@@ -80,9 +80,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-06">LAW-06</a></td>
 <td>Only signed, gated builds run</td>
-<td>Tested (red)</td>
+<td>Tested</td>
 <td><code>Rollout.tla</code>: TLC clean (6,290 states); 4 mutations caught</td>
-<td><code>laws/</code> check written (bundle ids bind content; only signed, gated, untampered releases are admitted); red until SB-506</td>
+<td><code>laws/</code> check through the real bundle, signer, release store and admission, + self-test; admission refusal tests; reproducible-build check</td>
 <td>—</td>
 <td>SB-012, SB-506, SB-509</td>
 </tr>
@@ -446,6 +446,12 @@
 <td>LAW-01, LAW-03, LAW-09, LAW-14</td>
 <td>Tested (measured)</td>
 <td>SB-501, SB-502: permission, injection, refusal, citation and regression suites on the local cell, gated on every <code>make check</code></td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-06</td>
+<td>Tested (red) → Tested</td>
+<td>SB-504, SB-506: green on real bundles, Ed25519 and cosign verifiers, and admission; a cell ignoring the gate is caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

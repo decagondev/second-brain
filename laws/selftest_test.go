@@ -657,3 +657,10 @@ func TestSelf_LAW07AuditMutationIsCaught(t *testing.T) {
 		t.Error("LAW-07: an audit log without redaction was not caught")
 	}
 }
+
+// LAW-06's check catches a cell that verifies the signature but not the gate.
+func TestSelf_LAW06MutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law06(r, newReleaseWorld(true)) }) {
+		t.Error("LAW-06: a cell that ignores the gate record was not caught")
+	}
+}

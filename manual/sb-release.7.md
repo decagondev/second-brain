@@ -41,6 +41,24 @@ The release id is `rel_<created>_<first 6 hex of SHA-256 of the canonical manife
 
 Builds are hermetic and reproducible: each release is built twice independently and the digests must match. Lockfiles are regenerated every release. Artefacts are signed and carry an SPDX SBOM (ADR-0005).
 
+Exactly (SB-504):
+
+- **Hermetic.** `make release-build` builds with `CGO_ENABLED=0`, `-trimpath`, `-buildvcs=false` and an empty build id, with the commit passed in by `-ldflags`, so the output depends only on the source and the Go toolchain version. `tools/ci/repro.sh` builds twice, in two fresh directories with separate build caches, and fails if any digest differs.
+- **SBOM.** `tools/release/sbom` writes SPDX 2.3 JSON: one package for each Go module in the binary (from its embedded build info, with its `go.sum` hash) and one for each npm package in `web/package-lock.json` (with its integrity hash). The SBOM is an artefact of the bundle, so its digest is in `bundle.json` and covered by the release signature.
+- **Signed.** The release signs the bundle's digest. In CI, signing is **cosign keyless**: GitHub's OIDC identity for this repository's release workflow, with a Rekor transparency-log entry. Development bundles are signed with a local Ed25519 key. Either way, a signature covers the bundle digest, and through it every artefact, prompt, policy, tool schema, the model and the SBOM.
+- **Gated.** The eval gate's verdict for a release is a signed statement too, `gate.json` `{ "release", "passed", "results_sha256" }`, signed the same way.
+
+### What a cell admits (SB-506)
+
+A cell **pulls** bundles from the release store over HTTPS. The factory never connects into a cell. Before it starts anything, the cell checks, in order, and refuses on the first failure (`EUNSIGNED`, and a Sev-1 alert):
+
+1. `bundle.json`'s id matches its contents (sb-release(7), Bundles);
+2. the bundle signature verifies for the release identity the cell trusts;
+3. every artefact it will run, the SBOM included, has the digest listed in the bundle;
+4. `gate.json` is for this release id, says `passed`, and its signature verifies.
+
+A cell runs only what passed all four. There is no flag to skip one (LAW-06).
+
 ### Channels
 
 Tenants choose `stable` or `testing`, never a version (ADR-0004).

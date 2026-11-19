@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S5.2a Reproducible builds, SBOM, signing and admission (SB-504, SB-506)
+
+**Wave/slice:** W5 / S5.2a · **Author:** platform lead + Claude · **Status:** In review (first CI signature, cell pull loop)
+
+**What:** A reproducible-build check, an SPDX SBOM generator, `make release-build`, a release workflow with cosign keyless signing, `release.Admit` with Ed25519 and cosign verifiers, a local release store, and LAW-06 green. The manual changed first: sb-release(7) gained the exact build, SBOM, signing and gate rules, and "What a cell admits".
+
+**Why this way:** The signature covers one digest, the bundle's, and the bundle lists every artefact's digest, the SBOM's included. So one signature check plus digest checks covers everything a cell runs. The gate's verdict is a signed record of its own, bound to the release id, so passing the gate can't be claimed by editing a file. Both verifiers refuse a signature whose key or identity isn't the one the cell trusts. The cosign adapter refuses when cosign is missing: no verifier means no start. Cells pull, so the factory never needs a way in.
+
+**Learned:** The first LAW-06 world rebuilt identical bundles and found them "already signed", which is correct: same contents, same release. The law now asks for a fresh bundle when it wants an unsigned one. A safety check refused a repro script that cleaned up with `rm -rf` on a variable, so the script now cleans its caches with `go clean -cache` and never removes a directory. Vendored builds carry no module hashes in their build info, so the SBOM takes them from `go.sum`.
+
+**Laws:** LAW-06 moves from Tested (red) to Tested. Every law test is green.
+
+**Next:** S5.2b, lockfile regeneration and the CVE patch path (SB-505).
+
 ## 2026-11-19 S5.1b Eval suites and the gate (SB-501, SB-502)
 
 **Wave/slice:** W5 / S5.1b · **Author:** platform lead + Claude · **Status:** In review (staging runs, branch protection)

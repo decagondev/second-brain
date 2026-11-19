@@ -69,6 +69,22 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 <p>The release id is <code>rel_&lt;created&gt;_&lt;first 6 hex of SHA-256 of the canonical manifest without the id&gt;</code>, for example <code>rel_2027-03-02_9b1c4e</code>. The canonical form is RFC 8785 JSON, as for payload hashes. Changing <strong>any</strong> field, a prompt byte, a policy, the model, a tool's schema or one artefact, gives a different id. Every audit row carries the running release id (sb-audit(5)), so any action can be traced to the exact prompts and policies it ran under.</p>
 <h3 id="builds">Builds</h3>
 <p>Builds are hermetic and reproducible: each release is built twice independently and the digests must match. Lockfiles are regenerated every release. Artefacts are signed and carry an SPDX SBOM (ADR-0005).</p>
+<p>Exactly (SB-504):</p>
+<ul>
+<li><strong>Hermetic.</strong> <code>make release-build</code> builds with <code>CGO_ENABLED=0</code>, <code>-trimpath</code>, <code>-buildvcs=false</code> and an empty build id, with the commit passed in by <code>-ldflags</code>, so the output depends only on the source and the Go toolchain version. <code>tools/ci/repro.sh</code> builds twice, in two fresh directories with separate build caches, and fails if any digest differs.</li>
+<li><strong>SBOM.</strong> <code>tools/release/sbom</code> writes SPDX 2.3 JSON: one package for each Go module in the binary (from its embedded build info, with its <code>go.sum</code> hash) and one for each npm package in <code>web/package-lock.json</code> (with its integrity hash). The SBOM is an artefact of the bundle, so its digest is in <code>bundle.json</code> and covered by the release signature.</li>
+<li><strong>Signed.</strong> The release signs the bundle's digest. In CI, signing is <strong>cosign keyless</strong>: GitHub's OIDC identity for this repository's release workflow, with a Rekor transparency-log entry. Development bundles are signed with a local Ed25519 key. Either way, a signature covers the bundle digest, and through it every artefact, prompt, policy, tool schema, the model and the SBOM.</li>
+<li><strong>Gated.</strong> The eval gate's verdict for a release is a signed statement too, <code>gate.json</code> <code>{ "release", "passed", "results_sha256" }</code>, signed the same way.</li>
+</ul>
+<h3 id="what-a-cell-admits-sb-506">What a cell admits (SB-506)</h3>
+<p>A cell <strong>pulls</strong> bundles from the release store over HTTPS. The factory never connects into a cell. Before it starts anything, the cell checks, in order, and refuses on the first failure (<code>EUNSIGNED</code>, and a Sev-1 alert):</p>
+<ol>
+<li><code>bundle.json</code>'s id matches its contents (sb-release(7), Bundles);</li>
+<li>the bundle signature verifies for the release identity the cell trusts;</li>
+<li>every artefact it will run, the SBOM included, has the digest listed in the bundle;</li>
+<li><code>gate.json</code> is for this release id, says <code>passed</code>, and its signature verifies.</li>
+</ol>
+<p>A cell runs only what passed all four. There is no flag to skip one (LAW-06).</p>
 <h3 id="channels">Channels</h3>
 <p>Tenants choose <code>stable</code> or <code>testing</code>, never a version (ADR-0004).</p>
 <h3 id="rings-and-promotion">Rings and promotion</h3>
@@ -88,7 +104,7 @@ sb release rollback --reason &quot;citation regressions in ring 2&quot;
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-release.1.html">sb-release(1)</a>, <a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and supply chain</a></p><p class="srcline">Source: <code>manual/sb-release.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#bundles">Bundles</a></li><li class="l3"><a href="#builds">Builds</a></li><li class="l3"><a href="#channels">Channels</a></li><li class="l3"><a href="#rings-and-promotion">Rings and promotion</a></li><li class="l3"><a href="#rollback">Rollback</a></li><li class="l3"><a href="#attestation">Attestation</a></li><li class="l3"><a href="#cves">CVEs</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#bundles">Bundles</a></li><li class="l3"><a href="#builds">Builds</a></li><li class="l3"><a href="#what-a-cell-admits-sb-506">What a cell admits (SB-506)</a></li><li class="l3"><a href="#channels">Channels</a></li><li class="l3"><a href="#rings-and-promotion">Rings and promotion</a></li><li class="l3"><a href="#rollback">Rollback</a></li><li class="l3"><a href="#attestation">Attestation</a></li><li class="l3"><a href="#cves">CVEs</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

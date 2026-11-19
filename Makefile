@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web tools clean
+.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -64,6 +64,12 @@ web:                   ## web UI: typecheck, tests (LAW-14 rendering, axe) and b
 	npm ci --prefix web --no-audit --no-fund
 	npm run --prefix web build
 	npm test --prefix web
+COMMIT_TIME := $(shell git show -s --format=%cI HEAD 2>/dev/null || echo 1970-01-01T00:00:00Z)
+COMMIT_DAY  := $(shell git show -s --format=%cs HEAD 2>/dev/null || echo 1970-01-01)
+release-build:         ## reproducible build twice, SBOM and bundle into build/release (SB-504)
+	tools/ci/repro.sh build/release
+	$(GO) run ./tools/release/sbom --binary build/release/a/sb --npm web/package-lock.json --created $(COMMIT_TIME) --out build/release/sbom.spdx.json
+	$(GO) run ./tools/release/bundle --artefact sb=build/release/a/sb --artefact sbom=build/release/sbom.spdx.json --created $(COMMIT_DAY) --out build/release/bundle.json --digest-out build/release/sign.txt
 integration:           ## adapter tests against real services; needs SB_TEST_POSTGRES_DSN (SB-105)
 	@test -n "$$SB_TEST_POSTGRES_DSN" || { echo "integration: set SB_TEST_POSTGRES_DSN"; exit 1; }
 	$(GO) test -count=1 ./internal/adapters/postgres/...

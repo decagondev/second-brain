@@ -31,6 +31,7 @@ func main() {
 	root := flag.String("root", ".", "repository root")
 	created := flag.String("created", "", "build date, YYYY-MM-DD")
 	out := flag.String("out", "bundle.json", "where to write the manifest")
+	digestOut := flag.String("digest-out", "", "also write the message to sign: sb-release:v1:<bundle digest>")
 	flag.Parse()
 	m, err := build(*root, arts, *created)
 	if err != nil {
@@ -41,6 +42,17 @@ func main() {
 	if err := os.WriteFile(*out, append(b, '\n'), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "bundle:", err)
 		os.Exit(1)
+	}
+	if *digestOut != "" {
+		d, err := m.Digest()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "bundle:", err)
+			os.Exit(1)
+		}
+		if err := os.WriteFile(*digestOut, []byte("sb-release:v1:"+d), 0o644); err != nil {
+			fmt.Fprintln(os.Stderr, "bundle:", err)
+			os.Exit(1)
+		}
 	}
 	fmt.Fprintln(os.Stdout, m.ID)
 }

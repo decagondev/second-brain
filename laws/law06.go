@@ -12,7 +12,8 @@ import (
 
 // ReleaseWorld builds bundles, signs and gates them, and asks a cell to admit one.
 type ReleaseWorld interface {
-	// Build makes a bundle; change names one field to alter ("" for none).
+	// Build makes a bundle; change names one field to alter ("" for none), or "fresh" for a
+	// bundle never built before.
 	Build(change string) (id string, err error)
 	Sign(id string) error
 	Gate(id string, pass bool) error
@@ -51,7 +52,7 @@ func law06(r *rand.Rand, w ReleaseWorld) error {
 		seen[id] = f
 	}
 	for i := 0; i < 6; i++ {
-		id, err := w.Build(bundleFields[r.Intn(len(bundleFields))])
+		id, err := w.Build("fresh")
 		if err != nil {
 			return err
 		}

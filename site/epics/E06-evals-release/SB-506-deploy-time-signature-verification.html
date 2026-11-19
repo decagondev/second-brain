@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,20 +60,23 @@
 <p>Unsigned builds don't start.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Cells refuse to start an image whose signature or SBOM doesn't verify</li>
-<li class="task"><span class="box"></span>Cells pull bundles and verify them; the factory needs no inbound network access to any cell</li>
+<li class="task done"><span class="box">✓</span>Cells refuse to start an image whose signature or SBOM doesn't verify</li>
+<li class="task"><span class="box"></span>Cells pull bundles and verify them; the factory needs no inbound network access to any cell (admission pulls through <code>release.Store</code>; the cell runtime's pull loop comes with W7)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Admission check in deploy</li>
-<li class="task"><span class="box"></span>Negative test with unsigned image</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-06</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Admission check in deploy</li>
+<li class="task done"><span class="box">✓</span>Negative test with unsigned image</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-06</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S5.2a): <code>release.Admit</code> pulls a release and checks, in order: the id matches the contents, the bundle signature verifies for the trusted identity, every artefact to run (the SBOM included) matches its listed digest, and a signed gate record for this id says passed. Any failure is <code>EUNSIGNED</code>. A signature has to be made by the trusted identity: one that brings its own key proves nothing. There are two verifiers: Ed25519 (development) and <code>internal/adapters/release/cosign</code>, which runs <code>cosign verify-blob</code> pinned to one workflow identity and the GitHub issuer, refuses if cosign is missing, and is tested with a fake cosign. <code>internal/adapters/release/localfs</code> is a read-only-to-cells release store. Admission tests refuse each of: unsigned, someone else's key, an edited bundle, a swapped artefact, no gate, a failed gate, a gate for another release, an unsigned gate edit, and an unlisted artefact. <code>TestLAW06_OnlySignedGatedBuildsRun</code>, red since S5.1a, is green, and a cell that ignores the gate is caught.</p>
+<p><strong>Left:</strong> the cell runtime's pull-and-admit loop and the Sev-1 alert on refusal (W7).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E06-evals-release/SB-506-deploy-time-signature-verification.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>
