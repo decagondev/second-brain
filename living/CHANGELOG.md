@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- `POST /v1/ask` and `GET /v1/traces/{id}` (S3.3: SB-306): the ask agent, conversations that re-check every source, traces with decision lists, and the sb-api(3) error shape.
 - Cited answers and the model gateway (S3.2: SB-304, SB-305): the answer composer decides citations in code; a provider-neutral gateway with OpenAI-compatible, Anthropic, Groq and OpenRouter adapters refuses prompts holding secrets and meters tokens.
 - Retrieval and live authorisation (S3.1: SB-301 to SB-303): pgvector index per tenant, hybrid search with the prefilter in the query, batched live ACL per connector, policy `read` check, a 12-chunk budget.
 - Linear tickets connector (SB-211): read-only GraphQL, team-based ACL, polled changes with an exact tie-break; tested against a recorded fake.

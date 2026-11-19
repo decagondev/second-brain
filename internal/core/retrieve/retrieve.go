@@ -132,8 +132,16 @@ func (a Authoriser) Check(ctx context.Context, user ports.UserRef, chunks []port
 
 // Result is what enters the context, and how many documents were refused.
 type Result struct {
-	Context []ports.Chunk
-	Refused int
+	Context   []ports.Chunk
+	Refused   int
+	Decisions []Decision // one per candidate document, in rank order
+}
+
+// Decision is the live outcome for one candidate document (sb-ask(3), traces).
+type Decision struct {
+	Cite    string `json:"cite"`
+	Verdict string `json:"verdict"` // "allow" or "refuse"
+	Reason  string `json:"reason"`  // allowed, source_denied, source_unknown, policy_denied
 }
 
 // ErrNoScope is a request without a valid scope.
@@ -152,18 +160,38 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 		return Result{}, err
 	}
 	cands = Fuse(cands)
-	chunks := make([]ports.Chunk, len(cands))
-	for i, c := range cands {
-		chunks[i] = c.Chunk
+	keep := map[string]bool{}
+	for _, k := range q.Kinds {
+		keep[k] = true
+	}
+	var chunks []ports.Chunk
+	for _, c := range cands {
+		if len(keep) == 0 || keep[c.Chunk.Kind] {
+			chunks = append(chunks, c.Chunk)
+		}
 	}
 	verdicts := a.Check(ctx, user, chunks)
 	var res Result
 	refused := map[string]bool{}
+	decided := map[string]int{}
 	for _, c := range chunks {
 		k := docKey(c)
-		allowed := verdicts[k] == ports.VerdictAllow &&
-			a.Policy.Authorise(ctx, s, "read", policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}, nil).Decision == policy.Allow
-		if !allowed {
+		reason := "allowed"
+		switch {
+		case verdicts[k] == ports.VerdictDeny:
+			reason = "source_denied"
+		case verdicts[k] != ports.VerdictAllow:
+			reason = "source_unknown"
+		case a.Policy.Authorise(ctx, s, "read", policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}, nil).Decision != policy.Allow:
+			reason = "policy_denied"
+		}
+		if i, ok := decided[k]; !ok {
+			decided[k] = len(res.Decisions)
+			res.Decisions = append(res.Decisions, Decision{Cite: c.Cite, Verdict: verdictOf(reason), Reason: reason})
+		} else if reason != "allowed" && res.Decisions[i].Reason == "allowed" {
+			res.Decisions[i] = Decision{Cite: c.Cite, Verdict: "refuse", Reason: reason}
+		}
+		if reason != "allowed" {
 			refused[k] = true
 			continue
 		}
@@ -173,4 +201,11 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 	}
 	res.Refused = len(refused)
 	return res, nil
+}
+
+func verdictOf(reason string) string {
+	if reason == "allowed" {
+		return "allow"
+	}
+	return "refuse"
 }

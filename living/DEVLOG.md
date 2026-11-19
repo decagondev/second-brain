@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.3 The ask agent and `POST /v1/ask` (SB-306)
+
+**Wave/slice:** W3 / S3.3 · **Author:** platform lead + Claude · **Status:** In review (audit-chain record waits for SB-401)
+
+**What:** `internal/core/ask` runs one question end to end: validate, retrieve and check live, compose through the gateway, keep a trace. `internal/api` serves it as `POST /v1/ask` and `GET /v1/traces/{id}`. The manual changed first: sb-ask(3) gained "How the ask agent runs, exactly", the conversation rule, the trace reasons, the `conversation` field and `EINVAL`.
+
+**Why this way:** When no chunk is allowed, the model isn't called at all. That's cheaper, and it means there's nothing for the model to make up. A conversation sends only the user's earlier questions, never earlier answers, so a turn can't carry content the user has lost access to since; every turn is checked live again. A missing kill-switch reader counts as killed, and a trace that can't be stored means no answer: missing infrastructure fails closed. The request and response types are checked against the man page's tables and example by a test, rather than generated; the man page stays the source and CI catches drift.
+
+**Learned:** The laws' ask system now goes through the real agent, so LAW-01 to LAW-03 test the whole path, model included. The stand-in model cites everything it sees and tries a label that was never there. The end-to-end LAW-14 test is an extension of a law that was already Tested, so it didn't go through the red ratchet; its mutation (citing refused candidates) is caught.
+
+**Laws:** LAW-01 and LAW-14 extended end to end. LAW-04 and LAW-05 are still the only red ones.
+
+**Next:** SB-307, the web UI (React, Vite, TypeScript), served by the cell.
+
 ## 2026-11-19 S3.2 Answer composer and model gateway (SB-304, SB-305)
 
 **Wave/slice:** W3 / S3.2 · **Author:** platform lead + Claude · **Status:** Done

@@ -79,7 +79,8 @@
     ]
   },
   &quot;refused&quot;: 2,
-  &quot;notice&quot;: null
+  &quot;notice&quot;: null,
+  &quot;conversation&quot;: &quot;cv_01JD3QB9…&quot;
 }
 </code></pre>
 <table>
@@ -104,11 +105,25 @@
 </tr>
 <tr>
 <td><code>notice</code></td>
-<td>e.g. <code>"most_uncited"</code>, <code>"no_access"</code>, <code>"no_sources"</code></td>
+<td><code>null</code>, <code>"most_uncited"</code>, <code>"no_access"</code> or <code>"no_sources"</code></td>
+</tr>
+<tr>
+<td><code>conversation</code></td>
+<td>The conversation this turn belongs to, <code>cv_…</code></td>
 </tr>
 </tbody>
 </table>
-<p><code>GET /v1/traces/{id}</code> returns the same answer plus the decision list (cite, verdict, reason), for the user who asked and for auditors.</p>
+<h3 id="how-the-ask-agent-runs-exactly">How the <code>ask</code> agent runs, exactly</h3>
+<ol>
+<li><strong>Validate.</strong> <code>question</code> must be 1 to 4,000 characters after trimming, and <code>sources</code> may name only <code>docs</code>, <code>chat</code>, <code>tickets</code> or <code>crm</code>. Unknown fields are ignored (sb-api(3), Versioning). Anything else is <code>EINVAL</code>.</li>
+<li><strong>Retrieve and check live</strong> as in sb-permissions(7). With <code>sources</code>, candidates of other kinds are dropped before the live check.</li>
+<li><strong>No allowed context:</strong> the model is <strong>not</strong> called. The answer is one uncited claim saying nothing the user can open answers this, with <code>notice</code> <code>no_access</code> if any candidate was refused, or <code>no_sources</code> if there were none.</li>
+<li><strong>Compose:</strong> the bundled <code>answer</code> prompt, the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as <code>citation_spoof</code> with the trace id and the label, never the claim text.</li>
+<li><strong>Notice:</strong> <code>most_uncited</code> when more than half the claims are uncited.</li>
+<li><strong>Trace:</strong> every answer gets a new trace id <code>tr_…</code>, returned in the body and in <code>X-SB-Trace</code>, and stored with the answer and its decision list for 30 days.</li>
+</ol>
+<p><strong>Conversations.</strong> A request without <code>conversation</code> starts one, and the response carries its <code>cv_…</code> id in <code>conversation</code>. A later turn sends only the user's <strong>earlier questions</strong> to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A <code>cv_…</code> id that isn't this user's is <code>EINVAL</code>, the same as one that doesn't exist.</p>
+<p><code>GET /v1/traces/{id}</code> returns the same answer plus the decision list (<code>cite</code>, <code>verdict</code>, <code>reason</code>, one per candidate document), for the user who asked and for auditors. Anyone else gets <code>EPERM</code>, the same as an unknown id. <code>reason</code> is one of <code>allowed</code>, <code>source_denied</code>, <code>source_unknown</code> or <code>policy_denied</code>.</p>
 <p><code>POST /v1/feedback</code> takes <code>{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }</code>.</p>
 <h2 id="errors">ERRORS</h2>
 <table>
@@ -119,6 +134,10 @@
 </tr>
 </thead>
 <tbody>
+<tr>
+<td><code>EINVAL</code></td>
+<td>Missing or over-long <code>question</code>, an unknown <code>sources</code> kind, or a <code>conversation</code> that isn't the user's</td>
+</tr>
 <tr>
 <td><code>EAUTH</code></td>
 <td>Not signed in, or session revoked</td>
@@ -151,7 +170,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-citations.7.html">sb-citations(7)</a>, <a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-api.3.html">sb-api(3)</a></p><p class="srcline">Source: <code>manual/sb-ask.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

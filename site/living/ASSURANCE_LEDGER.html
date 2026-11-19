@@ -154,7 +154,7 @@
 <td>Every claim cited or labelled</td>
 <td>Tested</td>
 <td>—</td>
-<td><code>laws/</code> property test over random model output (valid, spoofed and garbage labels) through <code>answer.Compose</code>, + self-test</td>
+<td><code>laws/</code> property test over random model output (valid, spoofed and garbage labels) through <code>answer.Compose</code>, and end to end through the ask agent, + self-tests</td>
 <td>—</td>
 <td>SB-304, SB-309</td>
 </tr>
@@ -362,6 +362,12 @@
 <td>LAW-07</td>
 <td>Tested (extended)</td>
 <td>SB-305: <code>TestLAW07_NoSecretInPrompts</code> green through the model gateway and the recorded fake provider</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-01, LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-306: the ask-level law tests run through the real ask agent and composer; <code>TestLAW14_AskAnswersCitedOrLabelled</code> added, with a mutation that cites refused candidates caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

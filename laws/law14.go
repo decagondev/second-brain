@@ -108,3 +108,32 @@ func law14(r *rand.Rand, compose Composer) error {
 	}
 	return nil
 }
+
+// law14Ask: end to end through the ask agent (SB-306), every claim of every answer cites
+// only documents that were in that answer's allowed context, or is labelled uncited.
+func law14Ask(w *World, sys System) error {
+	for _, u := range w.Users {
+		a, err := sys.Ask(w, u.ID, "anything")
+		if err != nil {
+			return err
+		}
+		if len(a.Claims) == 0 {
+			return fmt.Errorf("%s got an answer with no claims", u.ID)
+		}
+		inContext := map[string]bool{}
+		for _, d := range a.Context {
+			inContext[d] = true
+		}
+		for _, c := range a.Claims {
+			if c.Uncited == (len(c.Cites) > 0) {
+				return fmt.Errorf("%s: claim %q has uncited=%v and cites %v", u.ID, c.Text, c.Uncited, c.Cites)
+			}
+			for _, cite := range c.Cites {
+				if !inContext[docOf(cite)] {
+					return fmt.Errorf("%s: claim %q cites %s, which wasn't in the allowed context", u.ID, c.Text, cite)
+				}
+			}
+		}
+	}
+	return nil
+}

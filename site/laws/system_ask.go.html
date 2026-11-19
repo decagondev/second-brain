@@ -22,9 +22,16 @@
 
 import (
     &quot;context&quot;
+    &quot;encoding/json&quot;
     &quot;fmt&quot;
+    &quot;regexp&quot;
+    &quot;strconv&quot;
+    &quot;strings&quot;
+    &quot;time&quot;
 
     memindex &quot;example.com/second-brain/internal/adapters/index/memory&quot;
+    tracemem &quot;example.com/second-brain/internal/adapters/traces/memory&quot;
+    &quot;example.com/second-brain/internal/core/ask&quot;
     &quot;example.com/second-brain/internal/core/policy&quot;
     &quot;example.com/second-brain/internal/core/ports&quot;
     &quot;example.com/second-brain/internal/core/retrieve&quot;
@@ -33,7 +40,9 @@ import (
 
 // The real ask pipeline (SB-301 to SB-303) under the retrieval-level laws: one index per
 // tenant, bound to it; the world's source answers the live ACL; the cedar base policies
-// run in the kernel. Tool calls (Call) are still pending until SB-405 and SB-408.
+// run in the kernel, and the answer goes through the ask agent and composer (SB-306), with a
+// stand-in model that cites everything it is given and tries a spoofed label. Tool calls
+// (Call) are still pending until SB-405 and SB-408.
 
 func init() {
     NewSystem = func(w *World) System { return askSystem{w: w} }
@@ -45,6 +54,8 @@ type askSystem struct {
     // Mutations for the self-tests: index other tenants' documents in this cell, or
     // treat an Unknown live answer as Allow.
     indexOthers, unknownAsAllow bool
+    // citeCandidates: a composer that cites every retrieved candidate, refused or not.
+    citeCandidates bool
 }
 
 // worldConnector answers ACL from the world's live verdicts and records that it asked.
@@ -106,20 +117,76 @@ func (s askSystem) Ask(w *World, userID, question string) (Answer, error) {
     }
     auth := retrieve.Authoriser{Connectors: map[string]ports.Connector{&quot;docs&quot;: worldConnector{w, s.unknownAsAllow}},
         Policy: policy.Kernel{Engine: askPolicies, Recorder: okRecorder{}}}
-    res, err := retrieve.Context(ctx, scope, ports.UserRef{ID: u.ID}, nil, idx, auth, ports.Query{Text: question})
+    n := 0
+    agent := ask.Agent{Tenant: u.Tenant, Release: &quot;rel_law&quot;, Index: idx, Auth: auth,
+        Model:  &amp;citingModel{},
+        Store:  tracemem.New(),
+        Killed: func(context.Context) bool { return false },
+        NewID:  func(p string) string { n++; return fmt.Sprintf(&quot;%s%d&quot;, p, n) },
+        Now:    time.Now}
+    resp, err := agent.Ask(ctx, scope, ask.Request{Question: question})
+    if err != nil {
+        return Answer{}, err
+    }
+    tr, err := agent.Trace(ctx, scope, resp.Trace)
     if err != nil {
         return Answer{}, err
     }
     var a Answer
+    for _, d := range tr.Decisions {
+        if d.Verdict == &quot;allow&quot; {
+            a.Context = append(a.Context, docOf(d.Cite))
+        }
+    }
     seen := map[string]bool{}
-    for _, c := range res.Context {
-        if !seen[c.SourceID] {
-            seen[c.SourceID] = true
-            a.Context = append(a.Context, c.SourceID)
-            a.Citations = append(a.Citations, Citation{Doc: c.SourceID, Version: c.Version})
+    for _, c := range resp.Answer.Claims {
+        cc := ComposedClaim{Text: c.Text, Uncited: c.Uncited}
+        for _, ci := range c.Cites {
+            cc.Cites = append(cc.Cites, ci.Cite)
+            doc := docOf(ci.Cite)
+            if !seen[doc] {
+                seen[doc] = true
+                v, _ := strconv.Atoi(ci.Cite[strings.LastIndex(ci.Cite, &quot;@&quot;)+1:])
+                a.Citations = append(a.Citations, Citation{Doc: doc, Version: v})
+            }
+        }
+        a.Claims = append(a.Claims, cc)
+    }
+    if s.citeCandidates {
+        for _, d := range tr.Decisions {
+            a.Claims = append(a.Claims, ComposedClaim{Text: &quot;candidate&quot;, Cites: []string{d.Cite}})
         }
     }
     return a, nil
+}
+
+func docOf(cite string) string {
+    if i := strings.LastIndex(cite, &quot;@&quot;); i &gt;= 0 {
+        return cite[:i]
+    }
+    return cite
+}
+
+// citingModel stands in for a model provider: it cites every data block it was given,
+// one claim each, plus a claim citing a label that was never in the context (a spoof the
+// composer must strip) and a claim citing nothing.
+type citingModel struct{}
+
+var dataLabel = regexp.MustCompile(`&lt;&lt;data cite=&quot;(C[0-9]+) `)
+
+func (*citingModel) Complete(_ context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
+    type claim struct {
+        Text  string   `json:&quot;text&quot;`
+        Cites []string `json:&quot;cites&quot;`
+    }
+    var cs []claim
+    last := req.Messages[len(req.Messages)-1].Content
+    for _, m := range dataLabel.FindAllStringSubmatch(last, -1) {
+        cs = append(cs, claim{Text: &quot;from &quot; + m[1], Cites: []string{m[1]}})
+    }
+    cs = append(cs, claim{Text: &quot;spoofed&quot;, Cites: []string{&quot;C999&quot;}}, claim{Text: &quot;general&quot;, Cites: nil})
+    b, err := json.Marshal(map[string]any{&quot;claims&quot;: cs})
+    return ports.ModelResponse{Text: string(b)}, err
 }
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/system_ask.go</code></p></main>

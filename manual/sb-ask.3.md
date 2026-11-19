@@ -53,7 +53,8 @@ POST /v1/ask
     ]
   },
   "refused": 2,
-  "notice": null
+  "notice": null,
+  "conversation": "cv_01JD3QB9…"
 }
 ```
 
@@ -62,9 +63,21 @@ POST /v1/ask
 | `claims[].cites` | Only citations to chunks the user was live-authorised for |
 | `claims[].uncited` | `true` when no allowed chunk supports the claim. Set by code, never by the model |
 | `refused` | How many candidate documents were refused (deny or unknown). Never their titles |
-| `notice` | e.g. `"most_uncited"`, `"no_access"`, `"no_sources"` |
+| `notice` | `null`, `"most_uncited"`, `"no_access"` or `"no_sources"` |
+| `conversation` | The conversation this turn belongs to, `cv_…` |
 
-`GET /v1/traces/{id}` returns the same answer plus the decision list (cite, verdict, reason), for the user who asked and for auditors.
+### How the `ask` agent runs, exactly
+
+1. **Validate.** `question` must be 1 to 4,000 characters after trimming, and `sources` may name only `docs`, `chat`, `tickets` or `crm`. Unknown fields are ignored (sb-api(3), Versioning). Anything else is `EINVAL`.
+2. **Retrieve and check live** as in sb-permissions(7). With `sources`, candidates of other kinds are dropped before the live check.
+3. **No allowed context:** the model is **not** called. The answer is one uncited claim saying nothing the user can open answers this, with `notice` `no_access` if any candidate was refused, or `no_sources` if there were none.
+4. **Compose:** the bundled `answer` prompt, the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as `citation_spoof` with the trace id and the label, never the claim text.
+5. **Notice:** `most_uncited` when more than half the claims are uncited.
+6. **Trace:** every answer gets a new trace id `tr_…`, returned in the body and in `X-SB-Trace`, and stored with the answer and its decision list for 30 days.
+
+**Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist.
+
+`GET /v1/traces/{id}` returns the same answer plus the decision list (`cite`, `verdict`, `reason`, one per candidate document), for the user who asked and for auditors. Anyone else gets `EPERM`, the same as an unknown id. `reason` is one of `allowed`, `source_denied`, `source_unknown` or `policy_denied`.
 
 `POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }`.
 
@@ -72,6 +85,7 @@ POST /v1/ask
 
 | Code | When |
 |---|---|
+| `EINVAL` | Missing or over-long `question`, an unknown `sources` kind, or a `conversation` that isn't the user's |
 | `EAUTH` | Not signed in, or session revoked |
 | `ETENANT` | Token is for another tenant |
 | `EKILLED` | `ask` agent or the tenant is killed |

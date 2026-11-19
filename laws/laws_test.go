@@ -151,3 +151,7 @@ func TestLAW14_EveryClaimCitedOrLabelled(t *testing.T) {
 func TestLAW07_NoSecretInPrompts(t *testing.T) {
 	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Prompt(r, NewPromptWorld(t.TempDir())) })
 }
+
+func TestLAW14_AskAnswersCitedOrLabelled(t *testing.T) {
+	Check(t, "LAW-14", runs, func(r *rand.Rand) error { w := Gen(r); return law14Ask(w, NewSystem(w)) })
+}

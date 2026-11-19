@@ -602,3 +602,14 @@ func TestSelf_LAW07PromptMutationIsCaught(t *testing.T) {
 		t.Error("LAW-07: a model call without the gateway's secret check was not caught")
 	}
 }
+
+// LAW-14's end-to-end check catches an ask path that cites refused candidates.
+func TestSelf_LAW14AskMutationIsCaught(t *testing.T) {
+	f := func(r *rand.Rand) error {
+		w := Gen(r)
+		return law14Ask(w, askSystem{w: w, citeCandidates: true})
+	}
+	if !violates(runs, f) {
+		t.Error("LAW-14: an ask path citing refused candidates was not caught")
+	}
+}

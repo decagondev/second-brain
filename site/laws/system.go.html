@@ -32,6 +32,7 @@ type Citation struct {
 type Answer struct {
     Context   []string
     Citations []Citation
+    Claims    []ComposedClaim // the composed answer, when the system composes one
 }
 
 // ToolCall is one proposed tool call.
