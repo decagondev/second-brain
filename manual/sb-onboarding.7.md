@@ -51,6 +51,16 @@ Each phase ends with a **gate**. Don't move on until the gate passes. Every step
 
 **Gate 1:** `verify` passes every law; the pilot's thumbs-up rate is at least 70%.
 
+#### Running the pilot review
+
+The pilot needs about 20 people who will ask real work questions for two weeks (SB-311). Pick them from at least three teams, so that the documents and permissions they hit differ. Then:
+
+1. **Every Monday,** take the feedback export (sb-ask(3), `POST /v1/feedback`) and run `python3 -m evals.pilot report EXPORT.jsonl`. It prints the Gate 1 numbers: feedback count, thumbs-up rate, each wrong-citation report by cite, the share of answers with uncited claims, and the share of answers with refused sources. It exits 1 if the thumbs-up rate is under 70% or if there is no feedback at all.
+2. **Each wrong-citation report** is triaged within a week. Open the trace with auditor rights. If the cited chunk doesn't support the claim, add a case to `tenants/<tenant>/evals/` (sb-eval(5)), so the finding becomes a permanent test.
+3. **At the end of week two,** hold a retro with the [pilot retro template](../docs/pilot-retro-template.md). Log the findings in the devlog, add new risks to the risk register, and turn each fix into a ticket.
+
+The report holds ids, counts and comments only. It never shows a question or an answer.
+
 ### Days 15–45: everyone, plus drafts
 
 1. Remove `pilot_group`; add `draft-reply` to `agents`; `check`, then `apply`.

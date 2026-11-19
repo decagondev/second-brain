@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -65,16 +65,19 @@
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
 <li class="task"><span class="box"></span>Recruit pilot group</li>
 <li class="task"><span class="box"></span>Run two-week pilot</li>
 <li class="task"><span class="box"></span>Retro and backlog updates</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-02, LAW-03</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-02, LAW-03 (on the pilot's real data this is <code>sb tenant verify</code>, SB-601)</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S3.8): this ticket is human work (recruit 20 people, run two weeks, hold the retro), so it gets tooling and a runbook and stays In review. sb-onboarding(7) gained "Running the pilot review": who to pick, the weekly report, triage of wrong-citation reports into tenant eval cases, and the retro. <code>python3 -m evals.pilot report EXPORT.jsonl</code> turns the weekly feedback export (SB-310) into the Gate 1 numbers and exits 1 under a 70% thumbs-up rate or with no feedback; it has unit tests in <code>make test</code>. <a href="../../docs/pilot-retro-template.html">docs/pilot-retro-template.md</a> is the retro format: ids, counts and cites only.</p>
+<p><strong>Left (people):</strong> recruit the pilot group, run the two weeks, hold the retro, log findings and risks. <strong>Left (code):</strong> <code>sb tenant verify</code> (SB-601) for the pilot's law checks.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E04-retrieval-answers/SB-311-pilot-with-20-users-in-the-internal-tenant.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

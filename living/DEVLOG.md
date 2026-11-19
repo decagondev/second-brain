@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.8 Pilot tooling (SB-311), W3 built
+
+**Wave/slice:** W3 / S3.8 · **Author:** platform lead + Claude · **Status:** In review (the pilot itself is human work)
+
+**What:** The pilot review runbook in sb-onboarding(7), a Gate 1 report from the weekly feedback export, and a retro template. This ends W3. Done: SB-301, SB-302, SB-304 and SB-305. In review: SB-303, SB-306 to SB-311, each for a named human or staging item.
+
+**Why this way:** The pilot's numbers come from the export, and the export holds ids and counts only, so the report can be shared with leadership without leaking content. Every wrong-citation report becomes a tenant eval case, so pilot findings turn into regressions that stay tested forever.
+
+**Learned:** "No feedback" has to fail the gate. Dividing by zero would otherwise read as a pass at 0%, or as a crash.
+
+**Laws:** W3 ends with LAW-01, 02, 03, 07 and 14 green on the real pipeline. LAW-04 and LAW-05 (the tool bus) are red until W4.
+
+**Next:** W4, the tool bus (SB-405) and receipts (SB-408) first, to turn LAW-04 and LAW-05 green.
+
 ## 2026-11-19 S3.7 Feedback (SB-310)
 
 **Wave/slice:** W3 / S3.7 · **Author:** platform lead + Claude · **Status:** In review (weekly schedule with the cell runtime)

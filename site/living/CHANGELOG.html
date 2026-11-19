@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Pilot tooling (S3.8: SB-311): the pilot-review runbook in sb-onboarding(7), <code>python3 -m evals.pilot report</code> for the Gate 1 numbers, and a retro template.</li>
 <li>Feedback (S3.7: SB-310): <code>POST /v1/feedback</code> stores ratings, wrong-citation reports and comments against the trace, asker only; a weekly JSON-lines export with no question or answer text; Helpful/Not helpful controls in the web UI.</li>
 <li>Citation-faithfulness eval (S3.6: SB-309): a strict lexical support scorer, a local eval cell running the real ask path over fixture worlds, the shared <code>citation</code> suite and per-tenant golden questions in <code>tenants/&lt;name&gt;/evals/</code>, all in <code>make evals</code>.</li>
 <li>Slack <code>/ask</code> (S3.5: SB-308): signed and workspace-checked requests, one-active-user identity mapping by email, ephemeral answers through <code>response_url</code>, and a Share button that posts citation links only.</li>
