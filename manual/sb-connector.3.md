@@ -93,6 +93,21 @@ Read-only. Name it in a manifest as `connectors: { docs: google-drive }`.
 
 The connector is tested against `drivetest`, a recorded fake of the Drive API, and passes the contract kit there. A run against a real Google Workspace sandbox needs a service account the user provides.
 
+### `chat: slack` (SB-204)
+
+Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"] }` patterns match channel names.
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A Slack app's bot token and signing secret at `vault://tenants/TENANT/connectors/chat` (JSON `{"bot_token", "signing_secret"}`). Scopes: `channels:history`, `groups:history`, `channels:read`, `groups:read`, `users:read`, `users:read.email`. No write scopes, and no `im:` or `mpim:` scopes |
+| Documents | One document per message: id `CHANNEL/TS`, title `#channel`, text the message. Thread replies are their own documents. Version is the edit time, or else the post time, in microseconds, so edits always raise it |
+| Direct messages | Never fetched: DMs and group DMs are excluded by default, and the app has no scope to read them |
+| ACL | Live, per document: a **public** channel → `Allow` for any active, non-guest member of the workspace, and for guests who are in the channel; a **private** channel → `Allow` only for its members. The user is found by email; Slack answering "no such user" → `Deny`. Anything else, or a channel or message that's gone → `Unknown` |
+| Changes | Slack has no change feed, so the cell receives the Events API (`message`, `message_changed`, `message_deleted`, `member_joined_channel`, `member_left_channel`, `channel_archive`) at `/connectors/slack/events`, verifies Slack's request signature (v0, at most 5 minutes old), and appends each event to the connector's inbox. The cursor is a position in that inbox. Joins and leaves become permission-only changes for that channel's messages. An empty cursor (first sync, rebuild, and the nightly reconcile) lists every message in every channel the app is in |
+| Act | `ENOTSUP` (read-only) |
+
+Tested against `slacktest`, a recorded fake of the Web API and the Events API's signed delivery.
+
 ## MOCK CONNECTOR
 
 `internal/adapters/connectors/mock` is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:

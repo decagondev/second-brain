@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,31 @@
 <p>Decisions get made in chat; that knowledge should be findable by those who could see it.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Passes the contract kit</li>
-<li class="task"><span class="box"></span>Channel membership maps to ACL; private channels respected</li>
-<li class="task"><span class="box"></span>Direct messages are excluded by default</li>
+<li class="task done"><span class="box">✓</span>Passes the contract kit</li>
+<li class="task done"><span class="box">✓</span>Channel membership maps to ACL; private channels respected</li>
+<li class="task done"><span class="box">✓</span>Direct messages are excluded by default</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Adapter</li>
-<li class="task"><span class="box"></span>Membership mapping</li>
-<li class="task"><span class="box"></span>DM exclusion test</li>
-<li class="task"><span class="box"></span>Contract kit run</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Adapter</li>
+<li class="task done"><span class="box">✓</span>Membership mapping</li>
+<li class="task done"><span class="box">✓</span>DM exclusion test</li>
+<li class="task done"><span class="box">✓</span>Contract kit run</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: the user chose Slack. <code>internal/adapters/connectors/slack</code> is read-only and standard library only, and it passes the contract kit against <code>slacktest</code>, a recorded fake of the Web API and the Events API's signed deliveries.
+- Each message is a document (thread replies included), and its version is the edit or post time in microseconds.
+- ACL: public channel means any full member (guests need membership); private channel means members only; no Slack account means Deny; a missing message or channel means Unknown.
+- DMs and group DMs are never read, and <code>exclude</code> patterns match channel names.
+- Changes come from verified Events API deliveries (v0 signature, 5-minute window) kept in an inbox. Joins and leaves become permission-only changes, and an empty cursor lists everything.</p>
+<p>Tests: kit, membership mapping, exclusions, signature and staleness refusals, deletes. <code>TestLAW03_SlackUnknownIsNeverAllow</code> (with LAW-01's truth check) runs on it. While writing it, the law world twice mis-modelled faults (a 404 for one of two channels, then a leftover queued fault). The connector was right both times, and the world now injects one fault per channel in the batch.</p>
+<p><strong>Left:</strong> a real Slack workspace run (needs an app with the listed scopes, and a public URL for the Events API), and a durable inbox in the cell database.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E03-connectors-ingestion/SB-204-chat-connector-read-only.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

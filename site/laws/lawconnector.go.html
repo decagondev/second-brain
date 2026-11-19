@@ -25,11 +25,14 @@ import (
     &quot;errors&quot;
     &quot;fmt&quot;
     &quot;math/rand&quot;
+    &quot;strings&quot;
     &quot;time&quot;
 
     &quot;example.com/second-brain/internal/adapters/connectors/gdrive&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/gdrive/drivetest&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/slack&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/slack/slacktest&quot;
     &quot;example.com/second-brain/internal/core/ports&quot;
     &quot;example.com/second-brain/internal/obs&quot;
 )
@@ -204,6 +207,66 @@ func (w *driveWorld) ACL(access []bool, fault string) ([]string, error) {
 
 func (w *driveWorld) Act(string, bool) (string, error) { return &quot;&quot;, errors.New(&quot;ENOTSUP&quot;) }
 func (w *driveWorld) Effects() int                     { return 0 }
+
+// NewSlackWorld is the connector-level world over the Slack connector (SB-204) and its
+// fake. Access means the asker is in the private channel; &quot;script&quot; deletes the first
+// message, which the source can then no longer answer for.
+var NewSlackWorld = func() ConnectorWorld {
+    f := slacktest.New()
+    f.AddUser(&quot;U1&quot;, &quot;ann@acme.example&quot;, false)
+    f.AddUser(&quot;U2&quot;, &quot;bob@acme.example&quot;, false)
+    f.AddChannel(&quot;CIN&quot;, &quot;in&quot;, true, true, &quot;U1&quot;)
+    f.AddChannel(&quot;COUT&quot;, &quot;out&quot;, true, true, &quot;U2&quot;)
+    c := &amp;slack.Connector{Base: f.Base(), HTTP: f.Server.Client(), Redact: obs.NewRedactor(), Inbox: &amp;slack.MemoryInbox{},
+        Creds: func(context.Context) (string, error) { return f.CredsJSON(), nil }}
+    return &amp;slackWorld{f: f, c: c}
+}
+
+type slackWorld struct {
+    f *slacktest.Fake
+    c *slack.Connector
+}
+
+func (w *slackWorld) ACL(access []bool, fault string) ([]string, error) {
+    refs := make([]ports.SourceRef, len(access))
+    var first [2]string
+    for i, ok := range access {
+        ch := &quot;COUT&quot;
+        if ok {
+            ch = &quot;CIN&quot;
+        }
+        ts, _ := w.f.Post(ch, &quot;U2&quot;, &quot;&quot;, &quot;x&quot;)
+        if i == 0 {
+            first = [2]string{ch, ts}
+        }
+        refs[i] = ports.SourceRef{Kind: &quot;chat&quot;, ID: ch + &quot;/&quot; + ts + &quot;/&quot; + ts}
+    }
+    switch fault {
+    case &quot;script&quot;:
+        w.f.Delete(first[0], first[1])
+    case &quot;404&quot;: // the source can't find any channel in the batch: one fault per distinct channel
+        seen := map[string]bool{}
+        for _, r := range refs {
+            ch := strings.SplitN(r.ID, &quot;/&quot;, 2)[0]
+            if !seen[ch] {
+                seen[ch] = true
+                w.f.FailNext(&quot;404&quot;)
+            }
+        }
+    case &quot;&quot;:
+    default:
+        w.f.FailNext(fault)
+    }
+    vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: &quot;usr_ann&quot;, Email: &quot;ann@acme.example&quot;}, refs)
+    out := make([]string, len(vs))
+    for i, v := range vs {
+        out[i] = v.String()
+    }
+    return out, err
+}
+
+func (w *slackWorld) Act(string, bool) (string, error) { return &quot;&quot;, errors.New(&quot;ENOTSUP&quot;) }
+func (w *slackWorld) Effects() int                     { return 0 }
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/lawconnector.go</code></p></main>
   

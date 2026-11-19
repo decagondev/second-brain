@@ -153,6 +153,11 @@ func TestLAW01_PrefilterCatchesUp(t *testing.T) {
 func TestLAW13_RebuildDrill(t *testing.T) {
     Check(t, &quot;LAW-13&quot;, runs, law13Drill)
 }
+
+func TestLAW03_SlackUnknownIsNeverAllow(t *testing.T) {
+    w := NewSlackWorld()
+    Check(t, &quot;LAW-03&quot;, 30, func(r *rand.Rand) error { return law03Connector(r, w) })
+}
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/laws_test.go</code></p></main>
   

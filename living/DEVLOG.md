@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-204 Slack connector
+
+**Wave/slice:** W2 / S2.2 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** A read-only Slack connector with live channel-membership ACL, an Events API receiver with signature checks, and an inbox-backed change feed. The manual changed first: sb-connector(3) gained a `chat: slack` section, and sb-tenant(5) gained the model secret reference for ADR-0019.
+
+**Why this way:** One document per message makes edits and deletes exact: an edit raises that message's version, and a delete removes it. Per-thread documents would make a deleted reply look like an *older* version. Events are verified before they're stored, so the inbox only ever holds Slack's word.
+
+**Learned:** Law worlds can be wrong too. The Slack world's fault injection didn't match what "the source can't answer" means for a batch spanning channels, and the law caught it. Each time, the right fix was to the world, not the connector, and the devlog says so.
+
+**Laws:** connector-level LAW-03 (with LAW-01's truth check) also runs on Slack.
+
+**Next:** SB-211, the Linear connector.
+
 ## 2026-11-19 SB-210 Rebuild drill
 
 **Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review

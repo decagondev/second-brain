@@ -134,6 +134,43 @@ type Connector interface {
 </tbody>
 </table>
 <p>The connector is tested against <code>drivetest</code>, a recorded fake of the Drive API, and passes the contract kit there. A run against a real Google Workspace sandbox needs a service account the user provides.</p>
+<h3 id="chat-slack-sb-204"><code>chat: slack</code> (SB-204)</h3>
+<p>Read-only. Name it as <code>connectors: { chat: slack }</code>; <code>exclude: { chat: ["#hr-*"] }</code> patterns match channel names.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials</td>
+<td>A Slack app's bot token and signing secret at <code>vault://tenants/TENANT/connectors/chat</code> (JSON <code>{"bot_token", "signing_secret"}</code>). Scopes: <code>channels:history</code>, <code>groups:history</code>, <code>channels:read</code>, <code>groups:read</code>, <code>users:read</code>, <code>users:read.email</code>. No write scopes, and no <code>im:</code> or <code>mpim:</code> scopes</td>
+</tr>
+<tr>
+<td>Documents</td>
+<td>One document per message: id <code>CHANNEL/TS</code>, title <code>#channel</code>, text the message. Thread replies are their own documents. Version is the edit time, or else the post time, in microseconds, so edits always raise it</td>
+</tr>
+<tr>
+<td>Direct messages</td>
+<td>Never fetched: DMs and group DMs are excluded by default, and the app has no scope to read them</td>
+</tr>
+<tr>
+<td>ACL</td>
+<td>Live, per document: a <strong>public</strong> channel → <code>Allow</code> for any active, non-guest member of the workspace, and for guests who are in the channel; a <strong>private</strong> channel → <code>Allow</code> only for its members. The user is found by email; Slack answering "no such user" → <code>Deny</code>. Anything else, or a channel or message that's gone → <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Changes</td>
+<td>Slack has no change feed, so the cell receives the Events API (<code>message</code>, <code>message_changed</code>, <code>message_deleted</code>, <code>member_joined_channel</code>, <code>member_left_channel</code>, <code>channel_archive</code>) at <code>/connectors/slack/events</code>, verifies Slack's request signature (v0, at most 5 minutes old), and appends each event to the connector's inbox. The cursor is a position in that inbox. Joins and leaves become permission-only changes for that channel's messages. An empty cursor (first sync, rebuild, and the nightly reconcile) lists every message in every channel the app is in</td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code> (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>Tested against <code>slacktest</code>, a recorded fake of the Web API and the Events API's signed delivery.</p>
 <h2 id="mock-connector">MOCK CONNECTOR</h2>
 <p><code>internal/adapters/connectors/mock</code> is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:</p>
 <table>
@@ -177,7 +214,7 @@ type Connector interface {
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -40,6 +40,7 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 | `vault://tenants/TENANT/connectors/KIND` | the credential for one connector kind |
 | `vault://tenants/TENANT/oidc` | the cell's OIDC client secret |
 | `vault://tenants/TENANT/scim` | the IdP's SCIM bearer token |
+| `vault://tenants/TENANT/model` | the model gateway's API key (ADR-0019) |
 
 A reference is resolved through the `Secrets` port at the moment of the call, and only for the cell's own tenant: a reference to another tenant's path is refused. Resolved values are never stored in a struct field and never cached past the call. Every value resolved is also registered with the logger's redactor, so it is replaced by `[REDACTED]` anywhere it would appear in a log line: message, attribute, error or nested group. Attributes whose names contain `secret`, `password`, `token` or `key` are redacted whatever their value. For development, `file:///DIR` keeps the vault in `DIR/vault/tenants/…`, one file per secret, readable only by its owner; a file anyone else can read is refused.
 

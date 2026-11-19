@@ -5,11 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/adapters/connectors/gdrive"
 	"example.com/second-brain/internal/adapters/connectors/gdrive/drivetest"
 	"example.com/second-brain/internal/adapters/connectors/mock"
+	"example.com/second-brain/internal/adapters/connectors/slack"
+	"example.com/second-brain/internal/adapters/connectors/slack/slacktest"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/obs"
 )
@@ -184,3 +187,63 @@ func (w *driveWorld) ACL(access []bool, fault string) ([]string, error) {
 
 func (w *driveWorld) Act(string, bool) (string, error) { return "", errors.New("ENOTSUP") }
 func (w *driveWorld) Effects() int                     { return 0 }
+
+// NewSlackWorld is the connector-level world over the Slack connector (SB-204) and its
+// fake. Access means the asker is in the private channel; "script" deletes the first
+// message, which the source can then no longer answer for.
+var NewSlackWorld = func() ConnectorWorld {
+	f := slacktest.New()
+	f.AddUser("U1", "ann@acme.example", false)
+	f.AddUser("U2", "bob@acme.example", false)
+	f.AddChannel("CIN", "in", true, true, "U1")
+	f.AddChannel("COUT", "out", true, true, "U2")
+	c := &slack.Connector{Base: f.Base(), HTTP: f.Server.Client(), Redact: obs.NewRedactor(), Inbox: &slack.MemoryInbox{},
+		Creds: func(context.Context) (string, error) { return f.CredsJSON(), nil }}
+	return &slackWorld{f: f, c: c}
+}
+
+type slackWorld struct {
+	f *slacktest.Fake
+	c *slack.Connector
+}
+
+func (w *slackWorld) ACL(access []bool, fault string) ([]string, error) {
+	refs := make([]ports.SourceRef, len(access))
+	var first [2]string
+	for i, ok := range access {
+		ch := "COUT"
+		if ok {
+			ch = "CIN"
+		}
+		ts, _ := w.f.Post(ch, "U2", "", "x")
+		if i == 0 {
+			first = [2]string{ch, ts}
+		}
+		refs[i] = ports.SourceRef{Kind: "chat", ID: ch + "/" + ts + "/" + ts}
+	}
+	switch fault {
+	case "script":
+		w.f.Delete(first[0], first[1])
+	case "404": // the source can't find any channel in the batch: one fault per distinct channel
+		seen := map[string]bool{}
+		for _, r := range refs {
+			ch := strings.SplitN(r.ID, "/", 2)[0]
+			if !seen[ch] {
+				seen[ch] = true
+				w.f.FailNext("404")
+			}
+		}
+	case "":
+	default:
+		w.f.FailNext(fault)
+	}
+	vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: "usr_ann", Email: "ann@acme.example"}, refs)
+	out := make([]string, len(vs))
+	for i, v := range vs {
+		out[i] = v.String()
+	}
+	return out, err
+}
+
+func (w *slackWorld) Act(string, bool) (string, error) { return "", errors.New("ENOTSUP") }
+func (w *slackWorld) Effects() int                     { return 0 }

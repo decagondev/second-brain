@@ -133,3 +133,8 @@ func TestLAW01_PrefilterCatchesUp(t *testing.T) {
 func TestLAW13_RebuildDrill(t *testing.T) {
 	Check(t, "LAW-13", runs, law13Drill)
 }
+
+func TestLAW03_SlackUnknownIsNeverAllow(t *testing.T) {
+	w := NewSlackWorld()
+	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
+}

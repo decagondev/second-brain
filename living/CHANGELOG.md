@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Slack chat connector (SB-204): read-only, channel-membership ACL, DMs never read, Events API with signature checks; tested against a recorded fake.
 - Weekly rebuild drill (SB-210): `ingest.Drill` compares the index before and after a rebuild from sources.
 - LAW-01 ingest-gap test (SB-209): deletes and permission changes reach the prefilter in one sync; the live check holds in between.
 - Durable sync (SB-208): per-connector cursor store, scheduler, and freshness metrics on a Prometheus text endpoint.
