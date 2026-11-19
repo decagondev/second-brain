@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-202 Scriptable mock connector
+
+**Wave/slice:** W2 / S2.1 · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** The SB-201 mock gained a fault queue and forced verdicts. A fault-matrix test shows each behaviour on demand, and the connector-level LAW-03 test now mixes a scripted Unknown into otherwise truthful batches. The manual changed first: sb-connector(3) gained a MOCK CONNECTOR section.
+
+**Why this way:** Laws and evals need to name the bad thing that happens ("the second call times out"), not hope a random fault lands. A queue is deterministic and reproducible with `SB_SEED`.
+
+**Learned:** A no-receipt target is ambiguous in real life (did it apply?). The mock models the safe reading: no id, no effect, and an error. The real "applied but unconfirmed" case belongs to the tool bus (SB-408), which must report `DidNotRun` and reconcile.
+
+**Laws:** no status change.
+
+**Next:** SB-205 (credentials via vault references), then SB-203 once the docs vendor is chosen.
+
 ## 2026-11-19 SB-201 Connector contract, kit and mock
 
 **Wave/slice:** W2 / S2.1 · **Author:** platform lead + Claude · **Status:** Done

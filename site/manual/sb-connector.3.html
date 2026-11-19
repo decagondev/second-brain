@@ -96,13 +96,50 @@ type Connector interface {
 <h2 id="contract-kit">CONTRACT KIT</h2>
 <p>Run <code>go test ./internal/adapters/connectors/&lt;name&gt;/... -run Kit</code> against a sandbox. All cases must pass before a connector can be named in any manifest. The cases are listed in <a href="../docs/architecture/03-connectors.html#the-contract-kit">03 Connectors</a>.</p>
 <p>The kit is <code>connectorkit.Run(t, sandbox)</code> (package <code>internal/core/connectorkit</code>). A connector's test supplies a <code>Sandbox</code>: the connector under test, an existing document, a user who can open it and one who can't, a way to inject a fault into the next <code>ACL</code> call (<code>500</code>, timeout, <code>404</code>), a way to edit a document and to change its permissions, 200 existing refs for the batch case, and, for writable connectors, a valid <code>Action</code>. The kit also checks <code>APIVersion</code> against <code>ports.Negotiate</code>.</p>
+<h2 id="mock-connector">MOCK CONNECTOR</h2>
+<p><code>internal/adapters/connectors/mock</code> is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:</p>
+<table>
+<thead>
+<tr>
+<th>Ask for</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Allow or Deny</td>
+<td>the document's viewers (<code>Put</code>, <code>SetViewers</code>)</td>
+</tr>
+<tr>
+<td>Unknown for one user and document</td>
+<td><code>ScriptVerdict(email, id, VerdictUnknown)</code> (any verdict can be forced this way)</td>
+</tr>
+<tr>
+<td>A failing ACL call</td>
+<td><code>QueueFaults(500, timeout, 404, …)</code>: one fault per coming call, in order</td>
+</tr>
+<tr>
+<td>A deleted document</td>
+<td><code>Delete</code> (Fetch fails, ACL is Unknown)</td>
+</tr>
+<tr>
+<td>A target with no receipt</td>
+<td><code>IssueIDs(false)</code>: <code>Act</code> returns <code>ENORECEIPT</code> and changes nothing</td>
+</tr>
+<tr>
+<td>Read-only</td>
+<td><code>New(src, false)</code>: <code>Act</code> returns <code>ENOTSUP</code></td>
+</tr>
+</tbody>
+</table>
+<p>It passes the contract kit in both modes. The connector-level LAW-03 and LAW-05 tests run on it.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-05">LAW-05</a>, <a href="sb-laws.7.html#law-07">LAW-07</a>.</p>
 <h2 id="examples">EXAMPLES</h2>
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -38,7 +38,7 @@ import (
 // ConnectorWorld drives one connector over a source the law controls.
 type ConnectorWorld interface {
     // ACL asks for user's verdicts on n documents; access[i] is the truth; fault is
-    // &quot;&quot;, &quot;500&quot;, &quot;timeout&quot; or &quot;404&quot; for the call.
+    // &quot;&quot;, &quot;500&quot;, &quot;timeout&quot;, &quot;404&quot;, or &quot;script&quot; (the first ref's verdict is scripted Unknown).
     ACL(access []bool, fault string) (verdicts []string, err error)
     // Act runs action key against a target that does or doesn't issue ids; it returns
     // the receipt id (&quot;&quot; if none) and the error.
@@ -72,7 +72,11 @@ func (w *connWorld) ACL(access []bool, fault string) ([]string, error) {
         }
         refs[i] = ports.SourceRef{Kind: &quot;tickets&quot;, ID: id}
     }
-    w.src.InjectFault(mock.Fault(fault))
+    if fault == &quot;script&quot; { // an unmapped permission model on the first ref only
+        w.src.ScriptVerdict(&quot;ann@acme.example&quot;, refs[0].ID, ports.VerdictUnknown)
+    } else {
+        w.src.InjectFault(mock.Fault(fault))
+    }
     vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: &quot;usr_ann&quot;, Email: &quot;ann@acme.example&quot;}, refs)
     out := make([]string, len(vs))
     for i, v := range vs {
@@ -95,7 +99,7 @@ func law03Connector(r *rand.Rand, w ConnectorWorld) error {
         for j := range access {
             access[j] = r.Intn(2) == 0
         }
-        fault := []string{&quot;&quot;, &quot;&quot;, &quot;500&quot;, &quot;timeout&quot;, &quot;404&quot;}[r.Intn(5)]
+        fault := []string{&quot;&quot;, &quot;&quot;, &quot;500&quot;, &quot;timeout&quot;, &quot;404&quot;, &quot;script&quot;}[r.Intn(6)]
         if fault == &quot;timeout&quot; &amp;&amp; r.Intn(4) != 0 {
             fault = &quot;500&quot; // keep the slow case rare; it waits out the 800 ms deadline
         }
@@ -111,7 +115,7 @@ func law03Connector(r *rand.Rand, w ConnectorWorld) error {
             if access[j] {
                 want = &quot;allow&quot;
             }
-            if fault != &quot;&quot; {
+            if (fault != &quot;&quot; &amp;&amp; fault != &quot;script&quot;) || (fault == &quot;script&quot; &amp;&amp; j == 0) {
                 want = &quot;unknown&quot;
             }
             if v != want {

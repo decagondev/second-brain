@@ -76,6 +76,21 @@ Run `go test ./internal/adapters/connectors/<name>/... -run Kit` against a sandb
 
 The kit is `connectorkit.Run(t, sandbox)` (package `internal/core/connectorkit`). A connector's test supplies a `Sandbox`: the connector under test, an existing document, a user who can open it and one who can't, a way to inject a fault into the next `ACL` call (`500`, timeout, `404`), a way to edit a document and to change its permissions, 200 existing refs for the batch case, and, for writable connectors, a valid `Action`. The kit also checks `APIVersion` against `ports.Negotiate`.
 
+## MOCK CONNECTOR
+
+`internal/adapters/connectors/mock` is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:
+
+| Ask for | How |
+|---|---|
+| Allow or Deny | the document's viewers (`Put`, `SetViewers`) |
+| Unknown for one user and document | `ScriptVerdict(email, id, VerdictUnknown)` (any verdict can be forced this way) |
+| A failing ACL call | `QueueFaults(500, timeout, 404, …)`: one fault per coming call, in order |
+| A deleted document | `Delete` (Fetch fails, ACL is Unknown) |
+| A target with no receipt | `IssueIDs(false)`: `Act` returns `ENORECEIPT` and changes nothing |
+| Read-only | `New(src, false)`: `Act` returns `ENOTSUP` |
+
+It passes the contract kit in both modes. The connector-level LAW-03 and LAW-05 tests run on it.
+
 ## LAWS
 
 [LAW-01](sb-laws.7.md#law-01), [LAW-03](sb-laws.7.md#law-03), [LAW-05](sb-laws.7.md#law-05), [LAW-07](sb-laws.7.md#law-07).

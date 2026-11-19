@@ -18,7 +18,7 @@ import (
 // ConnectorWorld drives one connector over a source the law controls.
 type ConnectorWorld interface {
 	// ACL asks for user's verdicts on n documents; access[i] is the truth; fault is
-	// "", "500", "timeout" or "404" for the call.
+	// "", "500", "timeout", "404", or "script" (the first ref's verdict is scripted Unknown).
 	ACL(access []bool, fault string) (verdicts []string, err error)
 	// Act runs action key against a target that does or doesn't issue ids; it returns
 	// the receipt id ("" if none) and the error.
@@ -52,7 +52,11 @@ func (w *connWorld) ACL(access []bool, fault string) ([]string, error) {
 		}
 		refs[i] = ports.SourceRef{Kind: "tickets", ID: id}
 	}
-	w.src.InjectFault(mock.Fault(fault))
+	if fault == "script" { // an unmapped permission model on the first ref only
+		w.src.ScriptVerdict("ann@acme.example", refs[0].ID, ports.VerdictUnknown)
+	} else {
+		w.src.InjectFault(mock.Fault(fault))
+	}
 	vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: "usr_ann", Email: "ann@acme.example"}, refs)
 	out := make([]string, len(vs))
 	for i, v := range vs {
@@ -75,7 +79,7 @@ func law03Connector(r *rand.Rand, w ConnectorWorld) error {
 		for j := range access {
 			access[j] = r.Intn(2) == 0
 		}
-		fault := []string{"", "", "500", "timeout", "404"}[r.Intn(5)]
+		fault := []string{"", "", "500", "timeout", "404", "script"}[r.Intn(6)]
 		if fault == "timeout" && r.Intn(4) != 0 {
 			fault = "500" // keep the slow case rare; it waits out the 800 ms deadline
 		}
@@ -91,7 +95,7 @@ func law03Connector(r *rand.Rand, w ConnectorWorld) error {
 			if access[j] {
 				want = "allow"
 			}
-			if fault != "" {
+			if (fault != "" && fault != "script") || (fault == "script" && j == 0) {
 				want = "unknown"
 			}
 			if v != want {

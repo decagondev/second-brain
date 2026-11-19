@@ -46,7 +46,8 @@ type Source struct {
 	kind      string
 	docs      map[string]*doc
 	log       []change
-	fault     Fault
+	faults    []Fault // one per coming ACL call
+	scripted  map[string]ports.Verdict
 	issuesIDs bool
 	receipts  map[ports.IdempotencyKey]string
 	effects   int
@@ -54,7 +55,8 @@ type Source struct {
 
 // NewSource makes an empty source of one connector kind (docs, chat, tickets, crm).
 func NewSource(kind string) *Source {
-	return &Source{kind: kind, docs: map[string]*doc{}, receipts: map[ports.IdempotencyKey]string{}, issuesIDs: true}
+	return &Source{kind: kind, docs: map[string]*doc{}, receipts: map[ports.IdempotencyKey]string{}, issuesIDs: true,
+		scripted: map[string]ports.Verdict{}}
 }
 
 // Put creates or edits a document and records the change.
@@ -100,11 +102,36 @@ func (s *Source) Delete(id string) {
 	}
 }
 
-// InjectFault makes the next ACL call fail as f.
+// InjectFault makes the next ACL call fail as f (FaultNone clears the queue).
 func (s *Source) InjectFault(f Fault) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.fault = f
+	s.faults = nil
+	if f != FaultNone {
+		s.faults = []Fault{f}
+	}
+}
+
+// QueueFaults scripts the coming ACL calls: one fault each, in order.
+func (s *Source) QueueFaults(fs ...Fault) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.faults = append(s.faults, fs...)
+}
+
+// ScriptVerdict forces the verdict for one user and document, e.g. VerdictUnknown for an
+// unmapped permission model. It overrides the viewers until cleared with ClearScript.
+func (s *Source) ScriptVerdict(email, id string, v ports.Verdict) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.scripted[email+"\x00"+id] = v
+}
+
+// ClearScript removes every scripted verdict.
+func (s *Source) ClearScript() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.scripted = map[string]ports.Verdict{}
 }
 
 // IssueIDs sets whether the Act target returns an id for a change.
@@ -157,8 +184,10 @@ func (c *Connector) ACL(ctx context.Context, user ports.UserRef, refs []ports.So
 	ctx, cancel := context.WithTimeout(ctx, ACLDeadline)
 	defer cancel()
 	c.src.mu.Lock()
-	fault := c.src.fault
-	c.src.fault = FaultNone
+	fault := FaultNone
+	if len(c.src.faults) > 0 {
+		fault, c.src.faults = c.src.faults[0], c.src.faults[1:]
+	}
 	c.src.mu.Unlock()
 	switch fault {
 	case Fault500:
@@ -174,6 +203,10 @@ func (c *Connector) ACL(ctx context.Context, user ports.UserRef, refs []ports.So
 		d, ok := c.src.docs[r.ID]
 		if fault == FaultNotFound || !ok || d.deleted {
 			continue // Unknown
+		}
+		if v, ok := c.src.scripted[user.Email+"\x00"+r.ID]; ok {
+			out[i] = v
+			continue
 		}
 		out[i] = ports.VerdictDeny
 		if d.viewers[user.Email] {

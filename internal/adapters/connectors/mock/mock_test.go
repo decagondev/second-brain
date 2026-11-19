@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -62,3 +63,53 @@ func TestNegotiation(t *testing.T) {
 type old struct{ *Connector }
 
 func (old) APIVersion() int { return ports.ConnectorAPIVersion + 1 }
+
+// Every behaviour the mock offers, asked for on demand (sb-connector(3), MOCK CONNECTOR).
+func TestFaultMatrix(t *testing.T) {
+	ann := ports.UserRef{Email: "ann@acme.example"}
+	ref := []ports.SourceRef{{Kind: "docs", ID: "d"}}
+	verdict := func(src *Source) ports.Verdict {
+		vs, err := New(src, false).ACL(context.Background(), ann, ref)
+		if err != nil || len(vs) != 1 {
+			return ports.VerdictUnknown
+		}
+		return vs[0]
+	}
+	fresh := func(viewers ...string) *Source { s := NewSource("docs"); s.Put("d", "t", "x", viewers...); return s }
+	cases := []struct {
+		name  string
+		setup func() *Source
+		want  ports.Verdict
+	}{
+		{"allow", func() *Source { return fresh("ann@acme.example") }, ports.VerdictAllow},
+		{"deny", func() *Source { return fresh("bob@acme.example") }, ports.VerdictDeny},
+		{"scripted unknown", func() *Source {
+			s := fresh("ann@acme.example")
+			s.ScriptVerdict("ann@acme.example", "d", ports.VerdictUnknown)
+			return s
+		}, ports.VerdictUnknown},
+		{"500", func() *Source { s := fresh("ann@acme.example"); s.QueueFaults(Fault500); return s }, ports.VerdictUnknown},
+		{"timeout", func() *Source { s := fresh("ann@acme.example"); s.QueueFaults(FaultTimeout); return s }, ports.VerdictUnknown},
+		{"404", func() *Source { s := fresh("ann@acme.example"); s.QueueFaults(FaultNotFound); return s }, ports.VerdictUnknown},
+		{"deleted", func() *Source { s := fresh("ann@acme.example"); s.Delete("d"); return s }, ports.VerdictUnknown},
+	}
+	for _, c := range cases {
+		if got := verdict(c.setup()); got != c.want {
+			t.Errorf("%s: %v, want %v", c.name, got, c.want)
+		}
+	}
+	// A queue applies one fault per call, then the truth again.
+	s := fresh("ann@acme.example")
+	s.QueueFaults(Fault500, FaultNotFound)
+	for i, want := range []ports.Verdict{ports.VerdictUnknown, ports.VerdictUnknown, ports.VerdictAllow} {
+		if got := verdict(s); got != want {
+			t.Errorf("call %d: %v, want %v", i+1, got, want)
+		}
+	}
+	// No receipt: an error, and no effect.
+	s = fresh()
+	s.IssueIDs(false)
+	if r, err := New(s, true).Act(context.Background(), ports.Action{Target: "t"}, "k"); err == nil || r.TargetID != "" || s.Effects() != 0 {
+		t.Fatalf("no-receipt target: %v %v effects %d", r, err, s.Effects())
+	}
+}

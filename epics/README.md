@@ -15,7 +15,7 @@ summary: Epics, waves, slices and tickets.
 |---|---|---|---|---|
 | W0 Manual and Laws | 10 | 6 | 0 | Left: human reviews (SB-004, SB-005, SB-014) and, for SB-011 to SB-013, two reviewers (models and mutations green locally and in CI, 2026-11-19) |
 | W1 First Cell | 8 | 5 | 0 | Done: SB-101 to SB-103, SB-105 to SB-108, SB-114. In review: SB-104 (needs a cloud adapter), SB-109 to SB-112 (second reviewer for policy and audit) |
-| W2 to W7 | 1 | 0 | 66 | W2 started: SB-201 done |
+| W2 to W7 | 2 | 0 | 65 | W2: SB-201 and SB-202 done |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
 
