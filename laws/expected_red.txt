@@ -1,5 +1,2 @@
-LAW-01 SB-302 TestLAW01_CiteOnlyWhatTheAskerCanOpen
-LAW-02 SB-301 TestLAW02_NoTenantCrossing
-LAW-03 SB-302 TestLAW03_UnknownMeansRefuse
 LAW-04 SB-405 TestLAW04_AuditBeforeAct
 LAW-05 SB-408 TestLAW05_RanMeansReceipt

@@ -546,3 +546,20 @@ func (d dropACLOnly) Changes(ctx context.Context, c ports.Cursor) (ports.ChangeS
 	}
 	return out, next, err
 }
+
+// The retrieval-level laws catch mutations of the real ask pipeline, not only of the reference.
+func TestSelf_RealAskMutationsAreCaught(t *testing.T) {
+	cases := []struct {
+		name string
+		sys  askSystem
+		law  string
+	}{
+		{"cell indexes other tenants' documents", askSystem{indexOthers: true}, "LAW-02"},
+		{"unknown live answer treated as allow", askSystem{unknownAsAllow: true}, "LAW-03"},
+	}
+	for _, c := range cases {
+		if !violates(runs, run(allLaws[c.law], c.sys)) {
+			t.Errorf("%s: mutation %q was not caught", c.law, c.name)
+		}
+	}
+}

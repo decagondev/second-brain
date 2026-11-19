@@ -35,7 +35,7 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-01">LAW-01</a></td>
 <td>Cite only what the asker can open</td>
-<td>Tested (red)</td>
+<td>Tested</td>
 <td><code>Permissions.als</code>: 5 checks UNSAT at scope 6; mutation caught</td>
 <td><code>laws/</code> check + self-tests; red until SB-302</td>
 <td>—</td>
@@ -44,7 +44,7 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-02">LAW-02</a></td>
 <td>No tenant crossing</td>
-<td>Tested (red)</td>
+<td>Tested</td>
 <td><code>Permissions.als</code>: 5 checks UNSAT at scope 6; mutation caught</td>
 <td><code>laws/</code> check + self-tests; retrieval level red until SB-301; cell level (<code>TestLAW02_CellsShareNothing</code>, SB-103) request level (<code>TestLAW02_RequestsNeverCrossTenants</code>, SB-105) sign-in (<code>TestLAW02_TokensStayInTheirTenant</code>, SB-106) request context (<code>TestLAW02_ScopeIsTheOnlyWayIn</code>, SB-108) and policies (<code>TestLAW02_PoliciesNeverCrossTenants</code>, SB-110) green</td>
 <td>—</td>
@@ -53,7 +53,7 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-03">LAW-03</a></td>
 <td>Unknown means refuse</td>
-<td>Tested (red)</td>
+<td>Tested</td>
 <td><code>Permissions.als</code>: 5 checks UNSAT at scope 6; mutation caught</td>
 <td><code>laws/</code> check + self-tests; retrieval level red until SB-302; policy level (<code>TestLAW03_PolicyUnknownRefuses</code>, SB-109) green</td>
 <td>—</td>
@@ -344,6 +344,12 @@
 <td>LAW-01</td>
 <td>stays Tested (red)</td>
 <td>SB-209: ingest-gap test green (live check follows the source; prefilter catches up after one sync); retrieval level red until SB-302</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-01, LAW-02, LAW-03</td>
+<td>Tested (red) → Tested</td>
+<td>S3.1 (SB-301 to SB-303): the retrieval-level tests, red since W0, are green on the real pipeline; mutations of the real pipeline are caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

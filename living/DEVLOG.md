@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.1 Retrieval and live authorisation (SB-301 to SB-303)
+
+**Wave/slice:** W3 / S3.1 · **Author:** platform lead + Claude · **Status:** SB-301 and SB-302 Done, SB-303 In review
+
+**What:** Hybrid retrieval over a tenant-bound pgvector index, with the prefilter inside the query, followed by one batched live ACL call per connector and a policy `read` check, then a 12-chunk budget. The laws harness's `NewSystem` now runs this real pipeline. The manual changed first: sb-permissions(7) gained "Retrieval and the live check, exactly", and sb-ask(3) links to it.
+
+**Why this way:** Three independent barriers: the index can only serve its own tenant, the prefilter narrows inside the SQL, and the live check plus kernel decide. The laws are written against the outcome, so each barrier can fail without a leak. The pgvector adapter ships the vector as text cast to `vector`, which avoids a pgvector Go module.
+
+**Learned:** My first "real pipeline" mutation (a cell indexing other tenants' documents) wasn't caught, and for a good reason: the prefilter alone stopped it. To prove LAW-02 itself would see a leak, the mutation also has to break the prefilter. That's the honest version of "defence in depth": each layer is shown to matter by removing the others. A sibling-adapter import in a test tripped the dependency rule, so the pgvector test now has its own tiny embedder.
+
+**Laws:** LAW-01, LAW-02 and LAW-03 move from Tested (red) to Tested. Only the tool-call tests (LAW-04, LAW-05) are still red, until W4.
+
+**Next:** S3.2, the answer composer (SB-304) and the model gateway (SB-305, ADR-0019).
+
 ## 2026-11-19 SB-211 Linear connector (W2 built)
 
 **Wave/slice:** W2 / S2.4 · **Author:** platform lead + Claude · **Status:** In review

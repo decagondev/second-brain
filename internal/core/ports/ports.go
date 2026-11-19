@@ -286,3 +286,23 @@ type CursorStore interface {
 	Cursor(ctx context.Context, tenant, connector string) (c Cursor, found bool, err error)
 	SaveCursor(ctx context.Context, tenant, connector string, c Cursor) error
 }
+
+// Query is one retrieval request: the text and its embedding.
+type Query struct {
+	Text   string
+	Vector []float32
+	Limit  int // per ranking (vector, keyword); 0 means the default
+}
+
+// Candidate is a retrieved chunk with its rank in each ranking (0 = not ranked there).
+type Candidate struct {
+	Chunk                   Chunk
+	VectorRank, KeywordRank int
+}
+
+// Retriever searches one tenant's index (SB-301). The prefilter is applied inside the
+// search: only chunks whose ACLPrefilter shares a token with tokens are candidates.
+// A scope of another tenant is an error.
+type Retriever interface {
+	Search(ctx context.Context, s tenancy.Scope, tokens []string, q Query) ([]Candidate, error)
+}

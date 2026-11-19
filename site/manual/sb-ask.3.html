@@ -25,7 +25,7 @@
 { &quot;question&quot;: &quot;What's our refund approval limit?&quot; }
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
-<p><code>POST /v1/ask</code> runs the <code>ask</code> agent for the signed-in user. The answer is built only from chunks that passed <strong>live</strong> authorisation for this user at this moment. Each claim either carries citations to <code>doc@version</code> or is marked <code>uncited</code>.</p>
+<p><code>POST /v1/ask</code> runs the <code>ask</code> agent for the signed-in user. The answer is built only from chunks that passed <strong>live</strong> authorisation for this user at this moment. Each claim either carries citations to <code>doc@version</code> or is marked <code>uncited</code>. How candidates are found and checked is in <a href="sb-permissions.7.html#retrieval-and-the-live-check-exactly">sb-permissions(7)</a>.</p>
 <h3 id="request">Request</h3>
 <table>
 <thead>
