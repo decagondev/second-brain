@@ -49,7 +49,7 @@ No answer cites, quotes or uses a chunk from a document that the asker can't ope
 
 No retrieval, query, cache or log read returns data from another tenant.
 
-*Checks:* Model (`NoCrossTenant`) · Property with two seeded tenants on every CI run · adversarial queries · Verify · Watch (`ETENANT` counter).
+*Checks:* Model (`NoCrossTenant`) · Property with two seeded tenants on every CI run · adversarial queries, including hostile `Host` headers (SB-612) · Verify · Watch (`ETENANT` counter).
 
 ### LAW-03: Unknown means refuse {#law-03}
 
@@ -79,7 +79,7 @@ The build running in every cell is a signed release whose bundle passed the eval
 
 No secret (credential, token, key) appears in any prompt, log line or audit row.
 
-*Checks:* canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI (`tests/canary`, SB-411) · laws: logs, prompts and audit rows · Watch: the same scanner in production, findings are Sev-1 ([sb-observability(7)](sb-observability.7.md#canaries-and-the-secret-scanner)).
+*Checks:* canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI (`tests/canary`, SB-411) · laws: logs, prompts and audit rows, and secrets logged URL-escaped, base64 or hex, or under a credential-named attribute (SB-612) · Watch: the same scanner in production, findings are Sev-1 ([sb-observability(7)](sb-observability.7.md#canaries-and-the-secret-scanner)).
 
 ### LAW-08: At most one behind stable {#law-08}
 
@@ -91,7 +91,7 @@ No stable-channel tenant on the release train (custody `factory` or `tenant`) ru
 
 Ingested content can't cause a tool call or exfiltrate data. Only the user's own request can lead to a tool call.
 
-*Checks:* Eval (`injection`, zero tool calls and zero canary leaks) · Property: tool-argument provenance never from flagged spans.
+*Checks:* Eval (`injection`, zero tool calls and zero canary leaks) · Property: tool-argument provenance never from flagged spans · the pen test's corpus, `security/attacks/injection.txt`: every payload is flagged or stripped (SB-612).
 
 ### LAW-10: Kill wins {#law-10}
 
@@ -146,6 +146,10 @@ After a hand-off to `tenant` custody completes, the factory holds no access path
 At every moment, at least one custodian can unwrap a cell's root key. A hand-off re-wraps under the new custodian **before** destroying the old wrap.
 
 *Checks:* Model (`Handoff.tla: KeyNeverOrphaned`) · step-ordering test in the hand-off controller · Watch: key-wrap inventory per cell.
+
+### External review (SB-612)
+
+Before the platform scales past friendly tenants, an independent team pen-tests it against staging, with test tenants only. The scope and rules of engagement are in `security/README.md`. Every finding goes in the register, `security/findings.yaml`, with its severity, the laws it touches, and (once fixed) its `BUG-nnnn` entry. A fixed finding is also named in the threat model. `make check` fails while any **critical** or **high** finding isn't fixed, so a release can't go out over one. Medium and lower findings may be `accepted` with a reason in the threat model's residual risks. When a finding shows that a law was violated, a law test that would have caught it is added before the fix, and it must go red first.
 
 ## SEE ALSO
 

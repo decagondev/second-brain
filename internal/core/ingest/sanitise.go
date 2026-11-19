@@ -25,7 +25,7 @@ var (
 		regexp.MustCompile(`(?i)\byou\s+are\s+now\b`),
 		regexp.MustCompile(`(?i)\b(act|behave)\s+as\s+(the|a|an)\s`),
 		regexp.MustCompile(`(?i)\bpretend\s+to\s+be\b`),
-		regexp.MustCompile(`(?im)^\s*(system|assistant|developer)\s*:`),
+		regexp.MustCompile(`(?im)^\s*(?:[#>*_-]+\s*)*(system|assistant|developer)\s*(?:[*_]+\s*)?:`), // also as a Markdown heading, quote or bold label (SB-612)
 		regexp.MustCompile(`(?i)<\|im_(start|end)\|>|\[/?INST\]`),
 		regexp.MustCompile(`\{\s*"(tool|function|tool_name|name)"\s*:\s*"[^"]+"\s*,\s*"(args|arguments|parameters|input)"\s*:`),
 		regexp.MustCompile(`(?i)\b(do\s+not|don't|never)\s+(tell|inform|mention\s+(this\s+)?to|show)\s+the\s+user\b`),

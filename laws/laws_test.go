@@ -208,3 +208,19 @@ func TestLAW13_RetentionLeavesTheIndexDerived(t *testing.T) {
 func TestLAW11_ChainSurvivesRestore(t *testing.T) {
 	Check(t, "LAW-11", 60, func(r *rand.Rand) error { return law11Restore(r, NewDRWorld(t.TempDir())) })
 }
+
+func TestLAW07_NoSecretInLogsEncoded(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Encoded(r, NewSecretWorld(t.TempDir())) })
+}
+
+func TestLAW09_PenTestCorpusIsFlagged(t *testing.T) {
+	corpus, err := InjectionCorpus("../security/attacks/injection.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	Check(t, "LAW-09", 30, func(r *rand.Rand) error { return law09Corpus(r, NewSanitiserWorld(), corpus) })
+}
+
+func TestLAW02_HostileHostsAreRefused(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Attacks(r, NewRouter()) })
+}

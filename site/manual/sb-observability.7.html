@@ -239,7 +239,7 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 </table>
 <p>The same numbers answer <code>GET /v1/admin/usage?week=2027-W10</code> (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat).</p>
 <h3 id="telemetry-rules">Telemetry rules</h3>
-<p>Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07).</p>
+<p>Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07). The log redactor scrubs each resolved secret as written and in its URL-escaped, base64 (both alphabets, padded or not) and hex forms. An attribute named like a credential (<code>secret</code>, <code>password</code>, <code>token</code>, <code>key</code>, <code>authorization</code>, <code>cookie</code>, <code>credential</code>) is redacted whatever its value. A secret mixed with other bytes before it is encoded (HTTP Basic auth) can't be recognised in logs, so callers never log credential headers, and the attribute-name rule is the backstop.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-07">LAW-07</a>, all laws via Sev-1 alerts.</p>
 <h2 id="examples">EXAMPLES</h2>

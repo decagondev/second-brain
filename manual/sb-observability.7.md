@@ -112,7 +112,7 @@ The same numbers answer `GET /v1/admin/usage?week=2027-W10` (sb-admin(3)), which
 
 ### Telemetry rules
 
-Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07).
+Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07). The log redactor scrubs each resolved secret as written and in its URL-escaped, base64 (both alphabets, padded or not) and hex forms. An attribute named like a credential (`secret`, `password`, `token`, `key`, `authorization`, `cookie`, `credential`) is redacted whatever its value. A secret mixed with other bytes before it is encoded (HTTP Basic auth) can't be recognised in logs, so callers never log credential headers, and the attribute-name rule is the backstop.
 
 ## LAWS
 

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Pen-test readiness (S6.4b: SB-612): `security/` with the scope, the rules of engagement, the findings register and the injection corpus; a `make check` gate on open critical or high findings; law tests for hostile hosts, encoded secrets and the corpus.
 - DR game day (S6.4a: SB-613): the scoring rules in sb-observability(7), `internal/core/gameday` (restore from the first good copy into empty stores, and the score), a rehearsal in `tests/gameday` run by `make check`, the game day runbook, and a LAW-11 law test for a restore.
 - Retention and deletion (S6.3c: SB-611): the nightly retention job over traces, conversations, feedback and log files (never audit or the index), `POST /v1/admin/subjects/erase` with audit before and after, the `retention` audit kind, daily log files, and a LAW-13 law test showing that retention leaves the index derived.
 - HubSpot CRM connector (S6.3b: SB-610), `crm: hubspot`, read-only. It covers companies and deals, never contacts. Record-level access is checked live from the user's role, teams and the record's owner, through a role map held in the vault. Changes are polled through the CRM search API. Tested against the `hubspottest` recorded fake, with a new LAW-01 law test.
@@ -76,6 +77,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- The log redactor scrubs URL-escaped, base64 and hex forms of secrets, and credential-named attributes (BUG-0010). Markdown role labels are flagged as injection (BUG-0011).
 - `make proofs` pins TLA+ v1.7.4 (stable) instead of the v1.8.0 prerelease, which upstream rebuilt in place (BUG-0009).
 - `make smoke` is never cached, so a rebuilt `sb` is always tested; the smoke test covers the workflow eval gate (BUG-0008).
 - Audit `decision` rows no longer repeat the action in `reason` (the kernel's reason already starts with it).

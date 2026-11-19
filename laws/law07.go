@@ -20,7 +20,7 @@ import (
 
 // LogEvent is one way a careless caller might log a secret.
 type LogEvent struct {
-	Path  string // "msg", "attr", "err", "group", "named"
+	Path  string // "msg", "attr", "err", "group", "named", "authorization"
 	Value string // the secret, possibly embedded in other text
 }
 
@@ -67,6 +67,8 @@ func (w *secretWorld) Log(evs []LogEvent) (string, error) {
 			l.Info("call", slog.Group("req", slog.Group("auth", "header", e.Value)))
 		case "named":
 			l.Info("call", "api_token", fmt.Sprintf("v%d", i), "password", e.Value)
+		case "authorization":
+			l.Info("call", "Authorization", e.Value, "Cookie", e.Value, "credential", e.Value)
 		}
 	}
 	return buf.String(), nil

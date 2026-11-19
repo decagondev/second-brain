@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.4b Pen-test readiness (SB-612)
+
+**Wave/slice:** W6 / S6.4b · **Author:** platform lead + Claude · **Status:** In review (the external test is human)
+
+**What:** `security/` (scope, rules of engagement, `findings.yaml`, `attacks/injection.txt`), `tools/check/findings.py` in `make check`, three law tests (`law02attack.go`, `law07encoded.go`, `law09corpus.go`), and fixes in `internal/obs` (encoded secrets, credential-named attributes) and `internal/core/ingest` (Markdown role labels). The manual changed first: sb-laws(7) gained External review, and sb-observability(7) the redactor's encodings. The threat model was refreshed.
+
+**Why this way:** A pen test is worth most when its findings can't be forgotten, so the register is checked by the build: a critical or high finding that isn't fixed fails `make check`. Before the outside team starts, we attacked the three laws in the ticket ourselves the way a tester would. Two of the three tests went red, which makes them the register's first two entries, recorded and fixed the same way an external finding would be.
+
+**Learned:** The LAW-07 and LAW-09 tests were too polite. One only logged secrets made of letters, digits and dashes, exactly as written. The other drew from five fixed attacks, none of them in Markdown. Both now generate hostile inputs, and the corpus is a file a tester can add to without writing Go.
+
+**Laws:** LAW-02, LAW-07 and LAW-09 extended. LAW-07 and LAW-09 went red first and are green after the fixes, and LAW-02 was green first time. All law tests are green.
+
+**Next:** W7.
+
 ## 2026-11-19 S6.4a DR game day tooling (SB-613)
 
 **Wave/slice:** W6 / S6.4a · **Author:** platform lead + Claude · **Status:** In review (the game day itself is human)

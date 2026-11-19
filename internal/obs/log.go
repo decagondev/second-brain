@@ -6,9 +6,12 @@ package obs
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -18,7 +21,7 @@ import (
 // Redacted replaces every secret in log output.
 const Redacted = "[REDACTED]"
 
-var secretName = regexp.MustCompile(`(?i)(secret|password|token|key)`)
+var secretName = regexp.MustCompile(`(?i)(secret|password|token|key|authorization|cookie|credential)`)
 
 // Redactor holds the secret values seen so far.
 type Redactor struct {
@@ -43,6 +46,12 @@ func (r *Redactor) Register(v string) {
 		}
 	}
 	r.values = append(r.values, v)
+	// The same secret, encoded the ways a careless caller might log it (SB-612, PT-0001).
+	for _, e := range encodings(v) {
+		if e != v && !contains(r.values, e) {
+			r.values = append(r.values, e)
+		}
+	}
 	sort.Slice(r.values, func(i, j int) bool { return len(r.values[i]) > len(r.values[j]) })
 }
 
@@ -112,4 +121,19 @@ func (h *handler) attr(a slog.Attr) slog.Attr {
 		return slog.String(a.Key, h.r.Scrub(fmt.Sprint(v.Any())))
 	}
 	return slog.String(a.Key, h.r.Scrub(v.String()))
+}
+
+func encodings(v string) []string {
+	b := []byte(v)
+	return []string{url.QueryEscape(v), url.PathEscape(v), base64.StdEncoding.EncodeToString(b), base64.URLEncoding.EncodeToString(b),
+		base64.RawStdEncoding.EncodeToString(b), base64.RawURLEncoding.EncodeToString(b), hex.EncodeToString(b), strings.ToUpper(hex.EncodeToString(b))}
+}
+
+func contains(xs []string, v string) bool {
+	for _, x := range xs {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }

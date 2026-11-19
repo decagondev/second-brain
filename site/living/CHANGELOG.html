@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Pen-test readiness (S6.4b: SB-612): <code>security/</code> with the scope, the rules of engagement, the findings register and the injection corpus; a <code>make check</code> gate on open critical or high findings; law tests for hostile hosts, encoded secrets and the corpus.</li>
 <li>DR game day (S6.4a: SB-613): the scoring rules in sb-observability(7), <code>internal/core/gameday</code> (restore from the first good copy into empty stores, and the score), a rehearsal in <code>tests/gameday</code> run by <code>make check</code>, the game day runbook, and a LAW-11 law test for a restore.</li>
 <li>Retention and deletion (S6.3c: SB-611): the nightly retention job over traces, conversations, feedback and log files (never audit or the index), <code>POST /v1/admin/subjects/erase</code> with audit before and after, the <code>retention</code> audit kind, daily log files, and a LAW-13 law test showing that retention leaves the index derived.</li>
 <li>HubSpot CRM connector (S6.3b: SB-610), <code>crm: hubspot</code>, read-only. It covers companies and deals, never contacts. Record-level access is checked live from the user's role, teams and the record's owner, through a role map held in the vault. Changes are polled through the CRM search API. Tested against the <code>hubspottest</code> recorded fake, with a new LAW-01 law test.</li>
@@ -87,6 +88,7 @@
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li>The log redactor scrubs URL-escaped, base64 and hex forms of secrets, and credential-named attributes (BUG-0010). Markdown role labels are flagged as injection (BUG-0011).</li>
 <li><code>make proofs</code> pins TLA+ v1.7.4 (stable) instead of the v1.8.0 prerelease, which upstream rebuilt in place (BUG-0009).</li>
 <li><code>make smoke</code> is never cached, so a rebuilt <code>sb</code> is always tested; the smoke test covers the workflow eval gate (BUG-0008).</li>
 <li>Audit <code>decision</code> rows no longer repeat the action in <code>reason</code> (the kernel's reason already starts with it).</li>

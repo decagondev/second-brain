@@ -105,7 +105,20 @@ flowchart LR
 | Root key orphaned mid-transfer | Re-wrap before destroying the old wrap | LAW-18 |
 | Audit chain unverifiable after the move | Per-cell anchor key moves with the cell; verify before cutover | LAW-11 |
 
+## Pen-test findings (SB-612)
+
+The register is `security/findings.yaml`. Fixed findings and what changed in this model:
+
+| Finding | Severity | What changed | Law |
+|---|---|---|---|
+| PT-0001 | High | Secrets in logs: the redactor also scrubs URL-escaped, base64 and hex forms, and redacts `authorization`, `cookie` and `credential` attributes. A secret encoded together with other bytes (HTTP Basic auth) is a residual risk, below | LAW-07 |
+| PT-0002 | Medium | Indirect injection: role labels are flagged in Markdown headings, quotes and bold too. The attack corpus is a law test now | LAW-09 |
+
+The external test itself hasn't run yet. This section and the register take its findings.
+
 ## Residual risks we accept in v1
+
+- A secret encoded together with other bytes (for example `base64(user:secret)` in an HTTP Basic header) can't be recognised by the log redactor. Callers never log credential headers, the attribute-name rule redacts `authorization`, and the production scanner looks for canaries (PT-0001).
 
 - Tampering by someone with both database superuser and WORM-storage admin rights within one anchor window. Mitigated by separating those roles.
 - A source system that reports the wrong ACL. We trust the source's own answer; that's ADR-0002's trade-off.
@@ -119,5 +132,8 @@ flowchart LR
 | | Platform lead | | |
 
 ## Review cadence
+
+Last refreshed 2026-11-19 with PT-0001 and PT-0002 (SB-612); refresh again with the external test's findings.
+
 
 Every wave exit, after any trust-boundary change, and after the pen test (SB-612).

@@ -1,0 +1,21 @@
+# Pen-test findings register (SB-612). See security/README.md.
+# Fields: id (PT-nnnn), title, severity (critical|high|medium|low|info), status
+# (open|fixed|accepted), laws, found (YYYY-MM-DD), bug (BUG-nnnn, once fixed),
+# source (internal|external).
+findings:
+  - id: PT-0001
+    title: The log redactor missed secrets logged URL-escaped, base64 or hex, and under Authorization or Cookie attributes
+    severity: high
+    status: fixed
+    laws: [LAW-07]
+    found: 2026-11-19
+    bug: BUG-0010
+    source: internal
+  - id: PT-0002
+    title: Role labels written as Markdown headings, quotes or bold (### System:, > assistant:) were not flagged as injection
+    severity: medium
+    status: fixed
+    laws: [LAW-09]
+    found: 2026-11-19
+    bug: BUG-0011
+    source: internal

@@ -50,6 +50,7 @@ evals:                 ## eval harness: mock smoke, citation suite on the local 
 examples:              ## manual and example files are valid (SB-009)
 	$(PY) tools/check/examples.py
 	$(PY) tools/check/runbook.py
+	$(PY) tools/check/findings.py   # no open critical or high pen-test finding (SB-612)
 policy:                ## policies validate, every permit is tenant-scoped (SB-112)
 	$(PY) tools/check/policy.py
 crosscheck:            ## Python mirror of the TLA+ models (not a substitute for TLC)
