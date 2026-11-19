@@ -69,3 +69,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-15 | Tested (extended) | SB-407: the approver view echoes the hash it showed; a UI test changes the payload after load and checks the stale hash is sent, so the server refuses |
 | 2026-11-19 | LAW-04, LAW-05, LAW-15 | Tested (extended) | SB-410: end to end through the manifest's registry, real cedar policies, the bus and the Linear fake; `TestLAW05_LinearActNeedsReceipt` on the Linear write |
 | 2026-11-19 | LAW-07 | Tested (extended) | SB-411: `TestLAW07_NoSecretInAudit` red first, then green; CI canary scan over logs, prompts and audit exports with a leak control |
+| 2026-11-19 | LAW-11 | Tested (extended) | SB-412: the restore drill verifies the chain on every backup copy; a tampered copy is named and fails the drill |

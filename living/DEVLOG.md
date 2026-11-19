@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.4b Backups and the restore drill (SB-412), W4 built
+
+**Wave/slice:** W4 / S4.4b · **Author:** platform lead + Claude · **Status:** In review (cloud WORM bucket, monthly schedule)
+
+**What:** `internal/core/backup` (the 3-2-1 check, the nightly job, the restore drill and its report), a write-once local target, and an end-to-end test. The manual changed first: sb-audit(7) "Retention and backup" now says exactly what is copied, where, for how long, and what the drill checks.
+
+**Why this way:** The backup reuses the signed export, so a restored copy verifies with the same `audit.Verify` and pinned key as any export, with no second verifier to maintain. The 3-2-1 rule is checked by the job itself, not assumed from configuration, and a write-once target means a compromised job can add a night but never rewrite one. The drill checks every copy, not just one, because the copy you'd restore from after an incident is the one nobody looked at.
+
+**Learned:** The first version of the drill test lived in the local target's package and imported the memory stores, which the dependency rule forbids for sibling adapters. Moving it to `tests/backup` is the honest place anyway: it is a system test of three packages working together.
+
+**Laws:** LAW-11 now also holds over backups. All laws green. W4 is built: every tool call goes through the bus, every approval is bound to its payload, every outcome needs a receipt, and the audit chain is verified, backed up and drilled.
+
+**Next:** W5, evals against real cells and the release gate (SB-501 onward).
+
 ## 2026-11-19 S4.4a Canaries and the secret scanner (SB-411)
 
 **Wave/slice:** W4 / S4.4a · **Author:** platform lead + Claude · **Status:** In review (running-cell wiring, source sandboxes)

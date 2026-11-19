@@ -64,6 +64,13 @@ hourly: sign(latest hash) → WORM storage
 <p>The audit role can only insert and select. Each row chains to the previous row's hash, and the latest hash is signed and written to WORM storage every hour. <code>sb audit verify</code> recomputes everything (LAW-11).</p>
 <h3 id="retention-and-backup">Retention and backup</h3>
 <p>Seven years by default, independent of <code>retention_days</code>. Backed up 3-2-1, with a monthly restore drill that verifies the chain.</p>
+<p>Exactly (SB-412):</p>
+<ul>
+<li><strong>What.</strong> Every night, the backup job writes two objects for each cell: the full signed audit export (sb-audit(5)) and a snapshot of the approval store (every action with its state, hashes and receipts, as JSON lines). Each object is named <code>&lt;tenant&gt;/&lt;YYYY-MM-DD&gt;/audit.ndjson</code> or <code>.../approvals.jsonl</code>, with a <code>.sha256</code> beside it.</li>
+<li><strong>Where.</strong> At least <strong>three</strong> copies, on at least <strong>two</strong> kinds of media, with at least <strong>one</strong> off-site. The job refuses to run against a target set that breaks any of these, and reports which rule.</li>
+<li><strong>WORM.</strong> Each copy is write-once: an object can't be overwritten or deleted before its retention date (7 years). A second write to the same name is refused, so a nightly run never replaces an earlier night.</li>
+<li><strong>Restore drill.</strong> Monthly, and after any restore, the drill fetches the latest audit export from <strong>every</strong> copy. It checks each one's <code>.sha256</code>, verifies the chain offline with the cell's pinned key (<code>sb audit verify --export</code>), and checks that the copies agree with each other and that none is behind the live chain by more than a day. The drill passes only if every copy passes, and the report names each copy's result. A failure is Sev-1, like a chain break (LAW-11).</li>
+</ul>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-04">LAW-04</a>, <a href="sb-laws.7.html#law-07">LAW-07</a>, <a href="sb-laws.7.html#law-11">LAW-11</a>.</p>
 <h2 id="examples">EXAMPLES</h2>

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,25 @@
 <p>The audit log is the one thing we can never lose.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Three copies, two media, one off-site, with WORM retention</li>
-<li class="task"><span class="box"></span>Monthly restore drill verifies the chain end to end</li>
+<li class="task"><span class="box"></span>Three copies, two media, one off-site, with WORM retention (enforced by the job; local write-once targets built; a cloud bucket with object lock comes with W7 GCP)</li>
+<li class="task done"><span class="box">✓</span>Monthly restore drill verifies the chain end to end</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Backup jobs</li>
-<li class="task"><span class="box"></span>WORM bucket</li>
-<li class="task"><span class="box"></span>Restore drill script</li>
-<li class="task"><span class="box"></span>Drill schedule</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-11</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Backup jobs</li>
+<li class="task"><span class="box"></span>WORM bucket (GCP bucket with retention lock, W7)</li>
+<li class="task done"><span class="box">✓</span>Restore drill script</li>
+<li class="task"><span class="box"></span>Drill schedule (monthly, with the cell runtime's scheduler)</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-11</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S4.4b): <code>internal/core/backup</code>. <code>Check</code> enforces three copies, two media and one off-site, and the job refuses to run otherwise. <code>Job.Run</code> writes the full signed audit export and a JSON-lines snapshot of the approval store, each with a <code>.sha256</code>, to every copy, named by tenant and day, with a 7-year retention date. <code>Drill</code> fetches the latest export from every copy, checks its sha256, verifies the chain with the pinned key, and fails a copy more than a day behind the live chain or copies that disagree. Its Markdown report names each copy. <code>internal/adapters/backup/localfs</code> is a write-once target: exclusive create, read-only files, refused overwrite, and no delete before the retention date. <code>tests/backup</code> (in <code>make smoke</code>) backs up to three real local targets, refuses a second run on the same night, and runs the drill: it passes, then fails on a tampered NAS copy and names it, and fails stale copies.</p>
+<p><strong>Left:</strong> a cloud WORM bucket (GCP, W7) and the monthly schedule (cell runtime).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E05-actions-approvals-audit/SB-412-audit-and-approval-backups-3-2-1-and-restore.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

@@ -52,6 +52,13 @@ The audit role can only insert and select. Each row chains to the previous row's
 
 Seven years by default, independent of `retention_days`. Backed up 3-2-1, with a monthly restore drill that verifies the chain.
 
+Exactly (SB-412):
+
+- **What.** Every night, the backup job writes two objects for each cell: the full signed audit export (sb-audit(5)) and a snapshot of the approval store (every action with its state, hashes and receipts, as JSON lines). Each object is named `<tenant>/<YYYY-MM-DD>/audit.ndjson` or `.../approvals.jsonl`, with a `.sha256` beside it.
+- **Where.** At least **three** copies, on at least **two** kinds of media, with at least **one** off-site. The job refuses to run against a target set that breaks any of these, and reports which rule.
+- **WORM.** Each copy is write-once: an object can't be overwritten or deleted before its retention date (7 years). A second write to the same name is refused, so a nightly run never replaces an earlier night.
+- **Restore drill.** Monthly, and after any restore, the drill fetches the latest audit export from **every** copy. It checks each one's `.sha256`, verifies the chain offline with the cell's pinned key (`sb audit verify --export`), and checks that the copies agree with each other and that none is behind the live chain by more than a day. The drill passes only if every copy passes, and the report names each copy's result. A failure is Sev-1, like a chain break (LAW-11).
+
 ## LAWS
 
 [LAW-04](sb-laws.7.md#law-04), [LAW-07](sb-laws.7.md#law-07), [LAW-11](sb-laws.7.md#law-11).

@@ -103,3 +103,17 @@ func (r *Receipts) Put(_ context.Context, tenant, key, receipt string) error {
 	}
 	return nil
 }
+
+// All lists a tenant's actions by id (the backup snapshot, SB-412).
+func (s *Store) All(_ context.Context, tenant string) ([]approvals.Action, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []approvals.Action
+	for _, a := range s.m {
+		if a.Tenant == tenant {
+			out = append(out, a)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
