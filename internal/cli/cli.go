@@ -42,7 +42,6 @@ type env struct {
 var planned = map[string]string{
 	"tenant verify": "SB-601",
 	"audit tail":    "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
-	"release status": "SB-507", "release promote": "SB-507", "release rollback": "SB-508",
 	"eval diff":       "SB-501",
 	"factory handoff": "SB-705", "factory detach": "SB-708",
 }
@@ -86,6 +85,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		}
 	case "kill", "unkill":
 		return e.kill(cmd, rest[1:])
+	case "release":
+		if len(rest) > 1 && (rest[1] == "status" || rest[1] == "promote" || rest[1] == "rollback") {
+			return e.release(rest[1], rest[2:])
+		}
 	}
 	if len(rest) < 2 {
 		if hasSub(cmd) {
@@ -122,7 +125,7 @@ func hasSub(cmd string) bool {
 			return true
 		}
 	}
-	return cmd == "eval" || cmd == "kill" || cmd == "unkill"
+	return cmd == "eval" || cmd == "kill" || cmd == "unkill" || cmd == "release"
 }
 
 func parseGlobals(args []string, g *Globals) ([]string, error) {

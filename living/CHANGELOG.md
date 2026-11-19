@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Release controller and rollback (S5.3a: SB-507, SB-508): channels, rings, the 48-hour soak, the promote guard, draining rollback and a timed rollback drill, all as in `Rollout.tla` with its invariants checked after every move; `sb release status|promote|rollback` on a local control plane.
 - Lockfiles and the CVE path (S5.2b: SB-505): `make lockfiles`, a release-time check that lockfiles are current, a daily advisory watcher (`govulncheck`, `npm audit`), and the patch-release playbook.
 - Supply chain (S5.2a: SB-504, SB-506): reproducible builds checked twice, an SPDX 2.3 SBOM as a bundle artefact, cosign keyless signing in a release workflow, Ed25519 development signing, signed gate records, and cell admission that refuses anything unsigned, tampered or ungated (`EUNSIGNED`).
 - Eval suites and the gate (S5.1b: SB-501, SB-502): permission, injection, refusal and regression suites beside citation; results stored per release; `python3 -m evals gate` applies `evals/gate.yaml` (failures, scores, drop against stable), and `make evals` gates every run.

@@ -98,9 +98,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-08">LAW-08</a></td>
 <td>At most one behind stable</td>
-<td>Modelled</td>
+<td>Tested</td>
 <td><code>Rollout.tla</code>: TLC clean (6,290 states); 4 mutations caught</td>
-<td>—</td>
+<td><code>laws/</code> property test over random rollout moves through the real controller, + self-test; the controller checks <code>Rollout.tla</code>'s invariants after every move</td>
 <td>—</td>
 <td>SB-012, SB-507</td>
 </tr>
@@ -452,6 +452,12 @@
 <td>LAW-06</td>
 <td>Tested (red) → Tested</td>
 <td>SB-504, SB-506: green on real bundles, Ed25519 and cosign verifiers, and admission; a cell ignoring the gate is caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-08</td>
+<td>Stated → Tested</td>
+<td>SB-507, SB-508: <code>TestLAW08_AtMostOneBehindStable</code> red first, then green; promote-without-guard mutation caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

@@ -35,6 +35,42 @@ sb release rollback [--reason TEXT]
 </ol>
 <p><strong>rollback</strong> makes the previous stable current, marks the bad release <code>Revoked</code>, and redeploys every cell running it. Target: under 10 minutes for all cells. A revoked release can never be promoted or redeployed.</p>
 <p>Only maintainers can run these commands. Company operators see the same information read-only in the console.</p>
+<p><strong>How the controller decides, exactly (SB-507, SB-508).</strong> The controller is <code>internal/core/rollout</code>. Its state and moves are those of <code>proofs/tla/Rollout.tla</code>, and after every move it checks the model's invariants (<code>OnlyGatedRuns</code>, <code>OneBehindMax</code>, <code>StableNotAhead</code>, <code>StableNotRevoked</code>, <code>RevokedOnlyWhileDraining</code>, <code>DrainingOnlyRevoked</code>). A move that would break one is refused.</p>
+<table>
+<thead>
+<tr>
+<th>Move</th>
+<th>Allowed when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>register</td>
+<td>a release passed admission (signed and gated, sb-release(7)); others are never deployable</td>
+</tr>
+<tr>
+<td>deploy to <code>testing</code> (ring 0 is the internal tenant, ring 1 the friendly testing tenants)</td>
+<td>the release is gated, not revoked, and not older than stable</td>
+</tr>
+<tr>
+<td>promote</td>
+<td>the release is gated, not revoked and newer than stable; it has run on ring 0 <strong>and</strong> ring 1 for the soak time (48 h); and every stable tenant runs the current stable (the promote guard)</td>
+</tr>
+<tr>
+<td>deploy to <code>stable</code> (ring 2)</td>
+<td>a stable tenant isn't on the current stable</td>
+</tr>
+<tr>
+<td>rollback</td>
+<td>there is a previous stable: stable is revoked, the previous stable becomes current, and every cell on the revoked release starts <strong>draining</strong> (no new consequential tool calls) until it is redeployed</td>
+</tr>
+<tr>
+<td>revoke on testing</td>
+<td>the release is newer than stable; its cells drain</td>
+</tr>
+</tbody>
+</table>
+<p>Every move writes a <code>kind: release</code> audit row. With a local control plane (<code>--endpoint file:///DIR</code>), the state is <code>DIR/releases/state.json</code>. A rollback drill (SB-508) rolls back and redeploys every draining cell, then reports the time taken against the 10-minute target.</p>
 <h2 id="exit-status">EXIT STATUS</h2>
 <p>0 done · 1 guard not met (reason printed) · 3 not permitted.</p>
 <h2 id="laws">LAWS</h2>

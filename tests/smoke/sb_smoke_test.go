@@ -198,3 +198,40 @@ func TestKillLocal(t *testing.T) {
 		t.Fatalf("bad scope: %d %s", code, out)
 	}
 }
+
+// sb release status, promote and rollback against a local control plane (SB-507, SB-508).
+func TestReleaseCommands(t *testing.T) {
+	root := t.TempDir()
+	ep := "file://" + root
+	if err := os.MkdirAll(filepath.Join(root, "releases"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	soaked := time.Now().Add(-72 * time.Hour).UTC().Format(time.RFC3339)
+	state := `{"stable":"rel_2027-03-02_aaaaaa","prev_stable":"rel_2027-02-23_cccccc",
+ "releases":{"rel_2027-02-23_cccccc":{"id":"rel_2027-02-23_cccccc","order":0,"gated":true},
+  "rel_2027-03-02_aaaaaa":{"id":"rel_2027-03-02_aaaaaa","order":1,"gated":true},
+  "rel_2027-03-09_bbbbbb":{"id":"rel_2027-03-09_bbbbbb","order":2,"gated":true,"ring0_at":"` + soaked + `","ring1_at":"` + soaked + `"}},
+ "tenants":{"internal":{"name":"internal","channel":"testing","ring":0,"running":"rel_2027-03-09_bbbbbb"},
+  "acme-logistics":{"name":"acme-logistics","channel":"stable","ring":2,"running":"rel_2027-03-02_aaaaaa"},
+  "gamma-parts":{"name":"gamma-parts","channel":"stable","ring":2,"running":"rel_2027-02-23_cccccc"}}}`
+	if err := os.WriteFile(filepath.Join(root, "releases", "state.json"), []byte(state), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := runSB("--endpoint", ep, "release", "status"); code != 0 || !strings.Contains(out, "gamma-parts") || !strings.Contains(out, "testing  rel_2027-03-09_bbbbbb") {
+		t.Fatalf("status: %d\n%s", code, out)
+	}
+	code, out := runSB("--endpoint", ep, "release", "promote", "rel_2027-03-09_bbbbbb", "--to", "stable")
+	if code != 1 || !strings.Contains(out, "promote guard: gamma-parts runs rel_2027-02-23_cccccc") {
+		t.Fatalf("guard: %d\n%s", code, out)
+	}
+	if code, out := runSB("--endpoint", ep, "release", "rollback", "--reason", "smoke drill"); code != 0 || !strings.Contains(out, "rel_2027-03-02_aaaaaa revoked") || !strings.Contains(out, "acme-logistics") {
+		t.Fatalf("rollback: %d\n%s", code, out)
+	}
+	if code, out := runSB("--endpoint", ep, "release", "rollback"); code != 1 || !strings.Contains(out, "no previous stable") {
+		t.Fatalf("second rollback: %d\n%s", code, out)
+	}
+	audit, _ := os.ReadFile(filepath.Join(root, "audit", "platform.ndjson"))
+	if !strings.Contains(string(audit), `"kind":"release"`) || !strings.Contains(string(audit), `"state":"revoked"`) {
+		t.Fatalf("audit: %s", audit)
+	}
+}

@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S5.3a The release controller and rollback (SB-507, SB-508)
+
+**Wave/slice:** W5 / S5.3a · **Author:** platform lead + Claude · **Status:** In review (real cells, W7)
+
+**What:** `internal/core/rollout`, a timed rollback drill, and `sb release status|promote|rollback`. The manual changed first: sb-release(1) gained "How the controller decides, exactly".
+
+**Why this way:** The controller is a transcription of `Rollout.tla`, with the same moves, guards and names, and it checks the model's invariants after every move. A bug that slips past a guard can therefore never reach a state the model forbids; the move is refused instead. That's the same defence in depth as the policy kernel: the guard is the rule, the invariant check is the proof. Soak time is measured per ring from the first deploy. Draining comes straight from BUG-0001, and a failed redeploy leaves a cell draining, never back on the revoked build.
+
+**Learned:** The first cut of the LAW-08 mutation (promoting without the guard) was caught twice over: by the law, and by the controller's own invariant check on the next promotion. That is the point of having both.
+
+**Laws:** LAW-08 moves from Stated to Tested. Every law test is green.
+
+**Next:** S5.3b, running-build attestation per cell (SB-509) and manifest drift detection (SB-510).
+
 ## 2026-11-19 S5.2b Lockfiles and the CVE path (SB-505)
 
 **Wave/slice:** W5 / S5.2b · **Author:** platform lead + Claude · **Status:** In review (first scheduled run, testing channel)

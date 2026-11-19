@@ -664,3 +664,10 @@ func TestSelf_LAW06MutationIsCaught(t *testing.T) {
 		t.Error("LAW-06: a cell that ignores the gate record was not caught")
 	}
 }
+
+// LAW-08's check catches a controller that promotes past the guard.
+func TestSelf_LAW08MutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law08(r, newRolloutWorld(stableTenants, testingTenants, true)) }) {
+		t.Error("LAW-08: promoting without the promote guard was not caught")
+	}
+}

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,26 @@
 <p>Rings limit blast radius; the promote guard keeps everyone at most one behind.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Rings: internal, friendly, all</li>
-<li class="task"><span class="box"></span>Promotion to stable only when every stable tenant runs current stable (LAW-08)</li>
-<li class="task"><span class="box"></span>Behaviour matches <code>Rollout.tla</code></li>
+<li class="task done"><span class="box">✓</span>Rings: internal, friendly, all</li>
+<li class="task done"><span class="box">✓</span>Promotion to stable only when every stable tenant runs current stable (LAW-08)</li>
+<li class="task done"><span class="box">✓</span>Behaviour matches <code>Rollout.tla</code></li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Controller</li>
-<li class="task"><span class="box"></span>Promote guard</li>
-<li class="task"><span class="box"></span>Ring config</li>
-<li class="task"><span class="box"></span>LAW-08 test</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-06, LAW-08</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Controller</li>
+<li class="task done"><span class="box">✓</span>Promote guard</li>
+<li class="task done"><span class="box">✓</span>Ring config</li>
+<li class="task done"><span class="box">✓</span>LAW-08 test</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-06, LAW-08</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S5.3a, with SB-508): <code>internal/core/rollout</code> holds exactly the state and moves of <code>Rollout.tla</code>: register (only admitted releases are deployable), deploy to testing (ring 0 internal, ring 1 friendly), promote with the 48-hour soak on both rings and the promote guard, deploy to stable (ring 2), rollback with draining, redeploy, and revoke-on-testing. After every move it checks the model's six invariants and refuses any move that would break one. <code>sb release status</code> and <code>sb release promote REL --to stable</code> work against a local control plane (<code>DIR/releases/state.json</code>) and write <code>kind: release</code> audit rows first. The smoke test shows the promote guard refusing with the manual's message. <code>TestLAW08_AtMostOneBehindStable</code> went red first, then green over random builds, deploys, promotions, rollbacks and revocations, and checks LAW-06 at every step. A controller that promotes past the guard is caught.</p>
+<p><strong>Left:</strong> driving real cells in real rings (W7), where deploys are cell pulls.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E06-evals-release/SB-507-release-controller-with-channels-and-rings.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

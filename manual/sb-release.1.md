@@ -32,6 +32,19 @@ sb release rollback [--reason TEXT]
 
 Only maintainers can run these commands. Company operators see the same information read-only in the console.
 
+**How the controller decides, exactly (SB-507, SB-508).** The controller is `internal/core/rollout`. Its state and moves are those of `proofs/tla/Rollout.tla`, and after every move it checks the model's invariants (`OnlyGatedRuns`, `OneBehindMax`, `StableNotAhead`, `StableNotRevoked`, `RevokedOnlyWhileDraining`, `DrainingOnlyRevoked`). A move that would break one is refused.
+
+| Move | Allowed when |
+|---|---|
+| register | a release passed admission (signed and gated, sb-release(7)); others are never deployable |
+| deploy to `testing` (ring 0 is the internal tenant, ring 1 the friendly testing tenants) | the release is gated, not revoked, and not older than stable |
+| promote | the release is gated, not revoked and newer than stable; it has run on ring 0 **and** ring 1 for the soak time (48 h); and every stable tenant runs the current stable (the promote guard) |
+| deploy to `stable` (ring 2) | a stable tenant isn't on the current stable |
+| rollback | there is a previous stable: stable is revoked, the previous stable becomes current, and every cell on the revoked release starts **draining** (no new consequential tool calls) until it is redeployed |
+| revoke on testing | the release is newer than stable; its cells drain |
+
+Every move writes a `kind: release` audit row. With a local control plane (`--endpoint file:///DIR`), the state is `DIR/releases/state.json`. A rollback drill (SB-508) rolls back and redeploys every draining cell, then reports the time taken against the 10-minute target.
+
 ## EXIT STATUS
 
 0 done · 1 guard not met (reason printed) · 3 not permitted.

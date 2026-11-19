@@ -183,3 +183,7 @@ func TestLAW07_NoSecretInAudit(t *testing.T) {
 func TestLAW06_OnlySignedGatedBuildsRun(t *testing.T) {
 	Check(t, "LAW-06", runs, func(r *rand.Rand) error { return law06(r, NewReleaseWorld()) })
 }
+
+func TestLAW08_AtMostOneBehindStable(t *testing.T) {
+	Check(t, "LAW-08", runs, func(r *rand.Rand) error { return law08(r, NewRolloutWorld(stableTenants, testingTenants)) })
+}
