@@ -620,3 +620,10 @@ func TestSelf_LAW01ChatMutationIsCaught(t *testing.T) {
 		t.Error("LAW-01: a chat app answering as the wrong person was not caught")
 	}
 }
+
+// LAW-11's tamper check catches a verifier that only looks for anchors.
+func TestSelf_LAW11MutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law11(r, newChainWorld(true)) }) {
+		t.Error("LAW-11: a verifier that doesn't recompute the chain was not caught")
+	}
+}

@@ -17,6 +17,7 @@ import (
 	"example.com/second-brain/internal/adapters/placement/local"
 	"example.com/second-brain/internal/adapters/registry/localfs"
 	"example.com/second-brain/internal/core/apply"
+	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
@@ -41,7 +42,7 @@ var planned = map[string]string{
 	"tenant verify": "SB-601",
 	"kill agent":    "SB-403", "kill connector": "SB-403", "kill tenant": "SB-403", "kill list": "SB-403",
 	"unkill agent": "SB-403", "unkill connector": "SB-403", "unkill tenant": "SB-403",
-	"audit verify": "SB-402", "audit tail": "SB-402", "audit export": "SB-402",
+	"audit tail": "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
 	"release status": "SB-507", "release promote": "SB-507", "release rollback": "SB-508",
 	"eval diff":       "SB-501",
 	"factory handoff": "SB-705", "factory detach": "SB-708",
@@ -99,6 +100,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.tenantApply(rest[2:])
 	case "factory status":
 		return e.factoryStatus(rest[2:])
+	case "audit verify":
+		return e.auditVerify(rest[2:])
 	}
 	if t, ok := planned[name]; ok {
 		return e.fail("sb "+name, errs.New(errs.ENOTIMPL, "not built yet (%s)", t))
@@ -389,4 +392,68 @@ func (e *env) fail(prefix string, err error) int {
 		fmt.Fprintf(e.err, "%s: %s [%s]\n", prefix, msg, c)
 	}
 	return errs.Exit(err)
+}
+
+// auditVerify is sb audit verify (sb-audit(1)). Offline with --export FILE; against a
+// running cell it needs the cell runtime.
+func (e *env) auditVerify(args []string) int {
+	const name = "sb audit verify"
+	var file, key string
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--export", "--key", "--since":
+			if i+1 >= len(args) {
+				return e.fail(name, errs.New(errs.EUSAGE, "%s needs a value", args[i]))
+			}
+			switch args[i] {
+			case "--export":
+				file = args[i+1]
+			case "--key":
+				key = args[i+1]
+			}
+			i++
+		default:
+			return e.fail(name, errs.New(errs.EUSAGE, "unknown option %q; see sb-audit(1)", args[i]))
+		}
+	}
+	if file == "" {
+		return e.fail(name, errs.New(errs.ENOTIMPL, "verifying a running cell needs the cell runtime (SB-208); use --export FILE"))
+	}
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "cannot read %s: %v", file, err))
+	}
+	tenant := e.g.Tenant
+	if tenant == "" {
+		tenant = firstTenant(b)
+	}
+	rep, err := audit.Verify(strings.NewReader(string(b)), tenant, key)
+	if err != nil {
+		return e.fail(name, errs.New(errs.ECHAIN, "%s", strings.TrimPrefix(err.Error(), "audit: ECHAIN: ")))
+	}
+	if e.g.JSON {
+		out, _ := json.Marshal(map[string]any{"ok": true, "tenant": tenant, "rows": rep.Rows, "first_seq": rep.FirstSeq,
+			"last_seq": rep.LastSeq, "anchors": rep.Anchors, "key": rep.Key, "key_pinned": rep.KeyPinned})
+		fmt.Fprintln(e.out, string(out))
+		return 0
+	}
+	fmt.Fprintf(e.out, "verify: %s: %d rows (seq %d to %d), %d anchors, chain intact\n", tenant, rep.Rows, rep.FirstSeq, rep.LastSeq, rep.Anchors)
+	if !rep.KeyPinned {
+		fmt.Fprintln(e.err, "verify: key not pinned: pass --key with the key from the cell's custody record")
+	}
+	return 0
+}
+
+// firstTenant is the tenant of the first row in an export, or "".
+func firstTenant(b []byte) string {
+	for _, l := range strings.Split(string(b), "\n") {
+		var r struct {
+			Tenant string `json:"tenant"`
+			Anchor bool   `json:"anchor"`
+		}
+		if json.Unmarshal([]byte(l), &r) == nil && !r.Anchor && r.Tenant != "" {
+			return r.Tenant
+		}
+	}
+	return ""
 }

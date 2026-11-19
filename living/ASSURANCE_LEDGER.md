@@ -19,7 +19,7 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-08](../manual/sb-laws.7.md#law-08) | At most one behind stable | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-507 |
 | [LAW-09](../manual/sb-laws.7.md#law-09) | Data is not instructions | Tested | — | `laws/` ingest-level check (flag, strip, unescapable wrap) + self-test; injection corpus in `make check`; agent level with SB-405/SB-501 | — | SB-207, SB-501 |
 | [LAW-10](../manual/sb-laws.7.md#law-10) | Kill wins | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-403, SB-404 |
-| [LAW-11](../manual/sb-laws.7.md#law-11) | Audit chain unbroken | Stated | — | — | — | SB-401, SB-402, SB-412 |
+| [LAW-11](../manual/sb-laws.7.md#law-11) | Audit chain unbroken | Tested | — | `laws/` tamper test over exports (edit, drop, swap, duplicate, cut-off, forged anchor) through the real log, export and verifier, + self-test; Postgres append-only trigger test | — | SB-401, SB-402, SB-412 |
 | [LAW-12](../manual/sb-laws.7.md#law-12) | Deprovision revokes fast | Tested | — | `laws/` timed check on a fake clock, with and without lost fan-out, + self-test | — | SB-107 |
 | [LAW-13](../manual/sb-laws.7.md#law-13) | The index is derived | Tested | — | `laws/` ingest, re-ingest, drop and rebuild give the same `(cite, chunk, ACL)` set, + self-test; scheduled drill SB-210 | — | SB-210 |
 | [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Tested | — | `laws/` property test over random model output (valid, spoofed and garbage labels) through `answer.Compose`, end to end through the ask agent, and in the web UI's rendering (`web/src/ui.test.tsx`), + self-tests | — | SB-304, SB-309 |
@@ -62,3 +62,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-14 | Tested (extended) | SB-307: the web UI renders every claim as cited or labelled Uncited, never plain text; property test over random answers, mutation caught |
 | 2026-11-19 | LAW-01 | Tested (extended) | SB-308: `TestLAW01_ChatAnswersCiteOnlyWhatTheAskerCanOpen`, red first, green through the Slack app, the email-to-directory mapping and the ask agent; a wrong-person mutation is caught |
 | 2026-11-19 | LAW-14 | Tested (measured) | SB-309: the citation suite measures support per claim on the local cell; a misattributing model must fail it in `make evals` |
+| 2026-11-19 | LAW-11 | Stated → Tested | SB-401, SB-402: `TestLAW11_AuditChainUnbroken` red first, then green; verifier mutation caught |

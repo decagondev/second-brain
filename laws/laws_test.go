@@ -159,3 +159,7 @@ func TestLAW14_AskAnswersCitedOrLabelled(t *testing.T) {
 func TestLAW01_ChatAnswersCiteOnlyWhatTheAskerCanOpen(t *testing.T) {
 	Check(t, "LAW-01", runs, func(r *rand.Rand) error { w := Gen(r); return law01Chat(w, NewChatAsk()) })
 }
+
+func TestLAW11_AuditChainUnbroken(t *testing.T) {
+	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11(r, NewAuditChain()) })
+}

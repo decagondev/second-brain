@@ -127,10 +127,44 @@
 </tr>
 </tbody>
 </table>
+<h3 id="canonical-form-and-hash-exactly">Canonical form and hash, exactly</h3>
+<p>The canonical form of a row is RFC 8785 JSON of the row's fields <strong>without <code>hash</code></strong>: keys sorted, no whitespace, integers as plain digits, and fields that aren't set left out. Rows hold ids, hashes, codes and timestamps only, so every value is a string or an integer. A string with a control character, a <code>U+2028</code>/<code>U+2029</code>, or more than 512 bytes is refused at write time, so every implementation agrees on the bytes.</p>
+<p><code>hash = hex(SHA-256(prev ‖ canonical))</code>, where <code>prev</code> is the previous row's <code>hash</code> as 64 hex characters (64 zeros for row 1).</p>
+<h3 id="storage">Storage</h3>
+<p>The cell keeps rows in its own database, schema <code>audit_&lt;tenant&gt;</code>. The table refuses <code>UPDATE</code>, <code>DELETE</code> and <code>TRUNCATE</code> with a trigger, and the cell's audit role holds only <code>INSERT</code> and <code>SELECT</code>. Writers serialise on a per-tenant lock, so <code>seq</code> stays gap-free and each row's <code>prev</code> is the row before it.</p>
+<h3 id="anchors">Anchors</h3>
+<p>Every hour, and at the end of every export, the cell signs its latest row:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>seq</code>, <code>hash</code></td>
+<td>The row being anchored</td>
+</tr>
+<tr>
+<td><code>signed_at</code></td>
+<td>RFC 3339, ms, UTC</td>
+</tr>
+<tr>
+<td><code>sig</code></td>
+<td>Ed25519 signature, base64, over <code>sb-audit-anchor:v1:&lt;tenant&gt;:&lt;seq&gt;:&lt;hash&gt;:&lt;signed_at&gt;</code></td>
+</tr>
+<tr>
+<td><code>key</code></td>
+<td><code>ed25519:</code> + base64 public key</td>
+</tr>
+</tbody>
+</table>
+<p>The signing key belongs to <strong>the cell</strong>. Its seed is a data key wrapped by the cell's root key (<code>Keys.Wrap</code>, ADR-0015), never a factory-wide key. The public key is published in the cell's custody record, so auditors can pin it. Hourly anchors also go to WORM storage, a <code>kind: custody</code> audit row records every key hand-off, and <code>custody</code> is a valid <code>kind</code>.</p>
 <h3 id="forbidden-content">Forbidden content</h3>
 <p>Rows must never contain document text, prompts, answers, drafts, secrets or tokens. The canary scanner checks every row in CI and production (LAW-07).</p>
 <h3 id="export">Export</h3>
-<p><code>sb audit export</code> writes NDJSON, one row per line, ordered by <code>seq</code>. Every 10,000 rows, and at the end, there is an anchor line:</p>
+<p><code>sb audit export</code> writes NDJSON, one row per line, ordered by <code>seq</code>. The first line is a signed anchor on the row <strong>before</strong> the first exported row (<code>seq</code> 0 with the zero hash for a full export), so a dropped first row is detected. Every 10,000 rows, and on the last row, there is an anchor line:</p>
 <pre><code class="language-json">{&quot;anchor&quot;:true,&quot;seq&quot;:10000,&quot;hash&quot;:&quot;…&quot;,&quot;signed_at&quot;:&quot;…&quot;,&quot;sig&quot;:&quot;…&quot;,&quot;key&quot;:&quot;…&quot;}
 </code></pre>
 <p>The file is encrypted with the cell's KMS key for transport. <code>sb audit verify --export FILE</code> checks it offline.</p>
@@ -138,7 +172,7 @@
 <p><a href="sb-laws.7.html#law-04">LAW-04</a>, <a href="sb-laws.7.html#law-07">LAW-07</a>, <a href="sb-laws.7.html#law-11">LAW-11</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-audit.1.html">sb-audit(1)</a>, <a href="sb-audit.7.html">sb-audit(7)</a></p><p class="srcline">Source: <code>manual/sb-audit.5.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#fields">Fields</a></li><li class="l3"><a href="#forbidden-content">Forbidden content</a></li><li class="l3"><a href="#export">Export</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#fields">Fields</a></li><li class="l3"><a href="#canonical-form-and-hash-exactly">Canonical form and hash, exactly</a></li><li class="l3"><a href="#storage">Storage</a></li><li class="l3"><a href="#anchors">Anchors</a></li><li class="l3"><a href="#forbidden-content">Forbidden content</a></li><li class="l3"><a href="#export">Export</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

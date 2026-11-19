@@ -125,9 +125,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-11">LAW-11</a></td>
 <td>Audit chain unbroken</td>
-<td>Stated</td>
+<td>Tested</td>
 <td>—</td>
-<td>—</td>
+<td><code>laws/</code> tamper test over exports (edit, drop, swap, duplicate, cut-off, forged anchor) through the real log, export and verifier, + self-test; Postgres append-only trigger test</td>
 <td>—</td>
 <td>SB-401, SB-402, SB-412</td>
 </tr>
@@ -386,6 +386,12 @@
 <td>LAW-14</td>
 <td>Tested (measured)</td>
 <td>SB-309: the citation suite measures support per claim on the local cell; a misattributing model must fail it in <code>make evals</code></td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-11</td>
+<td>Stated → Tested</td>
+<td>SB-401, SB-402: <code>TestLAW11_AuditChainUnbroken</code> red first, then green; verifier mutation caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

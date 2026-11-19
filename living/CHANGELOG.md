@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Audit chain (S4.1a: SB-401, SB-402): hash-chained rows with RFC 8785 canonical form, per-cell Ed25519 anchors, an append-only Postgres store (triggers plus an INSERT/SELECT-only role), signed export, and `sb audit verify --export FILE [--key]` offline. Policy decisions can be written as `decision` rows.
 - Pilot tooling (S3.8: SB-311): the pilot-review runbook in sb-onboarding(7), `python3 -m evals.pilot report` for the Gate 1 numbers, and a retro template.
 - Feedback (S3.7: SB-310): `POST /v1/feedback` stores ratings, wrong-citation reports and comments against the trace, asker only; a weekly JSON-lines export with no question or answer text; Helpful/Not helpful controls in the web UI.
 - Citation-faithfulness eval (S3.6: SB-309): a strict lexical support scorer, a local eval cell running the real ask path over fixture worlds, the shared `citation` suite and per-tenant golden questions in `tenants/<name>/evals/`, all in `make evals`.

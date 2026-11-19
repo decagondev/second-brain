@@ -21,12 +21,13 @@
 <h2 id="name">NAME</h2>
 <p>sb-audit — verify the audit hash chain, tail it, or export it</p>
 <h2 id="synopsis">SYNOPSIS</h2>
-<pre><code class="language-text">sb audit verify [--tenant T] [--since TIME] [--export FILE]
+<pre><code class="language-text">sb audit verify [--tenant T] [--since TIME] [--export FILE [--key ed25519:PUB]]
 sb audit tail   [--tenant T] [--kind KIND]... [--actor ID]
 sb audit export [--tenant T] --since TIME [--until TIME] --out FILE
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
-<p><strong>verify</strong> recomputes the hash chain from the first row (or from <code>--since</code>, starting at the nearest signed anchor) and checks every hourly anchor signature. With <code>--export FILE</code>, it verifies an exported file offline, so auditors don't need access to the platform.</p>
+<p><strong>verify</strong> recomputes the hash chain from the first row (or from <code>--since</code>, starting at the nearest signed anchor) and checks every hourly anchor signature. With <code>--export FILE</code>, it verifies an exported file offline, so auditors don't need access to the platform. It checks that <code>seq</code> starts where it should and has no gaps, that every <code>prev</code> and <code>hash</code> holds, that every anchor's hash matches its row and its signature verifies, and that the file ends with an anchor on its last row. <code>--key</code> pins the cell's public key (from its custody record). Without it, the key in the file is used and <code>verify</code> prints <code>key not pinned</code>, because a forger could sign with a key of their own.</p>
+<p>The forms with <code>--tenant</code> talk to a running cell and arrive with the cell runtime. Until then they exit <code>ENOTIMPL</code>, and <code>--export</code> works offline today (SB-402).</p>
 <p><strong>tail</strong> streams new rows as NDJSON or a short human line per row. Filter by <code>--kind</code> (<code>tool_call</code>, <code>decision</code>, <code>approval</code>, <code>kill</code>, <code>config</code>, <code>release</code>, <code>access</code>).</p>
 <p><strong>export</strong> writes signed, encrypted NDJSON in the <a href="sb-audit.5.html">sb-audit(5)</a> format.</p>
 <p>Rows never contain document content, prompts or secrets: payloads appear only as SHA-256 hashes.</p>

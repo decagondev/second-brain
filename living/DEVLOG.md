@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.1a The audit chain (SB-401, SB-402)
+
+**Wave/slice:** W4 / S4.1a · **Author:** platform lead + Claude · **Status:** In review (tool-bus hook, cell runtime)
+
+**What:** `internal/core/audit` has rows, canonical form, chain hashing, signed anchors, export and an offline verifier. There is an append-only Postgres store and a memory store, and `sb audit verify --export`. The manual changed first: sb-audit(5) gained "Canonical form and hash, exactly", "Storage" and "Anchors", and the export now starts with an anchor. sb-audit(1) documents the offline verify and `--key`.
+
+**Why this way:** Only the store holds the write lock, and it hands the last seq and hash to the core's `build`. So the hashing rules live in one place, and Postgres can serialise with an advisory lock without knowing them. Rows are append-only in two independent ways: triggers refuse UPDATE, DELETE and TRUNCATE whatever the role, and the writer role holds only INSERT and SELECT. The anchor key is the cell's own: its seed is a data key under the cell's root key, never a factory-wide key (ADR-0015). Verify pins a public key, because a file that carries its own key proves only that someone signed it.
+
+**Learned:** A tamper the law test found by design: an export that starts mid-chain can't tell a dropped first row from a later start. The fix is a signed start anchor on the row before the first exported row. RFC 8785 and Go's JSON disagree on HTML escaping and on `U+2028`, so the canonical encoder turns off HTML escaping, and rows refuse those characters outright. Shell heredocs mangled `\n` in Go string literals twice, so Go code with escapes now goes through the Edit tool only.
+
+**Laws:** LAW-11 moves from Stated to Tested. LAW-04 and LAW-05 are still red until the tool bus (SB-405) and the executor (SB-408).
+
+**Next:** S4.1b, the kill switches (SB-403) and the kill drill (SB-404), with a LAW-10 timed test.
+
 ## 2026-11-19 S3.8 Pilot tooling (SB-311), W3 built
 
 **Wave/slice:** W3 / S3.8 · **Author:** platform lead + Claude · **Status:** In review (the pilot itself is human work)
