@@ -31,6 +31,18 @@ A manifest contains **no secrets and no versions**. Connector credentials are re
 
 Unknown fields are errors. There are no per-company extension points.
 
+### Secrets
+
+Secrets never appear in a manifest, in configuration, in a log line or in an audit row (LAW-07). They live in the cell's vault, and code refers to them only by reference. The only valid references are:
+
+| Reference | Holds |
+|---|---|
+| `vault://tenants/TENANT/connectors/KIND` | the credential for one connector kind |
+| `vault://tenants/TENANT/oidc` | the cell's OIDC client secret |
+| `vault://tenants/TENANT/scim` | the IdP's SCIM bearer token |
+
+A reference is resolved through the `Secrets` port at the moment of the call, and only for the cell's own tenant: a reference to another tenant's path is refused. Resolved values are never stored in a struct field and never cached past the call. Every value resolved is also registered with the logger's redactor, so it is replaced by `[REDACTED]` anywhere it would appear in a log line: message, attribute, error or nested group. Attributes whose names contain `secret`, `password`, `token` or `key` are redacted whatever their value. For development, `file:///DIR` keeps the vault in `DIR/vault/tenants/…`, one file per secret, readable only by its owner; a file anyone else can read is refused.
+
 ## FIELDS
 
 | Field | Type | Required | Default | Rules |

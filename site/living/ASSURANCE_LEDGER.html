@@ -89,9 +89,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-07">LAW-07</a></td>
 <td>No secret in prompt, log or audit</td>
-<td>Stated</td>
+<td>Tested</td>
 <td>—</td>
-<td>—</td>
+<td><code>laws/</code> canary check: resolved secrets never reach logs by any path, + self-tests</td>
 <td>—</td>
 <td>SB-205, SB-411</td>
 </tr>
@@ -314,6 +314,12 @@
 <td>LAW-03, LAW-05</td>
 <td>stay Tested (red)</td>
 <td>SB-201: connector-level tests green on the mock (no Allow under any fault; receipt or error, idempotent Act); the retrieval and tool-call levels are still red</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-07</td>
+<td>Stated → Tested</td>
+<td>SB-205: <code>TestLAW07_NoSecretInLogs</code> green through the real Resolver, local vault and redacting logger</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

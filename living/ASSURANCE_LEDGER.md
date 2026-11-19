@@ -15,7 +15,7 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-04](../manual/sb-laws.7.md#law-04) | Audit before act | Tested (red) | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | `laws/` check + self-tests; tool-call level red until SB-405; policy decisions (`TestLAW04_PolicyDecisionsAreRecordedFirst`, SB-111) green | — | SB-010, SB-011, SB-111, SB-401, SB-405 |
 | [LAW-05](../manual/sb-laws.7.md#law-05) | Ran means receipt | Tested (red) | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | `laws/` check + self-tests; red until SB-408 | — | SB-010, SB-011, SB-408 |
 | [LAW-06](../manual/sb-laws.7.md#law-06) | Only signed, gated builds run | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-506, SB-509 |
-| [LAW-07](../manual/sb-laws.7.md#law-07) | No secret in prompt, log or audit | Stated | — | — | — | SB-205, SB-411 |
+| [LAW-07](../manual/sb-laws.7.md#law-07) | No secret in prompt, log or audit | Tested | — | `laws/` canary check: resolved secrets never reach logs by any path, + self-tests | — | SB-205, SB-411 |
 | [LAW-08](../manual/sb-laws.7.md#law-08) | At most one behind stable | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-507 |
 | [LAW-09](../manual/sb-laws.7.md#law-09) | Data is not instructions | Stated | — | — | — | SB-207, SB-501 |
 | [LAW-10](../manual/sb-laws.7.md#law-10) | Kill wins | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-403, SB-404 |
@@ -50,3 +50,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-04 | stays Tested (red) | SB-111: decisions recorded before return, failed write is Unknown; a kernel that ignores a failed write is caught |
 | 2026-11-19 | LAW-18 | Modelled → Tested | SB-114: `TestLAW18_RootKeyAlwaysHasACustodian` green on the local control plane; missing custodian and dead root key caught |
 | 2026-11-19 | LAW-03, LAW-05 | stay Tested (red) | SB-201: connector-level tests green on the mock (no Allow under any fault; receipt or error, idempotent Act); the retrieval and tool-call levels are still red |
+| 2026-11-19 | LAW-07 | Stated → Tested | SB-205: `TestLAW07_NoSecretInLogs` green through the real Resolver, local vault and redacting logger |

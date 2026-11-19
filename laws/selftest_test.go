@@ -17,6 +17,7 @@ import (
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
+	"example.com/second-brain/internal/obs"
 )
 
 // The law checks are themselves tested: a correct reference system must pass
@@ -464,3 +465,23 @@ func (a *actsTwice) Act(key string, issues bool) (string, error) {
 	a.n++
 	return a.ConnectorWorld.Act(fmt.Sprintf("%s#%d", key, a.n), issues)
 }
+
+// LAW-07's check catches a logger that doesn't redact, and one that redacts by dropping
+// every line (the check requires output).
+func TestSelf_LAW07MutationsAreCaught(t *testing.T) {
+	plain := func(root string) SecretWorld {
+		w := NewSecretWorld(root).(*secretWorld)
+		w.red = obs.NewRedactor() // the logger never learns the secrets
+		return w
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law07(r, plain(t.TempDir())) }) {
+		t.Error("LAW-07: a logger that doesn't know the secrets was not caught")
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law07(r, silent{NewSecretWorld(t.TempDir())}) }) {
+		t.Error("LAW-07: a logger that writes nothing was not caught")
+	}
+}
+
+type silent struct{ SecretWorld }
+
+func (silent) Log([]LogEvent) (string, error) { return "", nil }

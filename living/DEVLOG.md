@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-205 Secrets by reference, and a logger that can't leak them
+
+**Wave/slice:** W2 / S2.1 · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** Validated vault references, a resolver that registers every value with the log redactor before returning it, a local vault, and a slog-based logger that scrubs those values everywhere. The manual changed first: sb-tenant(5) gained a Secrets section.
+
+**Why this way:** The usual secret leak isn't a secret field; it's a URL, header or error message that happens to contain the secret. So redaction works by value (what was resolved), on the rendered text of every attribute, as well as by key name. The resolver refuses to hand out a secret if there's no redactor to tell, which makes forgetting to wire redaction an error instead of a leak.
+
+**Learned:** The law test needs a "you must have logged something" clause. Otherwise a logger that drops every line passes trivially, and the self-test proves it.
+
+**Laws:** LAW-07 moves from Stated to Tested.
+
+**Next:** SB-203 once the user picks the docs vendor; otherwise the next W2 tickets that don't depend on it.
+
 ## 2026-11-19 SB-202 Scriptable mock connector
 
 **Wave/slice:** W2 / S2.1 · **Author:** platform lead + Claude · **Status:** Done

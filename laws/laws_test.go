@@ -104,3 +104,7 @@ func TestLAW03_ConnectorUnknownIsNeverAllow(t *testing.T) {
 func TestLAW05_ConnectorActNeedsReceipt(t *testing.T) {
 	Check(t, "LAW-05", runs, func(r *rand.Rand) error { return law05Connector(r, NewConnectorWorld()) })
 }
+
+func TestLAW07_NoSecretInLogs(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07(r, NewSecretWorld(t.TempDir())) })
+}

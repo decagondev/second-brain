@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Secrets by reference (SB-205): validated `vault://` references, a local vault, and a redacting structured logger (`internal/obs`).
 - Scriptable mock connector (SB-202): fault queue, forced verdicts, deletes, no-receipt target.
 - Connector contract v1 (SB-201): `APIVersion` and negotiation, the contract kit (`connectorkit.Run`), and a controllable mock source and connector.
 - Factory seams (SB-114): `sb factory status TENANT`, custody constants in one place, and the custody lint.
