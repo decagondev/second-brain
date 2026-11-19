@@ -113,6 +113,8 @@ func mapErr(err error) *errs.Error {
 		return errs.New(errs.EKILLED, "Answers are switched off for now.")
 	case errors.Is(err, ask.ErrNotFound):
 		return errs.New(errs.EPERM, "You can't see that trace.")
+	case errors.Is(err, ask.ErrBudget):
+		return errs.New(errs.EBUDGET, "The model budget or rate limit was reached.")
 	default:
 		return errs.New(errs.EUNAVAIL, "Answers are unavailable right now.")
 	}

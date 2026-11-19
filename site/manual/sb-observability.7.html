@@ -75,6 +75,79 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 </tbody>
 </table>
 <p>Every alert links to a runbook.</p>
+<h3 id="law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</h3>
+<p>Every law with a production check has one alert rule, in <code>internal/core/alerts</code>, and one runbook, <code>docs/runbooks/LAW-nn.md</code>. A test fails the build if a law with a <strong>Watch</strong> line in sb-laws(7) lacks either.</p>
+<table>
+<thead>
+<tr>
+<th>Law</th>
+<th>Signal</th>
+<th>Fires when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAW-01</td>
+<td><code>law_violation_total{law="LAW-01"}</code> (<code>sb tenant verify</code> and the live-check guard)</td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-02</td>
+<td><code>law_violation_total{law="LAW-02"}</code> (the kernel's tenant guard, index <code>ETENANT</code>)</td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-04</td>
+<td><code>sb_audit_write_failures_total</code></td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-06</td>
+<td><code>sb_attestation_findings_total</code></td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-07</td>
+<td><code>sb_secret_findings_total</code></td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-08</td>
+<td><code>sb_release_lag_max</code></td>
+<td>it is above 1</td>
+</tr>
+<tr>
+<td>LAW-11</td>
+<td><code>sb_audit_verify_failures_total</code></td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-12</td>
+<td><code>sb_deactivated_requests_total</code></td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-16</td>
+<td><code>sb_drift_findings_total</code></td>
+<td>it increases</td>
+</tr>
+<tr>
+<td>LAW-18</td>
+<td><code>sb_unwrappable_keys</code></td>
+<td>it is above 0</td>
+</tr>
+</tbody>
+</table>
+<p>All are <strong>Sev-1</strong>, sent through the alert webhook with the law, the tenant and the runbook path, never content.</p>
+<h3 id="telemetry-labels">Telemetry labels</h3>
+<p>Metric label values are ids, codes and names only: they must match <code>[A-Za-z0-9_.:@/-]</code> and be at most 128 characters. A value that doesn't match is <strong>replaced</strong> with <code>invalid</code> and counted in <code>sb_telemetry_rejected_total</code>, so a bug that tries to put text into a label can't leak it (LAW-07).</p>
+<h3 id="budgets-and-rate-limits-sb-609">Budgets and rate limits (SB-609)</h3>
+<p>The model gateway checks two limits <strong>before</strong> every model call, and refuses with <code>EBUDGET</code> instead of calling:</p>
+<ul>
+<li><strong>Monthly budget:</strong> the tenant's spend this calendar month (UTC), at the release's price table, plus the call's worst case (its <code>max_tokens</code> at the output price), must stay within <code>budget_usd_month</code>. Spend is metered from the provider's reported usage after each call.</li>
+<li><strong>Rate limit:</strong> 30 model calls per user per minute (a token bucket). A refused call is counted in <code>sb_budget_refusals_total{reason}</code> with <code>reason</code> either <code>budget</code> or <code>rate</code>.</li>
+</ul>
+<p>Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (<code>EUNAVAIL</code>). A budget pace above 120% of the month so far raises the Sev-3 alert above.</p>
 <h3 id="canaries-and-the-secret-scanner">Canaries and the secret scanner</h3>
 <p>Each cell plants <strong>canary secrets</strong> (SB-411): random values that look like credentials, <code>sbcanary-&lt;tenant&gt;-&lt;32 hex&gt;</code>. One is stored in the vault at <code>vault://tenants/TENANT/canary</code>, and one is placed in a fixture document in each connected source's test space. They are registered with the log redactor like any secret. Nothing legitimate ever uses them, so seeing one anywhere is proof of a leak path.</p>
 <p>The scanner looks for every canary, and for every value resolved from the vault, in three places: each log line as it is written, each model request before it leaves the gateway, and each audit row and export. A finding names the place and the canary's id, <strong>never the value</strong>. It is a <strong>Sev-1</strong> alert (<code>kind: secret_leak</code>), sent through the alert webhook. In CI, <code>tests/canary</code> runs the ask path, the tool bus and the audit export with canaries planted and fails on any finding. The same test also shows that a path that leaks on purpose is found.</p>
@@ -130,7 +203,7 @@ acl_unknown_ratio{tenant=&quot;acme-logistics&quot;,connector=&quot;chat&quot;} 
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-admin.3.html">sb-admin(3)</a>, <a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, backup and DR</a></p><p class="srcline">Source: <code>manual/sb-observability.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#per-tenant-dashboards">Per-tenant dashboards</a></li><li class="l3"><a href="#alerts">Alerts</a></li><li class="l3"><a href="#canaries-and-the-secret-scanner">Canaries and the secret scanner</a></li><li class="l3"><a href="#weekly-leadership-report">Weekly leadership report</a></li><li class="l3"><a href="#telemetry-rules">Telemetry rules</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#per-tenant-dashboards">Per-tenant dashboards</a></li><li class="l3"><a href="#alerts">Alerts</a></li><li class="l3"><a href="#law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</a></li><li class="l3"><a href="#telemetry-labels">Telemetry labels</a></li><li class="l3"><a href="#budgets-and-rate-limits-sb-609">Budgets and rate limits (SB-609)</a></li><li class="l3"><a href="#canaries-and-the-secret-scanner">Canaries and the secret scanner</a></li><li class="l3"><a href="#weekly-leadership-report">Weekly leadership report</a></li><li class="l3"><a href="#telemetry-rules">Telemetry rules</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

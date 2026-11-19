@@ -29,3 +29,19 @@ func TestFreshnessMetrics(t *testing.T) {
 		}
 	}
 }
+
+// Label values can't carry content (sb-observability(7), Telemetry labels; SB-607).
+func TestLabelsCantCarryContent(t *testing.T) {
+	m := NewMetrics()
+	m.Add("sb_asks_total", "asks", map[string]string{"tenant": "acme-logistics", "q": "what is the CEO's salary?"}, 1)
+	var b strings.Builder
+	_ = m.Write(&b)
+	out := b.String()
+	if strings.Contains(out, "salary") || !strings.Contains(out, `q="invalid"`) || !strings.Contains(out, "sb_telemetry_rejected_total 1") {
+		t.Fatalf("%s", out)
+	}
+	m.Set("sb_release_lag_max", "lag", map[string]string{"tenant": "acme-logistics", "cite": "docs:a@1"}, 1)
+	if v, ok := m.Get("sb_release_lag_max", map[string]string{"tenant": "acme-logistics", "cite": "docs:a@1"}); !ok || v != 1 {
+		t.Fatal("an id-shaped label was rejected")
+	}
+}

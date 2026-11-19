@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/budget"
 	"example.com/second-brain/internal/core/ports"
 )
 
@@ -42,7 +43,12 @@ type Gateway struct {
 	// OnSecret is told when a request held a secret (the Sev-1 secret_leak alert); the
 	// request is refused either way.
 	OnSecret func(ctx context.Context)
+	// Budget, when set, is checked before every call and metered after (SB-609).
+	Budget *budget.Guard
 }
+
+// ErrBudget is a call refused by the budget or rate limit (EBUDGET).
+var ErrBudget = budget.ErrBudget
 
 // Complete sends req after the secret check. The request's Model is always the release's.
 func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
@@ -55,6 +61,18 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 			g.OnSecret(ctx)
 		}
 		return ports.ModelResponse{}, ErrSecretInPrompt
+	}
+	if g.Budget != nil {
+		max := req.MaxTokens
+		if max == 0 {
+			max = 1024
+		}
+		if err := g.Budget.Allow(ctx, req.User, max); err != nil {
+			if errors.Is(err, budget.ErrBudget) {
+				return ports.ModelResponse{}, err
+			}
+			return ports.ModelResponse{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
+		}
 	}
 	req.Model = g.ModelID
 	retries, backoff := g.Retries, g.Backoff
@@ -72,6 +90,9 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 		resp, err := g.Model.Complete(ctx, req)
 		if err == nil {
 			g.meter(resp.Usage)
+			if g.Budget != nil {
+				_ = g.Budget.Record(ctx, resp.Usage.Input, resp.Usage.Output)
+			}
 			return resp, nil
 		}
 		if !errors.Is(err, ports.ErrRateLimited) || attempt >= retries {

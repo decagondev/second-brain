@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"example.com/second-brain/internal/core/budget"
 	"example.com/second-brain/internal/core/ports"
 )
 
@@ -117,5 +118,17 @@ func TestDeadlineStopsRetries(t *testing.T) {
 	}
 	if time.Since(start) > 500*time.Millisecond || m.calls != 1 {
 		t.Fatalf("waited past the deadline (%d calls)", m.calls)
+	}
+}
+
+func TestBudgetRefusesBeforeCalling(t *testing.T) {
+	m := &model{}
+	now := time.Date(2027, 3, 2, 10, 0, 0, 0, time.UTC)
+	g := Gateway{Model: m, Secrets: scrub{}, Budget: &budget.Guard{Tenant: "acme-logistics", MonthlyUSD: 1, Price: budget.Price{OutputPerM: 1000}, Meter: &budget.MemoryMeter{}, Now: func() time.Time { return now }}}
+	if _, err := g.Complete(context.Background(), ports.ModelRequest{User: "u1", MaxTokens: 100}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := g.Complete(context.Background(), ports.ModelRequest{User: "u1", MaxTokens: 10_000}); !errors.Is(err, ErrBudget) || m.calls != 1 {
+		t.Fatalf("over budget: %v after %d calls", err, m.calls)
 	}
 }

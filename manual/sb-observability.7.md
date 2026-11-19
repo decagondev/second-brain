@@ -37,6 +37,38 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 
 Every alert links to a runbook.
 
+### Law alerts, exactly (SB-608)
+
+Every law with a production check has one alert rule, in `internal/core/alerts`, and one runbook, `docs/runbooks/LAW-nn.md`. A test fails the build if a law with a **Watch** line in sb-laws(7) lacks either.
+
+| Law | Signal | Fires when |
+|---|---|---|
+| LAW-01 | `law_violation_total{law="LAW-01"}` (`sb tenant verify` and the live-check guard) | it increases |
+| LAW-02 | `law_violation_total{law="LAW-02"}` (the kernel's tenant guard, index `ETENANT`) | it increases |
+| LAW-04 | `sb_audit_write_failures_total` | it increases |
+| LAW-06 | `sb_attestation_findings_total` | it increases |
+| LAW-07 | `sb_secret_findings_total` | it increases |
+| LAW-08 | `sb_release_lag_max` | it is above 1 |
+| LAW-11 | `sb_audit_verify_failures_total` | it increases |
+| LAW-12 | `sb_deactivated_requests_total` | it increases |
+| LAW-16 | `sb_drift_findings_total` | it increases |
+| LAW-18 | `sb_unwrappable_keys` | it is above 0 |
+
+All are **Sev-1**, sent through the alert webhook with the law, the tenant and the runbook path, never content.
+
+### Telemetry labels
+
+Metric label values are ids, codes and names only: they must match `[A-Za-z0-9_.:@/-]` and be at most 128 characters. A value that doesn't match is **replaced** with `invalid` and counted in `sb_telemetry_rejected_total`, so a bug that tries to put text into a label can't leak it (LAW-07).
+
+### Budgets and rate limits (SB-609)
+
+The model gateway checks two limits **before** every model call, and refuses with `EBUDGET` instead of calling:
+
+- **Monthly budget:** the tenant's spend this calendar month (UTC), at the release's price table, plus the call's worst case (its `max_tokens` at the output price), must stay within `budget_usd_month`. Spend is metered from the provider's reported usage after each call.
+- **Rate limit:** 30 model calls per user per minute (a token bucket). A refused call is counted in `sb_budget_refusals_total{reason}` with `reason` either `budget` or `rate`.
+
+Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (`EUNAVAIL`). A budget pace above 120% of the month so far raises the Sev-3 alert above.
+
 ### Canaries and the secret scanner
 
 Each cell plants **canary secrets** (SB-411): random values that look like credentials, `sbcanary-<tenant>-<32 hex>`. One is stored in the vault at `vault://tenants/TENANT/canary`, and one is placed in a fixture document in each connected source's test space. They are registered with the log redactor like any secret. Nothing legitimate ever uses them, so seeing one anywhere is proof of a leak path.

@@ -58,7 +58,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `workflows` | list | no | `[]` | At most **one** in v1. Known workflows: `ticket-update` (needs connector kind `tickets`). Enabled only after the tenant's workflow evals pass |
 | `approval` | map workflow→principal | if `workflows` | | Principal is `group:NAME` from the IdP. Every workflow needs one |
 | `retention_days` | int | no | `365` | 30–3650. Applies to traces, citations and drafts, not to audit |
-| `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap. Over budget, asks fail with `EBUDGET` |
+| `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
 

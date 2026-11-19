@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Operations (S6.3a: SB-607 to SB-609): a Sev-1 alert rule and runbook for every law with a production check, a metric catalogue and tenant dashboard, a telemetry rule that keeps content out of labels, histograms, ask and ACL metrics, and a monthly budget and per-user rate limit in the model gateway (<code>EBUDGET</code>).</li>
 <li>Onboarding and the weekly report (S6.2: SB-604 to SB-606): every runbook step states what to expect and every phase has a gate checklist, enforced by <code>tools/check/runbook.py</code>; the weekly leadership report and <code>GET /v1/admin/usage</code>, counts only.</li>
 <li>Admin console and roles (S6.1b: SB-602, SB-603): an operator role as a Cedar policy, the admin API (manifest, diff by JSON Patch through the manifest checker, kill switches, audit paging), <code>manifest.Format</code> with a round-trip guarantee, and a web console for kill switches and make-permanent.</li>
 <li>Tenant verify (S6.1a: SB-601): law checks against a cell's own data and users (LAW-01 re-asked live, LAW-02 adversarial ids, LAW-03 injected timeout, LAW-14 claim labels), counts only, unknown fails; runs on the local cell with <code>tools/evalcell --verify</code>.</li>

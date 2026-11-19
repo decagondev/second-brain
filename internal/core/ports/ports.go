@@ -322,6 +322,7 @@ type ModelRequest struct {
 	Messages  []Message
 	MaxTokens int
 	JSON      bool
+	User      string // who the call is for (budget and rate limit); never sent to a provider
 }
 
 // Usage is the token count of one completion.

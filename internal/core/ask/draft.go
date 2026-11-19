@@ -123,7 +123,7 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 		chunks = append(chunks, c)
 	}
 	trace := a.NewID("tr_")
-	claims, err := a.composeWith(ctx, "draft", "Instruction: ", trace, instr, nil, chunks)
+	claims, err := a.composeWith(withUser(ctx, s.User()), "draft", "Instruction: ", trace, instr, nil, chunks)
 	if err != nil {
 		return DraftResponse{}, err
 	}

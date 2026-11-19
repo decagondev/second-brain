@@ -76,6 +76,10 @@ type Authoriser struct {
 	Policy     policy.Kernel
 	// Killed reports a killed connector kind; its documents stay Unknown (sb-kill-switches(7)).
 	Killed func(kind string) bool
+	// Metrics counts live verdicts per connector (sb_acl_verdicts_total), ids only.
+	Metrics interface {
+		Add(name, help string, labels map[string]string, v float64)
+	}
 }
 
 // Verdicts is the live answer per document key (kind:id).
@@ -173,6 +177,13 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 		}
 	}
 	verdicts := a.Check(ctx, user, chunks)
+	if a.Metrics != nil {
+		for k, v := range verdicts {
+			kind := strings.SplitN(k, ":", 2)[0]
+			a.Metrics.Add("sb_acl_verdicts_total", "Live ACL verdicts by tenant, connector and verdict.",
+				map[string]string{"tenant": s.Tenant(), "connector": kind, "verdict": strings.ToLower(v.String())}, 1)
+		}
+	}
 	var res Result
 	refused := map[string]bool{}
 	decided := map[string]int{}

@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.3a Alerts, telemetry and budgets (SB-607 to SB-609)
+
+**Wave/slice:** W6 / S6.3a · **Author:** platform lead + Claude · **Status:** In review (running cell, staging)
+
+**What:** `internal/core/alerts` with ten runbooks, `obs.Catalog`, histograms, the label rule, ask and ACL metrics, a tenant dashboard, and `internal/core/budget` in the gateway. The manual changed first: sb-observability(7) gained "Law alerts, exactly", "Telemetry labels" and "Budgets and rate limits", and sb-tenant(5) the budget's meaning.
+
+**Why this way:** Law alerts are driven by the manual. A test reads sb-laws(7), so a law that gains a production check can't ship without an alert and a runbook. The label rule fails closed: a bad value becomes `invalid` rather than being trusted, and it is counted so the bug is visible. The budget check uses the call's worst case before calling and real usage after, so a call can't overshoot because tokens are only known later. A meter that can't be read refuses, because budgets that fail open are not budgets.
+
+**Learned:** `ModelRequest` had no idea who a call was for, so the rate limit needed a `User` field. Adapters never serialise it, and their tests show the request bodies, so it can't leak to a provider.
+
+**Laws:** unchanged and all green; LAW-07 is reinforced by the label rule.
+
+**Next:** S6.3b, the HubSpot CRM connector (SB-610) and retention and deletion (SB-611).
+
 ## 2026-11-19 S6.2 Onboarding and the weekly report (SB-604 to SB-606)
 
 **Wave/slice:** W6 / S6.2 · **Author:** platform lead + Claude · **Status:** In review (dry run, friendly tenant, delivery)

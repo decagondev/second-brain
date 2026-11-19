@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"example.com/second-brain/internal/core/answer"
+	"example.com/second-brain/internal/core/budget"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/prompts"
 	"example.com/second-brain/internal/core/retrieve"
@@ -83,6 +84,7 @@ var (
 	ErrKilled      = errors.New("ask: EKILLED")
 	ErrUnavailable = errors.New("ask: EUNAVAIL")
 	ErrNotFound    = errors.New("ask: no such trace for this user") // EPERM
+	ErrBudget      = errors.New("ask: EBUDGET")
 )
 
 // Agent is the ask agent for one cell.
@@ -104,12 +106,36 @@ type Agent struct {
 	Now   func() time.Time
 	// Link returns a URL that opens a chunk's source at its version, or "" (sb-ask(3)).
 	Link func(c ports.Chunk) string
+	// Metrics records ask latency and outcomes (sb_ask_seconds, sb_asks_total), ids only.
+	Metrics interface {
+		Add(name, help string, labels map[string]string, v float64)
+		Observe(name, help string, labels map[string]string, v float64)
+	}
 	// IsAuditor says whether a scope may read every trace of this tenant; nil means nobody.
 	IsAuditor func(s tenancy.Scope) bool
 }
 
 // Ask answers one question for the scope's user.
-func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (Response, error) {
+func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (resp Response, err error) {
+	if a.Metrics != nil && a.Now != nil {
+		start := a.Now()
+		defer func() {
+			outcome := "ok"
+			switch {
+			case err != nil:
+				outcome = "error"
+			case resp.Notice != nil && (*resp.Notice == NoticeNoAccess || *resp.Notice == NoticeNoSources):
+				outcome = "refused"
+			}
+			l := map[string]string{"tenant": a.Tenant}
+			a.Metrics.Observe("sb_ask_seconds", "Ask latency in seconds.", l, a.Now().Sub(start).Seconds())
+			a.Metrics.Add("sb_asks_total", "Answers by outcome.", map[string]string{"tenant": a.Tenant, "outcome": outcome}, 1)
+		}()
+	}
+	return a.ask(ctx, s, req)
+}
+
+func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response, error) {
 	if err := s.Check(); err != nil || s.Tenant() != a.Tenant {
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
@@ -177,7 +203,7 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		resp.Notice = &n
 		resp.Answer.Claims = []answer.Claim{{Text: NothingToCite, Cites: []answer.Cite{}, Uncited: true}}
 	} else {
-		claims, err := a.compose(ctx, trace, q, earlier, res.Context)
+		claims, err := a.compose(withUser(ctx, s.User()), trace, q, earlier, res.Context)
 		if err != nil {
 			return Response{}, err
 		}
@@ -220,8 +246,11 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
 	msgs = append(msgs, ports.Message{Role: "user", Content: actx.Data() + "\n" + lead + q})
-	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text, Messages: msgs, JSON: true})
+	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text, Messages: msgs, JSON: true, User: a.user(ctx)})
 	if err != nil {
+		if errors.Is(err, budget.ErrBudget) {
+			return nil, fmt.Errorf("%w: %v", ErrBudget, err)
+		}
 		return nil, fmt.Errorf("%w: model: %v", ErrUnavailable, err)
 	}
 	res := answer.Compose(out.Text, actx, nil)
@@ -258,4 +287,16 @@ func (a Agent) Trace(ctx context.Context, s tenancy.Scope, id string) (Trace, er
 		return Trace{}, ErrNotFound
 	}
 	return t, nil
+}
+
+type userKey struct{}
+
+// withUser carries the asker to the model call for the budget's rate limit.
+func withUser(ctx context.Context, user string) context.Context {
+	return context.WithValue(ctx, userKey{}, user)
+}
+
+func (Agent) user(ctx context.Context) string {
+	u, _ := ctx.Value(userKey{}).(string)
+	return u
 }
