@@ -15,14 +15,14 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-04](../manual/sb-laws.7.md#law-04) | Audit before act | Tested (red) | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | `laws/` check + self-tests; tool-call level red until SB-405; policy decisions (`TestLAW04_PolicyDecisionsAreRecordedFirst`, SB-111) green | — | SB-010, SB-011, SB-111, SB-401, SB-405 |
 | [LAW-05](../manual/sb-laws.7.md#law-05) | Ran means receipt | Tested (red) | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | `laws/` check + self-tests; red until SB-408 | — | SB-010, SB-011, SB-408 |
 | [LAW-06](../manual/sb-laws.7.md#law-06) | Only signed, gated builds run | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-506, SB-509 |
-| [LAW-07](../manual/sb-laws.7.md#law-07) | No secret in prompt, log or audit | Tested | — | `laws/` canary check: resolved secrets never reach logs by any path, + self-tests | — | SB-205, SB-411 |
+| [LAW-07](../manual/sb-laws.7.md#law-07) | No secret in prompt, log or audit | Tested | — | `laws/` canary check: resolved secrets never reach logs by any path, nor the model provider through the gateway, + self-tests | — | SB-205, SB-411 |
 | [LAW-08](../manual/sb-laws.7.md#law-08) | At most one behind stable | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-507 |
 | [LAW-09](../manual/sb-laws.7.md#law-09) | Data is not instructions | Tested | — | `laws/` ingest-level check (flag, strip, unescapable wrap) + self-test; injection corpus in `make check`; agent level with SB-405/SB-501 | — | SB-207, SB-501 |
 | [LAW-10](../manual/sb-laws.7.md#law-10) | Kill wins | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-403, SB-404 |
 | [LAW-11](../manual/sb-laws.7.md#law-11) | Audit chain unbroken | Stated | — | — | — | SB-401, SB-402, SB-412 |
 | [LAW-12](../manual/sb-laws.7.md#law-12) | Deprovision revokes fast | Tested | — | `laws/` timed check on a fake clock, with and without lost fan-out, + self-test | — | SB-107 |
 | [LAW-13](../manual/sb-laws.7.md#law-13) | The index is derived | Tested | — | `laws/` ingest, re-ingest, drop and rebuild give the same `(cite, chunk, ACL)` set, + self-test; scheduled drill SB-210 | — | SB-210 |
-| [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Stated | — | — | — | SB-304, SB-309 |
+| [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Tested | — | `laws/` property test over random model output (valid, spoofed and garbage labels) through `answer.Compose`, + self-test | — | SB-304, SB-309 |
 | [LAW-15](../manual/sb-laws.7.md#law-15) | Approval binds one payload | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-406 |
 | [LAW-16](../manual/sb-laws.7.md#law-16) | The manifest is the truth | Tested | — | `laws/` manifest check (round trip and rejection) plan check (plan is the manifest diff) and apply check (recorded state equals the manifest; re-apply changes nothing), + self-tests; drift side with SB-510 | — | SB-101, SB-510, SB-602 |
 | [LAW-17](../manual/sb-laws.7.md#law-17) | Hand-off leaves no unlisted access | Modelled | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | — | — | SB-705, SB-706 |
@@ -56,3 +56,5 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-09 | Stated → Tested | SB-207: `TestLAW09_DataIsNotInstructions` green through the real pipeline; a pipeline without a sanitiser is caught |
 | 2026-11-19 | LAW-01 | stays Tested (red) | SB-209: ingest-gap test green (live check follows the source; prefilter catches up after one sync); retrieval level red until SB-302 |
 | 2026-11-19 | LAW-01, LAW-02, LAW-03 | Tested (red) → Tested | S3.1 (SB-301 to SB-303): the retrieval-level tests, red since W0, are green on the real pipeline; mutations of the real pipeline are caught |
+| 2026-11-19 | LAW-14 | Stated → Tested | SB-304: `TestLAW14_EveryClaimCitedOrLabelled` green on the real composer |
+| 2026-11-19 | LAW-07 | Tested (extended) | SB-305: `TestLAW07_NoSecretInPrompts` green through the model gateway and the recorded fake provider |

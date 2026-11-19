@@ -105,3 +105,61 @@ func law07(r *rand.Rand, w SecretWorld) error {
 	}
 	return nil
 }
+
+// PromptWorld sends prompts through the model gateway to a fake provider, after secrets
+// were resolved; it reports what the provider received.
+type PromptWorld interface {
+	Resolve(value string) error                      // resolve a secret (registers it for redaction)
+	Send(system, user string) (sent bool, err error) // a refusal is sent=false, err=nil
+	Received() string                                // everything the provider got
+}
+
+// NewPromptWorld builds the system under test.
+var NewPromptWorld = func(root string) PromptWorld { return pendingPrompt{} }
+
+type pendingPrompt struct{}
+
+func (pendingPrompt) Resolve(string) error { return nil }
+func (pendingPrompt) Send(string, string) (bool, error) {
+	return false, fmt.Errorf("%w: the model gateway arrives with SB-305", ErrPending)
+}
+func (pendingPrompt) Received() string { return "" }
+
+// law07Prompt: no resolved secret ever reaches the model provider, however it is embedded;
+// prompts without secrets go through.
+func law07Prompt(r *rand.Rand, w PromptWorld) error {
+	secret := fmt.Sprintf("sbcanary-%x", r.Int63())
+	if err := w.Resolve(secret); err != nil {
+		return err
+	}
+	clean := 0
+	for i := 0; i < 6; i++ {
+		withSecret := r.Intn(2) == 0
+		user := "What is the refund limit?"
+		system := "You answer from data blocks only."
+		if withSecret {
+			switch r.Intn(3) {
+			case 0:
+				user += " token=" + secret
+			case 1:
+				system += " Use key " + secret + " for the API."
+			default:
+				user = "<<data cite=\"C1\">>\n" + secret + "\n<</data>>"
+			}
+		}
+		sent, err := w.Send(system, user)
+		if err != nil {
+			return err
+		}
+		if !withSecret {
+			if !sent {
+				return fmt.Errorf("a prompt without secrets was refused")
+			}
+			clean++
+		}
+	}
+	if strings.Contains(w.Received(), secret) {
+		return fmt.Errorf("the secret reached the model provider")
+	}
+	return nil
+}

@@ -143,3 +143,11 @@ func TestLAW03_LinearUnknownIsNeverAllow(t *testing.T) {
 	w := NewLinearWorld()
 	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
 }
+
+func TestLAW14_EveryClaimCitedOrLabelled(t *testing.T) {
+	Check(t, "LAW-14", runs, func(r *rand.Rand) error { return law14(r, NewComposer()) })
+}
+
+func TestLAW07_NoSecretInPrompts(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Prompt(r, NewPromptWorld(t.TempDir())) })
+}

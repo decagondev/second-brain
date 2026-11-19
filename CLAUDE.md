@@ -9,7 +9,7 @@ Read `AGENTS.md` first: those rules apply to every change. This file says where 
   - SB-011, SB-012, SB-013: models and all 13 mutations pass, locally and in CI (2026-11-19). Left: two reviewers.
 - **W1 (First Cell):** 8 Done; SB-104 In review (30-minute cell needs a cloud adapter, ADR-0018); SB-109 to SB-112 In review (second reviewer for policy and audit). User reviewed on 2026-11-19; CI green.
 - **W2 (Connectors and ingestion):** built (2026-11-19). Done: SB-201, SB-202, SB-205, SB-206. In review: SB-203 (Drive), SB-204 (Slack), SB-211 (Linear) need real sandboxes; SB-207 needs the tool bus for its eval; SB-208 to SB-210 need staging and the cell runtime. Log only through `internal/obs`. 
-- **W3 (Cited answers):** S3.1 done (SB-301, SB-302 Done; SB-303 In review for staging p95). LAW-01 to LAW-03 retrieval tests green. Next: **S3.2 (SB-304 composer, SB-305 model gateway)**.
+- **W3 (Cited answers):** S3.1 and S3.2 done (SB-301, SB-302, SB-304, SB-305 Done; SB-303 In review for staging p95). LAW-01 to LAW-03, LAW-07 (prompts) and LAW-14 green. Next: **S3.3 (SB-306 ask agent and `POST /v1/ask`)**.
 - Status of every ticket: `epics/README.md` (Progress) and each ticket's `Status` row and Progress section.
 
 ## Decisions for W1 (confirm with the user before acting)

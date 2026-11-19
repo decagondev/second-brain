@@ -42,6 +42,15 @@ answer = claim*      claim = text (cite+ | uncited)
 <li>A document that was refused (deny or unknown).</li>
 </ul>
 <p>These are stripped and logged as <code>citation_spoof</code>.</p>
+<h3 id="how-the-composer-decides-code-not-the-model">How the composer decides (code, not the model)</h3>
+<p>The model sees each allowed chunk as a data block labelled <code>C1</code>, <code>C2</code>, … and must answer in JSON: <code>{"claims": [{"text": "…", "cites": ["C1", "C3"]}]}</code>. The composer then, in code:</p>
+<ol>
+<li>maps each label to its chunk; a label that isn't one of this answer's allowed chunks is <strong>stripped</strong> and counted as <code>citation_spoof</code> (by label, never by text);</li>
+<li>marks a claim <code>uncited</code> if none of its labels survived;</li>
+<li>turns surviving labels into citations: <code>cite</code>, title, span and the chunk's flags;</li>
+<li>treats output that isn't valid JSON of that shape as one claim, the whole text, <code>uncited</code>.</li>
+</ol>
+<p>A claim never carries a citation the asker wasn't live-authorised for, and the model can't mark anything as cited by itself (LAW-01, LAW-14).</p>
 <h3 id="versions">Versions</h3>
 <p>Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.</p>
 <h2 id="laws">LAWS</h2>
@@ -54,7 +63,7 @@ This changed in March. (uncited)
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-ask.3.html">sb-ask(3)</a>, <a href="../docs/architecture/07-answer-composer.html">07 Answer composer</a></p><p class="srcline">Source: <code>manual/sb-citations.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#what-a-citation-promises">What a citation promises</a></li><li class="l3"><a href="#uncited">Uncited</a></li><li class="l3"><a href="#what-cant-become-a-citation">What can't become a citation</a></li><li class="l3"><a href="#versions">Versions</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#what-a-citation-promises">What a citation promises</a></li><li class="l3"><a href="#uncited">Uncited</a></li><li class="l3"><a href="#what-cant-become-a-citation">What can't become a citation</a></li><li class="l3"><a href="#how-the-composer-decides-code-not-the-model">How the composer decides (code, not the model)</a></li><li class="l3"><a href="#versions">Versions</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

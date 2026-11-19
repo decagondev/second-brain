@@ -41,6 +41,17 @@ A claim with no valid citation is labelled `uncited` **by code** (LAW-14). It ma
 
 These are stripped and logged as `citation_spoof`.
 
+### How the composer decides (code, not the model)
+
+The model sees each allowed chunk as a data block labelled `C1`, `C2`, … and must answer in JSON: `{"claims": [{"text": "…", "cites": ["C1", "C3"]}]}`. The composer then, in code:
+
+1. maps each label to its chunk; a label that isn't one of this answer's allowed chunks is **stripped** and counted as `citation_spoof` (by label, never by text);
+2. marks a claim `uncited` if none of its labels survived;
+3. turns surviving labels into citations: `cite`, title, span and the chunk's flags;
+4. treats output that isn't valid JSON of that shape as one claim, the whole text, `uncited`.
+
+A claim never carries a citation the asker wasn't live-authorised for, and the model can't mark anything as cited by itself (LAW-01, LAW-14).
+
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

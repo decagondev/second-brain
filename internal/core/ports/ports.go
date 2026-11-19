@@ -306,3 +306,39 @@ type Candidate struct {
 type Retriever interface {
 	Search(ctx context.Context, s tenancy.Scope, tokens []string, q Query) ([]Candidate, error)
 }
+
+// Message is one turn of a model conversation.
+type Message struct {
+	Role    string // "user" or "assistant"
+	Content string
+}
+
+// ModelRequest is one chat completion (ADR-0019). System is the system prompt; JSON asks
+// the provider for a JSON object where it supports that.
+type ModelRequest struct {
+	Model     string
+	System    string
+	Messages  []Message
+	MaxTokens int
+	JSON      bool
+}
+
+// Usage is the token count of one completion.
+type Usage struct{ Input, Output int }
+
+// ModelResponse is the model's text and usage.
+type ModelResponse struct {
+	Text  string
+	Usage Usage
+}
+
+// Model errors every adapter maps to.
+var (
+	ErrRateLimited = errors.New("model: rate limited")
+	ErrModelDown   = errors.New("model: unavailable")
+)
+
+// Model is one provider's chat completion (SB-305). Adapters never retry; the gateway does.
+type Model interface {
+	Complete(ctx context.Context, req ModelRequest) (ModelResponse, error)
+}

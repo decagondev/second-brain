@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.2 Answer composer and model gateway (SB-304, SB-305)
+
+**Wave/slice:** W3 / S3.2 · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** The composer (`internal/core/answer`) turns the model's JSON claims into cited claims, deciding every citation in code. The gateway (`internal/core/gateway`) sits in front of every model adapter: it refuses secrets, pins the release's model, retries rate limits within the deadline and meters tokens. There are four standard-library adapters (OpenAI-compatible, Anthropic, Groq, OpenRouter) with one contract test against a recorded fake, and an embedded prompt set with SHA-256s. The manual changed first: sb-citations(7) "How the composer decides" and sb-agents(7) "MODEL GATEWAY".
+
+**Why this way:** The model only ever names labels (C1, C2, ...), never citations, so it can't cite anything outside the allowed context, even by accident. The secret check reuses the log redactor's registry: every resolved secret is already there, so nothing new has to be kept in sync. Groq and OpenRouter are thin wrappers over the OpenAI-compatible client; Anthropic gets its own body shape.
+
+**Learned:** The secret scan has to check the joined request too, since a secret split between the system prompt and a message is one string by the time it reaches the provider. A shell heredoc mangled a backslash in a Go string literal, so Go source with escapes now goes through the Write or Edit tool.
+
+**Laws:** LAW-14 moves from Stated to Tested. LAW-07 now also covers prompts. Only LAW-04 and LAW-05 (the tool bus, W4) stay red.
+
+**Next:** S3.3, the ask agent and `POST /v1/ask` (SB-306).
+
 ## 2026-11-19 S3.1 Retrieval and live authorisation (SB-301 to SB-303)
 
 **Wave/slice:** W3 / S3.1 · **Author:** platform lead + Claude · **Status:** SB-301 and SB-302 Done, SB-303 In review

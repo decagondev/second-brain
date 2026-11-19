@@ -67,6 +67,34 @@ tool call: killed? → authorise → audit → approved? → execute
 <p>Each run has a step limit (default 6), a token limit and a time limit (default 45 s). Hitting one ends the run with what it has and a notice. Runs never retry silently.</p>
 <h3 id="injection">Injection</h3>
 <p>Retrieved content can shape an answer's text but never its tool calls. Arguments copied from flagged spans are refused (LAW-09).</p>
+<h2 id="model-gateway">MODEL GATEWAY</h2>
+<p>Agents reach a model only through the gateway's <code>Model</code> port (<a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019</a>). Adapters: <code>openaicompat</code> (any OpenAI-compatible endpoint), <code>anthropic</code>, <code>groq</code> and <code>openrouter</code>. The provider and model id come from the release bundle, never from a manifest or a request. The API key is resolved from <code>vault://tenants/TENANT/model</code> at call time.</p>
+<table>
+<thead>
+<tr>
+<th>Guarantee</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No secret in a prompt (LAW-07)</td>
+<td>Before any call, the gateway scans the whole request for every secret registered with the log redactor. A match refuses the call (<code>EPERM</code>, reason <code>secret_in_prompt</code>), and nothing is sent</td>
+</tr>
+<tr>
+<td>Prompts come from the release</td>
+<td>System prompts are loaded by name from the bundled prompt set, each with its SHA-256, which the release bundle pins (SB-503)</td>
+</tr>
+<tr>
+<td>Metering</td>
+<td>Input and output tokens per tenant, provider and model are counted in <code>sb_model_tokens_total</code>. Budget enforcement is SB-609</td>
+</tr>
+<tr>
+<td>Failures</td>
+<td>Rate limits are retried with backoff within the request's deadline; anything else is <code>EUNAVAIL</code>. The gateway never falls back to another provider silently</td>
+</tr>
+</tbody>
+</table>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-04">LAW-04</a>, <a href="sb-laws.7.html#law-09">LAW-09</a>, <a href="sb-laws.7.html#law-10">LAW-10</a>, <a href="sb-laws.7.html#law-14">LAW-14</a>.</p>
 <h2 id="examples">EXAMPLES</h2>
@@ -76,7 +104,7 @@ approval: { ticket-update: group:it-leads }
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-approvals.7.html">sb-approvals(7)</a>, <a href="sb-actions.3.html">sb-actions(3)</a>, <a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent runtime</a></p><p class="srcline">Source: <code>manual/sb-agents.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#the-agents">The agents</a></li><li class="l3"><a href="#the-tool-bus">The tool bus</a></li><li class="l3"><a href="#limits">Limits</a></li><li class="l3"><a href="#injection">Injection</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#the-agents">The agents</a></li><li class="l3"><a href="#the-tool-bus">The tool bus</a></li><li class="l3"><a href="#limits">Limits</a></li><li class="l3"><a href="#injection">Injection</a></li><li class="l2"><a href="#model-gateway">MODEL GATEWAY</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

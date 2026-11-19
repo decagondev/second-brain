@@ -91,7 +91,7 @@
 <td>No secret in prompt, log or audit</td>
 <td>Tested</td>
 <td>—</td>
-<td><code>laws/</code> canary check: resolved secrets never reach logs by any path, + self-tests</td>
+<td><code>laws/</code> canary check: resolved secrets never reach logs by any path, nor the model provider through the gateway, + self-tests</td>
 <td>—</td>
 <td>SB-205, SB-411</td>
 </tr>
@@ -152,9 +152,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-14">LAW-14</a></td>
 <td>Every claim cited or labelled</td>
-<td>Stated</td>
+<td>Tested</td>
 <td>—</td>
-<td>—</td>
+<td><code>laws/</code> property test over random model output (valid, spoofed and garbage labels) through <code>answer.Compose</code>, + self-test</td>
 <td>—</td>
 <td>SB-304, SB-309</td>
 </tr>
@@ -350,6 +350,18 @@
 <td>LAW-01, LAW-02, LAW-03</td>
 <td>Tested (red) → Tested</td>
 <td>S3.1 (SB-301 to SB-303): the retrieval-level tests, red since W0, are green on the real pipeline; mutations of the real pipeline are caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-14</td>
+<td>Stated → Tested</td>
+<td>SB-304: <code>TestLAW14_EveryClaimCitedOrLabelled</code> green on the real composer</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-305: <code>TestLAW07_NoSecretInPrompts</code> green through the model gateway and the recorded fake provider</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

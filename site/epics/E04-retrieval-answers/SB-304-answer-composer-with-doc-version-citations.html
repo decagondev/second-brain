@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,24 @@
 <p>Citations are structure, not prose; the model proposes, code disposes.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Every claim span maps to an allowed chunk citation or is labelled <code>uncited</code> by code</li>
-<li class="task"><span class="box"></span>Citations that don't match an allowed chunk are stripped and logged</li>
+<li class="task done"><span class="box">✓</span>Every claim span maps to an allowed chunk citation or is labelled <code>uncited</code> by code</li>
+<li class="task done"><span class="box">✓</span>Citations that don't match an allowed chunk are stripped and logged</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Claim-span schema</li>
-<li class="task"><span class="box"></span>Citation validator</li>
-<li class="task"><span class="box"></span><code>uncited</code> labeller</li>
-<li class="task"><span class="box"></span>LAW-14 property test</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-14</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Claim-span schema</li>
+<li class="task done"><span class="box">✓</span>Citation validator</li>
+<li class="task done"><span class="box">✓</span><code>uncited</code> labeller</li>
+<li class="task done"><span class="box">✓</span>LAW-14 property test</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01, LAW-14</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S3.2, with SB-305): <code>internal/core/answer</code>. <code>NewContext</code> labels allowed chunks C1, C2, ... and <code>Data</code> renders them as data blocks. <code>Compose</code> parses the model's JSON, maps labels to chunks, strips any label outside the context (returned as <code>Spoofs</code>, ids only, for the ask agent to log as <code>citation_spoof</code> in SB-306), and marks a claim <code>uncited</code> when nothing survives. Output that isn't the expected JSON becomes one uncited claim. <code>TestLAW14_EveryClaimCitedOrLabelled</code> is green on the real composer, and a mutation that trusts the model's labels is caught.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E04-retrieval-answers/SB-304-answer-composer-with-doc-version-citations.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

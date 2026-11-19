@@ -2,6 +2,7 @@ package laws
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -561,5 +562,43 @@ func TestSelf_RealAskMutationsAreCaught(t *testing.T) {
 		if !violates(runs, run(allLaws[c.law], c.sys)) {
 			t.Errorf("%s: mutation %q was not caught", c.law, c.name)
 		}
+	}
+}
+
+// LAW-14's check catches a composer that trusts the model's labels.
+func TestSelf_LAW14MutationIsCaught(t *testing.T) {
+	trusting := func(raw string, labels map[string]string) ([]ComposedClaim, error) {
+		var parsed struct {
+			Claims []struct {
+				Text  string   `json:"text"`
+				Cites []string `json:"cites"`
+			} `json:"claims"`
+		}
+		if json.Unmarshal([]byte(raw), &parsed) != nil {
+			return []ComposedClaim{{Text: raw, Uncited: true}}, nil
+		}
+		var out []ComposedClaim
+		for _, c := range parsed.Claims {
+			cc := ComposedClaim{Text: c.Text}
+			for _, l := range c.Cites {
+				if cite, ok := labels[l]; ok {
+					cc.Cites = append(cc.Cites, cite)
+				} else {
+					cc.Cites = append(cc.Cites, l) // passes made-up citations through
+				}
+			}
+			out = append(out, cc)
+		}
+		return out, nil
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law14(r, trusting) }) {
+		t.Error("LAW-14: a composer that trusts the model's citations was not caught")
+	}
+}
+
+// LAW-07's prompt check catches a provider called without the gateway in front.
+func TestSelf_LAW07PromptMutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law07Prompt(r, newGatewayWorld(true)) }) {
+		t.Error("LAW-07: a model call without the gateway's secret check was not caught")
 	}
 }

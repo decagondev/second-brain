@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,25 @@
 <p>The model is a replaceable userspace process behind a port.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Provider-agnostic <code>Model</code> port; one managed provider adapter</li>
-<li class="task"><span class="box"></span>Prompts loaded from the release bundle only</li>
-<li class="task"><span class="box"></span>No secret or raw credential can be placed in a prompt (canary test)</li>
+<li class="task done"><span class="box">✓</span>Provider-agnostic <code>Model</code> port; one managed provider adapter</li>
+<li class="task done"><span class="box">✓</span>Prompts loaded from the release bundle only</li>
+<li class="task done"><span class="box">✓</span>No secret or raw credential can be placed in a prompt (canary test)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Port and adapter</li>
-<li class="task"><span class="box"></span>Prompt loader</li>
-<li class="task"><span class="box"></span>Canary test</li>
-<li class="task"><span class="box"></span>Token and cost metering</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-07</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Port and adapter</li>
+<li class="task done"><span class="box">✓</span>Prompt loader</li>
+<li class="task done"><span class="box">✓</span>Canary test</li>
+<li class="task done"><span class="box">✓</span>Token and cost metering</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-07</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S3.2): <code>ports.Model</code> and <code>internal/core/gateway</code>. The gateway refuses any request containing a registered secret (in the system prompt, a message, or split across them) with <code>EPERM secret_in_prompt</code> before anything is sent, pins the release's model id, retries rate limits with backoff only within the deadline, and meters <code>sb_model_tokens_total</code>. Four adapters under <code>internal/adapters/model/</code> (openaicompat, anthropic, groq, openrouter; OpenRouter fallback routing off) pass one contract test against the recorded fake <code>modeltest</code>. Prompts come only from the embedded set in <code>internal/core/prompts</code>, each with its SHA-256 for the release bundle (SB-503). <code>TestLAW07_NoSecretInPrompts</code> is green, and a mutation that calls the provider without the gateway is caught. Real-provider calls need keys and are not part of CI.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E04-retrieval-answers/SB-305-model-gateway-adapter.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

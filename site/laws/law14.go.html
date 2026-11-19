@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>law14.go · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/corpus/injection.json.html">injection.json</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law07.go.html">law07.go</a><a href="../laws/law09.go.html">law09.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law13.go.html">law13.go</a><a class="current" href="../laws/law14.go.html">law14.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/system_ask.go.html">system_ask.go</a><a href="../laws/system_prompt.go.html">system_prompt.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / laws</div><h1 id="law14go">law14.go</h1>
+<pre><code class="language-go">package laws
+
+import (
+    &quot;encoding/json&quot;
+    &quot;fmt&quot;
+    &quot;math/rand&quot;
+    &quot;sort&quot;
+
+    &quot;example.com/second-brain/internal/core/answer&quot;
+    &quot;example.com/second-brain/internal/core/ports&quot;
+)
+
+// LAW-14 (SB-304): every claim is cited or labelled uncited, by code. Whatever the model
+// returns (valid labels, made-up labels, labels of refused chunks, garbage), each claim
+// that comes out either cites only chunks from this answer's allowed context or is
+// marked uncited with no citations. LAW-01 follows: no citation outside the context.
+
+// ComposedClaim is one claim as the composer emits it.
+type ComposedClaim struct {
+    Text    string
+    Cites   []string // cites (kind:id@version)
+    Uncited bool
+}
+
+// Composer turns raw model output into claims, given the allowed context: label -&gt; cite.
+type Composer func(raw string, context map[string]string) ([]ComposedClaim, error)
+
+// NewComposer builds the system under test: answer.Compose (SB-304).
+var NewComposer = func() Composer {
+    return func(raw string, labels map[string]string) ([]ComposedClaim, error) {
+        var order []string
+        for l := range labels {
+            order = append(order, l)
+        }
+        sort.Strings(order)
+        ctx := answer.Context{Labels: map[string]ports.Chunk{}}
+        for _, l := range order {
+            ch := ports.Chunk{ID: &quot;chk_&quot; + l, Cite: labels[l]}
+            ctx.Labels[l] = ch
+            ctx.Order = append(ctx.Order, l)
+        }
+        res := answer.Compose(raw, ctx, nil)
+        out := make([]ComposedClaim, len(res.Claims))
+        for i, c := range res.Claims {
+            out[i] = ComposedClaim{Text: c.Text, Uncited: c.Uncited}
+            for _, ci := range c.Cites {
+                out[i].Cites = append(out[i].Cites, ci.Cite)
+            }
+        }
+        return out, nil
+    }
+}
+
+func law14(r *rand.Rand, compose Composer) error {
+    ctx := map[string]string{}
+    for i := 1; i &lt;= 1+r.Intn(5); i++ {
+        ctx[fmt.Sprintf(&quot;C%d&quot;, i)] = fmt.Sprintf(&quot;docs:d%d@%d&quot;, i, 1+r.Intn(9))
+    }
+    allowed := map[string]bool{}
+    for _, c := range ctx {
+        allowed[c] = true
+    }
+    var raw string
+    if r.Intn(6) == 0 {
+        raw = []string{&quot;not json at all&quot;, `{&quot;claims&quot;: &quot;nope&quot;}`, `[1,2,3]`, ``}[r.Intn(4)]
+    } else {
+        type claim struct {
+            Text  string   `json:&quot;text&quot;`
+            Cites []string `json:&quot;cites&quot;`
+        }
+        var cs []claim
+        for i := 0; i &lt; 1+r.Intn(5); i++ {
+            var labels []string
+            for j := 0; j &lt; r.Intn(4); j++ {
+                switch r.Intn(4) {
+                case 0:
+                    labels = append(labels, fmt.Sprintf(&quot;C%d&quot;, 50+r.Intn(5))) // not in context
+                case 1:
+                    labels = append(labels, &quot;docs:secret@1&quot;) // a raw cite the model made up
+                default:
+                    labels = append(labels, fmt.Sprintf(&quot;C%d&quot;, 1+r.Intn(len(ctx))))
+                }
+            }
+            cs = append(cs, claim{Text: fmt.Sprintf(&quot;claim %d&quot;, i), Cites: labels})
+        }
+        b, _ := json.Marshal(map[string]any{&quot;claims&quot;: cs})
+        raw = string(b)
+    }
+    out, err := compose(raw, ctx)
+    if err != nil {
+        return err
+    }
+    if len(out) == 0 {
+        return fmt.Errorf(&quot;no claims from %q&quot;, raw)
+    }
+    for _, c := range out {
+        switch {
+        case c.Uncited &amp;&amp; len(c.Cites) &gt; 0:
+            return fmt.Errorf(&quot;claim %q is uncited but cites %v&quot;, c.Text, c.Cites)
+        case !c.Uncited &amp;&amp; len(c.Cites) == 0:
+            return fmt.Errorf(&quot;claim %q has no citation and isn't labelled uncited (raw %q)&quot;, c.Text, raw)
+        }
+        for _, cite := range c.Cites {
+            if !allowed[cite] {
+                return fmt.Errorf(&quot;claim %q cites %s, which wasn't in the allowed context (raw %q)&quot;, c.Text, cite, raw)
+            }
+        }
+    }
+    return nil
+}
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/law14.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>
