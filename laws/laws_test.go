@@ -252,3 +252,15 @@ func TestLAW17_AccessCheckFindsEveryUnlistedPath(t *testing.T) {
 		return law17Access(r, w)
 	})
 }
+
+func TestLAW06_TenantAccountPullsOnlySignedGatedBuilds(t *testing.T) {
+	Check(t, "LAW-06", runs, func(r *rand.Rand) error {
+		w, done := NewPullReleaseWorld()
+		defer done()
+		return law06(r, w)
+	})
+}
+
+func TestLAW08_TenantCustodyCellsStayOneBehind(t *testing.T) {
+	Check(t, "LAW-08", runs, func(r *rand.Rand) error { return law08(r, NewTenantCustodyRolloutWorld(stableTenants, testingTenants)) })
+}

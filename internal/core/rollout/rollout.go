@@ -5,6 +5,7 @@ package rollout
 
 import (
 	"errors"
+	"example.com/second-brain/internal/core/cell"
 	"fmt"
 	"sort"
 	"time"
@@ -39,6 +40,9 @@ type Tenant struct {
 	Ring     int     `json:"ring"` // 0 internal, 1 friendly testing, 2 stable
 	Running  string  `json:"running"`
 	Draining bool    `json:"draining"`
+	// Custody is the cell's custody (cell constants; "" is factory). A tenant-custody cell
+	// pulls like any other and counts in every guard (SB-707).
+	Custody string `json:"custody,omitempty"`
 }
 
 // State is the controller's whole state (DIR/releases/state.json for a local control plane).
@@ -47,7 +51,10 @@ type State struct {
 	Tenants    map[string]*Tenant  `json:"tenants"`
 	Stable     string              `json:"stable"`
 	PrevStable string              `json:"prev_stable"`
-	next       int
+	// Detached are cells that left the train (sb-factory(7)): no guard counts them and
+	// nothing is ever deployed to them again.
+	Detached []string `json:"detached,omitempty"`
+	next     int
 }
 
 // ErrRefused is a move the controller won't make.
@@ -120,7 +127,8 @@ func (s *State) DeployTesting(tenant, id string, now time.Time) error {
 	})
 }
 
-// Promote makes id the new stable. The promote guard: every stable tenant runs stable.
+// Promote makes id the new stable. The promote guard: every stable tenant on the train runs
+// stable, whatever its custody; only detached cells are off the train.
 func (s *State) Promote(id string, now time.Time) error {
 	r, err := s.deployable(id)
 	if err != nil {
@@ -167,6 +175,33 @@ func (s *State) Rollback() (revoked string, err error) {
 				t.Draining = true
 			}
 		}
+	})
+}
+
+// SetCustody records a cell's custody after a hand-off; the cell stays on the train.
+func (s *State) SetCustody(tenant, custody string) error {
+	t, ok := s.Tenants[tenant]
+	if !ok {
+		return refuse("%s isn't on the train", tenant)
+	}
+	if custody == cell.CustodyDetached {
+		return refuse("use Detach to take %s off the train", tenant)
+	}
+	return s.commit(func() { t.Custody = custody })
+}
+
+// Detach takes a tenant-custody cell off the train (sb-factory(7), Detach).
+func (s *State) Detach(tenant string) error {
+	t, ok := s.Tenants[tenant]
+	if !ok {
+		return refuse("%s isn't on the train", tenant)
+	}
+	if t.Custody != cell.CustodyTenant {
+		return refuse("only a tenant-custody cell detaches; %s is in %q custody", tenant, t.Custody)
+	}
+	return s.commit(func() {
+		delete(s.Tenants, tenant)
+		s.Detached = append(s.Detached, tenant)
 	})
 }
 
@@ -241,7 +276,8 @@ func (s *State) commit(move func()) error {
 }
 
 func (s *State) clone() *State {
-	c := &State{Releases: map[string]*Release{}, Tenants: map[string]*Tenant{}, Stable: s.Stable, PrevStable: s.PrevStable, next: s.next}
+	c := &State{Releases: map[string]*Release{}, Tenants: map[string]*Tenant{}, Stable: s.Stable, PrevStable: s.PrevStable, next: s.next,
+		Detached: append([]string(nil), s.Detached...)}
 	for k, v := range s.Releases {
 		vv := *v
 		c.Releases[k] = &vv

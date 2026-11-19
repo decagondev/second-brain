@@ -100,3 +100,38 @@ func TestRollbackDrill(t *testing.T) {
 		t.Fatal("rolled back past the previous stable")
 	}
 }
+
+// SB-707: a tenant-custody cell counts in the promote guard; once detached it doesn't.
+func TestTenantCustodyCellsCount(t *testing.T) {
+	s := world()
+	if err := s.Detach("gamma-parts"); !errors.Is(err, ErrRefused) {
+		t.Fatalf("a factory cell detached: %v", err)
+	}
+	if err := s.SetCustody("gamma-parts", "tenant"); err != nil {
+		t.Fatal(err)
+	}
+	_ = s.Register("rel_b", true)
+	_ = s.DeployTesting("internal", "rel_b", t0)
+	_ = s.DeployTesting("beta-freight", "rel_b", t0)
+	_ = s.Promote("rel_b", t0.Add(50*time.Hour))
+	_ = s.Register("rel_c", true)
+	_ = s.DeployTesting("internal", "rel_c", t0)
+	_ = s.DeployTesting("beta-freight", "rel_c", t0)
+	_ = s.DeployStable("acme-logistics") // gamma-parts, in its own account, hasn't pulled
+	err := s.Promote("rel_c", t0.Add(100*time.Hour))
+	if !errors.Is(err, ErrRefused) || !strings.Contains(err.Error(), "gamma-parts") {
+		t.Fatalf("the guard ignored a tenant-custody cell: %v", err)
+	}
+	if err := s.Detach("gamma-parts"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Promote("rel_c", t0.Add(100*time.Hour)); err != nil {
+		t.Fatalf("a detached cell still blocks: %v", err)
+	}
+	if err := s.DeployStable("gamma-parts"); !errors.Is(err, ErrRefused) {
+		t.Fatal("deployed to a detached cell")
+	}
+	if len(s.Detached) != 1 || len(s.Violations()) != 0 {
+		t.Fatalf("%v %v", s.Detached, s.Violations())
+	}
+}

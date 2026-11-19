@@ -23,6 +23,10 @@ Hand-off:
 
 - [Hand-off](handoff.md): move a cell to the company's own cloud account under its own key (SB-701)
 
+Releases:
+
+- [Pausing release pulls](pause-pulls.md): a tenant-custody cell stops taking releases for a while, or detaches (SB-707)
+
 Game days:
 
 - [DR game day](dr-game-day.md): lose a cell's database, restore it inside its region, and score it (SB-613)

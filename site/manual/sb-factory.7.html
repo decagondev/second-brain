@@ -65,7 +65,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <h3 id="levels">Levels</h3>
 <ul>
 <li><strong>factory:</strong> the cell runs in the factory's cloud account under a factory-held root key. Company IT operates the manifest, approvals and kill switches; the factory operates infrastructure and releases. This is how every v1 tenant runs.</li>
-<li><strong>tenant:</strong> the cell runs in the company's own cloud account under a company-held root key. It still <strong>pulls</strong> signed releases from the factory train, so every law still holds. The factory keeps only the grants listed in the hand-off record, at minimum <em>publish releases</em>.</li>
+<li><strong>tenant:</strong> the cell runs in the company's own cloud account under a company-held root key. It still <strong>pulls</strong> signed releases from the factory train, so every law still holds (sb-release(7), Cells in a tenant's account). The factory keeps only the grants listed in the hand-off record, at minimum <em>publish releases</em>.</li>
 <li><strong>detached:</strong> the company takes an export package and leaves the train. The factory no longer guarantees anything about the cell.</li>
 </ul>
 <h3 id="hand-off">Hand-off</h3>

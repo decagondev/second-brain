@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Releases after hand-off (S7.2d: SB-707): the HTTPS release-store client with a pull token, custody and detach in the release controller, the pause-pulls runbook, and LAW-06 and LAW-08 law tests for tenant-custody cells.</li>
 <li>Access paths (S7.2c: SB-706): <code>internal/core/access</code> (Check, Watch, the wrap source), the GCP IAM source with a read-only verifier identity, <code>getIamPolicy</code> in the GCP fake, <code>sb factory access</code>, and a LAW-17 law test.</li>
 <li>The hand-off controller (S7.2b: SB-705): <code>internal/core/handoff</code>, <code>Handoff.tla</code> in code and checked against it, with hash-bound dual approval, a custody audit row before every step, cutover with a LAW-17 re-check, abort and detach. The LAW-17 and LAW-18 hand-off law tests are green.</li>
 <li>Key wraps (S7.2a: SB-704): the wrap inventory with verified re-wrap, a destroy and abort that check the kept wrap live, the audit-signing data key made at stamp time, and <code>key_wraps</code> in <code>sb factory status</code>.</li>

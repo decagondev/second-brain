@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.2d Releases after hand-off (SB-707)
+
+**Wave/slice:** W7 / S7.2d · **Author:** platform lead + Claude · **Status:** In review (a cell in a real tenant account)
+
+**What:** `internal/adapters/release/httpstore`, custody, `SetCustody` and `Detach` in `internal/core/rollout`, `laws/law06pull.go` and the tenant-custody rollout world, and `docs/runbooks/pause-pulls.md`. The manual changed first: sb-release(7) gained "Cells in a tenant's account", and sb-factory(7) links to it.
+
+**Why this way:** The factory already never reaches into a cell (cells pull, cells push attestations), so a cell in a tenant's account needs no new trust, only a read token it keeps itself. The risk is in the controller. A guard that quietly skipped cells it can't deploy to would let LAW-08 fail for exactly the tenants who took custody. So custody is explicit on each tenant, only `Detach` takes a cell off the train, and a law test with a mutation pins that down.
+
+**Learned:** Pausing pulls is the tenant's right, but it holds up everyone's promotions once the cell is more than one behind. The runbook says so plainly, and makes "a long pause becomes a detach" the rule instead of an argument.
+
+**Laws:** LAW-06 and LAW-08 extended (two law tests, one mutation caught). All law tests are green.
+
+**Next:** S7.3: detach and the export package (SB-708), billing and the model provider (SB-709), and the hand-off game day (SB-710).
+
 ## 2026-11-19 S7.2c Access paths (SB-706)
 
 **Wave/slice:** W7 / S7.2c · **Author:** platform lead + Claude · **Status:** In review (deployed cell, monthly schedule)

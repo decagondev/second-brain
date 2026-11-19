@@ -59,6 +59,14 @@ A cell **pulls** bundles from the release store over HTTPS. The factory never co
 
 A cell runs only what passed all four. There is no flag to skip one (LAW-06).
 
+### Cells in a tenant's account (SB-707)
+
+A cell in `tenant` custody (sb-factory(7)) gets releases exactly as a factory cell does: it **pulls**. Its only link to the factory's release store is a read token held in the tenant's own vault, `vault://tenants/TENANT/release-pull`, scoped to reading bundles. The factory's `publish-releases` grant lets the factory publish to its own store, and gives it no way into the tenant's account. The cell admits a bundle only after all four checks above, against the release identity it already trusts. A tampered object, an unknown release, a missing gate record or a wrong token all fail admission with `EUNSIGNED`, and the cell keeps running what it runs.
+
+The release controller holds every cell on the train with its custody. **Tenant-custody cells count in the promote guard** like any other: a stable tenant in its own account that hasn't pulled the current stable blocks promotion, so LAW-08 holds for it too. The controller learns what such a cell runs only from its signed attestations (Attestation, below), never by reaching in.
+
+A tenant may **pause pulls** by withholding the pull token. While paused, the cell falls behind, and once it is more than one behind stable, the promote guard holds every promotion until it pulls again. A pause that should last becomes a **detach** (sb-factory(7), Detach; the runbook `docs/runbooks/pause-pulls.md`). A detached cell leaves the train: the controller drops it from the guard and never deploys to it again, and LAW-06 and LAW-08 stop applying to it, as sb-factory(7) says.
+
 ### Channels
 
 Tenants choose `stable` or `testing`, never a version (ADR-0004).

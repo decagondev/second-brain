@@ -952,3 +952,15 @@ func (s skipKey) Paths(ctx context.Context, tenant string) ([]access.Path, error
 	}
 	return out, err
 }
+
+// LAW-08's check catches a promote guard that ignores cells in a tenant's account (SB-707).
+func TestSelf_LAW08TenantCustodyMutationIsCaught(t *testing.T) {
+	mutant := func() RolloutWorld {
+		w := NewTenantCustodyRolloutWorld(stableTenants, testingTenants).(*rolloutWorld)
+		w.skipTenantCustody = true
+		return w
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law08(r, mutant()) }) {
+		t.Error("LAW-08: a guard that skips tenant-custody cells was not caught")
+	}
+}

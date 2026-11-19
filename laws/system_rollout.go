@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/rollout"
 )
 
@@ -18,6 +19,20 @@ type rolloutWorld struct {
 	now time.Time
 	// noGuard is a mutation: promotion skips the promote guard.
 	noGuard bool
+	// skipTenantCustody is a mutation: the guard ignores cells in a tenant's account.
+	skipTenantCustody bool
+}
+
+// NewTenantCustodyRolloutWorld puts every other stable tenant in tenant custody (SB-707): they
+// pull from their own accounts, and the law must hold for them exactly as for the others.
+var NewTenantCustodyRolloutWorld = func(stable, testing []string) RolloutWorld {
+	w := newRolloutWorld(stable, testing, false)
+	for i, t := range stable {
+		if i%2 == 0 {
+			_ = w.s.SetCustody(t, cell.CustodyTenant)
+		}
+	}
+	return w
 }
 
 func newRolloutWorld(stable, testing []string, noGuard bool) *rolloutWorld {
@@ -43,6 +58,19 @@ func (w *rolloutWorld) Promote(id string, soaked bool) error {
 	at := w.now
 	if soaked {
 		at = at.Add(rollout.Soak + time.Hour)
+	}
+	if w.skipTenantCustody {
+		saved := map[string]string{}
+		for name, t := range w.s.Tenants {
+			if t.Channel == rollout.Stable && t.Custody == cell.CustodyTenant {
+				saved[name], t.Running = t.Running, w.s.Stable
+			}
+		}
+		err := w.s.Promote(id, at)
+		for name, r := range saved {
+			w.s.Tenants[name].Running = r
+		}
+		return err
 	}
 	if w.noGuard {
 		// The mutation: make every stable tenant look current just for the check.

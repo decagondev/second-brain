@@ -45,7 +45,7 @@ Custody is **not** a manifest field. A manifest containing `custody:`, `placemen
 ### Levels
 
 - **factory:** the cell runs in the factory's cloud account under a factory-held root key. Company IT operates the manifest, approvals and kill switches; the factory operates infrastructure and releases. This is how every v1 tenant runs.
-- **tenant:** the cell runs in the company's own cloud account under a company-held root key. It still **pulls** signed releases from the factory train, so every law still holds. The factory keeps only the grants listed in the hand-off record, at minimum *publish releases*.
+- **tenant:** the cell runs in the company's own cloud account under a company-held root key. It still **pulls** signed releases from the factory train, so every law still holds (sb-release(7), Cells in a tenant's account). The factory keeps only the grants listed in the hand-off record, at minimum *publish releases*.
 - **detached:** the company takes an export package and leaves the train. The factory no longer guarantees anything about the cell.
 
 ### Hand-off

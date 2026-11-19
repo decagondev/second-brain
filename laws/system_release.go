@@ -28,6 +28,8 @@ type releaseWorld struct {
 	trusted release.Verifier
 	// lax is a mutation: the cell checks the signature but not the gate record.
 	lax bool
+	// pull, when set, is how the cell reads the store: over HTTPS from a tenant account (SB-707).
+	pull release.Store
 }
 
 func newReleaseWorld(lax bool) *releaseWorld {
@@ -177,6 +179,10 @@ func (w *releaseWorld) Admit(id, tamper string) (bool, error) {
 		_ = json.Unmarshal(raw, &s)
 		return m.Check() == nil && w.trusted.Verify(context.Background(), d, s) == nil, nil
 	}
-	_, _, err := release.Admit(context.Background(), w.store, id, w.trusted, []string{"sb"})
+	var st release.Store = w.store
+	if w.pull != nil {
+		st = w.pull
+	}
+	_, _, err := release.Admit(context.Background(), st, id, w.trusted, []string{"sb"})
 	return err == nil, nil
 }
