@@ -54,6 +54,14 @@ type Bus struct {
 	Notify func(ctx context.Context, n Notice)
 	// IsAuditor says whether a scope may read every action; nil means nobody.
 	IsAuditor func(s tenancy.Scope) bool
+	// Receipts is the idempotency store: receipts by idempotency key (sb-approvals(7)).
+	Receipts Receipts
+}
+
+// Receipts stores every receipt under its idempotency key, so nothing runs twice.
+type Receipts interface {
+	Get(ctx context.Context, tenant, key string) (receipt string, found bool, err error)
+	Put(ctx context.Context, tenant, key, receipt string) error
 }
 
 // Notice is what a notification carries: ids, never the payload (sb-actions(3)).
@@ -395,9 +403,19 @@ func (b *Bus) Execute(ctx context.Context, id string) (approvals.Action, error) 
 func (b *Bus) act(ctx context.Context, a approvals.Action, tool Tool, key string) (approvals.Action, error) {
 	conn, ok := b.Connectors[tool.Connector]
 	state, reason, receipt := approvals.DidNotRun, "", ""
-	if !ok {
+	unconfirmed := false
+	prior, seen, rerr := "", false, error(nil)
+	if b.Receipts != nil {
+		prior, seen, rerr = b.Receipts.Get(ctx, b.Tenant, key)
+	}
+	switch {
+	case rerr != nil:
+		reason, unconfirmed = "idempotency store unavailable: "+rerr.Error(), false // nothing was sent
+	case seen:
+		state, receipt, reason = approvals.Ran, prior, "receipt (already ran under this key)"
+	case !ok:
 		reason = "ENOTSUP: no connector " + tool.Connector
-	} else {
+	default:
 		to := b.ActTimeout
 		if to == 0 {
 			to = 30 * time.Second
@@ -407,11 +425,14 @@ func (b *Bus) act(ctx context.Context, a approvals.Action, tool Tool, key string
 		cancel()
 		switch {
 		case err != nil:
-			reason = "act failed: " + err.Error()
+			reason, unconfirmed = "act failed: "+err.Error(), true // the target may have it
 		case rc.TargetID == "":
 			reason = "ENORECEIPT: the target returned no receipt"
 		default:
 			state, receipt, reason = approvals.Ran, rc.TargetID, "receipt"
+			if b.Receipts != nil {
+				_ = b.Receipts.Put(ctx, b.Tenant, key, receipt)
+			}
 		}
 	}
 	reason = clean(reason)
@@ -419,7 +440,7 @@ func (b *Bus) act(ctx context.Context, a approvals.Action, tool Tool, key string
 	_, _ = b.Audit.Write(ctx, audit.Event{Actor: "sys_executor", Kind: "tool_call", Subject: a.ID, State: string(state),
 		Approval: a.Approval, PayloadSHA256: a.PayloadSHA256, Receipt: receipt, Reason: reason})
 	final, err := b.Actions.Move(ctx, b.Tenant, a.ID, approvals.Executing, func(x *approvals.Action) error {
-		x.State, x.Receipt, x.Reason = state, receipt, reason
+		x.State, x.Receipt, x.Reason, x.Unconfirmed, x.FinishedAt = state, receipt, reason, unconfirmed, b.Now().UTC()
 		return nil
 	})
 	if err == nil && final.Workflow != "" {

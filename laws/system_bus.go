@@ -85,7 +85,8 @@ func newBus(tenant string, act func(ports.Action, ports.IdempotencyKey) string, 
 	}
 	log := &audit.Log{Tenant: tenant, Release: func() string { return "rel_law" }, Store: tapStore{inner: auditmem.New(), onExec: onExec, drop: drop}, Now: clock}
 	b := &toolbus.Bus{Tenant: tenant, Tools: busTools, Kill: checker, Policy: policy.Kernel{Engine: askPolicies, Recorder: log},
-		Audit: log, Actions: actmem.New(), Connectors: map[string]ports.Connector{"tickets": actConnector{f: act}}, Now: clock, NewID: newID}
+		Audit: log, Actions: actmem.New(), Connectors: map[string]ports.Connector{"tickets": actConnector{f: act}}, Now: clock, NewID: newID,
+		Receipts: actmem.NewReceipts()}
 	return &busEnv{bus: b, tenant: tenant}, nil
 }
 

@@ -72,6 +72,8 @@ type Action struct {
 	Receipt       string          `json:"receipt,omitempty"`
 	Reason        string          `json:"reason,omitempty"`
 	PolicyReason  string          `json:"policy_reason,omitempty"`
+	Unconfirmed   bool            `json:"unconfirmed,omitempty"` // Act failed or timed out: the target may have it
+	FinishedAt    time.Time       `json:"finished_at,omitempty"`
 }
 
 // Store keeps actions. Move changes an action's state only if it is still in from (a
@@ -80,6 +82,8 @@ type Store interface {
 	Put(ctx context.Context, a Action) error
 	Get(ctx context.Context, tenant, id string) (Action, bool, error)
 	Move(ctx context.Context, tenant, id string, from State, change func(*Action) error) (Action, error)
+	// Unconfirmed lists the tenant's DidNotRun actions still marked unconfirmed.
+	Unconfirmed(ctx context.Context, tenant string) ([]Action, error)
 }
 
 // Errors (sb-actions(3)).

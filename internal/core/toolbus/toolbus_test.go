@@ -81,6 +81,18 @@ func (s *store) Get(_ context.Context, _, id string) (approvals.Action, bool, er
 	a, ok := s.m[id]
 	return a, ok, nil
 }
+func (s *store) Unconfirmed(_ context.Context, _ string) ([]approvals.Action, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []approvals.Action
+	for _, a := range s.m {
+		if a.State == approvals.DidNotRun && a.Unconfirmed {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+
 func (s *store) Move(_ context.Context, _, id string, from approvals.State, f func(*approvals.Action) error) (approvals.Action, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -245,5 +257,89 @@ func TestApproveKillRecheck(t *testing.T) {
 	f.kill.killed = true
 	if _, err := f.bus.Approve(ctx, sc(t, "usr_erin"), a.ID, a.PayloadSHA256, ""); !errors.Is(err, kill.ErrKilled) || len(f.tgt.got) != 0 {
 		t.Fatalf("approve while killed: %v", err)
+	}
+}
+
+type receipts map[string]string
+
+func (r receipts) Get(_ context.Context, _, k string) (string, bool, error) {
+	v, ok := r[k]
+	return v, ok, nil
+}
+func (r receipts) Put(_ context.Context, _, k, v string) error { r[k] = v; return nil }
+
+// finder is a target that remembers what it did by key and can be asked.
+type finder struct {
+	*target
+	done map[ports.IdempotencyKey]string
+}
+
+func (f *finder) Find(_ context.Context, k ports.IdempotencyKey) (ports.Receipt, bool, error) {
+	v, ok := f.done[k]
+	return ports.Receipt{TargetID: v}, ok, nil
+}
+
+func TestIdempotencyAndReconcile(t *testing.T) {
+	f := newFixture()
+	ctx := context.Background()
+	rs := receipts{}
+	f.bus.Receipts = rs
+	fd := &finder{target: f.tgt, done: map[ports.IdempotencyKey]string{}}
+	f.bus.Connectors["tickets"] = fd
+
+	// A timeout: the target did it, but the bus never heard back.
+	f.tgt.err = errors.New("context deadline exceeded")
+	a, _ := f.bus.Invoke(ctx, sc(t, "usr_dana"), Call{Tool: "update", Target: "tickets:OPS-7", Payload: payload})
+	a, err := f.bus.Approve(ctx, sc(t, "usr_erin"), a.ID, a.PayloadSHA256, "")
+	if err != nil || a.State != approvals.DidNotRun || !a.Unconfirmed {
+		t.Fatalf("timeout: %+v %v", a, err)
+	}
+	acted := len(f.tgt.got)
+	res, err := f.bus.Reconcile(ctx)
+	if err != nil || res.Checked != 1 || res.Found != 0 {
+		t.Fatalf("nothing at the target yet: %+v %v", res, err)
+	}
+	fd.done[ports.IdempotencyKey(a.Approval)] = "jira:comment/77"
+	res, _ = f.bus.Reconcile(ctx)
+	got, _, _ := f.bus.Actions.Get(ctx, tenant, a.ID)
+	if res.Found != 1 || got.Receipt != "jira:comment/77" || got.Unconfirmed || got.Reason != "reconciled" || len(f.tgt.got) != acted {
+		t.Fatalf("reconcile: %+v %+v (acted %d -> %d)", res, got, acted, len(f.tgt.got))
+	}
+	if rs[a.Approval] != "jira:comment/77" {
+		t.Fatal("reconciled receipt not stored under its key")
+	}
+	last := f.aud.rows[len(f.aud.rows)-1]
+	if last.State != "Ran" || last.Receipt != "jira:comment/77" || last.Reason != "reconciled" {
+		t.Fatalf("audit %+v", last)
+	}
+
+	// A no-receipt answer is confirmed: nothing to reconcile.
+	f.tgt.err, f.tgt.receipt = nil, ""
+	b, _ := f.bus.Invoke(ctx, sc(t, "usr_dana"), Call{Tool: "update", Target: "tickets:OPS-8", Payload: payload})
+	b, _ = f.bus.Approve(ctx, sc(t, "usr_erin"), b.ID, b.PayloadSHA256, "")
+	if b.Unconfirmed {
+		t.Fatal("a no-receipt answer marked unconfirmed")
+	}
+
+	// A key that already has a receipt never calls Act again.
+	f.tgt.receipt = "jira:comment/88"
+	rs["apr_dup"] = "jira:comment/1"
+	before := len(f.tgt.got)
+	c := approvals.Action{ID: "tc_dup", Tenant: tenant, Tool: "update", Target: "tickets:OPS-9", State: approvals.Executing, Approval: "apr_dup"}
+	_ = f.bus.Actions.Put(ctx, c)
+	out, err := f.bus.act(ctx, c, f.bus.Tools["update"], "apr_dup")
+	if err != nil || out.State != approvals.Ran || out.Receipt != "jira:comment/1" || len(f.tgt.got) != before {
+		t.Fatalf("duplicate key: %+v %v", out, err)
+	}
+
+	// After 24 hours with nothing found, it stops.
+	f.tgt.err = errors.New("timeout")
+	d, _ := f.bus.Invoke(ctx, sc(t, "usr_dana"), Call{Tool: "update", Target: "tickets:OPS-10", Payload: payload})
+	d, _ = f.bus.Approve(ctx, sc(t, "usr_erin"), d.ID, d.PayloadSHA256, "")
+	*f.clock = f.clock.Add(ReconcileWindow)
+	res, _ = f.bus.Reconcile(ctx)
+	got, _, _ = f.bus.Actions.Get(ctx, tenant, d.ID)
+	if res.GaveUp != 1 || got.Unconfirmed || got.Reason != "not found after 24h" {
+		t.Fatalf("give up: %+v %+v", res, got)
 	}
 }

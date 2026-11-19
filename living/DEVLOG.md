@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.3a Idempotency store and reconciler (SB-408)
+
+**Wave/slice:** W4 / S4.3a · **Author:** platform lead + Claude · **Status:** In review (Postgres stores, real `Find`)
+
+**What:** `toolbus.Receipts` and its memory store, `unconfirmed` outcomes, and `Bus.Reconcile` with `RunReconciler`. The manual changed first: sb-approvals(7) now states the idempotency store, what "unconfirmed" means, and the reconciler's schedule and limits.
+
+**Why this way:** The receipt store is keyed by the approval id, the same key the target sees. So the bus's own state, the receipt store and the target all agree on "this ran once", and losing one of them can't cause a second run. Only errors and timeouts are unconfirmed: a target that answered without a receipt has told us what happened. The reconciled action stays `DidNotRun`, because that state is terminal in `Approvals.tla`. The receipt rides alongside it, and the audit log gets the `Ran` row that LAW-05 needs. That keeps the model and the code in step without a new transition.
+
+**Learned:** It was tempting to let the reconciler move the action to `Ran`. That would be a transition the model doesn't have, and proving it safe would mean changing the TLA+ spec. Recording the receipt without the state change keeps every proof as it is.
+
+**Laws:** all green. LAW-05 also holds across reconciliation, because only a found receipt makes a `Ran` row.
+
+**Next:** S4.3b, the `ticket-update` workflow end to end: Linear writes, the manifest's eval gate, and draft to receipt (SB-410).
+
 ## 2026-11-19 S4.2b The actions API and the approver view (SB-407)
 
 **Wave/slice:** W4 / S4.2b · **Author:** platform lead + Claude · **Status:** In review (notification adapters, human WCAG pass)

@@ -57,6 +57,12 @@ These names are identical in code, in the API and in [`proofs/tla/Approvals.tla`
 
 If `Act` times out, the action is `DidNotRun` and the user is told the result couldn't be confirmed. A reconciler asks the target by idempotency key. If it finds the change, it appends a `Ran` audit row with the receipt and notifies the user. It never re-executes.
 
+Exactly (SB-408):
+
+- **Idempotency store.** Every receipt is stored under its approval id. Before `Act`, the executor looks the approval id up. If there's a receipt, the action is `Ran` with that receipt and `Act` isn't called again. Losing the action's state can therefore never run it twice.
+- **Unconfirmed.** An `Act` that returns an error or times out leaves the action `DidNotRun` with `unconfirmed: true`. A target that answered with no receipt is `DidNotRun` and confirmed: nothing to reconcile.
+- **Reconciling.** Every 5 minutes for 24 hours, the reconciler asks the connector (`Find` by idempotency key) about each unconfirmed action. If the target has the change, the reconciler writes a `Ran` audit row with the receipt, stores the receipt, records it on the action (`receipt`, `reason: reconciled`, `unconfirmed: false`) and notifies. The action's state stays `DidNotRun`, because `DidNotRun` is terminal in the model, so the API reports the receipt alongside it. After 24 hours with nothing found, it records `reason: not found after 24h` and stops. A connector without `Find` leaves the action unconfirmed for a person to check.
+
 ## LAWS
 
 [LAW-04](sb-laws.7.md#law-04), [LAW-05](sb-laws.7.md#law-05), [LAW-10](sb-laws.7.md#law-10), [LAW-15](sb-laws.7.md#law-15).

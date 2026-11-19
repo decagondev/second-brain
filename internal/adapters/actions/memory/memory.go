@@ -5,6 +5,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"example.com/second-brain/internal/core/approvals"
@@ -60,4 +61,45 @@ func (s *Store) Move(_ context.Context, tenant, id string, from approvals.State,
 	}
 	s.m[key(tenant, id)] = a
 	return a, nil
+}
+
+// Unconfirmed implements approvals.Store.
+func (s *Store) Unconfirmed(_ context.Context, tenant string) ([]approvals.Action, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []approvals.Action
+	for _, a := range s.m {
+		if a.Tenant == tenant && a.State == approvals.DidNotRun && a.Unconfirmed {
+			out = append(out, a)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+// Receipts is an in-process idempotency store (toolbus.Receipts).
+type Receipts struct {
+	mu sync.Mutex
+	m  map[string]string
+}
+
+// NewReceipts returns an empty receipt store.
+func NewReceipts() *Receipts { return &Receipts{m: map[string]string{}} }
+
+// Get implements toolbus.Receipts.
+func (r *Receipts) Get(_ context.Context, tenant, key string) (string, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	v, ok := r.m[tenant+"/"+key]
+	return v, ok, nil
+}
+
+// Put implements toolbus.Receipts. A key keeps its first receipt.
+func (r *Receipts) Put(_ context.Context, tenant, key, receipt string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.m[tenant+"/"+key]; !ok {
+		r.m[tenant+"/"+key] = receipt
+	}
+	return nil
 }

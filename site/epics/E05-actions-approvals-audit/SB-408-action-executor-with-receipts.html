@@ -60,22 +60,23 @@
 <p>'Ran' means the target said so.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Action is <code>Ran</code> only with a receipt from <code>act</code>; otherwise <code>DidNotRun</code> with the reason</li>
-<li class="task"><span class="box"></span>Idempotency key per approval id prevents double execution</li>
+<li class="task done"><span class="box">✓</span>Action is <code>Ran</code> only with a receipt from <code>act</code>; otherwise <code>DidNotRun</code> with the reason</li>
+<li class="task done"><span class="box">✓</span>Idempotency key per approval id prevents double execution</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Executor</li>
-<li class="task"><span class="box"></span>Receipt validation</li>
-<li class="task"><span class="box"></span>Idempotency store</li>
-<li class="task"><span class="box"></span>LAW-05 green with no-receipt mock</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-05</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Executor</li>
+<li class="task done"><span class="box">✓</span>Receipt validation</li>
+<li class="task done"><span class="box">✓</span>Idempotency store</li>
+<li class="task done"><span class="box">✓</span>LAW-05 green with no-receipt mock</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-05</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
 <p>2026-11-19 (slice S4.2a, built with the bus): <code>Bus.Execute</code> re-checks the kill switch, re-hashes the payload against the approved hash, writes the <code>Executing</code> audit row, and calls <code>Act</code> with the approval id as idempotency key under a 30-second timeout. Only a non-empty receipt makes <code>Ran</code>. A missing receipt is <code>DidNotRun</code> (<code>ENORECEIPT</code>), and an error is <code>DidNotRun</code>, with control characters stripped from the reason before it is audited. <code>TestLAW05_RanMeansReceipt</code>, red since W0, is green on the real bus.</p>
-<p><strong>Left:</strong> the reconciler for timeouts with unknown effect (it asks the target by idempotency key, never re-executes), then the remaining checkboxes.</p>
+<p>2026-11-19 (slice S4.3a): the idempotency store (<code>toolbus.Receipts</code>; memory adapter) keeps every receipt under its key, and the executor checks it before <code>Act</code>, so a key that already ran returns its receipt without a second call. An <code>Act</code> error or timeout leaves the action <code>DidNotRun</code> and <code>unconfirmed</code>, while a no-receipt answer is confirmed. <code>Bus.Reconcile</code> (every 5 minutes through <code>RunReconciler</code>) asks connectors that implement <code>toolbus.Finder</code>. When it finds the change, it writes a <code>Ran</code> audit row with the receipt (actor <code>sys_reconciler</code>), stores the receipt, and records it on the action, without ever calling <code>Act</code>. After 24 hours with nothing found it gives up. The manual gained the exact rules in sb-approvals(7).</p>
+<p><strong>Left:</strong> Postgres stores for actions and receipts (cell runtime), and <code>Find</code> on real connectors that write (SB-410's Linear write).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E05-actions-approvals-audit/SB-408-action-executor-with-receipts.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
