@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Department spaces, specified (S8.1: SB-801 to SB-803): `sb-spaces(7)`, `sb-space(5)` and `sb-departments(7)`; spaces, labels and barriers in sb-permissions(7) and sb-policy(5); `ESPACE`, `ELABEL` and `EBARRIER`; a "choose your spaces" onboarding step; and `sb tenant check` refusing `spaces:` and `barriers:` by name until SB-1001.
 - Hand-off game day (S7.3c: SB-710): the day's checks in sb-factory(7), its runbook, and `tests/handoff`, a full rehearsal of hand-off and detach in `make check`. **W7 built.**
 - Model billing (S7.3b: SB-709): monthly cost statements (`internal/core/costs`, `GET /v1/admin/costs` as JSON or CSV) and a tenant-held provider key, read from the vault at every call.
 - Detach and export (S7.3a: SB-708): the export package writer and offline verifier, `sb factory verify-export`, the registry's custody history and tombstone, and a LAW-11 law test over tampered packages.

@@ -228,3 +228,14 @@ func TestSchemaPublished(t *testing.T) {
 		t.Fatal("examples/tenants/tenant.schema.json is stale; run: go test ./internal/core/manifest -run TestSchemaPublished -update")
 	}
 }
+
+// SB-801: spaces and barriers are specified (sb-space(5)) but not built; a manifest with
+// either is refused by name until SB-1001.
+func TestPlannedFieldsAreRefused(t *testing.T) {
+	for _, extra := range []string{"spaces:\n  eng: { members: [group:eng], scope: { docs: [\"/Eng/**\"] } }\n", "barriers:\n  - [group:a, group:b]\n"} {
+		_, ds := Check([]byte(valid + extra))
+		if len(ds) != 1 || !strings.Contains(ds[0].Msg, "not built yet (SB-1001)") || ds[0].Line != 7 {
+			t.Errorf("%q: %v", extra, ds)
+		}
+	}
+}

@@ -59,6 +59,35 @@ The factory and the tenant owner are roles, never superusers. Both are Cedar pol
 - **Custody records always name their tenant.** The kernel normally fills an empty resource `tenant` from the caller's scope. For `CellCustody` it doesn't: an empty `tenant` is `Unknown`, which refuses. Otherwise a tenant with its own group called `sb-factory-operators` could act on a custody record it built itself.
 - **Factory actions are control-plane calls.** They go through the policy kernel, so every decision is recorded before it is returned (LAW-04), and each step of a hand-off is also a `kind: custody` audit row (sb-factory(1)).
 
+### Spaces, labels and barriers (SB-802)
+
+The schema for spaces (schema v2, built in SB-1004) adds three entities. This is the draft that ticket builds:
+
+| Entity | Attributes |
+|---|---|
+| `Space` | `tenant`, `name`, `label_default`, `members` (set of `Group`), `stewards` (set of `Group`) |
+| `Label` | one of `public`, `internal`, `confidential`, `restricted`, as an ordered value |
+| `Barrier` | `tenant`, `a` (`Group`), `b` (`Group`) |
+
+`Chunk` gains `label` and `spaces` (the set of `Space` that hold its document), and the `read` request gains `context.space` (the space asked in, or `company`).
+
+```text
+// Draft (SB-1004), in Cedar: a space can only forbid. A text block, because the regression
+// test validates every cedar block against today's schema, and v2 isn't it yet. These sit beside the base read permit,
+// which stays the only permit on read; the source's live ACL is still checked after.
+forbid (principal, action == Action::"read", resource is Chunk)
+when { context.space != "company" && !(resource.spaces.contains(context.space_entity)) };
+
+forbid (principal, action == Action::"read", resource is Chunk)
+when { (resource.label == "confidential" || resource.label == "restricted") && !(principal.member_of_holder) };
+```
+
+The rules every space policy is held to:
+
+1. **A space policy can only forbid.** No policy file may `permit` `read` except the base permit. Space and label rules are `forbid`s, so a space can never make a chunk usable that the base policy and the source don't allow (LAW-19). `tools/check/policy.py` will enforce this for every space policy, base and tenant (SB-1004).
+2. **Barriers are forbids generated from the manifest**, one per barrier and direction, never written by hand.
+3. **A missing attribute is `Unknown`, which refuses.** A chunk with no `label` is evaluated as `restricted`, and a chunk with no `spaces` is held by no space.
+
 ### Rules CI enforces
 
 1. Every file validates against the schema.

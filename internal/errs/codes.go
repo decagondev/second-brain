@@ -9,6 +9,9 @@ const (
 	EAUTH       Code = "EAUTH"
 	EPERM       Code = "EPERM"
 	ETENANT     Code = "ETENANT"
+	ESPACE      Code = "ESPACE"
+	ELABEL      Code = "ELABEL"
+	EBARRIER    Code = "EBARRIER"
 	ENOTSUP     Code = "ENOTSUP"
 	ENOTIMPL    Code = "ENOTIMPL"
 	EMANIFEST   Code = "EMANIFEST"
@@ -30,6 +33,9 @@ var registry = map[Code]entry{
 	EAUTH:       {http: 401, exit: 3, meaning: "Not signed in, or session revoked", remedy: "Sign in again"},
 	EPERM:       {http: 403, exit: 3, meaning: "Refused: policy deny, source deny, unknown, or missing source", remedy: "Ask the owner for access; if frequent, check the connector's unknown rate"},
 	ETENANT:     {http: 403, exit: 3, meaning: "Request crossed a tenant boundary", remedy: "Use the cell for your own tenant"},
+	ESPACE:      {http: 403, exit: 3, meaning: "Asked in a space the asker isn't a member of", remedy: "Ask the space's stewards for membership, or ask company-wide"},
+	ELABEL:      {http: 403, exit: 3, meaning: "A chunk's label isn't allowed for this asker (a refusal reason, never shown with the chunk)", remedy: "Nothing to do as a user; operators see it in refusals"},
+	EBARRIER:    {http: 403, exit: 3, meaning: "An information barrier separates the asker from a chunk's space (a refusal reason)", remedy: "Nothing to do as a user; barriers are set in the manifest"},
 	ENOTSUP:     {http: 501, exit: 2, meaning: "Operation not supported by this connector", remedy: "Choose a workflow its connector supports"},
 	ENOTIMPL:    {http: 501, exit: 2, meaning: "Command or endpoint is specified in this manual but not built in this release", remedy: "See the ticket named in the message"},
 	EMANIFEST:   {http: 422, exit: 1, meaning: "Manifest invalid", remedy: "Fix the lines reported"},

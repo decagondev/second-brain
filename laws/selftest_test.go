@@ -992,3 +992,26 @@ func TestSelf_LAW11ExportMutationIsCaught(t *testing.T) {
 		t.Error("LAW-11 (export): a digest-only verifier was not caught")
 	}
 }
+
+// LAW-16's planned-field check catches a parser that quietly drops a spaces block.
+func TestSelf_LAW16PlannedMutationIsCaught(t *testing.T) {
+	drops := func(src []byte) (manifest.Tenant, []manifest.Diag) {
+		var keep []string
+		skipping := false
+		for _, l := range strings.SplitAfter(string(src), "\n") {
+			if strings.HasPrefix(l, "spaces:") || strings.HasPrefix(l, "barriers:") {
+				skipping = true
+				continue
+			}
+			if skipping && (strings.HasPrefix(l, " ") || strings.HasPrefix(l, "-")) {
+				continue
+			}
+			skipping = false
+			keep = append(keep, l)
+		}
+		return manifest.Check([]byte(strings.Join(keep, "")))
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law16Planned(r, drops) }) {
+		t.Error("LAW-16 (planned fields): a parser that drops spaces was not caught")
+	}
+}

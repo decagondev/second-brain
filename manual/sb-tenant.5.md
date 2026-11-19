@@ -61,6 +61,8 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
+| `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). **Refused until SB-1001**, with `not built yet (SB-1001)`. Without it, the cell is one undivided brain, as today |
+| `barriers` | list of group pairs | no | none | Information barriers ([sb-space(5)](sb-space.5.md)). Refused until SB-1001, like `spaces` |
 
 ## VALIDATION RULES
 

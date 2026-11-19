@@ -268,3 +268,7 @@ func TestLAW08_TenantCustodyCellsStayOneBehind(t *testing.T) {
 func TestLAW11_ExportPackageVerifiesOffline(t *testing.T) {
 	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11Export(r, NewExportWorld(t.TempDir())) })
 }
+
+func TestLAW16_UnbuiltFieldsAreRefused(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Planned(r, manifest.Check) })
+}

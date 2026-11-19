@@ -60,6 +60,32 @@ Allows are never reused across requests. Denies may be cached for 60 seconds.
 
 Nothing from the live check is cached between requests. `refused` counts the documents dropped in step 2.
 
+### Spaces, labels and barriers, exactly (SB-802)
+
+From W10, a cell may have department spaces ([sb-spaces(7)](sb-spaces.7.md)). The permission triple then carries the ask's space context: the space asked in (or `company` for a company-wide ask), the chunk's label, the spaces that hold its document, and the barriers between the asker's groups and theirs. Three checks join the decision, and **all three run before the source's live ACL, which stays last and stays the authority**:
+
+```mermaid
+flowchart LR
+  c["candidate chunk"] --> m{"1 member of a space<br/>that holds it?"}
+  m -- "no / unknown" --> r["refused"]
+  m -- yes --> l{"2 label allowed<br/>for this asker?"}
+  l -- "no / unknown" --> r
+  l -- yes --> b{"3 barrier between<br/>asker and holders?"}
+  b -- "yes / unknown" --> r
+  b -- no --> a{"4 source live ACL<br/>Allow, now?"}
+  a -- "Deny / Unknown" --> r
+  a -- Allow --> ok["in context, cited"]
+```
+
+1. **Membership (`ESPACE`).** For an ask in space S, the chunk must be in S's scope and the asker a member of S. Otherwise the whole ask is refused with `ESPACE` before retrieval, if the asker isn't a member of S at all. For a company-wide ask, the holders are every space whose scope covers the document. The chunk passes if the asker is a member of any holder, or if its label is `public` or `internal`.
+2. **Label (`ELABEL`).** `public` and `internal` pass for any asker who passed step 1. `confidential` and `restricted` pass only for members of a holding space (LAW-20). A missing or unknown label is `restricted`.
+3. **Barrier (`EBARRIER`).** A chunk is refused if any barrier separates a group of the asker from a member group of any space that holds it (LAW-22). Barriers are checked in both directions.
+4. **Source ACL.** Exactly as above (Retrieval and the live check). An `Allow` from steps 1 to 3 never skips it.
+
+A space policy can only **forbid**. Nothing in steps 1 to 3 can make a chunk usable that step 4 refuses (LAW-19), and a test checks that for every space and every chunk. Any `Unknown` in any step refuses (LAW-03). A cell with no spaces skips steps 1 to 3, as today.
+
+Like `EPERM`, the new codes are reasons, not messages: a refused chunk is never named to the user. `ESPACE` is returned to the asker only for an ask in a space they aren't a member of, which names the space and nothing in it. `ELABEL` and `EBARRIER` appear in the decision list of the trace and in the operators' refusal counts (sb-admin(3)).
+
 ### What users see
 
 - Refused documents are never named. The answer says how many were refused and, if all were, "I found sources but you don't have access to them."
@@ -71,7 +97,7 @@ The console's refusals view breaks refusals down by connector and reason. A conn
 
 ## LAWS
 
-[LAW-01](sb-laws.7.md#law-01), [LAW-02](sb-laws.7.md#law-02), [LAW-03](sb-laws.7.md#law-03).
+[LAW-01](sb-laws.7.md#law-01), [LAW-02](sb-laws.7.md#law-02), [LAW-03](sb-laws.7.md#law-03), and for spaces LAW-19, LAW-20 and LAW-22 ([sb-spaces(7)](sb-spaces.7.md)).
 
 ## EXAMPLES
 
@@ -86,4 +112,4 @@ answer:     "I found sources but you don't have access to them." refused: 1
 
 ## SEE ALSO
 
-[sb-policy(5)](sb-policy.5.md), [sb-connector(3)](sb-connector.3.md), [06 Retrieval and authorisation](../docs/architecture/06-retrieval-and-authorisation.md), [ADR-0002](../docs/adr/ADR-0002-source-acl-is-authority.md)
+[sb-policy(5)](sb-policy.5.md), [sb-spaces(7)](sb-spaces.7.md), [sb-connector(3)](sb-connector.3.md), [06 Retrieval and authorisation](../docs/architecture/06-retrieval-and-authorisation.md), [ADR-0002](../docs/adr/ADR-0002-source-acl-is-authority.md)

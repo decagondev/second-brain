@@ -345,3 +345,23 @@ func law16Drift(r *rand.Rand, detect DriftDetector) error {
 	}
 	return nil
 }
+
+// LAW-16 for fields that are specified but not built (SB-801): a valid manifest that also
+// declares spaces or barriers is refused, naming the ticket, and never applied without them.
+// A company must never believe a space protects what nothing enforces yet.
+func law16Planned(r *rand.Rand, check ManifestChecker) error {
+	entries := renderTenant(r, genTenant(r))
+	extra := []string{
+		"spaces:\n  people:\n    template: people\n    members: [group:people-team]\n    label: restricted\n    scope: { docs: [\"/People/**\"] }\n",
+		"barriers:\n  - [group:deal-team-orion, group:everyone]\n",
+	}[r.Intn(2)]
+	at := r.Intn(len(entries) + 1)
+	src := strings.Join(append(append(append([]string{}, entries[:at]...), extra), entries[at:]...), "")
+	_, ds := check([]byte(src))
+	for _, d := range ds {
+		if strings.Contains(d.Msg, "not built yet (SB-1001)") {
+			return nil
+		}
+	}
+	return fmt.Errorf("a manifest declaring %s was not refused with SB-1001 (errors: %v)\n%s", strings.SplitN(extra, ":", 2)[0], ds, src)
+}

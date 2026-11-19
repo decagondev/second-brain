@@ -33,11 +33,12 @@ Each phase ends with a **gate**. Don't move on until the gate passes. Every step
 
 ### Day 0: create the cell
 
-1. Write `tenant.yaml` from [the pilot example](sb-tenant.5.md#examples). → expect six required lines and no secrets in the file.
-2. `sb tenant check tenant.yaml` → expect `ok`.
-3. `sb tenant apply tenant.yaml --plan` → expect a plan with one cell, your connectors and `ask`, and nothing else.
-4. `sb tenant apply tenant.yaml` → expect `applied` in under 30 minutes.
-5. Sign in as a pilot user → expect the empty-state home page with your company name.
+1. Choose your spaces: pick the departments that need their own brain from [sb-departments(7)](sb-departments.7.md), and for each one the IdP groups that are its members and the folders and channels it covers. → expect a short list, usually 3 to 6 spaces, with People, Finance, Legal and Executive marked `restricted`. Until SB-1001 the list waits: the pilot runs as one brain, and the spaces go into the manifest when spaces ship.
+2. Write `tenant.yaml` from [the pilot example](sb-tenant.5.md#examples). → expect six required lines and no secrets in the file.
+3. `sb tenant check tenant.yaml` → expect `ok`.
+4. `sb tenant apply tenant.yaml --plan` → expect a plan with one cell, your connectors and `ask`, and nothing else.
+5. `sb tenant apply tenant.yaml` → expect `applied` in under 30 minutes.
+6. Sign in as a pilot user → expect the empty-state home page with your company name.
 
 **Gate 0:** a pilot user can sign in; a non-pilot user is refused.
 

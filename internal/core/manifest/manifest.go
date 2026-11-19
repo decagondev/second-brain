@@ -110,6 +110,10 @@ var fields = []field{
 	{"exclude", false, (*checker).exclude},
 }
 
+// Planned are top-level fields that are specified but not built yet, with their tickets.
+// Refusing them by name keeps a company from believing a space protects what it doesn't.
+var Planned = map[string]string{"spaces": "SB-1001", "barriers": "SB-1001"}
+
 const (
 	msgVersion = "field not allowed; pick a channel (stable|testing) instead (ADR-0004)"
 	msgSecret  = "field not allowed; secrets live in vault://tenants/<tenant>/connectors/<kind>"
@@ -171,6 +175,10 @@ func Check(src []byte) (Tenant, []Diag) {
 		}
 		f, ok := known[k.value]
 		if !ok {
+			if t, later := Planned[k.value]; later {
+				c.add(k, k.value, "not built yet (%s); a manifest that declares it is refused, never run without it (sb-space(5))", t)
+				continue
+			}
 			c.add(k, k.value, "unknown field; see sb-tenant(5) FIELDS")
 			continue
 		}

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-19 S8.1 Department spaces, specified (SB-801 to SB-803)
+
+**Wave/slice:** W8 / S8.1 · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** `manual/sb-spaces.7.md`, `manual/sb-space.5.md` and `manual/sb-departments.7.md`; spaces in sb-permissions(7), sb-policy(5), sb-errors(7), sb-tenant(5), sb-tenancy(7) and sb-onboarding(7); three generated error codes; `manifest.Planned`; and `law16Planned` with its self-test.
+
+**Why this way:** The pages are drafts that W10 to W12 build against, written from ADR-0020 and docs/08-department-brains.md. The order of checks puts the source's ACL last on purpose: the space checks are cheap and local, so they save ACL calls, but nothing they say can replace one. Refusing `spaces:` by name until it is built is the important behaviour change. The old "unknown field" message was already a refusal, but a named one tells an operator why, and the law test pins it, so no future parser change can quietly start dropping the block.
+
+**Learned:** Manual examples tagged `yaml run` go through `sb tenant check` when they contain `tenant:`. The space examples are therefore fragments without it, and only parse until SB-1001, when full manifests with spaces can be checked.
+
+**Laws:** LAW-16 extended (`TestLAW16_UnbuiltFieldsAreRefused`, with its mutation caught). LAW-19 to LAW-23 come in S8.2 as red tests. All law tests are green.
+
+**Next:** S8.2: the five new laws as red tests (SB-804), `Spaces.als` (SB-805), threat model v1 (SB-806) and the space-leak eval scaffold (SB-807).
+
 ## 2026-11-19 S7.3c The hand-off game day (SB-710)
 
 **Wave/slice:** W7 / S7.3c · **Author:** platform lead + Claude · **Status:** In review (the day with a friendly tenant)

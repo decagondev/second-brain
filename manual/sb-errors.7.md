@@ -29,6 +29,9 @@ There is one list of errors. `internal/errs/codes.go` is generated from the tabl
 | `EAUTH` | 401 | 3 | Not signed in, or session revoked | Sign in again |
 | `EPERM` | 403 | 3 | Refused: policy deny, source deny, **unknown**, or missing source | Ask the owner for access; if frequent, check the connector's unknown rate |
 | `ETENANT` | 403 | 3 | Request crossed a tenant boundary | Use the cell for your own tenant |
+| `ESPACE` | 403 | 3 | Asked in a space the asker isn't a member of | Ask the space's stewards for membership, or ask company-wide |
+| `ELABEL` | 403 | 3 | A chunk's label isn't allowed for this asker (a refusal reason, never shown with the chunk) | Nothing to do as a user; operators see it in refusals |
+| `EBARRIER` | 403 | 3 | An information barrier separates the asker from a chunk's space (a refusal reason) | Nothing to do as a user; barriers are set in the manifest |
 | `ENOTSUP` | 501 | 2 | Operation not supported by this connector | Choose a workflow its connector supports |
 | `ENOTIMPL` | 501 | 2 | Command or endpoint is specified in this manual but not built in this release | See the ticket named in the message |
 | `EMANIFEST` | 422 | 1 | Manifest invalid | Fix the lines reported |
@@ -46,6 +49,7 @@ There is one list of errors. `internal/errs/codes.go` is generated from the tabl
 ## NOTES
 
 - `EPERM` deliberately covers deny **and** unknown. Telling a user "unknown" invites retry games, and telling them "deny" may leak that a document exists. Operators see the breakdown in `/v1/admin/refusals`.
+- `ELABEL` and `EBARRIER` follow the same rule as `EPERM`: they are reasons in traces and refusal counts, and a user is never told which chunk a label or barrier refused (sb-permissions(7), Spaces, labels and barriers).
 - A refused source inside an answer is not an error; it's reported through `refused` and `notice` ([sb-ask(3)](sb-ask.3.md)).
 
 ## SEE ALSO

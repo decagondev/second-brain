@@ -75,6 +75,8 @@ No code anywhere names a company: routing is data in the registry. A cell knows 
 
 ### Custody
 
+A company can divide its cell into department **spaces** that only narrow access, with the cell staying the tenant boundary ([sb-spaces(7)](sb-spaces.7.md), ADR-0020).
+
 Every cell also has a custody record (`factory`, `tenant` or `detached`) that says which cloud account it lives in and who holds its root key. In v1, every cell is `factory` custody. Custody can later be handed to the company without re-onboarding ([sb-factory(7)](sb-factory.7.md)).
 
 ### Region pin
