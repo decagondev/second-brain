@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.4a DR game day tooling (SB-613)
+
+**Wave/slice:** W6 / S6.4a · **Author:** platform lead + Claude · **Status:** In review (the game day itself is human)
+
+**What:** `internal/core/gameday` (Restore, Score, SameIndex), `tests/gameday` (the rehearsal, now in `make check`), `laws/law11restore.go`, and `docs/runbooks/dr-game-day.md`. The manual changed first: sb-observability(7) gained the game day's scenario, targets and scoring.
+
+**Why this way:** A game day is only worth something if it's scored the same way every time, so the score is code and a day passes only when every line passes. The restore reuses the drill's per-copy checks instead of adding new ones. It writes only into empty stores and checks each row's `seq` and `prev` as it goes, so a restore can't splice two chains together. When two good copies disagree there's no safe automatic choice, so it stops and a human chooses.
+
+**Learned:** The architecture page promises an RPO of 15 minutes from continuous log archiving, but the local adapters only back up nightly. The rehearsal now says so plainly by failing the RPO when the backup is an hour old, instead of hiding it. The real RPO comes with W7's cloud adapter.
+
+**Laws:** LAW-11 extended (`TestLAW11_ChainSurvivesRestore`, with its mutation caught). LAW-13 is covered by the rebuild drill and checked again in the rehearsal. All green.
+
+**Next:** S6.4b, the pen test and threat model refresh (SB-612).
+
 ## 2026-11-19 S6.3c Retention and deletion (SB-611)
 
 **Wave/slice:** W6 / S6.3c · **Author:** platform lead + Claude · **Status:** In review (nightly schedule, W7)

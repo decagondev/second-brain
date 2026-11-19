@@ -148,6 +148,51 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 <li><strong>Rate limit:</strong> 30 model calls per user per minute (a token bucket). A refused call is counted in <code>sb_budget_refusals_total{reason}</code> with <code>reason</code> either <code>budget</code> or <code>rate</code>.</li>
 </ul>
 <p>Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (<code>EUNAVAIL</code>). A budget pace above 120% of the month so far raises the Sev-3 alert above.</p>
+<h3 id="disaster-recovery-game-day-exactly-sb-613">Disaster-recovery game day, exactly (SB-613)</h3>
+<p>The scenario is <strong>lose the cell's database</strong>, and the target is <strong>RTO 4 hours, RPO 15 minutes, inside the cell's region</strong>. The game day runs quarterly in staging and follows <a href="../docs/runbooks/dr-game-day.html">the runbook</a>. It is scored the same way every time:</p>
+<table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>Definition</th>
+<th>Pass</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T0</td>
+<td>when the failure is declared</td>
+<td></td>
+</tr>
+<tr>
+<td>RTO</td>
+<td>from T0 until the restored cell answers its smoke test</td>
+<td>≤ 4 h</td>
+</tr>
+<tr>
+<td>RPO</td>
+<td>from the time of the last audit row in the restored chain until T0</td>
+<td>≤ 15 min</td>
+</tr>
+<tr>
+<td>Chain</td>
+<td>the restored chain verifies with the cell's pinned key, is row-for-row the backup, and the next row written continues it (LAW-11)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Index</td>
+<td>the index rebuilt from the sources has the same <code>(cite, ACL)</code> set as before the failure (LAW-13)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Region</td>
+<td>every copy used, and the restored cell, are in the cell's pinned region</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p>The restore (<code>internal/core/gameday</code>) checks every copy as the restore drill does (sb-audit(7)) and restores from the first copy that passes, naming the copies it skipped and why. If two copies pass but hold different bytes for the same night, it refuses and a human chooses. It restores only into empty stores, row by row, refusing any row whose <code>seq</code> or <code>prev</code> doesn't continue the chain. The approvals snapshot from the same night is restored with it. The index is never restored, only rebuilt (LAW-13).</p>
+<p>A game day passes only if every line passes. A failed line is a finding: it goes in the retro and <code>living/BUGS_AND_MITIGATIONS.md</code>, and the next game day repeats the scenario. With only the local adapters, backups are nightly, so a rehearsal measures RPO honestly and fails it unless a backup ran within 15 minutes of T0. The 15-minute RPO depends on the cloud adapter's continuous log archive (W7). <code>tests/gameday</code> rehearses the whole scenario on local adapters in CI.</p>
 <h3 id="canaries-and-the-secret-scanner">Canaries and the secret scanner</h3>
 <p>Each cell plants <strong>canary secrets</strong> (SB-411): random values that look like credentials, <code>sbcanary-&lt;tenant&gt;-&lt;32 hex&gt;</code>. One is stored in the vault at <code>vault://tenants/TENANT/canary</code>, and one is placed in a fixture document in each connected source's test space. They are registered with the log redactor like any secret. Nothing legitimate ever uses them, so seeing one anywhere is proof of a leak path.</p>
 <p>The scanner looks for every canary, and for every value resolved from the vault, in three places: each log line as it is written, each model request before it leaves the gateway, and each audit row and export. A finding names the place and the canary's id, <strong>never the value</strong>. It is a <strong>Sev-1</strong> alert (<code>kind: secret_leak</code>), sent through the alert webhook. In CI, <code>tests/canary</code> runs the ask path, the tool bus and the audit export with canaries planted and fails on any finding. The same test also shows that a path that leaks on purpose is found.</p>
@@ -203,7 +248,7 @@ acl_unknown_ratio{tenant=&quot;acme-logistics&quot;,connector=&quot;chat&quot;} 
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-admin.3.html">sb-admin(3)</a>, <a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, backup and DR</a></p><p class="srcline">Source: <code>manual/sb-observability.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#per-tenant-dashboards">Per-tenant dashboards</a></li><li class="l3"><a href="#alerts">Alerts</a></li><li class="l3"><a href="#law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</a></li><li class="l3"><a href="#telemetry-labels">Telemetry labels</a></li><li class="l3"><a href="#budgets-and-rate-limits-sb-609">Budgets and rate limits (SB-609)</a></li><li class="l3"><a href="#canaries-and-the-secret-scanner">Canaries and the secret scanner</a></li><li class="l3"><a href="#weekly-leadership-report">Weekly leadership report</a></li><li class="l3"><a href="#telemetry-rules">Telemetry rules</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#per-tenant-dashboards">Per-tenant dashboards</a></li><li class="l3"><a href="#alerts">Alerts</a></li><li class="l3"><a href="#law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</a></li><li class="l3"><a href="#telemetry-labels">Telemetry labels</a></li><li class="l3"><a href="#budgets-and-rate-limits-sb-609">Budgets and rate limits (SB-609)</a></li><li class="l3"><a href="#disaster-recovery-game-day-exactly-sb-613">Disaster-recovery game day, exactly (SB-613)</a></li><li class="l3"><a href="#canaries-and-the-secret-scanner">Canaries and the secret scanner</a></li><li class="l3"><a href="#weekly-leadership-report">Weekly leadership report</a></li><li class="l3"><a href="#telemetry-rules">Telemetry rules</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

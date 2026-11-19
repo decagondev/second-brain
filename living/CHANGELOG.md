@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- DR game day (S6.4a: SB-613): the scoring rules in sb-observability(7), `internal/core/gameday` (restore from the first good copy into empty stores, and the score), a rehearsal in `tests/gameday` run by `make check`, the game day runbook, and a LAW-11 law test for a restore.
 - Retention and deletion (S6.3c: SB-611): the nightly retention job over traces, conversations, feedback and log files (never audit or the index), `POST /v1/admin/subjects/erase` with audit before and after, the `retention` audit kind, daily log files, and a LAW-13 law test showing that retention leaves the index derived.
 - HubSpot CRM connector (S6.3b: SB-610), `crm: hubspot`, read-only. It covers companies and deals, never contacts. Record-level access is checked live from the user's role, teams and the record's owner, through a role map held in the vault. Changes are polled through the CRM search API. Tested against the `hubspottest` recorded fake, with a new LAW-01 law test.
 - Operations (S6.3a: SB-607 to SB-609): a Sev-1 alert rule and runbook for every law with a production check, a metric catalogue and tenant dashboard, a telemetry rule that keeps content out of labels, histograms, ask and ACL metrics, and a monthly budget and per-user rate limit in the model gateway (`EBUDGET`).

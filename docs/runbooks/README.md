@@ -17,3 +17,7 @@ One runbook for each law with a production alert ([sb-observability(7)](../../ma
 - [LAW-12](LAW-12.md): Deprovision revokes fast
 - [LAW-16](LAW-16.md): The manifest is the truth
 - [LAW-18](LAW-18.md): The root key always has a custodian
+
+Game days:
+
+- [DR game day](dr-game-day.md): lose a cell's database, restore it inside its region, and score it (SB-613)

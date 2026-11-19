@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gameday_test.go · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="active" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../../docs/README.html">Design</a><a href="../../docs/00-problem-statement.html">Problem Statement</a><a href="../../docs/01-principles.html">Principles</a><a href="../../docs/02-domain-model.html">Domain Model</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../../docs/05-living-documents.html">Living Documents</a><a href="../../docs/06-engineering-standards.html">Engineering Standards</a><a href="../../docs/07-threat-model.html">Threat Model</a><a href="../../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../../docs/pilot-retro-template.html">Pilot retro template</a></div><div class="group"><h4>Architecture</h4><a href="../../docs/architecture/00-overview.html">Architecture Overview</a><a href="../../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../../docs/architecture/03-connectors.html">03 Connectors</a><a href="../../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../../docs/adr/README.html">Decision Records</a><a href="../../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a></div><div class="group"><h4>Proofs and policy</h4><a href="../../policy/README.html">Policy</a><a href="../../proofs/README.html">Proofs</a><a href="../../policy/platform/base.cedar.html">base.cedar</a><a href="../../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../../proofs/crosscheck.py.html">crosscheck.py</a><a href="../../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../../evals/README.html">Evals</a><a href="../../evals/__main__.py.html">__main__.py</a><a href="../../evals/checks.py.html">checks.py</a><a href="../../evals/corpus/injection.json.html">injection.json</a><a href="../../evals/faithfulness.py.html">faithfulness.py</a><a href="../../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../../evals/gate.py.html">gate.py</a><a href="../../evals/gate.yaml.html">gate.yaml</a><a href="../../evals/pilot.py.html">pilot.py</a><a href="../../evals/runner.py.html">runner.py</a><a href="../../evals/suites/citation.yaml.html">citation.yaml</a><a href="../../evals/suites/injection.yaml.html">injection.yaml</a><a href="../../evals/suites/permission.yaml.html">permission.yaml</a><a href="../../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../../evals/suites/regression.yaml.html">regression.yaml</a><a href="../../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../../evals/targets.py.html">targets.py</a><a href="../../evals/tests/test_checks.py.html">test_checks.py</a><a href="../../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../../laws/README.html">Laws</a><a href="../../laws/checks.go.html">checks.go</a><a href="../../laws/law01chat.go.html">law01chat.go</a><a href="../../laws/law01crm.go.html">law01crm.go</a><a href="../../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../../laws/law02cell.go.html">law02cell.go</a><a href="../../laws/law02policy.go.html">law02policy.go</a><a href="../../laws/law02route.go.html">law02route.go</a><a href="../../laws/law02scope.go.html">law02scope.go</a><a href="../../laws/law02token.go.html">law02token.go</a><a href="../../laws/law03policy.go.html">law03policy.go</a><a href="../../laws/law04policy.go.html">law04policy.go</a><a href="../../laws/law06.go.html">law06.go</a><a href="../../laws/law07.go.html">law07.go</a><a href="../../laws/law08.go.html">law08.go</a><a href="../../laws/law09.go.html">law09.go</a><a href="../../laws/law10.go.html">law10.go</a><a href="../../laws/law11.go.html">law11.go</a><a href="../../laws/law11restore.go.html">law11restore.go</a><a href="../../laws/law12.go.html">law12.go</a><a href="../../laws/law13.go.html">law13.go</a><a href="../../laws/law13retention.go.html">law13retention.go</a><a href="../../laws/law14.go.html">law14.go</a><a href="../../laws/law15.go.html">law15.go</a><a href="../../laws/law16.go.html">law16.go</a><a href="../../laws/law18.go.html">law18.go</a><a href="../../laws/lawconnector.go.html">lawconnector.go</a><a href="../../laws/laws_test.go.html">laws_test.go</a><a href="../../laws/prop.go.html">prop.go</a><a href="../../laws/selftest_test.go.html">selftest_test.go</a><a href="../../laws/system.go.html">system.go</a><a href="../../laws/system_ask.go.html">system_ask.go</a><a href="../../laws/system_audit.go.html">system_audit.go</a><a href="../../laws/system_bus.go.html">system_bus.go</a><a href="../../laws/system_chat.go.html">system_chat.go</a><a href="../../laws/system_drift.go.html">system_drift.go</a><a href="../../laws/system_kill.go.html">system_kill.go</a><a href="../../laws/system_prompt.go.html">system_prompt.go</a><a href="../../laws/system_release.go.html">system_release.go</a><a href="../../laws/system_rollout.go.html">system_rollout.go</a><a href="../../laws/world.go.html">world.go</a><a href="../../tests/backup/backup_test.go.html">backup_test.go</a><a href="../../tests/canary/canary_test.go.html">canary_test.go</a><a class="current" href="../../tests/gameday/gameday_test.go.html">gameday_test.go</a><a href="../../tests/regress/README.html">Regression tests</a><a href="../../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../../tests/smoke/README.html">Smoke tests</a><a href="../../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / tests/gameday</div><h1 id="gameday_testgo">gameday_test.go</h1>
+<pre><code class="language-go">// Package gameday rehearses the disaster-recovery game day end to end on local adapters
+// (sb-observability(7), Disaster-recovery game day, exactly; SB-613): back up a cell, lose
+// its database and index, restore from the copies, rebuild the index from the sources, and
+// score the day.
+package gameday
+
+import (
+    &quot;bytes&quot;
+    &quot;context&quot;
+    &quot;crypto/sha256&quot;
+    &quot;encoding/hex&quot;
+    &quot;errors&quot;
+    &quot;fmt&quot;
+    &quot;os&quot;
+    &quot;path/filepath&quot;
+    &quot;strings&quot;
+    &quot;testing&quot;
+    &quot;time&quot;
+
+    actmem &quot;example.com/second-brain/internal/adapters/actions/memory&quot;
+    auditmem &quot;example.com/second-brain/internal/adapters/audit/memory&quot;
+    &quot;example.com/second-brain/internal/adapters/backup/localfs&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
+    &quot;example.com/second-brain/internal/adapters/embed/hashing&quot;
+    memindex &quot;example.com/second-brain/internal/adapters/index/memory&quot;
+    &quot;example.com/second-brain/internal/core/approvals&quot;
+    &quot;example.com/second-brain/internal/core/audit&quot;
+    &quot;example.com/second-brain/internal/core/backup&quot;
+    &quot;example.com/second-brain/internal/core/gameday&quot;
+    &quot;example.com/second-brain/internal/core/ingest&quot;
+)
+
+const tenant = &quot;acme-logistics&quot;
+
+type cell struct {
+    rows    *auditmem.Store
+    acts    *actmem.Store
+    log     *audit.Log
+    idx     *memindex.Index
+    p       ingest.Pipeline
+    signer  audit.Signer
+    targets []backup.Target
+    now     time.Time
+}
+
+func newCell(t *testing.T, src *mock.Source) *cell {
+    signer, _ := audit.NewSigner(tenant, bytes.Repeat([]byte{9}, 32))
+    c := &amp;cell{signer: signer, now: time.Date(2027, 3, 2, 2, 0, 0, 0, time.UTC),
+        targets: []backup.Target{localfs.Dir{Root: t.TempDir(), Label: &quot;primary&quot;, Media: &quot;disk&quot;},
+            localfs.Dir{Root: t.TempDir(), Label: &quot;nas&quot;, Media: &quot;nas&quot;},
+            localfs.Dir{Root: t.TempDir(), Label: &quot;offsite&quot;, Media: &quot;object-store&quot;, Away: true}}}
+    c.lose(src)
+    return c
+}
+
+// lose replaces the database and the index with empty ones.
+func (c *cell) lose(src *mock.Source) {
+    c.rows, c.acts, c.idx = auditmem.New(), actmem.New(), memindex.New()
+    c.log = &amp;audit.Log{Tenant: tenant, Release: func() string { return &quot;rel_x&quot; }, Store: c.rows, Now: func() time.Time { return c.now }}
+    c.p = ingest.Pipeline{Tenant: tenant, Release: &quot;rel_x&quot;, Connector: mock.New(src, false), Embedder: hashing.Embedder{}, Index: c.idx}
+}
+
+func (c *cell) work(t *testing.T, n int) {
+    for i := 0; i &lt; n; i++ {
+        c.now = c.now.Add(time.Minute)
+        id := fmt.Sprintf(&quot;tc_%d_%d&quot;, c.now.Unix(), i)
+        if _, err := c.log.Write(context.Background(), audit.Event{Actor: &quot;usr_ann&quot;, Kind: &quot;approval&quot;, Subject: id, Reason: &quot;ok&quot;}); err != nil {
+            t.Fatal(err)
+        }
+        _ = c.acts.Put(context.Background(), approvals.Action{ID: id, Tenant: tenant, State: approvals.Ran})
+    }
+}
+
+func (c *cell) backup(t *testing.T) {
+    job := backup.Job{Tenant: tenant, Audit: c.rows, Signer: c.signer, Approvals: c.acts, Targets: c.targets, Now: func() time.Time { return c.now }}
+    if _, err := job.Run(context.Background()); err != nil {
+        t.Fatal(err)
+    }
+}
+
+func (c *cell) index(t *testing.T) []string {
+    cs, err := c.idx.All(context.Background(), tenant)
+    if err != nil {
+        t.Fatal(err)
+    }
+    out := make([]string, len(cs))
+    for i, ch := range cs {
+        out[i] = ch.Cite + &quot;|&quot; + strings.Join(ch.ACLPrefilter, &quot;,&quot;)
+    }
+    return out
+}
+
+func sources() *mock.Source {
+    src := mock.NewSource(&quot;docs&quot;)
+    src.Put(&quot;d1&quot;, &quot;Freight policy&quot;, &quot;Invoices over 10k need two approvals.&quot;, &quot;ann@acme.example&quot;)
+    src.Put(&quot;d2&quot;, &quot;Regions&quot;, &quot;The north region closes on Fridays.&quot;, &quot;ann@acme.example&quot;, &quot;bob@acme.example&quot;)
+    return src
+}
+
+// rehearse runs the scenario with the last backup `gap` before T0 and returns the score.
+func rehearse(t *testing.T, gap time.Duration) (gameday.Score, gameday.Restored) {
+    ctx := context.Background()
+    src := sources()
+    c := newCell(t, src)
+    if _, err := c.p.Sync(ctx, &quot;&quot;); err != nil {
+        t.Fatal(err)
+    }
+    before := c.index(t)
+    c.work(t, 12)
+    c.backup(t)
+    lastBacked, _ := c.rows.Range(ctx, 1, 1000)
+    c.now = c.now.Add(gap)
+    t0 := c.now
+
+    c.lose(src) // the database and the index are gone
+    res, err := gameday.Restore(ctx, tenant, c.signer.Key(), c.targets, c.rows, c.acts)
+    if err != nil {
+        t.Fatal(err)
+    }
+    if err := c.p.Rebuild(ctx); err != nil {
+        t.Fatal(err)
+    }
+    c.now = t0.Add(40 * time.Minute) // the restored cell passes its smoke test
+    restored, _ := c.rows.Range(ctx, 1, 1000)
+    chain := fmt.Sprint(restored) == fmt.Sprint(lastBacked)
+    var buf bytes.Buffer
+    if _, err := audit.Export(ctx, c.rows, c.signer, 1, c.now, &amp;buf); err != nil {
+        t.Fatal(err)
+    }
+    if _, err := audit.Verify(&amp;buf, tenant, c.signer.Key()); err != nil {
+        chain = false
+    }
+    c.work(t, 1) // the next row continues the chain
+    buf.Reset()
+    _, _ = audit.Export(ctx, c.rows, c.signer, 1, c.now, &amp;buf)
+    if _, err := audit.Verify(&amp;buf, tenant, c.signer.Key()); err != nil {
+        chain = false
+    }
+    return gameday.Score{Tenant: tenant, Failure: t0, Answered: t0.Add(40 * time.Minute), LastRow: res.LastAt,
+        Chain: chain, Index: gameday.SameIndex(before, c.index(t)), Region: true}, res
+}
+
+func TestGameDayPasses(t *testing.T) {
+    s, res := rehearse(t, 10*time.Minute)
+    if !s.Pass() || res.Rows != 12 || res.Actions != 12 || res.Copy != &quot;primary&quot; {
+        t.Fatalf(&quot;%+v\n%s&quot;, res, s.Markdown())
+    }
+    if !strings.Contains(s.Markdown(), &quot;### DR game day: passed&quot;) {
+        t.Fatal(s.Markdown())
+    }
+}
+
+// With nightly local backups, a failure an hour after the last one misses the RPO: the
+// rehearsal measures it honestly.
+func TestGameDayMeasuresRPO(t *testing.T) {
+    s, _ := rehearse(t, time.Hour)
+    if s.Pass() || !strings.Contains(s.Markdown(), &quot;| RPO | 1h0m0s | FAIL |&quot;) {
+        t.Fatal(s.Markdown())
+    }
+    s.LastRow = s.Failure.Add(-15 * time.Minute)
+    if !s.Pass() {
+        t.Fatal(&quot;an RPO of exactly 15 minutes must pass&quot;)
+    }
+    s.Answered = s.Failure.Add(4*time.Hour + time.Second)
+    if s.Pass() {
+        t.Fatal(&quot;an RTO over 4 hours passed&quot;)
+    }
+}
+
+func TestRestoreSkipsATamperedCopy(t *testing.T) {
+    ctx := context.Background()
+    src := sources()
+    c := newCell(t, src)
+    c.work(t, 5)
+    c.backup(t)
+    p := filepath.Join(c.targets[0].(localfs.Dir).Root, tenant, c.now.Format(&quot;2006-01-02&quot;), &quot;audit.ndjson&quot;)
+    _ = os.Chmod(p, 0o600)
+    b, _ := os.ReadFile(p)
+    _ = os.WriteFile(p, bytes.Replace(b, []byte(`&quot;reason&quot;:&quot;ok&quot;`), []byte(`&quot;reason&quot;:&quot;no&quot;`), 1), 0o600)
+    c.lose(src)
+    res, err := gameday.Restore(ctx, tenant, c.signer.Key(), c.targets, c.rows, c.acts)
+    if err != nil || res.Copy != &quot;nas&quot; || len(res.Skipped) != 1 || res.Skipped[0].Target != &quot;primary&quot; {
+        t.Fatalf(&quot;%+v %v&quot;, res, err)
+    }
+    if _, err := gameday.Restore(ctx, tenant, c.signer.Key(), c.targets, c.rows, c.acts); !errors.Is(err, gameday.ErrNotEmpty) {
+        t.Fatalf(&quot;a second restore into a full store: %v&quot;, err)
+    }
+}
+
+// Two copies that both verify but differ for the same night: a human chooses.
+func TestRestoreRefusesDisagreeingCopies(t *testing.T) {
+    ctx := context.Background()
+    src := sources()
+    c := newCell(t, src)
+    c.work(t, 3)
+    c.backup(t)
+    c.work(t, 2) // a longer, equally valid chain
+    var buf bytes.Buffer
+    _, _ = audit.Export(ctx, c.rows, c.signer, 1, c.now, &amp;buf)
+    name := tenant + &quot;/&quot; + c.now.Format(&quot;2006-01-02&quot;) + &quot;/audit.ndjson&quot;
+    sum := sha256.Sum256(buf.Bytes())
+    other := localfs.Dir{Root: t.TempDir(), Label: &quot;rogue&quot;, Media: &quot;disk&quot;}
+    _ = other.Put(ctx, name, buf.Bytes(), c.now.Add(time.Hour))
+    _ = other.Put(ctx, name+&quot;.sha256&quot;, []byte(hex.EncodeToString(sum[:])+&quot;\n&quot;), c.now.Add(time.Hour))
+    c.lose(src)
+    if _, err := gameday.Restore(ctx, tenant, c.signer.Key(), append(c.targets, other), c.rows, c.acts); !errors.Is(err, gameday.ErrDisagree) {
+        t.Fatalf(&quot;disagreeing copies: %v&quot;, err)
+    }
+    if rs, _ := c.rows.Range(ctx, 1, 10); len(rs) != 0 {
+        t.Fatal(&quot;rows were restored from disagreeing copies&quot;)
+    }
+}
+</code></pre>
+<p><a href="../../README.html">Back</a></p><p class="srcline">Source: <code>tests/gameday/gameday_test.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

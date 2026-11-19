@@ -204,3 +204,7 @@ func TestLAW03_HubSpotUnknownIsNeverAllow(t *testing.T) {
 func TestLAW13_RetentionLeavesTheIndexDerived(t *testing.T) {
 	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law13Retention(r, NewRetentionWorld()) })
 }
+
+func TestLAW11_ChainSurvivesRestore(t *testing.T) {
+	Check(t, "LAW-11", 60, func(r *rand.Rand) error { return law11Restore(r, NewDRWorld(t.TempDir())) })
+}

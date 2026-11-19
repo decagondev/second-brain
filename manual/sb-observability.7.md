@@ -69,6 +69,23 @@ The model gateway checks two limits **before** every model call, and refuses wit
 
 Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (`EUNAVAIL`). A budget pace above 120% of the month so far raises the Sev-3 alert above.
 
+### Disaster-recovery game day, exactly (SB-613)
+
+The scenario is **lose the cell's database**, and the target is **RTO 4 hours, RPO 15 minutes, inside the cell's region**. The game day runs quarterly in staging and follows [the runbook](../docs/runbooks/dr-game-day.md). It is scored the same way every time:
+
+| Measure | Definition | Pass |
+|---|---|---|
+| T0 | when the failure is declared | |
+| RTO | from T0 until the restored cell answers its smoke test | ≤ 4 h |
+| RPO | from the time of the last audit row in the restored chain until T0 | ≤ 15 min |
+| Chain | the restored chain verifies with the cell's pinned key, is row-for-row the backup, and the next row written continues it (LAW-11) | yes |
+| Index | the index rebuilt from the sources has the same `(cite, ACL)` set as before the failure (LAW-13) | yes |
+| Region | every copy used, and the restored cell, are in the cell's pinned region | yes |
+
+The restore (`internal/core/gameday`) checks every copy as the restore drill does (sb-audit(7)) and restores from the first copy that passes, naming the copies it skipped and why. If two copies pass but hold different bytes for the same night, it refuses and a human chooses. It restores only into empty stores, row by row, refusing any row whose `seq` or `prev` doesn't continue the chain. The approvals snapshot from the same night is restored with it. The index is never restored, only rebuilt (LAW-13).
+
+A game day passes only if every line passes. A failed line is a finding: it goes in the retro and `living/BUGS_AND_MITIGATIONS.md`, and the next game day repeats the scenario. With only the local adapters, backups are nightly, so a rehearsal measures RPO honestly and fails it unless a backup ran within 15 minutes of T0. The 15-minute RPO depends on the cloud adapter's continuous log archive (W7). `tests/gameday` rehearses the whole scenario on local adapters in CI.
+
 ### Canaries and the secret scanner
 
 Each cell plants **canary secrets** (SB-411): random values that look like credentials, `sbcanary-<tenant>-<32 hex>`. One is stored in the vault at `vault://tenants/TENANT/canary`, and one is placed in a fixture document in each connected source's test space. They are registered with the log redactor like any secret. Nothing legitimate ever uses them, so seeing one anywhere is proof of a leak path.

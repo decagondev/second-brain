@@ -35,6 +35,7 @@ smoke:                 ## black-box smoke tests of the sb binary (SB-016)
 	$(GO) test -count=1 ./tests/smoke/...   # never cached: it runs the freshly built bin/sb (BUG-0008)
 	$(GO) test ./tests/canary/...   # the CI secret scan with planted canaries (SB-411)
 	$(GO) test ./tests/backup/...   # backup 3-2-1 and the restore drill (SB-412)
+	$(GO) test ./tests/gameday/...  # the DR game day rehearsed on local adapters (SB-613)
 regress:               ## one test per bug, forever (SB-016)
 	@if ls tests/regress/*_test.go >/dev/null 2>&1; then $(GO) test ./tests/regress/...; fi
 	$(PY) -m unittest discover -s tests/regress -p "test_*.py" -q

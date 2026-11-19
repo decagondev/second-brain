@@ -746,3 +746,10 @@ func (o offByOne) Expire(ctx context.Context, tenant string, before time.Time) (
 	return n, nil
 }
 func (offByOne) Erase(context.Context, string, string) (int, error) { return 0, nil }
+
+// LAW-11's restore check catches a restore that trusts the first copy without checking it.
+func TestSelf_LAW11RestoreMutationIsCaught(t *testing.T) {
+	if !violates(60, func(r *rand.Rand) error { return law11Restore(r, newDRWorld(t.TempDir(), true)) }) {
+		t.Error("LAW-11 (restore): restoring an unchecked copy was not caught")
+	}
+}

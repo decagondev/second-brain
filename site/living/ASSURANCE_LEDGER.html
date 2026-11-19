@@ -129,7 +129,7 @@
 <td>—</td>
 <td><code>laws/</code> tamper test over exports (edit, drop, swap, duplicate, cut-off, forged anchor) through the real log, export and verifier, + self-test; Postgres append-only trigger test</td>
 <td>—</td>
-<td>SB-401, SB-402, SB-412</td>
+<td>SB-401, SB-402, SB-412, SB-613</td>
 </tr>
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-12">LAW-12</a></td>
@@ -482,6 +482,12 @@
 <td>LAW-13</td>
 <td>Tested (extended)</td>
 <td>SB-611: <code>TestLAW13_RetentionLeavesTheIndexDerived</code>: sweep and erasure match the model, and the index still equals a rebuild; index-ageing and off-by-one mutations caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-613: <code>TestLAW11_ChainSurvivesRestore</code>: a restore from 3-2-1 copies (zero to three tampered) is row for row the backup, verifies and continues; trusting an unchecked copy is caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

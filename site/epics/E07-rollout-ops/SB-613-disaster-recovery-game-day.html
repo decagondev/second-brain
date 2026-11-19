@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Restore a cell from backups inside its region, on the clock.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Cell restored within RTO 4 hours, RPO 15 minutes</li>
-<li class="task"><span class="box"></span>Audit chain verifies after restore</li>
+<li class="task"><span class="box"></span>Cell restored within RTO 4 hours, RPO 15 minutes (scored by <code>gameday.Score</code>; rehearsed on local adapters in <code>tests/gameday</code>; the real game day in staging is human-led, and the 15-minute RPO needs the cloud adapter's continuous log archive, W7)</li>
+<li class="task"><span class="box"></span>Audit chain verifies after restore (<code>TestLAW11_ChainSurvivesRestore</code> and the rehearsal; confirmed on the day in staging)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Plan</li>
-<li class="task"><span class="box"></span>Run</li>
-<li class="task"><span class="box"></span>Retro and fixes</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-11, LAW-13</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Plan</li>
+<li class="task"><span class="box"></span>Run (human, in staging: <a href="../../docs/runbooks/dr-game-day.html">runbook</a>)</li>
+<li class="task"><span class="box"></span>Retro and fixes (template in the runbook)</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-11, LAW-13</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S6.4a): sb-observability(7) gained "Disaster-recovery game day, exactly": the scenario, the targets, and a scoring table with RTO, RPO, chain, index and region. <code>internal/core/gameday.Restore</code> checks every copy as the restore drill does and restores from the first one that passes, naming the copies it skipped. It refuses when copies that pass disagree, writes only into empty stores, and adds rows one by one, refusing any that don't continue the chain. It restores the night's approvals snapshot too, and never restores the index. <code>gameday.Score</code> scores a day, and a day passes only if every line passes. <code>tests/gameday</code> (now part of <code>make check</code>) rehearses the whole scenario on local adapters: back up, lose the database and the index, restore, rebuild, verify, continue, score. It shows that a failure an hour after a nightly backup honestly fails the RPO. The new law test, <code>TestLAW11_ChainSurvivesRestore</code>, runs with zero to three tampered copies, and a self-test shows that a restore which trusts an unchecked copy is caught. LAW-13 is covered by the existing rebuild drill and by the rehearsal's index check. The runbook <code>docs/runbooks/dr-game-day.md</code> covers the plan, the run (each step with its expected result) and the retro.</p>
+<p><strong>Left:</strong> the game day itself, in staging, run by people, and the 15-minute RPO, which needs W7's continuous log archive.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E07-rollout-ops/SB-613-disaster-recovery-game-day.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>
