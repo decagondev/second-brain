@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.1c GCP placement (SB-703)
+
+**Wave/slice:** W7 / S7.1c · **Author:** platform lead + Claude · **Status:** In review (a real GCP project)
+
+**What:** `internal/adapters/placement/gcp` and `gcptest`, `deploy/gcp/bootstrap-deploy-role.sh`, and `laws/law02gcp.go`. The manual changed first: sb-tenancy(7) gained "Placement on GCP, exactly".
+
+**Why this way:** The first real cloud is GCP (the user's decision). Plain REST keeps the adapter within the standard library, so the module allow-list doesn't grow for four small API surfaces. The deploy role is defined once in code, `DeployPermissions`. The script must match it, the fake enforces it, and a test shows every entry is needed, so least privilege is measured rather than claimed. The fake also refuses calls across projects, which is what makes the two-account test mean something.
+
+**Learned:** The first draft of the permission test passed with `useToDecrypt` removed, because stamping never decrypts. The test now wraps and unwraps a data key too. Cloud SQL keeps its labels under `settings.userLabels`, not `labels`, and both the adapter and the fake now read them there.
+
+**Laws:** LAW-02 extended (`TestLAW02_GCPCellsShareNothing`). LAW-17 and LAW-18 are still red, as planned, until SB-705. Everything else is green.
+
+**Next:** S7.2: key re-wrap (SB-704) and the hand-off controller (SB-705).
+
 ## 2026-11-19 S7.1b Factory roles (SB-702)
 
 **Wave/slice:** W7 / S7.1b · **Author:** platform lead + Claude · **Status:** Done

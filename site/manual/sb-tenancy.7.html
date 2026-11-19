@@ -94,8 +94,41 @@
 </tbody>
 </table>
 <p>Every resource carries its cell's <code>tenant</code> and <code>region</code>. The provider id of each resource is unique to that cell: stamping two cells never returns a shared id, in the same account or in different ones. Stamping is idempotent: stamping a cell again finds what exists and creates only what's missing.</p>
-<p>The template never names a cloud account. The <code>Placement</code> port stamps resources into the account named by the cell's custody record. Each cloud is an adapter behind <code>Placement</code> and <code>Keys</code> (<a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018</a>). The <code>local</code> adapter (development and tests) exists now; AWS, GCP and Azure adapters come later. If a port can't say whether a resource exists, that is an error, never "absent".</p>
-<h3 id="registry-and-routing">Registry and routing</h3>
+<p>The template never names a cloud account. The <code>Placement</code> port stamps resources into the account named by the cell's custody record. Each cloud is an adapter behind <code>Placement</code> and <code>Keys</code> (<a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018</a>). The <code>local</code> adapter (development and tests) and the <code>gcp</code> adapter (below) exist; AWS and Azure adapters come later. If a port can't say whether a resource exists, that is an error, never "absent".</p>
+<h3 id="placement-on-gcp-exactly-sb-703">Placement on GCP, exactly (SB-703)</h3>
+<p>The <code>gcp</code> adapter (<code>internal/adapters/placement/gcp</code>) implements <code>Placement</code> and <code>Keys</code> in one GCP project, for the factory's own project or a tenant's (<code>tenant</code> custody, sb-factory(7)). It calls Google's REST APIs with the access token of a <strong>deploy service account</strong> and nothing else. It is the same template, with no tenant-specific code: only the project and the region differ.</p>
+<table>
+<thead>
+<tr>
+<th>Template resource</th>
+<th>GCP resource</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>database</code></td>
+<td>a Cloud SQL for PostgreSQL instance <code>sb-TENANT</code>, and the database <code>sb_TENANT</code> in it</td>
+</tr>
+<tr>
+<td><code>index-schema</code></td>
+<td>the schema <code>idx</code> in that database, made by the cell's migrations. The adapter ensures the database exists and returns the schema's id</td>
+</tr>
+<tr>
+<td><code>vault-namespace</code></td>
+<td>the Secret Manager prefix <code>sb-TENANT-</code>, marked by a secret <code>sb-TENANT-namespace</code>, with replication only in the cell's region</td>
+</tr>
+<tr>
+<td><code>root-key</code></td>
+<td>the Cloud KMS key <code>cell-TENANT-root</code> (symmetric, encrypt and decrypt) in the key ring <code>sb-TENANT</code>. <code>Wrap</code> and <code>Unwrap</code> are KMS <code>encrypt</code> and <code>decrypt</code>, with the key's name as additional authenticated data, so the key's material never leaves KMS</td>
+</tr>
+<tr>
+<td><code>queue</code></td>
+<td>the Pub/Sub topic <code>TENANT-jobs</code>, with message storage limited to the cell's region</td>
+</tr>
+</tbody>
+</table>
+<p>The manifest's region maps to one GCP location: <code>eu</code> is <code>europe-west1</code>, <code>us</code> is <code>us-central1</code>. Any other region is an error. Every resource is labelled <code>sb-tenant</code> and <code>sb-kind</code>, and has its location. A resource that already exists with a different tenant, kind or location is an error, never reused. Only an HTTP 404 means a resource is absent. Any other failure, a 403 included, is an error, so the adapter never creates a second copy of something it couldn't read. Long-running operations are polled until they finish or the context ends.</p>
+<p><strong>The deploy role.</strong> The tenant creates it in their own project with <code>deploy/gcp/bootstrap-deploy-role.sh PROJECT FACTORY_PRINCIPAL</code>. The script creates a custom role, <code>sbCellDeployer</code>, whose permissions are exactly those the adapter uses (<code>gcp.DeployPermissions</code>, which a test compares with the script). It creates a service account, <code>sb-cell-deployer</code>, with that role on the project and nothing else, and lets only the factory's principal impersonate it. The role can't read secret values, decrypt anything other than through the cell's own key, or change IAM. At hand-off the factory loses this impersonation grant, unless the hand-off record retains it (sb-factory(7)).</p>
 <p>The control plane's tenant registry holds one <strong>cell record</strong> per tenant: <code>tenant</code>, <code>region</code>, the cell <code>endpoint</code>, the <code>hosts</code> that reach it (by default <code>TENANT.</code> plus the control plane's base domain), and the custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>). <code>sb tenant apply</code> writes the record when it creates a cell. v1 always writes <code>factory</code>, <code>factory-account</code> and <code>factory</code>. The registry also holds each tenant's applied resources (sb-tenant(1)). In production it is Postgres (ADR-0017); <code>file:///DIR</code> keeps it in <code>DIR/cells</code> and <code>DIR/tenants</code> for development.</p>
 <p>The edge router serves every request in the same order:</p>
 <ol>
@@ -127,7 +160,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-factory.7.html">sb-factory(7)</a>, <a href="sb-identity.7.html">sb-identity(7)</a>, <a href="../docs/architecture/05-storage-and-index.html">05 Storage and index</a></p><p class="srcline">Source: <code>manual/sb-tenancy.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#cell-anatomy">Cell anatomy</a></li><li class="l3"><a href="#registry-and-routing">Registry and routing</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#region-pin">Region pin</a></li><li class="l3"><a href="#scope-in-code">Scope in code</a></li><li class="l3"><a href="#off-boarding">Off-boarding</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#cell-anatomy">Cell anatomy</a></li><li class="l3"><a href="#placement-on-gcp-exactly-sb-703">Placement on GCP, exactly (SB-703)</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#region-pin">Region pin</a></li><li class="l3"><a href="#scope-in-code">Scope in code</a></li><li class="l3"><a href="#off-boarding">Off-boarding</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -1,0 +1,378 @@
+// Package gcp is the Placement and Keys adapter for Google Cloud (sb-tenancy(7), Placement
+// on GCP, exactly; SB-703). It stamps a cell into one project with the access token of a
+// least-privilege deploy service account, over Google's REST APIs and the standard library.
+package gcp
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strings"
+	"time"
+
+	"example.com/second-brain/internal/core/ports"
+)
+
+// Endpoints are the API base URLs; the zero value means Google's.
+type Endpoints struct {
+	SQL, KMS, Secrets, PubSub string
+}
+
+func (e Endpoints) withDefaults() Endpoints {
+	def := func(v, d string) string {
+		if v == "" {
+			return d
+		}
+		return v
+	}
+	return Endpoints{SQL: def(e.SQL, "https://sqladmin.googleapis.com"), KMS: def(e.KMS, "https://cloudkms.googleapis.com"),
+		Secrets: def(e.Secrets, "https://secretmanager.googleapis.com"), PubSub: def(e.PubSub, "https://pubsub.googleapis.com")}
+}
+
+// Locations maps the manifest's regions to GCP locations.
+var Locations = map[string]string{"eu": "europe-west1", "us": "us-central1"}
+
+// DeployPermissions are exactly the IAM permissions the adapter uses. The bootstrap script
+// grants these and no others (a test compares them).
+var DeployPermissions = []string{
+	"cloudkms.cryptoKeyVersions.useToDecrypt",
+	"cloudkms.cryptoKeyVersions.useToEncrypt",
+	"cloudkms.cryptoKeys.create",
+	"cloudkms.cryptoKeys.get",
+	"cloudkms.keyRings.create",
+	"cloudkms.keyRings.get",
+	"cloudsql.databases.create",
+	"cloudsql.databases.get",
+	"cloudsql.instances.create",
+	"cloudsql.instances.get",
+	"pubsub.topics.create",
+	"pubsub.topics.get",
+	"secretmanager.secrets.create",
+	"secretmanager.secrets.get",
+}
+
+// Project is one GCP project as a cell account.
+type Project struct {
+	ID        string
+	HTTP      *http.Client
+	Token     func(ctx context.Context) (string, error) // the deploy service account's access token
+	Endpoints Endpoints
+	// Poll is the wait between checks of a long-running operation; zero means one second.
+	Poll time.Duration
+}
+
+var (
+	_ ports.Placement = Project{}
+	_ ports.Keys      = Project{}
+
+	safe      = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+	projectRx = regexp.MustCompile(`^[a-z][a-z0-9-]{4,28}[a-z0-9]$`)
+)
+
+// Account is the placement name.
+func (p Project) Account() string { return "gcp://" + p.ID }
+
+// apiError is an HTTP failure; only 404 means absent.
+type apiError struct {
+	status int
+	path   string
+}
+
+func (e *apiError) Error() string { return fmt.Sprintf("gcp: HTTP %d on %s", e.status, e.path) }
+
+func absent(err error) bool {
+	var e *apiError
+	return errors.As(err, &e) && e.status == http.StatusNotFound
+}
+
+func (p Project) do(ctx context.Context, method, rawURL string, body, v any) error {
+	tok, err := p.Token(ctx)
+	if err != nil {
+		return err
+	}
+	var rd io.Reader
+	if body != nil {
+		b, _ := json.Marshal(body)
+		rd = bytes.NewReader(b)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, rd)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+tok)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := p.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		u, _ := url.Parse(rawURL)
+		return &apiError{resp.StatusCode, u.Path}
+	}
+	if v == nil {
+		return nil
+	}
+	return json.Unmarshal(raw, v)
+}
+
+type labelled struct {
+	Name     string            `json:"name"`
+	Labels   map[string]string `json:"labels"`
+	Region   string            `json:"region"` // Cloud SQL instances; the others carry it in labels
+	Settings struct {
+		UserLabels map[string]string `json:"userLabels"` // Cloud SQL keeps its labels here
+	} `json:"settings"`
+}
+
+// check refuses an existing resource that belongs to another cell, kind or location.
+func check(what string, got labelled, r ports.CellResource, loc string) error {
+	l := got.Labels
+	if len(l) == 0 {
+		l = got.Settings.UserLabels
+	}
+	if l["sb-tenant"] != r.Tenant || l["sb-kind"] != r.Kind || l["sb-location"] != loc {
+		return fmt.Errorf("gcp: %s exists for %s/%s in %s, not %s/%s in %s", what, l["sb-tenant"], l["sb-kind"], l["sb-location"], r.Tenant, r.Kind, loc)
+	}
+	return nil
+}
+
+func labels(r ports.CellResource, loc string) map[string]string {
+	return map[string]string{"sb-tenant": r.Tenant, "sb-kind": r.Kind, "sb-location": loc}
+}
+
+func (p Project) prepare(r ports.CellResource) (string, error) {
+	if !projectRx.MatchString(p.ID) {
+		return "", fmt.Errorf("gcp: bad project id %q", p.ID)
+	}
+	if !safe.MatchString(r.Tenant) || !safe.MatchString(r.Kind) {
+		return "", fmt.Errorf("gcp: unsafe name %q/%q", r.Tenant, r.Kind)
+	}
+	loc, ok := Locations[r.Region]
+	if !ok {
+		return "", fmt.Errorf("gcp: no GCP location for region %q", r.Region)
+	}
+	return loc, nil
+}
+
+// ensure GETs a resource and, only on 404, creates it with create and GETs it again.
+func (p Project) ensure(ctx context.Context, what, getURL string, r ports.CellResource, loc string, create func() error) (labelled, error) {
+	var got labelled
+	err := p.do(ctx, http.MethodGet, getURL, nil, &got)
+	if err == nil {
+		return got, check(what, got, r, loc)
+	}
+	if !absent(err) {
+		return labelled{}, err // unknown is not absent
+	}
+	if err := create(); err != nil {
+		return labelled{}, err
+	}
+	if err := p.do(ctx, http.MethodGet, getURL, nil, &got); err != nil {
+		return labelled{}, err
+	}
+	return got, check(what, got, r, loc)
+}
+
+// wait polls a long-running operation until it is done.
+func (p Project) wait(ctx context.Context, opURL string) error {
+	poll := p.Poll
+	if poll == 0 {
+		poll = time.Second
+	}
+	for {
+		var op struct {
+			Status string `json:"status"`
+			Done   bool   `json:"done"`
+			Error  any    `json:"error"`
+		}
+		if err := p.do(ctx, http.MethodGet, opURL, nil, &op); err != nil {
+			return err
+		}
+		if op.Error != nil {
+			return fmt.Errorf("gcp: operation %s failed", opURL)
+		}
+		if op.Status == "DONE" || op.Done {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(poll):
+		}
+	}
+}
+
+// Ensure finds or creates one resource and returns its id.
+func (p Project) Ensure(ctx context.Context, r ports.CellResource) (string, error) {
+	loc, err := p.prepare(r)
+	if err != nil {
+		return "", err
+	}
+	e := p.Endpoints.withDefaults()
+	switch r.Kind {
+	case "database", "index-schema":
+		db, err := p.database(ctx, e, r, loc)
+		if err != nil {
+			return "", err
+		}
+		if r.Kind == "index-schema" {
+			return "gcp:sql:" + db + "/schemas/" + r.Name, nil // made by the cell's migrations
+		}
+		return "gcp:sql:" + db, nil
+	case "vault-namespace":
+		name := "sb-" + r.Tenant + "-namespace"
+		base := e.Secrets + "/v1/projects/" + p.ID + "/secrets"
+		got, err := p.ensure(ctx, "secret "+name, base+"/"+name, r, loc, func() error {
+			body := map[string]any{"labels": labels(r, loc), "replication": map[string]any{"userManaged": map[string]any{"replicas": []any{map[string]any{"location": loc}}}}}
+			return p.do(ctx, http.MethodPost, base+"?secretId="+url.QueryEscape(name), body, nil)
+		})
+		if err != nil {
+			return "", err
+		}
+		return "gcp:secrets:" + got.Name, nil
+	case "queue":
+		if !safe.MatchString(r.Name) {
+			return "", fmt.Errorf("gcp: unsafe topic name %q", r.Name)
+		}
+		u := e.PubSub + "/v1/projects/" + p.ID + "/topics/" + r.Name
+		got, err := p.ensure(ctx, "topic "+r.Name, u, r, loc, func() error {
+			body := map[string]any{"labels": labels(r, loc), "messageStoragePolicy": map[string]any{"allowedPersistenceRegions": []string{loc}}}
+			return p.do(ctx, http.MethodPut, u, body, nil)
+		})
+		if err != nil {
+			return "", err
+		}
+		return "gcp:pubsub:" + got.Name, nil
+	case "root-key":
+		return p.EnsureRootKey(ctx, r)
+	}
+	return "", fmt.Errorf("gcp: unknown resource kind %q", r.Kind)
+}
+
+// database ensures the cell's Cloud SQL instance and its database; it returns their path.
+func (p Project) database(ctx context.Context, e Endpoints, r ports.CellResource, loc string) (string, error) {
+	inst := "sb-" + r.Tenant
+	dbName := "sb_" + strings.ReplaceAll(r.Tenant, "-", "_")
+	base := e.SQL + "/v1/projects/" + p.ID + "/instances"
+	ir := ports.CellResource{Kind: "database", Name: dbName, Tenant: r.Tenant, Region: r.Region} // the instance is labelled as the database
+	got, err := p.ensure(ctx, "instance "+inst, base+"/"+inst, ir, loc, func() error {
+		body := map[string]any{"name": inst, "region": loc, "databaseVersion": "POSTGRES_17",
+			"settings": map[string]any{"tier": "db-custom-2-7680", "userLabels": labels(ir, loc)}}
+		var op struct {
+			Name string `json:"name"`
+		}
+		if err := p.do(ctx, http.MethodPost, base, body, &op); err != nil {
+			return err
+		}
+		return p.wait(ctx, e.SQL+"/v1/projects/"+p.ID+"/operations/"+op.Name)
+	})
+	if err != nil {
+		return "", err
+	}
+	if got.Region != loc {
+		return "", fmt.Errorf("gcp: instance %s is in %s, not %s", inst, got.Region, loc)
+	}
+	dbURL := base + "/" + inst + "/databases/" + dbName
+	var db struct {
+		Name string `json:"name"`
+	}
+	err = p.do(ctx, http.MethodGet, dbURL, nil, &db)
+	if absent(err) {
+		var op struct {
+			Name string `json:"name"`
+		}
+		if err := p.do(ctx, http.MethodPost, base+"/"+inst+"/databases", map[string]any{"name": dbName, "instance": inst}, &op); err != nil {
+			return "", err
+		}
+		if err := p.wait(ctx, e.SQL+"/v1/projects/"+p.ID+"/operations/"+op.Name); err != nil {
+			return "", err
+		}
+		err = p.do(ctx, http.MethodGet, dbURL, nil, &db)
+	}
+	if err != nil {
+		return "", err
+	}
+	return "projects/" + p.ID + "/instances/" + inst + "/databases/" + dbName, nil
+}
+
+// EnsureRootKey finds or creates the cell's KMS key and returns its resource name.
+func (p Project) EnsureRootKey(ctx context.Context, r ports.CellResource) (string, error) {
+	if r.Kind != "root-key" {
+		return "", fmt.Errorf("gcp: %s is not a root key", r.Kind)
+	}
+	loc, err := p.prepare(r)
+	if err != nil {
+		return "", err
+	}
+	if !safe.MatchString(r.Name) {
+		return "", fmt.Errorf("gcp: unsafe key name %q", r.Name)
+	}
+	e := p.Endpoints.withDefaults()
+	ring := "projects/" + p.ID + "/locations/" + loc + "/keyRings/sb-" + r.Tenant
+	if _, err := p.ensure(ctx, "key ring", e.KMS+"/v1/"+ring, r, loc, func() error {
+		return p.do(ctx, http.MethodPost, e.KMS+"/v1/projects/"+p.ID+"/locations/"+loc+"/keyRings?keyRingId=sb-"+r.Tenant,
+			map[string]any{"labels": labels(r, loc)}, nil)
+	}); err != nil {
+		return "", err
+	}
+	key := ring + "/cryptoKeys/" + r.Name
+	got, err := p.ensure(ctx, "key "+r.Name, e.KMS+"/v1/"+key, r, loc, func() error {
+		return p.do(ctx, http.MethodPost, e.KMS+"/v1/"+ring+"/cryptoKeys?cryptoKeyId="+url.QueryEscape(r.Name),
+			map[string]any{"purpose": "ENCRYPT_DECRYPT", "labels": labels(r, loc)}, nil)
+	})
+	if err != nil {
+		return "", err
+	}
+	return got.Name, nil
+}
+
+func (p Project) owns(keyID string) error {
+	if !strings.HasPrefix(keyID, "projects/"+p.ID+"/locations/") || !strings.Contains(keyID, "/cryptoKeys/") {
+		return fmt.Errorf("gcp: key %s is not in project %s", keyID, p.ID)
+	}
+	return nil
+}
+
+// Wrap encrypts a data key with the cell's KMS key; the key's name is the AAD.
+func (p Project) Wrap(ctx context.Context, keyID string, dataKey []byte) ([]byte, error) {
+	if err := p.owns(keyID); err != nil {
+		return nil, err
+	}
+	var out struct {
+		Ciphertext string `json:"ciphertext"`
+	}
+	body := map[string]any{"plaintext": base64.StdEncoding.EncodeToString(dataKey), "additionalAuthenticatedData": base64.StdEncoding.EncodeToString([]byte(keyID))}
+	if err := p.do(ctx, http.MethodPost, p.Endpoints.withDefaults().KMS+"/v1/"+keyID+":encrypt", body, &out); err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(out.Ciphertext)
+}
+
+// Unwrap decrypts a wrapped data key; a key wrapped under another cell's key fails.
+func (p Project) Unwrap(ctx context.Context, keyID string, wrapped []byte) ([]byte, error) {
+	if err := p.owns(keyID); err != nil {
+		return nil, err
+	}
+	var out struct {
+		Plaintext string `json:"plaintext"`
+	}
+	body := map[string]any{"ciphertext": base64.StdEncoding.EncodeToString(wrapped), "additionalAuthenticatedData": base64.StdEncoding.EncodeToString([]byte(keyID))}
+	if err := p.do(ctx, http.MethodPost, p.Endpoints.withDefaults().KMS+"/v1/"+keyID+":decrypt", body, &out); err != nil {
+		return nil, err
+	}
+	return base64.StdEncoding.DecodeString(out.Plaintext)
+}

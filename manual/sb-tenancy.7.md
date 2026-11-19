@@ -42,9 +42,25 @@ The template (`internal/core/cell`) declares every cell the same way. It takes o
 
 Every resource carries its cell's `tenant` and `region`. The provider id of each resource is unique to that cell: stamping two cells never returns a shared id, in the same account or in different ones. Stamping is idempotent: stamping a cell again finds what exists and creates only what's missing.
 
-The template never names a cloud account. The `Placement` port stamps resources into the account named by the cell's custody record. Each cloud is an adapter behind `Placement` and `Keys` ([ADR-0018](../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.md)). The `local` adapter (development and tests) exists now; AWS, GCP and Azure adapters come later. If a port can't say whether a resource exists, that is an error, never "absent".
+The template never names a cloud account. The `Placement` port stamps resources into the account named by the cell's custody record. Each cloud is an adapter behind `Placement` and `Keys` ([ADR-0018](../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.md)). The `local` adapter (development and tests) and the `gcp` adapter (below) exist; AWS and Azure adapters come later. If a port can't say whether a resource exists, that is an error, never "absent".
 
-### Registry and routing
+### Placement on GCP, exactly (SB-703)
+
+The `gcp` adapter (`internal/adapters/placement/gcp`) implements `Placement` and `Keys` in one GCP project, for the factory's own project or a tenant's (`tenant` custody, sb-factory(7)). It calls Google's REST APIs with the access token of a **deploy service account** and nothing else. It is the same template, with no tenant-specific code: only the project and the region differ.
+
+| Template resource | GCP resource |
+|---|---|
+| `database` | a Cloud SQL for PostgreSQL instance `sb-TENANT`, and the database `sb_TENANT` in it |
+| `index-schema` | the schema `idx` in that database, made by the cell's migrations. The adapter ensures the database exists and returns the schema's id |
+| `vault-namespace` | the Secret Manager prefix `sb-TENANT-`, marked by a secret `sb-TENANT-namespace`, with replication only in the cell's region |
+| `root-key` | the Cloud KMS key `cell-TENANT-root` (symmetric, encrypt and decrypt) in the key ring `sb-TENANT`. `Wrap` and `Unwrap` are KMS `encrypt` and `decrypt`, with the key's name as additional authenticated data, so the key's material never leaves KMS |
+| `queue` | the Pub/Sub topic `TENANT-jobs`, with message storage limited to the cell's region |
+
+The manifest's region maps to one GCP location: `eu` is `europe-west1`, `us` is `us-central1`. Any other region is an error. Every resource is labelled `sb-tenant` and `sb-kind`, and has its location. A resource that already exists with a different tenant, kind or location is an error, never reused. Only an HTTP 404 means a resource is absent. Any other failure, a 403 included, is an error, so the adapter never creates a second copy of something it couldn't read. Long-running operations are polled until they finish or the context ends.
+
+**The deploy role.** The tenant creates it in their own project with `deploy/gcp/bootstrap-deploy-role.sh PROJECT FACTORY_PRINCIPAL`. The script creates a custom role, `sbCellDeployer`, whose permissions are exactly those the adapter uses (`gcp.DeployPermissions`, which a test compares with the script). It creates a service account, `sb-cell-deployer`, with that role on the project and nothing else, and lets only the factory's principal impersonate it. The role can't read secret values, decrypt anything other than through the cell's own key, or change IAM. At hand-off the factory loses this impersonation grant, unless the hand-off record retains it (sb-factory(7)).
+
+
 
 The control plane's tenant registry holds one **cell record** per tenant: `tenant`, `region`, the cell `endpoint`, the `hosts` that reach it (by default `TENANT.` plus the control plane's base domain), and the custody record (`custody`, `placement`, `key_custodian`). `sb tenant apply` writes the record when it creates a cell. v1 always writes `factory`, `factory-account` and `factory`. The registry also holds each tenant's applied resources (sb-tenant(1)). In production it is Postgres (ADR-0017); `file:///DIR` keeps it in `DIR/cells` and `DIR/tenants` for development.
 

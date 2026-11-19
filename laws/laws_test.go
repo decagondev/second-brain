@@ -232,3 +232,11 @@ func TestLAW17_HandoffLeavesOnlyRetainedGrants(t *testing.T) {
 func TestLAW18_HandoffNeverOrphansTheKey(t *testing.T) {
 	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Handoff(r, NewHandoffWorld()) })
 }
+
+func TestLAW02_GCPCellsShareNothing(t *testing.T) {
+	Check(t, "LAW-02", 40, func(r *rand.Rand) error {
+		stamp, done := NewGCPCellStamper()
+		defer done()
+		return law02Cells(r, stamp)
+	})
+}

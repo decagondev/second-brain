@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>GCP placement (S7.1c: SB-703): the <code>gcp</code> Placement and Keys adapter (Cloud SQL, Cloud KMS, Secret Manager, Pub/Sub over REST), its recorded fake, the tenant's deploy-role bootstrap script, and a LAW-02 law test over GCP projects.</li>
 <li>Factory roles (S7.1b: SB-702): <code>factory-operator</code> and <code>tenant-owner</code> in Cedar, a <code>CellCustody</code> entity and six custody actions; no self-approval of a plan, no content reads across tenants, and custody records must name their tenant.</li>
 <li>Hand-off specified (S7.1a: SB-701): <code>sb-factory(1)</code>, the phases and invariants of a hand-off in sb-factory(7), the hand-off runbook, and LAW-17 and LAW-18 law tests (red until SB-705).</li>
 <li>Pen-test readiness (S6.4b: SB-612): <code>security/</code> with the scope, the rules of engagement, the findings register and the injection corpus; a <code>make check</code> gate on open critical or high findings; law tests for hostile hosts, encoded secrets and the corpus.</li>

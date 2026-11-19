@@ -82,3 +82,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-02, LAW-07, LAW-09 | Tested (extended) | SB-612: hostile Host headers refused; encoded secrets (red first, PT-0001/BUG-0010) and the injection corpus (red first, PT-0002/BUG-0011) now green |
 | 2026-11-19 | LAW-17, LAW-18 | LAW-17 Modelled → Tested (red); LAW-18 stays Tested | SB-701: hand-off law tests over random runs, red until SB-705; a reference controller from `Handoff.tla` passes, and four mutations are caught |
 | 2026-11-19 | LAW-02 | Tested (extended) | SB-702: factory roles in Cedar; the policy law test draws custody verbs and role groups and finds no cross-tenant allow; custody records must name their tenant |
+| 2026-11-19 | LAW-02 | Tested (extended) | SB-703: `TestLAW02_GCPCellsShareNothing`, the cell-isolation law over GCP projects through the gcp adapter's fake; two-project test |

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Stamp a cell into a company's own account with least privilege.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Cell stamped into a tenant account via a scoped deploy role the tenant creates</li>
-<li class="task"><span class="box"></span>Same template; no tenant-specific code</li>
+<li class="task"><span class="box"></span>Cell stamped into a tenant account via a scoped deploy role the tenant creates (against the recorded fake, with the deploy role's exact permissions; a run in a real GCP project needs the user's project and credentials)</li>
+<li class="task done"><span class="box">✓</span>Same template; no tenant-specific code</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Tenant-account adapter behind <code>Placement</code></li>
-<li class="task"><span class="box"></span>Bootstrap script for the tenant's deploy role</li>
-<li class="task"><span class="box"></span>Two-account test</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-02</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Tenant-account adapter behind <code>Placement</code></li>
+<li class="task done"><span class="box">✓</span>Bootstrap script for the tenant's deploy role</li>
+<li class="task done"><span class="box">✓</span>Two-account test</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-02</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S7.1c): sb-tenancy(7) gained "Placement on GCP, exactly". <code>internal/adapters/placement/gcp</code> implements <code>Placement</code> and <code>Keys</code> over Google's REST APIs with the standard library only, so no new module was needed. The template's resources map to a Cloud SQL instance and database, the <code>idx</code> schema made by migrations, a Secret Manager prefix with a marker secret, a Cloud KMS key ring and key, and a Pub/Sub topic, all in the region's one location (<code>eu</code> is <code>europe-west1</code>, <code>us</code> is <code>us-central1</code>). Every resource is labelled with its tenant, kind and location, and one with another identity is refused. Only a 404 means absent. <code>Wrap</code> and <code>Unwrap</code> are KMS encrypt and decrypt, with the key's name as AAD. <code>deploy/gcp/bootstrap-deploy-role.sh</code> creates the custom role <code>sbCellDeployer</code>, granting exactly <code>gcp.DeployPermissions</code> (a test compares the two), and a service account only the factory may impersonate. <code>gcptest</code> is a recorded fake that enforces one IAM permission per call and per-project tokens. The adapter passes the shared placement contract (<code>celltest</code>). <code>TestTwoAccounts</code> shows one tenant's deployer can't create, read or decrypt in another's project. <code>TestEveryPermissionIsNeeded</code> removes each of the 14 permissions in turn and shows the stamp, wrap or unwrap then fails. The new law test <code>TestLAW02_GCPCellsShareNothing</code> runs the cell-isolation law over GCP projects.</p>
+<p><strong>Left:</strong> a run in a real GCP project with the user's project and credentials.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-703-placement-adapter-for-tenant-owned-cloud.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>
