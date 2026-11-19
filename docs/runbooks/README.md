@@ -16,7 +16,12 @@ One runbook for each law with a production alert ([sb-observability(7)](../../ma
 - [LAW-11](LAW-11.md): Audit chain unbroken
 - [LAW-12](LAW-12.md): Deprovision revokes fast
 - [LAW-16](LAW-16.md): The manifest is the truth
+- [LAW-17](LAW-17.md): Hand-off leaves no unlisted access
 - [LAW-18](LAW-18.md): The root key always has a custodian
+
+Hand-off:
+
+- [Hand-off](handoff.md): move a cell to the company's own cloud account under its own key (SB-701)
 
 Game days:
 

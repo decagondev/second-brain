@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.1a The hand-off, specified (SB-701)
+
+**Wave/slice:** W7 / S7.1a · **Author:** platform lead + Claude · **Status:** In review (security and tenant review)
+
+**What:** `manual/sb-factory.1.md`, a final sb-factory(7) with "The hand-off, exactly", `docs/runbooks/handoff.md`, `laws/law17.go` (the hand-off world, LAW-17 and LAW-18 checks), and a reference controller with four mutants in the self-tests.
+
+**Why this way:** Manual first, and the manual follows the model. The table of phases is `Handoff.tla` written out for people, and the law tests check its invariants after every random operation, so the controller (SB-704, SB-705) has a precise target before a line of it exists. Writing a reference controller from the model shows the checks pass on something correct, and the mutants show they are not vacuous. Without that, a red test proves only that it is red.
+
+**Learned:** The model's dual approval says nothing about who approves, so a planner approving their own plan would satisfy it. The manual now requires a second factory operator, and the law checks it. The model may follow (W7 follow-up).
+
+**Laws:** LAW-17 and LAW-18 move to Tested (red) through the ratchet, with two lines in `expected_red.txt`, both SB-705. Everything else is green. LAW-17 now has a **Watch** line, so the alert test required a rule: `sb_unlisted_access_paths` above 0 is Sev-1, with `docs/runbooks/LAW-17.md`. It fires once SB-706 emits the metric.
+
+**Next:** S7.1b, the factory roles (SB-702).
+
 ## 2026-11-19 S6.4b Pen-test readiness (SB-612)
 
 **Wave/slice:** W6 / S6.4b · **Author:** platform lead + Claude · **Status:** In review (the external test is human)

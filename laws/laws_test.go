@@ -224,3 +224,11 @@ func TestLAW09_PenTestCorpusIsFlagged(t *testing.T) {
 func TestLAW02_HostileHostsAreRefused(t *testing.T) {
 	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Attacks(r, NewRouter()) })
 }
+
+func TestLAW17_HandoffLeavesOnlyRetainedGrants(t *testing.T) {
+	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return law17Handoff(r, NewHandoffWorld()) })
+}
+
+func TestLAW18_HandoffNeverOrphansTheKey(t *testing.T) {
+	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Handoff(r, NewHandoffWorld()) })
+}

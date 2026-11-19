@@ -22,4 +22,5 @@ var Catalog = map[string]string{
 	"sb_deactivated_requests_total":      "Requests from deactivated users (LAW-12)",
 	"sb_drift_findings_total":            "Manifest drift findings (LAW-16)",
 	"sb_unwrappable_keys":                "Data keys the root key can't unwrap (LAW-18)",
+	"sb_unlisted_access_paths":           "Factory access paths not in the hand-off record, from sb factory access (LAW-17)",
 }

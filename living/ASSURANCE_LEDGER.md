@@ -25,8 +25,8 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Tested | — | `laws/` property test over random model output (valid, spoofed and garbage labels) through `answer.Compose`, end to end through the ask agent, and in the web UI's rendering (`web/src/ui.test.tsx`), + self-tests | — | SB-304, SB-309 |
 | [LAW-15](../manual/sb-laws.7.md#law-15) | Approval binds one payload | Tested | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | `laws/` property test (stale, made-up and self approvals, edits) through the real bus, + self-test; canonical-hash tests | — | SB-011, SB-406 |
 | [LAW-16](../manual/sb-laws.7.md#law-16) | The manifest is the truth | Tested | — | `laws/` manifest check (round trip and rejection) plan check (plan is the manifest diff) and apply check (recorded state equals the manifest; re-apply changes nothing), + self-tests; drift side with SB-510 | — | SB-101, SB-510, SB-602 |
-| [LAW-17](../manual/sb-laws.7.md#law-17) | Hand-off leaves no unlisted access | Modelled | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | — | — | SB-705, SB-706 |
-| [LAW-18](../manual/sb-laws.7.md#law-18) | The root key always has a custodian | Tested | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | `laws/` W1 check: recorded custodian and working root key, + self-test; hand-off in W7 | — | SB-114, SB-704, SB-705 |
+| [LAW-17](../manual/sb-laws.7.md#law-17) | Hand-off leaves no unlisted access | Tested | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | `TestLAW17_HandoffLeavesOnlyRetainedGrants`, red until SB-705; reference controller + 4 mutants | Sev-1 rule `sb_unlisted_access_paths` (fires once SB-706 emits it) | SB-701, SB-705, SB-706 |
+| [LAW-18](../manual/sb-laws.7.md#law-18) | The root key always has a custodian | Tested | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | `laws/` W1 check: recorded custodian and working root key, + self-test; `TestLAW18_HandoffNeverOrphansTheKey`, red until SB-705 | — | SB-114, SB-701, SB-704, SB-705 |
 
 ## History
 
@@ -80,3 +80,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-13 | Tested (extended) | SB-611: `TestLAW13_RetentionLeavesTheIndexDerived`: sweep and erasure match the model, and the index still equals a rebuild; index-ageing and off-by-one mutations caught |
 | 2026-11-19 | LAW-11 | Tested (extended) | SB-613: `TestLAW11_ChainSurvivesRestore`: a restore from 3-2-1 copies (zero to three tampered) is row for row the backup, verifies and continues; trusting an unchecked copy is caught |
 | 2026-11-19 | LAW-02, LAW-07, LAW-09 | Tested (extended) | SB-612: hostile Host headers refused; encoded secrets (red first, PT-0001/BUG-0010) and the injection corpus (red first, PT-0002/BUG-0011) now green |
+| 2026-11-19 | LAW-17, LAW-18 | LAW-17 Modelled → Tested (red); LAW-18 stays Tested | SB-701: hand-off law tests over random runs, red until SB-705; a reference controller from `Handoff.tla` passes, and four mutations are caught |

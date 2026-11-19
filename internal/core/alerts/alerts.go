@@ -27,6 +27,7 @@ var Rules = []Rule{
 	{Law: "LAW-11", Metric: "sb_audit_verify_failures_total", Delta: true},
 	{Law: "LAW-12", Metric: "sb_deactivated_requests_total", Delta: true},
 	{Law: "LAW-16", Metric: "sb_drift_findings_total", Delta: true},
+	{Law: "LAW-17", Metric: "sb_unlisted_access_paths", Above: 0},
 	{Law: "LAW-18", Metric: "sb_unwrappable_keys", Above: 0},
 }
 

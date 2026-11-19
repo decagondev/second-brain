@@ -139,13 +139,13 @@ A cell's live configuration equals its applied manifest. Every console change is
 
 After a hand-off to `tenant` custody completes, the factory holds no access path to the cell (IAM role, deploy credential, break-glass role, network route, key wrap) except the grants listed in the hand-off record.
 
-*Checks:* Model (`Handoff.tla: NoUnlistedAccess`) · Verify (`sb tenant verify --law LAW-17`, which enumerates access paths from IaC state and IAM) · Watch: monthly re-enumeration. Planned for W7; v1 has no hand-offs.
+*Checks:* Model (`Handoff.tla: NoUnlistedAccess`) · Verify (`sb factory access`, which enumerates access paths from IaC state and IAM, sb-factory(1)) · Property: every hand-off run in the controller ends with only the retained grants (`TestLAW17_HandoffLeavesOnlyRetainedGrants`, red until SB-705) · Watch: monthly re-enumeration.
 
 ### LAW-18: The root key always has a custodian {#law-18}
 
 At every moment, at least one custodian can unwrap a cell's root key. A hand-off re-wraps under the new custodian **before** destroying the old wrap.
 
-*Checks:* Model (`Handoff.tla: KeyNeverOrphaned`) · step-ordering test in the hand-off controller · Watch: key-wrap inventory per cell.
+*Checks:* Model (`Handoff.tla: KeyNeverOrphaned`) · step-ordering property over random hand-offs, aborts and failures in the controller (`TestLAW18_HandoffNeverOrphansTheKey`, red until SB-704 and SB-705) · Watch: key-wrap inventory per cell.
 
 ### External review (SB-612)
 

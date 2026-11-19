@@ -56,7 +56,7 @@ func TestEachRuleFires(t *testing.T) {
 // Every alert's metric is one a cell emits (obs.Catalog is checked against the dashboard).
 func TestRulesUseKnownMetrics(t *testing.T) {
 	known := []string{"law_violation_total", "sb_audit_write_failures_total", "sb_attestation_findings_total", "sb_secret_findings_total",
-		"sb_release_lag_max", "sb_audit_verify_failures_total", "sb_deactivated_requests_total", "sb_drift_findings_total", "sb_unwrappable_keys"}
+		"sb_release_lag_max", "sb_audit_verify_failures_total", "sb_deactivated_requests_total", "sb_drift_findings_total", "sb_unwrappable_keys", "sb_unlisted_access_paths"}
 	for _, r := range Rules {
 		name := strings.SplitN(r.Metric, "{", 2)[0]
 		found := false

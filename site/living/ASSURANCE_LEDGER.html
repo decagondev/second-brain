@@ -179,20 +179,20 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-17">LAW-17</a></td>
 <td>Hand-off leaves no unlisted access</td>
-<td>Modelled</td>
+<td>Tested</td>
 <td><code>Handoff.tla</code>: TLC clean (23 states); 4 mutations caught</td>
-<td>—</td>
-<td>—</td>
-<td>SB-705, SB-706</td>
+<td><code>TestLAW17_HandoffLeavesOnlyRetainedGrants</code>, red until SB-705; reference controller + 4 mutants</td>
+<td>Sev-1 rule <code>sb_unlisted_access_paths</code> (fires once SB-706 emits it)</td>
+<td>SB-701, SB-705, SB-706</td>
 </tr>
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-18">LAW-18</a></td>
 <td>The root key always has a custodian</td>
 <td>Tested</td>
 <td><code>Handoff.tla</code>: TLC clean (23 states); 4 mutations caught</td>
-<td><code>laws/</code> W1 check: recorded custodian and working root key, + self-test; hand-off in W7</td>
+<td><code>laws/</code> W1 check: recorded custodian and working root key, + self-test; <code>TestLAW18_HandoffNeverOrphansTheKey</code>, red until SB-705</td>
 <td>—</td>
-<td>SB-114, SB-704, SB-705</td>
+<td>SB-114, SB-701, SB-704, SB-705</td>
 </tr>
 </tbody>
 </table>
@@ -494,6 +494,12 @@
 <td>LAW-02, LAW-07, LAW-09</td>
 <td>Tested (extended)</td>
 <td>SB-612: hostile Host headers refused; encoded secrets (red first, PT-0001/BUG-0010) and the injection corpus (red first, PT-0002/BUG-0011) now green</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-17, LAW-18</td>
+<td>LAW-17 Modelled → Tested (red); LAW-18 stays Tested</td>
+<td>SB-701: hand-off law tests over random runs, red until SB-705; a reference controller from <code>Handoff.tla</code> passes, and four mutations are caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

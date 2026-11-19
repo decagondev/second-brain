@@ -16,7 +16,7 @@ New here? Take the [tour](sb-tour.7.md) first.
 | [sb-tour(7)](sb-tour.7.md) | Fifteen minutes from manifest to cited answer to approved action |
 | [sb-laws(7)](sb-laws.7.md) | The eighteen laws, and how each is checked |
 | [sb-tenancy(7)](sb-tenancy.7.md) | Cells, isolation, regions |
-| [sb-factory(7)](sb-factory.7.md) | The factory, custody levels and hand-off (W7) |
+| [sb-factory(7)](sb-factory.7.md) | The factory, custody levels and hand-off |
 | [sb-identity(7)](sb-identity.7.md) | Sign-in, SCIM, sessions, deprovisioning |
 | [sb-permissions(7)](sb-permissions.7.md) | Allow, deny, unknown; prefilter versus live check |
 | [sb-ingest(7)](sb-ingest.7.md) | Sync, sanitising, provenance, freshness, rebuild |
@@ -41,6 +41,7 @@ New here? Take the [tour](sb-tour.7.md) first.
 | [sb-audit(1)](sb-audit.1.md) | `verify`, `tail`, `export` |
 | [sb-release(1)](sb-release.1.md) | `status`, `promote`, `rollback` (maintainers) |
 | [sb-eval(1)](sb-eval.1.md) | `run`, `diff` |
+| [sb-factory(1)](sb-factory.1.md) | `status`, `handoff`, `access`, `detach` (factory operators, tenant owners) |
 
 ## (3) API
 

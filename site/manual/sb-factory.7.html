@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a class="current" href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a class="current" href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-FACTORY(7)</span><span>Second Brain Manual</span><span>SB-FACTORY(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-factory7">sb-factory(7)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-factory — how Second Brains are produced, who has custody of each, and how custody is handed off</p>
@@ -24,12 +24,10 @@
 <pre><code class="language-text">custody:  factory  →  tenant  →  detached
                    ←  (hand-back)
 
-sb factory status   TENANT                                    (W1, read-only)
-sb factory handoff  plan    TENANT --to tenant-account://ID   (W7)
-sb factory handoff  approve PLAN-HASH                         (W7)
-sb factory handoff  execute PLAN-HASH                         (W7)
-sb factory handoff  abort   PLAN-HASH                         (W7)
-sb factory detach   TENANT  --accept-unsupported              (W7)
+sb factory status   TENANT
+sb factory handoff  plan|show|approve|execute|abort ...
+sb factory access   TENANT
+sb factory detach   TENANT --accept-unsupported --out DIR
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
 <p>The <strong>factory</strong> is the control plane, the cell template and the release train, run by the parent organisation. It stamps one isolated cell per tenant (<a href="sb-tenancy.7.html">sb-tenancy(7)</a>) and keeps every cell on the release train (<a href="sb-release.7.html">sb-release(7)</a>). The factory's own organisation is a normal tenant (ring 0). There is no superuser.</p>
@@ -77,6 +75,93 @@ sb factory detach   TENANT  --accept-unsupported              (W7)
 <li><strong>execute:</strong> provision in the tenant account, re-wrap the root key under the tenant's KMS, move state, verify laws and the audit chain, cut over, revoke factory paths, then destroy the factory key wrap.</li>
 <li><strong>abort:</strong> allowed any time before cutover. The factory cell never stops serving before cutover.</li>
 </ol>
+<p>The command grammar, options and exit codes are in <a href="sb-factory.1.html">sb-factory(1)</a>. The step-by-step procedure for both sides is <a href="../docs/runbooks/handoff.html">the hand-off runbook</a>.</p>
+<h3 id="the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</h3>
+<p>A hand-off moves through the phases of <code>proofs/tla/Handoff.tla</code>, and the controller (SB-705) stores the phase and writes a <code>kind: custody</code> audit row for each step <strong>before</strong> it acts:</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Reached by</th>
+<th>The factory cell</th>
+<th>Key wraps</th>
+<th>Factory access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Managed</code></td>
+<td>start, or abort</td>
+<td>serves</td>
+<td>factory</td>
+<td>all paths</td>
+</tr>
+<tr>
+<td><code>Planned</code></td>
+<td><code>plan</code> (a new plan voids all approvals)</td>
+<td>serves</td>
+<td>factory</td>
+<td>all paths</td>
+</tr>
+<tr>
+<td><code>Provisioned</code></td>
+<td><code>execute</code>, once a factory operator other than the planner and the tenant owner have both approved the current hash</td>
+<td>serves</td>
+<td>factory</td>
+<td>all paths</td>
+</tr>
+<tr>
+<td><code>KeyDual</code></td>
+<td>the root key is wrapped under the tenant's KMS and unwrapped once to prove it</td>
+<td>serves</td>
+<td>factory <strong>and</strong> tenant</td>
+<td>all paths</td>
+</tr>
+<tr>
+<td><code>Moved</code></td>
+<td>state is restored in the tenant account (the game day's restore, SB-613) and the index is rebuilt</td>
+<td>serves</td>
+<td>both</td>
+<td>all paths</td>
+</tr>
+<tr>
+<td><code>Verified</code></td>
+<td><code>sb tenant verify</code> passes, the audit chain verifies with the cell's key and continues, and the attestation matches</td>
+<td>serves</td>
+<td>both</td>
+<td>all paths</td>
+</tr>
+<tr>
+<td><code>CutOver</code></td>
+<td>traffic moves; every path not in the retained grants is revoked</td>
+<td>stops</td>
+<td>both</td>
+<td>retained grants only</td>
+</tr>
+<tr>
+<td><code>TenantOwned</code></td>
+<td>the factory's wrap is destroyed, and <code>sb factory access</code> passes</td>
+<td>gone</td>
+<td>tenant</td>
+<td>retained grants only</td>
+</tr>
+<tr>
+<td><code>Detached</code></td>
+<td><code>detach</code></td>
+<td>gone</td>
+<td>tenant</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>Three rules hold at every step. They are the model's invariants and the law tests' checks:</p>
+<ol>
+<li><strong>The key always has a custodian, and the serving cell can unwrap it</strong> (LAW-18). The tenant's wrap is made and tested before the factory's is destroyed, and the factory's is destroyed only after cutover.</li>
+<li><strong>Nothing moves without both approvals of the current plan.</strong> An approval is for a hash, and changing the plan changes the hash.</li>
+<li><strong>After cutover the factory holds only the retained grants</strong> (LAW-17), and after detach it holds none.</li>
+</ol>
+<p>Abort is allowed in every phase from <code>Planned</code> to <code>Verified</code>, and it restores <code>Managed</code> exactly: factory wrap only, all paths, the factory cell serving. A failed check in <code>execute</code> stops before cutover and leaves the phase where it was, so the operator can fix the problem and resume or abort.</p>
+<p>The <strong>hand-off record</strong> is written at <code>TenantOwned</code> and kept in the registry's custody history: the plan hash, both approvals, the new custody record (<code>custody: tenant</code>, <code>placement: tenant-account://PROVIDER/ID</code>, <code>key_custodian: tenant</code>), the retained grants, and the <code>sb factory access</code> result. LAW-17 is checked against this record.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-17">LAW-17</a> no unlisted factory access after hand-off · <a href="sb-laws.7.html#law-18">LAW-18</a> the root key always has a custodian. LAW-01 to LAW-16 continue to hold for <code>factory</code> and <code>tenant</code> custody.</p>
 <h2 id="examples">EXAMPLES</h2>
@@ -96,8 +181,8 @@ plan 3c09e1…  target tenant-account://cloud/gamma-prod-7731 (region eu)
 needs approval from: factory operator, tenant owner (group:gamma-it-owners)
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
-<p><a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+<p><a href="sb-factory.1.html">sb-factory(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

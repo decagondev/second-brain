@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Hand-off specified (S7.1a: SB-701): <code>sb-factory(1)</code>, the phases and invariants of a hand-off in sb-factory(7), the hand-off runbook, and LAW-17 and LAW-18 law tests (red until SB-705).</li>
 <li>Pen-test readiness (S6.4b: SB-612): <code>security/</code> with the scope, the rules of engagement, the findings register and the injection corpus; a <code>make check</code> gate on open critical or high findings; law tests for hostile hosts, encoded secrets and the corpus.</li>
 <li>DR game day (S6.4a: SB-613): the scoring rules in sb-observability(7), <code>internal/core/gameday</code> (restore from the first good copy into empty stores, and the score), a rehearsal in <code>tests/gameday</code> run by <code>make check</code>, the game day runbook, and a LAW-11 law test for a restore.</li>
 <li>Retention and deletion (S6.3c: SB-611): the nightly retention job over traces, conversations, feedback and log files (never audit or the index), <code>POST /v1/admin/subjects/erase</code> with audit before and after, the <code>retention</code> audit kind, daily log files, and a LAW-13 law test showing that retention leaves the index derived.</li>

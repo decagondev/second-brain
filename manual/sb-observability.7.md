@@ -52,6 +52,7 @@ Every law with a production check has one alert rule, in `internal/core/alerts`,
 | LAW-11 | `sb_audit_verify_failures_total` | it increases |
 | LAW-12 | `sb_deactivated_requests_total` | it increases |
 | LAW-16 | `sb_drift_findings_total` | it increases |
+| LAW-17 | `sb_unlisted_access_paths` (`sb factory access`, after cutover and monthly) | it is above 0 |
 | LAW-18 | `sb_unwrappable_keys` | it is above 0 |
 
 All are **Sev-1**, sent through the alert webhook with the law, the tenant and the runbook path, never content.

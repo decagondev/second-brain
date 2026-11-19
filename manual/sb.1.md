@@ -20,7 +20,7 @@ sb kill    agent|connector|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
 sb release status|promote|rollback       (maintainers)
-sb factory status|handoff|detach         (factory operators, W7)
+sb factory status|handoff|access|detach  (factory operators and tenant owners, sb-factory(1))
 sb eval    run|diff SUITE
 sb version
 ```
@@ -94,4 +94,4 @@ $ echo $?
 
 ## SEE ALSO
 
-[sb-tenant(1)](sb-tenant.1.md), [sb-kill(1)](sb-kill.1.md), [sb-audit(1)](sb-audit.1.md), [sb-release(1)](sb-release.1.md), [sb-eval(1)](sb-eval.1.md), [sb-factory(7)](sb-factory.7.md), [sb-errors(7)](sb-errors.7.md)
+[sb-tenant(1)](sb-tenant.1.md), [sb-kill(1)](sb-kill.1.md), [sb-audit(1)](sb-audit.1.md), [sb-release(1)](sb-release.1.md), [sb-eval(1)](sb-eval.1.md), [sb-factory(1)](sb-factory.1.md), [sb-factory(7)](sb-factory.7.md), [sb-errors(7)](sb-errors.7.md)

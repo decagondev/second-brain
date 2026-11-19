@@ -753,3 +753,121 @@ func TestSelf_LAW11RestoreMutationIsCaught(t *testing.T) {
 		t.Error("LAW-11 (restore): restoring an unchecked copy was not caught")
 	}
 }
+
+// refHandoff is a reference hand-off controller written from Handoff.tla, so the LAW-17
+// and LAW-18 checks can be shown to pass on a correct controller and to catch broken ones
+// before SB-705 exists.
+type refHandoff struct {
+	s       HandoffState
+	failing bool
+	bug     string // "", "destroy-early", "keep-paths", "planner-approves", "abort-keeps-wrap"
+}
+
+func newRefHandoff(bug string) *refHandoff {
+	paths := []string{"deploy-role", "break-glass-1", "break-glass-2", "iam-1", "iam-2", "publish-releases", "platform-kill", "support-metrics"}
+	return &refHandoff{bug: bug, s: HandoffState{Phase: "Managed", Serving: "factoryCell", Wraps: map[string]bool{"factory": true},
+		Access: append([]string(nil), paths...), Paths: paths, Approved: map[string]string{}, Approvers: map[string]string{}}}
+}
+
+func (h *refHandoff) Plan(planner string, retain []string) (string, error) {
+	if h.s.Phase != "Managed" && h.s.Phase != "Planned" {
+		return "", fmt.Errorf("EINVAL: a hand-off is running")
+	}
+	h.s.Phase, h.s.Planner, h.s.Retained = "Planned", planner, append([]string(nil), retain...)
+	h.s.Plan = fmt.Sprintf("ph_%s_%d", strings.Join(retain, "+"), len(h.s.Approved)+len(h.s.Plan))
+	h.s.Approved, h.s.Approvers = map[string]string{}, map[string]string{}
+	return h.s.Plan, nil
+}
+
+func (h *refHandoff) Approve(side, who, hash string) error {
+	if h.s.Phase != "Planned" || hash != h.s.Plan || (side == "factory" && who == h.s.Planner && h.bug != "planner-approves") {
+		return fmt.Errorf("ENOAPPROVAL")
+	}
+	h.s.Approved[side], h.s.Approvers[side] = hash, who
+	return nil
+}
+
+func (h *refHandoff) Fail() { h.failing = true }
+
+func (h *refHandoff) Step() error {
+	if h.failing {
+		h.failing = false
+		return fmt.Errorf("check failed")
+	}
+	switch h.s.Phase {
+	case "Planned":
+		if h.s.Approved["factory"] != h.s.Plan || h.s.Approved["tenant"] != h.s.Plan {
+			return fmt.Errorf("ENOAPPROVAL")
+		}
+		h.s.Phase = "Provisioned"
+	case "Provisioned":
+		h.s.Wraps["tenant"], h.s.Phase = true, "KeyDual"
+		if h.bug == "destroy-early" {
+			h.s.Wraps["factory"] = false
+		}
+	case "KeyDual":
+		h.s.Phase = "Moved"
+	case "Moved":
+		h.s.Phase = "Verified"
+	case "Verified":
+		h.s.Serving, h.s.Phase = "tenantCell", "CutOver"
+		if h.bug != "keep-paths" {
+			h.s.Access = append([]string(nil), h.s.Retained...)
+		}
+	case "CutOver":
+		h.s.Wraps["factory"], h.s.Phase = false, "TenantOwned"
+	}
+	return nil
+}
+
+func (h *refHandoff) Abort() error {
+	switch h.s.Phase {
+	case "Planned", "Provisioned", "KeyDual", "Moved", "Verified":
+		h.s.Phase, h.s.Plan = "Managed", ""
+		h.s.Approved, h.s.Approvers = map[string]string{}, map[string]string{}
+		h.s.Wraps = map[string]bool{"factory": true, "tenant": h.bug == "abort-keeps-wrap" && h.s.Wraps["tenant"]}
+		return nil
+	}
+	return fmt.Errorf("EINVAL")
+}
+
+func (h *refHandoff) Detach() error {
+	if h.s.Phase != "TenantOwned" {
+		return fmt.Errorf("EINVAL")
+	}
+	h.s.Phase, h.s.Access = "Detached", nil
+	return nil
+}
+
+func (h *refHandoff) State() HandoffState {
+	c := h.s
+	c.Wraps = map[string]bool{}
+	for k, v := range h.s.Wraps {
+		if v {
+			c.Wraps[k] = true
+		}
+	}
+	c.Access = append([]string(nil), h.s.Access...)
+	return c
+}
+
+func TestSelf_HandoffReferencePassesLAW17AndLAW18(t *testing.T) {
+	for seed := int64(1); seed <= runs; seed++ {
+		if err := law17Handoff(rand.New(rand.NewSource(seed)), newRefHandoff("")); err != nil {
+			t.Fatalf("seed %d: LAW-17 on the reference: %v", seed, err)
+		}
+		if err := law18Handoff(rand.New(rand.NewSource(seed)), newRefHandoff("")); err != nil {
+			t.Fatalf("seed %d: LAW-18 on the reference: %v", seed, err)
+		}
+	}
+}
+
+func TestSelf_HandoffMutationsAreCaught(t *testing.T) {
+	for bug, law := range map[string]func(*rand.Rand, HandoffWorld) error{
+		"destroy-early": law18Handoff, "keep-paths": law17Handoff, "planner-approves": law17Handoff, "abort-keeps-wrap": law17Handoff,
+	} {
+		if !violates(runs, func(r *rand.Rand) error { return law(r, newRefHandoff(bug)) }) {
+			t.Errorf("hand-off bug %q was not caught", bug)
+		}
+	}
+}

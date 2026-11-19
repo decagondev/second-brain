@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-factory(1) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a class="current" href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-FACTORY(1)</span><span>Second Brain Manual</span><span>SB-FACTORY(1)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-factory1">sb-factory(1)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-factory — show a cell's custody, hand it off to its company, check the factory's access, and detach</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">sb factory status   TENANT
+sb factory handoff  plan    TENANT --to tenant-account://PROVIDER/ID --region REGION [--retain GRANT]...
+sb factory handoff  show    PLAN
+sb factory handoff  approve PLAN --as factory|tenant
+sb factory handoff  execute PLAN
+sb factory handoff  abort   PLAN --reason TEXT
+sb factory access   TENANT
+sb factory detach   TENANT --accept-unsupported --out DIR
+</code></pre>
+<p><code>PLAN</code> is a plan hash, <code>ph_</code> followed by 64 hex characters, or a unique prefix of at least 12 of them.</p>
+<h2 id="description">DESCRIPTION</h2>
+<p>The concepts (custody levels, the hand-off steps, detach) are in <a href="sb-factory.7.html">sb-factory(7)</a>. This page is the command grammar. Every command that changes anything writes a <code>kind: custody</code> audit row in the tenant's cell before it acts, and in the factory's own audit log (LAW-04).</p>
+<h3 id="who-may-run-what">Who may run what</h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Role (sb-policy(5), Factory roles)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status</code>, <code>handoff show</code>, <code>access</code></td>
+<td><code>factory-operator</code>, or the tenant's <code>tenant-owner</code></td>
+</tr>
+<tr>
+<td><code>handoff plan</code>, <code>handoff execute</code>, <code>handoff abort</code></td>
+<td><code>factory-operator</code></td>
+</tr>
+<tr>
+<td><code>handoff approve --as factory</code></td>
+<td><code>factory-operator</code>, and not the person who made the plan</td>
+</tr>
+<tr>
+<td><code>handoff approve --as tenant</code></td>
+<td><code>tenant-owner</code> (member of the tenant IdP group <code>sb-owners</code>), signed in through the tenant's own IdP, with step-up</td>
+</tr>
+<tr>
+<td><code>detach</code></td>
+<td><code>tenant-owner</code>, on a cell in <code>tenant</code> custody</td>
+</tr>
+</tbody>
+</table>
+<p>Anything else is <code>EPERM</code> (exit 3). Neither role can read tenant content.</p>
+<h3 id="status-tenant"><code>status TENANT</code></h3>
+<p>Prints the custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>), the channel, and the hand-off in progress, if any, with its phase. It changes nothing.</p>
+<h3 id="handoff-plan-tenant-to-tenant-accountproviderid-region-region"><code>handoff plan TENANT --to tenant-account://PROVIDER/ID --region REGION</code></h3>
+<p>Builds the hand-off plan and prints it with its hash. The plan holds the tenant, its current custody record, the target account and region, every resource to provision, the key steps, <strong>every factory access path to revoke</strong>, and the grants to retain. Access paths are enumerated from IaC state, IAM and the registry (SB-706), never typed in. <code>--region</code> must equal the cell's pinned region; a different region is <code>EINVAL</code>. <code>PROVIDER</code> is one the factory has a placement adapter for (<code>gcp</code> first). Each <code>--retain</code> adds a grant; <code>publish-releases</code> is always retained. The grants are:</p>
+<table>
+<thead>
+<tr>
+<th>Grant</th>
+<th>Lets the factory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>publish-releases</code></td>
+<td>publish signed bundles the cell pulls (always kept)</td>
+</tr>
+<tr>
+<td><code>platform-kill</code></td>
+<td>set a platform-wide agent kill switch on this cell</td>
+</tr>
+<tr>
+<td><code>support-metrics</code></td>
+<td>read the cell's content-free metrics</td>
+</tr>
+</tbody>
+</table>
+<p>No grant reads content, and no grant can unwrap the cell's key. The plan is stored and audited as <code>HandoffPlanned</code>. A new plan for the same tenant replaces the old one and voids all approvals of it.</p>
+<h3 id="handoff-show-plan"><code>handoff show PLAN</code></h3>
+<p>Prints the stored plan, its approvals and its phase.</p>
+<h3 id="handoff-approve-plan-as-factorytenant"><code>handoff approve PLAN --as factory|tenant</code></h3>
+<p>Approves <strong>that hash</strong>. The approval records the approver, the side and the hash. A plan that has changed since it was printed has a different hash, so an approval can only ever be for what the approver saw.</p>
+<h3 id="handoff-execute-plan"><code>handoff execute PLAN</code></h3>
+<p>Runs the hand-off once both sides have approved the current plan: provision in the tenant account, re-wrap the root key under the tenant's KMS, move state, verify, cut over, revoke the factory's unlisted paths, destroy the factory's key wrap. Each step is recorded before it starts, and <code>execute</code> resumes from the last finished step if it is interrupted. Before cutover it stops on any failed check and leaves the factory cell serving. After cutover, it finishes the revocation and the key step even when retried.</p>
+<h3 id="handoff-abort-plan-reason-text"><code>handoff abort PLAN --reason TEXT</code></h3>
+<p>Allowed until cutover. It removes what was provisioned in the tenant account and the tenant's key wrap, and returns the cell to <code>Managed</code>. After cutover it is <code>EINVAL</code>: going back is a hand-back, with its own plan and approvals.</p>
+<h3 id="access-tenant"><code>access TENANT</code></h3>
+<p>Enumerates every factory access path to the cell (IAM roles and bindings, deploy credentials, break-glass roles, network routes, key wraps) and compares them with the hand-off record's retained grants. It exits 1 (<code>ELAW</code>) and names each unlisted path when one exists (LAW-17). It runs after cutover and monthly.</p>
+<h3 id="detach-tenant-accept-unsupported-out-dir"><code>detach TENANT --accept-unsupported --out DIR</code></h3>
+<p>Writes the export package (sb-factory(7), Detach) to <code>DIR</code>, then removes the <code>publish-releases</code> grant and the registry entry, keeping the custody history. <code>--accept-unsupported</code> is required: after detach the factory guarantees nothing about the cell.</p>
+<h2 id="options">OPTIONS</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--to tenant-account://PROVIDER/ID</code></td>
+<td>The target account (plan)</td>
+</tr>
+<tr>
+<td><code>--region REGION</code></td>
+<td>Must be the cell's pinned region (plan)</td>
+</tr>
+<tr>
+<td><code>--retain GRANT</code></td>
+<td>Keep a grant after hand-off; repeatable (plan)</td>
+</tr>
+<tr>
+<td><code>--as factory\|tenant</code></td>
+<td>Which side approves (approve)</td>
+</tr>
+<tr>
+<td><code>--reason TEXT</code></td>
+<td>Required for abort; goes into the audit log</td>
+</tr>
+<tr>
+<td><code>--accept-unsupported</code></td>
+<td>Required for detach</td>
+</tr>
+<tr>
+<td><code>--out DIR</code></td>
+<td>Where detach writes the export package</td>
+</tr>
+</tbody>
+</table>
+<p>The global options (<code>--json</code>, <code>--endpoint</code>) are in <a href="sb.1.html">sb(1)</a>.</p>
+<h2 id="exit-status">EXIT STATUS</h2>
+<p>0 success · 1 a check failed: unlisted access (<code>ELAW</code>), chain or law verification failed during execute (<code>ECHAIN</code>, <code>ELAW</code>) · 2 usage, a bad plan hash, the wrong region, or not built yet (<code>EUSAGE</code>, <code>EINVAL</code>, <code>ENOTIMPL</code>) · 3 not permitted (<code>EPERM</code>, <code>EAUTH</code>) · 5 approvals missing or for another hash (<code>ENOAPPROVAL</code>) · 7 the registry, an account or a KMS is unreachable (<code>EUNAVAIL</code>).</p>
+<p>Until its ticket lands, a command exits 2 with <code>ENOTIMPL</code> and names it: <code>handoff</code> SB-705, <code>access</code> SB-706, <code>detach</code> SB-708.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-17">LAW-17</a>, <a href="sb-laws.7.html#law-18">LAW-18</a>, <a href="sb-laws.7.html#law-04">LAW-04</a>, <a href="sb-laws.7.html#law-11">LAW-11</a>.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-text">$ sb factory handoff plan gamma-parts --to tenant-account://gcp/gamma-prod-7731 --region eu --retain platform-kill
+plan ph_3c09e1d2a4b5…  gamma-parts → tenant-account://gcp/gamma-prod-7731 (region eu)
+  provision   postgres, index schema, vault namespace, queue, kms key (tenant-owned)
+  key         wrap the root key under the tenant KMS, then destroy the factory wrap
+  revoke      7 factory access paths (deploy role, 2 break-glass roles, 4 IAM bindings)
+  retain      publish-releases, platform-kill
+needs approval from: a factory operator other than you, and the tenant owner (sb-owners)
+</code></pre>
+<pre><code class="language-sh">sb factory handoff approve ph_3c09e1d2a4b5 --as factory
+sb factory handoff approve ph_3c09e1d2a4b5 --as tenant      # the tenant owner, from their own IdP
+sb factory handoff execute ph_3c09e1d2a4b5
+sb factory access gamma-parts                               # exit 0: only the retained grants remain
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-factory.7.html">sb-factory(7)</a>, <a href="sb-policy.5.html">sb-policy(5)</a>, <a href="../docs/runbooks/handoff.html">the hand-off runbook</a>, <a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a></p><p class="srcline">Source: <code>manual/sb-factory.1.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#who-may-run-what">Who may run what</a></li><li class="l3"><a href="#status-tenant">status TENANT</a></li><li class="l3"><a href="#handoff-plan-tenant-to-tenant-accountproviderid-region-region">handoff plan TENANT --to tenant-account://PROVIDER/ID --region REGION</a></li><li class="l3"><a href="#handoff-show-plan">handoff show PLAN</a></li><li class="l3"><a href="#handoff-approve-plan-as-factorytenant">handoff approve PLAN --as factory|tenant</a></li><li class="l3"><a href="#handoff-execute-plan">handoff execute PLAN</a></li><li class="l3"><a href="#handoff-abort-plan-reason-text">handoff abort PLAN --reason TEXT</a></li><li class="l3"><a href="#access-tenant">access TENANT</a></li><li class="l3"><a href="#detach-tenant-accept-unsupported-out-dir">detach TENANT --accept-unsupported --out DIR</a></li><li class="l2"><a href="#options">OPTIONS</a></li><li class="l2"><a href="#exit-status">EXIT STATUS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>
