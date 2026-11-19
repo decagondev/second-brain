@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.2b The hand-off controller (SB-705)
+
+**Wave/slice:** W7 / S7.2b · **Author:** platform lead + Claude · **Status:** In review (CLI and a cloud Target)
+
+**What:** `internal/core/handoff` (Controller, MemoryStore, Transitions), the tenant-account parser in `cell/custody.go`, and `laws/law17world.go`, which replaces the pending world with the real controller. The manual changed first: sb-factory(7) names the controller, the Target port and the cutover re-check.
+
+**Why this way:** The model is the spec, so the controller's phase table is checked against `Handoff.tla` by reading the file, and a drift between the two fails a test instead of a review. Infrastructure work sits behind one `Target` port, and the key steps go through the verified wrap inventory (SB-704), so the controller's safety doesn't depend on any cloud adapter being right. Cutover re-enumerates the paths after revoking them: if a revoke silently did nothing, the step fails rather than reporting LAW-17 as kept.
+
+**Learned:** A green law test over random runs can still be vacuous if the runs never reach the phases it checks. A self-test now shows the runs reach all nine phases, including `TenantOwned` and `Detached`.
+
+**Laws:** LAW-17 and LAW-18 hand-off tests are green on the real controller, and `laws/expected_red.txt` is empty again. All law tests are green.
+
+**Next:** S7.2c, access-path enumeration (SB-706) and releases after hand-off (SB-707).
+
 ## 2026-11-19 S7.2a Key wraps and re-wrap (SB-704)
 
 **Wave/slice:** W7 / S7.2a · **Author:** platform lead + Claude · **Status:** Done

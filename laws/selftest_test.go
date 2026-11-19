@@ -908,3 +908,20 @@ func (d dropAll) Drop(c string) error {
 	}
 	return nil
 }
+
+// The hand-off law tests reach every phase on the real controller, so their checks of
+// CutOver, TenantOwned and Detached aren't vacuous.
+func TestSelf_HandoffRunsReachEveryPhase(t *testing.T) {
+	seen := map[string]bool{}
+	for seed := int64(1); seed <= runs; seed++ {
+		_ = handoffRun(rand.New(rand.NewSource(seed)), NewHandoffWorld(t.TempDir()), func(_ string, s HandoffState) error {
+			seen[s.Phase] = true
+			return nil
+		})
+	}
+	for _, p := range []string{"Managed", "Planned", "Provisioned", "KeyDual", "Moved", "Verified", "CutOver", "TenantOwned", "Detached"} {
+		if !seen[p] {
+			t.Errorf("no run reached %s", p)
+		}
+	}
+}

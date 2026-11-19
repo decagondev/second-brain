@@ -226,11 +226,11 @@ func TestLAW02_HostileHostsAreRefused(t *testing.T) {
 }
 
 func TestLAW17_HandoffLeavesOnlyRetainedGrants(t *testing.T) {
-	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return law17Handoff(r, NewHandoffWorld()) })
+	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return law17Handoff(r, NewHandoffWorld(t.TempDir())) })
 }
 
 func TestLAW18_HandoffNeverOrphansTheKey(t *testing.T) {
-	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Handoff(r, NewHandoffWorld()) })
+	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Handoff(r, NewHandoffWorld(t.TempDir())) })
 }
 
 func TestLAW02_GCPCellsShareNothing(t *testing.T) {

@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// The real world for these laws is in law17world.go.
+
 // LAW-17 and LAW-18 through the hand-off controller (SB-701 specifies, SB-704 and SB-705
 // build). Random runs of plan, approve, execute, failures, abort and replan must keep the
 // model's invariants (proofs/tla/Handoff.tla) at every step:
@@ -42,20 +44,10 @@ type HandoffWorld interface {
 	State() HandoffState
 }
 
-// NewHandoffWorld builds the system under test: the hand-off controller (SB-705).
-var NewHandoffWorld = func() HandoffWorld { return pendingHandoff{} }
-
-type pendingHandoff struct{}
-
-func (pendingHandoff) Plan(string, []string) (string, error) {
-	return "", fmt.Errorf("%w: the hand-off controller arrives with SB-704 and SB-705", ErrPending)
-}
-func (pendingHandoff) Approve(string, string, string) error { return nil }
-func (pendingHandoff) Step() error                          { return nil }
-func (pendingHandoff) Fail()                                {}
-func (pendingHandoff) Abort() error                         { return nil }
-func (pendingHandoff) Detach() error                        { return nil }
-func (pendingHandoff) State() HandoffState                  { return HandoffState{} }
+// NewHandoffWorld builds the system under test: the hand-off controller (SB-705) with the
+// real wrap inventory over two local key stores under root, and fakes for the factory's
+// access paths, the tenant account's infrastructure and the custody record.
+var NewHandoffWorld = func(root string) HandoffWorld { return newHandoffWorld(root) }
 
 var handoffGrants = []string{"publish-releases", "platform-kill", "support-metrics"}
 

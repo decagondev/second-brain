@@ -1,2 +1,0 @@
-LAW-17 SB-705 TestLAW17_HandoffLeavesOnlyRetainedGrants
-LAW-18 SB-705 TestLAW18_HandoffNeverOrphansTheKey

@@ -181,7 +181,7 @@
 <td>Hand-off leaves no unlisted access</td>
 <td>Tested</td>
 <td><code>Handoff.tla</code>: TLC clean (23 states); 4 mutations caught</td>
-<td><code>TestLAW17_HandoffLeavesOnlyRetainedGrants</code>, red until SB-705; reference controller + 4 mutants</td>
+<td><code>TestLAW17_HandoffLeavesOnlyRetainedGrants</code> on the controller (SB-705); reference controller + 4 mutants</td>
 <td>Sev-1 rule <code>sb_unlisted_access_paths</code> (fires once SB-706 emits it)</td>
 <td>SB-701, SB-705, SB-706</td>
 </tr>
@@ -190,7 +190,7 @@
 <td>The root key always has a custodian</td>
 <td>Tested</td>
 <td><code>Handoff.tla</code>: TLC clean (23 states); 4 mutations caught</td>
-<td><code>laws/</code> W1 check: recorded custodian and working root key, + self-test; <code>TestLAW18_DestroyNeedsAWorkingWrap</code> (SB-704); <code>TestLAW18_HandoffNeverOrphansTheKey</code>, red until SB-705</td>
+<td><code>laws/</code> W1 check: recorded custodian and working root key, + self-test; <code>TestLAW18_DestroyNeedsAWorkingWrap</code> (SB-704); <code>TestLAW18_HandoffNeverOrphansTheKey</code> on the controller (SB-705)</td>
 <td><code>sb factory status</code> key wraps, checked live</td>
 <td>SB-114, SB-701, SB-704, SB-705</td>
 </tr>
@@ -518,6 +518,12 @@
 <td>LAW-18</td>
 <td>Tested (extended)</td>
 <td>SB-704: <code>TestLAW18_DestroyNeedsAWorkingWrap</code> over the wrap inventory, red first (an abort that counted wraps instead of checking them), now green; unchecked-destroy and drop-last mutations caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-17, LAW-18</td>
+<td>Tested (red) → Tested (green)</td>
+<td>SB-705: the hand-off controller is wired in; <code>TestLAW17_HandoffLeavesOnlyRetainedGrants</code> and <code>TestLAW18_HandoffNeverOrphansTheKey</code> green on random runs reaching every phase; controller phases checked against <code>Handoff.tla</code></td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

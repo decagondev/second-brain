@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,24 +60,27 @@
 <p>One workflow, matching <code>Handoff.tla</code>, with a plan hash both sides approve.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>States and guards identical to <code>Handoff.tla</code>; TLC run clean in CI with mutation checks</li>
-<li class="task"><span class="box"></span>Abort before cutover leaves the factory cell untouched</li>
-<li class="task"><span class="box"></span>Every step writes a <code>custody</code> audit row</li>
+<li class="task done"><span class="box">✓</span>States and guards identical to <code>Handoff.tla</code>; TLC run clean in CI with mutation checks</li>
+<li class="task done"><span class="box">✓</span>Abort before cutover leaves the factory cell untouched</li>
+<li class="task done"><span class="box">✓</span>Every step writes a <code>custody</code> audit row</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Run TLC on <code>Handoff.tla</code> in CI</li>
-<li class="task"><span class="box"></span>Controller state machine</li>
-<li class="task"><span class="box"></span>Plan hashing and approvals</li>
-<li class="task"><span class="box"></span>Snapshot, restore and index rebuild in region</li>
-<li class="task"><span class="box"></span>Cutover and DNS</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-17, LAW-18</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Run TLC on <code>Handoff.tla</code> in CI</li>
+<li class="task done"><span class="box">✓</span>Controller state machine</li>
+<li class="task done"><span class="box">✓</span>Plan hashing and approvals</li>
+<li class="task"><span class="box"></span>Snapshot, restore and index rebuild in region (the <code>Target</code> port's <code>Move</code>; the game day's restore exists, SB-613; a cloud Target needs a running cell, W7)</li>
+<li class="task"><span class="box"></span>Cutover and DNS (the <code>Target</code> port's <code>Cutover</code>; the revocation and its LAW-17 check are built)</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-17, LAW-18</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S7.2b): <code>internal/core/handoff.Controller</code> is <code>Handoff.tla</code> in code. <code>TestStatesMatchTheModel</code> reads the model and compares its phases, its single-phase actions (guard and effect) and <code>InFlight</code> with the controller's, and TLC already checks the model in CI (<code>make proofs</code>). A plan's hash is <code>ph_</code> plus the SHA-256 of its RFC 8785 form. A new plan voids every approval, approvals bind a hash, and the planner can't approve for the factory. Every step writes a <code>kind: custody</code> audit row before it acts, and stores its phase only after it succeeds. Steps go Provision, then the verified re-wrap (SB-704), Move, Verify, then Cutover, which revokes every unretained path and re-checks that none remain (LAW-17). Last comes the factory wrap's destruction under the live guard, and the custody record changes to <code>tenant</code>. Abort runs from <code>Planned</code> to <code>Verified</code> and restores <code>Managed</code> exactly, and Detach revokes every path. The LAW-17 and LAW-18 hand-off law tests now run on the real controller and are green, and the ratchet is empty again. A self-test shows the random runs reach all nine phases.</p>
+<p><strong>Left:</strong> <code>sb factory handoff</code> in the CLI and a cloud <code>Target</code> (move, verify and cutover against a running cell, W7).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-705-hand-off-workflow-with-dual-approval.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

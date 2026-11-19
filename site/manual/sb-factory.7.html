@@ -77,7 +77,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 </ol>
 <p>The command grammar, options and exit codes are in <a href="sb-factory.1.html">sb-factory(1)</a>, and the roles that may run each command in <a href="sb-policy.5.html#factory-roles-exactly-sb-702">sb-policy(5), Factory roles</a>. The step-by-step procedure for both sides is <a href="../docs/runbooks/handoff.html">the hand-off runbook</a>.</p>
 <h3 id="the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</h3>
-<p>A hand-off moves through the phases of <code>proofs/tla/Handoff.tla</code>, and the controller (SB-705) stores the phase and writes a <code>kind: custody</code> audit row for each step <strong>before</strong> it acts:</p>
+<p>A hand-off moves through the phases of <code>proofs/tla/Handoff.tla</code>. The controller (<code>internal/core/handoff</code>, SB-705) has the same phases and transitions, and a test reads the model to check that they match. It stores the phase and writes a <code>kind: custody</code> audit row for each step <strong>before</strong> it acts:</p>
 <table>
 <thead>
 <tr>
@@ -160,7 +160,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <li><strong>Nothing moves without both approvals of the current plan.</strong> An approval is for a hash, and changing the plan changes the hash.</li>
 <li><strong>After cutover the factory holds only the retained grants</strong> (LAW-17), and after detach it holds none.</li>
 </ol>
-<p>Abort is allowed in every phase from <code>Planned</code> to <code>Verified</code>, and it restores <code>Managed</code> exactly: factory wrap only, all paths, the factory cell serving. A failed check in <code>execute</code> stops before cutover and leaves the phase where it was, so the operator can fix the problem and resume or abort.</p>
+<p>Each step's infrastructure work (provision, move, verify, cutover) goes through a <code>Target</code> port, so the same controller drives any cloud. The revocation at cutover re-enumerates the factory's paths afterwards and fails the step if any unlisted path remains. Abort is allowed in every phase from <code>Planned</code> to <code>Verified</code>, and it restores <code>Managed</code> exactly: factory wrap only, all paths, the factory cell serving. A failed check in <code>execute</code> stops before cutover and leaves the phase where it was, so the operator can fix the problem and resume or abort.</p>
 <h3 id="key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</h3>
 <p>A cell's data is encrypted under <strong>data keys</strong>, one per purpose. Today the only purpose is <code>audit-signing</code>, the seed of the cell's audit signing key (sb-audit(5)), made when the cell is first stamped. Each data key is stored only <strong>wrapped</strong> by a custodian's root key in that custodian's KMS. The <strong>wrap inventory</strong> records, for each purpose, one wrap per custodian: the custodian (<code>factory</code> or <code>tenant</code>), its KMS key id, and the wrapped bytes. A hand-off never re-encrypts data. It changes who can unwrap the data keys:</p>
 <ol>

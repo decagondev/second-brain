@@ -59,7 +59,7 @@ The command grammar, options and exit codes are in [sb-factory(1)](sb-factory.1.
 
 ### The hand-off, exactly (SB-701)
 
-A hand-off moves through the phases of `proofs/tla/Handoff.tla`, and the controller (SB-705) stores the phase and writes a `kind: custody` audit row for each step **before** it acts:
+A hand-off moves through the phases of `proofs/tla/Handoff.tla`. The controller (`internal/core/handoff`, SB-705) has the same phases and transitions, and a test reads the model to check that they match. It stores the phase and writes a `kind: custody` audit row for each step **before** it acts:
 
 | Phase | Reached by | The factory cell | Key wraps | Factory access |
 |---|---|---|---|---|
@@ -79,7 +79,7 @@ Three rules hold at every step. They are the model's invariants and the law test
 2. **Nothing moves without both approvals of the current plan.** An approval is for a hash, and changing the plan changes the hash.
 3. **After cutover the factory holds only the retained grants** (LAW-17), and after detach it holds none.
 
-Abort is allowed in every phase from `Planned` to `Verified`, and it restores `Managed` exactly: factory wrap only, all paths, the factory cell serving. A failed check in `execute` stops before cutover and leaves the phase where it was, so the operator can fix the problem and resume or abort.
+Each step's infrastructure work (provision, move, verify, cutover) goes through a `Target` port, so the same controller drives any cloud. The revocation at cutover re-enumerates the factory's paths afterwards and fails the step if any unlisted path remains. Abort is allowed in every phase from `Planned` to `Verified`, and it restores `Managed` exactly: factory wrap only, all paths, the factory cell serving. A failed check in `execute` stops before cutover and leaves the phase where it was, so the operator can fix the problem and resume or abort.
 
 ### Key wraps, exactly (SB-704)
 
