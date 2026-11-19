@@ -129,3 +129,7 @@ func TestLAW09_DataIsNotInstructions(t *testing.T) {
 func TestLAW01_PrefilterCatchesUp(t *testing.T) {
 	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01Prefilter(r, NewPrefilterWorld()) })
 }
+
+func TestLAW13_RebuildDrill(t *testing.T) {
+	Check(t, "LAW-13", runs, law13Drill)
+}

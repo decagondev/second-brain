@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-210 Rebuild drill
+
+**Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** `ingest.Drill`, a weekly schedule constant, and a law test running the drill. The manual changed first: sb-ingest(7) Rebuild describes the drill.
+
+**Why this way:** The drill compares the set LAW-13 talks about, not row counts, and reports differences by id so a failure can be investigated without exposing content.
+
+**Learned:** I had been gating commits on `tail`'s exit code, not on `make check`'s. The command now exits with make's own status.
+
+**Laws:** LAW-13 stays Tested, with the production drill now under test.
+
+**Next:** SB-204 (Slack) and SB-211 (Linear), the last W2 tickets.
+
 ## 2026-11-19 SB-209 Deletes and permission changes reach the prefilter
 
 **Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review

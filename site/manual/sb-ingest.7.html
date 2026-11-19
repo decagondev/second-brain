@@ -74,7 +74,7 @@
 <p>Each chunk's id is derived from tenant, <code>cite</code> and span, so ingesting the same <code>(source, version)</code> twice writes exactly the same chunks: ingest is idempotent. A newer version replaces all of the document's chunks in one write. An older or equal version than the one indexed changes nothing.</p>
 <p>Embeddings come through the <code>Embedder</code> port. Until the model provider is chosen (Q-04), cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. Chunks are written through the <code>Index</code> port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.</p>
 <h3 id="rebuild">Rebuild</h3>
-<p>The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13).</p>
+<p>The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13). Each cell's ingest worker runs the drill weekly (<code>ingest.Drill</code>): it snapshots the <code>(cite, chunk, ACL)</code> set, drops the index, replays every source from the start of its change feed, and compares. The result and the rebuild time are recorded per tenant. Any difference is a LAW-13 violation and a Sev-1, reported with chunk ids and cites, never content.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-09">LAW-09</a>, <a href="sb-laws.7.html#law-13">LAW-13</a>, <a href="sb-laws.7.html#law-01">LAW-01</a>.</p>
 <h2 id="examples">EXAMPLES</h2>

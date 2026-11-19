@@ -93,3 +93,56 @@ func TestCursorAdvancesOnlyAfterSuccess(t *testing.T) {
 		t.Fatalf("after resume: index %v, ok %d, cursor %q", idx.n, r.ok, cur["acme-logistics/docs"])
 	}
 }
+
+// The drill rebuilds the index from the sources and finds it identical; a corrupted index
+// (an extra chunk the sources don't produce) is reported, by id.
+func TestDrill(t *testing.T) {
+	f := &feed{changes: []ports.Change{{Ref: ports.SourceRef{Kind: "docs", ID: "a"}}, {Ref: ports.SourceRef{Kind: "docs", ID: "b"}}}}
+	idx := &chunkIndex{m: map[string][]ports.Chunk{}}
+	p := Pipeline{Tenant: "acme-logistics", Connector: f, Embedder: flatEmbed{}, Index: idx}
+	if _, err := p.Sync(context.Background(), ""); err != nil {
+		t.Fatal(err)
+	}
+	r, err := Drill(context.Background(), p, time.Now)
+	if err != nil || !r.Equal || r.Before == 0 || r.Before != r.After {
+		t.Fatalf("clean drill: %+v %v", r, err)
+	}
+	idx.m["zz"] = []ports.Chunk{{ID: "chk_stray", Cite: "docs:zz@9"}}
+	idx.dropped = false
+	r, _ = Drill(context.Background(), p, time.Now)
+	if r.Equal || len(r.Missing) != 1 || r.Missing[0] != "docs:zz@9|chk_stray|" {
+		t.Fatalf("stray chunk must make the drill fail: %+v", r)
+	}
+}
+
+type chunkIndex struct {
+	m       map[string][]ports.Chunk
+	dropped bool
+}
+
+func (c *chunkIndex) Indexed(_ context.Context, _ string, r ports.SourceRef) (int, bool, error) {
+	cs, ok := c.m[r.ID]
+	if !ok || len(cs) == 0 {
+		return 0, false, nil
+	}
+	return cs[0].Version, true, nil
+}
+func (c *chunkIndex) Replace(_ context.Context, _ string, r ports.SourceRef, _ int, cs []ports.Chunk) error {
+	c.m[r.ID] = cs
+	return nil
+}
+func (c *chunkIndex) Delete(_ context.Context, _ string, r ports.SourceRef) error {
+	delete(c.m, r.ID)
+	return nil
+}
+func (c *chunkIndex) All(context.Context, string) ([]ports.Chunk, error) {
+	var out []ports.Chunk
+	for _, cs := range c.m {
+		out = append(out, cs...)
+	}
+	return out, nil
+}
+func (c *chunkIndex) Drop(context.Context, string) error {
+	c.m, c.dropped = map[string][]ports.Chunk{}, true
+	return nil
+}

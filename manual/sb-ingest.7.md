@@ -66,7 +66,7 @@ Embeddings come through the `Embedder` port. Until the model provider is chosen 
 
 ### Rebuild
 
-The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13).
+The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13). Each cell's ingest worker runs the drill weekly (`ingest.Drill`): it snapshots the `(cite, chunk, ACL)` set, drops the index, replays every source from the start of its change feed, and compares. The result and the rebuild time are recorded per tenant. Any difference is a LAW-13 violation and a Sev-1, reported with chunk ids and cites, never content.
 
 ## LAWS
 

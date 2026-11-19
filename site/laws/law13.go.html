@@ -207,6 +207,30 @@ func (w *driveIngest) Edit(id, text string) error {
     w.f.Put(id, &quot;Title &quot;+id, &quot;application/vnd.google-apps.document&quot;, text, nil...)
     return nil
 }
+
+// law13Drill runs the production drill (ingest.Drill, SB-210) over a random corpus.
+func law13Drill(r *rand.Rand) error {
+    w := NewIngestWorld().(*ingestWorld)
+    var docs []SourceDoc
+    for i := 0; i &lt; 1+r.Intn(6); i++ {
+        docs = append(docs, SourceDoc{ID: fmt.Sprintf(&quot;d%d&quot;, i), Text: strings.Repeat(fmt.Sprintf(&quot;word%d &quot;, r.Intn(50)), 1+r.Intn(400)),
+            Viewers: []string{&quot;ann@acme.example&quot;, &quot;grp_finance&quot;}[:1+r.Intn(2)]})
+    }
+    if err := w.Load(docs); err != nil {
+        return err
+    }
+    if err := w.IngestAll(); err != nil {
+        return err
+    }
+    rep, err := ingest.Drill(context.Background(), w.p, time.Now)
+    if err != nil {
+        return err
+    }
+    if !rep.Equal || rep.Before == 0 {
+        return fmt.Errorf(&quot;drill: %+v&quot;, rep)
+    }
+    return nil
+}
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/law13.go</code></p></main>
   
