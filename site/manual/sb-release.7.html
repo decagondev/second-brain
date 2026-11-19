@@ -95,6 +95,12 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 <p>Cells verify signatures before starting a container, and report running digests hourly. Any mismatch is Sev-1 (LAW-06).</p>
 <h3 id="cves">CVEs</h3>
 <p>A CVE fix is a patch release through the normal path, within 24 hours on <code>testing</code>. Because no one is more than one behind, everyone has it after one promotion.</p>
+<p>Exactly (SB-505):</p>
+<ul>
+<li><strong>Lockfiles every release.</strong> <code>make lockfiles</code> regenerates <code>go.sum</code> and <code>vendor/</code> (<code>go mod tidy</code>, <code>go mod vendor</code>) and <code>web/package-lock.json</code> (<code>npm install --package-lock-only</code>). The release workflow runs it, and the release fails if any lockfile then differs from the commit. A release is always built from lockfiles that were current when it was cut, and the change is reviewed like code. A new <code>go.sum</code> line still needs its ADR and allow-list entry (ADR-0017), because <code>make deps</code> enforces the list.</li>
+<li><strong>Advisory watcher.</strong> A scheduled job runs every day at 06:00 UTC: <code>govulncheck</code> over the Go code (only vulnerabilities in code that is actually called), and <code>npm audit</code> over the web app's production packages at <code>high</code> and above. A finding fails the job, which notifies the maintainers. The job's output names the advisory, the package and the fixed version.</li>
+<li><strong>The 24-hour path.</strong> The <a href="../docs/patch-release-playbook.html">patch-release playbook</a> takes a finding to a patch release on <code>testing</code>: bump the one dependency, regenerate lockfiles, run <code>make check</code>, cut the release through the normal gate and signing, and record the advisory id in the changelog. Nothing skips the gate.</li>
+</ul>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-06">LAW-06</a>, <a href="sb-laws.7.html#law-08">LAW-08</a>.</p>
 <h2 id="examples">EXAMPLES</h2>

@@ -79,6 +79,12 @@ Cells verify signatures before starting a container, and report running digests 
 
 A CVE fix is a patch release through the normal path, within 24 hours on `testing`. Because no one is more than one behind, everyone has it after one promotion.
 
+Exactly (SB-505):
+
+- **Lockfiles every release.** `make lockfiles` regenerates `go.sum` and `vendor/` (`go mod tidy`, `go mod vendor`) and `web/package-lock.json` (`npm install --package-lock-only`). The release workflow runs it, and the release fails if any lockfile then differs from the commit. A release is always built from lockfiles that were current when it was cut, and the change is reviewed like code. A new `go.sum` line still needs its ADR and allow-list entry (ADR-0017), because `make deps` enforces the list.
+- **Advisory watcher.** A scheduled job runs every day at 06:00 UTC: `govulncheck` over the Go code (only vulnerabilities in code that is actually called), and `npm audit` over the web app's production packages at `high` and above. A finding fails the job, which notifies the maintainers. The job's output names the advisory, the package and the fixed version.
+- **The 24-hour path.** The [patch-release playbook](../docs/patch-release-playbook.md) takes a finding to a patch release on `testing`: bump the one dependency, regenerate lockfiles, run `make check`, cut the release through the normal gate and signing, and record the advisory id in the changelog. Nothing skips the gate.
+
 ## LAWS
 
 [LAW-06](sb-laws.7.md#law-06), [LAW-08](sb-laws.7.md#law-08).

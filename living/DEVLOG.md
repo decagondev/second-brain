@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S5.2b Lockfiles and the CVE path (SB-505)
+
+**Wave/slice:** W5 / S5.2b · **Author:** platform lead + Claude · **Status:** In review (first scheduled run, testing channel)
+
+**What:** `make lockfiles`, a lockfile-currency step in the release workflow, a daily advisory workflow, and the patch-release playbook. The manual changed first: sb-release(7) "CVEs" now says exactly what is regenerated, what the watcher runs, and the 24-hour path.
+
+**Why this way:** "Regenerated every release" is enforced by failing the release when regenerating would change a lockfile, not by regenerating silently in CI. That way every dependency change is a reviewed commit, and the build stays reproducible from the repository alone. `govulncheck` reports only reachable vulnerabilities, so the watcher's failures are ones that matter, and the playbook doesn't train people to ignore it. The playbook skips nothing: a CVE fix goes through the same gate and signature as any release.
+
+**Learned:** Nothing surprising. Lockfiles were current, and `npm audit` was clean.
+
+**Laws:** unchanged, all green. LAW-08 comes with the promote guard (SB-507).
+
+**Next:** S5.3, the release controller with channels and rings and the promote guard (SB-507, LAW-08), one-step rollback (SB-508), running-build attestation (SB-509), and manifest drift detection (SB-510).
+
 ## 2026-11-19 S5.2a Reproducible builds, SBOM, signing and admission (SB-504, SB-506)
 
 **Wave/slice:** W5 / S5.2a · **Author:** platform lead + Claude · **Status:** In review (first CI signature, cell pull loop)

@@ -1,0 +1,22 @@
+name: advisories
+# SB-505: the daily advisory watcher. A finding fails the job, which notifies the
+# maintainers; docs/patch-release-playbook.md takes it to a patch release within 24 hours.
+on:
+  schedule: [{ cron: "0 6 * * *" }]
+  workflow_dispatch: {}
+permissions: { contents: read }
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.24" }
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm audit --prefix web --omit=dev --audit-level=high

@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build tools clean
+.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -64,6 +64,10 @@ web:                   ## web UI: typecheck, tests (LAW-14 rendering, axe) and b
 	npm ci --prefix web --no-audit --no-fund
 	npm run --prefix web build
 	npm test --prefix web
+lockfiles:             ## regenerate go.sum, vendor/ and web/package-lock.json (SB-505); review the diff
+	$(GO) mod tidy
+	$(GO) mod vendor
+	npm install --prefix web --package-lock-only --no-audit --no-fund
 COMMIT_TIME := $(shell git show -s --format=%cI HEAD 2>/dev/null || echo 1970-01-01T00:00:00Z)
 COMMIT_DAY  := $(shell git show -s --format=%cs HEAD 2>/dev/null || echo 1970-01-01)
 release-build:         ## reproducible build twice, SBOM and bundle into build/release (SB-504)
