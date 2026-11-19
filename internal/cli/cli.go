@@ -40,9 +40,7 @@ type env struct {
 // planned maps "command sub" to the ticket that builds it.
 var planned = map[string]string{
 	"tenant verify": "SB-601",
-	"kill agent":    "SB-403", "kill connector": "SB-403", "kill tenant": "SB-403", "kill list": "SB-403",
-	"unkill agent": "SB-403", "unkill connector": "SB-403", "unkill tenant": "SB-403",
-	"audit tail": "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
+	"audit tail":    "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
 	"release status": "SB-507", "release promote": "SB-507", "release rollback": "SB-508",
 	"eval diff":       "SB-501",
 	"factory handoff": "SB-705", "factory detach": "SB-708",
@@ -85,6 +83,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		if len(rest) > 1 && rest[1] == "run" {
 			return e.evalRun(rest[2:])
 		}
+	case "kill", "unkill":
+		return e.kill(cmd, rest[1:])
 	}
 	if len(rest) < 2 {
 		if hasSub(cmd) {
@@ -121,7 +121,7 @@ func hasSub(cmd string) bool {
 			return true
 		}
 	}
-	return cmd == "eval"
+	return cmd == "eval" || cmd == "kill" || cmd == "unkill"
 }
 
 func parseGlobals(args []string, g *Globals) ([]string, error) {

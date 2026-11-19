@@ -51,7 +51,8 @@ func TestExitStatusContract(t *testing.T) {
 		{[]string{"tenant", "check", "../../examples/tenants/pilot.yaml"}, 0, "pilot.yaml: ok"},
 		{[]string{"tenant", "check", "../../examples/tenants/invalid.yaml"}, 1, "[EMANIFEST]"},
 		{[]string{"--json", "tenant", "check", "../../examples/tenants/invalid.yaml"}, 1, `"field":"custody"`},
-		{[]string{"--json", "kill", "agent", "ask"}, 2, `"code":"ENOTIMPL"`},
+		{[]string{"--json", "kill", "agent", "ask"}, 2, `"code":"EUSAGE"`}, // built in SB-403: --reason is required
+		{[]string{"--json", "kill", "agent", "ask", "--all-tenants", "--reason", "x"}, 2, `"code":"ENOTIMPL"`},
 	}
 	for _, c := range cases {
 		code, out := runSB(c.args...)
@@ -154,5 +155,30 @@ func TestTenantApply(t *testing.T) {
 	}
 	if code, out := runSB("--endpoint", ep, "factory", "status", "nobody-here"); code != 2 || !strings.Contains(out, "[EUSAGE]") {
 		t.Fatalf("factory status for no cell: exit %d %q", code, out)
+	}
+}
+
+// sb kill and unkill against a local control plane (SB-403): audited, listed, cleared.
+func TestKillLocal(t *testing.T) {
+	ep := "file://" + t.TempDir()
+	code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "kill", "agent", "ask", "--reason", "smoke drill")
+	if code != 0 || !strings.Contains(out, "agent:ask killed for acme-logistics") {
+		t.Fatalf("kill: %d %s", code, out)
+	}
+	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "kill", "list"); code != 0 || !strings.Contains(out, "agent:ask") || !strings.Contains(out, "smoke drill") {
+		t.Fatalf("list: %d %s", code, out)
+	}
+	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "unkill", "agent", "ask", "--reason", "done"); code != 0 {
+		t.Fatalf("unkill: %d %s", code, out)
+	}
+	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "kill", "list"); code != 0 || !strings.Contains(out, "no kill switches") {
+		t.Fatalf("list after unkill: %d %s", code, out)
+	}
+	audit, err := os.ReadFile(filepath.Join(strings.TrimPrefix(ep, "file://"), "audit", "acme-logistics.ndjson"))
+	if err != nil || strings.Count(string(audit), `"kind":"kill"`) != 2 || !strings.Contains(string(audit), `"state":"cleared"`) {
+		t.Fatalf("audit rows: %v %s", err, audit)
+	}
+	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "kill", "connector", "email", "--reason", "x"); code != 2 || !strings.Contains(out, "[EUSAGE]") {
+		t.Fatalf("bad scope: %d %s", code, out)
 	}
 }

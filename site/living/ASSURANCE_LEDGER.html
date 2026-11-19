@@ -116,9 +116,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-10">LAW-10</a></td>
 <td>Kill wins</td>
-<td>Modelled</td>
+<td>Tested</td>
 <td><code>Approvals.tla</code>: TLC clean (1,068 states); 4 mutations caught</td>
-<td>—</td>
+<td><code>laws/</code> timed test on a fake clock (random kills, unkills, store outages) through the real control, store and checker, + self-test; drill test</td>
 <td>—</td>
 <td>SB-011, SB-403, SB-404</td>
 </tr>
@@ -392,6 +392,12 @@
 <td>LAW-11</td>
 <td>Stated → Tested</td>
 <td>SB-401, SB-402: <code>TestLAW11_AuditChainUnbroken</code> red first, then green; verifier mutation caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-10</td>
+<td>→ Tested</td>
+<td>SB-403, SB-404: <code>TestLAW10_KillWins</code> red first, then green; stale-checker mutation caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

@@ -74,6 +74,8 @@ func Fuse(cs []ports.Candidate) []ports.Candidate {
 type Authoriser struct {
 	Connectors map[string]ports.Connector // by kind
 	Policy     policy.Kernel
+	// Killed reports a killed connector kind; its documents stay Unknown (sb-kill-switches(7)).
+	Killed func(kind string) bool
 }
 
 // Verdicts is the live answer per document key (kind:id).
@@ -100,8 +102,8 @@ func (a Authoriser) Check(ctx context.Context, user ports.UserRef, chunks []port
 	var wg sync.WaitGroup
 	for kind, refs := range byKind {
 		conn, ok := a.Connectors[kind]
-		if !ok {
-			continue // no connector: stays Unknown
+		if !ok || (a.Killed != nil && a.Killed(kind)) {
+			continue // no connector, or a killed one: stays Unknown
 		}
 		for start := 0; start < len(refs); start += MaxBatch {
 			end := start + MaxBatch

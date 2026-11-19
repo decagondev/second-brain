@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.1b Kill switches and the kill drill (SB-403, SB-404)
+
+**Wave/slice:** W4 / S4.1b · **Author:** platform lead + Claude · **Status:** In review (tool-bus check points, push channel, release pipeline)
+
+**What:** `internal/core/kill`: an audited `Control`, the per-cell `Checker` and the `Drill`. There are memory and local-control-plane stores, and `sb kill`, `sb unkill` and `sb kill list`. The manual changed first: sb-kill-switches(7) gained "How it works, exactly" and the drill's procedure, and sb-kill(1) the local control plane, the actor and the list output.
+
+**Why this way:** A 2-second poll leaves 8 seconds of margin under the 10-second bound even if every push is lost, and push only makes it faster. The checker keeps its last good list when a reload fails, because dropping known switches on an error would be the wrong way to fail. After 30 seconds it fails safe for consequential calls only, so reads keep working through a control-plane outage. Kill and unkill write their audit row first, so a switch never changes untraced (LAW-04 in spirit). The drill goes through the same `Control`, so drills are audited like real kills.
+
+**Learned:** The first version of the timed law test was wrong: it expected a kill set during an outage to take effect within 10 seconds, which no cell can do if it can't see the store. The manual's rule is the fail-safe. The law now counts a kill from when the cell could first see it, and checks the 30-second fail-safe separately. Putting the law in front of the manual sharpened both. The smoke test that expected `sb kill` to be `ENOTIMPL` now expects `EUSAGE` without `--reason`, plus a new end-to-end kill, list and unkill test. Nothing was deleted.
+
+**Laws:** LAW-10 is Tested. LAW-04 and LAW-05 are still red until the tool bus and the executor.
+
+**Next:** S4.2, the tool bus (SB-405, which turns LAW-04 green), approvals bound to content (SB-406, LAW-15) and the approver view (SB-407).
+
 ## 2026-11-19 S4.1a The audit chain (SB-401, SB-402)
 
 **Wave/slice:** W4 / S4.1a · **Author:** platform lead + Claude · **Status:** In review (tool-bus hook, cell runtime)

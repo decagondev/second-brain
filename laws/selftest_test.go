@@ -627,3 +627,10 @@ func TestSelf_LAW11MutationIsCaught(t *testing.T) {
 		t.Error("LAW-11: a verifier that doesn't recompute the chain was not caught")
 	}
 }
+
+// LAW-10's timed check catches a checker that never reloads the kill list.
+func TestSelf_LAW10MutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law10(r, newKillWorld(true)) }) {
+		t.Error("LAW-10: a checker with a stale kill list was not caught")
+	}
+}

@@ -56,10 +56,17 @@
 <li>Every kill and unkill is audited with its reason.</li>
 <li><strong>Fail-safe:</strong> a cell that can't reach the kill-switch store for 30 seconds stops consequential tool calls and keeps serving reads.</li>
 </ul>
+<h3 id="how-it-works-exactly">How it works, exactly</h3>
+<ol>
+<li><strong>Set.</strong> <code>sb kill</code> writes a <code>kind: kill</code> audit row (<code>subject</code> = <code>agent:NAME</code>, <code>connector:KIND</code> or <code>tenant</code>, <code>state</code> = <code>killed</code>, <code>reason</code> = the operator's text) <strong>first</strong>, then records the switch in the control plane's kill store. If the audit write fails, the switch isn't recorded and <code>sb kill</code> fails, so nothing changes without a trace. <code>sb unkill</code> does the same with <code>state</code> = <code>cleared</code>.</li>
+<li><strong>Propagate.</strong> Each cell keeps a kill checker. It reloads the whole switch list from the store every <strong>2 seconds</strong>, and the control plane also pushes each change as it's made. The 10-second bound therefore has 8 seconds of margin over the poll alone.</li>
+<li><strong>Check.</strong> The checker answers from the last list it loaded, at three points: before an agent run starts, before a tool call is authorised, and again right before an approved call executes. A killed connector also counts at the live check: its chunks are treated as <code>Unknown</code>, so they drop out of answers. A killed tenant refuses everything except admin, audit read and <code>sb unkill</code>, all with <code>EKILLED</code>.</li>
+<li><strong>Fail safe.</strong> If the checker hasn't loaded the list successfully for <strong>30 seconds</strong>, it treats every consequential tool call as killed (<code>EKILLED</code>, reason <code>kill_store_unreachable</code>), and reads go on as before. A checker that has never loaded the list at all, for example at cell start, treats every agent run, connector call and tool call as killed until its first load. Only admin and audit reads go ahead.</li>
+</ol>
 <h3 id="making-it-permanent">Making it permanent</h3>
 <p>A kill is runtime state. To keep something off, remove it from the manifest. The console offers this as a one-click manifest diff.</p>
 <h3 id="drills">Drills</h3>
-<p>Every release fires every scope in staging and checks the 10-second bound.</p>
+<p>Every release fires every scope in staging and checks the 10-second bound (SB-404). For each scope, the drill sets the switch through the normal audited path (actor <code>sys_kill_drill</code>), then tries a new op in that scope every 250 ms until the cell refuses it. A refusal later than 10 seconds fails the drill. The drill then clears the switch. The release notes get a table with each scope, how long it took to take effect, and pass or fail. A failed drill blocks the release like a failed eval.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-10">LAW-10</a>, <a href="sb-laws.7.html#law-04">LAW-04</a>.</p>
 <h2 id="examples">EXAMPLES</h2>
@@ -68,7 +75,7 @@ sb kill list --tenant acme-logistics
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-kill.1.html">sb-kill(1)</a>, <a href="../docs/architecture/11-kill-switches.html">11 Kill switches</a></p><p class="srcline">Source: <code>manual/sb-kill-switches.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#why-kill-switches">Why kill switches</a></li><li class="l3"><a href="#scopes">Scopes</a></li><li class="l3"><a href="#guarantees">Guarantees</a></li><li class="l3"><a href="#making-it-permanent">Making it permanent</a></li><li class="l3"><a href="#drills">Drills</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#why-kill-switches">Why kill switches</a></li><li class="l3"><a href="#scopes">Scopes</a></li><li class="l3"><a href="#guarantees">Guarantees</a></li><li class="l3"><a href="#how-it-works-exactly">How it works, exactly</a></li><li class="l3"><a href="#making-it-permanent">Making it permanent</a></li><li class="l3"><a href="#drills">Drills</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

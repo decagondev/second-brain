@@ -35,6 +35,8 @@ A tool call that already passed its final kill check finishes. Nothing new start
 
 `--reason` is required and goes into the audit log. Kill switches are runtime state: to make one permanent, remove the agent or connector from the manifest (the console offers this as a diff).
 
+With a local control plane (`--endpoint file:///DIR`), switches live in `DIR/kill/TENANT.json` and their audit rows in `DIR/audit/TENANT.ndjson`. The actor recorded is `SB_ACTOR` when it's set, else `sys_cli_local`. `--all-tenants` needs the control-plane client and exits `ENOTIMPL` until then. `kill list` prints each set switch with its time, actor and reason.
+
 ## EXIT STATUS
 
 0 switch recorded · 2 usage (missing `--reason`) · 3 not permitted.

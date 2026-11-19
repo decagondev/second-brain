@@ -163,3 +163,7 @@ func TestLAW01_ChatAnswersCiteOnlyWhatTheAskerCanOpen(t *testing.T) {
 func TestLAW11_AuditChainUnbroken(t *testing.T) {
 	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11(r, NewAuditChain()) })
 }
+
+func TestLAW10_KillWins(t *testing.T) {
+	Check(t, "LAW-10", runs, func(r *rand.Rand) error { return law10(r, NewKillWorld()) })
+}

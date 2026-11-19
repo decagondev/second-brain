@@ -81,6 +81,7 @@ func TestCheckUnknowns(t *testing.T) {
 		"error":        {Connectors: map[string]ports.Connector{"docs": &conn{answer: allow, err: errors.New("down")}}},
 		"late":         {Connectors: map[string]ports.Connector{"docs": &conn{answer: allow, delay: 2 * ACLDeadline}}},
 		"short answer": {Connectors: map[string]ports.Connector{"docs": &short{}}},
+		"killed":       {Connectors: map[string]ports.Connector{"docs": &conn{answer: allow}}, Killed: func(k string) bool { return k == "docs" }},
 	}
 	for name, a := range cases {
 		v := a.Check(context.Background(), ports.UserRef{}, chunks("docs", 2))
