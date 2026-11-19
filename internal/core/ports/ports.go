@@ -5,6 +5,8 @@ package ports
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"example.com/second-brain/internal/core/tenancy"
@@ -12,6 +14,18 @@ import (
 
 // ConnectorAPIVersion is the version of the contract in sb-connector(3).
 const ConnectorAPIVersion = 1
+
+// ErrVersion means a connector implements a contract version the platform doesn't accept.
+var ErrVersion = errors.New("ENOTSUP: connector API version not supported")
+
+// Negotiate accepts a connector only if it implements a supported contract version
+// (sb-connector(3), Version negotiation). There is no degraded mode.
+func Negotiate(c Connector) error {
+	if v := c.APIVersion(); v != ConnectorAPIVersion {
+		return fmt.Errorf("%w: connector speaks v%d, platform speaks v%d", ErrVersion, v, ConnectorAPIVersion)
+	}
+	return nil
+}
 
 // SourceRef names one document in one source.
 type SourceRef struct{ Kind, ID string }
@@ -75,6 +89,7 @@ type Receipt struct{ TargetID string }
 
 // Connector is the four-call contract (sb-connector(3)).
 type Connector interface {
+	APIVersion() int
 	Fetch(ctx context.Context, ref SourceRef) (Document, error)
 	ACL(ctx context.Context, user UserRef, refs []SourceRef) ([]Verdict, error)
 	Changes(ctx context.Context, cursor Cursor) (ChangeSet, Cursor, error)

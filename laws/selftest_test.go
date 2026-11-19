@@ -2,6 +2,7 @@ package laws
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -430,4 +431,36 @@ func TestSelf_LAW18MutationsAreCaught(t *testing.T) {
 			t.Errorf("LAW-18: mutation %q was not caught", name)
 		}
 	}
+}
+
+// The connector laws catch a connector that allows on error, and one that acts twice.
+func TestSelf_ConnectorMutationsAreCaught(t *testing.T) {
+	if !violates(40, func(r *rand.Rand) error { return law03Connector(r, allowOnFault{NewConnectorWorld()}) }) {
+		t.Error("LAW-03 (connector): allow-on-fault was not caught")
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law05Connector(r, &actsTwice{ConnectorWorld: NewConnectorWorld()}) }) {
+		t.Error("LAW-05 (connector): a non-idempotent Act was not caught")
+	}
+}
+
+type allowOnFault struct{ ConnectorWorld }
+
+func (a allowOnFault) ACL(access []bool, fault string) ([]string, error) {
+	got, err := a.ConnectorWorld.ACL(access, fault)
+	if fault != "" {
+		for i := range got {
+			got[i] = "allow"
+		}
+	}
+	return got, err
+}
+
+type actsTwice struct {
+	ConnectorWorld
+	n int
+}
+
+func (a *actsTwice) Act(key string, issues bool) (string, error) {
+	a.n++
+	return a.ConnectorWorld.Act(fmt.Sprintf("%s#%d", key, a.n), issues)
 }

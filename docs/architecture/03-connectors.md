@@ -68,6 +68,8 @@ The kit is a Go test suite each connector runs against a recorded or sandbox ten
 | `changes/acl-delta` | A permission change appears as a change |
 | `act/receipt-or-error` | Never returns success without a receipt id |
 | `act/idempotent` | Same key twice gives one effect and the same receipt |
+| `version/negotiated` | `APIVersion` is one the platform accepts |
+| `act/not-supported` | A read-only connector's `Act` returns `ENOTSUP` and no receipt |
 
 ## v1 connectors
 

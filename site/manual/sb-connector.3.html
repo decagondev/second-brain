@@ -26,6 +26,7 @@
 const ConnectorAPIVersion = 1
 
 type Connector interface {
+    APIVersion() int
     Fetch(ctx context.Context, ref SourceRef) (Document, error)
     ACL(ctx context.Context, user UserRef, refs []SourceRef) ([]Verdict, error)
     Changes(ctx context.Context, cursor Cursor) (ChangeSet, Cursor, error)
@@ -34,6 +35,8 @@ type Connector interface {
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
 <p>A connector is an adapter between one kind of company system and the platform. It holds no state except a sync cursor and does nothing but these four calls.</p>
+<h3 id="version-negotiation">Version negotiation</h3>
+<p><code>APIVersion</code> returns the contract version the connector implements. The platform loads a connector only if <code>ports.Negotiate</code> accepts its version: today exactly <code>1</code>. A connector built for a newer or older contract is refused at load time with <code>ENOTSUP</code>, never run in a degraded mode.</p>
 <h3 id="fetch">Fetch</h3>
 <p>Returns the document's text and structure, its <strong>version</strong> (monotonic per document, as reported by the source), and an ACL snapshot used only as a prefilter. The same <code>(ref, version)</code> must always return the same content hash.</p>
 <h3 id="acl">ACL</h3>
@@ -92,13 +95,14 @@ type Connector interface {
 </table>
 <h2 id="contract-kit">CONTRACT KIT</h2>
 <p>Run <code>go test ./internal/adapters/connectors/&lt;name&gt;/... -run Kit</code> against a sandbox. All cases must pass before a connector can be named in any manifest. The cases are listed in <a href="../docs/architecture/03-connectors.html#the-contract-kit">03 Connectors</a>.</p>
+<p>The kit is <code>connectorkit.Run(t, sandbox)</code> (package <code>internal/core/connectorkit</code>). A connector's test supplies a <code>Sandbox</code>: the connector under test, an existing document, a user who can open it and one who can't, a way to inject a fault into the next <code>ACL</code> call (<code>500</code>, timeout, <code>404</code>), a way to edit a document and to change its permissions, 200 existing refs for the batch case, and, for writable connectors, a valid <code>Action</code>. The kit also checks <code>APIVersion</code> against <code>ports.Negotiate</code>.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-05">LAW-05</a>, <a href="sb-laws.7.html#law-07">LAW-07</a>.</p>
 <h2 id="examples">EXAMPLES</h2>
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

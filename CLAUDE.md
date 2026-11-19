@@ -8,7 +8,7 @@ Read `AGENTS.md` first: those rules apply to every change. This file says where 
   - SB-004, SB-005, SB-014: need two human reviewers (sign-off tables in `docs/adr/README.md` and `docs/07-threat-model.md`).
   - SB-011, SB-012, SB-013: models and all 13 mutations pass, locally and in CI (2026-11-19). Left: two reviewers.
 - **W1 (First Cell):** 8 Done; SB-104 In review (30-minute cell needs a cloud adapter, ADR-0018); SB-109 to SB-112 In review (second reviewer for policy and audit). User reviewed on 2026-11-19; CI green.
-- **W2 (Connectors and ingestion):** started 2026-11-19 at **SB-201**. Ask the user which docs vendor before SB-203.
+- **W2 (Connectors and ingestion):** SB-201 Done. Next: **SB-202** (fault-injecting mock: extends `internal/adapters/connectors/mock`). Ask the user which docs vendor before SB-203.
 - Status of every ticket: `epics/README.md` (Progress) and each ticket's `Status` row and Progress section.
 
 ## Decisions for W1 (confirm with the user before acting)

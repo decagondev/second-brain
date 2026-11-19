@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-201 Connector contract, kit and mock
+
+**Wave/slice:** W2 / S2.1 · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** The connector contract gained a version and negotiation. The contract kit turns 03-connectors' case table into `connectorkit.Run`. A controllable mock source and connector passes it in read-only and writable modes. The manual changed first: sb-connector(3) gained version negotiation and how to run the kit, and 03-connectors gained two kit cases.
+
+**Why this way:** A kit is only worth something if a connector can't pass it while being wrong. So the kit drives faults through the sandbox, not through flags on the connector. It checks idempotency by counting effects at the target, not by trusting the receipt. Version negotiation refuses rather than degrades, because a degraded connector is an unknown permission model.
+
+**Learned:** The ratchet earned its keep again. My first LAW-05 connector test swallowed the "not implemented" error and passed against nothing, and the ratchet reported it as green before any code existed. Law tests must surface `ErrPending`, not treat it as an ordinary error.
+
+**Laws:** LAW-03 and LAW-05 stay Tested (red), with the connector level now green.
+
+**Next:** SB-202, the fault-injecting mock for laws and evals, then SB-203, which needs the user to pick the docs vendor.
+
 ## 2026-11-19 First push and first CI run
 
 **Wave/slice:** W0/W1 · **Author:** platform lead + Claude · **Status:** done

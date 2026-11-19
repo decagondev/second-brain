@@ -48,11 +48,16 @@
 <td><code>Act()</code></td>
 </tr>
 <tr>
+<td>States its contract version, which the platform negotiates</td>
+<td><code>APIVersion()</code></td>
+</tr>
+<tr>
 <td>Compile-time proof it implements the port</td>
 <td><code>var _ ports.Connector = (*Connector)(nil)</code></td>
 </tr>
 </tbody>
 </table>
+<p>A real connector also passes the contract kit: its test calls <code>connectorkit.Run(t, sandbox)</code>. See <code>internal/adapters/connectors/mock/mock_test.go</code> for a complete sandbox.</p>
 <p>Note what <code>ACL</code> does on error: it returns all-<code>Unknown</code> and <strong>no error</strong>. The caller would treat an error as <code>Unknown</code> anyway, so there's one obvious path (P3).</p>
 <p>To turn this into a real connector: put it under <code>internal/adapters/connectors/docs-&lt;vendor&gt;/</code>, implement <code>Client</code> against the vendor SDK, and make the contract kit pass.</p><p class="srcline">Source: <code>examples/connector/README.md</code></p></main>
   

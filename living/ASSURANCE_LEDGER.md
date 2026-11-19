@@ -49,3 +49,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-02 | stays Tested (red) | SB-110: policy-level test found and now guards BUG-0006 (tenant-less `use_agent` permit) |
 | 2026-11-19 | LAW-04 | stays Tested (red) | SB-111: decisions recorded before return, failed write is Unknown; a kernel that ignores a failed write is caught |
 | 2026-11-19 | LAW-18 | Modelled → Tested | SB-114: `TestLAW18_RootKeyAlwaysHasACustodian` green on the local control plane; missing custodian and dead root key caught |
+| 2026-11-19 | LAW-03, LAW-05 | stay Tested (red) | SB-201: connector-level tests green on the mock (no Allow under any fault; receipt or error, idempotent Act); the retrieval and tool-call levels are still red |

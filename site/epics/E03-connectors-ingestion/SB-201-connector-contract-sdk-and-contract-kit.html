@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,30 @@
 <p>Four calls, versioned, tested by a kit, is how connectors stay boring.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Go interface <code>Connector{Fetch, ACL, Changes, Act}</code> with API version</li>
-<li class="task"><span class="box"></span>Contract kit any connector can run</li>
-<li class="task"><span class="box"></span>A mock connector passes the kit</li>
+<li class="task done"><span class="box">✓</span>Go interface <code>Connector{Fetch, ACL, Changes, Act}</code> with API version</li>
+<li class="task done"><span class="box">✓</span>Contract kit any connector can run</li>
+<li class="task done"><span class="box">✓</span>A mock connector passes the kit</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Write the interface and types</li>
-<li class="task"><span class="box"></span>Write the contract kit as a Go test suite</li>
-<li class="task"><span class="box"></span>Version negotiation</li>
-<li class="task"><span class="box"></span>Docs examples</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-03, LAW-05</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Write the interface and types</li>
+<li class="task done"><span class="box">✓</span>Write the contract kit as a Go test suite</li>
+<li class="task done"><span class="box">✓</span>Version negotiation</li>
+<li class="task done"><span class="box">✓</span>Docs examples</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01, LAW-03, LAW-05</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: done.
+- <code>ports.Connector</code> gains <code>APIVersion()</code>, and <code>ports.Negotiate</code> refuses any other contract version with <code>ENOTSUP</code>.
+- <code>internal/core/connectorkit.Run(t, sandbox)</code> runs the ten kit cases from 03-connectors: version, version-stable fetch, deny-is-deny, error-is-unknown (500, timeout, 404), a batch of 200 within 800 ms, cursor resume, ACL delta, receipt-or-error, idempotent <code>Act</code>, and <code>ENOTSUP</code> for read-only connectors.
+- <code>internal/adapters/connectors/mock</code> is a controllable source plus connector. It passes the kit in read-only and writable modes and is the base for SB-202.
+- Connector-level law tests for LAW-03 and LAW-05 were red first (<code>not implemented</code>), then green. Self-tests catch allow-on-fault and a non-idempotent <code>Act</code>.</p>
+<p>The LAW-05 test first passed against nothing, because it swallowed the pending error; the ratchet flagged it, and it was fixed before any code existed. LAW-01 at the connector level is the ACL truth check inside the LAW-03 test (no fault means exactly the source's answer). LAW-01 itself is retrieval-level (SB-302).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

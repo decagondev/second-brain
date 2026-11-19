@@ -49,6 +49,9 @@ func (c *Connector) token(ctx context.Context) (string, error) {
 	return c.secrets.Get(ctx, "vault://tenants/"+c.tenant+"/connectors/docs")
 }
 
+// APIVersion is the contract version this connector implements (sb-connector(3)).
+func (c *Connector) APIVersion() int { return ports.ConnectorAPIVersion }
+
 func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Document, error) {
 	tok, err := c.token(ctx)
 	if err != nil {

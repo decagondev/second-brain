@@ -96,3 +96,11 @@ func TestLAW18_RootKeyAlwaysHasACustodian(t *testing.T) {
 		return law18(r, root, check)
 	})
 }
+
+func TestLAW03_ConnectorUnknownIsNeverAllow(t *testing.T) {
+	Check(t, "LAW-03", 60, func(r *rand.Rand) error { return law03Connector(r, NewConnectorWorld()) })
+}
+
+func TestLAW05_ConnectorActNeedsReceipt(t *testing.T) {
+	Check(t, "LAW-05", runs, func(r *rand.Rand) error { return law05Connector(r, NewConnectorWorld()) })
+}

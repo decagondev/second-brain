@@ -18,6 +18,7 @@ package ports
 const ConnectorAPIVersion = 1
 
 type Connector interface {
+    APIVersion() int
     Fetch(ctx context.Context, ref SourceRef) (Document, error)
     ACL(ctx context.Context, user UserRef, refs []SourceRef) ([]Verdict, error)
     Changes(ctx context.Context, cursor Cursor) (ChangeSet, Cursor, error)
@@ -28,6 +29,10 @@ type Connector interface {
 ## DESCRIPTION
 
 A connector is an adapter between one kind of company system and the platform. It holds no state except a sync cursor and does nothing but these four calls.
+
+### Version negotiation
+
+`APIVersion` returns the contract version the connector implements. The platform loads a connector only if `ports.Negotiate` accepts its version: today exactly `1`. A connector built for a newer or older contract is refused at load time with `ENOTSUP`, never run in a degraded mode.
 
 ### Fetch
 
@@ -68,6 +73,8 @@ Resolved at call time from `vault://tenants/<tenant>/connectors/<kind>` through 
 ## CONTRACT KIT
 
 Run `go test ./internal/adapters/connectors/<name>/... -run Kit` against a sandbox. All cases must pass before a connector can be named in any manifest. The cases are listed in [03 Connectors](../docs/architecture/03-connectors.md#the-contract-kit).
+
+The kit is `connectorkit.Run(t, sandbox)` (package `internal/core/connectorkit`). A connector's test supplies a `Sandbox`: the connector under test, an existing document, a user who can open it and one who can't, a way to inject a fault into the next `ACL` call (`500`, timeout, `404`), a way to edit a document and to change its permissions, 200 existing refs for the batch case, and, for writable connectors, a valid `Action`. The kit also checks `APIVersion` against `ports.Negotiate`.
 
 ## LAWS
 

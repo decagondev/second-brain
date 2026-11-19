@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lawconnector.go · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a class="current" href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / laws</div><h1 id="lawconnectorgo">lawconnector.go</h1>
+<pre><code class="language-go">package laws
+
+import (
+    &quot;context&quot;
+    &quot;errors&quot;
+    &quot;fmt&quot;
+    &quot;math/rand&quot;
+
+    &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
+    &quot;example.com/second-brain/internal/core/ports&quot;
+)
+
+// Connector-level laws (SB-201): what a connector itself must guarantee, checked on the
+// fault-injecting mock. LAW-03: under any fault, ACL is never Allow; with no fault it
+// tells the truth. LAW-05: Act returns a target-issued receipt or an error, and the
+// same key twice has one effect.
+
+// ConnectorWorld drives one connector over a source the law controls.
+type ConnectorWorld interface {
+    // ACL asks for user's verdicts on n documents; access[i] is the truth; fault is
+    // &quot;&quot;, &quot;500&quot;, &quot;timeout&quot; or &quot;404&quot; for the call.
+    ACL(access []bool, fault string) (verdicts []string, err error)
+    // Act runs action key against a target that does or doesn't issue ids; it returns
+    // the receipt id (&quot;&quot; if none) and the error.
+    Act(key string, targetIssuesID bool) (receipt string, err error)
+    // Effects is how many changes the target has applied.
+    Effects() int
+}
+
+// NewConnectorWorld builds the system under test: the mock source and its writable
+// connector (SB-201).
+var NewConnectorWorld = func() ConnectorWorld {
+    src := mock.NewSource(&quot;tickets&quot;)
+    return &amp;connWorld{src: src, c: mock.New(src, true)}
+}
+
+type connWorld struct {
+    src *mock.Source
+    c   *mock.Connector
+    n   int
+}
+
+func (w *connWorld) ACL(access []bool, fault string) ([]string, error) {
+    w.n++
+    refs := make([]ports.SourceRef, len(access))
+    for i, ok := range access {
+        id := fmt.Sprintf(&quot;d%d_%d&quot;, w.n, i)
+        if ok {
+            w.src.Put(id, &quot;t&quot;, &quot;x&quot;, &quot;ann@acme.example&quot;)
+        } else {
+            w.src.Put(id, &quot;t&quot;, &quot;x&quot;, &quot;bob@acme.example&quot;)
+        }
+        refs[i] = ports.SourceRef{Kind: &quot;tickets&quot;, ID: id}
+    }
+    w.src.InjectFault(mock.Fault(fault))
+    vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: &quot;usr_ann&quot;, Email: &quot;ann@acme.example&quot;}, refs)
+    out := make([]string, len(vs))
+    for i, v := range vs {
+        out[i] = v.String()
+    }
+    return out, err
+}
+
+func (w *connWorld) Act(key string, issues bool) (string, error) {
+    w.src.IssueIDs(issues)
+    r, err := w.c.Act(context.Background(), ports.Action{Target: &quot;tickets:OPS-1&quot;, Payload: []byte(`{}`)}, ports.IdempotencyKey(key))
+    return r.TargetID, err
+}
+
+func (w *connWorld) Effects() int { return w.src.Effects() }
+
+func law03Connector(r *rand.Rand, w ConnectorWorld) error {
+    for i := 0; i &lt; 6; i++ {
+        access := make([]bool, 1+r.Intn(8))
+        for j := range access {
+            access[j] = r.Intn(2) == 0
+        }
+        fault := []string{&quot;&quot;, &quot;&quot;, &quot;500&quot;, &quot;timeout&quot;, &quot;404&quot;}[r.Intn(5)]
+        if fault == &quot;timeout&quot; &amp;&amp; r.Intn(4) != 0 {
+            fault = &quot;500&quot; // keep the slow case rare; it waits out the 800 ms deadline
+        }
+        got, err := w.ACL(access, fault)
+        if err != nil {
+            return err
+        }
+        if len(got) != len(access) {
+            return fmt.Errorf(&quot;asked %d refs, got %d verdicts&quot;, len(access), len(got))
+        }
+        for j, v := range got {
+            want := &quot;deny&quot;
+            if access[j] {
+                want = &quot;allow&quot;
+            }
+            if fault != &quot;&quot; {
+                want = &quot;unknown&quot;
+            }
+            if v != want {
+                return fmt.Errorf(&quot;fault %q, ref %d (access %v): verdict %s, want %s&quot;, fault, j, access[j], v, want)
+            }
+        }
+    }
+    return nil
+}
+
+func law05Connector(r *rand.Rand, w ConnectorWorld) error {
+    receipts := map[string]string{}
+    effects := 0
+    for i := 0; i &lt; 8; i++ {
+        key := fmt.Sprintf(&quot;apr_%d&quot;, r.Intn(4))
+        issues := r.Intn(3) != 0
+        got, err := w.Act(key, issues)
+        if errors.Is(err, ErrPending) {
+            return err
+        }
+        prev, seen := receipts[key]
+        switch {
+        case err == nil &amp;&amp; got == &quot;&quot;:
+            return fmt.Errorf(&quot;Act %s succeeded without a receipt&quot;, key)
+        case err == nil &amp;&amp; seen &amp;&amp; got != prev:
+            return fmt.Errorf(&quot;Act %s twice gave receipts %s and %s&quot;, key, prev, got)
+        case err == nil &amp;&amp; !seen:
+            receipts[key] = got
+            effects++
+        }
+        if w.Effects() != effects {
+            return fmt.Errorf(&quot;after %d distinct successful keys the target shows %d effects&quot;, effects, w.Effects())
+        }
+    }
+    return nil
+}
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/lawconnector.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

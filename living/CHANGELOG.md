@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Connector contract v1 (SB-201): `APIVersion` and negotiation, the contract kit (`connectorkit.Run`), and a controllable mock source and connector.
 - Factory seams (SB-114): `sb factory status TENANT`, custody constants in one place, and the custody lint.
 - Policy analysis in CI (SB-112): `make policy` validates and tenant-scopes every policy; pull requests show a permission diff.
 - Policy decisions are audited (SB-111): `policy.Kernel` records before returning, samples read allows (`SB_AUDIT_READ_SAMPLE`), and a failed record is `Unknown`.

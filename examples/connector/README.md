@@ -14,7 +14,10 @@ summary: A minimal read-only connector showing the four-call contract.
 | Anything uncertain is `VerdictUnknown`, the zero value | `make([]ports.Verdict, …)` and every early `return out, nil` |
 | `Changes` reports deletes and permission-only changes | `Changes()` |
 | Read-only connectors return `ENOTSUP` from `Act` | `Act()` |
+| States its contract version, which the platform negotiates | `APIVersion()` |
 | Compile-time proof it implements the port | `var _ ports.Connector = (*Connector)(nil)` |
+
+A real connector also passes the contract kit: its test calls `connectorkit.Run(t, sandbox)`. See `internal/adapters/connectors/mock/mock_test.go` for a complete sandbox.
 
 Note what `ACL` does on error: it returns all-`Unknown` and **no error**. The caller would treat an error as `Unknown` anyway, so there's one obvious path (P3).
 
