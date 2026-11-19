@@ -41,6 +41,13 @@ Every tool call takes the same path, in this order:
 
 There's no other way to call a tool (LAW-04, LAW-10).
 
+In code, the bus is `internal/core/toolbus`, and it is the **only** caller of a connector's `Act`. A lint (`tools/check/toolbus.py`) fails the build if any other non-test package calls `.Act(`. Tools come from the release bundle's tool registry. Each has a name, a connector kind, and whether it's consequential. A call to a tool that isn't in the registry is `EPERM`, never "best effort".
+
+| Call | Path |
+|---|---|
+| Not consequential | kill check → `call_tool` authorise → audit row `tool_call`/`Executing` → `Act` → audit row `Ran` (with receipt) or `DidNotRun` |
+| Consequential | kill check → `propose` authorise → audit row `tool_call`/`PendingApproval` with the payload hash → stop. It runs only after an approval (sb-approvals(7)), then: kill re-check → audit row `Executing` with the approval id → `Act` with the approval id as idempotency key → `Ran` or `DidNotRun` |
+
 ### Limits
 
 Each run has a step limit (default 6), a token limit and a time limit (default 45 s). Hitting one ends the run with what it has and a notice. Runs never retry silently.

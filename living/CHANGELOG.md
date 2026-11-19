@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Tool bus, approvals and executor (S4.2a: SB-405, SB-406, SB-408): one path for every tool call (kill check, policy, audit row, approval, execute), approvals bound to an RFC 8785 payload hash over payload, target and workflow, no self-approval, 24-hour expiry, receipts required for `Ran`, and a lint that only the bus calls `Act`. Base policies gain tenant-scoped `call_tool`, `propose` and `approve` permits.
 - Kill switches (S4.1b: SB-403, SB-404): audited set and clear, a per-cell checker with a 2-second poll, push and a 30-second fail-safe, killed connectors treated as Unknown at the live check, `sb kill|unkill|kill list` on a local control plane, and the release kill drill with its report.
 - Audit chain (S4.1a: SB-401, SB-402): hash-chained rows with RFC 8785 canonical form, per-cell Ed25519 anchors, an append-only Postgres store (triggers plus an INSERT/SELECT-only role), signed export, and `sb audit verify --export FILE [--key]` offline. Policy decisions can be written as `decision` rows.
 - Pilot tooling (S3.8: SB-311): the pilot-review runbook in sb-onboarding(7), `python3 -m evals.pilot report` for the Gate 1 numbers, and a retro template.
@@ -56,6 +57,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- Audit `decision` rows no longer repeat the action in `reason` (the kernel's reason already starts with it).
 - The ask agent's live check now passes the asker's email to connectors, which ask their sources by email (BUG-0007).
 
 ### Changed

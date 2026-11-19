@@ -22,3 +22,19 @@ unless { principal.tenant == resource.tenant };
 // Admin only on your own cell.
 forbid (principal, action == Action::"admin", resource is Cell)
 unless { principal.tenant == resource.tenant };
+
+// Tools from the release's registry (SB-405): any user of the tenant may call a tool that
+// isn't consequential; the tool bus still checks kill switches and audits first.
+permit (principal, action == Action::"call_tool", resource is Tool)
+when { principal.tenant == resource.tenant && !resource.consequential };
+
+// Proposing an action for the tenant's enabled workflow (SB-406). It only drafts: running
+// it needs an approval by someone else in the workflow's approver group.
+permit (principal, action == Action::"propose", resource is Workflow)
+when { principal.tenant == resource.tenant };
+
+// Approvers are the workflow's approver group (sb-approvals(7)); the forbids above still
+// stop self-approval and approval across tenants.
+permit (principal, action == Action::"approve", resource is ProposedAction)
+when { principal.tenant == resource.tenant && principal in resource.approvers };
+

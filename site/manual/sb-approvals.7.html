@@ -88,6 +88,10 @@
 <li><strong>Receipt or it didn't happen.</strong> Only a target receipt makes <code>Ran</code> (LAW-05).</li>
 <li><strong>At most once.</strong> The approval id is the idempotency key for <code>Act</code>.</li>
 </ol>
+<h3 id="the-payload-hash-exactly">The payload hash, exactly</h3>
+<p><code>payload_sha256</code> is the hex SHA-256 of the payload's RFC 8785 canonical JSON: object keys sorted, no whitespace, strings in their shortest JSON escaping. Numbers must be integers between -2^53 and 2^53. Any other number is refused when the action is proposed, so every implementation hashes the same bytes. The hash covers the payload <strong>and</strong> the target (<code>{"payload":…,"target":"tickets:OPS-1182","workflow":"ticket-update"}</code>), so approving a comment for one ticket can't post it on another.</p>
+<h3 id="approving-exactly">Approving, exactly</h3>
+<p><code>approve</code> succeeds only if all of these hold, checked in this order, and each failure is <code>ENOAPPROVAL</code> with a reason: the action is <code>PendingApproval</code>, it hasn't expired (<code>expires_at</code>, 24 hours after proposal by default), the echoed hash equals the current payload's hash, the approver isn't the requester, and policy allows <code>approve</code> (which checks the approver group). The approval gets an id (<code>apr_…</code>) recorded with the hash and the approver, and then the executor runs. <code>reject</code> needs the same state and policy, takes a note, and ends the action. A note may be empty, but the click is always explicit.</p>
 <h3 id="timeouts-with-unknown-effect">Timeouts with unknown effect</h3>
 <p>If <code>Act</code> times out, the action is <code>DidNotRun</code> and the user is told the result couldn't be confirmed. A reconciler asks the target by idempotency key. If it finds the change, it appends a <code>Ran</code> audit row with the receipt and notifies the user. It never re-executes.</p>
 <h2 id="laws">LAWS</h2>
@@ -101,7 +105,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-actions.3.html">sb-actions(3)</a>, <a href="sb-agents.7.html">sb-agents(7)</a>, <a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and actions</a></p><p class="srcline">Source: <code>manual/sb-approvals.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#states">States</a></li><li class="l3"><a href="#rules">Rules</a></li><li class="l3"><a href="#timeouts-with-unknown-effect">Timeouts with unknown effect</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#states">States</a></li><li class="l3"><a href="#rules">Rules</a></li><li class="l3"><a href="#the-payload-hash-exactly">The payload hash, exactly</a></li><li class="l3"><a href="#approving-exactly">Approving, exactly</a></li><li class="l3"><a href="#timeouts-with-unknown-effect">Timeouts with unknown effect</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

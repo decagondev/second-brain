@@ -167,3 +167,7 @@ func TestLAW11_AuditChainUnbroken(t *testing.T) {
 func TestLAW10_KillWins(t *testing.T) {
 	Check(t, "LAW-10", runs, func(r *rand.Rand) error { return law10(r, NewKillWorld()) })
 }
+
+func TestLAW15_ApprovalBindsOnePayload(t *testing.T) {
+	Check(t, "LAW-15", runs, func(r *rand.Rand) error { return law15(r, NewApprovalWorld()) })
+}

@@ -29,13 +29,14 @@ func init() {
 }
 
 type askSystem struct {
-	pending
 	w *World
 	// Mutations for the self-tests: index other tenants' documents in this cell, or
 	// treat an Unknown live answer as Allow.
 	indexOthers, unknownAsAllow bool
 	// citeCandidates: a composer that cites every retrieved candidate, refused or not.
 	citeCandidates bool
+	// dropAudit: an audit store that acknowledges tool_call rows without keeping them.
+	dropAudit bool
 }
 
 // worldConnector answers ACL from the world's live verdicts and records that it asked.

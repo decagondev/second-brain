@@ -173,7 +173,7 @@ func (l *Log) RecordDecision(ctx context.Context, d policy.Record) error {
 		actor = "sys_kernel"
 	}
 	_, err := l.Write(ctx, Event{Actor: actor, Kind: "decision", Subject: d.Subject, State: d.Decision.String(),
-		Reason: d.Action + ": " + d.Reason})
+		Reason: d.Reason}) // the kernel's reason already starts with the action
 	return err
 }
 

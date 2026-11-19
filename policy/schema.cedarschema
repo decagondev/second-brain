@@ -8,7 +8,7 @@ entity Chunk in [Document] { tenant: Tenant, cite: String };
 entity Agent { tenant: Tenant, name: String, consequential: Bool };
 entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bool };
 entity Workflow { tenant: Tenant, name: String, approvers: Group };
-entity ProposedAction { tenant: Tenant, workflow: String, requester: User };
+entity ProposedAction { tenant: Tenant, workflow: String, requester: User, approvers: Group };
 entity Cell { tenant: Tenant };
 
 action "read"      appliesTo { principal: [User], resource: [Chunk, Document] };

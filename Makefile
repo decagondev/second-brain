@@ -22,6 +22,7 @@ lint:                  ## gofmt + golangci-lint (includes depguard, SB-008)
 	golangci-lint run ./...
 	$(PY) tools/check/decisions.py
 	$(PY) tools/check/custody.py
+	$(PY) tools/check/toolbus.py
 deps:                  ## the dependency rule, independent of the linter (SB-008)
 	$(PY) tools/check/deps.py
 gen:                   ## regenerate code from the manual

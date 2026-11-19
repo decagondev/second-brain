@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.2a The tool bus, approvals and the executor (SB-405, SB-406, SB-408)
+
+**Wave/slice:** W4 / S4.2a · **Author:** platform lead + Claude · **Status:** In review (bundle registry, reconciler, Postgres store)
+
+**What:** `internal/core/toolbus`, `internal/core/approvals`, a memory action store, a lint that only the bus calls `Act`, and three tenant-scoped base permits. The manual changed first: sb-agents(7) gained the bus's two paths and the lint, and sb-approvals(7) gained "The payload hash, exactly" and "Approving, exactly".
+
+**Why this way:** One package owns the whole order (kill, authorise, audit, approve, execute), so there's no second path to get wrong, and the lint keeps it that way. The hash covers the target and the workflow as well as the payload, so an approved comment can't be replayed on another ticket. The approval checks run in a fixed order, and each failure names its reason. The approval row is written before the state moves, and moves are compare-and-set, so two approvers racing can't both run it. Payload numbers are integers within ±2^53, because RFC 8785 float formatting is where implementations disagree.
+
+**Learned:** With the bus in, `laws/expected_red.txt` is empty for the first time: every law test runs against real code. One trap in the law harness: the bus writes the `Executing` row inside `Invoke`, before it returns the action id, so the world must learn the id when it is minted, not when `Invoke` returns. A second fix along the way: `decision` rows had the action in `reason` twice.
+
+**Laws:** LAW-04 and LAW-05 move from Tested (red) to Tested. LAW-15 moves from Stated to Tested. `make proofs` and `make crosscheck` pass with the new permits.
+
+**Next:** S4.2b, the actions API (`POST /v1/actions`, approve, reject) and the approver view (SB-407).
+
 ## 2026-11-19 S4.1b Kill switches and the kill drill (SB-403, SB-404)
 
 **Wave/slice:** W4 / S4.1b · **Author:** platform lead + Claude · **Status:** In review (tool-bus check points, push channel, release pipeline)

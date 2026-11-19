@@ -101,7 +101,7 @@ func TestWriteChainsAndRefuses(t *testing.T) {
 func TestDecisionRows(t *testing.T) {
 	l, st := newLog()
 	if err := l.RecordDecision(context.Background(), policy.Record{Tenant: "acme-logistics", Actor: "usr_1", Action: "call_tool",
-		Subject: `Tool::"x"`, Decision: policy.Deny, Reason: "no permit"}); err != nil {
+		Subject: `Tool::"x"`, Decision: policy.Deny, Reason: "call_tool: no permit"}); err != nil {
 		t.Fatal(err)
 	}
 	r := st.rows[0]

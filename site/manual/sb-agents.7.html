@@ -63,6 +63,25 @@ tool call: killed? → authorise → audit → approved? → execute
 <li><strong>Execute</strong></li>
 </ol>
 <p>There's no other way to call a tool (LAW-04, LAW-10).</p>
+<p>In code, the bus is <code>internal/core/toolbus</code>, and it is the <strong>only</strong> caller of a connector's <code>Act</code>. A lint (<code>tools/check/toolbus.py</code>) fails the build if any other non-test package calls <code>.Act(</code>. Tools come from the release bundle's tool registry. Each has a name, a connector kind, and whether it's consequential. A call to a tool that isn't in the registry is <code>EPERM</code>, never "best effort".</p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Not consequential</td>
+<td>kill check → <code>call_tool</code> authorise → audit row <code>tool_call</code>/<code>Executing</code> → <code>Act</code> → audit row <code>Ran</code> (with receipt) or <code>DidNotRun</code></td>
+</tr>
+<tr>
+<td>Consequential</td>
+<td>kill check → <code>propose</code> authorise → audit row <code>tool_call</code>/<code>PendingApproval</code> with the payload hash → stop. It runs only after an approval (sb-approvals(7)), then: kill re-check → audit row <code>Executing</code> with the approval id → <code>Act</code> with the approval id as idempotency key → <code>Ran</code> or <code>DidNotRun</code></td>
+</tr>
+</tbody>
+</table>
 <h3 id="limits">Limits</h3>
 <p>Each run has a step limit (default 6), a token limit and a time limit (default 45 s). Hitting one ends the run with what it has and a notice. Runs never retry silently.</p>
 <h3 id="injection">Injection</h3>

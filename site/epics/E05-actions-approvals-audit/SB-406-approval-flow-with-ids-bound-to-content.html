@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,24 +60,27 @@
 <p>An approval approves exactly one payload; any edit needs a new approval.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>States: Drafted, PendingApproval, Approved, Rejected, Expired, Executing, Ran, DidNotRun</li>
-<li class="task"><span class="box"></span>Approval id is bound to the SHA-256 of the canonical action payload; mismatch refuses</li>
-<li class="task"><span class="box"></span>Approver cannot be the requester for consequential actions</li>
+<li class="task done"><span class="box">✓</span>States: Drafted, PendingApproval, Approved, Rejected, Expired, Executing, Ran, DidNotRun</li>
+<li class="task done"><span class="box">✓</span>Approval id is bound to the SHA-256 of the canonical action payload; mismatch refuses</li>
+<li class="task done"><span class="box">✓</span>Approver cannot be the requester for consequential actions</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>State machine identical to <code>Approvals.tla</code></li>
-<li class="task"><span class="box"></span>Canonical payload encoding</li>
-<li class="task"><span class="box"></span>Separation-of-duties rule</li>
-<li class="task"><span class="box"></span>Expiry</li>
-<li class="task"><span class="box"></span>LAW-15 property test</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-04, LAW-15</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>State machine identical to <code>Approvals.tla</code></li>
+<li class="task done"><span class="box">✓</span>Canonical payload encoding</li>
+<li class="task done"><span class="box">✓</span>Separation-of-duties rule</li>
+<li class="task done"><span class="box">✓</span>Expiry</li>
+<li class="task done"><span class="box">✓</span>LAW-15 property test</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-04, LAW-15</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S4.2a): <code>internal/core/approvals</code> holds the eight states and transitions of <code>Approvals.tla</code>, RFC 8785 canonical payloads (integers within ±2^53 only, UTF-16 key order), and a hash over payload, target and workflow. The bus checks approval in order: state, expiry (24 hours, then <code>Expired</code>), echoed hash, not the requester, policy, kill. The approval row is audited first, and the store moves state by compare-and-set. An edit voids any approval and re-proposes with the new hash. <code>TestLAW15_ApprovalBindsOnePayload</code> went red first, then green; it covers stale, made-up and self approvals and edits, and a mutation that ignores the echoed hash is caught. There is a memory action store.</p>
+<p><strong>Left:</strong> a Postgres action store (cell runtime) and a second reviewer for the approval rules.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E05-actions-approvals-audit/SB-406-approval-flow-with-ids-bound-to-content.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

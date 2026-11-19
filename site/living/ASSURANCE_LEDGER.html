@@ -62,18 +62,18 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-04">LAW-04</a></td>
 <td>Audit before act</td>
-<td>Tested (red)</td>
+<td>Tested</td>
 <td><code>Approvals.tla</code>: TLC clean (1,068 states); 4 mutations caught</td>
-<td><code>laws/</code> check + self-tests; tool-call level red until SB-405; policy decisions (<code>TestLAW04_PolicyDecisionsAreRecordedFirst</code>, SB-111) green</td>
+<td><code>laws/</code> check + self-tests through the real tool bus and audit log; ordering tests in <code>internal/core/toolbus</code></td>
 <td>—</td>
 <td>SB-010, SB-011, SB-111, SB-401, SB-405</td>
 </tr>
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-05">LAW-05</a></td>
 <td>Ran means receipt</td>
-<td>Tested (red)</td>
+<td>Tested</td>
 <td><code>Approvals.tla</code>: TLC clean (1,068 states); 4 mutations caught</td>
-<td><code>laws/</code> check + self-tests; red until SB-408</td>
+<td><code>laws/</code> check + self-tests through the real executor; connector-level check</td>
 <td>—</td>
 <td>SB-010, SB-011, SB-408</td>
 </tr>
@@ -161,9 +161,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-15">LAW-15</a></td>
 <td>Approval binds one payload</td>
-<td>Modelled</td>
+<td>Tested</td>
 <td><code>Approvals.tla</code>: TLC clean (1,068 states); 4 mutations caught</td>
-<td>—</td>
+<td><code>laws/</code> property test (stale, made-up and self approvals, edits) through the real bus, + self-test; canonical-hash tests</td>
 <td>—</td>
 <td>SB-011, SB-406</td>
 </tr>
@@ -398,6 +398,18 @@
 <td>LAW-10</td>
 <td>→ Tested</td>
 <td>SB-403, SB-404: <code>TestLAW10_KillWins</code> red first, then green; stale-checker mutation caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-04, LAW-05</td>
+<td>Tested (red) → Tested</td>
+<td>SB-405, SB-408: green on the real tool bus; the red ratchet is empty for the first time</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-15</td>
+<td>Stated → Tested</td>
+<td>SB-406: <code>TestLAW15_ApprovalBindsOnePayload</code> red first, then green; ignore-the-echo mutation caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

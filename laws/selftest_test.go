@@ -634,3 +634,19 @@ func TestSelf_LAW10MutationIsCaught(t *testing.T) {
 		t.Error("LAW-10: a checker with a stale kill list was not caught")
 	}
 }
+
+// LAW-04 watches the real audit path: a store that drops tool_call rows is caught.
+func TestSelf_LAW04BusMutationIsCaught(t *testing.T) {
+	f := func(r *rand.Rand) error { w := Gen(r); return law04(w, askSystem{w: w, dropAudit: true}, r) }
+	if !violates(runs, f) {
+		t.Error("LAW-04: a tool bus whose audit rows are never stored was not caught")
+	}
+}
+
+// LAW-15's check catches approvals that don't bind the hash the approver saw.
+func TestSelf_LAW15MutationIsCaught(t *testing.T) {
+	f := func(r *rand.Rand) error { w := newApprovalWorld(); w.ignoreEcho = true; return law15(r, w) }
+	if !violates(runs, f) {
+		t.Error("LAW-15: approving without checking the echoed hash was not caught")
+	}
+}

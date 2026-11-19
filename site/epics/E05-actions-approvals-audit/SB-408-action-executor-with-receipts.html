@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -73,9 +73,12 @@
 <li class="task"><span class="box"></span>Write or extend the law tests: LAW-05</li>
 <li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S4.2a, built with the bus): <code>Bus.Execute</code> re-checks the kill switch, re-hashes the payload against the approved hash, writes the <code>Executing</code> audit row, and calls <code>Act</code> with the approval id as idempotency key under a 30-second timeout. Only a non-empty receipt makes <code>Ran</code>. A missing receipt is <code>DidNotRun</code> (<code>ENORECEIPT</code>), and an error is <code>DidNotRun</code>, with control characters stripped from the reason before it is audited. <code>TestLAW05_RanMeansReceipt</code>, red since W0, is green on the real bus.</p>
+<p><strong>Left:</strong> the reconciler for timeouts with unknown effect (it asks the target by idempotency key, never re-executes), then the remaining checkboxes.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E05-actions-approvals-audit/SB-408-action-executor-with-receipts.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>
