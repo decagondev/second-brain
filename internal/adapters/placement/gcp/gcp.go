@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/ports"
 )
 
@@ -375,4 +376,125 @@ func (p Project) Unwrap(ctx context.Context, keyID string, wrapped []byte) ([]by
 		return nil, err
 	}
 	return base64.StdEncoding.DecodeString(out.Plaintext)
+}
+
+// VerifierPermissions are what the read-only verifier identity needs to enumerate access
+// paths (sb-factory(7), Access paths, exactly). The tenant grants them; the deploy role
+// never has them.
+var VerifierPermissions = []string{
+	"cloudkms.cryptoKeys.getIamPolicy",
+	"iam.serviceAccounts.getIamPolicy",
+	"resourcemanager.projects.getIamPolicy",
+}
+
+// GrantRoles maps the roles that serve a retained grant (sb-factory(7)); the custom role is
+// relative to the project.
+var GrantRoles = map[string]string{"roles/sbPlatformKill": "platform-kill", "roles/monitoring.viewer": "support-metrics"}
+
+// IAM is the access-path source for one tenant project: every binding of a factory
+// principal on the project, the deploy service account and the cell's KMS key.
+type IAM struct {
+	Project   Project // its Token is the verifier identity's
+	Factory   []string
+	Location  string // the cell's GCP location, for its key
+	Endpoints struct{ CRM, IAM string }
+}
+
+var _ access.Source = IAM{}
+
+// Paths implements access.Source.
+func (s IAM) Paths(ctx context.Context, tenant string) ([]access.Path, error) {
+	bs, err := s.FactoryBindings(ctx, tenant)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]access.Path, len(bs))
+	for i, b := range bs {
+		kind := "iam-binding"
+		if b.Resource == "deploy-account" {
+			kind = "impersonation"
+		}
+		out[i] = access.Path{Source: "gcp-iam", Kind: kind, ID: b.Resource + ":" + b.Role + ":" + b.Member, Grant: b.Grant}
+	}
+	return out, nil
+}
+
+// Name implements access.Source.
+func (IAM) Name() string { return "gcp-iam" }
+
+type policy struct {
+	Bindings []struct {
+		Role    string   `json:"role"`
+		Members []string `json:"members"`
+	} `json:"bindings"`
+}
+
+// Policies reads the three IAM policies of a cell's tenant project.
+func (s IAM) Policies(ctx context.Context, tenant string) (map[string]policy, error) {
+	p := s.Project
+	if !projectRx.MatchString(p.ID) || !safe.MatchString(tenant) {
+		return nil, fmt.Errorf("gcp: bad project %q or tenant %q", p.ID, tenant)
+	}
+	crm, iam := s.Endpoints.CRM, s.Endpoints.IAM
+	if crm == "" {
+		crm = "https://cloudresourcemanager.googleapis.com"
+	}
+	if iam == "" {
+		iam = "https://iam.googleapis.com"
+	}
+	e := p.Endpoints.withDefaults()
+	sa := "sb-cell-deployer@" + p.ID + ".iam.gserviceaccount.com"
+	key := "projects/" + p.ID + "/locations/" + s.Location + "/keyRings/sb-" + tenant + "/cryptoKeys/cell-" + tenant + "-root"
+	urls := map[string][2]string{
+		"project":        {http.MethodPost, crm + "/v1/projects/" + p.ID + ":getIamPolicy"},
+		"deploy-account": {http.MethodPost, iam + "/v1/projects/" + p.ID + "/serviceAccounts/" + sa + ":getIamPolicy"},
+		"cell-key":       {http.MethodGet, e.KMS + "/v1/" + key + ":getIamPolicy"},
+	}
+	out := map[string]policy{}
+	for name, u := range urls {
+		var pol policy
+		var body any
+		if u[0] == http.MethodPost {
+			body = map[string]any{}
+		}
+		if err := p.do(ctx, u[0], u[1], body, &pol); err != nil {
+			return nil, fmt.Errorf("gcp: %s policy: %w", name, err) // unknown is a failure, never "no paths"
+		}
+		out[name] = pol
+	}
+	return out, nil
+}
+
+// Binding is one factory binding found in a policy.
+type Binding struct {
+	Resource, Role, Member, Grant string
+}
+
+// FactoryBindings lists every binding of a factory principal in the tenant project's policies.
+func (s IAM) FactoryBindings(ctx context.Context, tenant string) ([]Binding, error) {
+	pols, err := s.Policies(ctx, tenant)
+	if err != nil {
+		return nil, err
+	}
+	factory := map[string]bool{}
+	for _, f := range s.Factory {
+		factory[f] = true
+	}
+	var out []Binding
+	for _, res := range []string{"project", "deploy-account", "cell-key"} {
+		for _, b := range pols[res].Bindings {
+			for _, m := range b.Members {
+				if !factory[m] {
+					continue
+				}
+				role := strings.TrimPrefix(b.Role, "projects/"+s.Project.ID+"/")
+				grant := ""
+				if res == "project" {
+					grant = GrantRoles[role]
+				}
+				out = append(out, Binding{Resource: res, Role: b.Role, Member: m, Grant: grant})
+			}
+		}
+	}
+	return out, nil
 }

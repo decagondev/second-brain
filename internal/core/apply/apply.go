@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/keywrap"
 	"example.com/second-brain/internal/core/manifest"
@@ -34,6 +35,8 @@ type Deps struct {
 	// Wraps is the cell's wrap inventory: a new cell's audit-signing data key is made and
 	// wrapped by the factory's root key (SB-704). Nil skips it (older control planes).
 	Wraps keywrap.Store
+	// AccessFile is the local control plane's stand-in for IAM, for sb factory access (SB-706).
+	AccessFile access.Source
 }
 
 // EvalMaxAge is how old a workflow's passing eval record may be.

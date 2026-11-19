@@ -107,7 +107,8 @@ sb tenant verify FILE [--law LAW-nn]... [--sample N]
 </tbody>
 </table>
 <p>Any check that returns <em>unknown</em> counts as a <strong>fail</strong>.</p>
-<p>How verify decides, exactly (SB-601):</p>
+<p><code>--law LAW-17</code> runs the access-path check in sb-factory(7), Access paths, exactly. It is the same check as <code>sb factory access</code>.</p>
+<p>How verify decides the other laws, exactly (SB-601):</p>
 <ul>
 <li><strong>Sampling.</strong> Users are drawn from the directory and questions from the titles of indexed documents, <code>--sample</code> of each pairing (default 50), with a seed printed in the report so a run can be repeated. Nothing about a document but its id and version is ever printed.</li>
 <li><strong>LAW-01.</strong> For every citation in every sampled answer, verify asks the source <strong>again, live</strong>, whether the asker may open that document now. It also checks that the answer's own decision list shows the source was asked. A citation the source doesn't allow, or one with no recorded live check, fails.</li>

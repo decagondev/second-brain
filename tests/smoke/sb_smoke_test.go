@@ -172,6 +172,11 @@ func TestTenantApply(t *testing.T) {
 	if code, out := runSB("--endpoint", ep, "factory", "status", "nobody-here"); code != 2 || !strings.Contains(out, "[EUSAGE]") {
 		t.Fatalf("factory status for no cell: exit %d %q", code, out)
 	}
+	// SB-706: the factory's paths to a factory-custody cell: its key wrap (no local IAM file).
+	if code, out := runSB("--endpoint", ep, "factory", "access", "acme-logistics"); code != 0 ||
+		!strings.Contains(out, "LAW-17 applies after hand-off") || !strings.Contains(out, "key-wrap     key-wrap:audit-signing:") {
+		t.Fatalf("factory access: exit %d %q", code, out)
+	}
 }
 
 // sb kill and unkill against a local control plane (SB-403): audited, listed, cleared.

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,25 @@
 <p>Prove the factory kept only what was agreed.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>sb tenant verify --law LAW-17</code> enumerates factory access paths from IaC state and IAM and fails on any not in the hand-off record</li>
-<li class="task"><span class="box"></span>Monthly re-check alerts on drift</li>
+<li class="task"><span class="box"></span><code>sb tenant verify --law LAW-17</code> enumerates factory access paths from IaC state and IAM and fails on any not in the hand-off record (the check, its GCP IAM source and <code>sb factory access</code> are built; <code>verify</code> against a deployed cell and real IAM is W7)</li>
+<li class="task"><span class="box"></span>Monthly re-check alerts on drift (<code>access.Watch</code> sets the gauge the LAW-17 Sev-1 reads; scheduling it monthly needs the control-plane runtime)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Enumerator</li>
-<li class="task"><span class="box"></span>Comparison with hand-off record</li>
-<li class="task"><span class="box"></span>Monthly job</li>
-<li class="task"><span class="box"></span>Alert</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-17</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Enumerator</li>
+<li class="task done"><span class="box">✓</span>Comparison with hand-off record</li>
+<li class="task"><span class="box"></span>Monthly job (the function is built; the schedule is the runtime's)</li>
+<li class="task done"><span class="box">✓</span>Alert</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-17</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S7.2c): sb-factory(7) gained "Access paths, exactly", and sb-factory(1) and sb-tenant(1) follow it. <code>internal/core/access</code> has <code>Check</code>, which enumerates every source and reports each path no retained grant serves. A source that can't be read is <code>EUNAVAIL</code>, never a pass. It also has the wrap-inventory source and <code>Watch</code>, which sets <code>sb_unlisted_access_paths</code>, and to 1 when the check can't finish, feeding the LAW-17 Sev-1 rule from SB-701. The <code>gcp.IAM</code> source reads the project's, the deploy account's and the cell key's IAM policies with a separate read-only verifier identity (<code>gcp.VerifierPermissions</code>), and maps <code>sbPlatformKill</code> and <code>monitoring.viewer</code> to their grants. <code>gcptest</code> now serves <code>getIamPolicy</code>. <code>sb factory access TENANT</code> works on the local control plane, and the smoke test runs it. The new law test <code>TestLAW17_AccessCheckFindsEveryUnlistedPath</code> uses random factory and tenant bindings and key wraps against a model, and shows a failed read never passes. A self-test catches a source that skips the key's policy.</p>
+<p><strong>Left:</strong> <code>sb tenant verify --law LAW-17</code> against a deployed cell and real IAM, and the monthly schedule, both in the control-plane runtime.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-706-access-path-enumeration-and-law-17-check.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

@@ -99,7 +99,7 @@ The global options (`--json`, `--endpoint`) are in [sb(1)](sb.1.md).
 
 0 success · 1 a check failed: unlisted access (`ELAW`), chain or law verification failed during execute (`ECHAIN`, `ELAW`) · 2 usage, a bad plan hash, the wrong region, or not built yet (`EUSAGE`, `EINVAL`, `ENOTIMPL`) · 3 not permitted (`EPERM`, `EAUTH`) · 5 approvals missing or for another hash (`ENOAPPROVAL`) · 7 the registry, an account or a KMS is unreachable (`EUNAVAIL`).
 
-Until its ticket lands, a command exits 2 with `ENOTIMPL` and names it: `handoff` SB-705, `access` SB-706, `detach` SB-708.
+Until its ticket lands, a command exits 2 with `ENOTIMPL` and names it: `handoff` SB-705, `detach` SB-708. `access` works on the local control plane, where the sources are the wrap inventory and `DIR/access/TENANT.json` (local accounts have no IAM). On GCP the source is the project's IAM, read with the verifier identity.
 
 ## LAWS
 

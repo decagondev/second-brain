@@ -182,7 +182,7 @@
 <td>Tested</td>
 <td><code>Handoff.tla</code>: TLC clean (23 states); 4 mutations caught</td>
 <td><code>TestLAW17_HandoffLeavesOnlyRetainedGrants</code> on the controller (SB-705); reference controller + 4 mutants</td>
-<td>Sev-1 rule <code>sb_unlisted_access_paths</code> (fires once SB-706 emits it)</td>
+<td>Sev-1 rule on <code>sb_unlisted_access_paths</code>, set by <code>access.Watch</code> (SB-706; monthly schedule in the runtime)</td>
 <td>SB-701, SB-705, SB-706</td>
 </tr>
 <tr>
@@ -524,6 +524,12 @@
 <td>LAW-17, LAW-18</td>
 <td>Tested (red) → Tested (green)</td>
 <td>SB-705: the hand-off controller is wired in; <code>TestLAW17_HandoffLeavesOnlyRetainedGrants</code> and <code>TestLAW18_HandoffNeverOrphansTheKey</code> green on random runs reaching every phase; controller phases checked against <code>Handoff.tla</code></td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-17</td>
+<td>Tested (extended)</td>
+<td>SB-706: <code>TestLAW17_AccessCheckFindsEveryUnlistedPath</code> over IAM policies and key wraps; a failed read never passes; skipped-key-policy mutation caught; <code>sb factory access</code></td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

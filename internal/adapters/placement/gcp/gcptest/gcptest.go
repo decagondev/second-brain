@@ -25,14 +25,16 @@ type Fake struct {
 	res    map[string]map[string]any             // resource path -> JSON
 	keys   map[string][]byte                     // KMS key path -> key material (never returned)
 	faults []int
-	n      int
+	// policies: resource name -> role -> members (getIamPolicy answers; empty if unset)
+	policies map[string]map[string][]string
+	n        int
 	// Calls counts requests by project, so a test can show no call reached a project.
 	Calls map[string]int
 }
 
 // New starts the fake.
 func New() *Fake {
-	f := &Fake{grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
+	f := &Fake{policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
 	f.Server = httptest.NewTLSServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -92,6 +94,21 @@ func errBody(code int, status string) map[string]any {
 // route names the permission a request needs and the resource path it acts on.
 func route(method, path string) (perm, project, res string, create bool) {
 	p := strings.TrimPrefix(path, "/v1/")
+	if strings.HasSuffix(p, ":getIamPolicy") {
+		res := strings.TrimSuffix(p, ":getIamPolicy")
+		proj := strings.Split(res, "/")
+		if len(proj) < 2 {
+			return "", "", "", false
+		}
+		switch {
+		case strings.Contains(res, "/cryptoKeys/"):
+			return "cloudkms.cryptoKeys.getIamPolicy", proj[1], "iam:" + res, false
+		case strings.Contains(res, "/serviceAccounts/"):
+			return "iam.serviceAccounts.getIamPolicy", proj[1], "iam:" + res, false
+		case len(proj) == 2:
+			return "resourcemanager.projects.getIamPolicy", proj[1], "iam:" + res, false
+		}
+	}
 	parts := strings.Split(p, "/")
 	if len(parts) < 2 || parts[0] != "projects" {
 		return "", "", "", false
@@ -163,6 +180,13 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 		reply(w, 200, map[string]any{"name": path, "status": "DONE"})
 	case create:
 		f.create(w, r, path, body)
+	case strings.HasPrefix(path, "iam:"):
+		bs := f.policies[strings.TrimPrefix(path, "iam:")]
+		var out []any
+		for role, ms := range bs {
+			out = append(out, map[string]any{"role": role, "members": ms})
+		}
+		reply(w, 200, map[string]any{"bindings": out})
 	default:
 		v, ok := f.res[path]
 		if !ok {
@@ -246,3 +270,27 @@ func (f *Fake) crypt(w http.ResponseWriter, key, perm string, body map[string]an
 }
 
 func str(v any) string { s, _ := v.(string); return s }
+
+// Bind adds member to role in a resource's IAM policy (the project "projects/P", a service
+// account or a KMS key, by resource name).
+func (f *Fake) Bind(resource, role, member string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.policies[resource] == nil {
+		f.policies[resource] = map[string][]string{}
+	}
+	f.policies[resource][role] = append(f.policies[resource][role], member)
+}
+
+// Unbind removes member from role on a resource.
+func (f *Fake) Unbind(resource, role, member string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var keep []string
+	for _, m := range f.policies[resource][role] {
+		if m != member {
+			keep = append(keep, m)
+		}
+	}
+	f.policies[resource][role] = keep
+}

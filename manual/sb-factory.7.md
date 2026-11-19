@@ -92,6 +92,25 @@ Abort removes the tenant's wraps and keeps the factory's. Nothing ever removes t
 
 `sb factory status TENANT` prints the inventory as checked now, for example `key_wraps audit-signing: factory, tenant`, listing for each purpose the custodians whose wrap unwraps it at that moment. A wrap that fails to unwrap is shown as `factory (broken)`, and that is a Sev-1 (`sb_unwrappable_keys`, LAW-18).
 
+### Access paths, exactly (SB-706)
+
+An **access path** is any way the factory could reach a cell. Paths are enumerated from where they actually live, never from a list someone keeps:
+
+| Source | Paths |
+|---|---|
+| The cell project's IAM policy | every binding whose member is one of the factory's principals |
+| The deploy service account's IAM policy | the factory's right to impersonate it |
+| The cell's KMS key's IAM policy | any factory binding on the key |
+| The wrap inventory (SB-704) | a factory wrap of any data key |
+
+Each path names the grant it serves, if any. Only three roles serve a grant: the custom role `sbPlatformKill` serves `platform-kill`, `roles/monitoring.viewer` serves `support-metrics`, and nothing in the tenant's project serves `publish-releases`, because the cell pulls bundles from the factory's registry. A key wrap and an impersonation binding serve no grant.
+
+**The check.** `sb factory access TENANT` enumerates every source and compares the paths with the hand-off record's retained grants. A path whose grant isn't retained, or that serves none, is **unlisted**. Any unlisted path fails the check (`ELAW`, exit 1), and the check prints each one. A source that can't be read makes the check fail with `EUNAVAIL` (exit 7): an enumeration that didn't finish proves nothing, so it never passes. For a cell still in `factory` custody, the paths are printed and LAW-17 doesn't apply yet.
+
+**The monthly watch.** Once a month, and right after every cutover, the control plane runs the same check for every `tenant`-custody cell. It sets `sb_unlisted_access_paths{tenant}` to the number of unlisted paths, which raises the LAW-17 Sev-1 when it is above 0. A check that can't finish sets it to 1, so silence never looks like a pass.
+
+The enumeration reads IAM policies with a separate, read-only **verifier** identity that the tenant grants (`resourcemanager.projects.getIamPolicy`, `iam.serviceAccounts.getIamPolicy`, `cloudkms.cryptoKeys.getIamPolicy`), never with the deploy account. The tenant can therefore run the check themselves, and the factory can't hide a path by withdrawing its own read access.
+
 The **hand-off record** is written at `TenantOwned` and kept in the registry's custody history: the plan hash, both approvals, the new custody record (`custody: tenant`, `placement: tenant-account://PROVIDER/ID`, `key_custodian: tenant`), the retained grants, and the `sb factory access` result. LAW-17 is checked against this record.
 
 ## LAWS

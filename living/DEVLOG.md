@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.2c Access paths (SB-706)
+
+**Wave/slice:** W7 / S7.2c · **Author:** platform lead + Claude · **Status:** In review (deployed cell, monthly schedule)
+
+**What:** `internal/core/access`, `gcp.IAM` and `gcp.VerifierPermissions`, `getIamPolicy` in `gcptest`, `internal/adapters/access/localfs`, `sb factory access`, and `laws/law17access.go`. The manual changed first: sb-factory(7) gained "Access paths, exactly", and sb-factory(1) and sb-tenant(1) follow it.
+
+**Why this way:** LAW-17 is only as good as the enumeration, so paths are read from where they live (IAM policies and the wrap inventory), never from the plan's list of what should be there. The reader is a separate verifier identity that the tenant grants and can use themselves, so the factory can't make a path invisible by withdrawing its own read rights. And a read that fails counts as a failure, so an outage never passes as "no paths".
+
+**Learned:** The grant a binding serves depends on where it is. `monitoring.viewer` on the project serves `support-metrics`, but the same role on the KMS key serves nothing. The source therefore maps roles to grants only for project bindings, and the law test's model says the same.
+
+**Laws:** LAW-17 extended (`TestLAW17_AccessCheckFindsEveryUnlistedPath`, with its mutation caught). All law tests are green.
+
+**Next:** S7.2d, releases after hand-off (SB-707).
+
 ## 2026-11-19 S7.2b The hand-off controller (SB-705)
 
 **Wave/slice:** W7 / S7.2b · **Author:** platform lead + Claude · **Status:** In review (CLI and a cloud Target)

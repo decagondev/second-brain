@@ -14,6 +14,7 @@ import (
 
 	"example.com/second-brain/internal/adapters/policy/cedar"
 	"example.com/second-brain/internal/adapters/registry/localfs"
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/policy"
@@ -924,4 +925,30 @@ func TestSelf_HandoffRunsReachEveryPhase(t *testing.T) {
 			t.Errorf("no run reached %s", p)
 		}
 	}
+}
+
+// LAW-17's access check catches a source that doesn't read the key's policy.
+func TestSelf_LAW17AccessMutationIsCaught(t *testing.T) {
+	mutant := func() (AccessWorld, func()) {
+		w, done := NewAccessWorld()
+		aw := w.(*accessWorld)
+		aw.sources[0] = skipKey{aw.sources[0]}
+		return aw, done
+	}
+	if !violates(runs, func(r *rand.Rand) error { w, done := mutant(); defer done(); return law17Access(r, w) }) {
+		t.Error("LAW-17 (access): ignoring the key's IAM policy was not caught")
+	}
+}
+
+type skipKey struct{ access.Source }
+
+func (s skipKey) Paths(ctx context.Context, tenant string) ([]access.Path, error) {
+	ps, err := s.Source.Paths(ctx, tenant)
+	var out []access.Path
+	for _, p := range ps {
+		if !strings.HasPrefix(p.ID, "cell-key:") {
+			out = append(out, p)
+		}
+	}
+	return out, err
 }

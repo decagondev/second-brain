@@ -57,7 +57,9 @@ Lines start with `+` (add), `~` (change, showing the old value after `was`) or `
 
 Any check that returns *unknown* counts as a **fail**.
 
-How verify decides, exactly (SB-601):
+`--law LAW-17` runs the access-path check in sb-factory(7), Access paths, exactly. It is the same check as `sb factory access`.
+
+How verify decides the other laws, exactly (SB-601):
 
 - **Sampling.** Users are drawn from the directory and questions from the titles of indexed documents, `--sample` of each pairing (default 50), with a seed printed in the report so a run can be repeated. Nothing about a document but its id and version is ever printed.
 - **LAW-01.** For every citation in every sampled answer, verify asks the source **again, live**, whether the asker may open that document now. It also checks that the answer's own decision list shows the source was asked. A citation the source doesn't allow, or one with no recorded live check, fails.

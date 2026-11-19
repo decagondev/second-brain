@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Access paths (S7.2c: SB-706): `internal/core/access` (Check, Watch, the wrap source), the GCP IAM source with a read-only verifier identity, `getIamPolicy` in the GCP fake, `sb factory access`, and a LAW-17 law test.
 - The hand-off controller (S7.2b: SB-705): `internal/core/handoff`, `Handoff.tla` in code and checked against it, with hash-bound dual approval, a custody audit row before every step, cutover with a LAW-17 re-check, abort and detach. The LAW-17 and LAW-18 hand-off law tests are green.
 - Key wraps (S7.2a: SB-704): the wrap inventory with verified re-wrap, a destroy and abort that check the kept wrap live, the audit-signing data key made at stamp time, and `key_wraps` in `sb factory status`.
 - GCP placement (S7.1c: SB-703): the `gcp` Placement and Keys adapter (Cloud SQL, Cloud KMS, Secret Manager, Pub/Sub over REST), its recorded fake, the tenant's deploy-role bootstrap script, and a LAW-02 law test over GCP projects.

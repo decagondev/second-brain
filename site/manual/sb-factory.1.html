@@ -146,7 +146,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <p>The global options (<code>--json</code>, <code>--endpoint</code>) are in <a href="sb.1.html">sb(1)</a>.</p>
 <h2 id="exit-status">EXIT STATUS</h2>
 <p>0 success · 1 a check failed: unlisted access (<code>ELAW</code>), chain or law verification failed during execute (<code>ECHAIN</code>, <code>ELAW</code>) · 2 usage, a bad plan hash, the wrong region, or not built yet (<code>EUSAGE</code>, <code>EINVAL</code>, <code>ENOTIMPL</code>) · 3 not permitted (<code>EPERM</code>, <code>EAUTH</code>) · 5 approvals missing or for another hash (<code>ENOAPPROVAL</code>) · 7 the registry, an account or a KMS is unreachable (<code>EUNAVAIL</code>).</p>
-<p>Until its ticket lands, a command exits 2 with <code>ENOTIMPL</code> and names it: <code>handoff</code> SB-705, <code>access</code> SB-706, <code>detach</code> SB-708.</p>
+<p>Until its ticket lands, a command exits 2 with <code>ENOTIMPL</code> and names it: <code>handoff</code> SB-705, <code>detach</code> SB-708. <code>access</code> works on the local control plane, where the sources are the wrap inventory and <code>DIR/access/TENANT.json</code> (local accounts have no IAM). On GCP the source is the project's IAM, read with the verifier identity.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-17">LAW-17</a>, <a href="sb-laws.7.html#law-18">LAW-18</a>, <a href="sb-laws.7.html#law-04">LAW-04</a>, <a href="sb-laws.7.html#law-11">LAW-11</a>.</p>
 <h2 id="examples">EXAMPLES</h2>

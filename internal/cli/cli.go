@@ -15,9 +15,11 @@ import (
 	"strings"
 	"time"
 
+	accessfs "example.com/second-brain/internal/adapters/access/localfs"
 	wrapfs "example.com/second-brain/internal/adapters/keywrap/localfs"
 	"example.com/second-brain/internal/adapters/placement/local"
 	"example.com/second-brain/internal/adapters/registry/localfs"
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/apply"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/cell"
@@ -106,6 +108,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.tenantApply(rest[2:])
 	case "factory status":
 		return e.factoryStatus(rest[2:])
+	case "factory access":
+		return e.factoryAccess(rest[2:])
 	case "audit verify":
 		return e.auditVerify(rest[2:])
 	}
@@ -333,6 +337,47 @@ func (e *env) factoryStatus(args []string) int {
 	return 0
 }
 
+// factoryAccess runs the access-path check (sb-factory(1), access; SB-706). On the local
+// control plane the sources are the wrap inventory and DIR/access/TENANT.json, the local
+// accounts' stand-in for IAM.
+func (e *env) factoryAccess(args []string) int {
+	const name = "sb factory access"
+	args = e.localArgs(args)
+	if len(args) != 1 {
+		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb factory access TENANT"))
+	}
+	deps, err := e.controlPlane()
+	if err != nil {
+		return e.fail(name, err)
+	}
+	cells, ok := deps.Cells.(ports.Cells)
+	if !ok || deps.Wraps == nil || deps.AccessFile == nil {
+		return e.fail(name, errs.New(errs.EUNAVAIL, "this control plane cannot enumerate access paths"))
+	}
+	ctx := context.Background()
+	c, found, err := cells.CellByTenant(ctx, args[0])
+	switch {
+	case err != nil:
+		return e.fail(name, errs.New(errs.EUNAVAIL, "tenant registry unavailable: %v", err))
+	case !found:
+		return e.fail(name, errs.New(errs.EUSAGE, "no cell for tenant %q", args[0]))
+	case c.Custody != cell.CustodyFactory:
+		return e.fail(name, errs.New(errs.EUNAVAIL, "the hand-off record store for %s custody arrives with sb factory handoff (SB-705)", c.Custody))
+	}
+	res, err := access.Check(ctx, c.Tenant, []access.Source{access.Wraps{Store: deps.Wraps}, deps.AccessFile}, nil)
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUNAVAIL, "%v", err))
+	}
+	if e.g.JSON {
+		return e.json(map[string]any{"tenant": c.Tenant, "custody": c.Custody, "paths": res.Paths, "law": "LAW-17 applies after hand-off"})
+	}
+	fmt.Fprintf(e.out, "custody %s: LAW-17 applies after hand-off; the factory's paths now:\n", c.Custody)
+	for _, p := range res.Paths {
+		fmt.Fprintf(e.out, "  %-12s %s\n", p.Kind, p.ID)
+	}
+	return 0
+}
+
 // wrapLine prints the inventory, e.g. "audit-signing: factory, tenant (broken)".
 func wrapLine(inv []keywrap.Entry) string {
 	if len(inv) == 0 {
@@ -365,7 +410,8 @@ func (e *env) controlPlane() (apply.Deps, error) {
 		// v1 custody is always placement factory-account (sb-factory(7)); no account id here.
 		acct := local.Account{Root: filepath.Join(root, "accounts"), Name: cell.PlacementFactoryAccount}
 		return apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: "sb.localhost", Placement: acct, Keys: acct,
-			Evals: reg, Now: time.Now, Wraps: wrapfs.Dir{Root: filepath.Join(root, "keywraps")}}, nil
+			Evals: reg, Now: time.Now, Wraps: wrapfs.Dir{Root: filepath.Join(root, "keywraps")},
+			AccessFile: accessfs.Dir{Root: filepath.Join(root, "access")}}, nil
 	}
 	return apply.Deps{}, errs.New(errs.ENOTIMPL, "control-plane client not built yet (SB-105); use --endpoint file:///DIR")
 }

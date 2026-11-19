@@ -169,6 +169,38 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 </ol>
 <p>Abort removes the tenant's wraps and keeps the factory's. Nothing ever removes the last working wrap of a purpose (LAW-18).</p>
 <p><code>sb factory status TENANT</code> prints the inventory as checked now, for example <code>key_wraps audit-signing: factory, tenant</code>, listing for each purpose the custodians whose wrap unwraps it at that moment. A wrap that fails to unwrap is shown as <code>factory (broken)</code>, and that is a Sev-1 (<code>sb_unwrappable_keys</code>, LAW-18).</p>
+<h3 id="access-paths-exactly-sb-706">Access paths, exactly (SB-706)</h3>
+<p>An <strong>access path</strong> is any way the factory could reach a cell. Paths are enumerated from where they actually live, never from a list someone keeps:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Paths</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The cell project's IAM policy</td>
+<td>every binding whose member is one of the factory's principals</td>
+</tr>
+<tr>
+<td>The deploy service account's IAM policy</td>
+<td>the factory's right to impersonate it</td>
+</tr>
+<tr>
+<td>The cell's KMS key's IAM policy</td>
+<td>any factory binding on the key</td>
+</tr>
+<tr>
+<td>The wrap inventory (SB-704)</td>
+<td>a factory wrap of any data key</td>
+</tr>
+</tbody>
+</table>
+<p>Each path names the grant it serves, if any. Only three roles serve a grant: the custom role <code>sbPlatformKill</code> serves <code>platform-kill</code>, <code>roles/monitoring.viewer</code> serves <code>support-metrics</code>, and nothing in the tenant's project serves <code>publish-releases</code>, because the cell pulls bundles from the factory's registry. A key wrap and an impersonation binding serve no grant.</p>
+<p><strong>The check.</strong> <code>sb factory access TENANT</code> enumerates every source and compares the paths with the hand-off record's retained grants. A path whose grant isn't retained, or that serves none, is <strong>unlisted</strong>. Any unlisted path fails the check (<code>ELAW</code>, exit 1), and the check prints each one. A source that can't be read makes the check fail with <code>EUNAVAIL</code> (exit 7): an enumeration that didn't finish proves nothing, so it never passes. For a cell still in <code>factory</code> custody, the paths are printed and LAW-17 doesn't apply yet.</p>
+<p><strong>The monthly watch.</strong> Once a month, and right after every cutover, the control plane runs the same check for every <code>tenant</code>-custody cell. It sets <code>sb_unlisted_access_paths{tenant}</code> to the number of unlisted paths, which raises the LAW-17 Sev-1 when it is above 0. A check that can't finish sets it to 1, so silence never looks like a pass.</p>
+<p>The enumeration reads IAM policies with a separate, read-only <strong>verifier</strong> identity that the tenant grants (<code>resourcemanager.projects.getIamPolicy</code>, <code>iam.serviceAccounts.getIamPolicy</code>, <code>cloudkms.cryptoKeys.getIamPolicy</code>), never with the deploy account. The tenant can therefore run the check themselves, and the factory can't hide a path by withdrawing its own read access.</p>
 <p>The <strong>hand-off record</strong> is written at <code>TenantOwned</code> and kept in the registry's custody history: the plan hash, both approvals, the new custody record (<code>custody: tenant</code>, <code>placement: tenant-account://PROVIDER/ID</code>, <code>key_custodian: tenant</code>), the retained grants, and the <code>sb factory access</code> result. LAW-17 is checked against this record.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-17">LAW-17</a> no unlisted factory access after hand-off · <a href="sb-laws.7.html#law-18">LAW-18</a> the root key always has a custodian. LAW-01 to LAW-16 continue to hold for <code>factory</code> and <code>tenant</code> custody.</p>
@@ -191,7 +223,7 @@ needs approval from: factory operator, tenant owner (group:gamma-it-owners)
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-factory.1.html">sb-factory(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l3"><a href="#access-paths-exactly-sb-706">Access paths, exactly (SB-706)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -244,3 +244,11 @@ func TestLAW02_GCPCellsShareNothing(t *testing.T) {
 func TestLAW18_DestroyNeedsAWorkingWrap(t *testing.T) {
 	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Wraps(r, NewWrapWorld(t.TempDir())) })
 }
+
+func TestLAW17_AccessCheckFindsEveryUnlistedPath(t *testing.T) {
+	Check(t, "LAW-17", runs, func(r *rand.Rand) error {
+		w, done := NewAccessWorld()
+		defer done()
+		return law17Access(r, w)
+	})
+}
