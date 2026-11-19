@@ -22,3 +22,4 @@ A bug that a law self-test or another permanent test already covers names that t
 | BUG-0004 | `laws/selftest_test.go`: `TestSelf_EachMutationIsCaught` ("ignores tenant boundary") and `TestSelf_GeneratorCoversHardCases` ("public doc") |
 | BUG-0007 | `internal/core/ask`: `TestLiveCheckCarriesTheEmail`, and `make evals` (the citation suite runs the agent with an email-keyed connector) |
 | BUG-0008 | `Makefile` `smoke` runs `-count=1`; `tests/smoke` `TestTenantApply` covers the eval gate |
+| BUG-0009 | `tools/ci/fetch_tools.sh` checksum pin, now on a stable release (`tools/versions.env`) |

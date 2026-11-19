@@ -82,6 +82,7 @@
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><code>make proofs</code> pins TLA+ v1.7.4 (stable) instead of the v1.8.0 prerelease, which upstream rebuilt in place (BUG-0009).</li>
 <li><code>make smoke</code> is never cached, so a rebuilt <code>sb</code> is always tested; the smoke test covers the workflow eval gate (BUG-0008).</li>
 <li>Audit <code>decision</code> rows no longer repeat the action in <code>reason</code> (the kernel's reason already starts with it).</li>
 <li>The ask agent's live check now passes the asker's email to connectors, which ask their sources by email (BUG-0007).</li>

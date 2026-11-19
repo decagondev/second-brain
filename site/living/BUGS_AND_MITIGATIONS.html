@@ -77,6 +77,12 @@
 <td>Test harness</td>
 <td>Fixed</td>
 </tr>
+<tr>
+<td><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009</a></td>
+<td>The TLA+ checker was pinned to a prerelease rebuilt in place</td>
+<td>Tooling</td>
+<td>Fixed</td>
+</tr>
 </tbody>
 </table>
 <h2 id="bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</h2>
@@ -266,8 +272,31 @@
 <p><strong>Symptom:</strong> S4.3b added the eval gate to <code>sb tenant apply</code>, which correctly refused the smoke test's <code>full.yaml</code> apply. CI went red on three pushes (4a42bfb, e6bb767, 8d55543). Locally, <code>make check</code> stayed green because <code>go test ./tests/smoke/...</code> reported <code>(cached)</code>.</p>
 <p><strong>Root cause:</strong> The smoke tests run the <code>bin/sb</code> binary as a subprocess. Go's test cache keys on the test package's own inputs, not on a binary it executes, so a rebuilt <code>sb</code> with new behaviour reused the old result.</p>
 <p><strong>Fix:</strong> <code>make smoke</code> runs with <code>-count=1</code>, so it is never cached. The smoke test now covers the gate: without an eval record, applying <code>full.yaml</code> fails with <code>EEVAL</code> and writes nothing, and with a passing record it applies.</p>
-<p><strong>Caught by now:</strong> every <code>make check</code> runs the smoke tests fresh. Why it wasn't caught before: CI was green until the first change that altered <code>sb</code>'s behaviour without touching the smoke test package. Process fix: after a push, wait for CI before moving to the next slice when the slice changes CLI behaviour.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li></ul></aside>
+<p><strong>Caught by now:</strong> every <code>make check</code> runs the smoke tests fresh. Why it wasn't caught before: CI was green until the first change that altered <code>sb</code>'s behaviour without touching the smoke test package. Process fix: after a push, wait for CI before moving to the next slice when the slice changes CLI behaviour.</p>
+<h2 id="bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-19, CI <code>proofs</code> failed on 4bbd389 with a checksum mismatch</td>
+<td>Tooling</td>
+<td>SB-011</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>tools/ci/fetch_tools.sh</code> refused the downloaded <code>tla2tools.jar</code>: its SHA-256 no longer matched the pin. Upstream had republished the v1.8.0 asset that afternoon. The checksum check did exactly its job, refusing an artefact that changed under a fixed name.</p>
+<p><strong>Root cause:</strong> TLA+ v1.8.0 is a GitHub <strong>prerelease</strong> that upstream rebuilds in place, so it can't be pinned by checksum.</p>
+<p><strong>Fix:</strong> Pin the latest <strong>stable</strong> release, v1.7.4, which is immutable (<code>tools/versions.env</code>, with a comment saying why). All four models still pass, and all 13 mutations are still caught.</p>
+<p><strong>Caught by now:</strong> the checksum pin itself, on every CI run. Why it wasn't caught before: the prerelease hadn't been rebuilt since the pin was taken. Rule: pin only stable, immutable releases.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

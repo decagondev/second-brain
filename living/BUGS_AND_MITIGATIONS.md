@@ -17,6 +17,7 @@ Every defect gets an entry, including design defects found in review. Each entry
 | [BUG-0006](#bug-0006-base-policy-permitted-another-tenants-agent) | Base policy permitted another tenant's agent | Design | Fixed |
 | [BUG-0007](#bug-0007-the-live-check-asked-connectors-without-the-askers-email) | The live check asked connectors without the asker's email | Code | Fixed |
 | [BUG-0008](#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary) | Smoke tests were cached against a rebuilt binary | Test harness | Fixed |
+| [BUG-0009](#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place) | The TLA+ checker was pinned to a prerelease rebuilt in place | Tooling | Fixed |
 
 ## BUG-0001 Rollout model assumes atomic rollback
 
@@ -137,4 +138,18 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** `make smoke` runs with `-count=1`, so it is never cached. The smoke test now covers the gate: without an eval record, applying `full.yaml` fails with `EEVAL` and writes nothing, and with a passing record it applies.
 
 **Caught by now:** every `make check` runs the smoke tests fresh. Why it wasn't caught before: CI was green until the first change that altered `sb`'s behaviour without touching the smoke test package. Process fix: after a push, wait for CI before moving to the next slice when the slice changes CLI behaviour.
+
+## BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-19, CI `proofs` failed on 4bbd389 with a checksum mismatch | Tooling | SB-011 | Fixed |
+
+**Symptom:** `tools/ci/fetch_tools.sh` refused the downloaded `tla2tools.jar`: its SHA-256 no longer matched the pin. Upstream had republished the v1.8.0 asset that afternoon. The checksum check did exactly its job, refusing an artefact that changed under a fixed name.
+
+**Root cause:** TLA+ v1.8.0 is a GitHub **prerelease** that upstream rebuilds in place, so it can't be pinned by checksum.
+
+**Fix:** Pin the latest **stable** release, v1.7.4, which is immutable (`tools/versions.env`, with a comment saying why). All four models still pass, and all 13 mutations are still caught.
+
+**Caught by now:** the checksum pin itself, on every CI run. Why it wasn't caught before: the prerelease hadn't been rebuilt since the pin was taken. Rule: pin only stable, immutable releases.
 
