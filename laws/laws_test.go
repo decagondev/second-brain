@@ -112,3 +112,12 @@ func TestLAW07_NoSecretInLogs(t *testing.T) {
 func TestLAW13_TheIndexIsDerived(t *testing.T) {
 	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law13(r, NewIngestWorld()) })
 }
+
+func TestLAW03_DriveUnknownIsNeverAllow(t *testing.T) {
+	w := NewDriveWorld()
+	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
+}
+
+func TestLAW13_DriveIndexIsDerived(t *testing.T) {
+	Check(t, "LAW-13", 40, func(r *rand.Rand) error { return law13(r, NewDriveIngestWorld()) })
+}

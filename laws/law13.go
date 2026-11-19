@@ -6,12 +6,16 @@ import (
 	"math/rand"
 	"sort"
 	"strings"
+	"time"
 
+	"example.com/second-brain/internal/adapters/connectors/gdrive"
+	"example.com/second-brain/internal/adapters/connectors/gdrive/drivetest"
 	"example.com/second-brain/internal/adapters/connectors/mock"
 	"example.com/second-brain/internal/adapters/embed/hashing"
 	memindex "example.com/second-brain/internal/adapters/index/memory"
 	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/obs"
 )
 
 // LAW-13 (SB-206): the index is derived. Ingesting a tenant's sources, dropping the
@@ -154,4 +158,32 @@ func sameSet(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// NewDriveIngestWorld runs the same law over the Google Drive connector (SB-203).
+var NewDriveIngestWorld = func() IngestWorld {
+	f := drivetest.New()
+	sa := &gdrive.ServiceAccount{Key: func(context.Context) (string, error) { return f.KeyJSON(), nil },
+		HTTP: f.Server.Client(), Redact: obs.NewRedactor(), Now: time.Now}
+	idx := memindex.New()
+	c := &gdrive.Connector{Base: f.Base(), HTTP: f.Server.Client(), Tokens: sa}
+	return &driveIngest{f: f, ingestWorld: ingestWorld{idx: idx, p: ingest.Pipeline{Tenant: "acme-logistics", Release: "rel_test",
+		Connector: c, Embedder: hashing.Embedder{}, Index: idx}}}
+}
+
+type driveIngest struct {
+	f *drivetest.Fake
+	ingestWorld
+}
+
+func (w *driveIngest) Load(docs []SourceDoc) error {
+	for _, d := range docs {
+		w.f.Put(d.ID, "Title "+d.ID, "application/vnd.google-apps.document", d.Text, d.Viewers...)
+	}
+	return nil
+}
+
+func (w *driveIngest) Edit(id, text string) error {
+	w.f.Put(id, "Title "+id, "application/vnd.google-apps.document", text, nil...)
+	return nil
 }

@@ -26,12 +26,16 @@ import (
     &quot;math/rand&quot;
     &quot;sort&quot;
     &quot;strings&quot;
+    &quot;time&quot;
 
+    &quot;example.com/second-brain/internal/adapters/connectors/gdrive&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/gdrive/drivetest&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
     &quot;example.com/second-brain/internal/adapters/embed/hashing&quot;
     memindex &quot;example.com/second-brain/internal/adapters/index/memory&quot;
     &quot;example.com/second-brain/internal/core/ingest&quot;
     &quot;example.com/second-brain/internal/core/ports&quot;
+    &quot;example.com/second-brain/internal/obs&quot;
 )
 
 // LAW-13 (SB-206): the index is derived. Ingesting a tenant's sources, dropping the
@@ -174,6 +178,34 @@ func sameSet(a, b []string) bool {
         }
     }
     return true
+}
+
+// NewDriveIngestWorld runs the same law over the Google Drive connector (SB-203).
+var NewDriveIngestWorld = func() IngestWorld {
+    f := drivetest.New()
+    sa := &amp;gdrive.ServiceAccount{Key: func(context.Context) (string, error) { return f.KeyJSON(), nil },
+        HTTP: f.Server.Client(), Redact: obs.NewRedactor(), Now: time.Now}
+    idx := memindex.New()
+    c := &amp;gdrive.Connector{Base: f.Base(), HTTP: f.Server.Client(), Tokens: sa}
+    return &amp;driveIngest{f: f, ingestWorld: ingestWorld{idx: idx, p: ingest.Pipeline{Tenant: &quot;acme-logistics&quot;, Release: &quot;rel_test&quot;,
+        Connector: c, Embedder: hashing.Embedder{}, Index: idx}}}
+}
+
+type driveIngest struct {
+    f *drivetest.Fake
+    ingestWorld
+}
+
+func (w *driveIngest) Load(docs []SourceDoc) error {
+    for _, d := range docs {
+        w.f.Put(d.ID, &quot;Title &quot;+d.ID, &quot;application/vnd.google-apps.document&quot;, d.Text, d.Viewers...)
+    }
+    return nil
+}
+
+func (w *driveIngest) Edit(id, text string) error {
+    w.f.Put(id, &quot;Title &quot;+id, &quot;application/vnd.google-apps.document&quot;, text, nil...)
+    return nil
 }
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/law13.go</code></p></main>

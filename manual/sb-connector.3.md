@@ -76,6 +76,23 @@ Run `go test ./internal/adapters/connectors/<name>/... -run Kit` against a sandb
 
 The kit is `connectorkit.Run(t, sandbox)` (package `internal/core/connectorkit`). A connector's test supplies a `Sandbox`: the connector under test, an existing document, a user who can open it and one who can't, a way to inject a fault into the next `ACL` call (`500`, timeout, `404`), a way to edit a document and to change its permissions, 200 existing refs for the batch case, and, for writable connectors, a valid `Action`. The kit also checks `APIVersion` against `ports.Negotiate`.
 
+## CONNECTORS
+
+### `docs: google-drive` (SB-203)
+
+Read-only. Name it in a manifest as `connectors: { docs: google-drive }`.
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A Google service account key (JSON) at `vault://tenants/TENANT/connectors/docs`, with domain-wide delegation for the scope `https://www.googleapis.com/auth/drive.readonly` and nothing else |
+| Fetch | `files.get` as the service account. Google Docs are exported as `text/plain`; `text/*` files are downloaded; other types are indexed by name only. `version` is Drive's file `version`; the prefilter is the file's permissions (users' emails, `group:EMAIL`, `domain:DOMAIN`, `anyone`) |
+| ACL | Asks Drive **as the asker** (domain-wide delegation, `sub` = the user's email): `files.get` returns 200 → `Allow`; 404 or 403 → `Deny`, but only if the service account itself can still see the file; anything else, or a deleted file → `Unknown`. At most 8 calls run at once, within the 800 ms deadline |
+| Rate limits | `429` and `403 rateLimitExceeded` are retried with backoff while the deadline allows; then `Unknown` |
+| Changes | Drive's `changes.list` page token is the cursor. A removed or trashed file is a delete. A change whose `time` differs from the file's `modifiedTime` by more than a second is reported as permission-only |
+| Act | `ENOTSUP` (read-only) |
+
+The connector is tested against `drivetest`, a recorded fake of the Drive API, and passes the contract kit there. A run against a real Google Workspace sandbox needs a service account the user provides.
+
 ## MOCK CONNECTOR
 
 `internal/adapters/connectors/mock` is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:

@@ -25,9 +25,13 @@ import (
     &quot;errors&quot;
     &quot;fmt&quot;
     &quot;math/rand&quot;
+    &quot;time&quot;
 
+    &quot;example.com/second-brain/internal/adapters/connectors/gdrive&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/gdrive/drivetest&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
     &quot;example.com/second-brain/internal/core/ports&quot;
+    &quot;example.com/second-brain/internal/obs&quot;
 )
 
 // Connector-level laws (SB-201): what a connector itself must guarantee, checked on the
@@ -152,6 +156,54 @@ func law05Connector(r *rand.Rand, w ConnectorWorld) error {
     }
     return nil
 }
+
+// NewDriveWorld is the same connector-level world over the Google Drive connector
+// (SB-203) and its recorded fake. Drive is read-only, so only ACL is exercised; a
+// &quot;script&quot; fault trashes the first file, which the source can no longer answer for.
+var NewDriveWorld = func() ConnectorWorld {
+    f := drivetest.New()
+    sa := &amp;gdrive.ServiceAccount{Key: func(context.Context) (string, error) { return f.KeyJSON(), nil },
+        HTTP: f.Server.Client(), Redact: obs.NewRedactor(), Now: time.Now}
+    return &amp;driveWorld{f: f, c: &amp;gdrive.Connector{Base: f.Base(), HTTP: f.Server.Client(), Tokens: sa}}
+}
+
+type driveWorld struct {
+    f *drivetest.Fake
+    c *gdrive.Connector
+    n int
+}
+
+func (w *driveWorld) ACL(access []bool, fault string) ([]string, error) {
+    w.n++
+    refs := make([]ports.SourceRef, len(access))
+    for i, ok := range access {
+        id := fmt.Sprintf(&quot;f%d_%d&quot;, w.n, i)
+        viewer := &quot;bob@acme.example&quot;
+        if ok {
+            viewer = &quot;ann@acme.example&quot;
+        }
+        w.f.Put(id, &quot;t&quot;, &quot;application/vnd.google-apps.document&quot;, &quot;x&quot;, viewer)
+        refs[i] = ports.SourceRef{Kind: &quot;docs&quot;, ID: id}
+    }
+    switch fault {
+    case &quot;script&quot;:
+        w.f.Trash(refs[0].ID)
+    case &quot;&quot;:
+    default:
+        for range refs {
+            w.f.FailNext(fault)
+        }
+    }
+    vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: &quot;usr_ann&quot;, Email: &quot;ann@acme.example&quot;}, refs)
+    out := make([]string, len(vs))
+    for i, v := range vs {
+        out[i] = v.String()
+    }
+    return out, err
+}
+
+func (w *driveWorld) Act(string, bool) (string, error) { return &quot;&quot;, errors.New(&quot;ENOTSUP&quot;) }
+func (w *driveWorld) Effects() int                     { return 0 }
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/lawconnector.go</code></p></main>
   

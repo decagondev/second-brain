@@ -75,7 +75,7 @@ The kit is a Go test suite each connector runs against a recorded or sandbox ten
 
 | Kind | First vendor | Wave | Ticket |
 |---|---|---|---|
-| `docs` | One document platform (chosen with the first tenants) | W2 | SB-203 |
+| `docs` | Google Drive (`google-drive`, chosen by the user 2026-11-19) | W2 | SB-203 |
 | `chat` | One chat platform | W2 | SB-204 |
 | `tickets` | One ticketing platform | W2 | SB-211 |
 | `crm` | One CRM, read-only | W6 | SB-610 |

@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-203 Google Drive connector
+
+**Wave/slice:** W2 / S2.2 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** The user chose Google Drive as the first docs vendor. The connector is standard library only (OAuth JWT bearer and the Drive v3 REST calls), read-only, and passes the contract kit against `drivetest`, a recorded fake. The manual changed first: sb-connector(3) gained a CONNECTORS section, and 03-connectors names the vendor.
+
+**Why this way:** Drive has no "can user X see file Y" endpoint, so the live check asks Drive *as* the user, through domain-wide delegation. A 404 is ambiguous (no access, or gone), so it's a Deny only when the service account still sees the file; otherwise it's Unknown. A Google SDK would have meant several new modules under ADR-0017. Two endpoints and a JWT are small enough to own.
+
+**Learned:** The kit wants permission-only changes flagged, but Drive's change feed doesn't say what changed. Comparing the change time with the file's `modifiedTime` gives a good enough signal, and a wrong guess only costs a re-ingest. Building the fake surfaced a race of my own: a shared fault queue between user and service-account calls. Faults now have separate queues. These law tests had no red phase, because I wrote the connector first; that's noted on the ticket.
+
+**Laws:** connector-level LAW-03 (with LAW-01's truth check) and LAW-13 now also run on Drive. No status change.
+
+**Next:** a real Workspace sandbox run when the user can provide a service account. Then SB-204 (chat, vendor needed), SB-207 or SB-208.
+
 ## 2026-11-19 SB-206 Ingest pipeline
 
 **Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** Done

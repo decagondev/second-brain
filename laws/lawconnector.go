@@ -5,9 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"time"
 
+	"example.com/second-brain/internal/adapters/connectors/gdrive"
+	"example.com/second-brain/internal/adapters/connectors/gdrive/drivetest"
 	"example.com/second-brain/internal/adapters/connectors/mock"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/obs"
 )
 
 // Connector-level laws (SB-201): what a connector itself must guarantee, checked on the
@@ -132,3 +136,51 @@ func law05Connector(r *rand.Rand, w ConnectorWorld) error {
 	}
 	return nil
 }
+
+// NewDriveWorld is the same connector-level world over the Google Drive connector
+// (SB-203) and its recorded fake. Drive is read-only, so only ACL is exercised; a
+// "script" fault trashes the first file, which the source can no longer answer for.
+var NewDriveWorld = func() ConnectorWorld {
+	f := drivetest.New()
+	sa := &gdrive.ServiceAccount{Key: func(context.Context) (string, error) { return f.KeyJSON(), nil },
+		HTTP: f.Server.Client(), Redact: obs.NewRedactor(), Now: time.Now}
+	return &driveWorld{f: f, c: &gdrive.Connector{Base: f.Base(), HTTP: f.Server.Client(), Tokens: sa}}
+}
+
+type driveWorld struct {
+	f *drivetest.Fake
+	c *gdrive.Connector
+	n int
+}
+
+func (w *driveWorld) ACL(access []bool, fault string) ([]string, error) {
+	w.n++
+	refs := make([]ports.SourceRef, len(access))
+	for i, ok := range access {
+		id := fmt.Sprintf("f%d_%d", w.n, i)
+		viewer := "bob@acme.example"
+		if ok {
+			viewer = "ann@acme.example"
+		}
+		w.f.Put(id, "t", "application/vnd.google-apps.document", "x", viewer)
+		refs[i] = ports.SourceRef{Kind: "docs", ID: id}
+	}
+	switch fault {
+	case "script":
+		w.f.Trash(refs[0].ID)
+	case "":
+	default:
+		for range refs {
+			w.f.FailNext(fault)
+		}
+	}
+	vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: "usr_ann", Email: "ann@acme.example"}, refs)
+	out := make([]string, len(vs))
+	for i, v := range vs {
+		out[i] = v.String()
+	}
+	return out, err
+}
+
+func (w *driveWorld) Act(string, bool) (string, error) { return "", errors.New("ENOTSUP") }
+func (w *driveWorld) Effects() int                     { return 0 }

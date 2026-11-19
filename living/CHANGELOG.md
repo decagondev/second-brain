@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Google Drive docs connector (SB-203): read-only, live ACL as the asker via domain-wide delegation, rate-limit retries, change feed; tested against a recorded fake.
 - Ingest pipeline (SB-206): stable chunking, derived chunk ids, provenance, `Embedder` and `Index` ports with local adapters, sync and rebuild.
 - Secrets by reference (SB-205): validated `vault://` references, a local vault, and a redacting structured logger (`internal/obs`).
 - Scriptable mock connector (SB-202): fault queue, forced verdicts, deletes, no-receipt target.

@@ -96,6 +96,44 @@ type Connector interface {
 <h2 id="contract-kit">CONTRACT KIT</h2>
 <p>Run <code>go test ./internal/adapters/connectors/&lt;name&gt;/... -run Kit</code> against a sandbox. All cases must pass before a connector can be named in any manifest. The cases are listed in <a href="../docs/architecture/03-connectors.html#the-contract-kit">03 Connectors</a>.</p>
 <p>The kit is <code>connectorkit.Run(t, sandbox)</code> (package <code>internal/core/connectorkit</code>). A connector's test supplies a <code>Sandbox</code>: the connector under test, an existing document, a user who can open it and one who can't, a way to inject a fault into the next <code>ACL</code> call (<code>500</code>, timeout, <code>404</code>), a way to edit a document and to change its permissions, 200 existing refs for the batch case, and, for writable connectors, a valid <code>Action</code>. The kit also checks <code>APIVersion</code> against <code>ports.Negotiate</code>.</p>
+<h2 id="connectors">CONNECTORS</h2>
+<h3 id="docs-google-drive-sb-203"><code>docs: google-drive</code> (SB-203)</h3>
+<p>Read-only. Name it in a manifest as <code>connectors: { docs: google-drive }</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials</td>
+<td>A Google service account key (JSON) at <code>vault://tenants/TENANT/connectors/docs</code>, with domain-wide delegation for the scope <code>https://www.googleapis.com/auth/drive.readonly</code> and nothing else</td>
+</tr>
+<tr>
+<td>Fetch</td>
+<td><code>files.get</code> as the service account. Google Docs are exported as <code>text/plain</code>; <code>text/*</code> files are downloaded; other types are indexed by name only. <code>version</code> is Drive's file <code>version</code>; the prefilter is the file's permissions (users' emails, <code>group:EMAIL</code>, <code>domain:DOMAIN</code>, <code>anyone</code>)</td>
+</tr>
+<tr>
+<td>ACL</td>
+<td>Asks Drive <strong>as the asker</strong> (domain-wide delegation, <code>sub</code> = the user's email): <code>files.get</code> returns 200 → <code>Allow</code>; 404 or 403 → <code>Deny</code>, but only if the service account itself can still see the file; anything else, or a deleted file → <code>Unknown</code>. At most 8 calls run at once, within the 800 ms deadline</td>
+</tr>
+<tr>
+<td>Rate limits</td>
+<td><code>429</code> and <code>403 rateLimitExceeded</code> are retried with backoff while the deadline allows; then <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Changes</td>
+<td>Drive's <code>changes.list</code> page token is the cursor. A removed or trashed file is a delete. A change whose <code>time</code> differs from the file's <code>modifiedTime</code> by more than a second is reported as permission-only</td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code> (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>The connector is tested against <code>drivetest</code>, a recorded fake of the Drive API, and passes the contract kit there. A run against a real Google Workspace sandbox needs a service account the user provides.</p>
 <h2 id="mock-connector">MOCK CONNECTOR</h2>
 <p><code>internal/adapters/connectors/mock</code> is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:</p>
 <table>
@@ -139,7 +177,7 @@ type Connector interface {
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

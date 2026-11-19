@@ -52,3 +52,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-03, LAW-05 | stay Tested (red) | SB-201: connector-level tests green on the mock (no Allow under any fault; receipt or error, idempotent Act); the retrieval and tool-call levels are still red |
 | 2026-11-19 | LAW-07 | Stated → Tested | SB-205: `TestLAW07_NoSecretInLogs` green through the real Resolver, local vault and redacting logger |
 | 2026-11-19 | LAW-13 | Stated → Tested | SB-206: `TestLAW13_TheIndexIsDerived` green on the real pipeline over the mock source |
+| 2026-11-19 | LAW-03, LAW-13 | no change | SB-203: connector-level LAW-03 and LAW-13 tests also run on the Google Drive connector and its recorded fake |
