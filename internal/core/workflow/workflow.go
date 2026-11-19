@@ -22,12 +22,14 @@ const MaxComment = 10000
 type Template struct {
 	Tool      string
 	Connector string
+	Schema    string // the payload's JSON Schema, pinned by the release bundle (SB-503)
 	Validate  func(payload []byte) error
 }
 
 // Templates are the known workflows; manifest.Workflows names the same set.
 var Templates = map[string]Template{
-	"ticket-update": {Tool: "ticket-update.comment", Connector: "tickets", Validate: validateComment},
+	"ticket-update": {Tool: "ticket-update.comment", Connector: "tickets", Validate: validateComment,
+		Schema: `{"type":"object","additionalProperties":false,"required":["comment"],"properties":{"comment":{"type":"string","minLength":1,"maxLength":10000}}}`},
 }
 
 func validateComment(payload []byte) error {

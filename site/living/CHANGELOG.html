@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Release bundles (S5.1a: SB-503): <code>bundle.json</code> pins artefact digests, prompt hashes, tool schemas, policy hashes, the model and the gate; the release id is derived from its canonical form; <code>tools/release/bundle</code> builds it. Canonical JSON moves to <code>internal/core/canonjson</code>.</li>
 <li>Backups and the restore drill (S4.4b: SB-412): nightly signed audit export and approvals snapshot to at least three write-once copies on two media with one off-site, 7-year retention, and a drill that verifies every copy's chain and names any failure.</li>
 <li>Secret hygiene (S4.4a: SB-411): canaries and a scanner over logs, prompts and audit, Sev-1 <code>secret_leak</code> alerts through an HTTPS webhook (ids only), audit rows redacted before hashing, a gateway <code>OnSecret</code> hook, <code>vault://tenants/T/canary</code>, and the CI scan in <code>tests/canary</code>.</li>
 <li>draft-reply (S4.3c: SB-409): <code>POST /v1/drafts</code> writes a cited reply to a live-checked ticket or thread with the bundled <code>draft</code> prompt; never sends; <code>used</code>/<code>discarded</code> outcomes in <code>sb_drafts_total</code>; a draft panel in the web UI with Copy and Discard; a tenant-scoped base permit for enabled <code>draft-reply</code>.</li>

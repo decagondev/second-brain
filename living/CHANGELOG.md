@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Release bundles (S5.1a: SB-503): `bundle.json` pins artefact digests, prompt hashes, tool schemas, policy hashes, the model and the gate; the release id is derived from its canonical form; `tools/release/bundle` builds it. Canonical JSON moves to `internal/core/canonjson`.
 - Backups and the restore drill (S4.4b: SB-412): nightly signed audit export and approvals snapshot to at least three write-once copies on two media with one off-site, 7-year retention, and a drill that verifies every copy's chain and names any failure.
 - Secret hygiene (S4.4a: SB-411): canaries and a scanner over logs, prompts and audit, Sev-1 `secret_leak` alerts through an HTTPS webhook (ids only), audit rows redacted before hashing, a gateway `OnSecret` hook, `vault://tenants/T/canary`, and the CI scan in `tests/canary`.
 - draft-reply (S4.3c: SB-409): `POST /v1/drafts` writes a cited reply to a live-checked ticket or thread with the bundled `draft` prompt; never sends; `used`/`discarded` outcomes in `sb_drafts_total`; a draft panel in the web UI with Copy and Discard; a tenant-scoped base permit for enabled `draft-reply`.

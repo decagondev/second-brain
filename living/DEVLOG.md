@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S5.1a The release bundle (SB-503)
+
+**Wave/slice:** W5 / S5.1a · **Author:** platform lead + Claude · **Status:** In review (signing and admission next)
+
+**What:** `internal/core/release` (bundle, canonical form, id, check), `internal/core/canonjson` (shared with approvals), `tools/release/bundle`, `release/model.json`, and the LAW-06 law test, red. The manual changed first: sb-release(7) now gives the bundle's fields and the id rule.
+
+**Why this way:** The id is derived from the contents, so "any change is a new release" is arithmetic, not a process rule. Tool schemas are hashed as text, pinned with the release, so a change to what an approver can be shown is a release too. The model lives in a file in the repository, so changing it is a reviewed commit and a new id, never a runtime setting (ADR-0013). Canonical JSON had one home in approvals. A second user meant moving it to a package of its own, rather than having release import approvals.
+
+**Learned:** The bundler's own test runs against the real repository. That way, a new prompt file or policy is included automatically, and a missing input fails the build rather than producing a bundle that quietly omits it.
+
+**Laws:** LAW-06 moves from Stated to Tested (red), for the right reason, until SB-504 and SB-506.
+
+**Next:** S5.1b, the eval suites with results stored per release, and the gate (SB-501, SB-502).
+
 ## 2026-11-19 S4.4b Backups and the restore drill (SB-412), W4 built
 
 **Wave/slice:** W4 / S4.4b · **Author:** platform lead + Claude · **Status:** In review (cloud WORM bucket, monthly schedule)

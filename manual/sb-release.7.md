@@ -23,6 +23,20 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 
 A release is a signed **bundle**. Anything that changes behaviour is inside it and hashed into the release id, including prompts and the model version (ADR-0013). A prompt change is a release.
 
+The bundle manifest, `bundle.json` (SB-503):
+
+| Field | Holds |
+|---|---|
+| `code` | The SHA-256 of each built artefact, by name (`sb`, `cell`, `web`) |
+| `prompts` | Each bundled prompt's name and SHA-256 |
+| `tools` | Each registered tool: name, connector, consequential, workflow, and the SHA-256 of its payload schema |
+| `policies` | Each platform policy file and the schema, with SHA-256 |
+| `model` | `provider`, `model` and parameters (`max_tokens`) |
+| `gate` | The SHA-256 of `evals/gate.yaml` the release was gated with |
+| `created` | The build date, `YYYY-MM-DD` |
+
+The release id is `rel_<created>_<first 6 hex of SHA-256 of the canonical manifest without the id>`, for example `rel_2027-03-02_9b1c4e`. The canonical form is RFC 8785 JSON, as for payload hashes. Changing **any** field, a prompt byte, a policy, the model, a tool's schema or one artefact, gives a different id. Every audit row carries the running release id (sb-audit(5)), so any action can be traced to the exact prompts and policies it ran under.
+
 ### Builds
 
 Builds are hermetic and reproducible: each release is built twice independently and the digests must match. Lockfiles are regenerated every release. Artefacts are signed and carry an SPDX SBOM (ADR-0005).

@@ -27,6 +27,46 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 <h2 id="description">DESCRIPTION</h2>
 <h3 id="bundles">Bundles</h3>
 <p>A release is a signed <strong>bundle</strong>. Anything that changes behaviour is inside it and hashed into the release id, including prompts and the model version (ADR-0013). A prompt change is a release.</p>
+<p>The bundle manifest, <code>bundle.json</code> (SB-503):</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>code</code></td>
+<td>The SHA-256 of each built artefact, by name (<code>sb</code>, <code>cell</code>, <code>web</code>)</td>
+</tr>
+<tr>
+<td><code>prompts</code></td>
+<td>Each bundled prompt's name and SHA-256</td>
+</tr>
+<tr>
+<td><code>tools</code></td>
+<td>Each registered tool: name, connector, consequential, workflow, and the SHA-256 of its payload schema</td>
+</tr>
+<tr>
+<td><code>policies</code></td>
+<td>Each platform policy file and the schema, with SHA-256</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>provider</code>, <code>model</code> and parameters (<code>max_tokens</code>)</td>
+</tr>
+<tr>
+<td><code>gate</code></td>
+<td>The SHA-256 of <code>evals/gate.yaml</code> the release was gated with</td>
+</tr>
+<tr>
+<td><code>created</code></td>
+<td>The build date, <code>YYYY-MM-DD</code></td>
+</tr>
+</tbody>
+</table>
+<p>The release id is <code>rel_&lt;created&gt;_&lt;first 6 hex of SHA-256 of the canonical manifest without the id&gt;</code>, for example <code>rel_2027-03-02_9b1c4e</code>. The canonical form is RFC 8785 JSON, as for payload hashes. Changing <strong>any</strong> field, a prompt byte, a policy, the model, a tool's schema or one artefact, gives a different id. Every audit row carries the running release id (sb-audit(5)), so any action can be traced to the exact prompts and policies it ran under.</p>
 <h3 id="builds">Builds</h3>
 <p>Builds are hermetic and reproducible: each release is built twice independently and the digests must match. Lockfiles are regenerated every release. Artefacts are signed and carry an SPDX SBOM (ADR-0005).</p>
 <h3 id="channels">Channels</h3>

@@ -80,9 +80,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-06">LAW-06</a></td>
 <td>Only signed, gated builds run</td>
-<td>Modelled</td>
+<td>Tested (red)</td>
 <td><code>Rollout.tla</code>: TLC clean (6,290 states); 4 mutations caught</td>
-<td>—</td>
+<td><code>laws/</code> check written (bundle ids bind content; only signed, gated, untampered releases are admitted); red until SB-506</td>
 <td>—</td>
 <td>SB-012, SB-506, SB-509</td>
 </tr>
@@ -434,6 +434,12 @@
 <td>LAW-11</td>
 <td>Tested (extended)</td>
 <td>SB-412: the restore drill verifies the chain on every backup copy; a tampered copy is named and fails the drill</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-06</td>
+<td>Stated → Tested (red)</td>
+<td>SB-503: <code>TestLAW06_OnlySignedGatedBuildsRun</code> written, red for the right reason until signing and admission (SB-504, SB-506)</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
