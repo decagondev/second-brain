@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>A divestiture must not strand a company's knowledge.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Export contains manifest, policies, evals, signed audit export with anchor key, bundle and SBOM, runbooks</li>
-<li class="task"><span class="box"></span>After detach, the factory holds zero access paths and keeps only custody history</li>
+<li class="task done"><span class="box">✓</span>Export contains manifest, policies, evals, signed audit export with anchor key, bundle and SBOM, runbooks</li>
+<li class="task"><span class="box"></span>After detach, the factory holds zero access paths and keeps only custody history (the controller's Detach revokes every path, checked by the LAW-17 hand-off law test, and the registry tombstone keeps only history; <code>sb factory detach</code> on a running cell is W7's runtime)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Export builder</li>
-<li class="task"><span class="box"></span>Offline verification of the export</li>
-<li class="task"><span class="box"></span>Registry tombstone</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-11, LAW-17</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Export builder</li>
+<li class="task done"><span class="box">✓</span>Offline verification of the export</li>
+<li class="task done"><span class="box">✓</span>Registry tombstone</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-11, LAW-17</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S7.3a): sb-factory(7) gained "Detach, exactly", with the package layout, the offline check and the five-step order. sb-factory(1) gained <code>verify-export</code>, and sb-audit(5) notes the anchor key that ships with the export. <code>internal/core/export</code> writes a package with <code>MANIFEST.json</code> last and refuses a package missing any required item. <code>Verify</code> checks it offline, reusing <code>audit.Verify</code> with the pinned anchor key from <code>seq</code> 1, and <code>release.Admit</code> over the package's own release files with the release key in the package, rather than adding new checks. The registry (<code>localfs</code>) keeps an append-only custody history (<code>SetCustody</code>, which also implements the hand-off controller's Custody port). <code>Tombstone</code> removes a detached cell's record so it stops routing and keeps only that history. <code>sb factory verify-export DIR</code> maps failures to <code>ECHAIN</code>, <code>EUNSIGNED</code> and <code>ELAW</code>. The new law test <code>TestLAW11_ExportPackageVerifiesOffline</code> builds real packages and shows six kinds of tampering caught: a byte, a missing file, an extra file, a cut audit export, a swapped anchor key and an altered bundle. A self-test catches a digest-only verifier.</p>
+<p><strong>Left:</strong> <code>sb factory detach</code> against a running tenant-custody cell (W7 runtime).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-708-detach-and-export-package.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

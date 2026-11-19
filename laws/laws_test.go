@@ -264,3 +264,7 @@ func TestLAW06_TenantAccountPullsOnlySignedGatedBuilds(t *testing.T) {
 func TestLAW08_TenantCustodyCellsStayOneBehind(t *testing.T) {
 	Check(t, "LAW-08", runs, func(r *rand.Rand) error { return law08(r, NewTenantCustodyRolloutWorld(stableTenants, testingTenants)) })
 }
+
+func TestLAW11_ExportPackageVerifiesOffline(t *testing.T) {
+	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11Export(r, NewExportWorld(t.TempDir())) })
+}

@@ -67,3 +67,15 @@ func TestSynopsisMatchesManual(t *testing.T) {
 		}
 	}
 }
+
+// SB-708: verify-export fails closed on a directory that isn't a package (the passing case
+// is the LAW-11 export law test, over real packages).
+func TestVerifyExportFailsClosed(t *testing.T) {
+	if code, _, _ := run("factory", "verify-export"); code != 2 {
+		t.Fatalf("no dir: exit %d", code)
+	}
+	code, out, errOut := run("factory", "verify-export", t.TempDir())
+	if code != 1 || !strings.Contains(out+errOut, "ELAW") {
+		t.Fatalf("empty dir: exit %d %q %q", code, out, errOut)
+	}
+}

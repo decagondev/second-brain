@@ -23,6 +23,7 @@ import (
 	"example.com/second-brain/internal/core/apply"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/cell"
+	"example.com/second-brain/internal/core/export"
 	"example.com/second-brain/internal/core/keywrap"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
@@ -110,6 +111,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.factoryStatus(rest[2:])
 	case "factory access":
 		return e.factoryAccess(rest[2:])
+	case "factory verify-export":
+		return e.factoryVerifyExport(rest[2:])
 	case "audit verify":
 		return e.auditVerify(rest[2:])
 	}
@@ -375,6 +378,31 @@ func (e *env) factoryAccess(args []string) int {
 	for _, p := range res.Paths {
 		fmt.Fprintf(e.out, "  %-12s %s\n", p.Kind, p.ID)
 	}
+	return 0
+}
+
+// factoryVerifyExport checks a detach's export package offline (sb-factory(1); SB-708).
+func (e *env) factoryVerifyExport(args []string) int {
+	const name = "sb factory verify-export"
+	if len(args) != 1 {
+		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb factory verify-export DIR"))
+	}
+	rep, err := export.Verify(context.Background(), args[0])
+	switch {
+	case errors.Is(err, export.ErrChain):
+		return e.fail(name, errs.New(errs.ECHAIN, "%v", err))
+	case errors.Is(err, export.ErrBundle):
+		return e.fail(name, errs.New(errs.EUNSIGNED, "%v", err))
+	case err != nil:
+		return e.fail(name, errs.New(errs.ELAW, "%v", err))
+	}
+	if e.g.JSON {
+		return e.json(rep)
+	}
+	fmt.Fprintf(e.out, "files     %d listed, all present and unaltered, nothing extra\n", rep.Files)
+	fmt.Fprintf(e.out, "audit     %d rows to seq %d, verified with the pinned anchor key\n", rep.Rows, rep.LastSeq)
+	fmt.Fprintf(e.out, "release   %s, signature and gate verified\n", rep.Release)
+	fmt.Fprintf(e.out, "verify-export: %s passed\n", rep.Tenant)
 	return 0
 }
 

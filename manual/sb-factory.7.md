@@ -111,6 +111,34 @@ Each path names the grant it serves, if any. Only three roles serve a grant: the
 
 The enumeration reads IAM policies with a separate, read-only **verifier** identity that the tenant grants (`resourcemanager.projects.getIamPolicy`, `iam.serviceAccounts.getIamPolicy`, `cloudkms.cryptoKeys.getIamPolicy`), never with the deploy account. The tenant can therefore run the check themselves, and the factory can't hide a path by withdrawing its own read access.
 
+### Detach, exactly (SB-708)
+
+Detach takes a `tenant`-custody cell off the train. `sb factory detach TENANT --accept-unsupported --out DIR` writes the **export package** to `DIR`:
+
+| Path | What |
+|---|---|
+| `manifest.yaml` | the applied manifest |
+| `policies/*.cedar` | the tenant's policies |
+| `evals/` | the tenant's eval suites and their latest results |
+| `audit/audit.ndjson` | the signed audit export, every row from `seq` 1 (sb-audit(5), Export) |
+| `audit/anchor-key.txt` | the cell's anchor public key, to pin when verifying |
+| `release/bundle.json`, `bundle.sig`, `gate.json`, `gate.sig`, `sbom.spdx.json` | the running release, its gate record and their signatures |
+| `release/release-key.txt` | the release identity the bundle is signed by |
+| `runbooks/` | the manual and runbooks at that release |
+| `MANIFEST.json` | every file above with its SHA-256, written last |
+
+The index isn't exported, because it rebuilds from the sources (LAW-13). Neither are secrets: connector credentials stay in the tenant's own vault.
+
+The package verifies **offline** with `sb factory verify-export DIR`. It checks that every file in `MANIFEST.json` is present with its SHA-256 and that there are no other files. It checks that the audit export verifies with `audit/anchor-key.txt` from `seq` 1 to its last row (LAW-11), that the bundle's signature verifies with `release/release-key.txt`, and that the gate record is for that bundle and passed. A required item that is missing fails the check.
+
+Detach runs in this order, and stops at the first failure:
+
+1. The hand-off controller moves to `Detached` and writes the custody row (SB-705).
+2. The export package is written and verified, as above. Detach never revokes anything on the strength of a package that didn't verify.
+3. Every factory access path is revoked, `publish-releases` included, and `sb factory access` must then show **none** (LAW-17).
+4. The release controller drops the cell from the train (sb-release(7)).
+5. The registry replaces the cell record with a **tombstone**: the cell stops routing, and only the custody history stays (`custody`, `placement` and `key_custodian` with the time of each change). No content, manifest or audit row stays with the factory.
+
 The **hand-off record** is written at `TenantOwned` and kept in the registry's custody history: the plan hash, both approvals, the new custody record (`custody: tenant`, `placement: tenant-account://PROVIDER/ID`, `key_custodian: tenant`), the retained grants, and the `sb factory access` result. LAW-17 is checked against this record.
 
 ## LAWS

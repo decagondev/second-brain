@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.3a Detach and the export package (SB-708)
+
+**Wave/slice:** W7 / S7.3a · **Author:** platform lead + Claude · **Status:** In review (detach on a running cell)
+
+**What:** `internal/core/export`, custody history, `SetCustody` and `Tombstone` in the local registry, `sb factory verify-export`, and `laws/law11export.go`. The manual changed first: sb-factory(7) gained "Detach, exactly", and sb-factory(1) and sb-audit(5) follow it.
+
+**Why this way:** A company that leaves must be able to prove, without us, that what it took is complete and unaltered. So the package carries its own trust roots (the anchor key and the release key), and the verifier is made of the checks the platform already relies on: the audit chain verifier and a cell's admission. Detach writes and verifies the package before it revokes anything, because revoking first could strand a company with a bad package and no way back in.
+
+**Learned:** File digests alone prove nothing about an audit export cut short with its manifest updated, which is what a careful forger would do. The law test models that forger: every tampering except the byte edit and the extra file also rewrites `MANIFEST.json`.
+
+**Laws:** LAW-11 extended (`TestLAW11_ExportPackageVerifiesOffline`, with its mutation caught). LAW-17 after detach is covered by the controller's Detach in the hand-off law test. All law tests are green.
+
+**Next:** S7.3b, cost statements and a tenant-held model credential (SB-709).
+
 ## 2026-11-19 S7.2d Releases after hand-off (SB-707)
 
 **Wave/slice:** W7 / S7.2d · **Author:** platform lead + Claude · **Status:** In review (a cell in a real tenant account)

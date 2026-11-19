@@ -2,7 +2,10 @@ package laws
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"example.com/second-brain/internal/core/export"
 	"fmt"
 	"math/rand"
 	"os"
@@ -962,5 +965,30 @@ func TestSelf_LAW08TenantCustodyMutationIsCaught(t *testing.T) {
 	}
 	if !violates(runs, func(r *rand.Rand) error { return law08(r, mutant()) }) {
 		t.Error("LAW-08: a guard that skips tenant-custody cells was not caught")
+	}
+}
+
+// LAW-11's export check catches a verifier that only checks file digests.
+func TestSelf_LAW11ExportMutationIsCaught(t *testing.T) {
+	mutant := func(root string) ExportWorld {
+		return &exportWorld{root: root, verify: func(ctx context.Context, dir string) (export.Report, error) {
+			raw, err := os.ReadFile(filepath.Join(dir, "MANIFEST.json"))
+			if err != nil {
+				return export.Report{}, err
+			}
+			var man struct{ Files map[string]string }
+			_ = json.Unmarshal(raw, &man)
+			for name, want := range man.Files {
+				b, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(name)))
+				s := sha256.Sum256(b)
+				if err != nil || hex.EncodeToString(s[:]) != want {
+					return export.Report{}, export.ErrFiles
+				}
+			}
+			return export.Report{}, nil
+		}}
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law11Export(r, mutant(t.TempDir())) }) {
+		t.Error("LAW-11 (export): a digest-only verifier was not caught")
 	}
 }

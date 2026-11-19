@@ -21,6 +21,7 @@ sb factory handoff  execute PLAN
 sb factory handoff  abort   PLAN --reason TEXT
 sb factory access   TENANT
 sb factory detach   TENANT --accept-unsupported --out DIR
+sb factory verify-export DIR
 ```
 
 `PLAN` is a plan hash, `ph_` followed by 64 hex characters, or a unique prefix of at least 12 of them.
@@ -77,6 +78,10 @@ Allowed until cutover. It removes what was provisioned in the tenant account and
 
 Enumerates every factory access path to the cell (IAM roles and bindings, deploy credentials, break-glass roles, network routes, key wraps) and compares them with the hand-off record's retained grants. It exits 1 (`ELAW`) and names each unlisted path when one exists (LAW-17). It runs after cutover and monthly.
 
+### `verify-export DIR`
+
+Checks an export package offline, as sb-factory(7), Detach, exactly, describes, and prints each check. It needs no network and no factory credentials, so the tenant, or anyone they give the package to, can run it. It exits 1 (`ECHAIN` for the audit export, `EUNSIGNED` for the bundle, `ELAW` for a missing, extra or altered file) if any check fails.
+
 ### `detach TENANT --accept-unsupported --out DIR`
 
 Writes the export package (sb-factory(7), Detach) to `DIR`, then removes the `publish-releases` grant and the registry entry, keeping the custody history. `--accept-unsupported` is required: after detach the factory guarantees nothing about the cell.
@@ -99,7 +104,7 @@ The global options (`--json`, `--endpoint`) are in [sb(1)](sb.1.md).
 
 0 success · 1 a check failed: unlisted access (`ELAW`), chain or law verification failed during execute (`ECHAIN`, `ELAW`) · 2 usage, a bad plan hash, the wrong region, or not built yet (`EUSAGE`, `EINVAL`, `ENOTIMPL`) · 3 not permitted (`EPERM`, `EAUTH`) · 5 approvals missing or for another hash (`ENOAPPROVAL`) · 7 the registry, an account or a KMS is unreachable (`EUNAVAIL`).
 
-Until its ticket lands, a command exits 2 with `ENOTIMPL` and names it: `handoff` SB-705, `detach` SB-708. `access` works on the local control plane, where the sources are the wrap inventory and `DIR/access/TENANT.json` (local accounts have no IAM). On GCP the source is the project's IAM, read with the verifier identity.
+Until its ticket lands, a command exits 2 with `ENOTIMPL` and names it: `handoff` SB-705, `detach` SB-708 (it needs a running tenant-custody cell to export from). `verify-export` works today. `access` works on the local control plane, where the sources are the wrap inventory and `DIR/access/TENANT.json` (local accounts have no IAM). On GCP the source is the project's IAM, read with the verifier identity.
 
 ## LAWS
 

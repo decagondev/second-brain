@@ -75,7 +75,7 @@ Rows must never contain document text, prompts, answers, drafts, secrets or toke
 {"anchor":true,"seq":10000,"hash":"…","signed_at":"…","sig":"…","key":"…"}
 ```
 
-The file is encrypted with the cell's KMS key for transport. `sb audit verify --export FILE` checks it offline.
+The file is encrypted with the cell's KMS key for transport. `sb audit verify --export FILE` checks it offline. A detach's export package carries the export with the cell's anchor public key beside it (`audit/anchor-key.txt`, sb-factory(7)), so the chain can be verified after the cell has left the factory.
 
 ## LAWS
 

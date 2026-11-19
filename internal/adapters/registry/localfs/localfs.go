@@ -16,7 +16,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/ports"
 )
 
@@ -253,3 +255,96 @@ func (d Dir) EvalRecord(_ context.Context, tenant, workflow string) (ports.EvalR
 }
 
 var workflowName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,40}$`)
+
+// CustodyChange is one entry of a cell's custody history (sb-factory(7)).
+type CustodyChange struct {
+	At           string `json:"at"`
+	Custody      string `json:"custody"`
+	Placement    string `json:"placement"`
+	KeyCustodian string `json:"key_custodian"`
+}
+
+func (d Dir) history(tenant string) (string, error) {
+	if _, err := d.path(tenant); err != nil {
+		return "", err
+	}
+	return filepath.Join(d.Root, "custody", tenant+".ndjson"), nil
+}
+
+func (d Dir) appendHistory(tenant string, c CustodyChange) error {
+	p, err := d.history(tenant)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		return err
+	}
+	b, _ := json.Marshal(c)
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(append(b, '\n')); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
+}
+
+// SetCustody changes a cell's custody record and appends it to the custody history
+// (handoff.Custody). The history is written first, so no change goes unrecorded.
+func (d Dir) SetCustody(ctx context.Context, tenant, custody, placement, keyCustodian string) error {
+	c, found, err := d.CellByTenant(ctx, tenant)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return fmt.Errorf("registry: no cell for %s", tenant)
+	}
+	if err := d.appendHistory(tenant, CustodyChange{At: time.Now().UTC().Format(time.RFC3339), Custody: custody, Placement: placement, KeyCustodian: keyCustodian}); err != nil {
+		return err
+	}
+	c.Custody, c.Placement, c.KeyCustodian = custody, placement, keyCustodian
+	return d.PutCell(ctx, c)
+}
+
+// Tombstone removes a detached cell's record, so it stops routing, and keeps only its
+// custody history (sb-factory(7), Detach, exactly).
+func (d Dir) Tombstone(ctx context.Context, tenant string) error {
+	c, found, err := d.CellByTenant(ctx, tenant)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return fmt.Errorf("registry: no cell for %s", tenant)
+	}
+	if c.Custody != cell.CustodyDetached {
+		return fmt.Errorf("registry: %s is in %s custody; only a detached cell is tombstoned", tenant, c.Custody)
+	}
+	p, _ := d.cellPath(tenant)
+	return os.Remove(p)
+}
+
+// History returns a cell's custody history, oldest first.
+func (d Dir) History(_ context.Context, tenant string) ([]CustodyChange, error) {
+	p, err := d.history(tenant)
+	if err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(p)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var out []CustodyChange
+	for _, line := range bytes.Split(bytes.TrimSpace(b), []byte("\n")) {
+		var c CustodyChange
+		if err := json.Unmarshal(line, &c); err != nil {
+			return nil, fmt.Errorf("registry: custody history of %s is unreadable", tenant)
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}

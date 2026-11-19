@@ -201,6 +201,64 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <p><strong>The check.</strong> <code>sb factory access TENANT</code> enumerates every source and compares the paths with the hand-off record's retained grants. A path whose grant isn't retained, or that serves none, is <strong>unlisted</strong>. Any unlisted path fails the check (<code>ELAW</code>, exit 1), and the check prints each one. A source that can't be read makes the check fail with <code>EUNAVAIL</code> (exit 7): an enumeration that didn't finish proves nothing, so it never passes. For a cell still in <code>factory</code> custody, the paths are printed and LAW-17 doesn't apply yet.</p>
 <p><strong>The monthly watch.</strong> Once a month, and right after every cutover, the control plane runs the same check for every <code>tenant</code>-custody cell. It sets <code>sb_unlisted_access_paths{tenant}</code> to the number of unlisted paths, which raises the LAW-17 Sev-1 when it is above 0. A check that can't finish sets it to 1, so silence never looks like a pass.</p>
 <p>The enumeration reads IAM policies with a separate, read-only <strong>verifier</strong> identity that the tenant grants (<code>resourcemanager.projects.getIamPolicy</code>, <code>iam.serviceAccounts.getIamPolicy</code>, <code>cloudkms.cryptoKeys.getIamPolicy</code>), never with the deploy account. The tenant can therefore run the check themselves, and the factory can't hide a path by withdrawing its own read access.</p>
+<h3 id="detach-exactly-sb-708">Detach, exactly (SB-708)</h3>
+<p>Detach takes a <code>tenant</code>-custody cell off the train. <code>sb factory detach TENANT --accept-unsupported --out DIR</code> writes the <strong>export package</strong> to <code>DIR</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>manifest.yaml</code></td>
+<td>the applied manifest</td>
+</tr>
+<tr>
+<td><code>policies/*.cedar</code></td>
+<td>the tenant's policies</td>
+</tr>
+<tr>
+<td><code>evals/</code></td>
+<td>the tenant's eval suites and their latest results</td>
+</tr>
+<tr>
+<td><code>audit/audit.ndjson</code></td>
+<td>the signed audit export, every row from <code>seq</code> 1 (sb-audit(5), Export)</td>
+</tr>
+<tr>
+<td><code>audit/anchor-key.txt</code></td>
+<td>the cell's anchor public key, to pin when verifying</td>
+</tr>
+<tr>
+<td><code>release/bundle.json</code>, <code>bundle.sig</code>, <code>gate.json</code>, <code>gate.sig</code>, <code>sbom.spdx.json</code></td>
+<td>the running release, its gate record and their signatures</td>
+</tr>
+<tr>
+<td><code>release/release-key.txt</code></td>
+<td>the release identity the bundle is signed by</td>
+</tr>
+<tr>
+<td><code>runbooks/</code></td>
+<td>the manual and runbooks at that release</td>
+</tr>
+<tr>
+<td><code>MANIFEST.json</code></td>
+<td>every file above with its SHA-256, written last</td>
+</tr>
+</tbody>
+</table>
+<p>The index isn't exported, because it rebuilds from the sources (LAW-13). Neither are secrets: connector credentials stay in the tenant's own vault.</p>
+<p>The package verifies <strong>offline</strong> with <code>sb factory verify-export DIR</code>. It checks that every file in <code>MANIFEST.json</code> is present with its SHA-256 and that there are no other files. It checks that the audit export verifies with <code>audit/anchor-key.txt</code> from <code>seq</code> 1 to its last row (LAW-11), that the bundle's signature verifies with <code>release/release-key.txt</code>, and that the gate record is for that bundle and passed. A required item that is missing fails the check.</p>
+<p>Detach runs in this order, and stops at the first failure:</p>
+<ol>
+<li>The hand-off controller moves to <code>Detached</code> and writes the custody row (SB-705).</li>
+<li>The export package is written and verified, as above. Detach never revokes anything on the strength of a package that didn't verify.</li>
+<li>Every factory access path is revoked, <code>publish-releases</code> included, and <code>sb factory access</code> must then show <strong>none</strong> (LAW-17).</li>
+<li>The release controller drops the cell from the train (sb-release(7)).</li>
+<li>The registry replaces the cell record with a <strong>tombstone</strong>: the cell stops routing, and only the custody history stays (<code>custody</code>, <code>placement</code> and <code>key_custodian</code> with the time of each change). No content, manifest or audit row stays with the factory.</li>
+</ol>
 <p>The <strong>hand-off record</strong> is written at <code>TenantOwned</code> and kept in the registry's custody history: the plan hash, both approvals, the new custody record (<code>custody: tenant</code>, <code>placement: tenant-account://PROVIDER/ID</code>, <code>key_custodian: tenant</code>), the retained grants, and the <code>sb factory access</code> result. LAW-17 is checked against this record.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-17">LAW-17</a> no unlisted factory access after hand-off · <a href="sb-laws.7.html#law-18">LAW-18</a> the root key always has a custodian. LAW-01 to LAW-16 continue to hold for <code>factory</code> and <code>tenant</code> custody.</p>
@@ -223,7 +281,7 @@ needs approval from: factory operator, tenant owner (group:gamma-it-owners)
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-factory.1.html">sb-factory(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l3"><a href="#access-paths-exactly-sb-706">Access paths, exactly (SB-706)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l3"><a href="#access-paths-exactly-sb-706">Access paths, exactly (SB-706)</a></li><li class="l3"><a href="#detach-exactly-sb-708">Detach, exactly (SB-708)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>
