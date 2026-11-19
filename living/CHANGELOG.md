@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Model billing (S7.3b: SB-709): monthly cost statements (`internal/core/costs`, `GET /v1/admin/costs` as JSON or CSV) and a tenant-held provider key, read from the vault at every call.
 - Detach and export (S7.3a: SB-708): the export package writer and offline verifier, `sb factory verify-export`, the registry's custody history and tombstone, and a LAW-11 law test over tampered packages.
 - Releases after hand-off (S7.2d: SB-707): the HTTPS release-store client with a pull token, custody and detach in the release controller, the pause-pulls runbook, and LAW-06 and LAW-08 law tests for tenant-custody cells.
 - Access paths (S7.2c: SB-706): `internal/core/access` (Check, Watch, the wrap source), the GCP IAM source with a read-only verifier identity, `getIamPolicy` in the GCP fake, `sb factory access`, and a LAW-17 law test.

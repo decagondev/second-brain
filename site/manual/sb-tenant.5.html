@@ -208,6 +208,45 @@ agents: [ask]
 <p>The same Go types that drive the checker generate a JSON Schema, published as <a href="../examples/tenants/tenant.schema.json.html"><code>examples/tenants/tenant.schema.json</code></a> for editors. A test fails if the published file is out of date.</p>
 <h2 id="exit-status-errors">EXIT STATUS / ERRORS</h2>
 <p><code>sb tenant check</code> exits 1 with <code>EMANIFEST</code> and one line per error, in the form <code>file:line:col: field: message</code>, sorted by position. Errors about a field point at its key; errors about a value point at the value. See <a href="sb-tenant.1.html">sb-tenant(1)</a>.</p>
+<h2 id="model-billing-and-cost-statements">MODEL BILLING AND COST STATEMENTS</h2>
+<p>Exactly (SB-709).</p>
+<p><strong>Whose model account.</strong> The gateway's API key is always the cell's own, at <code>vault://tenants/TENANT/model</code>, and it is resolved at the moment of each call, never cached and never shared between cells (ADR-0019). Whoever puts the key there holds the provider contract and receives the provider's invoice. In <code>factory</code> custody that is usually the factory. A company that wants its own contract, and every company after hand-off, puts a key from <strong>its own</strong> provider account at that path. The next model call uses it, with no deploy and no manifest change, because the key is read per call. The provider and model still come from the release bundle, so changing the key changes who pays, never which model answers.</p>
+<p><strong>Cost statements.</strong> Each month the cell produces a statement for its tenant, from its own metering (the provider's reported usage, SB-609):</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>month</code></td>
+<td>the calendar month, UTC, e.g. <code>2027-03</code></td>
+</tr>
+<tr>
+<td><code>provider</code>, <code>model</code></td>
+<td>from the release bundle that served the calls</td>
+</tr>
+<tr>
+<td><code>tokens_in</code>, <code>tokens_out</code></td>
+<td>reported by the provider, summed over the month</td>
+</tr>
+<tr>
+<td><code>price_in_per_m</code>, <code>price_out_per_m</code></td>
+<td>the release's price table, USD per million tokens</td>
+</tr>
+<tr>
+<td><code>cost_usd</code></td>
+<td>tokens times price, rounded to the cent</td>
+</tr>
+<tr>
+<td><code>budget_usd_month</code></td>
+<td>the manifest's budget, for comparison</td>
+</tr>
+</tbody>
+</table>
+<p>A statement holds counts and prices only, never content or user ids, so it can be sent to finance as is. <code>GET /v1/admin/costs?month=2027-03</code> returns it (sb-admin(3)) as JSON, or as CSV with <code>&amp;format=csv</code>, one row per provider and model. The statement is an estimate at list price: when the tenant holds its own key, the provider's invoice is the bill, and the statement is how to check it. A month that hasn't ended is marked <code>partial</code>.</p>
 <h2 id="retention-and-deletion">RETENTION AND DELETION</h2>
 <p>Exactly (SB-611).</p>
 <p><strong>The nightly job.</strong> At 03:00 UTC each cell deletes everything of its tenant older than <code>retention_days</code> from every store of derived data:</p>
@@ -278,7 +317,7 @@ budget_usd_month: 1500
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-tenant.1.html">sb-tenant(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-factory.7.html">sb-factory(7)</a>, <a href="sb-onboarding.7.html">sb-onboarding(7)</a>, <a href="../examples/README.html">examples/tenants/</a></p><p class="srcline">Source: <code>manual/sb-tenant.5.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#secrets">Secrets</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l2"><a href="#validation-rules">VALIDATION RULES</a></li><li class="l2"><a href="#syntax">SYNTAX</a></li><li class="l2"><a href="#exit-status-errors">EXIT STATUS / ERRORS</a></li><li class="l2"><a href="#retention-and-deletion">RETENTION AND DELETION</a></li><li class="l2"><a href="#drift">DRIFT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#secrets">Secrets</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l2"><a href="#validation-rules">VALIDATION RULES</a></li><li class="l2"><a href="#syntax">SYNTAX</a></li><li class="l2"><a href="#exit-status-errors">EXIT STATUS / ERRORS</a></li><li class="l2"><a href="#model-billing-and-cost-statements">MODEL BILLING AND COST STATEMENTS</a></li><li class="l2"><a href="#retention-and-deletion">RETENTION AND DELETION</a></li><li class="l2"><a href="#drift">DRIFT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

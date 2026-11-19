@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
@@ -38,6 +40,11 @@ type Admin struct {
 	Usage     report.Source
 	Price     report.Price
 	Approvers []string // the manifest's approval groups
+	// Meter, Prices and BudgetUSD make the monthly cost statement (SB-709); Now dates it.
+	Meter     costs.Meter
+	Prices    map[string]costs.Price // provider/model -> price, from the release
+	BudgetUSD int
+	Now       func() time.Time
 	// Erasure erases one user's derived data (SB-611); nil means EUNAVAIL.
 	Erasure interface {
 		Erase(ctx context.Context, actor, user, reason string) (retention.Report, error)
@@ -52,30 +59,72 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/unkill", h.guard(h.kill(false)))
 	mux.HandleFunc("GET /v1/admin/kill", h.guard(h.switches))
 	mux.HandleFunc("GET /v1/admin/audit", h.guard(h.audit))
-	mux.HandleFunc("GET /v1/admin/usage", h.usage)
+	mux.HandleFunc("GET /v1/admin/usage", h.readers(h.usage))
+	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
 		h.fail(w, errs.New(errs.ENOTIMPL, "refusal reports arrive with SB-607"))
 	}))
 }
 
-// usage is open to operators and to approvers (sb-admin(3)).
-func (h Admin) usage(w http.ResponseWriter, r *http.Request) {
-	s, err := tenancy.FromContext(r.Context())
-	if err != nil {
-		h.fail(w, errs.New(errs.EAUTH, "Sign in again."))
-		return
-	}
-	approver := false
-	for _, g := range s.Groups() {
-		for _, a := range h.Approvers {
-			approver = approver || g == a
+// readers lets operators and approvers through (sb-admin(3): usage and costs).
+func (h Admin) readers(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s, err := tenancy.FromContext(r.Context())
+		if err != nil {
+			h.fail(w, errs.New(errs.EAUTH, "Sign in again."))
+			return
 		}
+		approver := false
+		for _, g := range s.Groups() {
+			for _, a := range h.Approvers {
+				approver = approver || g == a
+			}
+		}
+		if !approver && h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow {
+			h.fail(w, errs.New(errs.EPERM, "You need the operator or approver role for this."))
+			return
+		}
+		next(w, r)
 	}
-	if !approver && h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow {
-		h.fail(w, errs.New(errs.EPERM, "You need the operator or approver role for this."))
+}
+
+// costs is the month's cost statement (sb-tenant(5), Model billing and cost statements).
+func (h Admin) costs(w http.ResponseWriter, r *http.Request) {
+	month := r.URL.Query().Get("month")
+	if _, _, err := costs.ParseMonth(month); err != nil {
+		h.fail(w, errs.New(errs.EINVAL, "month must be like 2027-03"))
 		return
 	}
+	if h.Meter == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Metering isn't available in this cell."))
+		return
+	}
+	now := time.Now
+	if h.Now != nil {
+		now = h.Now
+	}
+	st, err := costs.Build(r.Context(), h.Meter, h.Tenant, month, h.Prices, h.BudgetUSD, now())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The cost statement can't be built right now."))
+		return
+	}
+	if r.URL.Query().Get("format") == "csv" {
+		b, err := st.CSV()
+		if err != nil {
+			h.fail(w, errs.New(errs.EUNAVAIL, "The cost statement can't be written."))
+			return
+		}
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("X-SB-Release", h.Release)
+		_, _ = w.Write(b)
+		return
+	}
+	h.ok(w, st)
+}
+
+// usage is the week's numbers (SB-606).
+func (h Admin) usage(w http.ResponseWriter, r *http.Request) {
 	from, to, err := report.ParseWeek(r.URL.Query().Get("week"))
 	if err != nil {
 		h.fail(w, errs.New(errs.EINVAL, "week must be like 2027-W10"))

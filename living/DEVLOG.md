@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.3b Model billing and cost statements (SB-709)
+
+**Wave/slice:** W7 / S7.3b · **Author:** platform lead + Claude · **Status:** In review (usage meter in a running cell)
+
+**What:** `internal/core/costs`, `GET /v1/admin/costs` with a shared `readers` guard, and a rotation test in `openaicompat`. The manual changed first: sb-tenant(5), sb-admin(3) and sb-factory(7).
+
+**Why this way:** Taking over the model contract needed no new mechanism. The key was already per cell and read per call (ADR-0019), so the option is the vault path the tenant controls, and the test proves the "next call" promise. The statement is built from metering, with list prices from the release. It refuses to print a cost it can't price, because a finance document with a guessed line is worse than an error.
+
+**Learned:** `usage` had its operator-or-approver check inline. A second endpoint with the same audience made it a guard, so the two can't drift apart.
+
+**Laws:** none on this ticket; all law tests are green.
+
+**Next:** S7.3c, the hand-off game day (SB-710), the last W7 ticket.
+
 ## 2026-11-19 S7.3a Detach and the export package (SB-708)
 
 **Wave/slice:** W7 / S7.3a · **Author:** platform lead + Claude · **Status:** In review (detach on a running cell)

@@ -75,6 +75,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <li><strong>execute:</strong> provision in the tenant account, re-wrap the root key under the tenant's KMS, move state, verify laws and the audit chain, cut over, revoke factory paths, then destroy the factory key wrap.</li>
 <li><strong>abort:</strong> allowed any time before cutover. The factory cell never stops serving before cutover.</li>
 </ol>
+<p>The model-provider contract moves separately and at the tenant's pace. The tenant puts a key from its own provider account at <code>vault://tenants/TENANT/model</code>, and the next call uses it (sb-tenant(5), Model billing and cost statements). Monthly cost statements let both sides reconcile the last factory-billed month.</p>
 <p>The command grammar, options and exit codes are in <a href="sb-factory.1.html">sb-factory(1)</a>, and the roles that may run each command in <a href="sb-policy.5.html#factory-roles-exactly-sb-702">sb-policy(5), Factory roles</a>. The step-by-step procedure for both sides is <a href="../docs/runbooks/handoff.html">the hand-off runbook</a>.</p>
 <h3 id="the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</h3>
 <p>A hand-off moves through the phases of <code>proofs/tla/Handoff.tla</code>. The controller (<code>internal/core/handoff</code>, SB-705) has the same phases and transitions, and a test reads the model to check that they match. It stores the phase and writes a <code>kind: custody</code> audit row for each step <strong>before</strong> it acts:</p>

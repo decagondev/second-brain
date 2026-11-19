@@ -89,6 +89,25 @@ The same Go types that drive the checker generate a JSON Schema, published as [`
 
 `sb tenant check` exits 1 with `EMANIFEST` and one line per error, in the form `file:line:col: field: message`, sorted by position. Errors about a field point at its key; errors about a value point at the value. See [sb-tenant(1)](sb-tenant.1.md).
 
+## MODEL BILLING AND COST STATEMENTS
+
+Exactly (SB-709).
+
+**Whose model account.** The gateway's API key is always the cell's own, at `vault://tenants/TENANT/model`, and it is resolved at the moment of each call, never cached and never shared between cells (ADR-0019). Whoever puts the key there holds the provider contract and receives the provider's invoice. In `factory` custody that is usually the factory. A company that wants its own contract, and every company after hand-off, puts a key from **its own** provider account at that path. The next model call uses it, with no deploy and no manifest change, because the key is read per call. The provider and model still come from the release bundle, so changing the key changes who pays, never which model answers.
+
+**Cost statements.** Each month the cell produces a statement for its tenant, from its own metering (the provider's reported usage, SB-609):
+
+| Line | Meaning |
+|---|---|
+| `month` | the calendar month, UTC, e.g. `2027-03` |
+| `provider`, `model` | from the release bundle that served the calls |
+| `tokens_in`, `tokens_out` | reported by the provider, summed over the month |
+| `price_in_per_m`, `price_out_per_m` | the release's price table, USD per million tokens |
+| `cost_usd` | tokens times price, rounded to the cent |
+| `budget_usd_month` | the manifest's budget, for comparison |
+
+A statement holds counts and prices only, never content or user ids, so it can be sent to finance as is. `GET /v1/admin/costs?month=2027-03` returns it (sb-admin(3)) as JSON, or as CSV with `&format=csv`, one row per provider and model. The statement is an estimate at list price: when the tenant holds its own key, the provider's invoice is the bill, and the statement is how to check it. A month that hasn't ended is marked `partial`.
+
 ## RETENTION AND DELETION
 
 Exactly (SB-611).

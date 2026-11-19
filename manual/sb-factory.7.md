@@ -55,6 +55,8 @@ Custody is **not** a manifest field. A manifest containing `custody:`, `placemen
 3. **execute:** provision in the tenant account, re-wrap the root key under the tenant's KMS, move state, verify laws and the audit chain, cut over, revoke factory paths, then destroy the factory key wrap.
 4. **abort:** allowed any time before cutover. The factory cell never stops serving before cutover.
 
+The model-provider contract moves separately and at the tenant's pace. The tenant puts a key from its own provider account at `vault://tenants/TENANT/model`, and the next call uses it (sb-tenant(5), Model billing and cost statements). Monthly cost statements let both sides reconcile the last factory-billed month.
+
 The command grammar, options and exit codes are in [sb-factory(1)](sb-factory.1.md), and the roles that may run each command in [sb-policy(5), Factory roles](sb-policy.5.md#factory-roles-exactly-sb-702). The step-by-step procedure for both sides is [the hand-off runbook](../docs/runbooks/handoff.md).
 
 ### The hand-off, exactly (SB-701)

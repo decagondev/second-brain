@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Model billing (S7.3b: SB-709): monthly cost statements (<code>internal/core/costs</code>, <code>GET /v1/admin/costs</code> as JSON or CSV) and a tenant-held provider key, read from the vault at every call.</li>
 <li>Detach and export (S7.3a: SB-708): the export package writer and offline verifier, <code>sb factory verify-export</code>, the registry's custody history and tombstone, and a LAW-11 law test over tampered packages.</li>
 <li>Releases after hand-off (S7.2d: SB-707): the HTTPS release-store client with a pull token, custody and detach in the release controller, the pause-pulls runbook, and LAW-06 and LAW-08 law tests for tenant-custody cells.</li>
 <li>Access paths (S7.2c: SB-706): <code>internal/core/access</code> (Check, Watch, the wrap source), the GCP IAM source with a read-only verifier identity, <code>getIamPolicy</code> in the GCP fake, <code>sb factory access</code>, and a LAW-17 law test.</li>

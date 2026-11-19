@@ -30,9 +30,10 @@ GET  /v1/admin/audit?since=…&amp;kind=…
 GET  /v1/admin/usage?week=2027-W10
 GET  /v1/admin/refusals?since=…
 POST /v1/admin/subjects/erase
+GET  /v1/admin/costs?month=2027-03[&amp;format=csv]
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
-<p>The console is a client of this API and has no other powers. Every endpoint needs the <code>operator</code> role (Cedar policy) except <code>usage</code>, which <code>approver</code> may also read.</p>
+<p>The console is a client of this API and has no other powers. Every endpoint needs the <code>operator</code> role (Cedar policy) except <code>usage</code> and <code>costs</code>, which <code>approver</code> may also read.</p>
 <p><strong><code>GET /v1/admin/manifest</code></strong> returns the applied manifest and its git commit.</p>
 <p><strong><code>POST /v1/admin/manifest/diff</code></strong> takes a JSON patch, e.g. <code>[{ "op": "add", "path": "/agents/-", "value": "draft-reply" }]</code>, validates it as <code>sb tenant check</code> would, and returns the YAML diff. Depending on tenant setup, the diff is either opened as a pull request against the tenant's manifest repo or signed and applied. Either way, the result is a manifest change (LAW-16).</p>
 <p><strong><code>POST /v1/admin/kill</code></strong> takes <code>{ "scope": "agent"|"connector"|"tenant", "name": "…", "reason": "…" }</code> and has the same semantics as <a href="sb-kill.1.html">sb-kill(1)</a>.</p>
@@ -40,6 +41,7 @@ POST /v1/admin/subjects/erase
 <p><strong><code>GET /v1/admin/usage?week=2027-W10</code></strong> returns the weekly report's numbers (sb-observability(7), Weekly leadership report): weekly active users, seats, asks, cited-answer rate, gaps by kind, drafts and their used-to-discarded ratio, actions by outcome and model spend.</p>
 <p><strong><code>GET /v1/admin/refusals</code></strong> lists refusal counts by connector and reason (<code>deny</code>, <code>unknown</code>, <code>timeout</code>, <code>missing</code>), with no document titles, so operators can spot a misbehaving connector.</p>
 <p><strong><code>POST /v1/admin/subjects/erase</code></strong> takes <code>{ "user": "usr_…", "reason": "…" }</code> and erases the user's derived data as sb-tenant(5), Retention and deletion, describes. The response is <code>{ "erased": { "traces": 3, "conversations": 1, "feedback": 1, "logs": 12 }, "audit": ["aud_…", "aud_…"] }</code>. A user id that isn't <code>usr_</code> followed by <code>[a-z0-9_]</code> is <code>EINVAL</code>, and a missing reason is <code>EINVAL</code>. Erasing a user with nothing stored succeeds with zero counts.</p>
+<p><strong><code>GET /v1/admin/costs?month=2027-03</code></strong> returns the month's cost statement (sb-tenant(5), Model billing and cost statements): <code>{ "tenant", "month", "partial", "lines": [{ "provider", "model", "tokens_in", "tokens_out", "price_in_per_m", "price_out_per_m", "cost_usd" }], "total_usd", "budget_usd_month" }</code>. With <code>&amp;format=csv</code> it is <code>text/csv</code> with the same columns, one row per line. A month that isn't <code>YYYY-MM</code> is <code>EINVAL</code>. Operators and approvers may read it.</p>
 <h3 id="roles-exactly-sb-603">Roles, exactly (SB-603)</h3>
 <table>
 <thead>

@@ -16,6 +16,7 @@ import (
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
@@ -168,5 +169,38 @@ func TestEraseSubject(t *testing.T) {
 	}
 	if strings.Join(states, ",") != "requested,done" {
 		t.Fatalf("audit: %v", states)
+	}
+}
+
+type usageMeter struct{}
+
+func (usageMeter) Usage(context.Context, string, time.Time, time.Time) ([]costs.Usage, error) {
+	return []costs.Usage{{Provider: "anthropic", Model: "claude-x", TokensIn: 2_000_000, TokensOut: 100_000}}, nil
+}
+
+// SB-709: the cost statement, for operators and approvers, as JSON or CSV.
+func TestCostStatement(t *testing.T) {
+	src, _ := os.ReadFile("../../examples/tenants/pilot.yaml")
+	m, _ := manifest.Check(src)
+	b, _ := os.ReadFile("../../policy/platform/base.cedar")
+	engine, _ := cedar.Load(map[string][]byte{"base.cedar": b})
+	rows := auditmem.New()
+	log := &audit.Log{Tenant: "acme-logistics", Release: func() string { return "rel_x" }, Store: rows, Now: time.Now}
+	h := Admin{Tenant: "acme-logistics", Policy: policy.Kernel{Engine: engine, Recorder: log}, Manifests: applied{m}, Audit: log, AuditRows: rows,
+		Release: "rel_x", Approvers: []string{"it-leads"}, Meter: usageMeter{}, Prices: map[string]costs.Price{"anthropic/claude-x": {InPerM: 3, OutPerM: 15}},
+		BudgetUSD: 1000, Now: func() time.Time { return time.Date(2027, 4, 2, 0, 0, 0, 0, time.UTC) }}
+	mux := http.NewServeMux()
+	h.Register(mux)
+	if w := adminCall(t, mux, []string{"it-leads"}, "GET", "/v1/admin/costs?month=2027-03", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"total_usd":7.5`) {
+		t.Fatalf("approver: %d %s", w.Code, w.Body)
+	}
+	if w := adminCall(t, mux, []string{"sb-operators"}, "GET", "/v1/admin/costs?month=2027-03&format=csv", ""); w.Code != 200 || !strings.HasPrefix(w.Body.String(), "tenant,month,partial") {
+		t.Fatalf("csv: %d %s", w.Code, w.Body)
+	}
+	if w := adminCall(t, mux, []string{"grp_support"}, "GET", "/v1/admin/costs?month=2027-03", ""); w.Code != 403 {
+		t.Fatalf("no role: %d", w.Code)
+	}
+	if w := adminCall(t, mux, []string{"it-leads"}, "GET", "/v1/admin/costs?month=March", ""); w.Code != 400 {
+		t.Fatalf("bad month: %d", w.Code)
 	}
 }
