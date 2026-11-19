@@ -505,3 +505,19 @@ func (n nondeterministic) Snapshot() ([]string, error) {
 	}
 	return got, err
 }
+
+// LAW-09's check catches a pipeline that indexes raw text, unstripped and unflagged.
+func TestSelf_LAW09MutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law09(r, rawText{}) }) {
+		t.Error("LAW-09: a pipeline without a sanitiser was not caught")
+	}
+}
+
+type rawText struct{}
+
+func (rawText) Ingest(text string) ([]SanitisedChunk, error) {
+	return []SanitisedChunk{{Text: text}}, nil
+}
+func (rawText) Wrap(text, cite string, flags []string) string {
+	return "<<data cite=\"" + cite + "\">>\n" + text + "\n<</data>>"
+}

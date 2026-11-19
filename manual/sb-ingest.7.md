@@ -36,6 +36,16 @@ Ingested text is written by people who aren't the asker, and some of it may be h
 
 Tool arguments derived from flagged spans are refused by the tool bus (LAW-09). Flags show on citations, so users can see when a source contained suspicious text.
 
+The rules, in order (`internal/core/ingest`, `Sanitise`):
+
+| Step | Rule | Recorded as |
+|---|---|---|
+| Strip | Zero-width characters, bidirectional controls and other invisible format characters; HTML comments; elements styled `display:none`, `visibility:hidden`, `font-size:0` or positioned off-screen; image alt text and link titles longer than 100 characters | flag `hidden_text_removed` |
+| Flag | Text addressed to an AI: overrides ("ignore previous instructions", "disregard the above"), new roles ("you are now", "act as"), chat-role markers (`system:`, `assistant:`, `<|im_start|>`), tool-call syntax (`{"tool": …}`, function-call JSON), requests to hide things from the user, and links that carry data in their query string to a domain outside the tenant | flag `instruction_like` |
+| Wrap | At prompt time each chunk becomes `<<data cite="…" flags="…">>` … `<</data>>`. Any `<<` or `>>` inside the text is escaped first, so content can't close its own block | — |
+
+Flags are per chunk and appear on its citation. A flagged chunk is still indexed and can be cited; it just can't steer the agent. The corpus in `evals/corpus/injection.json` (visible, hidden and benign look-alike cases) runs in `make check`. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).
+
 ### Provenance
 
 Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flags and the release that ingested it.

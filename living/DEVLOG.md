@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-207 Sanitiser and injection flags
+
+**Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** Ingest now strips hidden text and flags text addressed to an AI, per chunk, and `Wrap` puts chunks in data blocks they can't close. The manual changed first: sb-ingest(7) gained the rule table.
+
+**Why this way:** The sanitiser doesn't try to make hostile text safe. It records that text is suspicious and keeps it out of the instruction channel. Flagged chunks are still indexed and citable, because hiding them would make the assistant silently wrong about what a document says. Invisible characters are matched by Unicode category, not a hand list, so new zero-width tricks are covered.
+
+**Learned:** While writing the law, the Write tool turned my `\u200b` escapes into real zero-width characters inside the Go source, which is exactly the attack this ticket defends against. I caught it by reading the file back. The repo now has a regression test that fails on any invisible or control character in source (mutation-checked with a planted file), and code spells such characters as code points. The law itself needed one correction: zero-width obfuscation reveals text when stripped, so the right check is "flagged", not "removed".
+
+**Laws:** LAW-09 moves from Stated to Tested (ingest level). The agent-level check waits for SB-405/SB-501.
+
+**Next:** SB-208 (durable cursor and freshness), then the Slack and Linear connectors.
+
 ## 2026-11-19 SB-203 Google Drive connector
 
 **Wave/slice:** W2 / S2.2 · **Author:** platform lead + Claude · **Status:** In review

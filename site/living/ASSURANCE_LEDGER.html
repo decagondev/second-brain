@@ -107,9 +107,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-09">LAW-09</a></td>
 <td>Data is not instructions</td>
-<td>Stated</td>
+<td>Tested</td>
 <td>—</td>
-<td>—</td>
+<td><code>laws/</code> ingest-level check (flag, strip, unescapable wrap) + self-test; injection corpus in <code>make check</code>; agent level with SB-405/SB-501</td>
 <td>—</td>
 <td>SB-207, SB-501</td>
 </tr>
@@ -332,6 +332,12 @@
 <td>LAW-03, LAW-13</td>
 <td>no change</td>
 <td>SB-203: connector-level LAW-03 and LAW-13 tests also run on the Google Drive connector and its recorded fake</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-09</td>
+<td>Stated → Tested</td>
+<td>SB-207: <code>TestLAW09_DataIsNotInstructions</code> green through the real pipeline; a pipeline without a sanitiser is caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

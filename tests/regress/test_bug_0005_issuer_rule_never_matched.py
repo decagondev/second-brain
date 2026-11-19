@@ -37,3 +37,22 @@ class IssuerRule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NoInvisibleCharacters(unittest.TestCase):
+    """Same root cause as BUG-0005 (a tool silently rewrote an escape): no source file may
+    contain control characters or invisible format characters (Unicode Cf). Spell them as
+    code points in code, e.g. rune(0x200B)."""
+
+    def test_sources_are_visible(self):
+        import unicodedata
+        bad = []
+        for pat in ("**/*.go", "**/*.py", "**/*.md", "**/*.yaml", "**/*.json", "**/*.cedar"):
+            for f in ROOT.glob(pat):
+                rel = f.relative_to(ROOT).as_posix()
+                if rel.startswith(("vendor/", "site/", "tools/vendor/")) or "node_modules" in rel:
+                    continue
+                for n, line in enumerate(f.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+                    if any((ord(c) < 32 and c not in "\t") or unicodedata.category(c) == "Cf" for c in line):
+                        bad.append(f"{rel}:{n}")
+        self.assertEqual(bad, [], "invisible characters in source")

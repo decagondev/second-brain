@@ -105,6 +105,7 @@ type Pipeline struct {
 	Connector       ports.Connector
 	Embedder        ports.Embedder
 	Index           ports.Index
+	Sanitiser       Sanitiser // strip and flag rules (SB-207)
 }
 
 // Ingest fetches ref and replaces its chunks, unless that version (or newer) is indexed.
@@ -119,7 +120,8 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 	} else if found && (have > doc.Version || (have == doc.Version && !force)) {
 		return nil
 	}
-	text := Normalise(doc.Title + "\n\n" + doc.Text)
+	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
+	text := Normalise(clean)
 	spans := Chunks(text)
 	rs := []rune(text)
 	cite := Cite(ref, doc.Version)
@@ -133,7 +135,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		texts[i] = t
 		chunks[i] = ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
-			ACLPrefilter: acl, Release: p.Release}
+			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t))}
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)

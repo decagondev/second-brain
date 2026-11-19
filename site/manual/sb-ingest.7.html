@@ -36,6 +36,34 @@
 <li>at prompt time, wraps every chunk in a quoted data block with its provenance.</li>
 </ol>
 <p>Tool arguments derived from flagged spans are refused by the tool bus (LAW-09). Flags show on citations, so users can see when a source contained suspicious text.</p>
+<p>The rules, in order (<code>internal/core/ingest</code>, <code>Sanitise</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Rule</th>
+<th>Recorded as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strip</td>
+<td>Zero-width characters, bidirectional controls and other invisible format characters; HTML comments; elements styled <code>display:none</code>, <code>visibility:hidden</code>, <code>font-size:0</code> or positioned off-screen; image alt text and link titles longer than 100 characters</td>
+<td>flag <code>hidden_text_removed</code></td>
+</tr>
+<tr>
+<td>Flag</td>
+<td>Text addressed to an AI: overrides ("ignore previous instructions", "disregard the above"), new roles ("you are now", "act as"), chat-role markers (<code>system:</code>, <code>assistant:</code>, <code>&lt;|im_start|&gt;</code>), tool-call syntax (<code>{"tool": …}</code>, function-call JSON), requests to hide things from the user, and links that carry data in their query string to a domain outside the tenant</td>
+<td>flag <code>instruction_like</code></td>
+</tr>
+<tr>
+<td>Wrap</td>
+<td>At prompt time each chunk becomes <code>&lt;&lt;data cite="…" flags="…"&gt;&gt;</code> … <code>&lt;&lt;/data&gt;&gt;</code>. Any <code>&lt;&lt;</code> or <code>&gt;&gt;</code> inside the text is escaped first, so content can't close its own block</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Flags are per chunk and appear on its citation. A flagged chunk is still indexed and can be cited; it just can't steer the agent. The corpus in <code>evals/corpus/injection.json</code> (visible, hidden and benign look-alike cases) runs in <code>make check</code>. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).</p>
 <h3 id="provenance">Provenance</h3>
 <p>Every chunk records tenant, <code>cite</code> (<code>kind:id@version</code>), span, content hash, flags and the release that ingested it.</p>
 <h3 id="chunks">Chunks</h3>

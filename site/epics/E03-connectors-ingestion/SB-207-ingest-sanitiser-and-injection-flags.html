@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,30 @@
 <p>Ingested text is untrusted input; treat it like user input to a shell.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Instruction-like content is flagged and wrapped as quoted data</li>
+<li class="task done"><span class="box">✓</span>Instruction-like content is flagged and wrapped as quoted data</li>
 <li class="task"><span class="box"></span>Injection corpus triggers zero tool calls (eval)</li>
-<li class="task"><span class="box"></span>Flags visible in citations</li>
+<li class="task done"><span class="box">✓</span>Flags visible in citations</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Sanitiser rules</li>
-<li class="task"><span class="box"></span>Injection corpus in <code>evals/suites/injection.yaml</code></li>
-<li class="task"><span class="box"></span>Eval wired into CI</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-09</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Sanitiser rules</li>
+<li class="task done"><span class="box">✓</span>Injection corpus: <code>evals/corpus/injection.json</code> (JSON, because Go reads it with the standard library)</li>
+<li class="task done"><span class="box">✓</span>Eval wired into CI: the corpus runs in <code>make check</code> (<code>TestInjectionCorpus</code>); the agent-level suite waits for the tool bus</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-09</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: the sanitiser is built (<code>internal/core/ingest</code>, <code>sanitise.go</code>) and wired into the pipeline.
+- Strip removes invisible format characters (Unicode <code>Cf</code>: zero-width, bidi, BOM), HTML comments, elements hidden by style (unclosed ones are dropped to the end), and alt or title text over 100 characters.
+- Flag marks instruction-like spans: overrides, new roles, chat-role markers, tool-call JSON, "don't tell the user", and query-string links to non-tenant domains.
+- Flags are stored per chunk and are what citations will show. <code>Wrap</code> makes a data block the content can't close.
+- The 16-case corpus (12 attacks, 4 benign look-alikes) passes.</p>
+<p>LAW-09 has its first law test, red first, then green, and a pipeline without a sanitiser is caught. One law fix along the way: zero-width obfuscation doesn't <em>hide</em> text; stripping reveals it, so the law now requires it to be flagged rather than removed.</p>
+<p><strong>Left:</strong> "Injection corpus triggers zero tool calls (eval)" needs the agent runtime and tool bus (SB-405, SB-501). A canned mock answer would prove nothing, so this stays open.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E03-connectors-ingestion/SB-207-ingest-sanitiser-and-injection-flags.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

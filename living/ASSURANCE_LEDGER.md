@@ -17,7 +17,7 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-06](../manual/sb-laws.7.md#law-06) | Only signed, gated builds run | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-506, SB-509 |
 | [LAW-07](../manual/sb-laws.7.md#law-07) | No secret in prompt, log or audit | Tested | — | `laws/` canary check: resolved secrets never reach logs by any path, + self-tests | — | SB-205, SB-411 |
 | [LAW-08](../manual/sb-laws.7.md#law-08) | At most one behind stable | Modelled | `Rollout.tla`: TLC clean (6,290 states); 4 mutations caught | — | — | SB-012, SB-507 |
-| [LAW-09](../manual/sb-laws.7.md#law-09) | Data is not instructions | Stated | — | — | — | SB-207, SB-501 |
+| [LAW-09](../manual/sb-laws.7.md#law-09) | Data is not instructions | Tested | — | `laws/` ingest-level check (flag, strip, unescapable wrap) + self-test; injection corpus in `make check`; agent level with SB-405/SB-501 | — | SB-207, SB-501 |
 | [LAW-10](../manual/sb-laws.7.md#law-10) | Kill wins | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-403, SB-404 |
 | [LAW-11](../manual/sb-laws.7.md#law-11) | Audit chain unbroken | Stated | — | — | — | SB-401, SB-402, SB-412 |
 | [LAW-12](../manual/sb-laws.7.md#law-12) | Deprovision revokes fast | Tested | — | `laws/` timed check on a fake clock, with and without lost fan-out, + self-test | — | SB-107 |
@@ -53,3 +53,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-07 | Stated → Tested | SB-205: `TestLAW07_NoSecretInLogs` green through the real Resolver, local vault and redacting logger |
 | 2026-11-19 | LAW-13 | Stated → Tested | SB-206: `TestLAW13_TheIndexIsDerived` green on the real pipeline over the mock source |
 | 2026-11-19 | LAW-03, LAW-13 | no change | SB-203: connector-level LAW-03 and LAW-13 tests also run on the Google Drive connector and its recorded fake |
+| 2026-11-19 | LAW-09 | Stated → Tested | SB-207: `TestLAW09_DataIsNotInstructions` green through the real pipeline; a pipeline without a sanitiser is caught |

@@ -121,3 +121,7 @@ func TestLAW03_DriveUnknownIsNeverAllow(t *testing.T) {
 func TestLAW13_DriveIndexIsDerived(t *testing.T) {
 	Check(t, "LAW-13", 40, func(r *rand.Rand) error { return law13(r, NewDriveIngestWorld()) })
 }
+
+func TestLAW09_DataIsNotInstructions(t *testing.T) {
+	Check(t, "LAW-09", runs, func(r *rand.Rand) error { return law09(r, NewSanitiserWorld()) })
+}
