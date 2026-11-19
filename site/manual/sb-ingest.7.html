@@ -38,6 +38,10 @@
 <p>Tool arguments derived from flagged spans are refused by the tool bus (LAW-09). Flags show on citations, so users can see when a source contained suspicious text.</p>
 <h3 id="provenance">Provenance</h3>
 <p>Every chunk records tenant, <code>cite</code> (<code>kind:id@version</code>), span, content hash, flags and the release that ingested it.</p>
+<h3 id="chunks">Chunks</h3>
+<p>A document becomes chunks in a fixed order: normalise (line endings, trailing space), split into paragraphs, then pack paragraphs into chunks of at most 1,200 characters. A paragraph longer than that is cut at the last space before the limit. Boundaries depend only on the text, so the same text always gives the same chunks, and an edit to one paragraph changes only the chunks that contain it.</p>
+<p>Each chunk's id is derived from tenant, <code>cite</code> and span, so ingesting the same <code>(source, version)</code> twice writes exactly the same chunks: ingest is idempotent. A newer version replaces all of the document's chunks in one write. An older or equal version than the one indexed changes nothing.</p>
+<p>Embeddings come through the <code>Embedder</code> port. Until the model provider is chosen (Q-04), cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. Chunks are written through the <code>Index</code> port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.</p>
 <h3 id="rebuild">Rebuild</h3>
 <p>The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13).</p>
 <h2 id="laws">LAWS</h2>
@@ -49,7 +53,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-connector.3.html">sb-connector(3)</a>, <a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest pipeline</a></p><p class="srcline">Source: <code>manual/sb-ingest.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#read-only-by-default">Read-only by default</a></li><li class="l3"><a href="#freshness">Freshness</a></li><li class="l3"><a href="#content-is-data">Content is data</a></li><li class="l3"><a href="#provenance">Provenance</a></li><li class="l3"><a href="#rebuild">Rebuild</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#read-only-by-default">Read-only by default</a></li><li class="l3"><a href="#freshness">Freshness</a></li><li class="l3"><a href="#content-is-data">Content is data</a></li><li class="l3"><a href="#provenance">Provenance</a></li><li class="l3"><a href="#chunks">Chunks</a></li><li class="l3"><a href="#rebuild">Rebuild</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

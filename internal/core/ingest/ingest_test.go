@@ -45,8 +45,8 @@ func TestIDsAreDerived(t *testing.T) {
 		t.Fatal(Cite(ref, 3))
 	}
 	sp := Span{0, 10}
-	if ChunkID("acme-logistics", "docs:d1@3", sp) != ChunkID("acme-logistics", "docs:d1@3", sp) ||
-		ChunkID("acme-logistics", "docs:d1@3", sp) == ChunkID("beta-freight", "docs:d1@3", sp) {
+	a, b := ChunkID("acme-logistics", "docs:d1@3", sp), ChunkID("acme-logistics", "docs:d1@3", Span{0, 10})
+	if a != b || a == ChunkID("beta-freight", "docs:d1@3", sp) || a == ChunkID("acme-logistics", "docs:d1@4", sp) {
 		t.Fatal("chunk ids must be derived from tenant, cite and span")
 	}
 }

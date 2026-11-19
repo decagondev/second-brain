@@ -143,9 +143,9 @@
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-13">LAW-13</a></td>
 <td>The index is derived</td>
-<td>Stated</td>
+<td>Tested</td>
 <td>—</td>
-<td>—</td>
+<td><code>laws/</code> ingest, re-ingest, drop and rebuild give the same <code>(cite, chunk, ACL)</code> set, + self-test; scheduled drill SB-210</td>
 <td>—</td>
 <td>SB-210</td>
 </tr>
@@ -320,6 +320,12 @@
 <td>LAW-07</td>
 <td>Stated → Tested</td>
 <td>SB-205: <code>TestLAW07_NoSecretInLogs</code> green through the real Resolver, local vault and redacting logger</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-13</td>
+<td>Stated → Tested</td>
+<td>SB-206: <code>TestLAW13_TheIndexIsDerived</code> green on the real pipeline over the mock source</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
