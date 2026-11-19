@@ -48,7 +48,7 @@ Isolation is a property of the template, not of discipline.
 
 LAW-02 gains a cell-level law test, `TestLAW02_CellsShareNothing`, which was red first (`not implemented`) and is green now. The red ratchet takes per-test lines so the retrieval-level test can stay red until SB-301.
 
-**Left:** the IaC module and real-cloud stamping arrive with the first cloud adapter (ADR-0018). Also left: review by the user, and the first green CI run.
+**Left:** the IaC module and real-cloud stamping arrive with the first cloud adapter (ADR-0018). Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
 
 ## Definition of done
 

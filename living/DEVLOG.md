@@ -7,6 +7,14 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 First push and first CI run
+
+**Wave/slice:** W0/W1 · **Author:** platform lead + Claude · **Status:** done
+
+**What:** The user created the git repository and its remote. The first commit went to `main`. CI's first run failed in `check` and `proofs` with "permission denied", because the scripts `make` runs directly had been committed from Windows without the executable bit. `c0a12be` set the bit, and the second run was green in every job. A `.gitattributes` keeps LF line endings, so WSL never sees CRLF scripts.
+
+**Learned:** A repository created on Windows needs its executable bits set in git explicitly (`git update-index --chmod=+x`). Local WSL runs on `/mnt/c` can't show the problem, because drvfs reports every file as executable.
+
 ## 2026-11-19 SB-114 Factory seams (design note) and W1 status
 
 **Wave/slice:** W1 / S1.2 · **Author:** platform lead + Claude · **Status:** In review

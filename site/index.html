@@ -50,59 +50,9 @@ sb tenant verify acme.yaml
 <h2 class="band">The laws</h2>
 <section class="laws"><a class="law" href="manual/sb-laws.7.html#law-01"><b>LAW-01</b> Cite only what the asker can open</a><a class="law" href="manual/sb-laws.7.html#law-02"><b>LAW-02</b> No tenant crossing</a><a class="law" href="manual/sb-laws.7.html#law-03"><b>LAW-03</b> Unknown means refuse</a><a class="law" href="manual/sb-laws.7.html#law-04"><b>LAW-04</b> Audit before act</a><a class="law" href="manual/sb-laws.7.html#law-05"><b>LAW-05</b> Ran means receipt</a><a class="law" href="manual/sb-laws.7.html#law-06"><b>LAW-06</b> Only signed, gated builds run</a><a class="law" href="manual/sb-laws.7.html#law-07"><b>LAW-07</b> No secret in prompt, log or audit</a><a class="law" href="manual/sb-laws.7.html#law-08"><b>LAW-08</b> At most one behind stable</a><a class="law" href="manual/sb-laws.7.html#law-09"><b>LAW-09</b> Data is not instructions</a><a class="law" href="manual/sb-laws.7.html#law-10"><b>LAW-10</b> Kill wins</a><a class="law" href="manual/sb-laws.7.html#law-11"><b>LAW-11</b> Audit chain unbroken</a><a class="law" href="manual/sb-laws.7.html#law-12"><b>LAW-12</b> Deprovision revokes fast</a><a class="law" href="manual/sb-laws.7.html#law-13"><b>LAW-13</b> The index is derived</a><a class="law" href="manual/sb-laws.7.html#law-14"><b>LAW-14</b> Every claim cited or labelled</a><a class="law" href="manual/sb-laws.7.html#law-15"><b>LAW-15</b> Approval binds one payload</a><a class="law" href="manual/sb-laws.7.html#law-16"><b>LAW-16</b> The manifest is the truth</a><a class="law" href="manual/sb-laws.7.html#law-17"><b>LAW-17</b> Hand-off leaves no unlisted access</a><a class="law" href="manual/sb-laws.7.html#law-18"><b>LAW-18</b> The root key always has a custodian</a></section>
 <h2 class="band">Latest from the devlog</h2>
-<section class="latest"><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-114 Factory seams (design note) and W1 status</h2><p><strong>Wave/slice:</strong> W1 / S1.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
-<p><strong>What:</strong> The last W1 ticket. It adds the custody constants (one file), a custody lint, read-only <code>sb factory status</code>, and the first LAW-18 law test. The manual changed first: sb-factory(7) now covers status output and the lint.</p>
-<p><strong>Design note, every hand-off seam and its test:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Seam</th>
-<th>Where</th>
-<th>Test</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>)</td>
-<td>registry (<code>cells</code> table, <code>localfs</code>), <code>ports.CellRecord</code></td>
-<td><code>registrytest.Contract</code> (Postgres and local), <code>TestTenantApply</code> smoke</td>
-</tr>
-<tr>
-<td>Custody values in one place</td>
-<td><code>internal/core/cell/custody.go</code></td>
-<td><code>tools/check/custody.py</code> with self-test</td>
-</tr>
-<tr>
-<td>No hard-coded account</td>
-<td><code>Placement</code> port; local adapter stamps into <code>factory-account</code></td>
-<td><code>celltest.Contract</code> (two mock accounts), custody lint</td>
-</tr>
-<tr>
-<td>Envelope key hierarchy</td>
-<td><code>Keys</code> port, <code>cell.NewDataKey</code></td>
-<td><code>celltest.Contract</code> envelope test, <code>TestLAW18_RootKeyAlwaysHasACustodian</code></td>
-</tr>
-<tr>
-<td>Custody isn't a manifest field</td>
-<td><code>manifest</code> forbidden names</td>
-<td>golden <code>invalid.expected</code>, <code>TestEveryErrorMessage</code></td>
-</tr>
-<tr>
-<td>Cell can be re-pointed</td>
-<td><code>cell.LoadConfig</code> (<code>SB_CONTROL_PLANE</code>, <code>SB_IDENTITY_CERT</code>)</td>
-<td><code>TestConfig</code></td>
-</tr>
-<tr>
-<td>Read-only view</td>
-<td><code>sb factory status</code></td>
-<td>smoke</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Why this way:</strong> Hand-off (W7) only works if no code in W1 to W6 assumes the factory holds a cell. With each assumption behind a seam that has a test, W7 becomes a matter of new adapters and a workflow, not a refactor.</p>
-<p><strong>Learned:</strong> This law test had no red phase, because the code it tests landed in earlier tickets. The self-test's mutations stand in for it. That's worth stating rather than hiding.</p>
-<p><strong>Laws:</strong> LAW-18 moves from Modelled to Tested.</p>
-<p><strong>W1 status:</strong> all 13 tickets are In review, <code>make check</code>, <code>make integration</code> and <code>make proofs</code> are green in WSL, and laws stand at 32 tests with 5 expected red (retrieval and tool-call levels, W3 and W4). What's left for every W1 ticket: the user's review and the first CI run (the folder isn't a git repository yet). Real-cloud items (30-minute cell, staging timing, IaC module) wait for a cloud adapter (ADR-0018).</p></div></article><p><a href="devlog.html">All entries →</a></p></section>
+<section class="latest"><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>First push and first CI run</h2><p><strong>Wave/slice:</strong> W0/W1 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> done</p>
+<p><strong>What:</strong> The user created the git repository and its remote. The first commit went to <code>main</code>. CI's first run failed in <code>check</code> and <code>proofs</code> with "permission denied", because the scripts <code>make</code> runs directly had been committed from Windows without the executable bit. <code>c0a12be</code> set the bit, and the second run was green in every job. A <code>.gitattributes</code> keeps LF line endings, so WSL never sees CRLF scripts.</p>
+<p><strong>Learned:</strong> A repository created on Windows needs its executable bits set in git explicitly (<code>git update-index --chmod=+x</code>). Local WSL runs on <code>/mnt/c</code> can't show the problem, because drvfs reports every file as executable.</p></div></article><p><a href="devlog.html">All entries →</a></p></section>
 </main>
   
 </div>

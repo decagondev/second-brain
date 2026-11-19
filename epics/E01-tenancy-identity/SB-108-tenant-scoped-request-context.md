@@ -45,7 +45,7 @@ Tenant id must be impossible to forget, so it is a type, not a parameter.
 
 LAW-02 gains `TestLAW02_ScopeIsTheOnlyWayIn`, red first, then green. Other tenants' sessions get no scope, adversarial lookups of other tenants' ids find nothing, and a missing scope is an error. A directory that ignores the scope is caught.
 
-**Left:** review by the user, and the first green CI run.
+**Left:** review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
 
 ## Definition of done
 

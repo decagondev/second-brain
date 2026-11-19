@@ -38,7 +38,7 @@ Operators should see the diff before anything changes.
 
 2026-11-19: built. `internal/core/plan` turns a manifest into resources (cell, settings, connectors, excludes, agents, workflows) and diffs them against the applied state. `ports.Registry` is the new port. `internal/adapters/registry/localfs` serves `--endpoint file:///DIR` until the control plane exists (SB-105). It answers "no cell" only when the registry directory exists and has no record; anything else is `EUNAVAIL`. A region change fails with `EMANIFEST`. Apply without `--plan` is still `ENOTIMPL` (SB-104). Golden tests cover both sb-tenant(1) examples byte for byte, every line shape, stable JSON, and a pilot-to-full smoke test through the real binary. LAW-16 gains a plan-side law test.
 
-**Left:** review by the user, and the first green CI run.
+**Left:** review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
 
 ## Definition of done
 

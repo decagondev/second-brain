@@ -83,7 +83,7 @@
 - <code>internal/edge</code> routes in the order of sb-tenancy(7): unknown host is <code>EPERM</code>, registry down is <code>EUNAVAIL</code>, a bad token is <code>EAUTH</code>, and another tenant's token is <code>ETENANT</code>. It forwards only to the host's cell.
 - <code>cell.LoadConfig</code> takes the control-plane URL and identity certificate from configuration, with no defaults.</p>
 <p>LAW-02 gains a request-level law test, which was red first, then green. On its first green run it caught a spec gap: a valid token with no tenant claim. That is now <code>EAUTH</code> in the manual and in the law.</p>
-<p><strong>Left:</strong> token verification is a placeholder port until SB-106 (OIDC). Also left: review by the user, and the first green CI run, including the <code>postgres</code> job.</p>
+<p><strong>Left:</strong> token verification is a placeholder port until SB-106 (OIDC). Also left: review by the user, (first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams)).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

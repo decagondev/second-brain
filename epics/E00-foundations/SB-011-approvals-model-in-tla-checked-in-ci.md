@@ -40,7 +40,9 @@ CI job `proofs` runs `tools/ci/proofs.sh` with `tla2tools.jar` 1.8.0, checksum-p
 
 2026-11-19: `make proofs` ran locally: TLC reports no error, 1,068 distinct states (same as the cross-check). `tools/ci/mutations.py` catches all 4 guard mutations with the expected invariant (`NoSelfApproval`, `AuditBeforeExec` twice, `KillWins`). Ledger updated. The law-test subtask stays open: LAW-10 and LAW-15 tests come with SB-403 and SB-406.
 
-**Left:** two reviewers (proofs are a two-reviewer area, DoD) and one green `proofs` job in CI on a real push; the folder isn't a git repository yet, so CI hasn't run. Keep *In review* until both.
+2026-11-19: first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams).
+
+**Left:** two reviewers (proofs are a two-reviewer area, DoD).
 
 ## Definition of done
 

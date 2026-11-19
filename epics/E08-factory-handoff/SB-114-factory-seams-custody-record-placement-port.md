@@ -47,7 +47,7 @@ Hand-off is planned for W7; these v1 seams make it a workflow later instead of a
 
 There was no red phase for the law test, because the code it tests already existed. Instead, its self-test shows that a missing custodian and a dead root key are both caught. The seams are listed in the devlog design note.
 
-**Left:** review by the user, and the first green CI run. Hand-off itself is W7.
+**Left:** review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)). Hand-off itself is W7.
 
 ## Definition of done
 

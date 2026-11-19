@@ -45,7 +45,7 @@ The kernel has one entry point and three answers; unknown is never allow.
 
 LAW-03 gains `TestLAW03_PolicyUnknownRefuses`, red first, then green. It injects engine errors, timeouts, panics and invalid values, plus other-tenant resources and missing scopes. A "not denied means allowed" caller is caught.
 
-**Left:** policies are loaded from files for now; loading the tenant's policies from the release bundle is SB-503. Also left: review by the user, and the first green CI run.
+**Left:** policies are loaded from files for now; loading the tenant's policies from the release bundle is SB-503. Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
 
 ## Definition of done
 

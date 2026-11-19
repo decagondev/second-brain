@@ -6,8 +6,8 @@ Read `AGENTS.md` first: those rules apply to every change. This file says where 
 
 - **W0 (Manual and Laws):** 10 Done, 6 In review. `make check` is green on a clean clone.
   - SB-004, SB-005, SB-014: need two human reviewers (sign-off tables in `docs/adr/README.md` and `docs/07-threat-model.md`).
-  - SB-011, SB-012, SB-013: models and all 13 mutations pass locally (2026-11-19, devlog). Left: two reviewers and the first green CI `proofs` job.
-- **W1 (First Cell):** all 13 tickets In review (2026-11-19). Each ticket's Progress section says what's left: user review, the first CI run, and the real-cloud items that wait for a cloud adapter (ADR-0018). W2 can start once the user has reviewed.
+  - SB-011, SB-012, SB-013: models and all 13 mutations pass, locally and in CI (2026-11-19). Left: two reviewers.
+- **W1 (First Cell):** all 13 tickets In review (2026-11-19). CI is green on `main`. Each ticket's Progress section says what's left: user review, and the real-cloud items that wait for a cloud adapter (ADR-0018). W2 can start once the user has reviewed.
 - Status of every ticket: `epics/README.md` (Progress) and each ticket's `Status` row and Progress section.
 
 ## Decisions for W1 (confirm with the user before acting)

@@ -81,7 +81,7 @@
 - The first cell-data port, <code>ports.People</code>, takes a <code>Scope</code> on every method. Ports may now import <code>core/tenancy</code> and nothing else (architecture table, depguard and <code>deps.py</code>).
 - Sessions, the directory's auth side and SCIM run before a scope exists, by design. The registry and placement are control-plane ports with no tenant data. Every cell-data port from here on takes a <code>Scope</code> (SB-2xx, SB-3xx).</p>
 <p>LAW-02 gains <code>TestLAW02_ScopeIsTheOnlyWayIn</code>, red first, then green. Other tenants' sessions get no scope, adversarial lookups of other tenants' ids find nothing, and a missing scope is an error. A directory that ignores the scope is caught.</p>
-<p><strong>Left:</strong> review by the user, and the first green CI run.</p>
+<p><strong>Left:</strong> review by the user, (first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams)).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-108-tenant-scoped-request-context.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

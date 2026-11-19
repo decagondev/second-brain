@@ -44,7 +44,7 @@ A leaver must lose access within minutes, not at the next sync.
 
 LAW-12 has its first law test: red first, then green. It runs on a fake clock, with and without a lost revocation fan-out, and also requires that other users keep working. A cell that ignores the directory after a lost fan-out is caught.
 
-**Left:** the production directory lives in the cell database. The SCIM token's vault adapter comes with the secrets work. Audit rows for revocations (`kind=access`) wait for SB-401. Also left: review by the user, and the first green CI run.
+**Left:** the production directory lives in the cell database. The SCIM token's vault adapter comes with the secrets work. Audit rows for revocations (`kind=access`) wait for SB-401. Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
 
 ## Definition of done
 

@@ -75,7 +75,7 @@
 </ul>
 <h2 id="progress">Progress</h2>
 <p>2026-11-19: built. <code>internal/core/plan</code> turns a manifest into resources (cell, settings, connectors, excludes, agents, workflows) and diffs them against the applied state. <code>ports.Registry</code> is the new port. <code>internal/adapters/registry/localfs</code> serves <code>--endpoint file:///DIR</code> until the control plane exists (SB-105). It answers "no cell" only when the registry directory exists and has no record; anything else is <code>EUNAVAIL</code>. A region change fails with <code>EMANIFEST</code>. Apply without <code>--plan</code> is still <code>ENOTIMPL</code> (SB-104). Golden tests cover both sb-tenant(1) examples byte for byte, every line shape, stable JSON, and a pilot-to-full smoke test through the real binary. LAW-16 gains a plan-side law test.</p>
-<p><strong>Left:</strong> review by the user, and the first green CI run.</p>
+<p><strong>Left:</strong> review by the user, (first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams)).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-102-sb-tenant-apply-plan-dry-run.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

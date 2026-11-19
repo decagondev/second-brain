@@ -76,7 +76,8 @@
 <h2 id="progress">Progress</h2>
 <p>CI job <code>proofs</code> runs <code>tools/ci/proofs.sh</code> with <code>tla2tools.jar</code> 1.8.0, checksum-pinned. State names match <code>sb-approvals(7)</code>. The Python cross-check passes, and all 5 guard mutations produce counterexamples.</p>
 <p>2026-11-19: <code>make proofs</code> ran locally: TLC reports no error, 1,068 distinct states (same as the cross-check). <code>tools/ci/mutations.py</code> catches all 4 guard mutations with the expected invariant (<code>NoSelfApproval</code>, <code>AuditBeforeExec</code> twice, <code>KillWins</code>). Ledger updated. The law-test subtask stays open: LAW-10 and LAW-15 tests come with SB-403 and SB-406.</p>
-<p><strong>Left:</strong> two reviewers (proofs are a two-reviewer area, DoD) and one green <code>proofs</code> job in CI on a real push; the folder isn't a git repository yet, so CI hasn't run. Keep <em>In review</em> until both.</p>
+<p>2026-11-19: first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams).</p>
+<p><strong>Left:</strong> two reviewers (proofs are a two-reviewer area, DoD).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E00-foundations/SB-011-approvals-model-in-tla-checked-in-ci.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

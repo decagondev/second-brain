@@ -76,7 +76,8 @@
 <h2 id="progress">Progress</h2>
 <p><code>Rollout.tla</code> now models non-atomic rollback (BUG-0001 fixed in the model): revoked cells drain, then redeploy. The Python cross-check passes (6,290 states), and 4 mutations are caught, including dropping the promote guard.</p>
 <p>2026-11-19: <code>make proofs</code> ran locally: TLC reports no error, 6,290 distinct states (same as the cross-check). All 4 mutations are caught: no promote guard gives <code>OneBehindMax</code>, ungated promote gives <code>OnlyGatedRuns</code>, and deploying a revoked release or rolling back without draining both give <code>RevokedOnlyWhileDraining</code>. LAW-06 and LAW-08 are Modelled. The law-test subtask stays open for SB-506 and SB-507.</p>
-<p><strong>Left:</strong> two reviewers (proofs are a two-reviewer area, DoD) and one green <code>proofs</code> job in CI on a real push; the folder isn't a git repository yet, so CI hasn't run. Keep <em>In review</em> until both.</p>
+<p>2026-11-19: first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams).</p>
+<p><strong>Left:</strong> two reviewers (proofs are a two-reviewer area, DoD).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E00-foundations/SB-012-rollout-model-in-tla-checked-in-ci.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

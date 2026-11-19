@@ -40,7 +40,9 @@ Channel and ring rules interact with rollback in ways that are easy to get wrong
 
 2026-11-19: `make proofs` ran locally: TLC reports no error, 6,290 distinct states (same as the cross-check). All 4 mutations are caught: no promote guard gives `OneBehindMax`, ungated promote gives `OnlyGatedRuns`, and deploying a revoked release or rolling back without draining both give `RevokedOnlyWhileDraining`. LAW-06 and LAW-08 are Modelled. The law-test subtask stays open for SB-506 and SB-507.
 
-**Left:** two reviewers (proofs are a two-reviewer area, DoD) and one green `proofs` job in CI on a real push; the folder isn't a git repository yet, so CI hasn't run. Keep *In review* until both.
+2026-11-19: first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams).
+
+**Left:** two reviewers (proofs are a two-reviewer area, DoD).
 
 ## Definition of done
 

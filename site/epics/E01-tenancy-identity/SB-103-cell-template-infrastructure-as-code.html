@@ -84,7 +84,7 @@
 - <code>internal/adapters/placement/local</code> passes the contract and refuses unreadable records ("unknown" is not "absent"), identity mismatches and unsafe names.
 - No account id appears anywhere. Cells are stamped into the mock accounts <code>acct-a</code> to <code>acct-d</code>.</p>
 <p>LAW-02 gains a cell-level law test, <code>TestLAW02_CellsShareNothing</code>, which was red first (<code>not implemented</code>) and is green now. The red ratchet takes per-test lines so the retrieval-level test can stay red until SB-301.</p>
-<p><strong>Left:</strong> the IaC module and real-cloud stamping arrive with the first cloud adapter (ADR-0018). Also left: review by the user, and the first green CI run.</p>
+<p><strong>Left:</strong> the IaC module and real-cloud stamping arrive with the first cloud adapter (ADR-0018). Also left: review by the user, (first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams)).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

@@ -39,7 +39,9 @@ CI job wired with `alloy.jar` 6.2.0, checksum-pinned. `proofs.sh` only passes th
 
 2026-11-19: first real run. The planned flags were wrong: Alloy 6.2 `exec` runs only the default command, and on Windows the Java launcher expands a `*` argument. `proofs.sh` now runs each `check` by name (`-c NAME -t none`), needs `UNSAT` for each, and needs the `run SomeCitedAnswer` to be `SAT` so the model isn't vacuous. All 5 checks are UNSAT at scope 6. Mutation `context = candidates - live.Deny` makes `UnknownNeverUsed`, `MissingNeverUsed` and `CitedImpliesLiveAllow` SAT, as expected.
 
-**Left:** two reviewers (proofs are a two-reviewer area, DoD) and one green `proofs` job in CI on a real push; the folder isn't a git repository yet, so CI hasn't run. Keep *In review* until both.
+2026-11-19: first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams).
+
+**Left:** two reviewers (proofs are a two-reviewer area, DoD).
 
 ## Definition of done
 
