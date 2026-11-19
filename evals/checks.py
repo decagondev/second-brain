@@ -1,4 +1,5 @@
 """Expectation checks from sb-eval(5). Each returns (passed, detail)."""
+from .faithfulness import claim_support
 
 
 def _cites(res):
@@ -21,7 +22,7 @@ def uncited_max(res, n):
 
 
 def faithful_min(res, x):
-    scores = [c.get("support", 0.0) for c in res.get("claims", []) if c.get("cites")]
+    scores = [claim_support(c) for c in res.get("claims", []) if c.get("cites")]
     worst = min(scores) if scores else 0.0  # no cited claims cannot demonstrate faithfulness
     return worst >= x, f"worst claim support {worst:.2f} (min {x})"
 
@@ -52,3 +53,10 @@ def evaluate(res, expect):
         f = CHECKS.get(name)
         out.append((name, *(f(res, arg) if f else (False, f"unknown expectation {name!r}"))))
     return out
+
+
+def worst_support(res):
+    """The lowest support of any cited claim (None when nothing is cited)."""
+    scores = [claim_support(c) for c in res.get("claims", []) if c.get("cites")]
+    return min(scores) if scores else None
+

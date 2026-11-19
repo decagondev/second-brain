@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.6 Citation-faithfulness eval (SB-309)
+
+**Wave/slice:** W3 / S3.6 · **Author:** platform lead + Claude · **Status:** In review (`sb tenant verify`, staging model)
+
+**What:** A strict lexical support scorer. `tools/evalcell`, a local cell that runs the real ask path over a fixture world. The shared `citation` suite, and per-tenant golden questions in `tenants/<name>/evals/`. All of it runs in `make evals`, including a self-test that a misattributing model fails. The manual changed first: sb-eval(5) gained Faithfulness, Worlds for the local cell and Tenant golden questions, sb-eval(1) the new models and `--tenant-dir`, and sb-evals(7) Faithfulness.
+
+**Why this way:** The scorer is lexical, and it zeroes any claim with a number the source doesn't say. It can't be fooled into a high score, which matters more for a gate than catching every good paraphrase. A model judge can replace it once one is pinned in a release. The eval cell is a separate tool, not a CLI command, so the product CLI stays as specified. It reuses every production package and swaps only the model for a deterministic one. A tenant's gate may only be stricter than the shared gate.
+
+**Learned:** Building the local cell found BUG-0007: the agent never gave connectors the asker's email, so real connectors would have refused everything. Our fakes keyed on ids, real connectors key on emails, and no test put the two together. The eval cell now does, on every `make check`. Also, chunk spans index into the normalised "title, blank line, text", not the text alone. That's easy to get wrong when quoting a span back.
+
+**Laws:** LAW-14 is now measured as well as enforced. LAW-04 and LAW-05 are still the only red ones.
+
+**Next:** SB-310, feedback capture (`POST /v1/feedback`).
+
 ## 2026-11-19 S3.5 Slack `/ask` (SB-308)
 
 **Wave/slice:** W3 / S3.5 · **Author:** platform lead + Claude · **Status:** In review (real Slack workspace)

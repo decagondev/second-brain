@@ -61,3 +61,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-01, LAW-14 | Tested (extended) | SB-306: the ask-level law tests run through the real ask agent and composer; `TestLAW14_AskAnswersCitedOrLabelled` added, with a mutation that cites refused candidates caught |
 | 2026-11-19 | LAW-14 | Tested (extended) | SB-307: the web UI renders every claim as cited or labelled Uncited, never plain text; property test over random answers, mutation caught |
 | 2026-11-19 | LAW-01 | Tested (extended) | SB-308: `TestLAW01_ChatAnswersCiteOnlyWhatTheAskerCanOpen`, red first, green through the Slack app, the email-to-directory mapping and the ask agent; a wrong-person mutation is caught |
+| 2026-11-19 | LAW-14 | Tested (measured) | SB-309: the citation suite measures support per claim on the local cell; a misattributing model must fail it in `make evals` |

@@ -1,0 +1,14 @@
+# acme-logistics golden questions (SB-309). Named tenant/acme-logistics when run; the
+# gate may only be stricter than the shared citation threshold (sb-eval(5)).
+suite: golden
+world: .
+gate: { score_min: 0.95 }
+cases:
+  - id: acme-g001
+    as: usr_alice
+    ask: "Who approves refunds under 500?"
+    expect: { cites_any: ["docs:refund-policy@1"], faithful_min: 0.9 }
+  - id: acme-g002
+    as: usr_bob
+    ask: "When do express shipments arrive?"
+    expect: { cites_any: ["docs:shipping-sla@1"], faithful_min: 0.9 }

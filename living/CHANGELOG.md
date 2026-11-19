@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Citation-faithfulness eval (S3.6: SB-309): a strict lexical support scorer, a local eval cell running the real ask path over fixture worlds, the shared `citation` suite and per-tenant golden questions in `tenants/<name>/evals/`, all in `make evals`.
 - Slack `/ask` (S3.5: SB-308): signed and workspace-checked requests, one-active-user identity mapping by email, ephemeral answers through `response_url`, and a Share button that posts citation links only.
 - Web chat UI (S3.4: SB-307): React, Vite and TypeScript, served by the cell at `/` with a self-only CSP; citation chips, an "Uncited" label, notices, and axe-checked accessibility. `make web` and a CI `web` job.
 - `POST /v1/ask` and `GET /v1/traces/{id}` (S3.3: SB-306): the ask agent, conversations that re-check every source, traces with decision lists, and the sb-api(3) error shape.
@@ -48,6 +49,10 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - CI jobs: check, manual-diff, diagrams, proofs (TLC and Alloy, checksum-pinned).
 - `ENOTIMPL` error code. ADR-0016 (standard library only in W0).
 - `tools/ci/mutations.py`: the 13 model mutation checks, run by `make proofs`.
+
+### Fixed
+
+- The ask agent's live check now passes the asker's email to connectors, which ask their sources by email (BUG-0007).
 
 ### Changed
 

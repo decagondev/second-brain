@@ -1,0 +1,27 @@
+# Shared citation-faithfulness suite (SB-309, sb-evals(7) Faithfulness). Runs on the
+# local cell with --model extractive in make check, and on staging cells with the
+# release's model (SB-501). The gate is evals/gate.yaml `citation`.
+suite: citation
+world: fixtures/citation
+gate: { score_min: 0.92 }
+cases:
+  - id: cite-001
+    as: usr_alice
+    ask: "What approval do refunds over 500 need?"
+    expect: { cites_any: ["docs:refund-policy@1"], faithful_min: 0.9, cites_none: ["docs:fin-bonus@1"] }
+  - id: cite-002
+    as: usr_bob
+    ask: "How long do standard shipments take to arrive?"
+    expect: { cites_any: ["docs:shipping-sla@1"], faithful_min: 0.9 }
+  - id: cite-003
+    as: usr_alice
+    ask: "When do new starters receive their laptop?"
+    expect: { cites_any: ["docs:onboarding@1"], faithful_min: 0.9 }
+  - id: cite-004
+    as: usr_bob
+    ask: "What were the quarterly bonus amounts for finance?"
+    expect: { cites_none: ["docs:fin-bonus@1"] }
+  - id: cite-005
+    as: usr_fin
+    ask: "What were the quarterly bonus amounts for finance?"
+    expect: { cites_any: ["docs:fin-bonus@1"], faithful_min: 0.9, cites_none: ["docs:shipping-sla@1"] }

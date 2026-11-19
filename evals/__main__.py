@@ -1,39 +1,62 @@
-"""python3 -m evals run SUITE... [--model mock] (sb-eval(1))."""
+"""python3 -m evals run SUITE... [--model mock|extractive|misattributing] [--tenant-dir DIR] (sb-eval(1))."""
 import sys
 
-from .runner import HERE, load, run_suite
-from .targets import MockTarget
+import yaml
+
+from .runner import HERE, RUNS, load, run_suite, tenant_suites
+from .targets import LocalCell, MockTarget
+
+MODELS = ("mock", "extractive", "misattributing")
 
 
 def main(argv):
     if len(argv) < 2 or argv[0] != "run":
-        print("usage: python3 -m evals run SUITE... --model mock", file=sys.stderr)
+        print("usage: python3 -m evals run SUITE... --model mock|extractive [--tenant-dir DIR]", file=sys.stderr)
         return 2
     args, suites, model = argv[1:], [], None
     i = 0
-    while i < len(args):
-        a = args[i]
-        if a == "--model":
-            model, i = args[i + 1], i + 2
-        elif a in ("--tenant", "--release"):
-            print(f"sb eval run: {a} not built yet (SB-501) [ENOTIMPL]", file=sys.stderr)
-            return 2
-        else:
-            suites.append(a)
-            i += 1
-    if model != "mock":
-        print("sb eval run: only --model mock is built in W0; real targets arrive with SB-501 [ENOTIMPL]", file=sys.stderr)
+    try:
+        while i < len(args):
+            a = args[i]
+            if a == "--model":
+                model, i = args[i + 1], i + 2
+            elif a == "--tenant-dir":
+                shared = yaml.safe_load((HERE / "gate.yaml").read_text())["citation"]["score_min"]
+                suites.extend(tenant_suites(args[i + 1], shared))
+                i += 2
+            elif a in ("--tenant", "--release"):
+                print(f"sb eval run: {a} not built yet (SB-501) [ENOTIMPL]", file=sys.stderr)
+                return 2
+            else:
+                suites.append(load(a))
+                i += 1
+    except (ValueError, IndexError, FileNotFoundError) as e:
+        print(f"sb eval run: {e} [EUSAGE]", file=sys.stderr)
         return 2
-    print(f"{'suite':<12}{'case':<14}result")
+    if model not in MODELS:
+        print(f"sb eval run: --model must be one of {', '.join(MODELS)}; deployed cells arrive with SB-501 [ENOTIMPL]", file=sys.stderr)
+        return 2
+    print(f"{'suite':<26}{'case':<14}result")
     failed = 0
-    for s in suites:
-        suite = load(s)
-        for cid, ok, why in run_suite(suite, MockTarget(HERE / suite["world"])):
+    for suite in suites:
+        world = suite.get("_dir", HERE) / suite["world"]
+        target = MockTarget(world) if model == "mock" else LocalCell(world, model, RUNS)
+        rows, score = run_suite(suite, target)
+        for cid, ok, why in rows:
             failed += not ok
             detail = "" if ok else "  " + "; ".join(f"{n}: {d}" for n, _, d in why)
-            print(f"{suite['suite']:<12}{cid:<14}{'pass' if ok else 'FAIL'}{detail}")
+            print(f"{suite['suite']:<26}{cid:<14}{'pass' if ok else 'FAIL'}{detail}")
+        gate = suite.get("gate", {}).get("score_min")
+        if score is not None:
+            line = f"{suite['suite']:<26}{'score':<14}{score:.3f}"
+            if gate is not None:
+                line += f" (min {gate})"
+                if score < gate:
+                    failed += 1
+                    line += " FAIL"
+            print(line)
     if failed:
-        print(f"evals: {failed} case(s) failed [EEVAL]", file=sys.stderr)
+        print(f"evals: {failed} case(s) or score(s) failed [EEVAL]", file=sys.stderr)
         return 1
     return 0
 

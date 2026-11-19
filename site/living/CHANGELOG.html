@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Citation-faithfulness eval (S3.6: SB-309): a strict lexical support scorer, a local eval cell running the real ask path over fixture worlds, the shared <code>citation</code> suite and per-tenant golden questions in <code>tenants/&lt;name&gt;/evals/</code>, all in <code>make evals</code>.</li>
 <li>Slack <code>/ask</code> (S3.5: SB-308): signed and workspace-checked requests, one-active-user identity mapping by email, ephemeral answers through <code>response_url</code>, and a Share button that posts citation links only.</li>
 <li>Web chat UI (S3.4: SB-307): React, Vite and TypeScript, served by the cell at <code>/</code> with a self-only CSP; citation chips, an "Uncited" label, notices, and axe-checked accessibility. <code>make web</code> and a CI <code>web</code> job.</li>
 <li><code>POST /v1/ask</code> and <code>GET /v1/traces/{id}</code> (S3.3: SB-306): the ask agent, conversations that re-check every source, traces with decision lists, and the sb-api(3) error shape.</li>
@@ -60,6 +61,10 @@
 <li><code>ENOTIMPL</code> error code. ADR-0016 (standard library only in W0).</li>
 <li><code>tools/ci/mutations.py</code>: the 13 model mutation checks, run by <code>make proofs</code>.</li>
 </ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>The ask agent's live check now passes the asker's email to connectors, which ask their sources by email (BUG-0007).</li>
+</ul>
 <h3 id="changed">Changed</h3>
 <ul>
 <li><code>tools/ci/proofs.sh</code>: TLC runs from the model directory; Alloy runs each <code>check</code>/<code>run</code> by name (first real run, SB-013).</li>
@@ -77,7 +82,7 @@
 <li>Docs site generator <code>tools/site/build.py</code>.</li>
 <li>Factory and hand-off design: ADR-0015, architecture doc 16, <code>sb-factory(7)</code>, LAW-17 and LAW-18, <code>Handoff.tla</code>, epic E08 in wave W7, and v1 seams (SB-114 plus extra acceptance on SB-103, SB-105, SB-401, SB-506, SB-509).</li>
 </ul><p class="srcline">Source: <code>living/CHANGELOG.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#unreleased">Unreleased</a></li><li class="l3"><a href="#added">Added</a></li><li class="l3"><a href="#changed">Changed</a></li><li class="l3"><a href="#design-baseline">Design baseline</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#unreleased">Unreleased</a></li><li class="l3"><a href="#added">Added</a></li><li class="l3"><a href="#fixed">Fixed</a></li><li class="l3"><a href="#changed">Changed</a></li><li class="l3"><a href="#design-baseline">Design baseline</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

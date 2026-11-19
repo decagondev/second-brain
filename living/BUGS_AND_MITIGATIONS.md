@@ -15,6 +15,7 @@ Every defect gets an entry, including design defects found in review. Each entry
 | [BUG-0004](#bug-0004-law-generator-masked-cross-tenant-leaks) | Law generator masked cross-tenant leaks | Test harness | Fixed |
 | [BUG-0005](#bug-0005-issuer-rule-never-matched) | Issuer rule never matched | Test harness | Fixed |
 | [BUG-0006](#bug-0006-base-policy-permitted-another-tenants-agent) | Base policy permitted another tenant's agent | Design | Fixed |
+| [BUG-0007](#bug-0007-the-live-check-asked-connectors-without-the-askers-email) | The live check asked connectors without the asker's email | Code | Fixed |
 
 ## BUG-0001 Rollout model assumes atomic rollback
 
@@ -107,4 +108,18 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** `Agent`, `Tool` and `Workflow` got a `tenant` attribute in the schema, and the permit got `when { principal.tenant == resource.tenant }`. The kernel's own tenant guard (SB-109) had already been stopping this in practice.
 
 **Caught by now:** `TestLAW02_PoliciesNeverCrossTenants`, which evaluates the real policies with the kernel's guard bypassed, and its self-test. SB-112 will add the static CI check. Why it wasn't caught before: until SB-110 no test evaluated the policies themselves.
+
+## BUG-0007 The live check asked connectors without the asker's email
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-19, building the local eval cell (SB-309) | Code | SB-306 | Fixed |
+
+**Symptom:** `ask.Agent` called the live check with `UserRef{ID}` only. Drive, Slack and Linear ask their source by email, so with a real connector every verdict would have been Unknown and every answer refused. It failed closed, so nothing leaked, but no answer would have been useful.
+
+**Root cause:** The laws' world connector and the agent's unit-test fakes key their verdicts on the user id, and nothing ran the agent against an email-keyed connector.
+
+**Fix:** The agent passes the directory's primary email in `UserRef.Email` (`internal/core/ask`).
+
+**Caught by now:** `TestLiveCheckCarriesTheEmail` in `internal/core/ask`, and the citation suite in `make evals`, which runs the agent with the email-keyed mock connector. Why it wasn't caught before: no test put the agent in front of a connector that behaves like the real ones.
 

@@ -23,7 +23,7 @@ sb eval diff REL_A REL_B [--suite SUITE]
 
 Each case runs three times; the **worst** result counts.
 
-In W0 only `--model mock` is built: it answers from canned responses in the suite's fixture world, which is enough to test the runner and the expectation checks. Running against a cell (`--tenant`, `--release`) arrives with SB-501; until then those options exit with `ENOTIMPL`.
+Models: `--model mock` answers from canned responses in the suite's fixture world, which is enough to test the runner and the checks. `--model extractive` (and `misattributing`, for the self-test) runs the real ask path in a local cell over the suite's `world.yaml` (sb-eval(5)). The cell is the `tools/evalcell` program, built on first use. Suites print their citation score. `--tenant-dir DIR` adds every suite in `DIR/evals/` as `tenant/<name>`. Running against a deployed cell (`--tenant`, `--release`) arrives with SB-501; until then those options exit with `ENOTIMPL`.
 
 **diff** compares stored results for two releases and highlights regressions against the thresholds in `evals/gate.yaml`.
 

@@ -65,6 +65,12 @@
 <td>Design</td>
 <td>Fixed</td>
 </tr>
+<tr>
+<td><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007</a></td>
+<td>The live check asked connectors without the asker's email</td>
+<td>Code</td>
+<td>Fixed</td>
+</tr>
 </tbody>
 </table>
 <h2 id="bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</h2>
@@ -208,8 +214,31 @@
 <p><strong>Symptom:</strong> <code>policy/platform/base.cedar</code> had <code>permit (principal, action == Action::"use_agent", resource == Agent::"ask");</code> with no tenant condition, so the policy alone allowed a user of one tenant to use another tenant's <code>ask</code> agent.</p>
 <p><strong>Root cause:</strong> The rule "every permit carries a tenant condition" (sb-policy(5) rule 2) had no automated check yet (SB-112), and <code>Agent</code> had no <code>tenant</code> attribute to compare.</p>
 <p><strong>Fix:</strong> <code>Agent</code>, <code>Tool</code> and <code>Workflow</code> got a <code>tenant</code> attribute in the schema, and the permit got <code>when { principal.tenant == resource.tenant }</code>. The kernel's own tenant guard (SB-109) had already been stopping this in practice.</p>
-<p><strong>Caught by now:</strong> <code>TestLAW02_PoliciesNeverCrossTenants</code>, which evaluates the real policies with the kernel's guard bypassed, and its self-test. SB-112 will add the static CI check. Why it wasn't caught before: until SB-110 no test evaluated the policies themselves.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li></ul></aside>
+<p><strong>Caught by now:</strong> <code>TestLAW02_PoliciesNeverCrossTenants</code>, which evaluates the real policies with the kernel's guard bypassed, and its self-test. SB-112 will add the static CI check. Why it wasn't caught before: until SB-110 no test evaluated the policies themselves.</p>
+<h2 id="bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-19, building the local eval cell (SB-309)</td>
+<td>Code</td>
+<td>SB-306</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>ask.Agent</code> called the live check with <code>UserRef{ID}</code> only. Drive, Slack and Linear ask their source by email, so with a real connector every verdict would have been Unknown and every answer refused. It failed closed, so nothing leaked, but no answer would have been useful.</p>
+<p><strong>Root cause:</strong> The laws' world connector and the agent's unit-test fakes key their verdicts on the user id, and nothing ran the agent against an email-keyed connector.</p>
+<p><strong>Fix:</strong> The agent passes the directory's primary email in <code>UserRef.Email</code> (<code>internal/core/ask</code>).</p>
+<p><strong>Caught by now:</strong> <code>TestLiveCheckCarriesTheEmail</code> in <code>internal/core/ask</code>, and the citation suite in <code>make evals</code>, which runs the agent with the email-keyed mock connector. Why it wasn't caught before: no test put the agent in front of a connector that behaves like the real ones.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

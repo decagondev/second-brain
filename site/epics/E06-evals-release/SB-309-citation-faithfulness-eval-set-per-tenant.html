@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Faithfulness is measured, not asserted.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Suite runs in CI and on <code>sb tenant verify</code></li>
-<li class="task"><span class="box"></span>Each tenant can add golden questions in its repo folder</li>
+<li class="task"><span class="box"></span>Suite runs in CI and on <code>sb tenant verify</code> (CI: yes, in <code>make evals</code>; <code>sb tenant verify</code> is SB-601)</li>
+<li class="task done"><span class="box">✓</span>Each tenant can add golden questions in its repo folder</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Golden question format</li>
-<li class="task"><span class="box"></span>Faithfulness scorer</li>
-<li class="task"><span class="box"></span>Per-tenant suite loading</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-14</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Golden question format</li>
+<li class="task done"><span class="box">✓</span>Faithfulness scorer</li>
+<li class="task done"><span class="box">✓</span>Per-tenant suite loading</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-14</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S3.6): <code>evals/faithfulness.py</code> is the lexical scorer: the share of a claim's content words found in the cited chunk text, and 0 if the claim has a number the source doesn't. <code>faithful_min</code> uses it when a result carries no <code>support</code>, and each suite prints its citation score. <code>tools/evalcell</code> is a local cell: the real pipeline, index, live check (by email), cedar policies, ask agent and composer over a suite's <code>world.yaml</code>, with a deterministic <code>extractive</code> stand-in model and a <code>misattributing</code> one. <code>evals/suites/citation.yaml</code> runs in <code>make evals</code> (score 1.000, gate 0.92), every <code>tenants/&lt;name&gt;/evals/</code> suite runs as <code>tenant/&lt;name&gt;</code> (example: acme-logistics, gate 0.95, which must be stricter than the shared one), and <code>make evals</code> fails if the misattributing model passes. For LAW-14, the composer makes every claim cited or labelled in code; this eval measures whether the citations support the claims, and its self-test proves misattribution fails the gate. Building the local cell found BUG-0007.</p>
+<p><strong>Left:</strong> <code>sb tenant verify</code> (SB-601), and staging runs with the release's real model (SB-501), including a model judge if one is pinned.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E06-evals-release/SB-309-citation-faithfulness-eval-set-per-tenant.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

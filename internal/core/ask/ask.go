@@ -156,7 +156,13 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		}
 		query.Vector = vs[0]
 	}
-	res, err := retrieve.Context(ctx, s, ports.UserRef{ID: s.User()}, emails, a.Index, a.Auth, query)
+	// Connectors ask the source about the person by email (sb-connector(3), ACL), so the
+	// user reference carries the directory's primary email (BUG-0007).
+	who := ports.UserRef{ID: s.User()}
+	if len(emails) > 0 {
+		who.Email = emails[0]
+	}
+	res, err := retrieve.Context(ctx, s, who, emails, a.Index, a.Auth, query)
 	if err != nil {
 		return Response{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 	}

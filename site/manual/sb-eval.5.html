@@ -103,6 +103,29 @@ cases:
 </tr>
 </tbody>
 </table>
+<h3 id="faithfulness-faithful_min-and-the-citation-score">Faithfulness (<code>faithful_min</code> and the <code>citation</code> score)</h3>
+<p>Each cited claim gets a <strong>support</strong> score from 0 to 1 against the text of the chunks it cites. A result may carry <code>support</code> itself (from a model judge, or a mock); otherwise the harness computes it with the built-in <strong>lexical</strong> scorer:</p>
+<ol>
+<li>take the claim's content words: lower-cased words of 3 or more letters that aren't stop words;</li>
+<li>support is the share of those words that appear in the cited text;</li>
+<li>every number in the claim (<code>500</code>, <code>2026</code>, <code>4.5</code>) must appear in the cited text, or support is 0;</li>
+<li>a claim with no content words scores 1 if all its numbers appear, else 0.</li>
+</ol>
+<p>The lexical scorer is deliberately strict and cheap. It can't recognise a paraphrase, so a careful model can score below its true faithfulness, but it can't be talked into a high score. A suite's <strong>citation score</strong> is the mean, over its cases, of each case's worst-run lowest claim support. Uncited claims don't count toward it; <code>uncited_max</code> limits them.</p>
+<h3 id="worlds-for-the-local-cell">Worlds for the local cell</h3>
+<p><code>--model extractive</code> (and later real providers) runs the real ask path in a local cell over a world file, <code>world.yaml</code> next to the suite:</p>
+<pre><code class="language-yaml">tenant: acme-logistics
+users:
+  - { id: usr_alice, email: alice@acme-logistics.example, groups: [grp_support] }
+documents:
+  - id: refund-policy                 # cited as docs:refund-policy@&lt;version&gt;
+    title: Refund policy
+    text: &quot;Refunds over 500 need a team lead's approval.&quot;
+    viewers: [alice@acme-logistics.example]   # emails; the live check asks by email
+</code></pre>
+<p>The <code>extractive</code> model is a deterministic stand-in: for each data block it is given, it answers the block's first sentence, citing that block. It measures the pipeline, not a model. A <code>misattributing</code> model, which cites each sentence to the wrong block, exists to prove that the scorer and gate catch misattribution.</p>
+<h3 id="tenant-golden-questions">Tenant golden questions</h3>
+<p>Each tenant keeps its own suites in <code>tenants/&lt;tenant&gt;/evals/*.yaml</code>, with a <code>world.yaml</code> beside them. They're named <code>tenant/&lt;tenant&gt;</code>, whatever their <code>suite</code> field says, and run with <code>sb eval run tenant/&lt;tenant&gt;</code> (or <code>python3 -m evals run --tenant-dir tenants/&lt;tenant&gt;</code>). A tenant suite may set its own <code>gate: { score_min: N }</code>, which can only be <strong>stricter</strong> than the shared <code>citation</code> threshold. A looser one is an error.</p>
 <h3 id="gate-file">Gate file</h3>
 <pre><code class="language-yaml"># evals/gate.yaml (changes need two reviewers, one from security)
 permission: { failures_max: 0 }
@@ -126,7 +149,7 @@ cases:
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-evals.7.html">sb-evals(7)</a>, <a href="sb-eval.1.html">sb-eval(1)</a></p><p class="srcline">Source: <code>manual/sb-eval.5.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#case-fields">Case fields</a></li><li class="l3"><a href="#expectations">Expectations</a></li><li class="l3"><a href="#gate-file">Gate file</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#case-fields">Case fields</a></li><li class="l3"><a href="#expectations">Expectations</a></li><li class="l3"><a href="#faithfulness-faithful_min-and-the-citation-score">Faithfulness (faithful_min and the citation score)</a></li><li class="l3"><a href="#worlds-for-the-local-cell">Worlds for the local cell</a></li><li class="l3"><a href="#tenant-golden-questions">Tenant golden questions</a></li><li class="l3"><a href="#gate-file">Gate file</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

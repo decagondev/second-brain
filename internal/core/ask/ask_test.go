@@ -208,3 +208,30 @@ func TestModelDownIsUnavailable(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+// BUG-0007: the live check must reach the connector with the asker's email, because
+// real connectors ask their source by email.
+type emailSource struct {
+	source
+	got *[]ports.UserRef
+}
+
+func (e emailSource) ACL(ctx context.Context, u ports.UserRef, refs []ports.SourceRef) ([]ports.Verdict, error) {
+	*e.got = append(*e.got, u)
+	return e.source.ACL(ctx, u, refs)
+}
+
+func TestLiveCheckCarriesTheEmail(t *testing.T) {
+	a, _ := setup(t, &model{reply: `{"claims":[]}`})
+	var got []ports.UserRef
+	a.Auth.Connectors["docs"] = emailSource{source: source{}, got: &got}
+	a.Emails = func(context.Context, string) ([]string, error) {
+		return []string{"alice@acme.example", "a.l@acme.example"}, nil
+	}
+	if _, err := a.Ask(context.Background(), scope(t, "alice"), ask.Request{Question: "refund"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) == 0 || got[0].Email != "alice@acme.example" || got[0].ID != "alice" {
+		t.Fatalf("ACL asked about %+v, want alice with her email", got)
+	}
+}

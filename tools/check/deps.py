@@ -51,7 +51,9 @@ def issuer_problems(root):
     bad = []
     for f in Path(root).rglob("*.go"):
         rel = f.relative_to(root).as_posix()
-        if rel.startswith(("vendor/", "internal/auth/", "internal/core/tenancy/", "laws/")) or rel.endswith("_test.go"):
+        # laws/ and tools/evalcell/ are test harnesses that stand in for sign-in and never
+        # ship (SB-010, SB-309; the tools/evalcell/ exemption approved by the user 2026-11-19).
+        if rel.startswith(("vendor/", "internal/auth/", "internal/core/tenancy/", "laws/", "tools/evalcell/")) or rel.endswith("_test.go"):
             continue
         if re.search(r"\btenancy\.NewIssuer\(",f.read_text(encoding="utf-8")):
             bad.append(f"{rel} calls tenancy.NewIssuer; only internal/auth may (SB-108)")

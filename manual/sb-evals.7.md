@@ -34,6 +34,10 @@ Laws and models prove what the **code** does. But some behaviour depends on the 
 | `regression` | 0 failures; every eval-found bug becomes a case, forever |
 | `tenant/<name>` | the tenant's own thresholds; blocks that tenant's workflow only |
 
+### Faithfulness
+
+LAW-14 makes every claim cited or labelled, and LAW-01 makes every citation one the asker could open. Neither says the cited chunk **supports** the claim. The `citation` suite measures that: each claim–citation pair gets a support score (sb-eval(5), Faithfulness), and the suite's score is the mean of each case's worst run. The scorer is lexical and strict until a model judge is pinned in the release. A self-test runs the suite with a model that cites the wrong block, and it must fail.
+
 ### The gate
 
 Every release runs every suite on staging cells with the release's pinned prompts and model. Each case runs three times, and the worst run counts. If any threshold is missed, the release doesn't reach any tenant. There's no override. Thresholds change only by PR with two reviewers, one from security.

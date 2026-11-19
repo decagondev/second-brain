@@ -35,8 +35,12 @@ smoke:                 ## black-box smoke tests of the sb binary (SB-016)
 regress:               ## one test per bug, forever (SB-016)
 	@if ls tests/regress/*_test.go >/dev/null 2>&1; then $(GO) test ./tests/regress/...; fi
 	$(PY) -m unittest discover -s tests/regress -p "test_*.py" -q
-evals:                 ## eval harness against the mock model (SB-015)
+evals:                 ## eval harness: mock smoke, citation suite on the local cell, tenant suites (SB-015, SB-309)
 	$(PY) -m evals run evals/suites/smoke.yaml --model mock
+	$(PY) -m evals run evals/suites/citation.yaml --model extractive
+	@for t in tenants/*/; do $(PY) -m evals run --tenant-dir $$t --model extractive || exit 1; done
+	@! $(PY) -m evals run evals/suites/citation.yaml --model misattributing >/dev/null 2>&1 || { echo "evals: a misattributing model passed the citation suite"; exit 1; }
+	@echo "evals: the misattributing model fails the citation suite, as it must"
 examples:              ## manual and example files are valid (SB-009)
 	$(PY) tools/check/examples.py
 policy:                ## policies validate, every permit is tenant-scoped (SB-112)

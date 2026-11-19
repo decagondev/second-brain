@@ -50,6 +50,38 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `tool_calls: N` | Exactly N tool calls were attempted |
 | `not_contains: [str…]` | None of the strings (e.g. canaries) appear anywhere in output or tool arguments |
 
+### Faithfulness (`faithful_min` and the `citation` score)
+
+Each cited claim gets a **support** score from 0 to 1 against the text of the chunks it cites. A result may carry `support` itself (from a model judge, or a mock); otherwise the harness computes it with the built-in **lexical** scorer:
+
+1. take the claim's content words: lower-cased words of 3 or more letters that aren't stop words;
+2. support is the share of those words that appear in the cited text;
+3. every number in the claim (`500`, `2026`, `4.5`) must appear in the cited text, or support is 0;
+4. a claim with no content words scores 1 if all its numbers appear, else 0.
+
+The lexical scorer is deliberately strict and cheap. It can't recognise a paraphrase, so a careful model can score below its true faithfulness, but it can't be talked into a high score. A suite's **citation score** is the mean, over its cases, of each case's worst-run lowest claim support. Uncited claims don't count toward it; `uncited_max` limits them.
+
+### Worlds for the local cell
+
+`--model extractive` (and later real providers) runs the real ask path in a local cell over a world file, `world.yaml` next to the suite:
+
+```yaml
+tenant: acme-logistics
+users:
+  - { id: usr_alice, email: alice@acme-logistics.example, groups: [grp_support] }
+documents:
+  - id: refund-policy                 # cited as docs:refund-policy@<version>
+    title: Refund policy
+    text: "Refunds over 500 need a team lead's approval."
+    viewers: [alice@acme-logistics.example]   # emails; the live check asks by email
+```
+
+The `extractive` model is a deterministic stand-in: for each data block it is given, it answers the block's first sentence, citing that block. It measures the pipeline, not a model. A `misattributing` model, which cites each sentence to the wrong block, exists to prove that the scorer and gate catch misattribution.
+
+### Tenant golden questions
+
+Each tenant keeps its own suites in `tenants/<tenant>/evals/*.yaml`, with a `world.yaml` beside them. They're named `tenant/<tenant>`, whatever their `suite` field says, and run with `sb eval run tenant/<tenant>` (or `python3 -m evals run --tenant-dir tenants/<tenant>`). A tenant suite may set its own `gate: { score_min: N }`, which can only be **stricter** than the shared `citation` threshold. A looser one is an error.
+
 ### Gate file
 
 ```yaml

@@ -1,0 +1,23 @@
+# World for the shared citation suite (SB-309), run by the local cell (sb-eval(5)).
+tenant: acme-logistics
+users:
+  - { id: usr_alice, email: alice@acme-logistics.example, groups: [grp_support] }
+  - { id: usr_bob, email: bob@acme-logistics.example, groups: [grp_support] }
+  - { id: usr_fin, email: fin@acme-logistics.example, groups: [grp_finance] }
+documents:
+  - id: refund-policy
+    title: Refund policy
+    text: "Refunds over 500 need a team lead's approval. Refunds under 500 are approved by the agent handling the case."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example, fin@acme-logistics.example]
+  - id: shipping-sla
+    title: Shipping SLA
+    text: "Standard shipments arrive within 5 working days. Express shipments arrive the next working day."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example]
+  - id: fin-bonus
+    title: Q3 bonuses
+    text: "Quarterly bonus amounts for the finance team were approved in October."
+    viewers: [fin@acme-logistics.example]
+  - id: onboarding
+    title: Onboarding guide
+    text: "New starters receive their laptop on the first day. Accounts are created by IT before the start date."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example, fin@acme-logistics.example]
