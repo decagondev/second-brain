@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Secret hygiene (S4.4a: SB-411): canaries and a scanner over logs, prompts and audit, Sev-1 `secret_leak` alerts through an HTTPS webhook (ids only), audit rows redacted before hashing, a gateway `OnSecret` hook, `vault://tenants/T/canary`, and the CI scan in `tests/canary`.
 - draft-reply (S4.3c: SB-409): `POST /v1/drafts` writes a cited reply to a live-checked ticket or thread with the bundled `draft` prompt; never sends; `used`/`discarded` outcomes in `sb_drafts_total`; a draft panel in the web UI with Copy and Discard; a tenant-scoped base permit for enabled `draft-reply`.
 - The `ticket-update` workflow (S4.3b: SB-410): a strict comment template, a registry built from the manifest, idempotent Linear comments with `Find`, an eval gate in `sb tenant apply` (`EEVAL` without a passing record no more than 30 days old), and `evals run --record`.
 - Idempotency store and reconciler (S4.3a: SB-408): receipts kept by idempotency key so nothing runs twice; unconfirmed outcomes looked up by key for 24 hours, never re-executed.

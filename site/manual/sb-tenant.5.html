@@ -59,6 +59,10 @@ agents: [ask]
 <td><code>vault://tenants/TENANT/model</code></td>
 <td>the model gateway's API key (ADR-0019)</td>
 </tr>
+<tr>
+<td><code>vault://tenants/TENANT/canary</code></td>
+<td>the cell's canary secret; nothing may use it (<a href="sb-observability.7.html#canaries-and-the-secret-scanner">sb-observability(7)</a>)</td>
+</tr>
 </tbody>
 </table>
 <p>A reference is resolved through the <code>Secrets</code> port at the moment of the call, and only for the cell's own tenant: a reference to another tenant's path is refused. Resolved values are never stored in a struct field and never cached past the call. Every value resolved is also registered with the logger's redactor, so it is replaced by <code>[REDACTED]</code> anywhere it would appear in a log line: message, attribute, error or nested group. Attributes whose names contain <code>secret</code>, <code>password</code>, <code>token</code> or <code>key</code> are redacted whatever their value. For development, <code>file:///DIR</code> keeps the vault in <code>DIR/vault/tenants/…</code>, one file per secret, readable only by its owner; a file anyone else can read is refused.</p>

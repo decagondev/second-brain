@@ -7,6 +7,7 @@ import (
 
 	auditmem "example.com/second-brain/internal/adapters/audit/memory"
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/obs"
 )
 
 // The real audit chain (SB-401, SB-402): the log over the memory store, the export with
@@ -49,4 +50,35 @@ func (w *chainWorld) Verify(exp []byte) (bool, error) {
 	}
 	_, err := audit.Verify(bytes.NewReader(exp), "acme-logistics", w.signer.Key())
 	return err == nil, nil
+}
+
+// The real audit redaction (SB-411): the log scrubs every field through the cell's
+// redactor before hashing.
+func init() {
+	NewAuditSecretWorld = func() AuditSecretWorld { return newAuditSecretWorld(false) }
+}
+
+type auditSecretWorld struct {
+	red *obs.Redactor
+	cw  *chainWorld
+}
+
+func newAuditSecretWorld(noRedact bool) *auditSecretWorld {
+	w := &auditSecretWorld{red: obs.NewRedactor(), cw: newChainWorld(false)}
+	if !noRedact {
+		w.cw.log.Redact = w.red
+	}
+	return w
+}
+
+func (w *auditSecretWorld) Resolve(v string) error { w.red.Register(v); return nil }
+
+func (w *auditSecretWorld) Write(reason, state string) error {
+	_, err := w.cw.log.Write(context.Background(), audit.Event{Actor: "sys_executor", Kind: "tool_call", Subject: "tc_1", State: state, Reason: reason})
+	return err
+}
+
+func (w *auditSecretWorld) Export() (string, error) {
+	b, err := w.cw.Export()
+	return string(b), err
 }

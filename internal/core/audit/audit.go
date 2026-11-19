@@ -137,7 +137,10 @@ type Log struct {
 	Release func() string
 	Store   Store
 	Now     func() time.Time
-	mu      sync.Mutex
+	// Redact scrubs every string field before hashing: resolved secrets become [REDACTED]
+	// (sb-audit(5), Forbidden content). Nil leaves rows as written.
+	Redact interface{ Scrub(s string) string }
+	mu     sync.Mutex
 }
 
 // Write appends one event and returns the committed row. It returns only after the store
@@ -148,6 +151,11 @@ func (l *Log) Write(ctx context.Context, e Event) (Row, error) {
 	}
 	if e.Actor == "" || e.Subject == "" || e.Reason == "" {
 		return Row{}, fmt.Errorf("%w: actor, subject and reason are required", ErrInvalid)
+	}
+	if l.Redact != nil {
+		for _, f := range []*string{&e.Actor, &e.Subject, &e.State, &e.Approval, &e.PayloadSHA256, &e.Receipt, &e.Reason} {
+			*f = l.Redact.Scrub(*f)
+		}
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()

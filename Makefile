@@ -33,6 +33,7 @@ laws:                  ## law tests; expected-red laws must fail for the right r
 	$(PY) tools/check/laws.py
 smoke:                 ## black-box smoke tests of the sb binary (SB-016)
 	$(GO) test ./tests/smoke/...
+	$(GO) test ./tests/canary/...   # the CI secret scan with planted canaries (SB-411)
 regress:               ## one test per bug, forever (SB-016)
 	@if ls tests/regress/*_test.go >/dev/null 2>&1; then $(GO) test ./tests/regress/...; fi
 	$(PY) -m unittest discover -s tests/regress -p "test_*.py" -q

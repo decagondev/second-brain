@@ -91,7 +91,7 @@
 <td>No secret in prompt, log or audit</td>
 <td>Tested</td>
 <td>—</td>
-<td><code>laws/</code> canary check: resolved secrets never reach logs by any path, nor the model provider through the gateway, + self-tests</td>
+<td><code>laws/</code> canary check: resolved secrets never reach logs by any path, nor the model provider through the gateway, nor audit rows; CI canary scan (<code>tests/canary</code>), + self-tests</td>
 <td>—</td>
 <td>SB-205, SB-411</td>
 </tr>
@@ -422,6 +422,12 @@
 <td>LAW-04, LAW-05, LAW-15</td>
 <td>Tested (extended)</td>
 <td>SB-410: end to end through the manifest's registry, real cedar policies, the bus and the Linear fake; <code>TestLAW05_LinearActNeedsReceipt</code> on the Linear write</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-411: <code>TestLAW07_NoSecretInAudit</code> red first, then green; CI canary scan over logs, prompts and audit exports with a leak control</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

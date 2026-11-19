@@ -63,6 +63,8 @@ The signing key belongs to **the cell**. Its seed is a data key wrapped by the c
 
 ### Forbidden content
 
+Before a row is hashed, every string field passes through the cell's secret redactor: any value resolved from the vault is replaced with `[REDACTED]` (SB-411). So an error text that quotes a token can't carry it into the chain, and the hash covers the redacted row.
+
 Rows must never contain document text, prompts, answers, drafts, secrets or tokens. The canary scanner checks every row in CI and production (LAW-07).
 
 ### Export

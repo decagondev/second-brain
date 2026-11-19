@@ -88,7 +88,7 @@ LAW-17 hand-off leaves no unlisted access    LAW-18 the root key always has a cu
 <p><em>Checks:</em> Model (<code>Rollout.tla: OnlyGatedRuns</code>) · deploy-time verification · Watch: hourly digest attestation per cell.</p>
 <h3 id="law-07">LAW-07: No secret in prompt, log or audit</h3>
 <p>No secret (credential, token, key) appears in any prompt, log line or audit row.</p>
-<p><em>Checks:</em> canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI · Watch: the same scanner in production.</p>
+<p><em>Checks:</em> canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI (<code>tests/canary</code>, SB-411) · laws: logs, prompts and audit rows · Watch: the same scanner in production, findings are Sev-1 (<a href="sb-observability.7.html#canaries-and-the-secret-scanner">sb-observability(7)</a>).</p>
 <h3 id="law-08">LAW-08: At most one behind stable</h3>
 <p>No stable-channel tenant on the release train (custody <code>factory</code> or <code>tenant</code>) runs a release more than one behind the current stable. Detached cells are off the train (<a href="sb-factory.7.html">sb-factory(7)</a>).</p>
 <p><em>Checks:</em> Model (<code>Rollout.tla: OneBehindMax</code>). Removing the promote guard produces a counterexample · release-controller check on every promotion · Watch: hourly lag.</p>

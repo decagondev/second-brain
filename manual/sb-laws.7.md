@@ -79,7 +79,7 @@ The build running in every cell is a signed release whose bundle passed the eval
 
 No secret (credential, token, key) appears in any prompt, log line or audit row.
 
-*Checks:* canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI · Watch: the same scanner in production.
+*Checks:* canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI (`tests/canary`, SB-411) · laws: logs, prompts and audit rows · Watch: the same scanner in production, findings are Sev-1 ([sb-observability(7)](sb-observability.7.md#canaries-and-the-secret-scanner)).
 
 ### LAW-08: At most one behind stable {#law-08}
 

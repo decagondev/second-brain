@@ -39,6 +39,9 @@ type Gateway struct {
 	Retries  int           // rate-limit retries; 0 means 3
 	Backoff  time.Duration // first backoff; 0 means 200ms
 	Sleep    func(context.Context, time.Duration) error
+	// OnSecret is told when a request held a secret (the Sev-1 secret_leak alert); the
+	// request is refused either way.
+	OnSecret func(ctx context.Context)
 }
 
 // Complete sends req after the secret check. The request's Model is always the release's.
@@ -48,6 +51,9 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 	}
 	if containsSecret(g.Secrets, req) {
 		g.count("sb_model_refusals_total", "Model requests refused by the gateway.", map[string]string{"reason": "secret_in_prompt"}, 1)
+		if g.OnSecret != nil {
+			g.OnSecret(ctx)
+		}
 		return ports.ModelResponse{}, ErrSecretInPrompt
 	}
 	req.Model = g.ModelID

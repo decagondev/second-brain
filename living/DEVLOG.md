@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.4a Canaries and the secret scanner (SB-411)
+
+**Wave/slice:** W4 / S4.4a · **Author:** platform lead + Claude · **Status:** In review (running-cell wiring, source sandboxes)
+
+**What:** Canaries, a scanner, Sev-1 alerts through a webhook, redaction in the audit log, the gateway hook, and a CI scan. The manual changed first: sb-observability(7) gained "Canaries and the secret scanner", sb-audit(5) the redaction rule, sb-tenant(5) the `canary` vault path, and sb-laws(7) the checks.
+
+**Why this way:** A canary is a secret nothing legitimate ever uses, so any sighting is a leak, with no false positives to tune. The scanner learns every resolved secret too, through the same registrar as the redactor, so the two can't drift apart. Findings and alerts carry ids and line numbers, never values: an alert that quoted the leak would be a second leak. The audit log scrubs before hashing, so the chain verifies over what was actually stored.
+
+**Learned:** The first CI run found the model API key "leaking" to the model provider. It was in the `Authorization` header, which is exactly where it should go. The scan was wrong, not the code: a prompt is the request body. That's the scanner doing its job, and it sharpened the manual's definition of where prompts are scanned.
+
+**Laws:** LAW-07 now covers audit rows, with a red-first law test and a mutation. All laws green.
+
+**Next:** S4.4b, backups of the audit chain and approvals (3-2-1, WORM) and the monthly restore drill (SB-412).
+
 ## 2026-11-19 S4.3c draft-reply (SB-409)
 
 **Wave/slice:** W4 / S4.3c · **Author:** platform lead + Claude · **Status:** Done

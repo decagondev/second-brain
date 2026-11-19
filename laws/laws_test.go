@@ -175,3 +175,7 @@ func TestLAW15_ApprovalBindsOnePayload(t *testing.T) {
 func TestLAW05_LinearActNeedsReceipt(t *testing.T) {
 	Check(t, "LAW-05", 30, func(r *rand.Rand) error { return law05Connector(r, NewLinearWorld()) })
 }
+
+func TestLAW07_NoSecretInAudit(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Audit(r, NewAuditSecretWorld()) })
+}

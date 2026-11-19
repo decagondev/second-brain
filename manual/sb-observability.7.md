@@ -37,6 +37,12 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 
 Every alert links to a runbook.
 
+### Canaries and the secret scanner
+
+Each cell plants **canary secrets** (SB-411): random values that look like credentials, `sbcanary-<tenant>-<32 hex>`. One is stored in the vault at `vault://tenants/TENANT/canary`, and one is placed in a fixture document in each connected source's test space. They are registered with the log redactor like any secret. Nothing legitimate ever uses them, so seeing one anywhere is proof of a leak path.
+
+The scanner looks for every canary, and for every value resolved from the vault, in three places: each log line as it is written, each model request before it leaves the gateway, and each audit row and export. A finding names the place and the canary's id, **never the value**. It is a **Sev-1** alert (`kind: secret_leak`), sent through the alert webhook. In CI, `tests/canary` runs the ask path, the tool bus and the audit export with canaries planted and fails on any finding. The same test also shows that a path that leaks on purpose is found.
+
 ### Weekly leadership report
 
 Weekly active users ÷ seats, asks, cited-answer rate, top uncited topics (as counts, never content), drafts and their approve-to-reject ratio, approved actions and receipts, spend. Delivered automatically to the tenant's approver group.

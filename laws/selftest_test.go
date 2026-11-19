@@ -650,3 +650,10 @@ func TestSelf_LAW15MutationIsCaught(t *testing.T) {
 		t.Error("LAW-15: approving without checking the echoed hash was not caught")
 	}
 }
+
+// LAW-07's audit check catches a log that doesn't redact.
+func TestSelf_LAW07AuditMutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law07Audit(r, newAuditSecretWorld(true)) }) {
+		t.Error("LAW-07: an audit log without redaction was not caught")
+	}
+}

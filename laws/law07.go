@@ -163,3 +163,48 @@ func law07Prompt(r *rand.Rand, w PromptWorld) error {
 	}
 	return nil
 }
+
+// AuditSecretWorld writes audit rows whose text may quote a resolved secret (an error
+// from a target, say) and exports the chain.
+type AuditSecretWorld interface {
+	Resolve(value string) error
+	Write(reason, state string) error
+	Export() (string, error)
+}
+
+// NewAuditSecretWorld builds the system under test.
+var NewAuditSecretWorld = func() AuditSecretWorld { return pendingAuditSecret{} }
+
+type pendingAuditSecret struct{}
+
+func (pendingAuditSecret) Resolve(string) error       { return nil }
+func (pendingAuditSecret) Write(string, string) error { return nil }
+func (pendingAuditSecret) Export() (string, error) {
+	return "", fmt.Errorf("%w: audit redaction arrives with SB-411", ErrPending)
+}
+
+// law07Audit: no resolved secret reaches an audit row or export, however a writer quotes it.
+func law07Audit(r *rand.Rand, w AuditSecretWorld) error {
+	secret := fmt.Sprintf("sbcanary-acme-logistics-%032x", r.Int63())
+	if err := w.Resolve(secret); err != nil {
+		return err
+	}
+	for i := 0; i < 1+r.Intn(5); i++ {
+		reason := []string{"act failed: 401 for token " + secret, "ok", "url?key=" + secret, "plain"}[r.Intn(4)]
+		state := []string{"", "Bearer " + secret, "DidNotRun"}[r.Intn(3)]
+		if err := w.Write(reason, state); err != nil {
+			return err
+		}
+	}
+	out, err := w.Export()
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(out, `"kind"`) {
+		return fmt.Errorf("the export holds no rows; the check would prove nothing")
+	}
+	if strings.Contains(out, secret) {
+		return fmt.Errorf("a resolved secret reached the audit chain")
+	}
+	return nil
+}
