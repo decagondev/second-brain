@@ -28,6 +28,9 @@
 <p>Connectors use read-only scopes unless a gated workflow needs write access to that connector. Paths and channels listed in <code>exclude</code> are never fetched.</p>
 <h3 id="freshness">Freshness</h3>
 <p>Changes, including deletes and permission changes, are indexed with a p95 of 15 minutes or less. In the gap, the live ACL check still protects every answer (LAW-01).</p>
+<h3 id="sync">Sync</h3>
+<p>Each connector of a cell is synced by a scheduler every 60 seconds, with up to 10 seconds of jitter. One sync reads the connector's changes from its stored cursor, ingests them, and only then stores the new cursor. If anything fails, the old cursor stays, so the next run repeats the work. Ingest is idempotent, so repeating it is harmless. A cell restart resumes from the stored cursors and never from the beginning.</p>
+<p>Freshness is measured per connector as the age of the last successful sync, exported as <code>sb_ingest_last_success_age_seconds{tenant, connector}</code>. It stays well under the 15-minute target while syncs succeed, and an alert fires when it passes 15 minutes. Failures are counted in <code>sb_ingest_sync_failures_total{tenant, connector}</code>.</p>
 <h3 id="content-is-data">Content is data</h3>
 <p>Ingested text is written by people who aren't the asker, and some of it may be hostile. The sanitiser:</p>
 <ol>
@@ -81,7 +84,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-connector.3.html">sb-connector(3)</a>, <a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest pipeline</a></p><p class="srcline">Source: <code>manual/sb-ingest.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#read-only-by-default">Read-only by default</a></li><li class="l3"><a href="#freshness">Freshness</a></li><li class="l3"><a href="#content-is-data">Content is data</a></li><li class="l3"><a href="#provenance">Provenance</a></li><li class="l3"><a href="#chunks">Chunks</a></li><li class="l3"><a href="#rebuild">Rebuild</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#read-only-by-default">Read-only by default</a></li><li class="l3"><a href="#freshness">Freshness</a></li><li class="l3"><a href="#sync">Sync</a></li><li class="l3"><a href="#content-is-data">Content is data</a></li><li class="l3"><a href="#provenance">Provenance</a></li><li class="l3"><a href="#chunks">Chunks</a></li><li class="l3"><a href="#rebuild">Rebuild</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

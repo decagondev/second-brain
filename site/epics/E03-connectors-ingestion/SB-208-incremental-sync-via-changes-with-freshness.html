@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -61,20 +61,27 @@
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
 <li class="task"><span class="box"></span>p95 change-to-index time is 15 minutes or less in staging</li>
-<li class="task"><span class="box"></span>Cursor stored per connector; restart resumes</li>
+<li class="task done"><span class="box">✓</span>Cursor stored per connector; restart resumes</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Change cursor store</li>
-<li class="task"><span class="box"></span>Scheduler</li>
-<li class="task"><span class="box"></span>Freshness metric</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Change cursor store</li>
+<li class="task done"><span class="box">✓</span>Scheduler</li>
+<li class="task done"><span class="box">✓</span>Freshness metric</li>
 <li class="task"><span class="box"></span>Staging load test</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19:
+- <code>ports.CursorStore</code>, with a file adapter (<code>internal/adapters/cursor/filestore</code>) for development; cells keep cursors in their database.
+- <code>ingest.Syncer.Once</code> stores the new cursor only after the whole sync succeeded, and <code>Run</code> syncs every 60 s plus jitter.
+- <code>internal/obs</code> gains a Prometheus text registry (<code>Metrics</code>, served at <code>/metrics</code>) and <code>Freshness</code>, which exports <code>sb_ingest_last_success_age_seconds</code> and <code>sb_ingest_sync_failures_total</code> per tenant and connector.
+- A test fails the second fetch, checks the cursor didn't move, then resumes and checks both documents are indexed.</p>
+<p><strong>Left:</strong> "p95 change-to-index time is 15 minutes or less in staging" and the staging load test need a staging cell, which needs a cloud adapter (ADR-0018). Locally a sync takes milliseconds.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E03-connectors-ingestion/SB-208-incremental-sync-via-changes-with-freshness.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

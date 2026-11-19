@@ -279,3 +279,10 @@ type Index interface {
 	All(ctx context.Context, tenant string) ([]Chunk, error)
 	Drop(ctx context.Context, tenant string) error
 }
+
+// CursorStore keeps each connector's sync cursor (SB-208). found is false only when no
+// cursor was ever stored; an unreadable store is an error.
+type CursorStore interface {
+	Cursor(ctx context.Context, tenant, connector string) (c Cursor, found bool, err error)
+	SaveCursor(ctx context.Context, tenant, connector string, c Cursor) error
+}

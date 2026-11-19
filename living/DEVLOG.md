@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-208 Durable cursor, scheduler and freshness
+
+**Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** A cursor store port and file adapter, a syncer that advances the cursor only after a successful sync, a 60-second scheduler with jitter, and freshness metrics through a small Prometheus text registry in `internal/obs`. The manual changed first: sb-ingest(7) gained a Sync section.
+
+**Why this way:** "Save the cursor last" plus idempotent ingest means a crash anywhere repeats work rather than losing it, with no transaction across the source, the index and the cursor. Freshness is the age of the last success, not a queue depth, because it is the one number that says whether the 15-minute promise holds.
+
+**Learned:** The metrics registry is small enough to own (about 100 lines), which keeps OpenTelemetry out until there's a reason for it.
+
+**Laws:** none.
+
+**Next:** SB-209 (deletes and ACL changes within the freshness SLA) and SB-210 (rebuild drill), then the Slack and Linear connectors.
+
 ## 2026-11-19 SB-207 Sanitiser and injection flags
 
 **Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review
