@@ -44,6 +44,23 @@ Idempotency-Key: 01JD3QE2…
 
 Approvers fetch it with `GET /v1/actions/{id}`, which adds a `diff` against the target's current state where the connector supports it.
 
+`POST /v1/actions` takes `{ "workflow": "ticket-update", "target": "tickets:OPS-1182", "payload": { … } }`. The tool is the one the release's registry lists for that workflow; a workflow that isn't enabled is `EPERM`.
+
+`GET /v1/actions/{id}` may be read by the requester, by members of the approver group, and by auditors. Anyone else gets `EPERM`, the same as an unknown id. Besides the fields above, it returns:
+
+| Field | Meaning |
+|---|---|
+| `policy_reason` | Why policy allowed the proposal, e.g. `propose: permitted by base.cedar#10` |
+| `diff` | `[{ "field", "before", "after" }]`, one per top-level payload field that differs from the target's current state, or `null` when the connector can't read the current state. Values are shown exactly as stored |
+| `approval`, `approved_by` | Set once approved |
+| `receipt` / `reason` | Set once `Ran` / `DidNotRun` |
+
+### The approver view
+
+The web UI shows an action at `/?action=tc_…` (SB-407). It shows the target system and object, the requester, the policy reason, the expiry, the exact payload, and the diff, field by field. The page shows the hash it was given and **echoes that same hash** on approve, so a payload that changed after the page loaded is refused (`ENOAPPROVAL`) rather than approved unseen. Approve and Reject are two separate buttons. Each needs an explicit click, and each offers an optional note. The page never approves on load, on Enter, or for a list of actions at once.
+
+Approvers are told about new actions through the cell's notification hook (chat or email adapter). The notification carries the action id and workflow only, never the payload.
+
 `POST /v1/actions/{id}/approve` **must** echo the hash the approver was shown:
 
 ```json

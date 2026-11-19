@@ -66,3 +66,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-10 | → Tested | SB-403, SB-404: `TestLAW10_KillWins` red first, then green; stale-checker mutation caught |
 | 2026-11-19 | LAW-04, LAW-05 | Tested (red) → Tested | SB-405, SB-408: green on the real tool bus; the red ratchet is empty for the first time |
 | 2026-11-19 | LAW-15 | Stated → Tested | SB-406: `TestLAW15_ApprovalBindsOnePayload` red first, then green; ignore-the-echo mutation caught |
+| 2026-11-19 | LAW-15 | Tested (extended) | SB-407: the approver view echoes the hash it showed; a UI test changes the payload after load and checks the stale hash is sent, so the server refuses |

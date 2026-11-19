@@ -71,6 +71,7 @@ type Action struct {
 	Note          string          `json:"note,omitempty"`
 	Receipt       string          `json:"receipt,omitempty"`
 	Reason        string          `json:"reason,omitempty"`
+	PolicyReason  string          `json:"policy_reason,omitempty"`
 }
 
 // Store keeps actions. Move changes an action's state only if it is still in from (a

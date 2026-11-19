@@ -43,6 +43,37 @@ Idempotency-Key: 01JD3QE2…
 }
 </code></pre>
 <p>Approvers fetch it with <code>GET /v1/actions/{id}</code>, which adds a <code>diff</code> against the target's current state where the connector supports it.</p>
+<p><code>POST /v1/actions</code> takes <code>{ "workflow": "ticket-update", "target": "tickets:OPS-1182", "payload": { … } }</code>. The tool is the one the release's registry lists for that workflow; a workflow that isn't enabled is <code>EPERM</code>.</p>
+<p><code>GET /v1/actions/{id}</code> may be read by the requester, by members of the approver group, and by auditors. Anyone else gets <code>EPERM</code>, the same as an unknown id. Besides the fields above, it returns:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>policy_reason</code></td>
+<td>Why policy allowed the proposal, e.g. <code>propose: permitted by base.cedar#10</code></td>
+</tr>
+<tr>
+<td><code>diff</code></td>
+<td><code>[{ "field", "before", "after" }]</code>, one per top-level payload field that differs from the target's current state, or <code>null</code> when the connector can't read the current state. Values are shown exactly as stored</td>
+</tr>
+<tr>
+<td><code>approval</code>, <code>approved_by</code></td>
+<td>Set once approved</td>
+</tr>
+<tr>
+<td><code>receipt</code> / <code>reason</code></td>
+<td>Set once <code>Ran</code> / <code>DidNotRun</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-approver-view">The approver view</h3>
+<p>The web UI shows an action at <code>/?action=tc_…</code> (SB-407). It shows the target system and object, the requester, the policy reason, the expiry, the exact payload, and the diff, field by field. The page shows the hash it was given and <strong>echoes that same hash</strong> on approve, so a payload that changed after the page loaded is refused (<code>ENOAPPROVAL</code>) rather than approved unseen. Approve and Reject are two separate buttons. Each needs an explicit click, and each offers an optional note. The page never approves on load, on Enter, or for a list of actions at once.</p>
+<p>Approvers are told about new actions through the cell's notification hook (chat or email adapter). The notification carries the action id and workflow only, never the payload.</p>
 <p><code>POST /v1/actions/{id}/approve</code> <strong>must</strong> echo the hash the approver was shown:</p>
 <pre><code class="language-json">{ &quot;payload_sha256&quot;: &quot;5d1f0c…&quot;, &quot;note&quot;: &quot;ok&quot; }
 </code></pre>
@@ -89,7 +120,7 @@ curl -sS -X POST &quot;$SB/v1/actions/$ID/approve&quot; -H &quot;Authorization: 
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-approvals.7.html">sb-approvals(7)</a>, <a href="sb-agents.7.html">sb-agents(7)</a>, <a href="sb-connector.3.html">sb-connector(3)</a></p><p class="srcline">Source: <code>manual/sb-actions.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#drafts-draft-reply">Drafts (draft-reply)</a></li><li class="l3"><a href="#actions-gated-workflows">Actions (gated workflows)</a></li><li class="l3"><a href="#states">States</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#drafts-draft-reply">Drafts (draft-reply)</a></li><li class="l3"><a href="#actions-gated-workflows">Actions (gated workflows)</a></li><li class="l3"><a href="#the-approver-view">The approver view</a></li><li class="l3"><a href="#states">States</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

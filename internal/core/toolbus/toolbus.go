@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/approvals"
@@ -48,6 +50,15 @@ type Bus struct {
 	NewID      func(prefix string) string
 	// ActTimeout bounds one Act; 0 means 30 seconds.
 	ActTimeout time.Duration
+	// Notify tells approvers and requesters about an action (ids only, never the payload).
+	Notify func(ctx context.Context, n Notice)
+	// IsAuditor says whether a scope may read every action; nil means nobody.
+	IsAuditor func(s tenancy.Scope) bool
+}
+
+// Notice is what a notification carries: ids, never the payload (sb-actions(3)).
+type Notice struct {
+	Tenant, Action, Workflow, Approvers, Requester, Event string
 }
 
 // Errors (sb-errors(7) codes in the text).
@@ -81,18 +92,16 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 		return approvals.Action{}, err
 	}
 	// 2. Authorise.
+	var decision policy.Result
 	if tool.Consequential {
-		err := b.Policy.Require(ctx, s, "propose", policy.Entity{Type: "Workflow", ID: tool.Workflow, Tenant: b.Tenant,
+		decision = b.Policy.Authorise(ctx, s, "propose", policy.Entity{Type: "Workflow", ID: tool.Workflow, Tenant: b.Tenant,
 			Attrs: map[string]any{"name": tool.Workflow, "approvers": policy.Ref{Type: "Group", ID: tool.Approvers}}}, nil)
-		if err != nil {
-			return approvals.Action{}, fmt.Errorf("%w: %v", ErrPerm, err)
-		}
 	} else {
-		err := b.Policy.Require(ctx, s, "call_tool", policy.Entity{Type: "Tool", ID: tool.Name, Tenant: b.Tenant,
+		decision = b.Policy.Authorise(ctx, s, "call_tool", policy.Entity{Type: "Tool", ID: tool.Name, Tenant: b.Tenant,
 			Attrs: map[string]any{"name": tool.Name, "connector": tool.Connector, "consequential": false}}, nil)
-		if err != nil {
-			return approvals.Action{}, fmt.Errorf("%w: %v", ErrPerm, err)
-		}
+	}
+	if decision.Decision != policy.Allow {
+		return approvals.Action{}, fmt.Errorf("%w: %s (%s)", ErrPerm, decision.Reason, decision.Decision)
 	}
 	hash, err := approvals.Hash(tool.Workflow, c.Target, c.Payload)
 	if err != nil {
@@ -100,7 +109,7 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 	}
 	canon, _ := approvals.Canonical(c.Payload)
 	a := approvals.Action{ID: b.NewID("tc_"), Tenant: b.Tenant, Workflow: tool.Workflow, Tool: tool.Name, Target: c.Target,
-		Payload: canon, PayloadSHA256: hash, Requester: s.User(), Approvers: tool.Approvers}
+		Payload: canon, PayloadSHA256: hash, Requester: s.User(), Approvers: tool.Approvers, PolicyReason: clean(decision.Reason)}
 	if !tool.Consequential {
 		// 3. Audit row, then 5. execute (no approval needed).
 		a.State = approvals.Executing
@@ -122,7 +131,100 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 	if err := b.Actions.Put(ctx, a); err != nil {
 		return approvals.Action{}, err
 	}
+	b.notify(ctx, a, "pending_approval")
 	return a, nil
+}
+
+func (b *Bus) notify(ctx context.Context, a approvals.Action, event string) {
+	if b.Notify != nil {
+		b.Notify(ctx, Notice{Tenant: a.Tenant, Action: a.ID, Workflow: a.Workflow, Approvers: a.Approvers, Requester: a.Requester, Event: event})
+	}
+}
+
+// ToolFor is the registry's tool for a workflow, if the tenant has it enabled.
+func (b *Bus) ToolFor(workflow string) (Tool, bool) {
+	for _, t := range b.Tools {
+		if t.Consequential && t.Workflow == workflow {
+			return t, true
+		}
+	}
+	return Tool{}, false
+}
+
+// Change is one top-level payload field that differs from the target's current state.
+type Change struct {
+	Field  string          `json:"field"`
+	Before json.RawMessage `json:"before"`
+	After  json.RawMessage `json:"after"`
+}
+
+// Current is implemented by connectors that can read a target's current state, so
+// approvers see a diff (sb-actions(3)).
+type Current interface {
+	Current(ctx context.Context, target string) (json.RawMessage, error)
+}
+
+// View is an action as GET /v1/actions/{id} returns it.
+type View struct {
+	approvals.Action
+	Diff []Change `json:"diff"`
+}
+
+// Get returns an action to its requester, its approver group, or an auditor.
+func (b *Bus) Get(ctx context.Context, s tenancy.Scope, id string) (View, error) {
+	a, err := b.load(ctx, s, id)
+	if err != nil {
+		return View{}, err
+	}
+	member := false
+	for _, g := range s.Groups() {
+		member = member || g == a.Approvers
+	}
+	if a.Requester != s.User() && !member && (b.IsAuditor == nil || !b.IsAuditor(s)) {
+		return View{}, fmt.Errorf("%w: no such action", ErrPerm)
+	}
+	v := View{Action: a}
+	if cur, ok := b.Connectors[b.Tools[a.Tool].Connector].(Current); ok {
+		if before, err := cur.Current(ctx, a.Target); err == nil {
+			v.Diff = diff(before, a.Payload)
+		}
+	}
+	return v, nil
+}
+
+func diff(before, after json.RawMessage) []Change {
+	var bm, am map[string]json.RawMessage
+	if json.Unmarshal(before, &bm) != nil || json.Unmarshal(after, &am) != nil {
+		return nil
+	}
+	keys := map[string]bool{}
+	for k := range bm {
+		keys[k] = true
+	}
+	for k := range am {
+		keys[k] = true
+	}
+	var names []string
+	for k := range keys {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	out := []Change{}
+	for _, k := range names {
+		bc, _ := approvals.Canonical(orNull(bm[k]))
+		ac, _ := approvals.Canonical(orNull(am[k]))
+		if string(bc) != string(ac) {
+			out = append(out, Change{Field: k, Before: bc, After: ac})
+		}
+	}
+	return out
+}
+
+func orNull(r json.RawMessage) json.RawMessage {
+	if len(r) == 0 {
+		return json.RawMessage("null")
+	}
+	return r
 }
 
 // Edit replaces a pending or approved action's payload: back to Drafted, then proposed
@@ -316,10 +418,14 @@ func (b *Bus) act(ctx context.Context, a approvals.Action, tool Tool, key string
 	// The outcome is audited; if that write fails the state still records what happened.
 	_, _ = b.Audit.Write(ctx, audit.Event{Actor: "sys_executor", Kind: "tool_call", Subject: a.ID, State: string(state),
 		Approval: a.Approval, PayloadSHA256: a.PayloadSHA256, Receipt: receipt, Reason: reason})
-	return b.Actions.Move(ctx, b.Tenant, a.ID, approvals.Executing, func(x *approvals.Action) error {
+	final, err := b.Actions.Move(ctx, b.Tenant, a.ID, approvals.Executing, func(x *approvals.Action) error {
 		x.State, x.Receipt, x.Reason = state, receipt, reason
 		return nil
 	})
+	if err == nil && final.Workflow != "" {
+		b.notify(ctx, final, strings.ToLower(string(state)))
+	}
+	return final, err
 }
 
 // clean makes an error text safe for an audit row: no control characters, at most 200 bytes.

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Approvers see what will run, where, and what changes.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Shows target system, exact payload diff, requester, policy reason and expiry</li>
-<li class="task"><span class="box"></span>Approve and reject both require a reason field (optional text, required click)</li>
+<li class="task done"><span class="box">✓</span>Shows target system, exact payload diff, requester, policy reason and expiry</li>
+<li class="task done"><span class="box">✓</span>Approve and reject both require a reason field (optional text, required click)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>UI</li>
-<li class="task"><span class="box"></span>Diff renderer</li>
-<li class="task"><span class="box"></span>Notification hooks</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-15</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>UI</li>
+<li class="task done"><span class="box">✓</span>Diff renderer</li>
+<li class="task done"><span class="box">✓</span>Notification hooks (<code>toolbus.Bus.Notify</code>, ids only; the chat and email adapters come with the cell runtime)</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-15</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S4.2b): <code>internal/api/actions.go</code> serves <code>POST /v1/actions</code> (the registry's tool for the workflow; a disabled workflow is <code>EPERM</code>), <code>GET /v1/actions/{id}</code> (requester, approver group or auditor only, with <code>policy_reason</code> and a field-by-field <code>diff</code> when the connector implements <code>toolbus.Current</code>, else <code>null</code>), and approve and reject, with sb-errors(7) codes. API tests run the real bus over memory stores: propose, outsider read refused, approver read with diff, self-approval and wrong hash refused (409), approve to <code>Ran</code> with a receipt, reject, and float payloads refused. The web UI's approver view (<code>/?action=tc_…</code>) shows the target system and object, requester, policy reason, expiry, hash, exact payload and diff table. It echoes the hash it was shown, so the test changes the payload on the server after load and checks the stale hash is still what gets sent. Approve and Reject need explicit clicks (Enter does nothing), notes are optional, and the view is axe-clean. The bus records the policy reason on each action and calls <code>Notify</code> with ids only.</p>
+<p><strong>Left:</strong> the chat and email notification adapters (cell runtime), and a human WCAG pass with the web UI's (SB-307).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E05-actions-approvals-audit/SB-407-approver-view.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

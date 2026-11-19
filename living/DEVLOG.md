@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.2b The actions API and the approver view (SB-407)
+
+**Wave/slice:** W4 / S4.2b · **Author:** platform lead + Claude · **Status:** In review (notification adapters, human WCAG pass)
+
+**What:** HTTP handlers for actions over the tool bus, `Bus.Get` with access rules and a field diff, policy reasons and id-only notifications from the bus, and the web approver view. The manual changed first: sb-actions(3) gained the propose body, the read rules and fields, "The approver view", and the notification rule.
+
+**Why this way:** The approver view sends back the hash it displayed, not one it fetches again, so the server's hash check (LAW-15) also covers "the page went stale". A test proves it by changing the payload after the page loads. The diff compares canonical values field by field, so a key-order change isn't shown as a change. Reading an action is limited to the requester, the approver group and auditors, and anyone else gets the same answer as for an unknown id, so ids can't be probed.
+
+**Learned:** Go's JSON gives the shallower of two same-named fields precedence. That's handy for one response shape where `diff` must be `null` rather than missing, but it is easy to misread, so the handler builds that shape explicitly instead of relying on `omitempty`.
+
+**Laws:** LAW-15 now also covers the UI. Every law test is green.
+
+**Next:** S4.3, the reconciler for unknown outcomes (SB-408), draft-reply (SB-409) and the first gated workflow template (SB-410).
+
 ## 2026-11-19 S4.2a The tool bus, approvals and the executor (SB-405, SB-406, SB-408)
 
 **Wave/slice:** W4 / S4.2a · **Author:** platform lead + Claude · **Status:** In review (bundle registry, reconciler, Postgres store)

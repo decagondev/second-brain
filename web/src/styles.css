@@ -48,4 +48,14 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .feedback button[aria-pressed="true"] { outline: 2px solid var(--accent); font-weight: 700; }
 .feedback input, .feedback select { font: inherit; min-height: 44px; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
 .feedback-status { flex-basis: 100%; color: var(--muted); margin: 0; }
+.action-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.action-facts dt { font-weight: 700; }
+.action-facts dd { margin: 0; overflow-wrap: anywhere; }
+.payload { background: var(--chip-bg); padding: 0.75rem; overflow-x: auto; white-space: pre-wrap; }
+.diff { border-collapse: collapse; width: 100%; }
+.diff th, .diff td { border: 1px solid var(--muted); padding: 0.25rem 0.5rem; text-align: left; vertical-align: top; }
+.diff del { color: var(--flag); }
+.diff ins { color: var(--accent); }
+.decide { display: grid; gap: 0.5rem; margin-top: 1rem; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
