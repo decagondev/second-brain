@@ -54,7 +54,8 @@ class LocalCell:
     def prepare(self, cases):
         root = Path(__file__).resolve().parents[1]
         req = {"world": self.world, "model": self.model, "policies": str(root / "policy" / "platform"),
-               "cases": [{"key": f"{c['id']}#{a}", "as": c["as"], "ask": c["ask"]} for c in cases for a in range(self.runs)]}
+               "cases": [{"key": f"{c['id']}#{a}", "as": c["as"], "ask": c["ask"], "inject": {"acl": (c.get("inject") or {}).get("acl", "")}}
+                         for c in cases for a in range(self.runs)]}
         p = self._subprocess.run([str(self.binary())], input=self._json.dumps(req), capture_output=True, text=True)
         if p.returncode != 0:
             raise RuntimeError(f"evalcell failed: {p.stderr.strip()}")

@@ -15,6 +15,7 @@ sb-eval — run evaluation suites against a cell or a mock model
 ```text
 sb eval run  SUITE... [--tenant T] [--release REL] [--model mock]
 sb eval diff REL_A REL_B [--suite SUITE]
+sb eval gate RESULTS/REL [--stable RESULTS/REL_STABLE]
 ```
 
 ## DESCRIPTION
@@ -23,7 +24,9 @@ sb eval diff REL_A REL_B [--suite SUITE]
 
 Each case runs three times; the **worst** result counts.
 
-Models: `--model mock` answers from canned responses in the suite's fixture world, which is enough to test the runner and the checks. `--model extractive` (and `misattributing`, for the self-test) runs the real ask path in a local cell over the suite's `world.yaml` (sb-eval(5)). The cell is the `tools/evalcell` program, built on first use. Suites print their citation score. `--tenant-dir DIR` adds every suite in `DIR/evals/` as `tenant/<name>`. `--record FILE` writes `{"passed", "at", "suites", "model"}` after the run, which `sb tenant apply` reads to enable a workflow (sb-tenant(1)). It records a failed run too, so a failure is never mistaken for "not run yet". Running against a deployed cell (`--tenant`, `--release`) arrives with SB-501; until then those options exit with `ENOTIMPL`.
+Models: `--model mock` answers from canned responses in the suite's fixture world, which is enough to test the runner and the checks. `--model extractive` (and `misattributing`, for the self-test) runs the real ask path in a local cell over the suite's `world.yaml` (sb-eval(5)). The cell is the `tools/evalcell` program, built on first use. Suites print their citation score. `--tenant-dir DIR` adds every suite in `DIR/evals/` as `tenant/<name>`. `--record FILE` writes `{"passed", "at", "suites", "model"}` after the run, which `sb tenant apply` reads to enable a workflow (sb-tenant(1)). It records a failed run too, so a failure is never mistaken for "not run yet". `--results DIR --release REL` stores each suite's result as `DIR/REL/<suite>.json`: every case's pass or fail and failed checks, the failure count, the pass rate, the mean support (citation), the model and the time. With a local model, `--release` only labels the results. Running against a deployed staging cell (`--tenant`) needs a staging cell and exits `ENOTIMPL` until one exists. Runs are deterministic: the local cell and its stand-in models have no randomness, and a suite's cases run in file order (SB-501).
+
+**gate** applies `evals/gate.yaml` to one release's stored results (SB-502). For each suite in the gate file, it needs that suite's result, and checks `failures_max` against the failure count and `score_min` against the score: the mean support for `citation`, the pass rate for everything else. With `--stable`, it also checks `drop_max`: how far the score may fall below the current stable's. A missing result is a failure, never a pass. It prints one line per suite and exits 1 (`EEVAL`) if any suite fails. `sb release promote` refuses a release whose gate failed.
 
 **diff** compares stored results for two releases and highlights regressions against the thresholds in `evals/gate.yaml`.
 

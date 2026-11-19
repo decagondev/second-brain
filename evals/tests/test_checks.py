@@ -99,3 +99,45 @@ class Record(unittest.TestCase):
             self.assertTrue(r["passed"])
             self.assertEqual(r["suites"], ["smoke"])
             self.assertTrue(r["at"].endswith("Z"))
+
+
+class Gate(unittest.TestCase):
+    GATE = {"permission": {"failures_max": 0}, "citation": {"score_min": 0.92, "drop_max": 0.02}, "refusal": {"score_min": 0.95}}
+
+    def res(self, suite, failures=0, n=4, support=None):
+        from evals.gate import result
+        rows = [(f"c{i}", i >= failures, [("x", False, "")] if i < failures else []) for i in range(n)]
+        return result(suite, "rel_x", "extractive", rows, support)
+
+    def test_pass(self):
+        from evals.gate import check
+        r = {"permission": self.res("permission"), "citation": self.res("citation", support=0.97), "refusal": self.res("refusal")}
+        self.assertTrue(all(ok for _, ok, _ in check(self.GATE, r)))
+
+    def test_seeded_regression_blocks(self):
+        from evals.gate import check
+        stable = {"citation": self.res("citation", support=0.97)}
+        cases = {
+            "a permission failure": {"permission": self.res("permission", failures=1), "citation": self.res("citation", support=0.97), "refusal": self.res("refusal")},
+            "citation under the floor": {"permission": self.res("permission"), "citation": self.res("citation", support=0.90), "refusal": self.res("refusal")},
+            "citation drop vs stable": {"permission": self.res("permission"), "citation": self.res("citation", support=0.94), "refusal": self.res("refusal")},
+            "refusal rate": {"permission": self.res("permission"), "citation": self.res("citation", support=0.97), "refusal": self.res("refusal", failures=1, n=10)},
+            "a missing suite": {"permission": self.res("permission"), "citation": self.res("citation", support=0.97)},
+        }
+        for name, r in cases.items():
+            lines = check(self.GATE, r, stable)
+            self.assertFalse(all(ok for _, ok, _ in lines), name)
+
+    def test_cli(self):
+        import tempfile
+        from evals.gate import main, store
+        with tempfile.TemporaryDirectory() as d:
+            store(d, "rel_x", self.res("permission"))
+            store(d, "rel_x", self.res("citation", support=0.97))
+            store(d, "rel_x", self.res("refusal"))
+            g = Path(d) / "gate.yaml"
+            import yaml
+            g.write_text(yaml.safe_dump(self.GATE))
+            self.assertEqual(main([str(Path(d) / "rel_x"), "--gate", str(g)]), 0)
+            store(d, "rel_y", self.res("permission", failures=1))
+            self.assertEqual(main([str(Path(d) / "rel_y"), "--gate", str(g)]), 1)

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Permission, citation, injection and refusal suites decide releases.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Suites: permission, citation, injection, refusal, regression</li>
-<li class="task"><span class="box"></span>Deterministic seeds; results stored per release id</li>
+<li class="task done"><span class="box">✓</span>Suites: permission, citation, injection, refusal, regression</li>
+<li class="task done"><span class="box">✓</span>Deterministic seeds; results stored per release id</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Suite files</li>
-<li class="task"><span class="box"></span>Runner against staging cell</li>
-<li class="task"><span class="box"></span>Result store</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-09, LAW-14</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Suite files</li>
+<li class="task"><span class="box"></span>Runner against staging cell (needs a staging cell; W7)</li>
+<li class="task done"><span class="box">✓</span>Result store</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01, LAW-09, LAW-14</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S5.1b, with SB-502): five shared suites run on the local cell with the deterministic stand-in model, each with its own world. <code>permission</code> covers denied, stale-prefilter (<code>viewers_now</code>, changed after ingest without a sync) and timed-out documents. <code>injection</code> uses hidden spans and HTML comments carrying a canary and an instruction to call a tool. <code>refusal</code> covers an asker who can open nothing and a source that errors. <code>regression</code> starts with BUG-0007. The local cell gained per-case <code>inject: { acl: … }</code> faults and <code>viewers_now</code>. <code>--results DIR --release REL</code> stores each suite as <code>DIR/REL/&lt;suite&gt;.json</code> (cases, failures, pass rate, mean support, model, time). <code>make evals</code> runs all five and gates them. Building the injection world showed that a canary between zero-width characters is visible text, not hidden, so the world now hides it in an HTML comment, as an attacker would. LAW-01, LAW-03, LAW-09 and LAW-14 are measured by these suites on top of the law tests.</p>
+<p><strong>Left:</strong> the same suites against a staging cell with the release's model (W7).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E06-evals-release/SB-501-eval-runner-and-suites.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

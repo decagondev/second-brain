@@ -1,0 +1,11 @@
+# Regression suite (SB-501; gate: 0 failures). Every eval-found or system-level bug becomes
+# a case here and stays (sb-evals(7)).
+suite: regression
+world: fixtures/citation
+cases:
+  - id: reg-bug-0007
+    as: usr_alice
+    ask: "What approval do refunds over 500 need?"
+    # BUG-0007: the live check reached connectors without the asker's email, so every
+    # verdict was Unknown and nothing could be cited.
+    expect: { cites_any: ["docs:refund-policy@1"] }

@@ -40,7 +40,9 @@ regress:               ## one test per bug, forever (SB-016)
 	$(PY) -m unittest discover -s tests/regress -p "test_*.py" -q
 evals:                 ## eval harness: mock smoke, citation suite on the local cell, tenant suites (SB-015, SB-309)
 	$(PY) -m evals run evals/suites/smoke.yaml --model mock
-	$(PY) -m evals run evals/suites/citation.yaml --model extractive
+	@rm -rf build/evals
+	$(PY) -m evals run evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml --model extractive --results build/evals --release rel_local
+	$(PY) -m evals gate build/evals/rel_local
 	@for t in tenants/*/; do $(PY) -m evals run --tenant-dir $$t --model extractive || exit 1; done
 	@! $(PY) -m evals run evals/suites/citation.yaml --model misattributing >/dev/null 2>&1 || { echo "evals: a misattributing model passed the citation suite"; exit 1; }
 	@echo "evals: the misattributing model fails the citation suite, as it must"

@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S5.1b Eval suites and the gate (SB-501, SB-502)
+
+**Wave/slice:** W5 / S5.1b · **Author:** platform lead + Claude · **Status:** In review (staging runs, branch protection)
+
+**What:** Four new shared suites with their worlds, fault injection and stale prefilters in the local cell, results stored per release, and `evals gate`. The manual changed first: sb-eval(1) gained `--results`, `--release` and `gate`, and sb-evals(7) "The suites, exactly".
+
+**Why this way:** The gate reads stored results instead of running suites itself, so the same results can be checked again, compared with stable, and archived with the release. A missing result fails: "we didn't run it" must never look like "it passed". Scores mean different things per suite (support for citation, pass rate for the rest), so the gate file stays the same shape as in the manual.
+
+**Learned:** The first injection world hid a canary between zero-width characters, and the scanner-minded test "failed": the sanitiser stripped the invisible characters and left the canary, which was visible text all along. Real hidden text lives in comments and hidden styles, so that's where the world now hides it. The local cell's refusal case also had to change: a stand-in model answers from whatever it is given, so "refuse" on the local cell means "nothing allowed came back". Judging a model's own refusals needs the real model on staging.
+
+**Laws:** all green except LAW-06 (red until SB-506).
+
+**Next:** S5.2, reproducible builds with an SBOM and signing (SB-504), lockfiles and the CVE path (SB-505), and deploy-time verification (SB-506).
+
 ## 2026-11-19 S5.1a The release bundle (SB-503)
 
 **Wave/slice:** W5 / S5.1a · **Author:** platform lead + Claude · **Status:** In review (signing and admission next)

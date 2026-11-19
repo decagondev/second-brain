@@ -71,3 +71,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-07 | Tested (extended) | SB-411: `TestLAW07_NoSecretInAudit` red first, then green; CI canary scan over logs, prompts and audit exports with a leak control |
 | 2026-11-19 | LAW-11 | Tested (extended) | SB-412: the restore drill verifies the chain on every backup copy; a tampered copy is named and fails the drill |
 | 2026-11-19 | LAW-06 | Stated → Tested (red) | SB-503: `TestLAW06_OnlySignedGatedBuildsRun` written, red for the right reason until signing and admission (SB-504, SB-506) |
+| 2026-11-19 | LAW-01, LAW-03, LAW-09, LAW-14 | Tested (measured) | SB-501, SB-502: permission, injection, refusal, citation and regression suites on the local cell, gated on every `make check` |

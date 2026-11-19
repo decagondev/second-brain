@@ -42,6 +42,9 @@ type world struct {
 		Title   string   `json:"title"`
 		Text    string   `json:"text"`
 		Viewers []string `json:"viewers"`
+		// ViewersNow changes who may open the document after ingest, without a sync: the
+		// prefilter is stale and only the live check knows (permission suite).
+		ViewersNow *[]string `json:"viewers_now"`
 	} `json:"documents"`
 }
 
@@ -50,9 +53,12 @@ type input struct {
 	Model    string `json:"model"`
 	Policies string `json:"policies"`
 	Cases    []struct {
-		Key string `json:"key"`
-		As  string `json:"as"`
-		Ask string `json:"ask"`
+		Key    string `json:"key"`
+		As     string `json:"as"`
+		Ask    string `json:"ask"`
+		Inject struct {
+			ACL string `json:"acl"` // "timeout", "500" or "404" for the docs connector, this case only
+		} `json:"inject"`
 	} `json:"cases"`
 }
 
@@ -122,6 +128,11 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 	if _, err := p.Sync(ctx, ""); err != nil {
 		return nil, fmt.Errorf("ingest: %w", err)
 	}
+	for _, d := range w.Documents {
+		if d.ViewersNow != nil {
+			src.SetViewers(d.ID, (*d.ViewersNow)...) // not synced: the index keeps the old prefilter
+		}
+	}
 	engine, err := loadPolicies(in.Policies)
 	if err != nil {
 		return nil, err
@@ -157,7 +168,11 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 		if err != nil {
 			return nil, err
 		}
+		if c.Inject.ACL != "" {
+			src.QueueFaults(mock.Fault(c.Inject.ACL))
+		}
 		resp, err := agent.Ask(ctx, s, ask.Request{Question: c.Ask})
+		src.InjectFault(mock.FaultNone)
 		if err != nil {
 			out[c.Key] = result{Error: err.Error()}
 			continue

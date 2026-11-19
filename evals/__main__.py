@@ -10,10 +10,13 @@ MODELS = ("mock", "extractive", "misattributing")
 
 
 def main(argv):
+    if argv and argv[0] == "gate":
+        from .gate import main as gate_main
+        return gate_main(argv[1:])
     if len(argv) < 2 or argv[0] != "run":
         print("usage: python3 -m evals run SUITE... --model mock|extractive [--tenant-dir DIR]", file=sys.stderr)
         return 2
-    args, suites, model, record = argv[1:], [], None, None
+    args, suites, model, record, results_dir, release = argv[1:], [], None, None, None, None
     i = 0
     try:
         while i < len(args):
@@ -26,14 +29,21 @@ def main(argv):
                 shared = yaml.safe_load((HERE / "gate.yaml").read_text())["citation"]["score_min"]
                 suites.extend(tenant_suites(args[i + 1], shared))
                 i += 2
-            elif a in ("--tenant", "--release"):
-                print(f"sb eval run: {a} not built yet (SB-501) [ENOTIMPL]", file=sys.stderr)
+            elif a == "--results":
+                results_dir, i = args[i + 1], i + 2
+            elif a == "--release":
+                release, i = args[i + 1], i + 2
+            elif a == "--tenant":
+                print("sb eval run: --tenant needs a staging cell, which doesn't exist yet [ENOTIMPL]", file=sys.stderr)
                 return 2
             else:
                 suites.append(load(a))
                 i += 1
     except (ValueError, IndexError, FileNotFoundError) as e:
         print(f"sb eval run: {e} [EUSAGE]", file=sys.stderr)
+        return 2
+    if (results_dir is None) != (release is None):
+        print("sb eval run: --results and --release go together [EUSAGE]", file=sys.stderr)
         return 2
     if model not in MODELS:
         print(f"sb eval run: --model must be one of {', '.join(MODELS)}; deployed cells arrive with SB-501 [ENOTIMPL]", file=sys.stderr)
@@ -44,6 +54,9 @@ def main(argv):
         world = suite.get("_dir", HERE) / suite["world"]
         target = MockTarget(world) if model == "mock" else LocalCell(world, model, RUNS)
         rows, score = run_suite(suite, target)
+        if results_dir:
+            from .gate import result, store
+            store(results_dir, release or "rel_local", result(suite["suite"], release or "rel_local", model, rows, score))
         for cid, ok, why in rows:
             failed += not ok
             detail = "" if ok else "  " + "; ".join(f"{n}: {d}" for n, _, d in why)

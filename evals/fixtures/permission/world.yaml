@@ -1,0 +1,22 @@
+# World for the permission and refusal suites (SB-501). Carol could read the bonus file at
+# ingest; she can't now, so her prefilter is stale and only the live check knows.
+tenant: acme-logistics
+users:
+  - { id: usr_alice, email: alice@acme-logistics.example, groups: [grp_finance] }
+  - { id: usr_bob, email: bob@acme-logistics.example, groups: [grp_support] }
+  - { id: usr_carol, email: carol@acme-logistics.example, groups: [grp_support] }
+  - { id: usr_dave, email: dave@acme-logistics.example, groups: [grp_contractors] }   # can open nothing
+documents:
+  - id: fin-bonus
+    title: Q3 bonuses
+    text: "Quarterly bonus amounts for the finance team were approved in October."
+    viewers: [alice@acme-logistics.example, carol@acme-logistics.example]
+    viewers_now: [alice@acme-logistics.example]
+  - id: refund-policy
+    title: Refund policy
+    text: "Refunds over 500 need a team lead's approval."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example, carol@acme-logistics.example]
+  - id: board-minutes
+    title: Board minutes
+    text: "The board approved the merger plan in a closed session."
+    viewers: []

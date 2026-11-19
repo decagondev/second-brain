@@ -64,6 +64,44 @@ gate:   evals/gate.yaml    (no override flag)
 </table>
 <h3 id="faithfulness">Faithfulness</h3>
 <p>LAW-14 makes every claim cited or labelled, and LAW-01 makes every citation one the asker could open. Neither says the cited chunk <strong>supports</strong> the claim. The <code>citation</code> suite measures that: each claim–citation pair gets a support score (sb-eval(5), Faithfulness), and the suite's score is the mean of each case's worst run. The scorer is lexical and strict until a model judge is pinned in the release. A self-test runs the suite with a model that cites the wrong block, and it must fail.</p>
+<h3 id="the-suites-exactly-sb-501">The suites, exactly (SB-501)</h3>
+<table>
+<thead>
+<tr>
+<th>Suite</th>
+<th>File</th>
+<th>What it shows on the local cell</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>permission</code></td>
+<td><code>evals/suites/permission.yaml</code></td>
+<td>denied, stale-prefilter and timed-out documents are never cited; allowed ones are</td>
+</tr>
+<tr>
+<td><code>citation</code></td>
+<td><code>evals/suites/citation.yaml</code></td>
+<td>support of each cited claim (sb-eval(5), Faithfulness)</td>
+</tr>
+<tr>
+<td><code>injection</code></td>
+<td><code>evals/suites/injection.yaml</code></td>
+<td>hidden instructions and canaries never reach an answer; no tool calls</td>
+</tr>
+<tr>
+<td><code>refusal</code></td>
+<td><code>evals/suites/refusal.yaml</code></td>
+<td>an asker who can open nothing, or a source that can't answer, gets a refusal notice</td>
+</tr>
+<tr>
+<td><code>regression</code></td>
+<td><code>evals/suites/regression.yaml</code></td>
+<td>one case per bug, forever (BUG-0007 first)</td>
+</tr>
+</tbody>
+</table>
+<p>On the local cell, with a deterministic stand-in model, these measure the pipeline. On staging, with the release's model, they measure the model too.</p>
 <h3 id="the-gate">The gate</h3>
 <p>Every release runs every suite on staging cells with the release's pinned prompts and model. Each case runs three times, and the worst run counts. If any threshold is missed, the release doesn't reach any tenant. There's no override. Thresholds change only by PR with two reviewers, one from security.</p>
 <h3 id="ownership">Ownership</h3>
@@ -76,7 +114,7 @@ sb eval diff rel_2027-03-02_9b1c4e rel_2027-03-09_4f7a20 --suite citation
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-eval.1.html">sb-eval(1)</a>, <a href="sb-eval.5.html">sb-eval(5)</a>, <a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the gate</a></p><p class="srcline">Source: <code>manual/sb-evals.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#why-evals">Why evals</a></li><li class="l3"><a href="#suites">Suites</a></li><li class="l3"><a href="#faithfulness">Faithfulness</a></li><li class="l3"><a href="#the-gate">The gate</a></li><li class="l3"><a href="#ownership">Ownership</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#why-evals">Why evals</a></li><li class="l3"><a href="#suites">Suites</a></li><li class="l3"><a href="#faithfulness">Faithfulness</a></li><li class="l3"><a href="#the-suites-exactly-sb-501">The suites, exactly (SB-501)</a></li><li class="l3"><a href="#the-gate">The gate</a></li><li class="l3"><a href="#ownership">Ownership</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>
