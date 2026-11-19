@@ -85,3 +85,17 @@ class TenantSuites(unittest.TestCase):
             (t / "evals" / "golden.yaml").write_text("suite: g\nworld: .\ngate: { score_min: 0.5 }\ncases: []\n")
             with self.assertRaises(ValueError):
                 tenant_suites(t, 0.92)
+
+
+class Record(unittest.TestCase):
+    def test_record_written_for_pass_and_fail(self):
+        import json
+        import tempfile
+        from evals.__main__ import main
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "evals" / "acme-logistics" / "ticket-update.json"
+            self.assertEqual(main(["run", str(HERE / "suites" / "smoke.yaml"), "--model", "mock", "--record", str(out)]), 0)
+            r = json.loads(out.read_text())
+            self.assertTrue(r["passed"])
+            self.assertEqual(r["suites"], ["smoke"])
+            self.assertTrue(r["at"].endswith("Z"))

@@ -67,3 +67,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-04, LAW-05 | Tested (red) → Tested | SB-405, SB-408: green on the real tool bus; the red ratchet is empty for the first time |
 | 2026-11-19 | LAW-15 | Stated → Tested | SB-406: `TestLAW15_ApprovalBindsOnePayload` red first, then green; ignore-the-echo mutation caught |
 | 2026-11-19 | LAW-15 | Tested (extended) | SB-407: the approver view echoes the hash it showed; a UI test changes the payload after load and checks the stale hash is sent, so the server refuses |
+| 2026-11-19 | LAW-04, LAW-05, LAW-15 | Tested (extended) | SB-410: end to end through the manifest's registry, real cedar policies, the bus and the Linear fake; `TestLAW05_LinearActNeedsReceipt` on the Linear write |

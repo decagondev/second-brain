@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"example.com/second-brain/internal/adapters/placement/local"
 	"example.com/second-brain/internal/adapters/registry/localfs"
@@ -244,7 +245,10 @@ var NewApplier = func() Applier {
 	return func(root string, t manifest.Tenant) (plan.Plan, error) {
 		reg := localfs.Dir{Root: root}
 		acct := local.Account{Root: filepath.Join(root, "accounts"), Name: cell.PlacementFactoryAccount}
-		d := apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: "sb.localhost", Placement: acct, Keys: acct}
+		// Every workflow's evals have passed here: LAW-16 is about apply matching the
+		// manifest, and the eval gate has its own tests (SB-410).
+		d := apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: "sb.localhost", Placement: acct, Keys: acct,
+			Evals: passedEvals{}, Now: time.Now}
 		return apply.Run(context.Background(), d, t, nil)
 	}
 }
@@ -271,4 +275,11 @@ func law16Apply(r *rand.Rand, root string, run Applier) error {
 		return fmt.Errorf("re-applying the same manifest changed %v (err %v)", p.Changes, err)
 	}
 	return nil
+}
+
+// passedEvals says every workflow's evals passed an hour ago.
+type passedEvals struct{}
+
+func (passedEvals) EvalRecord(context.Context, string, string) (ports.EvalRecord, bool, error) {
+	return ports.EvalRecord{Passed: true, At: time.Now().Add(-time.Hour), Suites: []string{"tenant/law"}, Model: "law"}, true, nil
 }

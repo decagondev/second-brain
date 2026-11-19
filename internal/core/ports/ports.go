@@ -349,3 +349,16 @@ type Model interface {
 type UserFinder interface {
 	UsersByEmail(ctx context.Context, tenant, email string) ([]User, error)
 }
+
+// EvalRecord is the latest eval run that may enable a workflow (sb-tenant(1), SB-410).
+type EvalRecord struct {
+	Passed bool      `json:"passed"`
+	At     time.Time `json:"at"`
+	Suites []string  `json:"suites"`
+	Model  string    `json:"model"`
+}
+
+// EvalGate reads a tenant's eval record for one workflow.
+type EvalGate interface {
+	EvalRecord(ctx context.Context, tenant, workflow string) (r EvalRecord, found bool, err error)
+}

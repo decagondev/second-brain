@@ -14,6 +14,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"example.com/second-brain/internal/core/ports"
@@ -227,3 +228,28 @@ func (d Dir) PutCell(_ context.Context, c ports.CellRecord) error {
 	}
 	return os.Rename(tmp, p)
 }
+
+// EvalRecord implements ports.EvalGate: DIR/evals/TENANT/WORKFLOW.json, as written by
+// python3 -m evals run --record (sb-tenant(1), SB-410).
+func (d Dir) EvalRecord(_ context.Context, tenant, workflow string) (ports.EvalRecord, bool, error) {
+	if _, err := d.path(tenant); err != nil {
+		return ports.EvalRecord{}, false, err
+	}
+	if !workflowName.MatchString(workflow) {
+		return ports.EvalRecord{}, false, fmt.Errorf("localfs: bad workflow %q", workflow)
+	}
+	b, err := os.ReadFile(filepath.Join(d.Root, "evals", tenant, workflow+".json"))
+	if errors.Is(err, os.ErrNotExist) {
+		return ports.EvalRecord{}, false, nil
+	}
+	if err != nil {
+		return ports.EvalRecord{}, false, err
+	}
+	var r ports.EvalRecord
+	if err := json.Unmarshal(b, &r); err != nil {
+		return ports.EvalRecord{}, false, fmt.Errorf("localfs: eval record is not valid JSON: %w", err)
+	}
+	return r, true, nil
+}
+
+var workflowName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,40}$`)

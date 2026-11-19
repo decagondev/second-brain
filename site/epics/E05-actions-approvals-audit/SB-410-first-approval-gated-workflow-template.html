@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,25 @@
 <p>Each company picks one write workflow; the template makes that a manifest line.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>workflows: [ticket-update]</code> in the manifest enables it after that tenant's evals pass</li>
-<li class="task"><span class="box"></span>End-to-end test from draft to receipt</li>
+<li class="task done"><span class="box">✓</span><code>workflows: [ticket-update]</code> in the manifest enables it after that tenant's evals pass</li>
+<li class="task done"><span class="box">✓</span>End-to-end test from draft to receipt</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Workflow definition</li>
-<li class="task"><span class="box"></span>Manifest field</li>
-<li class="task"><span class="box"></span>Eval precondition</li>
-<li class="task"><span class="box"></span>E2E test</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-04, LAW-05, LAW-15</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Workflow definition</li>
+<li class="task done"><span class="box">✓</span>Manifest field</li>
+<li class="task done"><span class="box">✓</span>Eval precondition</li>
+<li class="task done"><span class="box">✓</span>E2E test</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-04, LAW-05, LAW-15</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S4.3b): <code>internal/core/workflow</code> holds the <code>ticket-update</code> template: tool <code>ticket-update.comment</code>, connector <code>tickets</code>, consequential, with a strict payload of <code>{"comment"}</code> only, 1 to 10,000 characters. <code>Registry</code> builds the bus's tools from a manifest's workflows and approval groups. The Linear connector now writes: <code>Act</code> posts one comment whose id is a UUID derived from the idempotency key, reads it back when the answer has no id, fails rather than claiming a receipt, and implements <code>Find</code> for the reconciler. The recorded fake gained <code>CommentCreate</code> and <code>CommentByID</code> with lost-answer, no-id and no-op faults. <code>sb tenant apply</code> refuses, before any step, a plan that adds or changes a workflow without a passing eval record no more than 30 days old (<code>EEVAL</code>). The local control plane reads <code>evals/TENANT/WORKFLOW.json</code>, which <code>python3 -m evals run … --record FILE</code> writes, failures included. <code>TestTicketUpdateEndToEnd</code> runs the example manifest through the registry, the real cedar base policies, the bus and the Linear fake: propose over the API, an extra payload field refused, an approver outside <code>it-leads</code> refused, approval by <code>it-leads</code>, one comment at Linear, <code>Ran</code> with <code>linear:comment/…</code>, and the audit trail <code>PendingApproval Approved Executing Ran</code>. <code>TestLAW05_LinearActNeedsReceipt</code> checks the connector never claims a receipt it doesn't have.</p>
+<p><strong>Left:</strong> a run against a real Linear sandbox with a <code>comments:create</code> key, and Postgres stores (cell runtime).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E05-actions-approvals-audit/SB-410-first-approval-gated-workflow-template.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

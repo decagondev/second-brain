@@ -25,6 +25,13 @@ type Fake struct {
 	members []membership
 	faults  []string
 	limited int
+	// Comments made through commentCreate, by comment id.
+	Comments map[string]Comment
+}
+
+// Comment is a comment the connector created (SB-410).
+type Comment struct {
+	ID, IssueID, Body string
 }
 
 // User is a workspace member.
@@ -57,7 +64,7 @@ type Issue struct {
 // New starts a fake over TLS.
 func New() *Fake {
 	f := &Fake{Key: "lin_api_fakekey0123456789", clock: time.Now().UTC(), users: map[string]*User{},
-		teams: map[string]*Team{}, issues: map[string]*Issue{}}
+		teams: map[string]*Team{}, issues: map[string]*Issue{}, Comments: map[string]Comment{}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /graphql", f.serve)
 	f.Server = httptest.NewTLSServer(mux)
@@ -197,6 +204,8 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 		fault = f.take("500", "timeout")
 	case "IssueByID":
 		fault = f.take("404")
+	case "CommentCreate":
+		fault = f.take("500", "timeout", "lost", "noid", "noop")
 	}
 	f.mu.Unlock()
 	switch fault {
@@ -221,6 +230,50 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		data = map[string]any{"users": map[string]any{"nodes": nodes}}
+	case "CommentByID":
+		c, ok := f.Comments[str("id")]
+		if !ok {
+			data = map[string]any{"comment": nil}
+			break
+		}
+		data = map[string]any{"comment": map[string]any{"id": c.ID}}
+	case "CommentCreate":
+		in, _ := req.Variables["input"].(map[string]any)
+		id, _ := in["id"].(string)
+		issue, _ := in["issueId"].(string)
+		body, _ := in["body"].(string)
+		var target *Issue
+		for _, is := range f.issues {
+			if is.ID == issue || is.Identifier == issue {
+				target = is
+			}
+		}
+		if target == nil || id == "" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []any{map[string]any{"message": "Entity not found", "extensions": map[string]any{"code": "INVALID_INPUT"}}}})
+			return
+		}
+		if _, dup := f.Comments[id]; dup {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{"errors": []any{map[string]any{"message": "Entity already exists", "extensions": map[string]any{"code": "INVALID_INPUT"}}}})
+			return
+		}
+		if fault == "noop" { // success, no id, and nothing was made
+			data = map[string]any{"commentCreate": map[string]any{"success": true, "comment": nil}}
+			break
+		}
+		f.Comments[id] = Comment{ID: id, IssueID: target.ID, Body: body}
+		target.Comments = append(target.Comments, body)
+		target.UpdatedAt = f.tick()
+		if fault == "lost" { // the comment was made, but the answer never arrives
+			w.WriteHeader(504)
+			return
+		}
+		if fault == "noid" { // made, but the answer carries no id
+			data = map[string]any{"commentCreate": map[string]any{"success": true, "comment": nil}}
+			break
+		}
+		data = map[string]any{"commentCreate": map[string]any{"success": true, "comment": map[string]any{"id": id}}}
 	case "IssueByID":
 		is, ok := f.issues[str("id")]
 		if !ok || fault == "404" {

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The `ticket-update` workflow (S4.3b: SB-410): a strict comment template, a registry built from the manifest, idempotent Linear comments with `Find`, an eval gate in `sb tenant apply` (`EEVAL` without a passing record no more than 30 days old), and `evals run --record`.
 - Idempotency store and reconciler (S4.3a: SB-408): receipts kept by idempotency key so nothing runs twice; unconfirmed outcomes looked up by key for 24 hours, never re-executed.
 - Actions API and approver view (S4.2b: SB-407): `POST /v1/actions`, `GET /v1/actions/{id}` with policy reason and field diff, approve and reject; a web approver view that echoes the shown hash and needs explicit clicks; id-only notifications.
 - Tool bus, approvals and executor (S4.2a: SB-405, SB-406, SB-408): one path for every tool call (kill check, policy, audit row, approval, execute), approvals bound to an RFC 8785 payload hash over payload, target and workflow, no self-approval, 24-hour expiry, receipts required for `Ran`, and a lint that only the bus calls `Act`. Base policies gain tenant-scoped `call_tool`, `propose` and `approve` permits.

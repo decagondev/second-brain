@@ -13,13 +13,15 @@ def main(argv):
     if len(argv) < 2 or argv[0] != "run":
         print("usage: python3 -m evals run SUITE... --model mock|extractive [--tenant-dir DIR]", file=sys.stderr)
         return 2
-    args, suites, model = argv[1:], [], None
+    args, suites, model, record = argv[1:], [], None, None
     i = 0
     try:
         while i < len(args):
             a = args[i]
             if a == "--model":
                 model, i = args[i + 1], i + 2
+            elif a == "--record":
+                record, i = args[i + 1], i + 2
             elif a == "--tenant-dir":
                 shared = yaml.safe_load((HERE / "gate.yaml").read_text())["citation"]["score_min"]
                 suites.extend(tenant_suites(args[i + 1], shared))
@@ -55,10 +57,26 @@ def main(argv):
                     failed += 1
                     line += " FAIL"
             print(line)
+    if record:
+        write_record(record, failed == 0, [x["suite"] for x in suites], model)
     if failed:
         print(f"evals: {failed} case(s) or score(s) failed [EEVAL]", file=sys.stderr)
         return 1
     return 0
+
+
+def write_record(path, passed, suites, model):
+    """The eval record sb tenant apply reads to enable a workflow (sb-tenant(1))."""
+    import datetime
+    import json
+    import os
+    from pathlib import Path
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    tmp = p.with_suffix(p.suffix + ".tmp")
+    tmp.write_text(json.dumps({"passed": passed, "at": at, "suites": sorted(set(suites)), "model": model}) + "\n")
+    os.replace(tmp, p)
 
 
 if __name__ == "__main__":

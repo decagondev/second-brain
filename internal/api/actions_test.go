@@ -114,3 +114,9 @@ func TestActionsFlow(t *testing.T) {
 		t.Errorf("float payload: %d", code)
 	}
 }
+
+func httpMux(a Actions) *http.ServeMux {
+	mux := http.NewServeMux()
+	a.Register(mux)
+	return mux
+}

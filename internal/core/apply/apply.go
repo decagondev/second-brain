@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/manifest"
@@ -26,6 +27,45 @@ type Deps struct {
 	// BaseDomain gives a new cell its default host, TENANT.BaseDomain (sb-tenancy(7)).
 	BaseDomain string
 	NewID      func() string
+	// Evals gates workflows on their eval record (SB-410); Now dates it.
+	Evals ports.EvalGate
+	Now   func() time.Time
+}
+
+// EvalMaxAge is how old a workflow's passing eval record may be.
+const EvalMaxAge = 30 * 24 * time.Hour
+
+// EvalError refuses a plan that enables a workflow whose evals haven't passed.
+type EvalError struct {
+	Workflow, Why string
+}
+
+func (e *EvalError) Error() string {
+	return fmt.Sprintf("workflow %q can't be enabled: %s; run its evals with --record (sb-eval(1))", e.Workflow, e.Why)
+}
+
+// gate checks every workflow the plan adds or changes, before any step runs.
+func gate(ctx context.Context, d Deps, tenant string, p plan.Plan) error {
+	for _, c := range p.Changes {
+		if c.Kind != plan.KindWorkflow || c.Op == plan.OpRemove {
+			continue
+		}
+		if d.Evals == nil || d.Now == nil {
+			return &EvalError{c.Name, "no eval records in this control plane"}
+		}
+		r, found, err := d.Evals.EvalRecord(ctx, tenant, c.Name)
+		switch {
+		case err != nil:
+			return &EvalError{c.Name, "its eval record can't be read: " + err.Error()}
+		case !found:
+			return &EvalError{c.Name, "no eval record"}
+		case !r.Passed:
+			return &EvalError{c.Name, "its last eval run failed"}
+		case d.Now().Sub(r.At) > EvalMaxAge:
+			return &EvalError{c.Name, "its passing eval record is older than 30 days"}
+		}
+	}
+	return nil
 }
 
 // Record is the registry record of a new cell: v1 custody is always factory
@@ -68,6 +108,9 @@ func Run(ctx context.Context, d Deps, t manifest.Tenant, done func(plan.Change))
 	}
 	p, err := plan.Make(t, applied, found)
 	if err != nil || len(p.Changes) == 0 {
+		return p, err
+	}
+	if err := gate(ctx, d, t.Tenant, p); err != nil {
 		return p, err
 	}
 	id, err := newID(d.NewID)

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
@@ -198,4 +199,48 @@ type broken struct{}
 
 func (broken) Applied(context.Context, string) ([]ports.Resource, bool, error) {
 	return nil, false, errors.New("timeout")
+}
+
+type evals map[string]ports.EvalRecord
+
+func (e evals) EvalRecord(_ context.Context, _, wf string) (ports.EvalRecord, bool, error) {
+	r, ok := e[wf]
+	return r, ok, nil
+}
+
+// SB-410: a plan that enables a workflow is refused before any step runs unless that
+// workflow's eval record passed within 30 days.
+func TestWorkflowWaitsForEvals(t *testing.T) {
+	full := tenant(t, strings.Replace(pilot, "chat: slack }", "chat: slack, tickets: jira }", 1)+
+		"workflows: [ticket-update]\napproval: { ticket-update: group:it-leads }\n")
+	now := time.Date(2027, 3, 2, 10, 0, 0, 0, time.UTC)
+	cases := map[string]evals{
+		"no record":   {},
+		"failed":      {"ticket-update": {Passed: false, At: now}},
+		"stale":       {"ticket-update": {Passed: true, At: now.Add(-31 * 24 * time.Hour)}},
+		"no evals at": nil,
+	}
+	for name, ev := range cases {
+		w := newWorld()
+		d := w.deps()
+		d.Now = func() time.Time { return now }
+		if ev != nil {
+			d.Evals = ev
+		}
+		_, err := Run(context.Background(), d, full, nil)
+		var ee *EvalError
+		if !errors.As(err, &ee) || ee.Workflow != "ticket-update" {
+			t.Errorf("%s: got %v, want an EvalError", name, err)
+		}
+		if w.writes != 0 {
+			t.Errorf("%s: %d writes before the gate refused", name, w.writes)
+		}
+	}
+	w := newWorld()
+	d := w.deps()
+	d.Now = func() time.Time { return now }
+	d.Evals = evals{"ticket-update": {Passed: true, At: now.Add(-time.Hour)}}
+	if _, err := Run(context.Background(), d, full, nil); err != nil {
+		t.Fatalf("passing record: %v", err)
+	}
 }

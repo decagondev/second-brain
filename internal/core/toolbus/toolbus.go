@@ -27,6 +27,8 @@ type Tool struct {
 	Consequential bool   `json:"consequential"`
 	Workflow      string `json:"workflow,omitempty"`  // consequential tools belong to the tenant's workflow
 	Approvers     string `json:"approvers,omitempty"` // the workflow's approver group
+	// Validate checks a payload's shape before it is hashed; nil accepts any payload.
+	Validate func(payload []byte) error `json:"-"`
 }
 
 // Checker is the kill checker as the bus uses it.
@@ -110,6 +112,11 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 	}
 	if decision.Decision != policy.Allow {
 		return approvals.Action{}, fmt.Errorf("%w: %s (%s)", ErrPerm, decision.Reason, decision.Decision)
+	}
+	if tool.Validate != nil {
+		if err := tool.Validate(c.Payload); err != nil {
+			return approvals.Action{}, err
+		}
 	}
 	hash, err := approvals.Hash(tool.Workflow, c.Target, c.Payload)
 	if err != nil {
@@ -244,6 +251,11 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 	}
 	if a.Requester != s.User() {
 		return approvals.Action{}, fmt.Errorf("%w: only the requester edits an action", ErrPerm)
+	}
+	if v := b.Tools[a.Tool].Validate; v != nil {
+		if err := v(payload); err != nil {
+			return approvals.Action{}, err
+		}
 	}
 	hash, err := approvals.Hash(a.Workflow, a.Target, payload)
 	if err != nil {

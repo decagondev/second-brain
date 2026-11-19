@@ -183,11 +183,15 @@ type Connector interface {
 <tbody>
 <tr>
 <td>Credentials</td>
-<td>A Linear API key with read access at <code>vault://tenants/TENANT/connectors/tickets</code></td>
+<td>A Linear API key with read access at <code>vault://tenants/TENANT/connectors/tickets</code>. With the <code>ticket-update</code> workflow enabled, the key also needs <code>comments:create</code></td>
 </tr>
 <tr>
 <td>Documents</td>
 <td>One document per issue: id is Linear's issue id, title <code>KEY-123 title</code>, text the description and comments. Version is <code>updatedAt</code> in microseconds</td>
+</tr>
+<tr>
+<td>Act (<code>ticket-update</code>)</td>
+<td>Target <code>tickets:&lt;KEY-123 or issue id&gt;</code>, payload <code>{"comment": "…"}</code>. Posts one comment whose id is a UUID derived from the idempotency key, so a retry finds the first comment instead of posting again. The receipt is <code>linear:comment/&lt;id&gt;</code>. An answer without an id is read back by that id, and if it isn't there, <code>Act</code> fails. <code>Find</code> (for the reconciler) looks the comment up by the same id</td>
 </tr>
 <tr>
 <td>ACL</td>

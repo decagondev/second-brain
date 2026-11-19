@@ -114,8 +114,9 @@ Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `t
 
 | Concern | Behaviour |
 |---|---|
-| Credentials | A Linear API key with read access at `vault://tenants/TENANT/connectors/tickets` |
+| Credentials | A Linear API key with read access at `vault://tenants/TENANT/connectors/tickets`. With the `ticket-update` workflow enabled, the key also needs `comments:create` |
 | Documents | One document per issue: id is Linear's issue id, title `KEY-123 title`, text the description and comments. Version is `updatedAt` in microseconds |
+| Act (`ticket-update`) | Target `tickets:<KEY-123 or issue id>`, payload `{"comment": "…"}`. Posts one comment whose id is a UUID derived from the idempotency key, so a retry finds the first comment instead of posting again. The receipt is `linear:comment/<id>`. An answer without an id is read back by that id, and if it isn't there, `Act` fails. `Find` (for the reconciler) looks the comment up by the same id |
 | ACL | Live: the user is found by email (none, or inactive → `Deny`). A **private** team's issues → `Allow` only for team members; a public team's issues → `Allow` for full members, and for guests only if they're in the team. An archived, trashed or missing issue → `Unknown` |
 | Changes | Polled from the GraphQL API, so no public endpoint is needed. The cursor holds the last `updatedAt` seen for issues and for team changes. Updated issues are content changes; archived or trashed issues are deletes; a team made private or public, or a membership added or removed, is a permission-only change for every issue in that team. An empty cursor lists every issue |
 | Rate limits | HTTP 429 or a `RATELIMITED` error is retried with backoff while the deadline allows; then `Unknown` |

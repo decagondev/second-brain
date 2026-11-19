@@ -6,6 +6,8 @@ package linear
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -41,8 +43,8 @@ type Connector struct {
 
 var _ ports.Connector = (*Connector)(nil)
 
-// ErrNotSupported is Act before SB-410.
-var ErrNotSupported = errors.New("ENOTSUP: linear connector is read-only until SB-410")
+// ErrNotSupported is kept for callers that test for it; Act is supported since SB-410.
+var ErrNotSupported = errors.New("ENOTSUP: not supported by the linear connector")
 
 func (c *Connector) APIVersion() int { return ports.ConnectorAPIVersion }
 
@@ -58,9 +60,11 @@ func (e *gqlError) Error() string { return fmt.Sprintf("linear: %d %s", e.status
 const (
 	opIssue = `query IssueByID($id: String!) { issue(id: $id) { id identifier title description updatedAt archivedAt trashed
   team { id key private members(first: 250) { nodes { id email } } } comments(first: 100) { nodes { body } } } }`
-	opUser   = `query UserByEmail($email: String!) { users(filter: { email: { eq: $email } }) { nodes { id active guest } } }`
-	opTeam   = `query TeamAccess($id: String!) { team(id: $id) { id private members(first: 250) { nodes { id } } } }`
-	opIssues = `query IssuesSince($after: String, $since: DateTimeOrDuration) { issues(first: 100, after: $after, includeArchived: true,
+	opComment     = `mutation CommentCreate($input: CommentCreateInput!) { commentCreate(input: $input) { success comment { id } } }`
+	opCommentByID = `query CommentByID($id: String!) { comment(id: $id) { id } }`
+	opUser        = `query UserByEmail($email: String!) { users(filter: { email: { eq: $email } }) { nodes { id active guest } } }`
+	opTeam        = `query TeamAccess($id: String!) { team(id: $id) { id private members(first: 250) { nodes { id } } } }`
+	opIssues      = `query IssuesSince($after: String, $since: DateTimeOrDuration) { issues(first: 100, after: $after, includeArchived: true,
   orderBy: updatedAt, filter: { updatedAt: { gte: $since } }) { nodes { id updatedAt archivedAt trashed } pageInfo { hasNextPage endCursor } } }`
 	opTeams = `query TeamsChangedSince($since: DateTimeOrDuration) { teams(filter: { updatedAt: { gt: $since } }) { nodes { id updatedAt } }
   teamMemberships(filter: { updatedAt: { gt: $since } }) { nodes { updatedAt team { id } } } }`
@@ -426,7 +430,70 @@ func (c *Connector) teamIssues(ctx context.Context, team string) ([]string, erro
 	}
 }
 
-// Act is not supported until SB-410.
-func (c *Connector) Act(context.Context, ports.Action, ports.IdempotencyKey) (ports.Receipt, error) {
-	return ports.Receipt{}, ErrNotSupported
+// Act posts one comment for the ticket-update workflow (SB-410). Target is
+// tickets:<issue identifier or id>; the payload is {"comment": "..."}. The comment id is a
+// UUID derived from the idempotency key, so a repeat finds the first comment instead of
+// posting a second one. The receipt is linear:comment/<id>.
+func (c *Connector) Act(ctx context.Context, a ports.Action, key ports.IdempotencyKey) (ports.Receipt, error) {
+	issue, ok := strings.CutPrefix(a.Target, kind+":")
+	if !ok || issue == "" || key == "" {
+		return ports.Receipt{}, fmt.Errorf("linear: act needs a tickets: target and a key")
+	}
+	var p struct {
+		Comment string `json:"comment"`
+	}
+	if err := json.Unmarshal(a.Payload, &p); err != nil || strings.TrimSpace(p.Comment) == "" {
+		return ports.Receipt{}, fmt.Errorf("linear: payload must be {\"comment\": \"…\"}")
+	}
+	if rc, found, err := c.Find(ctx, key); err != nil {
+		return ports.Receipt{}, err
+	} else if found {
+		return rc, nil
+	}
+	id := commentID(key)
+	var out struct {
+		CommentCreate struct {
+			Success bool `json:"success"`
+			Comment struct {
+				ID string `json:"id"`
+			} `json:"comment"`
+		} `json:"commentCreate"`
+	}
+	err := c.do(ctx, opComment, "CommentCreate", map[string]any{"input": map[string]any{"id": id, "issueId": issue, "body": p.Comment}}, &out)
+	if err != nil {
+		return ports.Receipt{}, err
+	}
+	if !out.CommentCreate.Success || out.CommentCreate.Comment.ID == "" {
+		// No id in the answer: read the change back by its id, or fail (sb-connector(3), Act).
+		if rc, found, err := c.Find(ctx, key); err == nil && found {
+			return rc, nil
+		}
+		return ports.Receipt{}, fmt.Errorf("ENORECEIPT: linear answered without a comment id")
+	}
+	return ports.Receipt{TargetID: "linear:comment/" + out.CommentCreate.Comment.ID}, nil
+}
+
+// Find looks a comment up by idempotency key (toolbus.Finder, the reconciler).
+func (c *Connector) Find(ctx context.Context, key ports.IdempotencyKey) (ports.Receipt, bool, error) {
+	var out struct {
+		Comment *struct {
+			ID string `json:"id"`
+		} `json:"comment"`
+	}
+	if err := c.do(ctx, opCommentByID, "CommentByID", map[string]any{"id": commentID(key)}, &out); err != nil {
+		return ports.Receipt{}, false, err
+	}
+	if out.Comment == nil || out.Comment.ID == "" {
+		return ports.Receipt{}, false, nil
+	}
+	return ports.Receipt{TargetID: "linear:comment/" + out.Comment.ID}, true, nil
+}
+
+// commentID is a version-4-shaped UUID from SHA-256 of the key.
+func commentID(key ports.IdempotencyKey) string {
+	h := sha256.Sum256([]byte("sb-linear-comment:" + string(key)))
+	h[6] = (h[6] & 0x0f) | 0x40
+	h[8] = (h[8] & 0x3f) | 0x80
+	x := hex.EncodeToString(h[:16])
+	return x[0:8] + "-" + x[8:12] + "-" + x[12:16] + "-" + x[16:20] + "-" + x[20:32]
 }

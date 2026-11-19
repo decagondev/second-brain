@@ -191,6 +191,10 @@ func TestLAW10_KillWins(t *testing.T) {
 func TestLAW15_ApprovalBindsOnePayload(t *testing.T) {
     Check(t, &quot;LAW-15&quot;, runs, func(r *rand.Rand) error { return law15(r, NewApprovalWorld()) })
 }
+
+func TestLAW05_LinearActNeedsReceipt(t *testing.T) {
+    Check(t, &quot;LAW-05&quot;, 30, func(r *rand.Rand) error { return law05Connector(r, NewLinearWorld()) })
+}
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/laws_test.go</code></p></main>
   

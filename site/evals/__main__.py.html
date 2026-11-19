@@ -33,13 +33,15 @@ def main(argv):
     if len(argv) &lt; 2 or argv[0] != &quot;run&quot;:
         print(&quot;usage: python3 -m evals run SUITE... --model mock|extractive [--tenant-dir DIR]&quot;, file=sys.stderr)
         return 2
-    args, suites, model = argv[1:], [], None
+    args, suites, model, record = argv[1:], [], None, None
     i = 0
     try:
         while i &lt; len(args):
             a = args[i]
             if a == &quot;--model&quot;:
                 model, i = args[i + 1], i + 2
+            elif a == &quot;--record&quot;:
+                record, i = args[i + 1], i + 2
             elif a == &quot;--tenant-dir&quot;:
                 shared = yaml.safe_load((HERE / &quot;gate.yaml&quot;).read_text())[&quot;citation&quot;][&quot;score_min&quot;]
                 suites.extend(tenant_suites(args[i + 1], shared))
@@ -75,10 +77,26 @@ def main(argv):
                     failed += 1
                     line += &quot; FAIL&quot;
             print(line)
+    if record:
+        write_record(record, failed == 0, [x[&quot;suite&quot;] for x in suites], model)
     if failed:
         print(f&quot;evals: {failed} case(s) or score(s) failed [EEVAL]&quot;, file=sys.stderr)
         return 1
     return 0
+
+
+def write_record(path, passed, suites, model):
+    &quot;&quot;&quot;The eval record sb tenant apply reads to enable a workflow (sb-tenant(1)).&quot;&quot;&quot;
+    import datetime
+    import json
+    import os
+    from pathlib import Path
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    at = datetime.datetime.now(datetime.timezone.utc).strftime(&quot;%Y-%m-%dT%H:%M:%SZ&quot;)
+    tmp = p.with_suffix(p.suffix + &quot;.tmp&quot;)
+    tmp.write_text(json.dumps({&quot;passed&quot;: passed, &quot;at&quot;: at, &quot;suites&quot;: sorted(set(suites)), &quot;model&quot;: model}) + &quot;\n&quot;)
+    os.replace(tmp, p)
 
 
 if __name__ == &quot;__main__&quot;:

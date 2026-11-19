@@ -3,6 +3,7 @@ package linear
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"example.com/second-brain/internal/adapters/connectors/linear/lineartest"
@@ -46,8 +47,10 @@ func (s sandbox) Refs(n int) []ports.SourceRef {
 func (s sandbox) InjectACLFault(kind string)        { s.f.FailNext(kind) }
 func (s sandbox) Edit(ref ports.SourceRef)          { s.f.Put(ref.ID, "T1", "Payroll", "edited") }
 func (s sandbox) ChangePermissions(ports.SourceRef) { s.f.Join("T1", "U3") }
-func (s sandbox) Action() (ports.Action, bool)      { return ports.Action{}, false }
-func (s sandbox) Effects() int                      { return 0 }
+func (s sandbox) Action() (ports.Action, bool) {
+	return ports.Action{Target: "tickets:FIN-1", Payload: []byte(`{"comment":"Root cause: disk full"}`)}, true
+}
+func (s sandbox) Effects() int { return len(s.f.Comments) }
 
 func TestKit(t *testing.T) {
 	f, c := setup(t)
@@ -130,5 +133,35 @@ func TestRateLimitsAreRetried(t *testing.T) {
 	vs, _ := c.ACL(context.Background(), ports.UserRef{Email: "bob@acme.example"}, []ports.SourceRef{{Kind: "tickets", ID: "a"}})
 	if vs[0] != ports.VerdictAllow {
 		t.Fatalf("after two 429s: %v", vs[0])
+	}
+}
+
+// SB-410: a lost answer leaves the comment at Linear; Find recovers its receipt, and a
+// retry with the same key doesn't post a second comment.
+func TestActLostAnswerAndFind(t *testing.T) {
+	f, c := setup(t)
+	f.AddTeam("T1", "OPS", false, "U1")
+	f.Put("i1", "T1", "Disk", "full")
+	ctx := context.Background()
+	a := ports.Action{Target: "tickets:OPS-1", Payload: []byte(`{"comment":"Root cause: disk full"}`)}
+	f.FailNext("lost")
+	if _, err := c.Act(ctx, a, "apr_9"); err == nil {
+		t.Fatal("a lost answer reported success")
+	}
+	rc, found, err := c.Find(ctx, "apr_9")
+	if err != nil || !found || !strings.HasPrefix(rc.TargetID, "linear:comment/") {
+		t.Fatalf("find: %+v %v %v", rc, found, err)
+	}
+	again, err := c.Act(ctx, a, "apr_9")
+	if err != nil || again != rc || len(f.Comments) != 1 {
+		t.Fatalf("retry: %+v %v (%d comments)", again, err, len(f.Comments))
+	}
+	if _, found, _ := c.Find(ctx, "apr_never"); found {
+		t.Fatal("found a comment that was never made")
+	}
+	for _, bad := range []ports.Action{{Target: "docs:x", Payload: a.Payload}, {Target: "tickets:OPS-1", Payload: []byte(`{"comment":""}`)}} {
+		if _, err := c.Act(ctx, bad, "apr_10"); err == nil {
+			t.Errorf("%+v accepted", bad)
+		}
 	}
 }

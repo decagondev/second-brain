@@ -23,7 +23,7 @@ sb eval diff REL_A REL_B [--suite SUITE]
 
 Each case runs three times; the **worst** result counts.
 
-Models: `--model mock` answers from canned responses in the suite's fixture world, which is enough to test the runner and the checks. `--model extractive` (and `misattributing`, for the self-test) runs the real ask path in a local cell over the suite's `world.yaml` (sb-eval(5)). The cell is the `tools/evalcell` program, built on first use. Suites print their citation score. `--tenant-dir DIR` adds every suite in `DIR/evals/` as `tenant/<name>`. Running against a deployed cell (`--tenant`, `--release`) arrives with SB-501; until then those options exit with `ENOTIMPL`.
+Models: `--model mock` answers from canned responses in the suite's fixture world, which is enough to test the runner and the checks. `--model extractive` (and `misattributing`, for the self-test) runs the real ask path in a local cell over the suite's `world.yaml` (sb-eval(5)). The cell is the `tools/evalcell` program, built on first use. Suites print their citation score. `--tenant-dir DIR` adds every suite in `DIR/evals/` as `tenant/<name>`. `--record FILE` writes `{"passed", "at", "suites", "model"}` after the run, which `sb tenant apply` reads to enable a workflow (sb-tenant(1)). It records a failed run too, so a failure is never mistaken for "not run yet". Running against a deployed cell (`--tenant`, `--release`) arrives with SB-501; until then those options exit with `ENOTIMPL`.
 
 **diff** compares stored results for two releases and highlights regressions against the thresholds in `evals/gate.yaml`.
 

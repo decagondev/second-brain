@@ -105,6 +105,20 @@ class TenantSuites(unittest.TestCase):
             (t / &quot;evals&quot; / &quot;golden.yaml&quot;).write_text(&quot;suite: g\nworld: .\ngate: { score_min: 0.5 }\ncases: []\n&quot;)
             with self.assertRaises(ValueError):
                 tenant_suites(t, 0.92)
+
+
+class Record(unittest.TestCase):
+    def test_record_written_for_pass_and_fail(self):
+        import json
+        import tempfile
+        from evals.__main__ import main
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / &quot;evals&quot; / &quot;acme-logistics&quot; / &quot;ticket-update.json&quot;
+            self.assertEqual(main([&quot;run&quot;, str(HERE / &quot;suites&quot; / &quot;smoke.yaml&quot;), &quot;--model&quot;, &quot;mock&quot;, &quot;--record&quot;, str(out)]), 0)
+            r = json.loads(out.read_text())
+            self.assertTrue(r[&quot;passed&quot;])
+            self.assertEqual(r[&quot;suites&quot;], [&quot;smoke&quot;])
+            self.assertTrue(r[&quot;at&quot;].endswith(&quot;Z&quot;))
 </code></pre>
 <p><a href="../README.html">Back</a></p><p class="srcline">Source: <code>evals/tests/test_checks.py</code></p></main>
   

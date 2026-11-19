@@ -45,6 +45,18 @@ These names are identical in code, in the API and in [`proofs/tla/Approvals.tla`
 5. **Receipt or it didn't happen.** Only a target receipt makes `Ran` (LAW-05).
 6. **At most once.** The approval id is the idempotency key for `Act`.
 
+### The `ticket-update` workflow
+
+The first gated workflow (SB-410). Enabling it takes `workflows: [ticket-update]` and `approval: { ticket-update: group:<name> }` in the manifest, the `tickets` connector, and a passing eval record (sb-tenant(1)).
+
+| Part | Value |
+|---|---|
+| Tool | `ticket-update.comment`, connector `tickets`, consequential |
+| Target | `tickets:<KEY-123>` |
+| Payload | `{"comment": "…"}`: one string, 1 to 10,000 characters, no other fields |
+| Approvers | The manifest's approval group |
+| Receipt | The target's comment id, for example `linear:comment/<id>` |
+
 ### The payload hash, exactly
 
 `payload_sha256` is the hex SHA-256 of the payload's RFC 8785 canonical JSON: object keys sorted, no whitespace, strings in their shortest JSON escaping. Numbers must be integers between -2^53 and 2^53. Any other number is refused when the action is proposed, so every implementation hashes the same bytes. The hash covers the payload **and** the target (`{"payload":…,"target":"tickets:OPS-1182","workflow":"ticket-update"}`), so approving a comment for one ticket can't post it on another.

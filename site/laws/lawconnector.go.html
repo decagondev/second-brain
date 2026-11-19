@@ -278,6 +278,8 @@ var NewLinearWorld = func() ConnectorWorld {
     f.AddUser(&quot;U2&quot;, &quot;bob@acme.example&quot;, false)
     f.AddTeam(&quot;TIN&quot;, &quot;IN&quot;, true, &quot;U1&quot;)
     f.AddTeam(&quot;TOUT&quot;, &quot;OUT&quot;, true, &quot;U2&quot;)
+    f.AddTeam(&quot;TOPS&quot;, &quot;OPS&quot;, false, &quot;U1&quot;)
+    f.Put(&quot;iops&quot;, &quot;TOPS&quot;, &quot;Disk full&quot;, &quot;the target of LAW-05's comments&quot;)
     c := &amp;linear.Connector{Endpoint: f.Endpoint(), HTTP: f.Server.Client(), Redact: obs.NewRedactor(),
         Key: func(context.Context) (string, error) { return f.Key, nil }}
     return &amp;linearWorld{f: f, c: c}
@@ -320,8 +322,18 @@ func (w *linearWorld) ACL(access []bool, fault string) ([]string, error) {
     return out, err
 }
 
-func (w *linearWorld) Act(string, bool) (string, error) { return &quot;&quot;, errors.New(&quot;ENOTSUP&quot;) }
-func (w *linearWorld) Effects() int                     { return 0 }
+// Act posts a comment (SB-410). A target that &quot;doesn't issue ids&quot; answers without one:
+// half the time the comment was made (the connector must read it back), half the time
+// nothing was made (the connector must fail, never claim a receipt).
+func (w *linearWorld) Act(key string, issues bool) (string, error) {
+    if !issues {
+        w.n++
+        w.f.FailNext([]string{&quot;noid&quot;, &quot;noop&quot;}[w.n%2])
+    }
+    r, err := w.c.Act(context.Background(), ports.Action{Target: &quot;tickets:OPS-1&quot;, Payload: []byte(`{&quot;comment&quot;:&quot;law-05&quot;}`)}, ports.IdempotencyKey(key))
+    return r.TargetID, err
+}
+func (w *linearWorld) Effects() int { return len(w.f.Comments) }
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/lawconnector.go</code></p></main>
   

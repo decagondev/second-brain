@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"example.com/second-brain/internal/adapters/placement/local"
 	"example.com/second-brain/internal/adapters/registry/localfs"
@@ -252,9 +253,12 @@ func (e *env) tenantApply(args []string) int {
 		}
 	})
 	var ie *plan.ImmutableError
+	var ee *apply.EvalError
 	switch {
 	case errors.As(err, &ie):
 		return e.fail(name, errs.New(errs.EMANIFEST, "%s: %v", file, err))
+	case errors.As(err, &ee):
+		return e.fail(name, errs.New(errs.EEVAL, "%v", err))
 	case err != nil:
 		return e.fail(name, errs.New(errs.EUNAVAIL, "%v; run apply again to resume", err))
 	case e.g.JSON:
@@ -324,7 +328,8 @@ func (e *env) controlPlane() (apply.Deps, error) {
 		reg := localfs.Dir{Root: root}
 		// v1 custody is always placement factory-account (sb-factory(7)); no account id here.
 		acct := local.Account{Root: filepath.Join(root, "accounts"), Name: cell.PlacementFactoryAccount}
-		return apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: "sb.localhost", Placement: acct, Keys: acct}, nil
+		return apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: "sb.localhost", Placement: acct, Keys: acct,
+			Evals: reg, Now: time.Now}, nil
 	}
 	return apply.Deps{}, errs.New(errs.ENOTIMPL, "control-plane client not built yet (SB-105); use --endpoint file:///DIR")
 }

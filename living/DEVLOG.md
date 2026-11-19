@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.3b The ticket-update workflow (SB-410)
+
+**Wave/slice:** W4 / S4.3b · **Author:** platform lead + Claude · **Status:** In review (real Linear sandbox)
+
+**What:** The workflow template and registry, Linear writes with `Find`, the eval gate in apply, `--record` in the eval harness, and an end-to-end test from proposal to Linear receipt. The manual changed first: sb-approvals(7) gained "The ticket-update workflow", sb-tenant(1) "Workflows wait for their evals", sb-connector(3) Linear's write scope and `Act` row, and sb-eval(1) `--record`.
+
+**Why this way:** The comment's id comes from the idempotency key, so Linear itself enforces "once per approval". A retry, a lost answer or the reconciler all land on the same comment. The connector never returns success without a receipt: an answer with no id is read back by that id, or it is an error. That keeps LAW-05 true at the connector, not just in the bus. The eval gate refuses the whole plan before any step runs, so an apply never half-enables a workflow. The template's payload is strict: an extra field is refused, because an approver shown `{comment}` must not approve a hidden `assignee` change.
+
+**Learned:** Building the end-to-end test from the example manifest and the real base policies caught nothing new, and that is the point: it proves the pieces from four slices fit, with the audit trail in the order the model says. The Linear law world first shared one fake across runs, and effects leaked from one seed into the next. Connector-level law worlds need a fresh target per run.
+
+**Laws:** all green. LAW-04, LAW-05 and LAW-15 are extended end to end, and LAW-05 also holds at the Linear connector.
+
+**Next:** S4.3c, the draft-reply agent (SB-409).
+
 ## 2026-11-19 S4.3a Idempotency store and reconciler (SB-408)
 
 **Wave/slice:** W4 / S4.3a · **Author:** platform lead + Claude · **Status:** In review (Postgres stores, real `Find`)
