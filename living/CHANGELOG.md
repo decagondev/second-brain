@@ -63,6 +63,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- `make smoke` is never cached, so a rebuilt `sb` is always tested; the smoke test covers the workflow eval gate (BUG-0008).
 - Audit `decision` rows no longer repeat the action in `reason` (the kernel's reason already starts with it).
 - The ask agent's live check now passes the asker's email to connectors, which ask their sources by email (BUG-0007).
 

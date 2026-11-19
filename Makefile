@@ -32,7 +32,7 @@ gen-check:             ## generated code matches the manual (SB-006)
 laws:                  ## law tests; expected-red laws must fail for the right reason (SB-010)
 	$(PY) tools/check/laws.py
 smoke:                 ## black-box smoke tests of the sb binary (SB-016)
-	$(GO) test ./tests/smoke/...
+	$(GO) test -count=1 ./tests/smoke/...   # never cached: it runs the freshly built bin/sb (BUG-0008)
 	$(GO) test ./tests/canary/...   # the CI secret scan with planted canaries (SB-411)
 	$(GO) test ./tests/backup/...   # backup 3-2-1 and the restore drill (SB-412)
 regress:               ## one test per bug, forever (SB-016)

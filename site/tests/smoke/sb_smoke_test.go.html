@@ -29,6 +29,7 @@ import (
     &quot;path/filepath&quot;
     &quot;strings&quot;
     &quot;testing&quot;
+    &quot;time&quot;
 )
 
 var sb string
@@ -162,6 +163,21 @@ func TestTenantApply(t *testing.T) {
     }
     if again, _ := os.ReadFile(filepath.Join(cp, &quot;journal&quot;, &quot;acme-logistics.ndjson&quot;)); len(again) != len(journal) {
         t.Fatal(&quot;a no-change apply wrote to the journal&quot;)
+    }
+    // The full manifest enables ticket-update, which waits for a passing eval record (SB-410).
+    if code, out := apply(&quot;full.yaml&quot;); code != 1 || !strings.Contains(out, &quot;[EEVAL]&quot;) || !strings.Contains(out, &quot;ticket-update&quot;) {
+        t.Fatalf(&quot;full without an eval record: exit %d\n%s&quot;, code, out)
+    }
+    if again, _ := os.ReadFile(filepath.Join(cp, &quot;journal&quot;, &quot;acme-logistics.ndjson&quot;)); len(again) != len(journal) {
+        t.Fatal(&quot;a refused apply wrote to the journal&quot;)
+    }
+    rec := filepath.Join(cp, &quot;evals&quot;, &quot;acme-logistics&quot;, &quot;ticket-update.json&quot;)
+    if err := os.MkdirAll(filepath.Dir(rec), 0o755); err != nil {
+        t.Fatal(err)
+    }
+    stamp := time.Now().UTC().Format(time.RFC3339)
+    if err := os.WriteFile(rec, []byte(`{&quot;passed&quot;:true,&quot;at&quot;:&quot;`+stamp+`&quot;,&quot;suites&quot;:[&quot;tenant/acme-logistics&quot;],&quot;model&quot;:&quot;extractive&quot;}`), 0o644); err != nil {
+        t.Fatal(err)
     }
     if code, out := apply(&quot;full.yaml&quot;); code != 0 || !strings.HasSuffix(out, &quot;apply: 3 added, 2 changed, 1 removed\n&quot;) {
         t.Fatalf(&quot;pilot -&gt; full: exit %d\n%s&quot;, code, out)

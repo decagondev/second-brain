@@ -16,6 +16,7 @@ Every defect gets an entry, including design defects found in review. Each entry
 | [BUG-0005](#bug-0005-issuer-rule-never-matched) | Issuer rule never matched | Test harness | Fixed |
 | [BUG-0006](#bug-0006-base-policy-permitted-another-tenants-agent) | Base policy permitted another tenant's agent | Design | Fixed |
 | [BUG-0007](#bug-0007-the-live-check-asked-connectors-without-the-askers-email) | The live check asked connectors without the asker's email | Code | Fixed |
+| [BUG-0008](#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary) | Smoke tests were cached against a rebuilt binary | Test harness | Fixed |
 
 ## BUG-0001 Rollout model assumes atomic rollback
 
@@ -122,4 +123,18 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** The agent passes the directory's primary email in `UserRef.Email` (`internal/core/ask`).
 
 **Caught by now:** `TestLiveCheckCarriesTheEmail` in `internal/core/ask`, and the citation suite in `make evals`, which runs the agent with the email-keyed mock connector. Why it wasn't caught before: no test put the agent in front of a connector that behaves like the real ones.
+
+## BUG-0008 Smoke tests were cached against a rebuilt binary
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-19, CI failed on S4.3b while `make check` passed locally | Test harness | SB-016 | Fixed |
+
+**Symptom:** S4.3b added the eval gate to `sb tenant apply`, which correctly refused the smoke test's `full.yaml` apply. CI went red on three pushes (4a42bfb, e6bb767, 8d55543). Locally, `make check` stayed green because `go test ./tests/smoke/...` reported `(cached)`.
+
+**Root cause:** The smoke tests run the `bin/sb` binary as a subprocess. Go's test cache keys on the test package's own inputs, not on a binary it executes, so a rebuilt `sb` with new behaviour reused the old result.
+
+**Fix:** `make smoke` runs with `-count=1`, so it is never cached. The smoke test now covers the gate: without an eval record, applying `full.yaml` fails with `EEVAL` and writes nothing, and with a passing record it applies.
+
+**Caught by now:** every `make check` runs the smoke tests fresh. Why it wasn't caught before: CI was green until the first change that altered `sb`'s behaviour without touching the smoke test package. Process fix: after a push, wait for CI before moving to the next slice when the slice changes CLI behaviour.
 

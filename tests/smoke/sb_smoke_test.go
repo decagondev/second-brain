@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 var sb string
@@ -142,6 +143,21 @@ func TestTenantApply(t *testing.T) {
 	}
 	if again, _ := os.ReadFile(filepath.Join(cp, "journal", "acme-logistics.ndjson")); len(again) != len(journal) {
 		t.Fatal("a no-change apply wrote to the journal")
+	}
+	// The full manifest enables ticket-update, which waits for a passing eval record (SB-410).
+	if code, out := apply("full.yaml"); code != 1 || !strings.Contains(out, "[EEVAL]") || !strings.Contains(out, "ticket-update") {
+		t.Fatalf("full without an eval record: exit %d\n%s", code, out)
+	}
+	if again, _ := os.ReadFile(filepath.Join(cp, "journal", "acme-logistics.ndjson")); len(again) != len(journal) {
+		t.Fatal("a refused apply wrote to the journal")
+	}
+	rec := filepath.Join(cp, "evals", "acme-logistics", "ticket-update.json")
+	if err := os.MkdirAll(filepath.Dir(rec), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Now().UTC().Format(time.RFC3339)
+	if err := os.WriteFile(rec, []byte(`{"passed":true,"at":"`+stamp+`","suites":["tenant/acme-logistics"],"model":"extractive"}`), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	if code, out := apply("full.yaml"); code != 0 || !strings.HasSuffix(out, "apply: 3 added, 2 changed, 1 removed\n") {
 		t.Fatalf("pilot -> full: exit %d\n%s", code, out)
