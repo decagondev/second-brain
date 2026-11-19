@@ -4,6 +4,7 @@ import { ask, AskError } from "./api";
 import type { ApiError, AskResponse, Fetch } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
+import { DraftPanel } from "./Draft";
 
 interface Turn {
   question: string;
@@ -67,6 +68,7 @@ export function App({ fetcher }: { fetcher?: Fetch }) {
           </button>
         )}
       </form>
+      <DraftPanel fetcher={fetcher} />
     </main>
   );
 }

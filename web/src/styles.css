@@ -58,4 +58,6 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .diff ins { color: var(--accent); }
 .decide { display: grid; gap: 0.5rem; margin-top: 1rem; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.draft { display: grid; gap: 0.5rem; margin-top: 2rem; border-top: 1px solid var(--muted); padding-top: 1rem; }
+.draft input { font: inherit; padding: 0.5rem; min-height: 44px; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
 

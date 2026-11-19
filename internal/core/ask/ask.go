@@ -205,7 +205,11 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 }
 
 func (a Agent) compose(ctx context.Context, trace, q string, earlier []string, chunks []ports.Chunk) ([]answer.Claim, error) {
-	p, err := prompts.Get("answer")
+	return a.composeWith(ctx, "answer", "Question: ", trace, q, earlier, chunks)
+}
+
+func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, earlier []string, chunks []ports.Chunk) ([]answer.Claim, error) {
+	p, err := prompts.Get(prompt)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}
@@ -215,7 +219,7 @@ func (a Agent) compose(ctx context.Context, trace, q string, earlier []string, c
 		msgs = append(msgs, ports.Message{Role: "user", Content: e})
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
-	msgs = append(msgs, ports.Message{Role: "user", Content: actx.Data() + "\nQuestion: " + q})
+	msgs = append(msgs, ports.Message{Role: "user", Content: actx.Data() + "\n" + lead + q})
 	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text, Messages: msgs, JSON: true})
 	if err != nil {
 		return nil, fmt.Errorf("%w: model: %v", ErrUnavailable, err)

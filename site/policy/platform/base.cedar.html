@@ -31,6 +31,11 @@ when { principal.tenant == resource.tenant };
 permit (principal, action == Action::&quot;use_agent&quot;, resource == Agent::&quot;ask&quot;)
 when { principal.tenant == resource.tenant };
 
+// draft-reply, where the tenant's manifest enables it (SB-409); tenant policies may narrow
+// it further (by group or by ticket project). It drafts only: a person always sends.
+permit (principal, action == Action::&quot;use_agent&quot;, resource == Agent::&quot;draft-reply&quot;)
+when { principal.tenant == resource.tenant &amp;&amp; resource has enabled &amp;&amp; resource.enabled };
+
 // Nobody approves their own action (LAW-15).
 forbid (principal, action == Action::&quot;approve&quot;, resource is ProposedAction)
 when { resource.requester == principal };

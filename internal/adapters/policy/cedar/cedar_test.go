@@ -48,6 +48,8 @@ func TestBasePolicies(t *testing.T) {
 		{"read other tenant's chunk", ann, "read", policy.Entity{Type: "Chunk", ID: "c2", Tenant: "beta-freight", Attrs: map[string]any{"cite": "docs:b@1"}}, policy.Deny},
 		{"use ask", ann, "use_agent", policy.Entity{Type: "Agent", ID: "ask", Attrs: map[string]any{"name": "ask", "consequential": false}}, policy.Allow},
 		{"use another agent", ann, "use_agent", policy.Entity{Type: "Agent", ID: "draft-reply", Attrs: map[string]any{"name": "draft-reply", "consequential": false}}, policy.Deny},
+		{"use draft-reply where enabled", ann, "use_agent", policy.Entity{Type: "Agent", ID: "draft-reply", Attrs: map[string]any{"name": "draft-reply", "consequential": false, "enabled": true}}, policy.Allow},
+		{"use draft-reply where disabled", ann, "use_agent", policy.Entity{Type: "Agent", ID: "draft-reply", Attrs: map[string]any{"name": "draft-reply", "consequential": false, "enabled": false}}, policy.Deny},
 		{"approve own action", ann, "approve", policy.Entity{Type: "ProposedAction", ID: "a1",
 			Attrs: map[string]any{"workflow": "ticket-update", "requester": policy.Ref{Type: "User", ID: "ann"}, "approvers": policy.Ref{Type: "Group", ID: "it-leads"}}}, policy.Deny},
 		{"approve as the approver group", ann, "approve", policy.Entity{Type: "ProposedAction", ID: "a2",

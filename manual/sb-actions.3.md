@@ -24,6 +24,16 @@ Idempotency-Key: 01JD3QE2…
 
 `POST /v1/drafts` with `{ "context": "chat:C024BE91L/1709550000.1234" | "tickets:OPS-1182", "instruction": "…" }` returns a draft with citations, exactly like an answer. The platform **never sends** a draft. The user copies it, or opens it in the target app, and sends it there. That's why drafts need no approval.
 
+How a draft is made, exactly (SB-409):
+
+1. **Validate.** `context` is `chat:<channel>/<ts>` or `tickets:<KEY-123 or id>`, and `instruction` is 1 to 2,000 characters. Anything else is `EINVAL`.
+2. **Kill and policy.** The `draft-reply` agent must not be killed (`EKILLED`), and policy must allow `use_agent` on `Agent::"draft-reply"` with `context.target_project` set to the ticket's project key (`FIN` for `FIN-12`), so tenant policies can narrow drafting by project (`EPERM`).
+3. **The context item, live.** The item is checked with a live `ACL` call like any chunk. Anything but Allow is `EPERM`, and nothing about the item is returned. Its text becomes the first data block, `C1`, citable like any source.
+4. **Retrieve, compose.** Retrieval and the live check run as for `ask`, with the instruction as the query. The bundled `draft` prompt writes the reply, and the composer decides citations (sb-citations(7)).
+5. **Never sent.** The draft agent has no tools. The response has the same shape as an answer (`trace`, `release`, `answer.claims`, `refused`, `notice`) plus `context`. The UI offers **Copy**, and the person sends it in the target app.
+
+`POST /v1/drafts/{trace}/outcome` takes `{ "outcome": "used" | "discarded" }` from the person who drafted. It is counted in `sb_drafts_total{outcome}`. That is the approve and reject rate leadership reviews at day 45 (sb-onboarding(7)).
+
 ### Actions (gated workflows)
 
 `POST /v1/actions` proposes a consequential action for the tenant's enabled workflow. The response is the action in state `PendingApproval`:

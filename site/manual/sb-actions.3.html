@@ -28,6 +28,15 @@ Idempotency-Key: 01JD3QE2…
 <h2 id="description">DESCRIPTION</h2>
 <h3 id="drafts-draft-reply">Drafts (<code>draft-reply</code>)</h3>
 <p><code>POST /v1/drafts</code> with <code>{ "context": "chat:C024BE91L/1709550000.1234" | "tickets:OPS-1182", "instruction": "…" }</code> returns a draft with citations, exactly like an answer. The platform <strong>never sends</strong> a draft. The user copies it, or opens it in the target app, and sends it there. That's why drafts need no approval.</p>
+<p>How a draft is made, exactly (SB-409):</p>
+<ol>
+<li><strong>Validate.</strong> <code>context</code> is <code>chat:&lt;channel&gt;/&lt;ts&gt;</code> or <code>tickets:&lt;KEY-123 or id&gt;</code>, and <code>instruction</code> is 1 to 2,000 characters. Anything else is <code>EINVAL</code>.</li>
+<li><strong>Kill and policy.</strong> The <code>draft-reply</code> agent must not be killed (<code>EKILLED</code>), and policy must allow <code>use_agent</code> on <code>Agent::"draft-reply"</code> with <code>context.target_project</code> set to the ticket's project key (<code>FIN</code> for <code>FIN-12</code>), so tenant policies can narrow drafting by project (<code>EPERM</code>).</li>
+<li><strong>The context item, live.</strong> The item is checked with a live <code>ACL</code> call like any chunk. Anything but Allow is <code>EPERM</code>, and nothing about the item is returned. Its text becomes the first data block, <code>C1</code>, citable like any source.</li>
+<li><strong>Retrieve, compose.</strong> Retrieval and the live check run as for <code>ask</code>, with the instruction as the query. The bundled <code>draft</code> prompt writes the reply, and the composer decides citations (sb-citations(7)).</li>
+<li><strong>Never sent.</strong> The draft agent has no tools. The response has the same shape as an answer (<code>trace</code>, <code>release</code>, <code>answer.claims</code>, <code>refused</code>, <code>notice</code>) plus <code>context</code>. The UI offers <strong>Copy</strong>, and the person sends it in the target app.</li>
+</ol>
+<p><code>POST /v1/drafts/{trace}/outcome</code> takes <code>{ "outcome": "used" | "discarded" }</code> from the person who drafted. It is counted in <code>sb_drafts_total{outcome}</code>. That is the approve and reject rate leadership reviews at day 45 (sb-onboarding(7)).</p>
 <h3 id="actions-gated-workflows">Actions (gated workflows)</h3>
 <p><code>POST /v1/actions</code> proposes a consequential action for the tenant's enabled workflow. The response is the action in state <code>PendingApproval</code>:</p>
 <pre><code class="language-json">{

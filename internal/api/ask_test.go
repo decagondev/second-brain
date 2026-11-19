@@ -204,3 +204,42 @@ func TestFeedbackEndpoint(t *testing.T) {
 		t.Errorf("invalid: %d", w.Code)
 	}
 }
+
+type fakeDrafter struct{ err error }
+
+func (f fakeDrafter) Draft(_ context.Context, _ tenancy.Scope, r ask.DraftRequest) (ask.DraftResponse, error) {
+	if f.err != nil {
+		return ask.DraftResponse{}, f.err
+	}
+	return ask.DraftResponse{Response: ask.Response{Trace: "tr_d", Release: "rel_x", Answer: ask.Answer{Claims: []answer.Claim{{Text: "Thanks.", Cites: []answer.Cite{}, Uncited: true}}}}, Context: r.Context}, nil
+}
+
+func (f fakeDrafter) Outcome(context.Context, tenancy.Scope, string, string) error { return f.err }
+
+func TestDraftEndpoints(t *testing.T) {
+	post := func(d Drafter, path, body string) *httptest.ResponseRecorder {
+		mux := http.NewServeMux()
+		Drafts{Agent: d, Ask: Ask{Release: "rel_x"}}.Register(mux)
+		req := httptest.NewRequest("POST", path, strings.NewReader(body))
+		s, _ := tenancy.NewIssuer("acme-logistics").Issue("acme-logistics", "alice", nil)
+		req = req.WithContext(tenancy.WithScope(req.Context(), s))
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		return w
+	}
+	w := post(fakeDrafter{}, "/v1/drafts", `{"context":"tickets:OPS-7","instruction":"reply"}`)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"context":"tickets:OPS-7"`) || !strings.Contains(w.Body.String(), `"claims"`) || w.Header().Get("X-SB-Trace") != "tr_d" {
+		t.Fatalf("%d %s", w.Code, w.Body)
+	}
+	for _, c := range []struct {
+		err  error
+		code int
+	}{{ask.ErrInvalid, 400}, {ask.ErrNotFound, 403}, {ask.ErrKilled, 503}} {
+		if w := post(fakeDrafter{err: c.err}, "/v1/drafts", `{"context":"tickets:OPS-7","instruction":"reply"}`); w.Code != c.code {
+			t.Errorf("%v: %d", c.err, w.Code)
+		}
+	}
+	if w := post(fakeDrafter{}, "/v1/drafts/tr_d/outcome", `{"outcome":"used"}`); w.Code != 200 {
+		t.Errorf("outcome: %d", w.Code)
+	}
+}

@@ -25,7 +25,7 @@ entity Group { tenant: Tenant };
 entity User in [Group] { tenant: Tenant };
 entity Document { tenant: Tenant, source: String };
 entity Chunk in [Document] { tenant: Tenant, cite: String };
-entity Agent { tenant: Tenant, name: String, consequential: Bool };
+entity Agent { tenant: Tenant, name: String, consequential: Bool, enabled?: Bool };
 entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bool };
 entity Workflow { tenant: Tenant, name: String, approvers: Group };
 entity ProposedAction { tenant: Tenant, workflow: String, requester: User, approvers: Group };

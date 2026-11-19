@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S4.3c draft-reply (SB-409)
+
+**Wave/slice:** W4 / S4.3c · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** The draft-reply agent, its API and outcome metric, a draft panel in the web UI, a `draft` prompt, and a base permit for an enabled `draft-reply`. The manual changed first: sb-actions(3) now says exactly how a draft is made, and adds the outcome endpoint.
+
+**Why this way:** A draft reuses the ask pipeline (live check, composer, trace) with one addition: the ticket or thread being answered is live-checked as an item in its own right before its text is used. Drafting on a ticket you can't open would otherwise leak it through the draft. The agent has no tools at all, so "a human always sends" is structural, not a rule someone has to remember. The base permit needs an `enabled` attribute, optional in the schema so older entities still evaluate cleanly, and tenant policies can then narrow by group or by ticket project, as the example policy already does for `FIN`.
+
+**Learned:** Making `enabled` a required attribute would have broken every older fixture with evaluation errors, which cedar turns into Unknown. That would be safe, but every existing test would change meaning. Optional plus `has` keeps old entities at Deny and new ones explicit.
+
+**Laws:** all green. LAW-14 holds through the same composer, and drafts make no tool calls (LAW-04).
+
+**Next:** S4.4, secret canaries and the scanner (SB-411), and audit and approval backups with a restore drill (SB-412).
+
 ## 2026-11-19 S4.3b The ticket-update workflow (SB-410)
 
 **Wave/slice:** W4 / S4.3b · **Author:** platform lead + Claude · **Status:** In review (real Linear sandbox)

@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>draft-reply (S4.3c: SB-409): <code>POST /v1/drafts</code> writes a cited reply to a live-checked ticket or thread with the bundled <code>draft</code> prompt; never sends; <code>used</code>/<code>discarded</code> outcomes in <code>sb_drafts_total</code>; a draft panel in the web UI with Copy and Discard; a tenant-scoped base permit for enabled <code>draft-reply</code>.</li>
 <li>The <code>ticket-update</code> workflow (S4.3b: SB-410): a strict comment template, a registry built from the manifest, idempotent Linear comments with <code>Find</code>, an eval gate in <code>sb tenant apply</code> (<code>EEVAL</code> without a passing record no more than 30 days old), and <code>evals run --record</code>.</li>
 <li>Idempotency store and reconciler (S4.3a: SB-408): receipts kept by idempotency key so nothing runs twice; unconfirmed outcomes looked up by key for 24 hours, never re-executed.</li>
 <li>Actions API and approver view (S4.2b: SB-407): <code>POST /v1/actions</code>, <code>GET /v1/actions/{id}</code> with policy reason and field diff, approve and reject; a web approver view that echoes the shown hash and needs explicit clicks; id-only notifications.</li>
