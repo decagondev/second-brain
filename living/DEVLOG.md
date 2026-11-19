@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.1a Tenant verify (SB-601)
+
+**Wave/slice:** W6 / S6.1a · **Author:** platform lead + Claude · **Status:** In review (a deployed cell's endpoint, W7)
+
+**What:** `internal/core/verify` and a local-cell target in `tools/evalcell --verify`. The manual changed first: sb-tenant(1) gained "How verify decides, exactly".
+
+**Why this way:** The laws suite proves the code over generated worlds. Verify asks the same questions of one tenant's real data, so a misconfigured connector or a source whose permission model we misread shows up before staff do. LAW-01 re-asks the source live instead of trusting the answer's own record, and also requires that record, because "the source said yes later" isn't the same as "the source was asked". The target interface is the seam between local and deployed cells: the runner never changes, only the target does.
+
+**Learned:** The local target needed the eval cell's construction as a reusable function. That refactor (`build`) now serves both the eval harness and verify, so the two can't disagree about what a cell is. The issuer rule kept the target inside `tools/evalcell`, the one harness allowed to mint scopes, rather than in a new production package.
+
+**Laws:** LAW-01, LAW-02, LAW-03 and LAW-14 are checked by verify as well as by the laws suite. All green.
+
+**Next:** S6.1b, the admin console and API, where every change is a manifest diff and an audit row (SB-602), and console roles (SB-603).
+
 ## 2026-11-19 S5.3b Attestation and drift (SB-509, SB-510), W5 built
 
 **Wave/slice:** W5 / S5.3b · **Author:** platform lead + Claude · **Status:** In review (cell loops, W7)

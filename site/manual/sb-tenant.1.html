@@ -107,6 +107,16 @@ sb tenant verify FILE [--law LAW-nn]... [--sample N]
 </tbody>
 </table>
 <p>Any check that returns <em>unknown</em> counts as a <strong>fail</strong>.</p>
+<p>How verify decides, exactly (SB-601):</p>
+<ul>
+<li><strong>Sampling.</strong> Users are drawn from the directory and questions from the titles of indexed documents, <code>--sample</code> of each pairing (default 50), with a seed printed in the report so a run can be repeated. Nothing about a document but its id and version is ever printed.</li>
+<li><strong>LAW-01.</strong> For every citation in every sampled answer, verify asks the source <strong>again, live</strong>, whether the asker may open that document now. It also checks that the answer's own decision list shows the source was asked. A citation the source doesn't allow, or one with no recorded live check, fails.</li>
+<li><strong>LAW-02.</strong> Verify takes document ids that belong to <strong>other</strong> tenants (from the control plane's registry, ids only) and asks for them by id and by text. Any result that cites one fails.</li>
+<li><strong>LAW-03.</strong> Verify makes one connector time out and asks again. Any citation from that connector fails.</li>
+<li><strong>LAW-14.</strong> Every claim of every sampled answer must have a citation or be labelled <code>uncited</code>.</li>
+<li><strong>Report.</strong> One line per law: <code>pass</code>, <code>fail</code> or <code>unknown</code>, with counts only. The exit status is 0 only if every law passes. <code>unknown</code> (for example, no users to sample) is a failure.</li>
+</ul>
+<p>Verify runs against a cell through the same <code>verify.Target</code> interface whether the cell is local or deployed. Against a deployed cell it needs the cell runtime's verifier endpoint, and until then <code>sb tenant verify</code> exits <code>ENOTIMPL</code>. The local cell (<code>tools/evalcell --verify</code>) runs it over a fixture world today.</p>
 <h2 id="options">OPTIONS</h2>
 <table>
 <thead>

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Tenant verify (S6.1a: SB-601): law checks against a cell's own data and users (LAW-01 re-asked live, LAW-02 adversarial ids, LAW-03 injected timeout, LAW-14 claim labels), counts only, unknown fails; runs on the local cell with `tools/evalcell --verify`.
 - Attestation and drift (S5.3b: SB-509, SB-510): signed cell attestations checked against the deployed bundle with Sev-1 findings for mismatch, replay and silence; manifest drift detection that names each resource and field.
 - Release controller and rollback (S5.3a: SB-507, SB-508): channels, rings, the 48-hour soak, the promote guard, draining rollback and a timed rollback drill, all as in `Rollout.tla` with its invariants checked after every move; `sb release status|promote|rollback` on a local control plane.
 - Lockfiles and the CVE path (S5.2b: SB-505): `make lockfiles`, a release-time check that lockfiles are current, a daily advisory watcher (`govulncheck`, `npm audit`), and the patch-release playbook.

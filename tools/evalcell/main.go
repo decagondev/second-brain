@@ -79,6 +79,9 @@ type result struct {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--verify" {
+		os.Exit(verifyMain())
+	}
 	var in input
 	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
 		fail("evalcell: bad input: %v", err)
@@ -97,19 +100,28 @@ func fail(f string, a ...any) {
 	os.Exit(7)
 }
 
-func run(ctx context.Context, in input) (map[string]result, error) {
-	w := in.World
+// cell is one local cell built from a world.
+type cell struct {
+	w     world
+	src   *mock.Source
+	conn  *mock.Connector
+	agent ask.Agent
+	users map[string]int
+	texts map[string]string
+}
+
+func build(ctx context.Context, w world, modelName, policies string) (*cell, error) {
 	if w.Tenant == "" {
 		return nil, fmt.Errorf("world has no tenant")
 	}
 	var model ports.Model
-	switch in.Model {
+	switch modelName {
 	case "extractive":
 		model = extractive{shift: false}
 	case "misattributing":
 		model = extractive{shift: true}
 	default:
-		return nil, fmt.Errorf("unknown model %q (extractive, misattributing)", in.Model)
+		return nil, fmt.Errorf("unknown model %q (extractive, misattributing)", modelName)
 	}
 
 	src := mock.NewSource("docs")
@@ -133,7 +145,7 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 			src.SetViewers(d.ID, (*d.ViewersNow)...) // not synced: the index keeps the old prefilter
 		}
 	}
-	engine, err := loadPolicies(in.Policies)
+	engine, err := loadPolicies(policies)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +168,15 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 		NewID: func(p string) string { n++; return fmt.Sprintf("%s%d", p, n) },
 		Now:   time.Now}
 
+	return &cell{w: w, src: src, conn: conn, agent: agent, users: users, texts: texts}, nil
+}
+
+func run(ctx context.Context, in input) (map[string]result, error) {
+	c, err := build(ctx, in.World, in.Model, in.Policies)
+	if err != nil {
+		return nil, err
+	}
+	w, src, agent, users, texts := in.World, c.src, c.agent, c.users, c.texts
 	issuer := tenancy.NewIssuer(w.Tenant)
 	out := map[string]result{}
 	for _, c := range in.Cases {

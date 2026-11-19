@@ -40,7 +40,7 @@ type env struct {
 
 // planned maps "command sub" to the ticket that builds it.
 var planned = map[string]string{
-	"tenant verify": "SB-601",
+	"tenant verify": "SB-601, which needs a deployed cell's verifier endpoint (W7); the local cell runs it: tools/evalcell --verify",
 	"audit tail":    "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
 	"eval diff":       "SB-501",
 	"factory handoff": "SB-705", "factory detach": "SB-708",

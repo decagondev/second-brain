@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Tenant verify (S6.1a: SB-601): law checks against a cell's own data and users (LAW-01 re-asked live, LAW-02 adversarial ids, LAW-03 injected timeout, LAW-14 claim labels), counts only, unknown fails; runs on the local cell with <code>tools/evalcell --verify</code>.</li>
 <li>Attestation and drift (S5.3b: SB-509, SB-510): signed cell attestations checked against the deployed bundle with Sev-1 findings for mismatch, replay and silence; manifest drift detection that names each resource and field.</li>
 <li>Release controller and rollback (S5.3a: SB-507, SB-508): channels, rings, the 48-hour soak, the promote guard, draining rollback and a timed rollback drill, all as in <code>Rollout.tla</code> with its invariants checked after every move; <code>sb release status|promote|rollback</code> on a local control plane.</li>
 <li>Lockfiles and the CVE path (S5.2b: SB-505): <code>make lockfiles</code>, a release-time check that lockfiles are current, a daily advisory watcher (<code>govulncheck</code>, <code>npm audit</code>), and the patch-release playbook.</li>

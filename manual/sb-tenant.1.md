@@ -57,6 +57,17 @@ Lines start with `+` (add), `~` (change, showing the old value after `was`) or `
 
 Any check that returns *unknown* counts as a **fail**.
 
+How verify decides, exactly (SB-601):
+
+- **Sampling.** Users are drawn from the directory and questions from the titles of indexed documents, `--sample` of each pairing (default 50), with a seed printed in the report so a run can be repeated. Nothing about a document but its id and version is ever printed.
+- **LAW-01.** For every citation in every sampled answer, verify asks the source **again, live**, whether the asker may open that document now. It also checks that the answer's own decision list shows the source was asked. A citation the source doesn't allow, or one with no recorded live check, fails.
+- **LAW-02.** Verify takes document ids that belong to **other** tenants (from the control plane's registry, ids only) and asks for them by id and by text. Any result that cites one fails.
+- **LAW-03.** Verify makes one connector time out and asks again. Any citation from that connector fails.
+- **LAW-14.** Every claim of every sampled answer must have a citation or be labelled `uncited`.
+- **Report.** One line per law: `pass`, `fail` or `unknown`, with counts only. The exit status is 0 only if every law passes. `unknown` (for example, no users to sample) is a failure.
+
+Verify runs against a cell through the same `verify.Target` interface whether the cell is local or deployed. Against a deployed cell it needs the cell runtime's verifier endpoint, and until then `sb tenant verify` exits `ENOTIMPL`. The local cell (`tools/evalcell --verify`) runs it over a fixture world today.
+
 ## OPTIONS
 
 | Option | Meaning |
