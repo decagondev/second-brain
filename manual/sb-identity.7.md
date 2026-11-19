@@ -64,6 +64,10 @@ Approving a consequential action requires a session less than 15 minutes old, or
 
 The chat-app integration and CI use workload identity with short-lived tokens. There are no static API keys.
 
+### Chat users
+
+A chat-app request acts as a person only after it is mapped to the directory. The workspace must be the tenant's, the chat user's email (from the chat app's own user profile) must match exactly **one active** directory user, and the scope is issued for that user with their directory groups, the same as a web session. Without a single match there is no answer and no fallback identity (sb-ask(3), The chat app). The mapping is checked on every request and never cached, so a SCIM deactivation stops chat answers at once.
+
 ## LAWS
 
 [LAW-02](sb-laws.7.md#law-02), [LAW-12](sb-laws.7.md#law-12).

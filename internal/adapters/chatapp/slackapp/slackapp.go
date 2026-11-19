@@ -1,0 +1,416 @@
+// Package slackapp is the Slack entry point to the ask agent (sb-ask(3), The chat app;
+// SB-308): the /ask slash command and the Share button. Replies go through Slack's
+// response_url, ephemeral to the asker; the bot needs only the `commands` scope.
+package slackapp
+
+import (
+	"bytes"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"example.com/second-brain/internal/core/answer"
+	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/tenancy"
+)
+
+// MaxSkew is how old a signed request may be.
+const MaxSkew = 5 * time.Minute
+
+// AnswerTimeout bounds one answer.
+const AnswerTimeout = 60 * time.Second
+
+// Asker is the ask agent as the app uses it.
+type Asker interface {
+	Ask(ctx context.Context, s tenancy.Scope, req ask.Request) (ask.Response, error)
+	Trace(ctx context.Context, s tenancy.Scope, id string) (ask.Trace, error)
+}
+
+// App is one cell's Slack app.
+type App struct {
+	Tenant string
+	TeamID string // the tenant's Slack workspace
+	// Secret returns the signing secret (vault://tenants/TENANT/connectors/chat), at call time.
+	Secret func(ctx context.Context) (string, error)
+	// Email returns a Slack user's profile email (users.info); see WebEmail.
+	Email  func(ctx context.Context, slackUser string) (string, error)
+	Users  ports.UserFinder
+	Groups func(ctx context.Context, tenant, user string) ([]string, error)
+	Issuer tenancy.Issuer // the cell's one issuer (SB-108)
+	Agent  Asker
+	// Post sends a message to a response_url; nil means a real HTTPS POST.
+	Post func(ctx context.Context, responseURL string, msg Message) error
+	// Go runs the answer after the acknowledgement; nil means a goroutine.
+	Go  func(func())
+	Now func() time.Time
+}
+
+// Message is a response_url payload.
+type Message struct {
+	ResponseType    string  `json:"response_type"` // "ephemeral" or "in_channel"
+	Text            string  `json:"text"`
+	ReplaceOriginal bool    `json:"replace_original,omitempty"`
+	Blocks          []Block `json:"blocks,omitempty"`
+}
+
+// Block is the subset of Slack Block Kit the app sends.
+type Block struct {
+	Type     string    `json:"type"`
+	Text     *Text     `json:"text,omitempty"`
+	Elements []Element `json:"elements,omitempty"`
+}
+
+// Text is a Block Kit text object.
+type Text struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+// Element is a Block Kit button.
+type Element struct {
+	Type     string `json:"type"`
+	Text     *Text  `json:"text,omitempty"`
+	ActionID string `json:"action_id,omitempty"`
+	Value    string `json:"value,omitempty"`
+}
+
+// Replies the app sends (no content, no names).
+const (
+	MsgLooking   = "Looking that up…"
+	MsgNoMatch   = "I can't match your Slack account to your company sign-in, so I can't answer. Ask your admin to check your email in the directory."
+	MsgUsage     = "Ask a question: /ask What is our refund approval limit?"
+	MsgShareFail = "Only the person who asked can share this answer."
+)
+
+// ErrNoMatch is a chat user who isn't exactly one active directory user.
+var ErrNoMatch = errors.New("slackapp: chat user doesn't map to one active directory user")
+
+// Register mounts the endpoints on mux.
+func (a *App) Register(mux *http.ServeMux) {
+	mux.HandleFunc("POST /chat/slack/commands", a.command)
+	mux.HandleFunc("POST /chat/slack/interactions", a.interaction)
+}
+
+// verify reads and checks a Slack request; it returns the form on success.
+func (a *App) verify(r *http.Request) (url.Values, bool) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
+	if err != nil {
+		return nil, false
+	}
+	ts := r.Header.Get("X-Slack-Request-Timestamp")
+	sec, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return nil, false
+	}
+	if d := a.Now().Sub(time.Unix(sec, 0)); d > MaxSkew || d < -MaxSkew {
+		return nil, false
+	}
+	secret, err := a.Secret(r.Context())
+	if err != nil || secret == "" {
+		return nil, false
+	}
+	if !hmac.Equal([]byte(Sign(secret, ts, body)), []byte(r.Header.Get("X-Slack-Signature"))) {
+		return nil, false
+	}
+	form, err := url.ParseQuery(string(body))
+	if err != nil {
+		return nil, false
+	}
+	return form, true
+}
+
+// Sign is Slack's v0 request signature (used by tests and the fake).
+func Sign(secret, ts string, body []byte) string {
+	m := hmac.New(sha256.New, []byte(secret))
+	m.Write([]byte("v0:" + ts + ":"))
+	m.Write(body)
+	return "v0=" + hex.EncodeToString(m.Sum(nil))
+}
+
+func (a *App) command(w http.ResponseWriter, r *http.Request) {
+	form, ok := a.verify(r)
+	if !ok || form.Get("team_id") != a.TeamID || a.TeamID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	question := strings.TrimSpace(form.Get("text"))
+	if question == "" {
+		reply(w, Message{ResponseType: "ephemeral", Text: MsgUsage})
+		return
+	}
+	user, responseURL := form.Get("user_id"), form.Get("response_url")
+	if !slackURL(responseURL) {
+		http.Error(w, "bad response_url", http.StatusBadRequest)
+		return
+	}
+	reply(w, Message{ResponseType: "ephemeral", Text: MsgLooking})
+	a.run(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), AnswerTimeout)
+		defer cancel()
+		_ = a.post(ctx, responseURL, a.answer(ctx, user, question))
+	})
+}
+
+// answer maps the person, asks, and renders an ephemeral reply.
+func (a *App) answer(ctx context.Context, slackUser, question string) Message {
+	s, err := a.scope(ctx, slackUser)
+	if err != nil {
+		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: MsgNoMatch}
+	}
+	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question})
+	if err != nil {
+		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: errText(err)}
+	}
+	return Render(question, resp)
+}
+
+// scope maps a Slack user to exactly one active directory user and issues their scope.
+// It is checked on every request and never cached (sb-identity(7), Chat users).
+func (a *App) scope(ctx context.Context, slackUser string) (tenancy.Scope, error) {
+	if slackUser == "" {
+		return tenancy.Scope{}, ErrNoMatch
+	}
+	email, err := a.Email(ctx, slackUser)
+	if err != nil || email == "" {
+		return tenancy.Scope{}, ErrNoMatch
+	}
+	users, err := a.Users.UsersByEmail(ctx, a.Tenant, email)
+	if err != nil || len(users) != 1 || !users[0].Active || users[0].Tenant != a.Tenant {
+		return tenancy.Scope{}, ErrNoMatch
+	}
+	groups, err := a.Groups(ctx, a.Tenant, users[0].ID)
+	if err != nil {
+		return tenancy.Scope{}, ErrNoMatch
+	}
+	s, err := a.Issuer.Issue(a.Tenant, users[0].ID, groups)
+	if err != nil {
+		return tenancy.Scope{}, ErrNoMatch
+	}
+	return s, nil
+}
+
+// Render is the ephemeral answer: claims with citation links, uncited claims labelled,
+// then notice, refused count and trace, and a Share button carrying only the trace id.
+func Render(question string, r ask.Response) Message {
+	var b strings.Builder
+	for _, c := range r.Answer.Claims {
+		if c.Uncited || len(c.Cites) == 0 {
+			b.WriteString("• _Uncited:_ " + escape(c.Text) + "\n")
+			continue
+		}
+		b.WriteString("• " + escape(c.Text) + " " + links(c.Cites) + "\n")
+	}
+	if r.Notice != nil {
+		b.WriteString("\n_" + notices[*r.Notice] + "_\n")
+	}
+	if r.Refused > 0 {
+		fmt.Fprintf(&b, "_%d source(s) were not shown because you can't open them._\n", r.Refused)
+	}
+	fmt.Fprintf(&b, "_Trace %s_", r.Trace)
+	text := b.String()
+	return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: text, Blocks: []Block{
+		{Type: "section", Text: &Text{Type: "mrkdwn", Text: "*" + escape(question) + "*\n" + text}},
+		{Type: "actions", Elements: []Element{{Type: "button", Text: &Text{Type: "plain_text", Text: "Share in channel"}, ActionID: "share", Value: r.Trace}}},
+	}}
+}
+
+var notices = map[string]string{
+	ask.NoticeNoAccess:    "Some sources you don't have access to may answer this. Ask their owner.",
+	ask.NoticeNoSources:   "Nothing indexed answers this yet.",
+	ask.NoticeMostUncited: "Most of this answer isn't backed by your sources.",
+}
+
+func links(cs []answer.Cite) string {
+	var out []string
+	for _, c := range cs {
+		label := escape(c.Cite)
+		if c.URL != "" && strings.HasPrefix(c.URL, "https://") {
+			out = append(out, "<"+escapeURL(c.URL)+"|"+label+">")
+		} else {
+			out = append(out, "`"+label+"`")
+		}
+	}
+	return "[" + strings.Join(out, ", ") + "]"
+}
+
+// escape keeps text from becoming Slack markup (links, mentions).
+func escape(s string) string {
+	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;").Replace(s)
+}
+
+func escapeURL(u string) string {
+	return strings.NewReplacer("|", "%7C", ">", "%3E", "<", "%3C").Replace(u)
+}
+
+func errText(err error) string {
+	switch {
+	case errors.Is(err, ask.ErrInvalid):
+		return "That question can't be asked: " + strings.TrimPrefix(err.Error(), "ask: EINVAL: ")
+	case errors.Is(err, ask.ErrKilled):
+		return "Answers are switched off for now."
+	default:
+		return "Answers are unavailable right now. Try again in a minute."
+	}
+}
+
+// interaction handles the Share button: only the asker, with their own scope.
+func (a *App) interaction(w http.ResponseWriter, r *http.Request) {
+	form, ok := a.verify(r)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var p struct {
+		Team        struct{ ID string } `json:"team"`
+		User        struct{ ID string } `json:"user"`
+		ResponseURL string              `json:"response_url"`
+		Actions     []struct {
+			ActionID string `json:"action_id"`
+			Value    string `json:"value"`
+		} `json:"actions"`
+	}
+	if json.Unmarshal([]byte(form.Get("payload")), &p) != nil || p.Team.ID != a.TeamID || a.TeamID == "" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if len(p.Actions) != 1 || p.Actions[0].ActionID != "share" || !slackURL(p.ResponseURL) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	trace := p.Actions[0].Value
+	a.run(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), AnswerTimeout)
+		defer cancel()
+		s, err := a.scope(ctx, p.User.ID)
+		if err != nil {
+			_ = a.post(ctx, p.ResponseURL, Message{ResponseType: "ephemeral", Text: MsgNoMatch})
+			return
+		}
+		t, err := a.Agent.Trace(ctx, s, trace)
+		if err != nil || t.User != s.User() {
+			_ = a.post(ctx, p.ResponseURL, Message{ResponseType: "ephemeral", Text: MsgShareFail})
+			return
+		}
+		_ = a.post(ctx, p.ResponseURL, Shared(t))
+	})
+}
+
+// Shared is the in-channel message: the citation links only, never claim text, so each
+// reader opens the sources under their own access.
+func Shared(t ask.Trace) Message {
+	seen := map[string]bool{}
+	var cites []answer.Cite
+	for _, c := range t.Response.Answer.Claims {
+		for _, ci := range c.Cites {
+			if !seen[ci.Cite] {
+				seen[ci.Cite] = true
+				cites = append(cites, ci)
+			}
+		}
+	}
+	text := "Shared an answer (trace " + t.ID + "). Open the sources to read it with your own access."
+	if len(cites) > 0 {
+		text += "\nSources: " + links(cites)
+	}
+	return Message{ResponseType: "in_channel", Text: text}
+}
+
+func (a *App) run(f func()) {
+	if a.Go != nil {
+		a.Go(f)
+		return
+	}
+	go f()
+}
+
+func (a *App) post(ctx context.Context, responseURL string, m Message) error {
+	if a.Post != nil {
+		return a.Post(ctx, responseURL, m)
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, responseURL, bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("slackapp: response_url HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// slackURL accepts only Slack's own response URLs (no request forgery to other hosts).
+func slackURL(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && u.Scheme == "https" && u.Host == "hooks.slack.com" && u.User == nil
+}
+
+func reply(w http.ResponseWriter, m Message) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(m)
+}
+
+// WebEmail returns an Email function that calls Slack's users.info with the bot token
+// (users:read.email). Base is https://slack.com/api unless a test points it at a fake.
+func WebEmail(base string, token func(ctx context.Context) (string, error), client *http.Client) func(ctx context.Context, user string) (string, error) {
+	if base == "" {
+		base = "https://slack.com/api"
+	}
+	if client == nil {
+		client = http.DefaultClient
+	}
+	return func(ctx context.Context, user string) (string, error) {
+		tok, err := token(ctx)
+		if err != nil {
+			return "", err
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/users.info?"+url.Values{"user": {user}}.Encode(), nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("Authorization", "Bearer "+tok)
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer func() { _ = resp.Body.Close() }()
+		var out struct {
+			OK   bool   `json:"ok"`
+			Err  string `json:"error"`
+			User struct {
+				Deleted bool `json:"deleted"`
+				IsBot   bool `json:"is_bot"`
+				Profile struct {
+					Email string `json:"email"`
+				} `json:"profile"`
+			} `json:"user"`
+		}
+		if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&out); err != nil {
+			return "", err
+		}
+		if !out.OK || out.User.Deleted || out.User.IsBot || out.User.Profile.Email == "" {
+			return "", fmt.Errorf("slackapp: users.info: no usable email (%s)", out.Err)
+		}
+		return out.User.Profile.Email, nil
+	}
+}

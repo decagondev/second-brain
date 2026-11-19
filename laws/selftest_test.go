@@ -613,3 +613,10 @@ func TestSelf_LAW14AskMutationIsCaught(t *testing.T) {
 		t.Error("LAW-14: an ask path citing refused candidates was not caught")
 	}
 }
+
+// LAW-01's chat check catches a chat app that maps the Slack user to the wrong person.
+func TestSelf_LAW01ChatMutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { w := Gen(r); return law01Chat(w, chatSystem{wrongPerson: true}.ask) }) {
+		t.Error("LAW-01: a chat app answering as the wrong person was not caught")
+	}
+}

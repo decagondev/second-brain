@@ -5,6 +5,7 @@ package memory
 import (
 	"context"
 	"sort"
+	"strings"
 	"sync"
 
 	"example.com/second-brain/internal/core/ports"
@@ -54,6 +55,26 @@ func (d *Dir) UserByName(_ context.Context, tenant, name string) (ports.User, bo
 		}
 	}
 	return ports.User{}, false, nil
+}
+
+// UsersByEmail implements ports.UserFinder: every user of the tenant with that email,
+// compared case-insensitively.
+func (d *Dir) UsersByEmail(_ context.Context, tenant, email string) ([]ports.User, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	var out []ports.User
+	for _, u := range d.users {
+		if u.Tenant != tenant {
+			continue
+		}
+		for _, e := range u.Emails {
+			if strings.EqualFold(e, email) {
+				out = append(out, u)
+				break
+			}
+		}
+	}
+	return out, nil
 }
 
 func (d *Dir) PutGroup(_ context.Context, g ports.Group) error {

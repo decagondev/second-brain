@@ -146,7 +146,7 @@ type Connector interface {
 <tbody>
 <tr>
 <td>Credentials</td>
-<td>A Slack app's bot token and signing secret at <code>vault://tenants/TENANT/connectors/chat</code> (JSON <code>{"bot_token", "signing_secret"}</code>). Scopes: <code>channels:history</code>, <code>groups:history</code>, <code>channels:read</code>, <code>groups:read</code>, <code>users:read</code>, <code>users:read.email</code>. No write scopes, and no <code>im:</code> or <code>mpim:</code> scopes</td>
+<td>A Slack app's bot token and signing secret at <code>vault://tenants/TENANT/connectors/chat</code> (JSON <code>{"bot_token", "signing_secret"}</code>). Scopes: <code>channels:history</code>, <code>groups:history</code>, <code>channels:read</code>, <code>groups:read</code>, <code>users:read</code>, <code>users:read.email</code>. No write scopes, and no <code>im:</code> or <code>mpim:</code> scopes. The chat app (<code>/ask</code>, sb-ask(3)) adds only <code>commands</code></td>
 </tr>
 <tr>
 <td>Documents</td>

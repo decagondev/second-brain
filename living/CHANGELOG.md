@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Slack `/ask` (S3.5: SB-308): signed and workspace-checked requests, one-active-user identity mapping by email, ephemeral answers through `response_url`, and a Share button that posts citation links only.
 - Web chat UI (S3.4: SB-307): React, Vite and TypeScript, served by the cell at `/` with a self-only CSP; citation chips, an "Uncited" label, notices, and axe-checked accessibility. `make web` and a CI `web` job.
 - `POST /v1/ask` and `GET /v1/traces/{id}` (S3.3: SB-306): the ask agent, conversations that re-check every source, traces with decision lists, and the sb-api(3) error shape.
 - Cited answers and the model gateway (S3.2: SB-304, SB-305): the answer composer decides citations in code; a provider-neutral gateway with OpenAI-compatible, Anthropic, Groq and OpenRouter adapters refuses prompts holding secrets and meters tokens.

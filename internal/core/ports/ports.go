@@ -343,3 +343,9 @@ var (
 type Model interface {
 	Complete(ctx context.Context, req ModelRequest) (ModelResponse, error)
 }
+
+// UserFinder maps an email to directory users (SB-308, chat identity). It returns every
+// user of the tenant with that email, so callers can refuse anything but exactly one.
+type UserFinder interface {
+	UsersByEmail(ctx context.Context, tenant, email string) ([]User, error)
+}

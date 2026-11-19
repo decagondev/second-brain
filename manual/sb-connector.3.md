@@ -99,7 +99,7 @@ Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"]
 
 | Concern | Behaviour |
 |---|---|
-| Credentials | A Slack app's bot token and signing secret at `vault://tenants/TENANT/connectors/chat` (JSON `{"bot_token", "signing_secret"}`). Scopes: `channels:history`, `groups:history`, `channels:read`, `groups:read`, `users:read`, `users:read.email`. No write scopes, and no `im:` or `mpim:` scopes |
+| Credentials | A Slack app's bot token and signing secret at `vault://tenants/TENANT/connectors/chat` (JSON `{"bot_token", "signing_secret"}`). Scopes: `channels:history`, `groups:history`, `channels:read`, `groups:read`, `users:read`, `users:read.email`. No write scopes, and no `im:` or `mpim:` scopes. The chat app (`/ask`, sb-ask(3)) adds only `commands` |
 | Documents | One document per message: id `CHANNEL/TS`, title `#channel`, text the message. Thread replies are their own documents. Version is the edit time, or else the post time, in microseconds, so edits always raise it |
 | Direct messages | Never fetched: DMs and group DMs are excluded by default, and the app has no scope to read them |
 | ACL | Live, per document: a **public** channel → `Allow` for any active, non-guest member of the workspace, and for guests who are in the channel; a **private** channel → `Allow` only for its members. The user is found by email; Slack answering "no such user" → `Deny`. Anything else, or a channel or message that's gone → `Unknown` |

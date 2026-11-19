@@ -15,7 +15,7 @@ summary: Epics, waves, slices and tickets.
 |---|---|---|---|---|
 | W0 Manual and Laws | 10 | 6 | 0 | Left: human reviews (SB-004, SB-005, SB-014) and, for SB-011 to SB-013, two reviewers (models and mutations green locally and in CI, 2026-11-19) |
 | W1 First Cell | 8 | 5 | 0 | Done: SB-101 to SB-103, SB-105 to SB-108, SB-114. In review: SB-104 (needs a cloud adapter), SB-109 to SB-112 (second reviewer for policy and audit) |
-| W2 to W7 | 8 | 10 | 49 | W2 built (4 done, 7 in review); W3 S3.1 to S3.4: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain) and SB-307 (WCAG audit, connector links) in review |
+| W2 to W7 | 8 | 11 | 48 | W2 built (4 done, 7 in review); W3 S3.1 to S3.5: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain), SB-307 (WCAG audit, connector links) and SB-308 (real Slack workspace) in review |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
 

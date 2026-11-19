@@ -155,3 +155,7 @@ func TestLAW07_NoSecretInPrompts(t *testing.T) {
 func TestLAW14_AskAnswersCitedOrLabelled(t *testing.T) {
 	Check(t, "LAW-14", runs, func(r *rand.Rand) error { w := Gen(r); return law14Ask(w, NewSystem(w)) })
 }
+
+func TestLAW01_ChatAnswersCiteOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { w := Gen(r); return law01Chat(w, NewChatAsk()) })
+}

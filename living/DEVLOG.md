@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.5 Slack `/ask` (SB-308)
+
+**Wave/slice:** W3 / S3.5 · **Author:** platform lead + Claude · **Status:** In review (real Slack workspace)
+
+**What:** The Slack app as a second entry point to the same ask agent: a signed slash command and a Share button. The manual changed first: sb-ask(3) gained "The chat app (Slack)", sb-identity(7) gained "Chat users", and sb-connector(3) notes the one added scope, `commands`.
+
+**Why this way:** Replies go through Slack's `response_url`, so the bot needs no Slack write scope at all, and every reply is ephemeral. The identity mapping needs exactly one active directory user for the Slack email, checked on every request. Two matches, an inactive user or no match means no answer, never a guess. Share posts citation links only, so a reader who can't open a source learns nothing from the share. That keeps LAW-01 true for everyone in the channel, not just the asker. `response_url` must be on `hooks.slack.com`, so a forged request can't make the cell POST anywhere else.
+
+**Learned:** The law-test harness could reuse the ask agent by pulling its construction into `askSystem.agent`, so the chat law runs the same cell as the web law. The red-first step worked as intended here: a pending `NewChatAsk`, red for the right reason, then the real app. The mutation that answers as the tenant's first user is caught because the live ACL is asked about the wrong person.
+
+**Laws:** LAW-01 extended to the chat path. LAW-04 and LAW-05 are still the only red ones.
+
+**Next:** SB-309, the citation-faithfulness eval.
+
 ## 2026-11-19 S3.4 Web chat UI (SB-307)
 
 **Wave/slice:** W3 / S3.4 · **Author:** platform lead + Claude · **Status:** In review (human WCAG audit, connector links)

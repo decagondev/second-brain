@@ -77,33 +77,10 @@ func (s askSystem) Ask(w *World, userID, question string) (Answer, error) {
 	if err != nil {
 		return Answer{}, err
 	}
-	// The asker's cell has its own index, holding only its tenant's documents.
-	idx := memindex.New().Bind(u.Tenant)
-	for _, d := range w.Docs {
-		if d.Tenant != u.Tenant && !s.indexOthers {
-			continue
-		}
-		ref := ports.SourceRef{Kind: "docs", ID: d.ID}
-		c := ports.Chunk{ID: "chk_" + d.ID, Tenant: d.Tenant, Cite: fmt.Sprintf("%s@%d", d.ID, d.Version), Kind: "docs",
-			SourceID: d.ID, Version: d.Version, Text: "anything " + d.ID, ACLPrefilter: d.Prefilter}
-		if s.indexOthers && d.Tenant != u.Tenant {
-			// The mutation files another tenant's chunk under this cell, with a prefilter
-			// built wrongly; only the tenant boundary itself is left to stop it.
-			c.Tenant, c.ACLPrefilter = u.Tenant, []string{"anyone"}
-		}
-		if err := idx.Replace(ctx, u.Tenant, ref, d.Version, []ports.Chunk{c}); err != nil {
-			return Answer{}, err
-		}
+	agent, err := s.agent(ctx, w, u.Tenant)
+	if err != nil {
+		return Answer{}, err
 	}
-	auth := retrieve.Authoriser{Connectors: map[string]ports.Connector{"docs": worldConnector{w, s.unknownAsAllow}},
-		Policy: policy.Kernel{Engine: askPolicies, Recorder: okRecorder{}}}
-	n := 0
-	agent := ask.Agent{Tenant: u.Tenant, Release: "rel_law", Index: idx, Auth: auth,
-		Model:  &citingModel{},
-		Store:  tracemem.New(),
-		Killed: func(context.Context) bool { return false },
-		NewID:  func(p string) string { n++; return fmt.Sprintf("%s%d", p, n) },
-		Now:    time.Now}
 	resp, err := agent.Ask(ctx, scope, ask.Request{Question: question})
 	if err != nil {
 		return Answer{}, err
@@ -167,4 +144,37 @@ func (*citingModel) Complete(_ context.Context, req ports.ModelRequest) (ports.M
 	cs = append(cs, claim{Text: "spoofed", Cites: []string{"C999"}}, claim{Text: "general", Cites: nil})
 	b, err := json.Marshal(map[string]any{"claims": cs})
 	return ports.ModelResponse{Text: string(b)}, err
+}
+
+// agent builds the cell's ask agent for one tenant: its own index, holding only its
+// tenant's documents (unless mutated), the world's source as the live check, and the
+// cedar base policies.
+func (s askSystem) agent(ctx context.Context, w *World, tenant string) (ask.Agent, error) {
+	idx := memindex.New().Bind(tenant)
+	for _, d := range w.Docs {
+		if d.Tenant != tenant && !s.indexOthers {
+			continue
+		}
+		ref := ports.SourceRef{Kind: "docs", ID: d.ID}
+		c := ports.Chunk{ID: "chk_" + d.ID, Tenant: d.Tenant, Cite: fmt.Sprintf("%s@%d", d.ID, d.Version), Kind: "docs",
+			SourceID: d.ID, Version: d.Version, Text: "anything " + d.ID, ACLPrefilter: d.Prefilter}
+		if s.indexOthers && d.Tenant != tenant {
+			// The mutation files another tenant's chunk under this cell, with a prefilter
+			// built wrongly; only the tenant boundary itself is left to stop it.
+			c.Tenant, c.ACLPrefilter = tenant, []string{"anyone"}
+		}
+		if err := idx.Replace(ctx, tenant, ref, d.Version, []ports.Chunk{c}); err != nil {
+			return ask.Agent{}, err
+		}
+	}
+	auth := retrieve.Authoriser{Connectors: map[string]ports.Connector{"docs": worldConnector{w, s.unknownAsAllow}},
+		Policy: policy.Kernel{Engine: askPolicies, Recorder: okRecorder{}}}
+	n := 0
+	agent := ask.Agent{Tenant: tenant, Release: "rel_law", Index: idx, Auth: auth,
+		Model:  &citingModel{},
+		Store:  tracemem.New(),
+		Killed: func(context.Context) bool { return false },
+		NewID:  func(p string) string { n++; return fmt.Sprintf("%s%d", p, n) },
+		Now:    time.Now}
+	return agent, nil
 }

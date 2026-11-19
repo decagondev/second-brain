@@ -163,6 +163,15 @@
 </table>
 <p>The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an <code>aria-live</code> region, and every chip has an accessible name that includes the cite.</p>
 <p><code>cites[].url</code> is set when the source's connector can link to a version; it is omitted otherwise.</p>
+<h3 id="the-chat-app-slack">The chat app (Slack)</h3>
+<p>Staff can also ask from Slack with <code>/ask &lt;question&gt;</code> (SB-308). It is the same <code>ask</code> agent with the same laws. Only the entry point differs.</p>
+<ol>
+<li><strong>Verify.</strong> The cell checks Slack's request signature with the signing secret from <code>vault://tenants/TENANT/connectors/chat</code> and refuses any request older than 5 minutes. The <code>team_id</code> must be the tenant's workspace. Anything else gets HTTP 401 and no reply.</li>
+<li><strong>Map the person.</strong> The bot looks up the Slack user's email (<code>users.info</code>) and finds the <strong>one active</strong> directory user with that email (SCIM-provisioned, sb-identity(7)). No match, more than one match, or an inactive user gets an ephemeral reply saying the account can't be matched, and <strong>no answer</strong>. The bot never falls back to a shared or service identity.</li>
+<li><strong>Answer privately.</strong> Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's <code>response_url</code> (only <code>https://hooks.slack.com/</code>), also <strong>ephemeral</strong>, so only the asker sees it. Claims show as text with their citations as links (<code>&lt;url|cite&gt;</code>). Uncited claims start with <em>Uncited:</em>. The reply ends with the notice, the refused count and the trace id.</li>
+<li><strong>Share.</strong> A <em>Share in channel</em> button posts the question and the <strong>citation links only, never the claim text</strong>, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.</li>
+</ol>
+<p>Errors are ephemeral replies with the error's <code>message</code> and trace id. Slack scopes added for the bot: <code>commands</code> only. The bot uses no Slack write scopes, because replies go through <code>response_url</code>.</p>
 <h2 id="errors">ERRORS</h2>
 <table>
 <thead>
@@ -208,7 +217,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-citations.7.html">sb-citations(7)</a>, <a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-api.3.html">sb-api(3)</a></p><p class="srcline">Source: <code>manual/sb-ask.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l3"><a href="#the-web-ui">The web UI</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l3"><a href="#the-web-ui">The web UI</a></li><li class="l3"><a href="#the-chat-app-slack">The chat app (Slack)</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

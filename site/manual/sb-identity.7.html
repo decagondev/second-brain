@@ -110,6 +110,8 @@ users:    SCIM only        →  deactivate revokes in ≤ 5 min
 <p>Approving a consequential action requires a session less than 15 minutes old, or step-up re-authentication at the IdP.</p>
 <h3 id="service-identities">Service identities</h3>
 <p>The chat-app integration and CI use workload identity with short-lived tokens. There are no static API keys.</p>
+<h3 id="chat-users">Chat users</h3>
+<p>A chat-app request acts as a person only after it is mapped to the directory. The workspace must be the tenant's, the chat user's email (from the chat app's own user profile) must match exactly <strong>one active</strong> directory user, and the scope is issued for that user with their directory groups, the same as a web session. Without a single match there is no answer and no fallback identity (sb-ask(3), The chat app). The mapping is checked on every request and never cached, so a SCIM deactivation stops chat answers at once.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-12">LAW-12</a>.</p>
 <h2 id="examples">EXAMPLES</h2>
@@ -119,7 +121,7 @@ users:    SCIM only        →  deactivate revokes in ≤ 5 min
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-api.3.html">sb-api(3)</a>, <a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and tenancy</a></p><p class="srcline">Source: <code>manual/sb-identity.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#sign-in">Sign-in</a></li><li class="l3"><a href="#users-and-groups">Users and groups</a></li><li class="l3"><a href="#sessions">Sessions</a></li><li class="l3"><a href="#approvals">Approvals</a></li><li class="l3"><a href="#service-identities">Service identities</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#sign-in">Sign-in</a></li><li class="l3"><a href="#users-and-groups">Users and groups</a></li><li class="l3"><a href="#sessions">Sessions</a></li><li class="l3"><a href="#approvals">Approvals</a></li><li class="l3"><a href="#service-identities">Service identities</a></li><li class="l3"><a href="#chat-users">Chat users</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>
