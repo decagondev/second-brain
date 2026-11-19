@@ -161,6 +161,14 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <li><strong>After cutover the factory holds only the retained grants</strong> (LAW-17), and after detach it holds none.</li>
 </ol>
 <p>Abort is allowed in every phase from <code>Planned</code> to <code>Verified</code>, and it restores <code>Managed</code> exactly: factory wrap only, all paths, the factory cell serving. A failed check in <code>execute</code> stops before cutover and leaves the phase where it was, so the operator can fix the problem and resume or abort.</p>
+<h3 id="key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</h3>
+<p>A cell's data is encrypted under <strong>data keys</strong>, one per purpose. Today the only purpose is <code>audit-signing</code>, the seed of the cell's audit signing key (sb-audit(5)), made when the cell is first stamped. Each data key is stored only <strong>wrapped</strong> by a custodian's root key in that custodian's KMS. The <strong>wrap inventory</strong> records, for each purpose, one wrap per custodian: the custodian (<code>factory</code> or <code>tenant</code>), its KMS key id, and the wrapped bytes. A hand-off never re-encrypts data. It changes who can unwrap the data keys:</p>
+<ol>
+<li><strong>Re-wrap</strong> (phase <code>KeyDual</code>): for each purpose, unwrap with the factory's key, wrap under the tenant's key, then unwrap the new wrap and compare. A purpose whose new wrap doesn't give back the same key fails the step. Re-wrap is idempotent: a tenant wrap that already unwraps correctly is kept.</li>
+<li><strong>Destroy the factory wrap</strong> (phase <code>TenantOwned</code>): refused with <code>ELAW</code> unless, for <strong>every</strong> purpose, the tenant's wrap unwraps <strong>now</strong> to the same data key as the factory's, and the cell being served is the tenant's. The check runs at the moment of destroying, not from a record of an earlier check.</li>
+</ol>
+<p>Abort removes the tenant's wraps and keeps the factory's. Nothing ever removes the last working wrap of a purpose (LAW-18).</p>
+<p><code>sb factory status TENANT</code> prints the inventory as checked now, for example <code>key_wraps audit-signing: factory, tenant</code>, listing for each purpose the custodians whose wrap unwraps it at that moment. A wrap that fails to unwrap is shown as <code>factory (broken)</code>, and that is a Sev-1 (<code>sb_unwrappable_keys</code>, LAW-18).</p>
 <p>The <strong>hand-off record</strong> is written at <code>TenantOwned</code> and kept in the registry's custody history: the plan hash, both approvals, the new custody record (<code>custody: tenant</code>, <code>placement: tenant-account://PROVIDER/ID</code>, <code>key_custodian: tenant</code>), the retained grants, and the <code>sb factory access</code> result. LAW-17 is checked against this record.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-17">LAW-17</a> no unlisted factory access after hand-off · <a href="sb-laws.7.html#law-18">LAW-18</a> the root key always has a custodian. LAW-01 to LAW-16 continue to hold for <code>factory</code> and <code>tenant</code> custody.</p>
@@ -169,6 +177,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 custody        factory
 placement      factory-account
 key_custodian  factory
+key_wraps      audit-signing: factory
 channel        stable
 handoff        none
 </code></pre>
@@ -182,7 +191,7 @@ needs approval from: factory operator, tenant owner (group:gamma-it-owners)
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-factory.1.html">sb-factory(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

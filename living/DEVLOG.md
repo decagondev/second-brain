@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.2a Key wraps and re-wrap (SB-704)
+
+**Wave/slice:** W7 / S7.2a · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** `internal/core/keywrap`, `internal/adapters/keywrap/localfs`, the audit-signing data key made in `apply`, `key_wraps` in `sb factory status`, and `laws/law18wrap.go`. The manual changed first: sb-factory(7) gained "Key wraps, exactly", and sb-factory(1), sb-laws(7) and the status example follow it.
+
+**Why this way:** A hand-off moves custody of data keys, not data, so the inventory is the thing to get right. Every check that guards a wrap's removal unwraps now, through the kept custodian's own key store, rather than trusting a record that says it worked earlier: KMS access can disappear between two steps.
+
+**Learned:** The law test went red on its first run. Abort removed the tenant's wraps whenever some other wrap existed, even one that no longer unwrapped. An abort after the factory's KMS lost a key would have orphaned the data key, which is exactly LAW-18's failure. Abort is now the destroy guard with the roles swapped, so there is one rule, not two.
+
+**Laws:** LAW-18 extended (`TestLAW18_DestroyNeedsAWorkingWrap`, red first, two mutations caught). The LAW-17 and LAW-18 hand-off tests are still red, as planned, until SB-705.
+
+**Next:** S7.2b, the hand-off controller (SB-705).
+
 ## 2026-11-19 S7.1c GCP placement (SB-703)
 
 **Wave/slice:** W7 / S7.1c · **Author:** platform lead + Claude · **Status:** In review (a real GCP project)

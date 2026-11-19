@@ -66,7 +66,7 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 </table>
 <p>Anything else is <code>EPERM</code> (exit 3). Neither role can read tenant content.</p>
 <h3 id="status-tenant"><code>status TENANT</code></h3>
-<p>Prints the custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>), the channel, and the hand-off in progress, if any, with its phase. It changes nothing.</p>
+<p>Prints the custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>), the key wraps of each data key as checked now (sb-factory(7), Key wraps), the channel, and the hand-off in progress, if any, with its phase. It changes nothing. A broken wrap is shown as <code>CUSTODIAN (broken)</code>, and if a purpose has no working wrap, <code>status</code> exits 1 with <code>ELAW</code>.</p>
 <h3 id="handoff-plan-tenant-to-tenant-accountproviderid-region-region"><code>handoff plan TENANT --to tenant-account://PROVIDER/ID --region REGION</code></h3>
 <p>Builds the hand-off plan and prints it with its hash. The plan holds the tenant, its current custody record, the target account and region, every resource to provision, the key steps, <strong>every factory access path to revoke</strong>, and the grants to retain. Access paths are enumerated from IaC state, IAM and the registry (SB-706), never typed in. <code>--region</code> must equal the cell's pinned region; a different region is <code>EINVAL</code>. <code>PROVIDER</code> is one the factory has a placement adapter for (<code>gcp</code> first). Each <code>--retain</code> adds a grant; <code>publish-releases</code> is always retained. The grants are:</p>
 <table>

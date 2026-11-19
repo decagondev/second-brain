@@ -145,7 +145,7 @@ After a hand-off to `tenant` custody completes, the factory holds no access path
 
 At every moment, at least one custodian can unwrap a cell's root key. A hand-off re-wraps under the new custodian **before** destroying the old wrap.
 
-*Checks:* Model (`Handoff.tla: KeyNeverOrphaned`) · step-ordering property over random hand-offs, aborts and failures in the controller (`TestLAW18_HandoffNeverOrphansTheKey`, red until SB-704 and SB-705) · Watch: key-wrap inventory per cell.
+*Checks:* Model (`Handoff.tla: KeyNeverOrphaned`) · the wrap inventory's ordering guard: the factory wrap can't be destroyed unless every data key's tenant wrap unwraps now (`TestLAW18_DestroyNeedsAWorkingWrap`, SB-704) · step-ordering property over random hand-offs, aborts and failures in the controller (`TestLAW18_HandoffNeverOrphansTheKey`, red until SB-704 and SB-705) · Watch: key-wrap inventory per cell.
 
 ### External review (SB-612)
 

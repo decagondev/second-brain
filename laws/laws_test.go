@@ -240,3 +240,7 @@ func TestLAW02_GCPCellsShareNothing(t *testing.T) {
 		return law02Cells(r, stamp)
 	})
 }
+
+func TestLAW18_DestroyNeedsAWorkingWrap(t *testing.T) {
+	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Wraps(r, NewWrapWorld(t.TempDir())) })
+}

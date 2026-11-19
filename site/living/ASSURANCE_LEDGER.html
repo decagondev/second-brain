@@ -190,8 +190,8 @@
 <td>The root key always has a custodian</td>
 <td>Tested</td>
 <td><code>Handoff.tla</code>: TLC clean (23 states); 4 mutations caught</td>
-<td><code>laws/</code> W1 check: recorded custodian and working root key, + self-test; <code>TestLAW18_HandoffNeverOrphansTheKey</code>, red until SB-705</td>
-<td>—</td>
+<td><code>laws/</code> W1 check: recorded custodian and working root key, + self-test; <code>TestLAW18_DestroyNeedsAWorkingWrap</code> (SB-704); <code>TestLAW18_HandoffNeverOrphansTheKey</code>, red until SB-705</td>
+<td><code>sb factory status</code> key wraps, checked live</td>
 <td>SB-114, SB-701, SB-704, SB-705</td>
 </tr>
 </tbody>
@@ -512,6 +512,12 @@
 <td>LAW-02</td>
 <td>Tested (extended)</td>
 <td>SB-703: <code>TestLAW02_GCPCellsShareNothing</code>, the cell-isolation law over GCP projects through the gcp adapter's fake; two-project test</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-18</td>
+<td>Tested (extended)</td>
+<td>SB-704: <code>TestLAW18_DestroyNeedsAWorkingWrap</code> over the wrap inventory, red first (an abort that counted wraps instead of checking them), now green; unchecked-destroy and drop-last mutations caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

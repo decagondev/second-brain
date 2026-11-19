@@ -43,7 +43,7 @@ Anything else is `EPERM` (exit 3). Neither role can read tenant content.
 
 ### `status TENANT`
 
-Prints the custody record (`custody`, `placement`, `key_custodian`), the channel, and the hand-off in progress, if any, with its phase. It changes nothing.
+Prints the custody record (`custody`, `placement`, `key_custodian`), the key wraps of each data key as checked now (sb-factory(7), Key wraps), the channel, and the hand-off in progress, if any, with its phase. It changes nothing. A broken wrap is shown as `CUSTODIAN (broken)`, and if a purpose has no working wrap, `status` exits 1 with `ELAW`.
 
 ### `handoff plan TENANT --to tenant-account://PROVIDER/ID --region REGION`
 

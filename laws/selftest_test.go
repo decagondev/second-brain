@@ -871,3 +871,40 @@ func TestSelf_HandoffMutationsAreCaught(t *testing.T) {
 		}
 	}
 }
+
+// LAW-18's wrap check catches a destroy that doesn't verify the other custodian first, and a
+// drop that removes the last wrap.
+func TestSelf_LAW18WrapMutationsAreCaught(t *testing.T) {
+	for name, mk := range map[string]func(string) WrapWorld{
+		"unchecked destroy":  func(root string) WrapWorld { return uncheckedDestroy{NewWrapWorld(root).(*wrapWorld)} },
+		"drop the last wrap": func(root string) WrapWorld { return dropAll{NewWrapWorld(root).(*wrapWorld)} },
+	} {
+		if !violates(runs, func(r *rand.Rand) error { return law18Wraps(r, mk(t.TempDir())) }) {
+			t.Errorf("LAW-18 (wraps): %s was not caught", name)
+		}
+	}
+}
+
+type uncheckedDestroy struct{ *wrapWorld }
+
+func (u uncheckedDestroy) Destroy(gone string) error {
+	ws, _ := u.st.List(context.Background(), wrapTenant)
+	for _, x := range ws {
+		if x.Custodian == gone {
+			_ = u.st.Delete(context.Background(), wrapTenant, x.Purpose, gone)
+		}
+	}
+	return nil
+}
+
+type dropAll struct{ *wrapWorld }
+
+func (d dropAll) Drop(c string) error {
+	ws, _ := d.st.List(context.Background(), wrapTenant)
+	for _, x := range ws {
+		if x.Custodian == c {
+			_ = d.st.Delete(context.Background(), wrapTenant, x.Purpose, c)
+		}
+	}
+	return nil
+}

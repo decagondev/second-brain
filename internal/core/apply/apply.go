@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/cell"
+	"example.com/second-brain/internal/core/keywrap"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/ports"
@@ -30,6 +31,9 @@ type Deps struct {
 	// Evals gates workflows on their eval record (SB-410); Now dates it.
 	Evals ports.EvalGate
 	Now   func() time.Time
+	// Wraps is the cell's wrap inventory: a new cell's audit-signing data key is made and
+	// wrapped by the factory's root key (SB-704). Nil skips it (older control planes).
+	Wraps keywrap.Store
 }
 
 // EvalMaxAge is how old a workflow's passing eval record may be.
@@ -131,8 +135,20 @@ func Run(ctx context.Context, d Deps, t manifest.Tenant, done func(plan.Change))
 		}
 		if c.Kind == plan.KindCell && c.Op == plan.OpAdd {
 			// The cell is recorded only after every resource exists (sb-tenant(1)).
-			if _, err := cell.Stamp(ctx, d.Placement, d.Keys, t); err != nil {
+			rs, err := cell.Stamp(ctx, d.Placement, d.Keys, t)
+			if err != nil {
 				return fail(err)
+			}
+			if d.Wraps != nil {
+				for _, r := range rs {
+					if r.Kind != cell.KindRootKey {
+						continue
+					}
+					c := keywrap.Custodian{Name: cell.KeyCustodianFactory, Keys: d.Keys, KeyID: r.ID}
+					if err := keywrap.Seed(ctx, t.Tenant, d.Wraps, c, keywrap.PurposeAuditSigning); err != nil {
+						return fail(err)
+					}
+				}
 			}
 			if err := d.Cells.PutCell(ctx, Record(t, d.Placement, d.BaseDomain)); err != nil {
 				return fail(err)

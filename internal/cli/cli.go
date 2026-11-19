@@ -15,11 +15,13 @@ import (
 	"strings"
 	"time"
 
+	wrapfs "example.com/second-brain/internal/adapters/keywrap/localfs"
 	"example.com/second-brain/internal/adapters/placement/local"
 	"example.com/second-brain/internal/adapters/registry/localfs"
 	"example.com/second-brain/internal/core/apply"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/cell"
+	"example.com/second-brain/internal/core/keywrap"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/ports"
@@ -305,15 +307,46 @@ func (e *env) factoryStatus(args []string) int {
 			}
 		}
 	}
+	wraps, orphaned := "unknown", false
+	if deps.Wraps != nil {
+		inv, err := keywrap.Inventory(ctx, c.Tenant, deps.Wraps, map[string]ports.Keys{cell.KeyCustodianFactory: deps.Keys})
+		if err != nil {
+			return e.fail(name, errs.New(errs.EUNAVAIL, "key-wrap inventory unavailable: %v", err))
+		}
+		wraps, orphaned = wrapLine(inv), keywrap.Orphaned(inv)
+	}
 	if e.g.JSON {
-		return e.json(map[string]string{"tenant": c.Tenant, "custody": c.Custody, "placement": c.Placement,
-			"key_custodian": c.KeyCustodian, "channel": channel, "handoff": "none"})
+		code := e.json(map[string]string{"tenant": c.Tenant, "custody": c.Custody, "placement": c.Placement,
+			"key_custodian": c.KeyCustodian, "key_wraps": wraps, "channel": channel, "handoff": "none"})
+		if code == 0 && orphaned {
+			return 1
+		}
+		return code
 	}
 	for _, kv := range [][2]string{{"custody", c.Custody}, {"placement", c.Placement}, {"key_custodian", c.KeyCustodian},
-		{"channel", channel}, {"handoff", "none"}} {
+		{"key_wraps", wraps}, {"channel", channel}, {"handoff", "none"}} {
 		fmt.Fprintf(e.out, "%-14s %s\n", kv[0], kv[1])
 	}
+	if orphaned {
+		return e.fail(name, errs.New(errs.ELAW, "a data key has no working wrap (LAW-18)"))
+	}
 	return 0
+}
+
+// wrapLine prints the inventory, e.g. "audit-signing: factory, tenant (broken)".
+func wrapLine(inv []keywrap.Entry) string {
+	if len(inv) == 0 {
+		return "none recorded"
+	}
+	var parts []string
+	for _, en := range inv {
+		cs := append([]string(nil), en.Working...)
+		for _, b := range en.Broken {
+			cs = append(cs, b+" (broken)")
+		}
+		parts = append(parts, en.Purpose+": "+strings.Join(cs, ", "))
+	}
+	return strings.Join(parts, "; ")
 }
 
 // controlPlane opens the control plane named by --endpoint or SB_ENDPOINT (sb(1)).
@@ -332,7 +365,7 @@ func (e *env) controlPlane() (apply.Deps, error) {
 		// v1 custody is always placement factory-account (sb-factory(7)); no account id here.
 		acct := local.Account{Root: filepath.Join(root, "accounts"), Name: cell.PlacementFactoryAccount}
 		return apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: "sb.localhost", Placement: acct, Keys: acct,
-			Evals: reg, Now: time.Now}, nil
+			Evals: reg, Now: time.Now, Wraps: wrapfs.Dir{Root: filepath.Join(root, "keywraps")}}, nil
 	}
 	return apply.Deps{}, errs.New(errs.ENOTIMPL, "control-plane client not built yet (SB-105); use --endpoint file:///DIR")
 }

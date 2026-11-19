@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Key wraps (S7.2a: SB-704): the wrap inventory with verified re-wrap, a destroy and abort that check the kept wrap live, the audit-signing data key made at stamp time, and `key_wraps` in `sb factory status`.
 - GCP placement (S7.1c: SB-703): the `gcp` Placement and Keys adapter (Cloud SQL, Cloud KMS, Secret Manager, Pub/Sub over REST), its recorded fake, the tenant's deploy-role bootstrap script, and a LAW-02 law test over GCP projects.
 - Factory roles (S7.1b: SB-702): `factory-operator` and `tenant-owner` in Cedar, a `CellCustody` entity and six custody actions; no self-approval of a plan, no content reads across tenants, and custody records must name their tenant.
 - Hand-off specified (S7.1a: SB-701): `sb-factory(1)`, the phases and invariants of a hand-off in sb-factory(7), the hand-off runbook, and LAW-17 and LAW-18 law tests (red until SB-705).
