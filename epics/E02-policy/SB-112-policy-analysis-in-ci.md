@@ -38,7 +38,7 @@ A policy change is a code change and gets the same gate.
 
 2026-11-19: `tools/check/policy.py`, run by `make check` as `make policy`, does three things. It validates every policy file against the schema with cedarpy (a missing validator fails). It requires `principal.tenant == resource.tenant` in every permit's `when`. It limits tenant policies to `use_agent`/`propose`/`approve` permits. On pull requests, CI runs `--diff origin/BASE`, which evaluates a fixed matrix (member and each group, times every action and resource kind) against the old and new policies and prints the permissions gained and lost. A built-in self-test runs first, so the rules can't silently stop matching (BUG-0005). Mutation-checked: a tenant-less permit dropped into `examples/policies/` fails with both rule messages. LAW-02's dynamic policy test (SB-110) and this static check guard the same rule from two sides.
 
-**Left:** the `--diff` mode needs a git repository, so it runs only in CI (the folder isn't a repo yet). Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+**Left:** a second reviewer. Changes to `policy` and `audit` need two (definition of done); the user reviewed on 2026-11-19, and CI is green.
 
 ## Definition of done
 

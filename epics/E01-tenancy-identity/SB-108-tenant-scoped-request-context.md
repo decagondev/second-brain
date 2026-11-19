@@ -13,7 +13,7 @@ summary: "Tenant id must be impossible to forget, so it is a type, not a paramet
 | Manual | [`sb-tenancy(7)`](../../manual/sb-tenancy.7.md) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02) |
 | Depends on | [SB-106](../E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -45,7 +45,7 @@ Tenant id must be impossible to forget, so it is a type, not a parameter.
 
 LAW-02 gains `TestLAW02_ScopeIsTheOnlyWayIn`, red first, then green. Other tenants' sessions get no scope, adversarial lookups of other tenants' ids find nothing, and a missing scope is an error. A directory that ignores the scope is caught.
 
-**Left:** review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+2026-11-19: reviewed by the user; CI green. **Done.**
 
 ## Definition of done
 

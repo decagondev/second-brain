@@ -13,7 +13,7 @@ summary: "Requests must find their cell without any code knowing a company's nam
 | Manual | [`sb-tenancy(7)`](../../manual/sb-tenancy.7.md) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02) |
 | Depends on | [SB-103](../E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -47,7 +47,7 @@ Requests must find their cell without any code knowing a company's name.
 
 LAW-02 gains a request-level law test, which was red first, then green. On its first green run it caught a spec gap: a valid token with no tenant claim. That is now `EAUTH` in the manual and in the law.
 
-**Left:** token verification is a placeholder port until SB-106 (OIDC). Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+2026-11-19: reviewed by the user; CI green. **Done.**
 
 ## Definition of done
 

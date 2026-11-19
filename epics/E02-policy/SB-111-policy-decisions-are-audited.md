@@ -37,7 +37,7 @@ An unexplained allow is a future incident.
 
 2026-11-19: `policy.Kernel` (engine plus `Recorder`) is now the only way to ask; the free `Authorise` is gone. Every `Deny`/`Unknown` and every non-read decision is recorded before it is returned, and read allows are sampled (`SB_AUDIT_READ_SAMPLE`, default 1%). A failed or missing recorder turns the decision into `Unknown`. Records carry tenant, actor, action, subject (`Type::"ID"`) and reason with policy ids: ids only, no content. The rows feed the audit chain when SB-401 lands. LAW-04 gains `TestLAW04_PolicyDecisionsAreRecordedFirst`, red first, then green. A kernel that allows when the audit write fails is caught. The red ratchet line for the existing LAW-04 test is now per-test.
 
-**Left:** the audit adapter that writes `decision` rows into the hash chain (SB-401). Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+**Left:** a second reviewer. Changes to `policy` and `audit` need two (definition of done); the user reviewed on 2026-11-19, and CI is green.
 
 ## Definition of done
 

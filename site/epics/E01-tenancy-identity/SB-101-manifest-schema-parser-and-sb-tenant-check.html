@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>In review</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -80,7 +80,7 @@
 <p>2026-11-19: built. <code>internal/core/manifest</code> holds a strict YAML-subset parser that keeps line and column (<code>yaml.go</code>), the checker (<code>manifest.go</code>) and the JSON Schema (<code>schema.go</code>). All three are standard library only, so ADR-0016 still holds. One field table drives the checker, the required list and the schema, and a test keeps the <code>Tenant</code> json tags in step with it. The schema is published as <code>examples/tenants/tenant.schema.json</code>, and a test fails if it's stale. <code>sb tenant check</code> prints <code>FILE: ok</code>, or compiler-format errors and a count line, then exits 1 with <code>EMANIFEST</code>. <code>--json</code> is supported. Golden tests cover all 66 messages at their exact positions, and <code>invalid.yaml</code> prints <code>invalid.expected</code> byte for byte (unit test and <code>make examples</code>). LAW-16 has a law test for the manifest side; the drift side comes with SB-510. <code>make check</code> is green in WSL.</p>
 <p>Manual changes, made first: sb-tenant(5) gains a SYNTAX section and exact rules (regions <code>eu</code>/<code>us</code>, vendor names, known workflows, duplicates, <code>_</code>-separated forbidden names, <code>apply</code> owning the existing-cell comparison). sb-tenant(1) gains output and JSON format. sb-tenancy(7) gains the region list.</p>
 <p>2026-11-19: the user confirmed regions <code>eu</code> and <code>us</code> "for now" and gave the go-ahead.</p>
-<p><strong>Left:</strong> the first green CI run on a real push (the folder isn't a git repository yet).</p>
+<p>2026-11-19: reviewed by the user; CI green. <strong>Done.</strong></p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

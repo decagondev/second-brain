@@ -13,7 +13,7 @@ summary: "The manifest is the one file a company edits; errors must point at the
 | Manual | [`sb-tenant(5)`](../../manual/sb-tenant.5.md), [`sb-tenant(1)`](../../manual/sb-tenant.1.md) |
 | Laws | [LAW-16](../../manual/sb-laws.7.md#law-16) |
 | Depends on | [SB-004](../E00-foundations/SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -45,7 +45,7 @@ Manual changes, made first: sb-tenant(5) gains a SYNTAX section and exact rules 
 
 2026-11-19: the user confirmed regions `eu` and `us` "for now" and gave the go-ahead.
 
-**Left:** the first green CI run on a real push (the folder isn't a git repository yet).
+2026-11-19: reviewed by the user; CI green. **Done.**
 
 ## Definition of done
 

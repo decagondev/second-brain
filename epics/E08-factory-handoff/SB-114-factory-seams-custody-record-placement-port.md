@@ -13,7 +13,7 @@ summary: "Hand-off is planned for W7; these v1 seams make it a workflow later in
 | Manual | [`sb-factory(7)`](../../manual/sb-factory.7.md), [`sb-tenancy(7)`](../../manual/sb-tenancy.7.md) |
 | Laws | [LAW-18](../../manual/sb-laws.7.md#law-18) |
 | Depends on | [SB-103](../E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.md), [SB-105](../E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -47,7 +47,7 @@ Hand-off is planned for W7; these v1 seams make it a workflow later instead of a
 
 There was no red phase for the law test, because the code it tests already existed. Instead, its self-test shows that a missing custodian and a dead root key are both caught. The seams are listed in the devlog design note.
 
-**Left:** review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)). Hand-off itself is W7.
+2026-11-19: reviewed by the user; CI green. **Done.**
 
 ## Definition of done
 

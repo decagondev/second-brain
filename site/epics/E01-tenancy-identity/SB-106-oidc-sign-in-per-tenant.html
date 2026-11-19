@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>In review</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -81,7 +81,7 @@
 - <code>internal/adapters/sessions/memory</code> is the per-cell store.
 - Tests: a full browser sign-in against the test IdP, re-validation and 12-hour expiry, an unknown user refused, a two-IdP fixture (acme's session and acme's token both refused at beta), and one failing token per rule, including <code>alg: none</code> and a forged key.
 - LAW-02 gains a sign-in law test, red first, then green.</p>
-<p><strong>Left:</strong> the client secret is read through a function, and the vault adapter that backs it (<code>vault://tenants/TENANT/oidc</code>) comes with the secrets work. The directory is a fake until SCIM (SB-107). The production session store is the cell database. Also left: review by the user, (first CI run green on <code>c0a12be</code> (all jobs: check, proofs, postgres, diagrams)).</p>
+<p>2026-11-19: reviewed by the user; CI green. <strong>Done.</strong></p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

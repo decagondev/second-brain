@@ -13,7 +13,7 @@ summary: "A leaver must lose access within minutes, not at the next sync."
 | Manual | [`sb-identity(7)`](../../manual/sb-identity.7.md) |
 | Laws | [LAW-12](../../manual/sb-laws.7.md#law-12) |
 | Depends on | [SB-106](../E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -44,7 +44,7 @@ A leaver must lose access within minutes, not at the next sync.
 
 LAW-12 has its first law test: red first, then green. It runs on a fake clock, with and without a lost revocation fan-out, and also requires that other users keep working. A cell that ignores the directory after a lost fan-out is caught.
 
-**Left:** the production directory lives in the cell database. The SCIM token's vault adapter comes with the secrets work. Audit rows for revocations (`kind=access`) wait for SB-401. Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+2026-11-19: reviewed by the user; CI green. **Done.**
 
 ## Definition of done
 

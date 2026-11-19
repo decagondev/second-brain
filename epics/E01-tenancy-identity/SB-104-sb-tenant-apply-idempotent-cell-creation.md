@@ -39,7 +39,7 @@ Applying twice must be the same as applying once.
 
 2026-11-19: built on the local control plane (ADR-0018). `internal/core/apply` runs the plan one change at a time. A new cell is stamped first and recorded in the registry only after all five resources exist. Every step is journalled (`start`/`done`) through the new `ports.Journal`, with ids and names only, and the registry gets `ports.RegistryWriter`. A no-change apply writes nothing. A registry that can't answer is an error, never "no cell". The crash test fails each write in turn (41 crash points across a create and a change), reruns, and gets the same registry record, no duplicate resources, a journal where every `done` follows its `start`, and an empty follow-up plan. `sb tenant apply FILE` prints each change and a summary. The smoke test runs create, no changes, then pilot to full through the real binary. LAW-16 gains an apply-side law test.
 
-**Left:** the 30-minute timing and the staging measurement need a cloud adapter. Audit rows per step wait for the audit chain (SB-401); the journal is already their source. Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+**Left:** the 30-minute new-cell acceptance item and the staging timing need a cloud adapter (ADR-0018). Reviewed by the user on 2026-11-19, and CI is green. Audit rows per step wait for SB-401.
 
 ## Definition of done
 

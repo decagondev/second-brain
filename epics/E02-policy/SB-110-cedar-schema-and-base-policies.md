@@ -37,7 +37,7 @@ Policies a company operator can read beat policies hidden in code.
 
 2026-11-19: the schema gains `Document` (with `Chunk in [Document]`) and a `tenant` on every entity (`Agent`, `Tool`, `Workflow`). `read` applies to chunks and documents. The base policies now scope every permit to the tenant. A new law test, `TestLAW02_PoliciesNeverCrossTenants`, runs the real platform and example tenant policies through cedar-go with the kernel's guard bypassed. On its first run it was red for a real reason: `permit use_agent ask` had no tenant condition (BUG-0006). It is fixed and green, and a self-test catches a tenant-less permit. Every policy file and docs `cedar` block still validates against the new schema (`make regress`, BUG-0003 test). LAW-03 for policies is covered by the SB-109 kernel test and the adapter test (an erroring policy is `Unknown`).
 
-**Left:** review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)). CI's tenant-condition check and permission diffs are SB-112.
+**Left:** a second reviewer. Changes to `policy` and `audit` need two (definition of done); the user reviewed on 2026-11-19, and CI is green.
 
 ## Definition of done
 

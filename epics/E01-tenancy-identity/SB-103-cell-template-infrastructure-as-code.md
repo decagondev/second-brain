@@ -13,7 +13,7 @@ summary: "Isolation is a property of the template, not of discipline."
 | Manual | [`sb-tenancy(7)`](../../manual/sb-tenancy.7.md) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02) |
 | Depends on | [SB-101](../E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -48,7 +48,7 @@ Isolation is a property of the template, not of discipline.
 
 LAW-02 gains a cell-level law test, `TestLAW02_CellsShareNothing`, which was red first (`not implemented`) and is green now. The red ratchet takes per-test lines so the retrieval-level test can stay red until SB-301.
 
-**Left:** the IaC module and real-cloud stamping arrive with the first cloud adapter (ADR-0018). Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+2026-11-19: reviewed by the user; CI green. **Done.** The IaC module still waits for the first cloud adapter (ADR-0018); it is a subtask, not an acceptance item.
 
 ## Definition of done
 

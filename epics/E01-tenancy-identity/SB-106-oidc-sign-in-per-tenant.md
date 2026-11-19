@@ -13,7 +13,7 @@ summary: "Users sign in with the IdP they already have."
 | Manual | [`sb-identity(7)`](../../manual/sb-identity.7.md) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02) |
 | Depends on | [SB-105](../E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.md) |
-| Status | In review |
+| Status | Done |
 
 ## Why
 
@@ -44,7 +44,7 @@ Users sign in with the IdP they already have.
 - Tests: a full browser sign-in against the test IdP, re-validation and 12-hour expiry, an unknown user refused, a two-IdP fixture (acme's session and acme's token both refused at beta), and one failing token per rule, including `alg: none` and a forged key.
 - LAW-02 gains a sign-in law test, red first, then green.
 
-**Left:** the client secret is read through a function, and the vault adapter that backs it (`vault://tenants/TENANT/oidc`) comes with the secrets work. The directory is a fake until SCIM (SB-107). The production session store is the cell database. Also left: review by the user, (first CI run green on `c0a12be` (all jobs: check, proofs, postgres, diagrams)).
+2026-11-19: reviewed by the user; CI green. **Done.**
 
 ## Definition of done
 
