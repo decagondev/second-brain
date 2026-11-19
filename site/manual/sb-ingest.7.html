@@ -27,7 +27,7 @@
 <h3 id="read-only-by-default">Read-only by default</h3>
 <p>Connectors use read-only scopes unless a gated workflow needs write access to that connector. Paths and channels listed in <code>exclude</code> are never fetched.</p>
 <h3 id="freshness">Freshness</h3>
-<p>Changes, including deletes and permission changes, are indexed with a p95 of 15 minutes or less. In the gap, the live ACL check still protects every answer (LAW-01).</p>
+<p>Changes, including deletes and permission changes, are indexed with a p95 of 15 minutes or less. A delete removes all of the document's chunks at the next sync; the source's change feed is the tombstone record, so nothing else is kept. A permission-only change re-ingests the same version, so the prefilter matches the source again. In the gap, the live ACL check still protects every answer (LAW-01): the prefilter only narrows candidates and never grants.</p>
 <h3 id="sync">Sync</h3>
 <p>Each connector of a cell is synced by a scheduler every 60 seconds, with up to 10 seconds of jitter. One sync reads the connector's changes from its stored cursor, ingests them, and only then stores the new cursor. If anything fails, the old cursor stays, so the next run repeats the work. Ingest is idempotent, so repeating it is harmless. A cell restart resumes from the stored cursors and never from the beginning.</p>
 <p>Freshness is measured per connector as the age of the last successful sync, exported as <code>sb_ingest_last_success_age_seconds{tenant, connector}</code>. It stays well under the 15-minute target while syncs succeed, and an alert fires when it passes 15 minutes. Failures are counted in <code>sb_ingest_sync_failures_total{tenant, connector}</code>.</p>

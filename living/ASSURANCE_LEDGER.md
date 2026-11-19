@@ -54,3 +54,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-13 | Stated → Tested | SB-206: `TestLAW13_TheIndexIsDerived` green on the real pipeline over the mock source |
 | 2026-11-19 | LAW-03, LAW-13 | no change | SB-203: connector-level LAW-03 and LAW-13 tests also run on the Google Drive connector and its recorded fake |
 | 2026-11-19 | LAW-09 | Stated → Tested | SB-207: `TestLAW09_DataIsNotInstructions` green through the real pipeline; a pipeline without a sanitiser is caught |
+| 2026-11-19 | LAW-01 | stays Tested (red) | SB-209: ingest-gap test green (live check follows the source; prefilter catches up after one sync); retrieval level red until SB-302 |

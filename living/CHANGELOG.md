@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- LAW-01 ingest-gap test (SB-209): deletes and permission changes reach the prefilter in one sync; the live check holds in between.
 - Durable sync (SB-208): per-connector cursor store, scheduler, and freshness metrics on a Prometheus text endpoint.
 - Ingest sanitiser (SB-207): strip hidden text, flag instruction-like spans per chunk, unescapable data blocks; injection corpus in `make check`; a repo-wide guard against invisible characters in source.
 - Google Drive docs connector (SB-203): read-only, live ACL as the asker via domain-wide delegation, rate-limit retries, change feed; tested against a recorded fake.

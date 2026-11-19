@@ -24,7 +24,7 @@ Connectors use read-only scopes unless a gated workflow needs write access to th
 
 ### Freshness
 
-Changes, including deletes and permission changes, are indexed with a p95 of 15 minutes or less. In the gap, the live ACL check still protects every answer (LAW-01).
+Changes, including deletes and permission changes, are indexed with a p95 of 15 minutes or less. A delete removes all of the document's chunks at the next sync; the source's change feed is the tombstone record, so nothing else is kept. A permission-only change re-ingests the same version, so the prefilter matches the source again. In the gap, the live ACL check still protects every answer (LAW-01): the prefilter only narrows candidates and never grants.
 
 ### Sync
 

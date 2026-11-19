@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-209 Deletes and permission changes reach the prefilter
+
+**Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** A LAW-01 law test for the ingest gap, plus manual wording. The behaviour itself came from SB-206.
+
+**Why this way:** A separate tombstone table would be a second source of truth about deletions. The source's change feed already is one, and replaying it during a rebuild reproduces the deletes.
+
+**Learned:** The law went green on its first non-pending run, because SB-206 had already handled permission-only changes. The self-test proves the law would notice if that handling went away.
+
+**Laws:** LAW-01 stays Tested (red); the ingest-gap level is now green.
+
+**Next:** SB-210, the rebuild drill.
+
 ## 2026-11-19 SB-208 Durable cursor, scheduler and freshness
 
 **Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** In review

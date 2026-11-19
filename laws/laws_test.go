@@ -125,3 +125,7 @@ func TestLAW13_DriveIndexIsDerived(t *testing.T) {
 func TestLAW09_DataIsNotInstructions(t *testing.T) {
 	Check(t, "LAW-09", runs, func(r *rand.Rand) error { return law09(r, NewSanitiserWorld()) })
 }
+
+func TestLAW01_PrefilterCatchesUp(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01Prefilter(r, NewPrefilterWorld()) })
+}

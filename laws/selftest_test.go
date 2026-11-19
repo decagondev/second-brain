@@ -521,3 +521,28 @@ func (rawText) Ingest(text string) ([]SanitisedChunk, error) {
 func (rawText) Wrap(text, cite string, flags []string) string {
 	return "<<data cite=\"" + cite + "\">>\n" + text + "\n<</data>>"
 }
+
+// LAW-01's catch-up check catches a pipeline that ignores permission-only changes.
+func TestSelf_LAW01PrefilterMutationIsCaught(t *testing.T) {
+	mutant := func() PrefilterWorld {
+		w := NewPrefilterWorld().(*prefilterWorld)
+		w.p.Connector = dropACLOnly{w.c}
+		return w
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law01Prefilter(r, mutant()) }) {
+		t.Error("LAW-01 (prefilter): ignoring permission-only changes was not caught")
+	}
+}
+
+type dropACLOnly struct{ ports.Connector }
+
+func (d dropACLOnly) Changes(ctx context.Context, c ports.Cursor) (ports.ChangeSet, ports.Cursor, error) {
+	set, next, err := d.Connector.Changes(ctx, c)
+	var out ports.ChangeSet
+	for _, ch := range set {
+		if !ch.ACLOnly {
+			out = append(out, ch)
+		}
+	}
+	return out, next, err
+}
