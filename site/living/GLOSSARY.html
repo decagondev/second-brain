@@ -51,6 +51,10 @@
 <td>A record binding one approver to one payload hash</td>
 </tr>
 <tr>
+<td><strong>Barrier</strong></td>
+<td>An information barrier: two groups in the manifest whose members never see each other's content, drafts or actions (LAW-22)</td>
+</tr>
+<tr>
 <td><strong>Bundle</strong></td>
 <td>A signed release: images, prompts, tools, policies, model id, SBOM, eval results</td>
 </tr>
@@ -119,6 +123,10 @@
 <td>Runtime stop for an agent, connector or tenant; effective in 10 seconds or less</td>
 </tr>
 <tr>
+<td><strong>Label</strong></td>
+<td>A document's sensitivity: <code>public</code>, <code>internal</code>, <code>confidential</code> or <code>restricted</code>. From the source if it has one, else the space default</td>
+</tr>
+<tr>
 <td><strong>Law</strong></td>
 <td>An invariant the platform guarantees for every input (<code>LAW-nn</code>)</td>
 </tr>
@@ -153,6 +161,14 @@
 <tr>
 <td><strong>Slice</strong></td>
 <td>A thin, end-to-end, demoable increment inside a wave</td>
+</tr>
+<tr>
+<td><strong>Space</strong></td>
+<td>A department brain inside a company's cell: a scope over its sources, with its own members, stewards, agents, label default, retention and data key. It can only narrow access (ADR-0020)</td>
+</tr>
+<tr>
+<td><strong>Steward</strong></td>
+<td>A department lead who proposes changes to their space and re-certifies its members; the tenant operator approves</td>
 </tr>
 <tr>
 <td><strong>Tenant</strong></td>

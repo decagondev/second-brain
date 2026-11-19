@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a class="current" href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a><a href="../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../docs/pilot-retro-template.html">Pilot retro template</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/corpus/injection.json.html">injection.json</a><a href="../evals/faithfulness.py.html">faithfulness.py</a><a href="../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.py.html">gate.py</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/pilot.py.html">pilot.py</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/citation.yaml.html">citation.yaml</a><a href="../evals/suites/injection.yaml.html">injection.yaml</a><a href="../evals/suites/permission.yaml.html">permission.yaml</a><a href="../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../evals/suites/regression.yaml.html">regression.yaml</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law01chat.go.html">law01chat.go</a><a href="../laws/law01crm.go.html">law01crm.go</a><a href="../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../laws/law02attack.go.html">law02attack.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02gcp.go.html">law02gcp.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law06.go.html">law06.go</a><a href="../laws/law06pull.go.html">law06pull.go</a><a href="../laws/law07.go.html">law07.go</a><a href="../laws/law07encoded.go.html">law07encoded.go</a><a href="../laws/law08.go.html">law08.go</a><a href="../laws/law09.go.html">law09.go</a><a href="../laws/law09corpus.go.html">law09corpus.go</a><a href="../laws/law10.go.html">law10.go</a><a href="../laws/law11.go.html">law11.go</a><a href="../laws/law11export.go.html">law11export.go</a><a href="../laws/law11restore.go.html">law11restore.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law13.go.html">law13.go</a><a href="../laws/law13retention.go.html">law13retention.go</a><a href="../laws/law14.go.html">law14.go</a><a href="../laws/law15.go.html">law15.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law17.go.html">law17.go</a><a href="../laws/law17access.go.html">law17access.go</a><a href="../laws/law17world.go.html">law17world.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/law18wrap.go.html">law18wrap.go</a><a href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/system_ask.go.html">system_ask.go</a><a href="../laws/system_audit.go.html">system_audit.go</a><a href="../laws/system_bus.go.html">system_bus.go</a><a href="../laws/system_chat.go.html">system_chat.go</a><a href="../laws/system_drift.go.html">system_drift.go</a><a href="../laws/system_kill.go.html">system_kill.go</a><a href="../laws/system_prompt.go.html">system_prompt.go</a><a href="../laws/system_release.go.html">system_release.go</a><a href="../laws/system_rollout.go.html">system_rollout.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/backup/backup_test.go.html">backup_test.go</a><a href="../tests/canary/canary_test.go.html">canary_test.go</a><a href="../tests/gameday/gameday_test.go.html">gameday_test.go</a><a href="../tests/handoff/handoff_test.go.html">handoff_test.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a class="current" href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a><a href="../docs/08-department-brains.html">Department Brains</a><a href="../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../docs/pilot-retro-template.html">Pilot retro template</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a><a href="../docs/adr/ADR-0020-department-spaces-inside-the-cell.html">ADR-0020: Department brains are spaces inside the company&#x27;s cell, and a space can only narrow access</a><a href="../docs/adr/ADR-0021-gcp-cell-runtime.html">ADR-0021: Cells run on Cloud Run with Cloud SQL, one project per cell; Firebase only for hosting and identity</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/corpus/injection.json.html">injection.json</a><a href="../evals/faithfulness.py.html">faithfulness.py</a><a href="../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.py.html">gate.py</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/pilot.py.html">pilot.py</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/citation.yaml.html">citation.yaml</a><a href="../evals/suites/injection.yaml.html">injection.yaml</a><a href="../evals/suites/permission.yaml.html">permission.yaml</a><a href="../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../evals/suites/regression.yaml.html">regression.yaml</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law01chat.go.html">law01chat.go</a><a href="../laws/law01crm.go.html">law01crm.go</a><a href="../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../laws/law02attack.go.html">law02attack.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02gcp.go.html">law02gcp.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law06.go.html">law06.go</a><a href="../laws/law06pull.go.html">law06pull.go</a><a href="../laws/law07.go.html">law07.go</a><a href="../laws/law07encoded.go.html">law07encoded.go</a><a href="../laws/law08.go.html">law08.go</a><a href="../laws/law09.go.html">law09.go</a><a href="../laws/law09corpus.go.html">law09corpus.go</a><a href="../laws/law10.go.html">law10.go</a><a href="../laws/law11.go.html">law11.go</a><a href="../laws/law11export.go.html">law11export.go</a><a href="../laws/law11restore.go.html">law11restore.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law13.go.html">law13.go</a><a href="../laws/law13retention.go.html">law13retention.go</a><a href="../laws/law14.go.html">law14.go</a><a href="../laws/law15.go.html">law15.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law17.go.html">law17.go</a><a href="../laws/law17access.go.html">law17access.go</a><a href="../laws/law17world.go.html">law17world.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/law18wrap.go.html">law18wrap.go</a><a href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/system_ask.go.html">system_ask.go</a><a href="../laws/system_audit.go.html">system_audit.go</a><a href="../laws/system_bus.go.html">system_bus.go</a><a href="../laws/system_chat.go.html">system_chat.go</a><a href="../laws/system_drift.go.html">system_drift.go</a><a href="../laws/system_kill.go.html">system_kill.go</a><a href="../laws/system_prompt.go.html">system_prompt.go</a><a href="../laws/system_release.go.html">system_release.go</a><a href="../laws/system_rollout.go.html">system_rollout.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/backup/backup_test.go.html">backup_test.go</a><a href="../tests/canary/canary_test.go.html">canary_test.go</a><a href="../tests/gameday/gameday_test.go.html">gameday_test.go</a><a href="../tests/handoff/handoff_test.go.html">handoff_test.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
   <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="second-brain-product-requirements-document">Second Brain: Product Requirements Document</h1>
 <table>
 <thead>
@@ -42,6 +42,7 @@
 <p>Second Brain is one reusable platform that a parent organisation rolls out to every company it acquires. Each company gets an isolated cell, configured by one manifest. Staff get <strong>cited answers</strong> built only from sources they can open right now. Teams get a small set of <strong>agent actions</strong> that humans send or approve. Operators get <strong>kill switches</strong> and a tamper-evident <strong>audit log</strong>. The parent gets <strong>one template and one release train</strong> instead of a different stack per company.</p>
 <p>v1 ships in seven waves (W0 to W6), roughly 19 weeks. The formal models and law tests come first (W0). Cited answers reach a pilot in W3. Gated actions arrive in W4, and self-serve roll-out in W6.</p>
 <p>The control plane is a <strong>factory</strong>: it produces and runs every tenant's Second Brain. After v1, wave <strong>W7</strong> (3 weeks) adds <strong>hand-off</strong>: transferring custody of one tenant's Second Brain into that company's own cloud account under its own keys, or detaching it entirely. v1 doesn't build hand-off, but it does build the seams that make hand-off a workflow rather than a migration (ADR-0015, SB-114).</p>
+<p>After W7, waves <strong>W8 to W13</strong> (17 weeks) add <strong>department brains</strong>: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in <a href="08-department-brains.html">08-department-brains.md</a>.</p>
 <h2 id="problem">Problem</h2>
 <p>Acquired companies have no single index of what they know, no reliable record of who may see what, and no record of who did what. AI use is ad hoc and unsafe, and every company starts from zero. The full statement is in <a href="00-problem-statement.html">00-problem-statement.md</a>.</p>
 <h2 id="goals-and-non-goals">Goals and non-goals</h2>
@@ -133,6 +134,11 @@
 <td><strong>Tenant owner</strong> (company leadership or IT owner)</td>
 <td>Accept custody of their Second Brain</td>
 <td>Dual approval of the hand-off plan, LAW-17 proof, export package (W7)</td>
+</tr>
+<tr>
+<td><strong>Steward</strong> (a department lead, such as the HR or Finance lead)</td>
+<td>Run their department's space, re-certify its members</td>
+<td>Space changes as approved diffs, access reviews, legal hold (W12)</td>
 </tr>
 </tbody>
 </table>
@@ -412,8 +418,8 @@
 <tr>
 <td><a href="../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a></td>
 <td>The spec, the laws and the first formal models exist before features, and CI enforces the process.</td>
-<td>5</td>
-<td>15</td>
+<td>7</td>
+<td>22</td>
 </tr>
 <tr>
 <td><a href="../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a></td>
@@ -463,6 +469,36 @@
 <td>5</td>
 <td>11</td>
 </tr>
+<tr>
+<td><a href="../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a></td>
+<td>A real cell runs on Google Cloud in its own project, with its schedules, metrics and verifier, and nothing in the core knows it's GCP.</td>
+<td>4</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="../epics/E10-department-spaces/README.html">E10 Department Spaces</a></td>
+<td>A company's brain holds all its knowledge, split into department spaces that can only narrow what each source allows.</td>
+<td>4</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a></td>
+<td>Every common department starts from a template with its sources, labels, agents and evals, including code, HR and accounting systems.</td>
+<td>4</td>
+<td>7</td>
+</tr>
+<tr>
+<td><a href="../epics/E12-space-governance/README.html">E12 Space Governance</a></td>
+<td>Department leads run their own spaces; barriers, segregation of duties, access reviews and reorgs work the way a real organisation needs.</td>
+<td>5</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></td>
+<td>If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser.</td>
+<td>2</td>
+<td>4</td>
+</tr>
 </tbody>
 </table>
 <div class="mermaid-wrap"><pre class="mermaid">flowchart LR
@@ -500,6 +536,22 @@
   E06 --&gt; E07
   E06 --&gt; E08
   E07 --&gt; E08
+  E09[&quot;E09 Cells on GCP&quot;]
+  E10[&quot;E10 Department Spaces&quot;]
+  E11[&quot;E11 Department Templates and Connectors&quot;]
+  E12[&quot;E12 Space Governance&quot;]
+  E13[&quot;E13 Portfolio Department Grants&quot;]
+  E01 --&gt; E09
+  E08 --&gt; E09
+  E02 --&gt; E10
+  E04 --&gt; E10
+  E09 --&gt; E10
+  E03 --&gt; E11
+  E10 --&gt; E11
+  E05 --&gt; E12
+  E10 --&gt; E12
+  E10 --&gt; E13
+  E12 --&gt; E13
 </pre></div>
 <h2 id="user-stories">User stories</h2>
 <p>Each story is delivered by the listed tickets. Stories are written from the persona's point of view; acceptance lives on the tickets.</p>
@@ -510,6 +562,8 @@
 <li><strong>US-00.3</strong>: As a <em>maintainer</em>, I want the law tests to exist and fail red before features land, so that every feature is born against its laws. Delivered by <a href="../epics/E00-foundations/SB-010-law-harness-and-law-01-to-law-05-as-failing.html">SB-010</a>.</li>
 <li><strong>US-00.4</strong>: As a <em>security reviewer</em>, I want the approval, rollout and permission designs model-checked, so that design flaws are found before code. Delivered by <a href="../epics/E00-foundations/SB-011-approvals-model-in-tla-checked-in-ci.html">SB-011</a>, <a href="../epics/E00-foundations/SB-012-rollout-model-in-tla-checked-in-ci.html">SB-012</a>, <a href="../epics/E00-foundations/SB-013-permissions-model-in-alloy-checked-in-ci.html">SB-013</a>.</li>
 <li><strong>US-00.5</strong>: As a <em>new contributor</em>, I want one command that builds, tests and renders the docs, so that I am productive on day one. Delivered by <a href="../epics/E00-foundations/SB-001-repo-skeleton-and-toolchain.html">SB-001</a>, <a href="../epics/E00-foundations/SB-002-manual-layout-man-page-template-and-docs.html">SB-002</a>, <a href="../epics/E00-foundations/SB-009-link-check-diagram-check-and-manual-example.html">SB-009</a>, <a href="../epics/E00-foundations/SB-016-smoke-and-regression-test-conventions.html">SB-016</a>.</li>
+<li><strong>US-00.6</strong>: As a <em>maintainer</em>, I want read the space, policy and department pages before any space code exists, so that spaces are built to a spec, not invented in a pull request. Delivered by <a href="../epics/E00-foundations/SB-801-sb-spaces-7-and-sb-space-5-first-drafts.html">SB-801</a>, <a href="../epics/E00-foundations/SB-802-permissions-and-policy-pages-for-spaces.html">SB-802</a>, <a href="../epics/E00-foundations/SB-803-department-catalogue-sb-departments-7.html">SB-803</a>.</li>
+<li><strong>US-00.7</strong>: As a <em>security reviewer</em>, I want the space laws red and the spaces model checked before spaces exist, so that every space feature is born against its laws. Delivered by <a href="../epics/E00-foundations/SB-804-law-19-to-law-23-as-failing-tests.html">SB-804</a>, <a href="../epics/E00-foundations/SB-805-spaces-model-in-alloy-checked-in-ci.html">SB-805</a>, <a href="../epics/E00-foundations/SB-806-threat-model-v1-for-spaces-and-adr-sign-off.html">SB-806</a>, <a href="../epics/E00-foundations/SB-807-space-leak-eval-scaffold.html">SB-807</a>.</li>
 </ul>
 <h3 id="e01-tenancy-and-identity">E01 Tenancy and Identity</h3>
 <ul>
@@ -572,6 +626,40 @@
 <li><strong>US-08.4</strong>: As a <em>company IT operator</em>, I want to keep receiving signed releases after hand-off, so that we stay patched without a support contract per release. Delivered by <a href="../epics/E08-factory-handoff/SB-707-releases-after-hand-off.html">SB-707</a>.</li>
 <li><strong>US-08.5</strong>: As a <em>company owner after divestiture</em>, I want a complete export so we can leave the factory, so that a sale doesn't strand our knowledge. Delivered by <a href="../epics/E08-factory-handoff/SB-708-detach-and-export-package.html">SB-708</a>, <a href="../epics/E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.html">SB-709</a>, <a href="../epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.html">SB-710</a>.</li>
 </ul>
+<h3 id="e09-cells-on-gcp">E09 Cells on GCP</h3>
+<ul>
+<li><strong>US-09.1</strong>: As a <em>factory operator</em>, I want a cell to run on Cloud Run and Cloud SQL in its own project, so that companies get a real Second Brain, not a local one. Delivered by <a href="../epics/E09-gcp-runtime/SB-901-cloud-run-services-per-cell.html">SB-901</a>, <a href="../epics/E09-gcp-runtime/SB-902-private-cloud-sql-with-cmek-and-a-perimeter.html">SB-902</a>, <a href="../epics/E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.html">SB-903</a>.</li>
+<li><strong>US-09.2</strong>: As a <em>company IT operator</em>, I want every schedule, metric and check to run inside the cell, so that sync, retention, reports and checks happen without anyone remembering. Delivered by <a href="../epics/E09-gcp-runtime/SB-904-schedules-in-the-cell.html">SB-904</a>, <a href="../epics/E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.html">SB-905</a>.</li>
+<li><strong>US-09.3</strong>: As a <em>asker</em>, I want to reach my company's brain at its own address and sign in even if we have no corporate IdP, so that every acquired company can use it from day one. Delivered by <a href="../epics/E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.html">SB-906</a>, <a href="../epics/E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.html">SB-907</a>.</li>
+<li><strong>US-09.4</strong>: As a <em>maintainer</em>, I want the W1 to W7 items that waited for a real cloud closed on a staging cell, so that v1 is finished, not just built. Delivered by <a href="../epics/E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.html">SB-908</a>.</li>
+</ul>
+<h3 id="e10-department-spaces">E10 Department Spaces</h3>
+<ul>
+<li><strong>US-10.1</strong>: As a <em>company IT operator</em>, I want to declare our departments as spaces in the manifest, so that our brain mirrors how we're organised. Delivered by <a href="../epics/E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.html">SB-1001</a>, <a href="../epics/E10-department-spaces/SB-1002-space-registry-and-space-scoped-request-context.html">SB-1002</a>, <a href="../epics/E10-department-spaces/SB-1003-per-space-data-keys.html">SB-1003</a>.</li>
+<li><strong>US-10.2</strong>: As a <em>company security lead</em>, I want space policy that can only narrow what each source allows, so that adding a space can never leak anything. Delivered by <a href="../epics/E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.html">SB-1004</a>, <a href="../epics/E10-department-spaces/SB-1005-ingest-routes-and-labels-every-document.html">SB-1005</a>.</li>
+<li><strong>US-10.3</strong>: As a <em>asker</em>, I want to ask my department's brain or the whole company and see where each citation came from, so that I get the right answer from the right place. Delivered by <a href="../epics/E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.html">SB-1006</a>, <a href="../epics/E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.html">SB-1007</a>.</li>
+<li><strong>US-10.4</strong>: As a <em>company IT operator</em>, I want to audit and stop one space on its own, so that a problem in one department doesn't stop the company. Delivered by <a href="../epics/E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.html">SB-1008</a>.</li>
+</ul>
+<h3 id="e11-department-templates-and-connectors">E11 Department Templates and Connectors</h3>
+<ul>
+<li><strong>US-11.1</strong>: As a <em>company IT operator</em>, I want ready templates for common departments, so that we pick departments instead of designing them. Delivered by <a href="../epics/E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.html">SB-1101</a>, <a href="../epics/E11-department-templates/SB-1102-department-agents.html">SB-1102</a>.</li>
+<li><strong>US-11.2</strong>: As a <em>engineer</em>, I want our repositories, issues and pull requests in the Engineering brain, so that I can ask how our systems work. Delivered by <a href="../epics/E11-department-templates/SB-1103-code-connector-read-only.html">SB-1103</a>.</li>
+<li><strong>US-11.3</strong>: As a <em>people or finance lead</em>, I want our HR and accounting systems in our spaces with sensitive fields never ingested, so that we get answers without exposing pay, cases or bank details. Delivered by <a href="../epics/E11-department-templates/SB-1104-hris-connector-read-only.html">SB-1104</a>, <a href="../epics/E11-department-templates/SB-1105-accounting-connector-read-only.html">SB-1105</a>, <a href="../epics/E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.html">SB-1106</a>.</li>
+<li><strong>US-11.4</strong>: As a <em>maintainer</em>, I want every template to pass its own suites, leak suites included, before it reaches a tenant, so that a template change can't quietly open a department. Delivered by <a href="../epics/E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.html">SB-1107</a>.</li>
+</ul>
+<h3 id="e12-space-governance">E12 Space Governance</h3>
+<ul>
+<li><strong>US-12.1</strong>: As a <em>department steward</em>, I want to run my space and re-certify its members without IT doing every change, so that my department's brain stays right and stays ours. Delivered by <a href="../epics/E12-space-governance/SB-1201-stewards-and-delegated-space-changes.html">SB-1201</a>, <a href="../epics/E12-space-governance/SB-1202-quarterly-access-reviews.html">SB-1202</a>.</li>
+<li><strong>US-12.2</strong>: As a <em>compliance officer</em>, I want information barriers and segregation of duties, so that deal teams, investigations and finance controls work as our policies say. Delivered by <a href="../epics/E12-space-governance/SB-1203-information-barriers.html">SB-1203</a>, <a href="../epics/E12-space-governance/SB-1204-segregation-of-duties.html">SB-1204</a>.</li>
+<li><strong>US-12.3</strong>: As a <em>people operations lead</em>, I want reorgs to change access within 5 minutes, and to preview them first, so that a move never leaves someone with yesterday's access. Delivered by <a href="../epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.html">SB-1205</a>, <a href="../epics/E12-space-governance/SB-1206-reorg-preview.html">SB-1206</a>.</li>
+<li><strong>US-12.4</strong>: As a <em>legal lead</em>, I want to put a space or scope on legal hold, so that nothing under a matter is deleted. Delivered by <a href="../epics/E12-space-governance/SB-1207-legal-hold-per-space.html">SB-1207</a>.</li>
+<li><strong>US-12.5</strong>: As a <em>company security lead</em>, I want the spaces red-teamed before we rely on them, so that we trust the People and Finance brains. Delivered by <a href="../epics/E12-space-governance/SB-1208-cross-space-red-team-and-game-day.html">SB-1208</a>.</li>
+</ul>
+<h3 id="e13-portfolio-department-grants">E13 Portfolio Department Grants</h3>
+<ul>
+<li><strong>US-13.1</strong>: As a <em>parent-org finance lead</em>, I want consented, aggregate-only roll-ups from each company's Finance space, so that I see the portfolio without a superuser or raw documents. Delivered by <a href="../epics/E13-portfolio-grants/SB-1301-space-grant-model-and-consent.html">SB-1301</a>, <a href="../epics/E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.html">SB-1302</a>, <a href="../epics/E13-portfolio-grants/SB-1304-finance-roll-up-pilot.html">SB-1304</a>.</li>
+<li><strong>US-13.2</strong>: As a <em>company owner</em>, I want to revoke a grant and see every delivery it made, so that consent stays ours. Delivered by <a href="../epics/E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.html">SB-1303</a>.</li>
+</ul>
 <h2 id="waves">Waves</h2>
 <p>A <strong>wave</strong> is a release-sized group of work with an exit gate. A <strong>slice</strong> is a thin, end-to-end, demoable increment inside a wave. Tickets belong to one epic and one slice, so slices cut across epics.</p>
 <table>
@@ -632,6 +720,42 @@
 <td>3 weeks</td>
 <td>After v1: the factory can hand custody of a tenant's Second Brain to that company, in its own cloud account, without losing data, audit continuity or the laws.</td>
 </tr>
+<tr>
+<td>W8</td>
+<td>Space Manual and Laws</td>
+<td>2 weeks</td>
+<td>The spec for spaces exists before the code: space and department pages, LAW-19 to LAW-23 as red tests, the spaces model checked, threat model v1.</td>
+</tr>
+<tr>
+<td>W9</td>
+<td>Cells on GCP</td>
+<td>3 weeks</td>
+<td>A real cell runs on Cloud Run and Cloud SQL in its own project, with every schedule, metric and check that W1 to W7 left to the runtime.</td>
+</tr>
+<tr>
+<td>W10</td>
+<td>Spaces in a Cell</td>
+<td>3 weeks</td>
+<td>Spaces live in the manifest, the policy and the index; people ask one department's brain or the whole company; LAW-19 and LAW-20 green.</td>
+</tr>
+<tr>
+<td>W11</td>
+<td>Department Templates</td>
+<td>3 weeks</td>
+<td>Twelve department templates with agents and evals; code, HR and accounting sources read-only; restricted fields never ingested.</td>
+</tr>
+<tr>
+<td>W12</td>
+<td>Space Governance</td>
+<td>3 weeks</td>
+<td>Stewards run their spaces; barriers, segregation of duties, access reviews and 5-minute reorgs; LAW-21 and LAW-22 green.</td>
+</tr>
+<tr>
+<td>W13</td>
+<td>Portfolio Department Grants</td>
+<td>3 weeks</td>
+<td>Only if Q-01 says yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green.</td>
+</tr>
 </tbody>
 </table>
 <div class="mermaid-wrap"><pre class="mermaid">gantt
@@ -654,6 +778,18 @@
   Portfolio Roll-out :w6, after w5, 21d
   section W7
   Factory Hand-off :w7, after w6, 21d
+  section W8
+  Space Manual and Laws :w8, after w7, 14d
+  section W9
+  Cells on GCP :w9, after w8, 21d
+  section W10
+  Spaces in a Cell :w10, after w9, 21d
+  section W11
+  Department Templates :w11, after w10, 21d
+  section W12
+  Space Governance :w12, after w11, 21d
+  section W13
+  Portfolio Department Grants :w13, after w12, 21d
 </pre></div>
 <h3 id="wave-exit-gates-and-slices">Wave exit gates and slices</h3>
 <h4 id="w0-manual-and-laws">W0 Manual and Laws</h4>
@@ -999,6 +1135,245 @@
 </tr>
 </tbody>
 </table>
+<h4 id="w8-space-manual-and-laws">W8 Space Manual and Laws</h4>
+<p><em>The spec for spaces exists before the code: space and department pages, LAW-19 to LAW-23 as red tests, the spaces model checked, threat model v1.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>Man pages <code>sb-spaces(7)</code>, <code>sb-space(5)</code> and <code>sb-departments(7)</code> drafted; <code>sb-permissions(7)</code> and <code>sb-policy(5)</code> updated</li>
+<li class="task"><span class="box"></span>LAW-19 to LAW-23 run in CI and fail for the right reason</li>
+<li class="task"><span class="box"></span><code>Spaces.als</code> model-checks in CI with no counterexample; its mutations fail</li>
+<li class="task"><span class="box"></span>Threat model v1 and ADR-0020, ADR-0021 signed off by two reviewers</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S8.1</td>
+<td>Space pages</td>
+<td>The man pages and catalogue every later ticket links to</td>
+<td><a href="../epics/E00-foundations/SB-801-sb-spaces-7-and-sb-space-5-first-drafts.html">SB-801</a>, <a href="../epics/E00-foundations/SB-802-permissions-and-policy-pages-for-spaces.html">SB-802</a>, <a href="../epics/E00-foundations/SB-803-department-catalogue-sb-departments-7.html">SB-803</a></td>
+</tr>
+<tr>
+<td>S8.2</td>
+<td>Laws red, model green</td>
+<td>LAW-19 to LAW-23 failing over mocks; <code>Spaces.als</code> checked; threat model v1; leak eval scaffold</td>
+<td><a href="../epics/E00-foundations/SB-804-law-19-to-law-23-as-failing-tests.html">SB-804</a>, <a href="../epics/E00-foundations/SB-805-spaces-model-in-alloy-checked-in-ci.html">SB-805</a>, <a href="../epics/E00-foundations/SB-806-threat-model-v1-for-spaces-and-adr-sign-off.html">SB-806</a>, <a href="../epics/E00-foundations/SB-807-space-leak-eval-scaffold.html">SB-807</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w9-cells-on-gcp">W9 Cells on GCP</h4>
+<p><em>A real cell runs on Cloud Run and Cloud SQL in its own project, with every schedule, metric and check that W1 to W7 left to the runtime.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>A new cell in a real GCP project in under 30 minutes, idempotent; SB-104 and SB-703 Done</li>
+<li class="task"><span class="box"></span>Only verified images run (Binary Authorization); the database is private with CMEK inside a perimeter</li>
+<li class="task"><span class="box"></span>Every schedule runs in the cell; a missed run alerts</li>
+<li class="task"><span class="box"></span>A staging cell closes the W1 to W7 items that waited for a real cloud</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S9.1</td>
+<td>Run a cell</td>
+<td>Cloud Run services, private Cloud SQL with CMEK, the perimeter, and a real <code>sb tenant apply</code></td>
+<td><a href="../epics/E09-gcp-runtime/SB-901-cloud-run-services-per-cell.html">SB-901</a>, <a href="../epics/E09-gcp-runtime/SB-902-private-cloud-sql-with-cmek-and-a-perimeter.html">SB-902</a>, <a href="../epics/E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.html">SB-903</a></td>
+</tr>
+<tr>
+<td>S9.2</td>
+<td>Runtime jobs</td>
+<td>Every schedule, <code>/metrics</code> and the verifier endpoint running in the cell</td>
+<td><a href="../epics/E09-gcp-runtime/SB-904-schedules-in-the-cell.html">SB-904</a>, <a href="../epics/E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.html">SB-905</a></td>
+</tr>
+<tr>
+<td>S9.3</td>
+<td>Edge and identity</td>
+<td>Firebase Hosting for the web UI; Identity Platform for companies with no IdP</td>
+<td><a href="../epics/E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.html">SB-906</a>, <a href="../epics/E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.html">SB-907</a></td>
+</tr>
+<tr>
+<td>S9.4</td>
+<td>Staging</td>
+<td>A staging cell that closes the W1 to W7 items waiting for a real cloud</td>
+<td><a href="../epics/E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.html">SB-908</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w10-spaces-in-a-cell">W10 Spaces in a Cell</h4>
+<p><em>Spaces live in the manifest, the policy and the index; people ask one department's brain or the whole company; LAW-19 and LAW-20 green.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>A manifest with spaces passes <code>sb tenant check</code> and applies</li>
+<li class="task"><span class="box"></span>LAW-19 and LAW-20 green; policy analysis proves narrowing for every policy</li>
+<li class="task"><span class="box"></span>Asks in a space and company-wide, with space and label on every citation</li>
+<li class="task"><span class="box"></span>A space can be killed and crypto-shredded on its own</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S10.1</td>
+<td>Space model</td>
+<td>Spaces in the manifest, the registry and the request context, each with its own key</td>
+<td><a href="../epics/E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.html">SB-1001</a>, <a href="../epics/E10-department-spaces/SB-1002-space-registry-and-space-scoped-request-context.html">SB-1002</a>, <a href="../epics/E10-department-spaces/SB-1003-per-space-data-keys.html">SB-1003</a></td>
+</tr>
+<tr>
+<td>S10.2</td>
+<td>Space policy</td>
+<td>Cedar for spaces and labels; ingest routes and labels every document</td>
+<td><a href="../epics/E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.html">SB-1004</a>, <a href="../epics/E10-department-spaces/SB-1005-ingest-routes-and-labels-every-document.html">SB-1005</a></td>
+</tr>
+<tr>
+<td>S10.3</td>
+<td>Ask in a space</td>
+<td>Ask a space or the whole company; the UI and chat app know spaces; audit and kill per space</td>
+<td><a href="../epics/E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.html">SB-1006</a>, <a href="../epics/E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.html">SB-1007</a>, <a href="../epics/E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.html">SB-1008</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w11-department-templates">W11 Department Templates</h4>
+<p><em>Twelve department templates with agents and evals; code, HR and accounting sources read-only; restricted fields never ingested.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>Thirteen templates in the bundle; <code>sb space init</code> works for each</li>
+<li class="task"><span class="box"></span>Code, HRIS and accounting connectors pass the contract kit on recorded fakes</li>
+<li class="task"><span class="box"></span>Restricted fields are dropped before chunking, logged by name only</li>
+<li class="task"><span class="box"></span>Every template's citation and leak suites gate releases</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S11.1</td>
+<td>Catalogue</td>
+<td>Templates as data and the department agents</td>
+<td><a href="../epics/E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.html">SB-1101</a>, <a href="../epics/E11-department-templates/SB-1102-department-agents.html">SB-1102</a></td>
+</tr>
+<tr>
+<td>S11.2</td>
+<td>Engineering sources</td>
+<td>Code hosting read-only</td>
+<td><a href="../epics/E11-department-templates/SB-1103-code-connector-read-only.html">SB-1103</a></td>
+</tr>
+<tr>
+<td>S11.3</td>
+<td>People and Finance sources</td>
+<td>HRIS and accounting read-only, with field allow-lists</td>
+<td><a href="../epics/E11-department-templates/SB-1104-hris-connector-read-only.html">SB-1104</a>, <a href="../epics/E11-department-templates/SB-1105-accounting-connector-read-only.html">SB-1105</a>, <a href="../epics/E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.html">SB-1106</a></td>
+</tr>
+<tr>
+<td>S11.4</td>
+<td>Department evals</td>
+<td>A suite per template, leak suites included, in the gate</td>
+<td><a href="../epics/E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.html">SB-1107</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w12-space-governance">W12 Space Governance</h4>
+<p><em>Stewards run their spaces; barriers, segregation of duties, access reviews and 5-minute reorgs; LAW-21 and LAW-22 green.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>Stewards change their spaces only through approved diffs</li>
+<li class="task"><span class="box"></span>LAW-21 and LAW-22 green; <code>Approvals.tla</code> re-checked with segregation of duties</li>
+<li class="task"><span class="box"></span>A quarterly access review produces audit-ready evidence</li>
+<li class="task"><span class="box"></span>Cross-space red team run; no open critical or high findings</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S12.1</td>
+<td>Stewards</td>
+<td>Delegated space administration and quarterly access reviews</td>
+<td><a href="../epics/E12-space-governance/SB-1201-stewards-and-delegated-space-changes.html">SB-1201</a>, <a href="../epics/E12-space-governance/SB-1202-quarterly-access-reviews.html">SB-1202</a></td>
+</tr>
+<tr>
+<td>S12.2</td>
+<td>Barriers and duties</td>
+<td>Information barriers and segregation of duties</td>
+<td><a href="../epics/E12-space-governance/SB-1203-information-barriers.html">SB-1203</a>, <a href="../epics/E12-space-governance/SB-1204-segregation-of-duties.html">SB-1204</a></td>
+</tr>
+<tr>
+<td>S12.3</td>
+<td>Reorgs</td>
+<td>SCIM attributes in policy; joiner, mover, leaver in 5 minutes; reorg preview</td>
+<td><a href="../epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.html">SB-1205</a>, <a href="../epics/E12-space-governance/SB-1206-reorg-preview.html">SB-1206</a></td>
+</tr>
+<tr>
+<td>S12.4</td>
+<td>Harden</td>
+<td>Legal hold and a cross-space red team</td>
+<td><a href="../epics/E12-space-governance/SB-1207-legal-hold-per-space.html">SB-1207</a>, <a href="../epics/E12-space-governance/SB-1208-cross-space-red-team-and-game-day.html">SB-1208</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w13-portfolio-department-grants">W13 Portfolio Department Grants</h4>
+<p><em>Only if Q-01 says yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>Q-01 answered yes and ADR-0014 Accepted (otherwise the wave doesn't start)</li>
+<li class="task"><span class="box"></span>LAW-23 green; LAW-02 still green</li>
+<li class="task"><span class="box"></span>A friendly tenant's grant delivers a roll-up and is revoked within 5 minutes</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S13.1</td>
+<td>Grants</td>
+<td>Consented, aggregate-only grants and their revocation</td>
+<td><a href="../epics/E13-portfolio-grants/SB-1301-space-grant-model-and-consent.html">SB-1301</a>, <a href="../epics/E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.html">SB-1302</a>, <a href="../epics/E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.html">SB-1303</a></td>
+</tr>
+<tr>
+<td>S13.2</td>
+<td>Roll-up pilot</td>
+<td>A finance roll-up with friendly tenants</td>
+<td><a href="../epics/E13-portfolio-grants/SB-1304-finance-roll-up-pilot.html">SB-1304</a></td>
+</tr>
+</tbody>
+</table>
 <h2 id="roll-out-runbook-summary">Roll-out runbook (summary)</h2>
 <p>The full runbook is <a href="../manual/sb-onboarding.7.html"><code>sb-onboarding(7)</code></a>. Each company's own IT team runs it, with no calls to the platform team.</p>
 <table>
@@ -1096,6 +1471,30 @@
 <td>Before W7</td>
 <td>Parent org</td>
 <td>W7 scope unclear</td>
+</tr>
+<tr>
+<td>A GCP organisation, billing account and a staging project for the factory</td>
+<td>W9</td>
+<td>Parent-org platform</td>
+<td>Real-cloud items stay In review</td>
+</tr>
+<tr>
+<td>Sandboxes for GitHub, BambooHR and QuickBooks Online</td>
+<td>W11</td>
+<td>Company IT + vendors</td>
+<td>Connectors run on recorded fakes only</td>
+</tr>
+<tr>
+<td>Answers to Q-11 and Q-12 (department systems, HR data and works councils)</td>
+<td>Before W11</td>
+<td>Parent org + company HR</td>
+<td>People and Finance spaces slip</td>
+</tr>
+<tr>
+<td>Answer to Q-01</td>
+<td>Before W13</td>
+<td>Parent-org leadership + legal</td>
+<td>W13 doesn't start</td>
 </tr>
 </tbody>
 </table>
@@ -1202,8 +1601,10 @@
 <li><strong>Q-06:</strong> Will the parent sign off the proposed metric targets?</li>
 <li><strong>Q-09:</strong> Which hand-off modes are actually needed: own cloud account, divestiture detach, or both? How likely is a divestiture in the first two years?</li>
 <li><strong>Q-10:</strong> After hand-off, who holds the model-provider contract and support terms, and does the factory keep any operational responsibility?</li>
+<li><strong>Q-11:</strong> Which HRIS and accounting systems do the first companies use (BambooHR and QuickBooks Online are the defaults), and which departments do they actually have?</li>
+<li><strong>Q-12:</strong> For HR data in the EU, does any company need a works-council or DPIA sign-off before a People space ingests anything beyond policies?</li>
 </ol><p class="srcline">Source: <code>docs/03-prd.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#summary">Summary</a></li><li class="l2"><a href="#problem">Problem</a></li><li class="l2"><a href="#goals-and-non-goals">Goals and non-goals</a></li><li class="l2"><a href="#personas">Personas</a></li><li class="l2"><a href="#functional-requirements">Functional requirements</a></li><li class="l2"><a href="#non-functional-requirements">Non-functional requirements</a></li><li class="l2"><a href="#delivery-model">Delivery model</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#user-stories">User stories</a></li><li class="l3"><a href="#e00-manual-laws-and-proofs">E00 Manual, Laws and Proofs</a></li><li class="l3"><a href="#e01-tenancy-and-identity">E01 Tenancy and Identity</a></li><li class="l3"><a href="#e02-policy-kernel">E02 Policy Kernel</a></li><li class="l3"><a href="#e03-connectors-and-ingestion">E03 Connectors and Ingestion</a></li><li class="l3"><a href="#e04-retrieval-and-cited-answers">E04 Retrieval and Cited Answers</a></li><li class="l3"><a href="#e05-actions-approvals-audit-and-kill-switches">E05 Actions, Approvals, Audit and Kill Switches</a></li><li class="l3"><a href="#e06-evals-release-and-supply-chain">E06 Evals, Release and Supply Chain</a></li><li class="l3"><a href="#e07-roll-out-admin-and-operations">E07 Roll-out, Admin and Operations</a></li><li class="l3"><a href="#e08-factory-and-hand-off">E08 Factory and Hand-off</a></li><li class="l2"><a href="#waves">Waves</a></li><li class="l3"><a href="#wave-exit-gates-and-slices">Wave exit gates and slices</a></li><li class="l2"><a href="#roll-out-runbook-summary">Roll-out runbook (summary)</a></li><li class="l2"><a href="#dependencies">Dependencies</a></li><li class="l2"><a href="#risks">Risks</a></li><li class="l2"><a href="#success-metrics">Success metrics</a></li><li class="l2"><a href="#open-questions">Open questions</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#summary">Summary</a></li><li class="l2"><a href="#problem">Problem</a></li><li class="l2"><a href="#goals-and-non-goals">Goals and non-goals</a></li><li class="l2"><a href="#personas">Personas</a></li><li class="l2"><a href="#functional-requirements">Functional requirements</a></li><li class="l2"><a href="#non-functional-requirements">Non-functional requirements</a></li><li class="l2"><a href="#delivery-model">Delivery model</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#user-stories">User stories</a></li><li class="l3"><a href="#e00-manual-laws-and-proofs">E00 Manual, Laws and Proofs</a></li><li class="l3"><a href="#e01-tenancy-and-identity">E01 Tenancy and Identity</a></li><li class="l3"><a href="#e02-policy-kernel">E02 Policy Kernel</a></li><li class="l3"><a href="#e03-connectors-and-ingestion">E03 Connectors and Ingestion</a></li><li class="l3"><a href="#e04-retrieval-and-cited-answers">E04 Retrieval and Cited Answers</a></li><li class="l3"><a href="#e05-actions-approvals-audit-and-kill-switches">E05 Actions, Approvals, Audit and Kill Switches</a></li><li class="l3"><a href="#e06-evals-release-and-supply-chain">E06 Evals, Release and Supply Chain</a></li><li class="l3"><a href="#e07-roll-out-admin-and-operations">E07 Roll-out, Admin and Operations</a></li><li class="l3"><a href="#e08-factory-and-hand-off">E08 Factory and Hand-off</a></li><li class="l3"><a href="#e09-cells-on-gcp">E09 Cells on GCP</a></li><li class="l3"><a href="#e10-department-spaces">E10 Department Spaces</a></li><li class="l3"><a href="#e11-department-templates-and-connectors">E11 Department Templates and Connectors</a></li><li class="l3"><a href="#e12-space-governance">E12 Space Governance</a></li><li class="l3"><a href="#e13-portfolio-department-grants">E13 Portfolio Department Grants</a></li><li class="l2"><a href="#waves">Waves</a></li><li class="l3"><a href="#wave-exit-gates-and-slices">Wave exit gates and slices</a></li><li class="l2"><a href="#roll-out-runbook-summary">Roll-out runbook (summary)</a></li><li class="l2"><a href="#dependencies">Dependencies</a></li><li class="l2"><a href="#risks">Risks</a></li><li class="l2"><a href="#success-metrics">Success metrics</a></li><li class="l2"><a href="#open-questions">Open questions</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

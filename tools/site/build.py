@@ -277,7 +277,7 @@ sb tenant apply  acme.yaml
 sb tenant verify acme.yaml
 ```""")
     prd = (ROOT / "docs/03-prd.md").read_text()
-    waves = re.findall(r"^\| (W\d) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$", prd, re.M)
+    waves = re.findall(r"^\| (W\d+) \| ([^|]+) \| ([^|]+) \| ([^|]+) \|$", prd, re.M)
     wave_html = "".join(f'<a class="wave" href="docs/03-prd.html#{w.lower()}-{re.sub(r"[^a-z0-9]+", "-", n.strip().lower()).strip("-")}"><b>{w}</b><span>{html.escape(n.strip())}</span><small>{html.escape(l.strip())}</small></a>' for w, n, l, _ in waves)
     laws = re.findall(r"^### (LAW-\d\d): (.+?) \{#", (ROOT / "manual/sb-laws.7.md").read_text(), re.M)
     law_html = "".join(f'<a class="law" href="manual/sb-laws.7.html#{i.lower()}"><b>{i}</b> {html.escape(t)}</a>' for i, t in laws)

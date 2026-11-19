@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Department Brains · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a><a class="current" href="../docs/08-department-brains.html">Department Brains</a><a href="../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../docs/pilot-retro-template.html">Pilot retro template</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a><a href="../docs/adr/ADR-0020-department-spaces-inside-the-cell.html">ADR-0020: Department brains are spaces inside the company&#x27;s cell, and a space can only narrow access</a><a href="../docs/adr/ADR-0021-gcp-cell-runtime.html">ADR-0021: Cells run on Cloud Run with Cloud SQL, one project per cell; Firebase only for hosting and identity</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/corpus/injection.json.html">injection.json</a><a href="../evals/faithfulness.py.html">faithfulness.py</a><a href="../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.py.html">gate.py</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/pilot.py.html">pilot.py</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/citation.yaml.html">citation.yaml</a><a href="../evals/suites/injection.yaml.html">injection.yaml</a><a href="../evals/suites/permission.yaml.html">permission.yaml</a><a href="../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../evals/suites/regression.yaml.html">regression.yaml</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law01chat.go.html">law01chat.go</a><a href="../laws/law01crm.go.html">law01crm.go</a><a href="../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../laws/law02attack.go.html">law02attack.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02gcp.go.html">law02gcp.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law06.go.html">law06.go</a><a href="../laws/law06pull.go.html">law06pull.go</a><a href="../laws/law07.go.html">law07.go</a><a href="../laws/law07encoded.go.html">law07encoded.go</a><a href="../laws/law08.go.html">law08.go</a><a href="../laws/law09.go.html">law09.go</a><a href="../laws/law09corpus.go.html">law09corpus.go</a><a href="../laws/law10.go.html">law10.go</a><a href="../laws/law11.go.html">law11.go</a><a href="../laws/law11export.go.html">law11export.go</a><a href="../laws/law11restore.go.html">law11restore.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law13.go.html">law13.go</a><a href="../laws/law13retention.go.html">law13retention.go</a><a href="../laws/law14.go.html">law14.go</a><a href="../laws/law15.go.html">law15.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law17.go.html">law17.go</a><a href="../laws/law17access.go.html">law17access.go</a><a href="../laws/law17world.go.html">law17world.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/law18wrap.go.html">law18wrap.go</a><a href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/system_ask.go.html">system_ask.go</a><a href="../laws/system_audit.go.html">system_audit.go</a><a href="../laws/system_bus.go.html">system_bus.go</a><a href="../laws/system_chat.go.html">system_chat.go</a><a href="../laws/system_drift.go.html">system_drift.go</a><a href="../laws/system_kill.go.html">system_kill.go</a><a href="../laws/system_prompt.go.html">system_prompt.go</a><a href="../laws/system_release.go.html">system_release.go</a><a href="../laws/system_rollout.go.html">system_rollout.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/backup/backup_test.go.html">backup_test.go</a><a href="../tests/canary/canary_test.go.html">canary_test.go</a><a href="../tests/gameday/gameday_test.go.html">gameday_test.go</a><a href="../tests/handoff/handoff_test.go.html">handoff_test.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="department-brains">Department brains</h1>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Owner</th>
+<th>Status</th>
+<th>Related</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.1</td>
+<td>2026-11-19</td>
+<td>Platform lead</td>
+<td>Plan accepted (the user, 2026-11-19)</td>
+<td><a href="adr/ADR-0020-department-spaces-inside-the-cell.html">ADR-0020</a> · <a href="adr/ADR-0021-gcp-cell-runtime.html">ADR-0021</a> · <a href="03-prd.html#waves">PRD waves</a> · <a href="../epics/README.html">Plan</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="summary">Summary</h2>
+<p>Today each company has one brain: one cell whose only access rule is the source's live ACL. This plan lets a company hold <strong>all</strong> its knowledge in that cell, split into <strong>department spaces</strong> (an Engineering brain, a People brain, a Finance brain and so on) with access as fine-grained as a real organisation needs. A space is a scope over the company's sources, with its own agents, stewards, labels, retention and data key. It can only <strong>narrow</strong> what the source allows (ADR-0020). The cell stays the tenant boundary, so nothing changes about isolation between companies.</p>
+<p>The plan also settles the next open decision, the runtime for cells on GCP (ADR-0021): Cloud Run, Cloud SQL for PostgreSQL with <code>pgvector</code>, Cloud KMS, Secret Manager, Pub/Sub and Cloud Scheduler, with Firebase used only for hosting and, optionally, identity.</p>
+<p>It adds six waves, W8 to W13, in the same cadence as W0 to W7: manual and laws first, then thin slices.</p>
+<h2 id="how-companies-organise">How companies organise</h2>
+<p>Most companies of the size the parent acquires are organised <strong>by function</strong>, with a few <strong>divisions</strong> (product lines or regions) or a <strong>matrix</strong> of the two once they grow. Access follows that shape: people share widely inside their function and project, and a few functions hold need-to-know data.</p>
+<table>
+<thead>
+<tr>
+<th>Department</th>
+<th>Typical sources</th>
+<th>Data sensitivity</th>
+<th>Who else usually reads it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engineering</td>
+<td>Code hosting, tickets, design docs, incident notes, chat</td>
+<td>Internal; secrets and security findings are restricted</td>
+<td>Product, Design, Support (read), IT/Security</td>
+</tr>
+<tr>
+<td>Product</td>
+<td>Specs, roadmaps, research notes, tickets</td>
+<td>Internal; unreleased pricing and roadmap are confidential</td>
+<td>Engineering, Design, Sales and Marketing leads</td>
+</tr>
+<tr>
+<td>Design</td>
+<td>Design files, research, brand assets</td>
+<td>Internal</td>
+<td>Product, Engineering, Marketing</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>CRM, proposals, call notes, pricing</td>
+<td>Confidential (deal terms, forecasts)</td>
+<td>Finance, Support, Executive</td>
+</tr>
+<tr>
+<td>Marketing</td>
+<td>Docs, campaign plans, brand, analytics</td>
+<td>Internal; embargoed launches are confidential</td>
+<td>Sales, Product</td>
+</tr>
+<tr>
+<td>Customer Support</td>
+<td>Tickets, help-centre articles, macros</td>
+<td>Internal; customer PII is confidential</td>
+<td>Engineering, Product, Sales</td>
+</tr>
+<tr>
+<td>People / HR</td>
+<td>HRIS, policies, handbook, cases, comp</td>
+<td>Restricted (PII, compensation, performance, cases); policies are internal</td>
+<td>Managers for their own reports only; Legal for cases</td>
+</tr>
+<tr>
+<td>Finance / Accounting</td>
+<td>Ledger, reports, budgets, close checklists</td>
+<td>Restricted (unreleased results, payroll, bank details); budgets are confidential to owners</td>
+<td>Executive, budget owners for their own lines</td>
+</tr>
+<tr>
+<td>Legal</td>
+<td>Contracts, matters, policies</td>
+<td>Restricted (privileged); approved policies are internal</td>
+<td>Executive; deal teams by matter</td>
+</tr>
+<tr>
+<td>IT / Security</td>
+<td>Runbooks, asset lists, access requests, findings</td>
+<td>Confidential; vulnerabilities and credentials are restricted</td>
+<td>Engineering</td>
+</tr>
+<tr>
+<td>Operations</td>
+<td>SOPs, vendor docs, logistics</td>
+<td>Internal</td>
+<td>Finance, Sales</td>
+</tr>
+<tr>
+<td>Executive</td>
+<td>Board packs, strategy, M&amp;A</td>
+<td>Restricted</td>
+<td>Board, named deal teams</td>
+</tr>
+</tbody>
+</table>
+<p>Four practices show up in almost every company with a mature access model, and the plan builds each one in.</p>
+<ol>
+<li><strong>Roles from the directory, refined by attributes.</strong> Group membership (role-based access) does the bulk; attributes from HR (department, level, location, cost centre, manager) refine it (attribute-based access). SCIM's enterprise user extension carries exactly these attributes, so the cell can read them the way it already reads groups (SB-107).</li>
+<li><strong>Data classification.</strong> A short label ladder, usually <em>public</em>, <em>internal</em>, <em>confidential</em>, <em>restricted</em>, applied to every document, with a default per source and per department. Labels from the source win where they exist (for example Drive labels).</li>
+<li><strong>Need-to-know and information barriers.</strong> HR cases, legal matters, unreleased results and M&amp;A work are visible only to a named group, and some groups must not see each other's work at all (an ethical wall). Microsoft Purview's information barriers and sensitivity labels are the common reference for this in productivity suites.</li>
+<li><strong>Joiner, mover, leaver and access reviews.</strong> Access changes the moment someone joins, changes team or leaves, and owners re-certify who has access each quarter (a standard SOX and SOC 2 control). Finance adds <strong>segregation of duties</strong>: whoever requests can't approve.</li>
+</ol>
+<h2 id="the-concept-spaces-in-one-cell">The concept: spaces in one cell</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart TB
+  subgraph cell[&quot;acme-logistics cell (one tenant, ADR-0001)&quot;]
+    direction TB
+    eng[&quot;Engineering space&lt;br/&gt;label default: internal&quot;]
+    prod[&quot;Product space&lt;br/&gt;internal&quot;]
+    sup[&quot;Support space&lt;br/&gt;internal&quot;]
+    ppl[&quot;People space&lt;br/&gt;restricted&quot;]
+    fin[&quot;Finance space&lt;br/&gt;restricted&quot;]
+    exec[&quot;Executive space&lt;br/&gt;restricted&quot;]
+    idx[(&quot;one index, one audit chain,&lt;br/&gt;per-space data keys&quot;)]
+    eng --- idx
+    prod --- idx
+    sup --- idx
+    ppl --- idx
+    fin --- idx
+    exec --- idx
+  end
+  src[&quot;Sources: Drive, Slack, Linear, HubSpot,&lt;br/&gt;GitHub, BambooHR, QuickBooks&quot;] --&gt; idx
+  idp[&quot;Company IdP: groups + SCIM attributes&quot;] --&gt; cell
+</pre></div>
+<p>A <strong>space</strong> is declared in the manifest. It names a template, the groups that are members, its stewards, the parts of each connector it covers, a label default and retention. One document can belong to several spaces (a shared spec is in Engineering and Product). A person can belong to several spaces.</p>
+<pre><code class="language-yaml"># Sketch only; the real schema is sb-space(5), written first in W8.
+spaces:
+  engineering:
+    template: engineering
+    members: [group:eng, group:product]
+    stewards: [group:eng-leads]
+    scope: { docs: [&quot;/Engineering/**&quot;], chat: [&quot;#eng-*&quot;], code: [&quot;acme/*&quot;] }
+  people:
+    template: people
+    members: [group:people-team]
+    stewards: [group:hr-leads]
+    label: restricted
+    scope: { docs: [&quot;/People/**&quot;], hris: [policies, org-chart] }
+barriers:
+  - [group:deal-team-orion, group:everyone]
+</code></pre>
+<h3 id="the-access-decision">The access decision</h3>
+<p>Every chunk passes all of these before it reaches a model's context, in this order, and any <code>Unknown</code> refuses (LAW-03):</p>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  q[&quot;ask in space S&lt;br/&gt;or company-wide&quot;] --&gt; m{&quot;member of S?&lt;br/&gt;(IdP groups)&quot;}
+  m -- no --&gt; r[&quot;refused&quot;]
+  m -- yes --&gt; l{&quot;label allowed for&lt;br/&gt;this asker in S?&quot;}
+  l -- no --&gt; r
+  l -- yes --&gt; b{&quot;barrier between asker&lt;br/&gt;and the document&#x27;s groups?&quot;}
+  b -- yes --&gt; r
+  b -- no --&gt; a{&quot;source live ACL&lt;br/&gt;allows? (ADR-0002)&quot;}
+  a -- no / unknown --&gt; r
+  a -- yes --&gt; ok[&quot;in context, cited&quot;]
+</pre></div>
+<p>The source's ACL stays last and stays the authority. The space checks run first because they are local and cheap, so they save ACL calls without ever replacing one.</p>
+<h3 id="new-laws">New laws</h3>
+<p>These are written as red tests in W8 and turn green in W10 to W13. The final wording goes into <a href="../manual/sb-laws.7.html"><code>sb-laws(7)</code></a> in W8.</p>
+<table>
+<thead>
+<tr>
+<th>Law</th>
+<th>Name</th>
+<th>Statement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAW-19</td>
+<td>Spaces only narrow</td>
+<td>No answer, citation, draft or action uses a chunk the source's live ACL would deny, whatever any space policy says</td>
+</tr>
+<tr>
+<td>LAW-20</td>
+<td>Restricted stays home</td>
+<td>Content labelled <code>restricted</code> reaches only members of a space that holds it, including in company-wide asks</td>
+</tr>
+<tr>
+<td>LAW-21</td>
+<td>Moves revoke fast</td>
+<td>When the IdP removes someone from a space's groups, they lose that space within 5 minutes; a new membership grants nothing until the cell has confirmed it</td>
+</tr>
+<tr>
+<td>LAW-22</td>
+<td>Barriers hold</td>
+<td>No answer, citation, draft or action crosses a declared information barrier, in either direction</td>
+</tr>
+<tr>
+<td>LAW-23</td>
+<td>Grants are consented and revocable</td>
+<td>A parent-org grant on a space carries only aggregates the company approved, and stops within 5 minutes of revocation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="department-templates">Department templates</h2>
+<p>A template is data: default connectors and scopes, a label default, retention, agents and an eval suite. Companies rename, merge or drop them, and add their own spaces from the <code>custom</code> template. Following P3, every template field is a manifest field for everyone, never per-company code.</p>
+<table>
+<thead>
+<tr>
+<th>Template</th>
+<th>Label default</th>
+<th>Default agents</th>
+<th>Default sources</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>engineering</code></td>
+<td>internal</td>
+<td><code>ask</code>, <code>incident-summary</code></td>
+<td>code, tickets, docs, chat</td>
+<td>Secrets and security findings restricted</td>
+</tr>
+<tr>
+<td><code>product</code></td>
+<td>internal</td>
+<td><code>ask</code>, <code>spec-digest</code></td>
+<td>docs, tickets</td>
+<td></td>
+</tr>
+<tr>
+<td><code>design</code></td>
+<td>internal</td>
+<td><code>ask</code></td>
+<td>docs</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sales</code></td>
+<td>confidential</td>
+<td><code>ask</code>, <code>draft-reply</code></td>
+<td>crm, docs</td>
+<td>Deal terms confidential</td>
+</tr>
+<tr>
+<td><code>marketing</code></td>
+<td>internal</td>
+<td><code>ask</code>, <code>draft-reply</code></td>
+<td>docs, chat</td>
+<td></td>
+</tr>
+<tr>
+<td><code>support</code></td>
+<td>internal</td>
+<td><code>ask</code>, <code>draft-reply</code></td>
+<td>tickets, docs</td>
+<td>Customer PII confidential</td>
+</tr>
+<tr>
+<td><code>people</code></td>
+<td>restricted</td>
+<td><code>ask</code> (policies only for non-members)</td>
+<td>hris, docs</td>
+<td>Comp, performance and cases never ingested by default</td>
+</tr>
+<tr>
+<td><code>finance</code></td>
+<td>restricted</td>
+<td><code>ask</code>, <code>close-checklist</code></td>
+<td>accounting, docs</td>
+<td>Segregation of duties on every workflow</td>
+</tr>
+<tr>
+<td><code>legal</code></td>
+<td>restricted</td>
+<td><code>ask</code></td>
+<td>docs</td>
+<td>Legal hold overrides retention</td>
+</tr>
+<tr>
+<td><code>it-security</code></td>
+<td>confidential</td>
+<td><code>ask</code>, <code>runbook-answer</code></td>
+<td>docs, tickets</td>
+<td></td>
+</tr>
+<tr>
+<td><code>operations</code></td>
+<td>internal</td>
+<td><code>ask</code></td>
+<td>docs</td>
+<td></td>
+</tr>
+<tr>
+<td><code>executive</code></td>
+<td>restricted</td>
+<td><code>ask</code></td>
+<td>docs</td>
+<td>Board and M&amp;A behind barriers</td>
+</tr>
+<tr>
+<td><code>custom</code></td>
+<td>internal</td>
+<td><code>ask</code></td>
+<td>any</td>
+<td>For whatever a company has that isn't above</td>
+</tr>
+</tbody>
+</table>
+<p>The People space shows why narrowing matters. Everyone can ask "how many days of parental leave do we get?" and get a cited answer, because the handbook is labelled <code>internal</code> and shared company-wide. Nobody outside the People team gets an answer drawn from a case file, even if a sharing mistake in Drive made that file openable, because the case folder is <code>restricted</code> and only the People space holds it.</p>
+<h2 id="running-it-on-gcp">Running it on GCP</h2>
+<p>ADR-0021 has the decision. The mapping from the cell template to Google Cloud:</p>
+<table>
+<thead>
+<tr>
+<th>Cell resource</th>
+<th>GCP</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Account</td>
+<td>One project per cell, in a folder per tenant</td>
+<td>Folders group projects by owner and carry org policies; the factory has its own folder</td>
+</tr>
+<tr>
+<td>Services</td>
+<td>Cloud Run services and jobs, one service account each</td>
+<td>No Kubernetes (ADR-0011)</td>
+</tr>
+<tr>
+<td>Database and index</td>
+<td>Cloud SQL for PostgreSQL 17 with <code>pgvector</code>, private IP, CMEK</td>
+<td>Spaces add rows and policy, not instances</td>
+</tr>
+<tr>
+<td>Root key, space keys</td>
+<td>Cloud KMS key ring per cell; one key per space, wrapped by the root</td>
+<td>Crypto-shred a space by destroying its key (LAW-18 holds)</td>
+</tr>
+<tr>
+<td>Vault</td>
+<td>Secret Manager under the cell's prefix</td>
+<td>Already built (SB-703)</td>
+</tr>
+<tr>
+<td>Queue and schedules</td>
+<td>Pub/Sub, Cloud Scheduler</td>
+<td>Sync, retention, reports, LAW-17 check, anchors</td>
+</tr>
+<tr>
+<td>Audit anchors</td>
+<td>Cloud Storage with a locked retention policy</td>
+<td>WORM (ADR-0012)</td>
+</tr>
+<tr>
+<td>Perimeter</td>
+<td>VPC Service Controls around the cell project</td>
+<td>Blocks data leaving the project by API</td>
+</tr>
+<tr>
+<td>Admission</td>
+<td>Binary Authorization on signed images</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td>Web UI</td>
+<td>Firebase Hosting, rewriting <code>/v1/*</code> to the cell's Cloud Run <code>api</code></td>
+<td>Optional; any static host works</td>
+</tr>
+<tr>
+<td>Sign-in without an IdP</td>
+<td>Identity Platform, one tenant per company, SAML or OIDC federation</td>
+<td>Optional <code>oidc</code> adapter; SCIM still required for groups</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why not Firestore?</strong> It would split the cell into two stores. The audit chain, approvals and index would lose a shared transaction, and there's no <code>pgvector</code>. Firebase is good at the edge (hosting, sign-in) and stays there.</p>
+<h2 id="what-w8-to-w13-deliver">What W8 to W13 deliver</h2>
+<table>
+<thead>
+<tr>
+<th>Wave</th>
+<th>Name</th>
+<th>Goal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W8</td>
+<td>Space Manual and Laws</td>
+<td>The space pages, the department catalogue, LAW-19 to LAW-23 as red tests, <code>Spaces.als</code> checked, threat model v1</td>
+</tr>
+<tr>
+<td>W9</td>
+<td>Cells on GCP</td>
+<td>A real cell runs on Cloud Run and Cloud SQL, with schedules, metrics and the verifier, in under 30 minutes</td>
+</tr>
+<tr>
+<td>W10</td>
+<td>Spaces in a Cell</td>
+<td>Spaces in the manifest, policy and index; ask in a space or company-wide; LAW-19 and LAW-20 green</td>
+</tr>
+<tr>
+<td>W11</td>
+<td>Department Templates</td>
+<td>Twelve templates, department agents and evals; GitHub, BambooHR and QuickBooks Online read-only</td>
+</tr>
+<tr>
+<td>W12</td>
+<td>Space Governance</td>
+<td>Stewards, access reviews, barriers, segregation of duties, reorgs in 5 minutes; LAW-21 and LAW-22 green</td>
+</tr>
+<tr>
+<td>W13</td>
+<td>Portfolio Department Grants</td>
+<td>If Q-01 says yes: consented, aggregate-only grants from a company space to a parent space; LAW-23 green</td>
+</tr>
+</tbody>
+</table>
+<p>The tickets are in the <a href="../epics/README.html">plan</a>, and the slices and exit gates are in the <a href="03-prd.html#waves">PRD</a>.</p>
+<h2 id="sources">Sources</h2>
+<ul>
+<li>Google Cloud, <a href="https://docs.cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy">Resource hierarchy</a> and <a href="https://docs.cloud.google.com/architecture/landing-zones/decide-resource-hierarchy">Decide a resource hierarchy for your landing zone</a>: folders group projects by department or owner and delegate administration; there's no single best layout.</li>
+<li>Google Cloud, <a href="https://docs.cloud.google.com/identity-platform/docs/multi-tenancy">Identity Platform multi-tenancy</a> and <a href="https://docs.cloud.google.com/identity-platform/docs/multi-tenancy-managing-tenants">Managing tenants programmatically</a>: per-tenant SAML and OIDC federation.</li>
+<li>Google Cloud, <a href="https://docs.cloud.google.com/sql/docs/postgres/ai-overview">Build generative AI applications using Cloud SQL</a> (<code>pgvector</code>) and <a href="https://docs.cloud.google.com/sql/docs/postgres/connect-run">Connect from Cloud Run</a>.</li>
+<li>IETF, <a href="https://www.rfc-editor.org/rfc/rfc7643#section-4.3">RFC 7643 §4.3, the SCIM enterprise user extension</a>: <code>department</code>, <code>division</code>, <code>costCenter</code>, <code>organization</code>, <code>manager</code>.</li>
+<li>Microsoft, <a href="https://learn.microsoft.com/en-us/Purview/purview-security">Microsoft Purview security</a>, and Texas A&amp;M IT's <a href="https://docs.it.tamu.edu/it/m365/purview/information-barriers">Information Barriers guide</a>: information barriers separate groups; sensitivity labels classify and protect content. They are two separate controls.</li>
+</ul><p class="srcline">Source: <code>docs/08-department-brains.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#summary">Summary</a></li><li class="l2"><a href="#how-companies-organise">How companies organise</a></li><li class="l2"><a href="#the-concept-spaces-in-one-cell">The concept: spaces in one cell</a></li><li class="l3"><a href="#the-access-decision">The access decision</a></li><li class="l3"><a href="#new-laws">New laws</a></li><li class="l2"><a href="#department-templates">Department templates</a></li><li class="l2"><a href="#running-it-on-gcp">Running it on GCP</a></li><li class="l2"><a href="#what-w8-to-w13-deliver">What W8 to W13 deliver</a></li><li class="l2"><a href="#sources">Sources</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

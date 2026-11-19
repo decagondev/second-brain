@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E13 Portfolio Department Grants · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a class="current" href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></div><div class="group"><h4>Tickets in E13</h4><a href="../../epics/E13-portfolio-grants/SB-1301-space-grant-model-and-consent.html">SB-1301: Space grant model and consent</a><a href="../../epics/E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.html">SB-1302: Aggregate-only grant delivery</a><a href="../../epics/E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.html">SB-1303: Grant revocation and expiry</a><a href="../../epics/E13-portfolio-grants/SB-1304-finance-roll-up-pilot.html">SB-1304: Finance roll-up pilot with friendly tenants</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E13-portfolio-grants</div><h1 id="e13-portfolio-department-grants">E13: Portfolio Department Grants</h1>
+<blockquote>
+<p>If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser.</p>
+</blockquote>
+<p><strong>Waves:</strong> W13 · <strong>Tickets:</strong> 4 · <strong>Stories:</strong> 2</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-13.1</strong>: As a <em>parent-org finance lead</em>, I want consented, aggregate-only roll-ups from each company's Finance space, so that I see the portfolio without a superuser or raw documents. Delivered by <a href="SB-1301-space-grant-model-and-consent.html">SB-1301</a>, <a href="SB-1302-aggregate-only-grant-delivery.html">SB-1302</a>, <a href="SB-1304-finance-roll-up-pilot.html">SB-1304</a>.</li>
+<li><strong>US-13.2</strong>: As a <em>company owner</em>, I want to revoke a grant and see every delivery it made, so that consent stays ours. Delivered by <a href="SB-1303-grant-revocation-and-expiry.html">SB-1303</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB1301[&quot;SB-1301&lt;br/&gt;Space grant model and…&quot;]
+  SB1302[&quot;SB-1302&lt;br/&gt;Aggregate-only grant…&quot;]
+  SB1303[&quot;SB-1303&lt;br/&gt;Grant revocation and expiry&quot;]
+  SB1304[&quot;SB-1304&lt;br/&gt;Finance roll-up pilot with…&quot;]
+  SB1301 --&gt; SB1302
+  SB1302 --&gt; SB1303
+  SB1303 --&gt; SB1304
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-1301-space-grant-model-and-consent.html">SB-1301</a></td>
+<td>W13 / S13.1</td>
+<td>Space grant model and consent</td>
+<td>LAW-02, LAW-23</td>
+</tr>
+<tr>
+<td><a href="SB-1302-aggregate-only-grant-delivery.html">SB-1302</a></td>
+<td>W13 / S13.1</td>
+<td>Aggregate-only grant delivery</td>
+<td>LAW-02, LAW-23</td>
+</tr>
+<tr>
+<td><a href="SB-1303-grant-revocation-and-expiry.html">SB-1303</a></td>
+<td>W13 / S13.1</td>
+<td>Grant revocation and expiry</td>
+<td>LAW-10, LAW-23</td>
+</tr>
+<tr>
+<td><a href="SB-1304-finance-roll-up-pilot.html">SB-1304</a></td>
+<td>W13 / S13.2</td>
+<td>Finance roll-up pilot with friendly tenants</td>
+<td>LAW-23</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E13-portfolio-grants/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

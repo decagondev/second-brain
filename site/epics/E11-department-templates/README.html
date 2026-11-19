@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E11 Department Templates and Connectors · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a class="current" href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></div><div class="group"><h4>Tickets in E11</h4><a href="../../epics/E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.html">SB-1101: Template catalogue as data and sb space init</a><a href="../../epics/E11-department-templates/SB-1102-department-agents.html">SB-1102: Department agents</a><a href="../../epics/E11-department-templates/SB-1103-code-connector-read-only.html">SB-1103: Code connector (read-only)</a><a href="../../epics/E11-department-templates/SB-1104-hris-connector-read-only.html">SB-1104: HRIS connector (read-only, restricted)</a><a href="../../epics/E11-department-templates/SB-1105-accounting-connector-read-only.html">SB-1105: Accounting connector (read-only, restricted)</a><a href="../../epics/E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.html">SB-1106: Field-level allow-lists for restricted sources</a><a href="../../epics/E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.html">SB-1107: Per-template eval suites in the gate</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E11-department-templates</div><h1 id="e11-department-templates-and-connectors">E11: Department Templates and Connectors</h1>
+<blockquote>
+<p>Every common department starts from a template with its sources, labels, agents and evals, including code, HR and accounting systems.</p>
+</blockquote>
+<p><strong>Waves:</strong> W11 · <strong>Tickets:</strong> 7 · <strong>Stories:</strong> 4</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-11.1</strong>: As a <em>company IT operator</em>, I want ready templates for common departments, so that we pick departments instead of designing them. Delivered by <a href="SB-1101-template-catalogue-as-data-and-sb-space-init.html">SB-1101</a>, <a href="SB-1102-department-agents.html">SB-1102</a>.</li>
+<li><strong>US-11.2</strong>: As a <em>engineer</em>, I want our repositories, issues and pull requests in the Engineering brain, so that I can ask how our systems work. Delivered by <a href="SB-1103-code-connector-read-only.html">SB-1103</a>.</li>
+<li><strong>US-11.3</strong>: As a <em>people or finance lead</em>, I want our HR and accounting systems in our spaces with sensitive fields never ingested, so that we get answers without exposing pay, cases or bank details. Delivered by <a href="SB-1104-hris-connector-read-only.html">SB-1104</a>, <a href="SB-1105-accounting-connector-read-only.html">SB-1105</a>, <a href="SB-1106-field-level-allow-lists-for-restricted-sources.html">SB-1106</a>.</li>
+<li><strong>US-11.4</strong>: As a <em>maintainer</em>, I want every template to pass its own suites, leak suites included, before it reaches a tenant, so that a template change can't quietly open a department. Delivered by <a href="SB-1107-per-template-eval-suites-in-the-gate.html">SB-1107</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB1101[&quot;SB-1101&lt;br/&gt;Template catalogue as data…&quot;]
+  SB1102[&quot;SB-1102&lt;br/&gt;Department agents&quot;]
+  SB1103[&quot;SB-1103&lt;br/&gt;Code connector (read-only)&quot;]
+  SB1104[&quot;SB-1104&lt;br/&gt;HRIS connector (read-only,…&quot;]
+  SB1105[&quot;SB-1105&lt;br/&gt;Accounting connector…&quot;]
+  SB1106[&quot;SB-1106&lt;br/&gt;Field-level allow-lists for…&quot;]
+  SB1107[&quot;SB-1107&lt;br/&gt;Per-template eval suites in…&quot;]
+  SB1101 --&gt; SB1102
+  SB1106 --&gt; SB1104
+  SB1106 --&gt; SB1105
+  SB1102 --&gt; SB1107
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-1101-template-catalogue-as-data-and-sb-space-init.html">SB-1101</a></td>
+<td>W11 / S11.1</td>
+<td>Template catalogue as data and <code>sb space init</code></td>
+<td>LAW-16</td>
+</tr>
+<tr>
+<td><a href="SB-1102-department-agents.html">SB-1102</a></td>
+<td>W11 / S11.1</td>
+<td>Department agents</td>
+<td>LAW-09, LAW-14</td>
+</tr>
+<tr>
+<td><a href="SB-1103-code-connector-read-only.html">SB-1103</a></td>
+<td>W11 / S11.2</td>
+<td>Code connector (read-only)</td>
+<td>LAW-01, LAW-03, LAW-07</td>
+</tr>
+<tr>
+<td><a href="SB-1104-hris-connector-read-only.html">SB-1104</a></td>
+<td>W11 / S11.3</td>
+<td>HRIS connector (read-only, restricted)</td>
+<td>LAW-01, LAW-07, LAW-20</td>
+</tr>
+<tr>
+<td><a href="SB-1105-accounting-connector-read-only.html">SB-1105</a></td>
+<td>W11 / S11.3</td>
+<td>Accounting connector (read-only, restricted)</td>
+<td>LAW-01, LAW-07, LAW-20</td>
+</tr>
+<tr>
+<td><a href="SB-1106-field-level-allow-lists-for-restricted-sources.html">SB-1106</a></td>
+<td>W11 / S11.3</td>
+<td>Field-level allow-lists for restricted sources</td>
+<td>LAW-07, LAW-20</td>
+</tr>
+<tr>
+<td><a href="SB-1107-per-template-eval-suites-in-the-gate.html">SB-1107</a></td>
+<td>W11 / S11.4</td>
+<td>Per-template eval suites in the gate</td>
+<td>LAW-06, LAW-20, LAW-22</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E11-department-templates/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

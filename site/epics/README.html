@@ -16,9 +16,9 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a class="current" href="../epics/README.html">Plan</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a class="current" href="../epics/README.html">Plan</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></div></aside>
   <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / epics</div><h1 id="plan-epics-and-tickets">Plan: epics and tickets</h1>
-<p>9 epics, 42 user stories and 96 tickets across 8 waves. The narrative, wave exit gates and slices are in the <a href="../docs/03-prd.html#waves">PRD</a>.</p>
+<p>14 epics, 63 user stories and 138 tickets across 14 waves. W8 to W13 add department brains (<a href="../docs/08-department-brains.html">08-department-brains.md</a>). The narrative, wave exit gates and slices are in the <a href="../docs/03-prd.html#waves">PRD</a>.</p>
 <p><strong>How to pick up work:</strong> take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.</p>
 <h2 id="progress">Progress</h2>
 <table>
@@ -52,6 +52,13 @@
 <td>55</td>
 <td>0</td>
 <td>W2 built (4 done, 7 in review); W3 S3.1 to S3.6: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain), SB-307 (WCAG audit, connector links), SB-308 (real Slack workspace), SB-309 (tenant verify, staging model) SB-310 (weekly schedule) and SB-311 (the pilot itself, human) in review; W4 S4.1 to S4.3: SB-409 done; SB-401 to SB-408 and SB-410 to SB-412 in review (W4 built); W5 built: SB-501 to SB-510 in review; W6 S6.1 and S6.2: SB-603 done; SB-601, SB-602, SB-604 to SB-609 in review; S6.3b: SB-610 (HubSpot, real sandbox) in review; S6.3c: SB-611 (nightly schedule in a running cell) in review; S6.4a: SB-613 (the game day itself, human) in review; S6.4b: SB-612 (the external pen test, human) in review; <strong>W6 built</strong>; W7 S7.1a: SB-701 (security and tenant review, human) in review; S7.1b: SB-702 done; S7.1c: SB-703 (real GCP project) in review; S7.2a: SB-704 done; S7.2b: SB-705 (CLI and a cloud Target) in review; LAW-17 and LAW-18 hand-off tests green; S7.2c: SB-706 (verify on a deployed cell, monthly schedule) in review; S7.2d: SB-707 (a cell in a real tenant account) in review; S7.3a: SB-708 (detach on a running cell) in review; S7.3b: SB-709 (usage meter in a running cell) in review; S7.3c: SB-710 (the game day with a friendly tenant, human) in review; <strong>W7 built</strong></td>
+</tr>
+<tr>
+<td>W8 to W13</td>
+<td>0</td>
+<td>0</td>
+<td>42</td>
+<td>Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. W13 starts only if Q-01 is answered yes</td>
 </tr>
 </tbody>
 </table>
@@ -92,6 +99,22 @@
   E06 --&gt; E07
   E06 --&gt; E08
   E07 --&gt; E08
+  E09[&quot;E09 Cells on GCP&quot;]
+  E10[&quot;E10 Department Spaces&quot;]
+  E11[&quot;E11 Department Templates and Connectors&quot;]
+  E12[&quot;E12 Space Governance&quot;]
+  E13[&quot;E13 Portfolio Department Grants&quot;]
+  E01 --&gt; E09
+  E08 --&gt; E09
+  E02 --&gt; E10
+  E04 --&gt; E10
+  E09 --&gt; E10
+  E03 --&gt; E11
+  E10 --&gt; E11
+  E05 --&gt; E12
+  E10 --&gt; E12
+  E10 --&gt; E13
+  E12 --&gt; E13
 </pre></div>
 <h2 id="epics">Epics</h2>
 <table>
@@ -107,8 +130,8 @@
 <tr>
 <td><a href="E00-foundations/README.html">E00 Manual, Laws and Proofs</a></td>
 <td>The spec, the laws and the first formal models exist before features, and CI enforces the process.</td>
-<td>W0</td>
-<td>15</td>
+<td>W0, W8</td>
+<td>22</td>
 </tr>
 <tr>
 <td><a href="E01-tenancy-identity/README.html">E01 Tenancy and Identity</a></td>
@@ -157,6 +180,36 @@
 <td>One factory produces and runs every tenant's Second Brain, and can hand custody of one to its company without a rebuild.</td>
 <td>W1, W7</td>
 <td>11</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/README.html">E09 Cells on GCP</a></td>
+<td>A real cell runs on Google Cloud in its own project, with its schedules, metrics and verifier, and nothing in the core knows it's GCP.</td>
+<td>W9</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/README.html">E10 Department Spaces</a></td>
+<td>A company's brain holds all its knowledge, split into department spaces that can only narrow what each source allows.</td>
+<td>W10</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/README.html">E11 Department Templates and Connectors</a></td>
+<td>Every common department starts from a template with its sources, labels, agents and evals, including code, HR and accounting systems.</td>
+<td>W11</td>
+<td>7</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/README.html">E12 Space Governance</a></td>
+<td>Department leads run their own spaces; barriers, segregation of duties, access reviews and reorgs work the way a real organisation needs.</td>
+<td>W12</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></td>
+<td>If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser.</td>
+<td>W13</td>
+<td>4</td>
 </tr>
 </tbody>
 </table>
@@ -857,8 +910,386 @@
 <td>Hand-off game day with a friendly tenant</td>
 </tr>
 </tbody>
+</table>
+<h3 id="w8-space-manual-and-laws">W8 Space Manual and Laws</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E00-foundations/SB-801-sb-spaces-7-and-sb-space-5-first-drafts.html">SB-801</a></td>
+<td>S8.1</td>
+<td>E00</td>
+<td>First drafts: <code>sb-spaces(7)</code> and <code>sb-space(5)</code></td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E00-foundations/SB-802-permissions-and-policy-pages-for-spaces.html">SB-802</a></td>
+<td>S8.1</td>
+<td>E00</td>
+<td><code>sb-permissions(7)</code> and <code>sb-policy(5)</code> for spaces, labels and barriers</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E00-foundations/SB-803-department-catalogue-sb-departments-7.html">SB-803</a></td>
+<td>S8.1</td>
+<td>E00</td>
+<td>Department catalogue: <code>sb-departments(7)</code></td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E00-foundations/SB-804-law-19-to-law-23-as-failing-tests.html">SB-804</a></td>
+<td>S8.2</td>
+<td>E00</td>
+<td>LAW-19 to LAW-23 as failing tests</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E00-foundations/SB-805-spaces-model-in-alloy-checked-in-ci.html">SB-805</a></td>
+<td>S8.2</td>
+<td>E00</td>
+<td>Spaces model in Alloy, checked in CI</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E00-foundations/SB-806-threat-model-v1-for-spaces-and-adr-sign-off.html">SB-806</a></td>
+<td>S8.2</td>
+<td>E00</td>
+<td>Threat model v1 for spaces and ADR-0020, ADR-0021 sign-off</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E00-foundations/SB-807-space-leak-eval-scaffold.html">SB-807</a></td>
+<td>S8.2</td>
+<td>E00</td>
+<td>Space leak eval scaffold</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h3 id="w9-cells-on-gcp">W9 Cells on GCP</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E09-gcp-runtime/SB-901-cloud-run-services-per-cell.html">SB-901</a></td>
+<td>S9.1</td>
+<td>E09</td>
+<td>Cloud Run services and jobs per cell</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-902-private-cloud-sql-with-cmek-and-a-perimeter.html">SB-902</a></td>
+<td>S9.1</td>
+<td>E09</td>
+<td>Private Cloud SQL with CMEK and a VPC Service Controls perimeter</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.html">SB-903</a></td>
+<td>S9.1</td>
+<td>E09</td>
+<td><code>sb tenant apply</code> in a real GCP project in under 30 minutes</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-904-schedules-in-the-cell.html">SB-904</a></td>
+<td>S9.2</td>
+<td>E09</td>
+<td>Every schedule running in the cell</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.html">SB-905</a></td>
+<td>S9.2</td>
+<td>E09</td>
+<td><code>/metrics</code> and the verifier endpoint</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.html">SB-906</a></td>
+<td>S9.3</td>
+<td>E09</td>
+<td>Firebase Hosting for the web UI</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.html">SB-907</a></td>
+<td>S9.3</td>
+<td>E09</td>
+<td>Identity Platform adapter for companies without an OIDC IdP</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.html">SB-908</a></td>
+<td>S9.4</td>
+<td>E09</td>
+<td>A staging cell closes the W1 to W7 items waiting for a real cloud</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h3 id="w10-spaces-in-a-cell">W10 Spaces in a Cell</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.html">SB-1001</a></td>
+<td>S10.1</td>
+<td>E10</td>
+<td>Spaces in the manifest and <code>sb tenant check</code></td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1002-space-registry-and-space-scoped-request-context.html">SB-1002</a></td>
+<td>S10.1</td>
+<td>E10</td>
+<td>Space registry and space-scoped request context</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1003-per-space-data-keys.html">SB-1003</a></td>
+<td>S10.1</td>
+<td>E10</td>
+<td>Per-space data keys wrapped by the cell root</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.html">SB-1004</a></td>
+<td>S10.2</td>
+<td>E10</td>
+<td>Cedar schema v2: spaces and labels, narrowing only</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1005-ingest-routes-and-labels-every-document.html">SB-1005</a></td>
+<td>S10.2</td>
+<td>E10</td>
+<td>Ingest routes and labels every document</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.html">SB-1006</a></td>
+<td>S10.3</td>
+<td>E10</td>
+<td>Ask in a space or company-wide</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.html">SB-1007</a></td>
+<td>S10.3</td>
+<td>E10</td>
+<td>Spaces in the web UI and the chat app</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.html">SB-1008</a></td>
+<td>S10.3</td>
+<td>E10</td>
+<td>Audit and kill switch per space</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h3 id="w11-department-templates">W11 Department Templates</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.html">SB-1101</a></td>
+<td>S11.1</td>
+<td>E11</td>
+<td>Template catalogue as data and <code>sb space init</code></td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/SB-1102-department-agents.html">SB-1102</a></td>
+<td>S11.1</td>
+<td>E11</td>
+<td>Department agents</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/SB-1103-code-connector-read-only.html">SB-1103</a></td>
+<td>S11.2</td>
+<td>E11</td>
+<td>Code connector (read-only)</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/SB-1104-hris-connector-read-only.html">SB-1104</a></td>
+<td>S11.3</td>
+<td>E11</td>
+<td>HRIS connector (read-only, restricted)</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/SB-1105-accounting-connector-read-only.html">SB-1105</a></td>
+<td>S11.3</td>
+<td>E11</td>
+<td>Accounting connector (read-only, restricted)</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.html">SB-1106</a></td>
+<td>S11.3</td>
+<td>E11</td>
+<td>Field-level allow-lists for restricted sources</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.html">SB-1107</a></td>
+<td>S11.4</td>
+<td>E11</td>
+<td>Per-template eval suites in the gate</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h3 id="w12-space-governance">W12 Space Governance</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E12-space-governance/SB-1201-stewards-and-delegated-space-changes.html">SB-1201</a></td>
+<td>S12.1</td>
+<td>E12</td>
+<td>Stewards and delegated space changes</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1202-quarterly-access-reviews.html">SB-1202</a></td>
+<td>S12.1</td>
+<td>E12</td>
+<td>Quarterly access reviews</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1203-information-barriers.html">SB-1203</a></td>
+<td>S12.2</td>
+<td>E12</td>
+<td>Information barriers</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1204-segregation-of-duties.html">SB-1204</a></td>
+<td>S12.2</td>
+<td>E12</td>
+<td>Segregation of duties for workflows</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.html">SB-1205</a></td>
+<td>S12.3</td>
+<td>E12</td>
+<td>SCIM attributes and five-minute moves</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1206-reorg-preview.html">SB-1206</a></td>
+<td>S12.3</td>
+<td>E12</td>
+<td>Reorg preview: who gains and loses before it happens</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1207-legal-hold-per-space.html">SB-1207</a></td>
+<td>S12.4</td>
+<td>E12</td>
+<td>Legal hold per space</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E12-space-governance/SB-1208-cross-space-red-team-and-game-day.html">SB-1208</a></td>
+<td>S12.4</td>
+<td>E12</td>
+<td>Cross-space red team and game day</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h3 id="w13-portfolio-department-grants">W13 Portfolio Department Grants</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E13-portfolio-grants/SB-1301-space-grant-model-and-consent.html">SB-1301</a></td>
+<td>S13.1</td>
+<td>E13</td>
+<td>Space grant model and consent</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.html">SB-1302</a></td>
+<td>S13.1</td>
+<td>E13</td>
+<td>Aggregate-only grant delivery</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.html">SB-1303</a></td>
+<td>S13.1</td>
+<td>E13</td>
+<td>Grant revocation and expiry</td>
+<td>Open</td>
+</tr>
+<tr>
+<td><a href="E13-portfolio-grants/SB-1304-finance-roll-up-pilot.html">SB-1304</a></td>
+<td>S13.2</td>
+<td>E13</td>
+<td>Finance roll-up pilot with friendly tenants</td>
+<td>Open</td>
+</tr>
+</tbody>
 </table><p class="srcline">Source: <code>epics/README.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#epic-dependencies">Epic dependencies</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#all-tickets-by-wave">All tickets by wave</a></li><li class="l3"><a href="#w0-manual-and-laws">W0 Manual and Laws</a></li><li class="l3"><a href="#w1-first-cell">W1 First Cell</a></li><li class="l3"><a href="#w2-ingestion">W2 Ingestion</a></li><li class="l3"><a href="#w3-cited-answers">W3 Cited Answers</a></li><li class="l3"><a href="#w4-safe-actions">W4 Safe Actions</a></li><li class="l3"><a href="#w5-gated-releases">W5 Gated Releases</a></li><li class="l3"><a href="#w6-portfolio-roll-out">W6 Portfolio Roll-out</a></li><li class="l3"><a href="#w7-factory-hand-off">W7 Factory Hand-off</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#epic-dependencies">Epic dependencies</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#all-tickets-by-wave">All tickets by wave</a></li><li class="l3"><a href="#w0-manual-and-laws">W0 Manual and Laws</a></li><li class="l3"><a href="#w1-first-cell">W1 First Cell</a></li><li class="l3"><a href="#w2-ingestion">W2 Ingestion</a></li><li class="l3"><a href="#w3-cited-answers">W3 Cited Answers</a></li><li class="l3"><a href="#w4-safe-actions">W4 Safe Actions</a></li><li class="l3"><a href="#w5-gated-releases">W5 Gated Releases</a></li><li class="l3"><a href="#w6-portfolio-roll-out">W6 Portfolio Roll-out</a></li><li class="l3"><a href="#w7-factory-hand-off">W7 Factory Hand-off</a></li><li class="l3"><a href="#w8-space-manual-and-laws">W8 Space Manual and Laws</a></li><li class="l3"><a href="#w9-cells-on-gcp">W9 Cells on GCP</a></li><li class="l3"><a href="#w10-spaces-in-a-cell">W10 Spaces in a Cell</a></li><li class="l3"><a href="#w11-department-templates">W11 Department Templates</a></li><li class="l3"><a href="#w12-space-governance">W12 Space Governance</a></li><li class="l3"><a href="#w13-portfolio-department-grants">W13 Portfolio Department Grants</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

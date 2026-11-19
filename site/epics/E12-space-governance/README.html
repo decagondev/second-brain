@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E12 Space Governance · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a class="current" href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></div><div class="group"><h4>Tickets in E12</h4><a href="../../epics/E12-space-governance/SB-1201-stewards-and-delegated-space-changes.html">SB-1201: Stewards and delegated space changes</a><a href="../../epics/E12-space-governance/SB-1202-quarterly-access-reviews.html">SB-1202: Quarterly access reviews</a><a href="../../epics/E12-space-governance/SB-1203-information-barriers.html">SB-1203: Information barriers</a><a href="../../epics/E12-space-governance/SB-1204-segregation-of-duties.html">SB-1204: Segregation of duties for workflows</a><a href="../../epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.html">SB-1205: SCIM attributes and five-minute moves</a><a href="../../epics/E12-space-governance/SB-1206-reorg-preview.html">SB-1206: Reorg preview: who gains and loses before it happens</a><a href="../../epics/E12-space-governance/SB-1207-legal-hold-per-space.html">SB-1207: Legal hold per space</a><a href="../../epics/E12-space-governance/SB-1208-cross-space-red-team-and-game-day.html">SB-1208: Cross-space red team and game day</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E12-space-governance</div><h1 id="e12-space-governance">E12: Space Governance</h1>
+<blockquote>
+<p>Department leads run their own spaces; barriers, segregation of duties, access reviews and reorgs work the way a real organisation needs.</p>
+</blockquote>
+<p><strong>Waves:</strong> W12 · <strong>Tickets:</strong> 8 · <strong>Stories:</strong> 5</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-12.1</strong>: As a <em>department steward</em>, I want to run my space and re-certify its members without IT doing every change, so that my department's brain stays right and stays ours. Delivered by <a href="SB-1201-stewards-and-delegated-space-changes.html">SB-1201</a>, <a href="SB-1202-quarterly-access-reviews.html">SB-1202</a>.</li>
+<li><strong>US-12.2</strong>: As a <em>compliance officer</em>, I want information barriers and segregation of duties, so that deal teams, investigations and finance controls work as our policies say. Delivered by <a href="SB-1203-information-barriers.html">SB-1203</a>, <a href="SB-1204-segregation-of-duties.html">SB-1204</a>.</li>
+<li><strong>US-12.3</strong>: As a <em>people operations lead</em>, I want reorgs to change access within 5 minutes, and to preview them first, so that a move never leaves someone with yesterday's access. Delivered by <a href="SB-1205-scim-attributes-and-five-minute-moves.html">SB-1205</a>, <a href="SB-1206-reorg-preview.html">SB-1206</a>.</li>
+<li><strong>US-12.4</strong>: As a <em>legal lead</em>, I want to put a space or scope on legal hold, so that nothing under a matter is deleted. Delivered by <a href="SB-1207-legal-hold-per-space.html">SB-1207</a>.</li>
+<li><strong>US-12.5</strong>: As a <em>company security lead</em>, I want the spaces red-teamed before we rely on them, so that we trust the People and Finance brains. Delivered by <a href="SB-1208-cross-space-red-team-and-game-day.html">SB-1208</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB1201[&quot;SB-1201&lt;br/&gt;Stewards and delegated…&quot;]
+  SB1202[&quot;SB-1202&lt;br/&gt;Quarterly access reviews&quot;]
+  SB1203[&quot;SB-1203&lt;br/&gt;Information barriers&quot;]
+  SB1204[&quot;SB-1204&lt;br/&gt;Segregation of duties for…&quot;]
+  SB1205[&quot;SB-1205&lt;br/&gt;SCIM attributes and…&quot;]
+  SB1206[&quot;SB-1206&lt;br/&gt;Reorg preview: who gains…&quot;]
+  SB1207[&quot;SB-1207&lt;br/&gt;Legal hold per space&quot;]
+  SB1208[&quot;SB-1208&lt;br/&gt;Cross-space red team and…&quot;]
+  SB1201 --&gt; SB1202
+  SB1205 --&gt; SB1206
+  SB1203 --&gt; SB1208
+  SB1205 --&gt; SB1208
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-1201-stewards-and-delegated-space-changes.html">SB-1201</a></td>
+<td>W12 / S12.1</td>
+<td>Stewards and delegated space changes</td>
+<td>LAW-15, LAW-16, LAW-19</td>
+</tr>
+<tr>
+<td><a href="SB-1202-quarterly-access-reviews.html">SB-1202</a></td>
+<td>W12 / S12.1</td>
+<td>Quarterly access reviews</td>
+<td>LAW-16</td>
+</tr>
+<tr>
+<td><a href="SB-1203-information-barriers.html">SB-1203</a></td>
+<td>W12 / S12.2</td>
+<td>Information barriers</td>
+<td>LAW-22</td>
+</tr>
+<tr>
+<td><a href="SB-1204-segregation-of-duties.html">SB-1204</a></td>
+<td>W12 / S12.2</td>
+<td>Segregation of duties for workflows</td>
+<td>LAW-15</td>
+</tr>
+<tr>
+<td><a href="SB-1205-scim-attributes-and-five-minute-moves.html">SB-1205</a></td>
+<td>W12 / S12.3</td>
+<td>SCIM attributes and five-minute moves</td>
+<td>LAW-12, LAW-21</td>
+</tr>
+<tr>
+<td><a href="SB-1206-reorg-preview.html">SB-1206</a></td>
+<td>W12 / S12.3</td>
+<td>Reorg preview: who gains and loses before it happens</td>
+<td>LAW-16</td>
+</tr>
+<tr>
+<td><a href="SB-1207-legal-hold-per-space.html">SB-1207</a></td>
+<td>W12 / S12.4</td>
+<td>Legal hold per space</td>
+<td>LAW-11, LAW-13</td>
+</tr>
+<tr>
+<td><a href="SB-1208-cross-space-red-team-and-game-day.html">SB-1208</a></td>
+<td>W12 / S12.4</td>
+<td>Cross-space red team and game day</td>
+<td>LAW-19, LAW-20, LAW-21, LAW-22</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E12-space-governance/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>
