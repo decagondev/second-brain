@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"example.com/second-brain/internal/adapters/policy/cedar"
 	"example.com/second-brain/internal/adapters/registry/localfs"
@@ -17,6 +18,7 @@ import (
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/obs"
 )
@@ -702,3 +704,45 @@ func (m teamAsAll) SetLevel(email, level string) {
 	}
 	m.CRMWorld.SetLevel(email, level)
 }
+
+// LAW-13's retention check catches a job that ages the index with the derived stores, and
+// one that keeps the record exactly retention_days old out of the sweep's keep set.
+func TestSelf_LAW13RetentionMutationsAreCaught(t *testing.T) {
+	ages := func() RetentionWorld {
+		return newRetentionWorld(func(w *retentionWorld) []retention.Store { return []retention.Store{indexAger{w.in}} })
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law13Retention(r, ages()) }) {
+		t.Error("LAW-13 (retention): a job that expires the index was not caught")
+	}
+	strict := func() RetentionWorld {
+		return newRetentionWorld(func(w *retentionWorld) []retention.Store { return []retention.Store{offByOne{w}} })
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law13Retention(r, strict()) }) {
+		t.Error("LAW-13 (retention): deleting records exactly retention_days old was not caught")
+	}
+}
+
+type indexAger struct{ w *ingestWorld }
+
+func (indexAger) Name() string { return "index" }
+func (a indexAger) Expire(context.Context, string, time.Time) (int, error) {
+	return 1, a.w.Drop()
+}
+func (indexAger) Erase(context.Context, string, string) (int, error) { return 0, nil }
+
+// offByOne deletes traces at the cutoff too.
+type offByOne struct{ w *retentionWorld }
+
+func (offByOne) Name() string { return "traces-strict" }
+func (o offByOne) Expire(ctx context.Context, tenant string, before time.Time) (int, error) {
+	n := 0
+	for _, s := range o.w.traces.Retention() {
+		k, err := s.Expire(ctx, tenant, before.Add(time.Nanosecond))
+		if err != nil {
+			return n, err
+		}
+		n += k
+	}
+	return n, nil
+}
+func (offByOne) Erase(context.Context, string, string) (int, error) { return 0, nil }

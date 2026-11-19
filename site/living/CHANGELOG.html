@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Retention and deletion (S6.3c: SB-611): the nightly retention job over traces, conversations, feedback and log files (never audit or the index), <code>POST /v1/admin/subjects/erase</code> with audit before and after, the <code>retention</code> audit kind, daily log files, and a LAW-13 law test showing that retention leaves the index derived.</li>
 <li>HubSpot CRM connector (S6.3b: SB-610), <code>crm: hubspot</code>, read-only. It covers companies and deals, never contacts. Record-level access is checked live from the user's role, teams and the record's owner, through a role map held in the vault. Changes are polled through the CRM search API. Tested against the <code>hubspottest</code> recorded fake, with a new LAW-01 law test.</li>
 <li>Operations (S6.3a: SB-607 to SB-609): a Sev-1 alert rule and runbook for every law with a production check, a metric catalogue and tenant dashboard, a telemetry rule that keeps content out of labels, histograms, ask and ACL metrics, and a monthly budget and per-user rate limit in the model gateway (<code>EBUDGET</code>).</li>
 <li>Onboarding and the weekly report (S6.2: SB-604 to SB-606): every runbook step states what to expect and every phase has a gate checklist, enforced by <code>tools/check/runbook.py</code>; the weekly leadership report and <code>GET /v1/admin/usage</code>, counts only.</li>

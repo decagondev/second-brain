@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Retention is configuration, not a project.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>retention_days</code> enforced on derived data and logs; audit retention follows its own policy</li>
-<li class="task"><span class="box"></span>Subject deletion request removes derived data and records the deletion in audit</li>
+<li class="task"><span class="box"></span><code>retention_days</code> enforced on derived data and logs; audit retention follows its own policy (the job and every store are built and tested; running it nightly at 03:00 UTC needs the cell runtime's scheduler, W7)</li>
+<li class="task done"><span class="box">✓</span>Subject deletion request removes derived data and records the deletion in audit</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Retention jobs</li>
-<li class="task"><span class="box"></span>Deletion API</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-13</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Retention jobs</li>
+<li class="task done"><span class="box">✓</span>Deletion API</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-13</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S6.3c): <code>internal/core/retention.Job</code> is the nightly sweep and subject erasure. It runs over the cell's stores of derived data only: traces (answers and drafts, with their citations and decision lists), conversations, feedback, and the daily log files (<code>internal/adapters/logs/localfs</code>). Audit and the index are never among them. A record exactly <code>retention_days</code> old is kept. A <code>retention_days</code> outside 30 to 3650 refuses to run. Each sweep writes one <code>kind: retention</code> audit row with the cutoff and the count per store, and a failing store is recorded and retried the next night. <code>POST /v1/admin/subjects/erase</code> (operator only) audits the request before erasing anything: if that row can't be written, nothing is erased. It then erases the user's records from every store, log lines that name them included, and audits the outcome. <code>retention</code> is a new audit kind (sb-audit(5)). The new law test, <code>TestLAW13_RetentionLeavesTheIndexDerived</code>, checks the sweep and an erasure against a model and shows that the index still equals a rebuild. A self-test shows that a job which ages the index, and one which deletes records exactly <code>retention_days</code> old, are both caught.</p>
+<p><strong>Left:</strong> the nightly schedule and the Postgres stores in a running cell (W7).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E07-rollout-ops/SB-611-retention-and-deletion.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

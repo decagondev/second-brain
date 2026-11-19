@@ -57,7 +57,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `agents` | list | yes | | `ask` (required), `draft-reply`. No duplicates |
 | `workflows` | list | no | `[]` | At most **one** in v1. Known workflows: `ticket-update` (needs connector kind `tickets`). Enabled only after the tenant's workflow evals pass |
 | `approval` | map workflow→principal | if `workflows` | | Principal is `group:NAME` from the IdP. Every workflow needs one |
-| `retention_days` | int | no | `365` | 30–3650. Applies to traces, citations and drafts, not to audit |
+| `retention_days` | int | no | `365` | 30–3650. Applies to traces (with their citations and decision lists), drafts, conversations, feedback and logs, never to audit or the index. See Retention and deletion |
 | `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
@@ -88,6 +88,28 @@ The same Go types that drive the checker generate a JSON Schema, published as [`
 ## EXIT STATUS / ERRORS
 
 `sb tenant check` exits 1 with `EMANIFEST` and one line per error, in the form `file:line:col: field: message`, sorted by position. Errors about a field point at its key; errors about a value point at the value. See [sb-tenant(1)](sb-tenant.1.md).
+
+## RETENTION AND DELETION
+
+Exactly (SB-611).
+
+**The nightly job.** At 03:00 UTC each cell deletes everything of its tenant older than `retention_days` from every store of derived data:
+
+| Store | What it holds | Aged by |
+|---|---|---|
+| `traces` | answers and drafts, with their citations and decision lists | when it was answered |
+| `conversations` | the questions of each conversation | the last question |
+| `feedback` | ratings and comments | when it was given |
+| `logs` | the cell's daily log files | the file's day |
+
+A record exactly `retention_days` old is kept, and one older is deleted. The job refuses to run with a `retention_days` outside 30 to 3650, so a bad value fails rather than deleting more than it should. Each run writes one `kind: retention` audit row (subject `sweep`) with the cutoff and how many records each store deleted, never what they held. If any store fails, the row records it, and the next night tries again. Traces are readable for at most 30 days whatever `retention_days` says (sb-ask(3)); retention only bounds how long they are kept.
+
+**What retention never touches.**
+
+- **Audit** follows its own policy: seven years, WORM (sb-audit(7)).
+- **The index** is derived from the sources and ages with them. A document deleted at its source leaves the index within one sync (SB-209), and a rebuild gives the same index (LAW-13). The job has no access to it.
+
+**Subject deletion.** `POST /v1/admin/subjects/erase` (sb-admin(3)) erases everything the cell's derived stores hold about one user, whatever its age: their traces and drafts, conversations, feedback, and every log line that names them. It writes a `kind: retention` audit row (subject `erase:USER`, state `requested`) **before** erasing anything, and a second row (state `done`, or `failed` with the store that failed) after. If the first row can't be written, nothing is erased. The audit rows about the user, including their earlier actions and approvals, stay: they are the record, and they hold ids, not content. Content about the person inside the sources (a CRM contact, a document they wrote) is deleted at the source, and the index follows (LAW-13).
 
 ## DRIFT
 

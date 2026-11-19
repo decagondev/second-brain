@@ -147,7 +147,7 @@
 <td>—</td>
 <td><code>laws/</code> ingest, re-ingest, drop and rebuild give the same <code>(cite, chunk, ACL)</code> set, + self-test; scheduled drill SB-210</td>
 <td>—</td>
-<td>SB-210</td>
+<td>SB-210, SB-611</td>
 </tr>
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-14">LAW-14</a></td>
@@ -476,6 +476,12 @@
 <td>LAW-01, LAW-03</td>
 <td>Tested (extended)</td>
 <td>SB-610: <code>TestLAW01_CRMRecordPermissionsAreLive</code> checks HubSpot record verdicts against a reference model of role level, teams and owner; team-read-as-all mutation caught; LAW-03 over the HubSpot connector</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-13</td>
+<td>Tested (extended)</td>
+<td>SB-611: <code>TestLAW13_RetentionLeavesTheIndexDerived</code>: sweep and erasure match the model, and the index still equals a rebuild; index-ageing and off-by-one mutations caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

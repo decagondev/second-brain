@@ -26,7 +26,7 @@ var Zero = strings.Repeat("0", 64)
 
 // Kinds are the valid row kinds.
 var Kinds = map[string]bool{"tool_call": true, "decision": true, "approval": true, "kill": true, "config": true,
-	"release": true, "access": true, "custody": true}
+	"release": true, "access": true, "custody": true, "retention": true}
 
 // MaxField is the longest string field, in bytes.
 const MaxField = 512

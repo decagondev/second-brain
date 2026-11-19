@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/retention"
 )
 
 // Store is safe for concurrent use.
@@ -18,11 +19,14 @@ type Store struct {
 	traces   map[string]ask.Trace
 	convs    map[string]conv
 	feedback map[string]ask.Feedback // tenant/trace
+	// Now stamps conversations for retention; nil is time.Now.
+	Now func() time.Time
 }
 
 type conv struct {
 	tenant, user string
 	questions    []string
+	at           time.Time // the last question
 }
 
 // New returns an empty store.
@@ -73,6 +77,10 @@ func (s *Store) AppendQuestion(_ context.Context, tenant, user, id, q string) er
 	}
 	c.tenant, c.user = tenant, user
 	c.questions = append(c.questions, q)
+	c.at = time.Now()
+	if s.Now != nil {
+		c.at = s.Now()
+	}
 	s.convs[id] = c
 	return nil
 }
@@ -99,4 +107,58 @@ func (s *Store) FeedbackBetween(_ context.Context, tenant string, from, to time.
 		return out[i].At.Before(out[j].At) || (out[i].At.Equal(out[j].At) && out[i].Trace < out[j].Trace)
 	})
 	return out, nil
+}
+
+// Retention returns the store's three retention stores: traces (answers and drafts),
+// conversations and feedback (sb-tenant(5), Retention and deletion).
+func (s *Store) Retention() []retention.Store {
+	return []retention.Store{view{s, "traces"}, view{s, "conversations"}, view{s, "feedback"}}
+}
+
+type view struct {
+	s    *Store
+	name string
+}
+
+func (v view) Name() string { return v.name }
+
+// Expire implements retention.Store.
+func (v view) Expire(_ context.Context, tenant string, before time.Time) (int, error) {
+	return v.drop(func(t, _ string, at time.Time) bool { return t == tenant && at.Before(before) }), nil
+}
+
+// Erase implements retention.Store.
+func (v view) Erase(_ context.Context, tenant, user string) (int, error) {
+	return v.drop(func(t, u string, _ time.Time) bool { return t == tenant && u == user }), nil
+}
+
+func (v view) drop(match func(tenant, user string, at time.Time) bool) int {
+	s := v.s
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	switch v.name {
+	case "traces":
+		for k, t := range s.traces {
+			if match(t.Tenant, t.User, t.At) {
+				delete(s.traces, k)
+				n++
+			}
+		}
+	case "conversations":
+		for k, c := range s.convs {
+			if match(c.tenant, c.user, c.at) {
+				delete(s.convs, k)
+				n++
+			}
+		}
+	case "feedback":
+		for k, f := range s.feedback {
+			if match(f.Tenant, f.User, f.At) {
+				delete(s.feedback, k)
+				n++
+			}
+		}
+	}
+	return n
 }

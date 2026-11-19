@@ -200,3 +200,7 @@ func TestLAW03_HubSpotUnknownIsNeverAllow(t *testing.T) {
 	w := NewHubSpotWorld()
 	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
 }
+
+func TestLAW13_RetentionLeavesTheIndexDerived(t *testing.T) {
+	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law13Retention(r, NewRetentionWorld()) })
+}

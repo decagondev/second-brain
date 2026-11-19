@@ -14,6 +14,7 @@ import (
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/report"
+	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
@@ -37,6 +38,10 @@ type Admin struct {
 	Usage     report.Source
 	Price     report.Price
 	Approvers []string // the manifest's approval groups
+	// Erasure erases one user's derived data (SB-611); nil means EUNAVAIL.
+	Erasure interface {
+		Erase(ctx context.Context, actor, user, reason string) (retention.Report, error)
+	}
 }
 
 // Register mounts the endpoints.
@@ -48,6 +53,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/kill", h.guard(h.switches))
 	mux.HandleFunc("GET /v1/admin/audit", h.guard(h.audit))
 	mux.HandleFunc("GET /v1/admin/usage", h.usage)
+	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
 		h.fail(w, errs.New(errs.ENOTIMPL, "refusal reports arrive with SB-607"))
 	}))
@@ -165,6 +171,32 @@ func (h Admin) kill(set bool) func(http.ResponseWriter, *http.Request, tenancy.S
 		default:
 			h.ok(w, map[string]any{"scope": scope, "killed": set})
 		}
+	}
+}
+
+// erase is subject deletion (sb-admin(3), sb-tenant(5) Retention and deletion).
+func (h Admin) erase(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+	var req struct {
+		User   string `json:"user"`
+		Reason string `json:"reason"`
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil {
+		h.fail(w, errs.New(errs.EINVAL, "The body must be {\"user\": \"usr_…\", \"reason\": \"…\"}."))
+		return
+	}
+	if h.Erasure == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Erasure isn't available in this cell."))
+		return
+	}
+	rep, err := h.Erasure.Erase(r.Context(), s.User(), req.User, req.Reason)
+	switch {
+	case errors.Is(err, retention.ErrInvalid):
+		h.fail(w, errs.New(errs.EINVAL, "A usr_ id and a reason are required."))
+	case err != nil:
+		h.fail(w, errs.New(errs.EUNAVAIL, "The erasure didn't finish; the audit log says how far it got."))
+	default:
+		h.ok(w, map[string]any{"erased": rep.Counts, "audit": rep.Audit})
 	}
 }
 

@@ -139,7 +139,7 @@ agents: [ask]
 <td>int</td>
 <td>no</td>
 <td><code>365</code></td>
-<td>30–3650. Applies to traces, citations and drafts, not to audit</td>
+<td>30–3650. Applies to traces (with their citations and decision lists), drafts, conversations, feedback and logs, never to audit or the index. See Retention and deletion</td>
 </tr>
 <tr>
 <td><code>budget_usd_month</code></td>
@@ -208,6 +208,47 @@ agents: [ask]
 <p>The same Go types that drive the checker generate a JSON Schema, published as <a href="../examples/tenants/tenant.schema.json.html"><code>examples/tenants/tenant.schema.json</code></a> for editors. A test fails if the published file is out of date.</p>
 <h2 id="exit-status-errors">EXIT STATUS / ERRORS</h2>
 <p><code>sb tenant check</code> exits 1 with <code>EMANIFEST</code> and one line per error, in the form <code>file:line:col: field: message</code>, sorted by position. Errors about a field point at its key; errors about a value point at the value. See <a href="sb-tenant.1.html">sb-tenant(1)</a>.</p>
+<h2 id="retention-and-deletion">RETENTION AND DELETION</h2>
+<p>Exactly (SB-611).</p>
+<p><strong>The nightly job.</strong> At 03:00 UTC each cell deletes everything of its tenant older than <code>retention_days</code> from every store of derived data:</p>
+<table>
+<thead>
+<tr>
+<th>Store</th>
+<th>What it holds</th>
+<th>Aged by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>traces</code></td>
+<td>answers and drafts, with their citations and decision lists</td>
+<td>when it was answered</td>
+</tr>
+<tr>
+<td><code>conversations</code></td>
+<td>the questions of each conversation</td>
+<td>the last question</td>
+</tr>
+<tr>
+<td><code>feedback</code></td>
+<td>ratings and comments</td>
+<td>when it was given</td>
+</tr>
+<tr>
+<td><code>logs</code></td>
+<td>the cell's daily log files</td>
+<td>the file's day</td>
+</tr>
+</tbody>
+</table>
+<p>A record exactly <code>retention_days</code> old is kept, and one older is deleted. The job refuses to run with a <code>retention_days</code> outside 30 to 3650, so a bad value fails rather than deleting more than it should. Each run writes one <code>kind: retention</code> audit row (subject <code>sweep</code>) with the cutoff and how many records each store deleted, never what they held. If any store fails, the row records it, and the next night tries again. Traces are readable for at most 30 days whatever <code>retention_days</code> says (sb-ask(3)); retention only bounds how long they are kept.</p>
+<p><strong>What retention never touches.</strong></p>
+<ul>
+<li><strong>Audit</strong> follows its own policy: seven years, WORM (sb-audit(7)).</li>
+<li><strong>The index</strong> is derived from the sources and ages with them. A document deleted at its source leaves the index within one sync (SB-209), and a rebuild gives the same index (LAW-13). The job has no access to it.</li>
+</ul>
+<p><strong>Subject deletion.</strong> <code>POST /v1/admin/subjects/erase</code> (sb-admin(3)) erases everything the cell's derived stores hold about one user, whatever its age: their traces and drafts, conversations, feedback, and every log line that names them. It writes a <code>kind: retention</code> audit row (subject <code>erase:USER</code>, state <code>requested</code>) <strong>before</strong> erasing anything, and a second row (state <code>done</code>, or <code>failed</code> with the store that failed) after. If the first row can't be written, nothing is erased. The audit rows about the user, including their earlier actions and approvals, stay: they are the record, and they hold ids, not content. Content about the person inside the sources (a CRM contact, a document they wrote) is deleted at the source, and the index follows (LAW-13).</p>
 <h2 id="drift">DRIFT</h2>
 <p>Every hour, each cell reports its live configuration as resources in the plan's terms (kind, name, attributes), and the control plane compares it with what was last applied from the manifest (SB-510). Any difference is a <code>manifest_drift</code> alert that names the resource and the field, for example <code>connector tickets: attribute vendor: applied jira, live linear</code>, or <code>agent draft-reply: present live, not applied</code>. Values are configuration, never secrets (secrets aren't in the manifest). Drift isn't fixed automatically: <code>sb tenant apply</code> with the manifest makes the cell match again, and if the live change was intended, the manifest changes first (LAW-16).</p>
 <h2 id="laws">LAWS</h2>
@@ -237,7 +278,7 @@ budget_usd_month: 1500
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-tenant.1.html">sb-tenant(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-factory.7.html">sb-factory(7)</a>, <a href="sb-onboarding.7.html">sb-onboarding(7)</a>, <a href="../examples/README.html">examples/tenants/</a></p><p class="srcline">Source: <code>manual/sb-tenant.5.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#secrets">Secrets</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l2"><a href="#validation-rules">VALIDATION RULES</a></li><li class="l2"><a href="#syntax">SYNTAX</a></li><li class="l2"><a href="#exit-status-errors">EXIT STATUS / ERRORS</a></li><li class="l2"><a href="#drift">DRIFT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#secrets">Secrets</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l2"><a href="#validation-rules">VALIDATION RULES</a></li><li class="l2"><a href="#syntax">SYNTAX</a></li><li class="l2"><a href="#exit-status-errors">EXIT STATUS / ERRORS</a></li><li class="l2"><a href="#retention-and-deletion">RETENTION AND DELETION</a></li><li class="l2"><a href="#drift">DRIFT</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

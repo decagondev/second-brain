@@ -29,6 +29,7 @@ GET  /v1/admin/kill
 GET  /v1/admin/audit?since=…&amp;kind=…
 GET  /v1/admin/usage?week=2027-W10
 GET  /v1/admin/refusals?since=…
+POST /v1/admin/subjects/erase
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
 <p>The console is a client of this API and has no other powers. Every endpoint needs the <code>operator</code> role (Cedar policy) except <code>usage</code>, which <code>approver</code> may also read.</p>
@@ -38,6 +39,7 @@ GET  /v1/admin/refusals?since=…
 <p><strong><code>GET /v1/admin/audit</code></strong> pages through <a href="sb-audit.5.html">sb-audit(5)</a> rows.</p>
 <p><strong><code>GET /v1/admin/usage?week=2027-W10</code></strong> returns the weekly report's numbers (sb-observability(7), Weekly leadership report): weekly active users, seats, asks, cited-answer rate, gaps by kind, drafts and their used-to-discarded ratio, actions by outcome and model spend.</p>
 <p><strong><code>GET /v1/admin/refusals</code></strong> lists refusal counts by connector and reason (<code>deny</code>, <code>unknown</code>, <code>timeout</code>, <code>missing</code>), with no document titles, so operators can spot a misbehaving connector.</p>
+<p><strong><code>POST /v1/admin/subjects/erase</code></strong> takes <code>{ "user": "usr_…", "reason": "…" }</code> and erases the user's derived data as sb-tenant(5), Retention and deletion, describes. The response is <code>{ "erased": { "traces": 3, "conversations": 1, "feedback": 1, "logs": 12 }, "audit": ["aud_…", "aud_…"] }</code>. A user id that isn't <code>usr_</code> followed by <code>[a-z0-9_]</code> is <code>EINVAL</code>, and a missing reason is <code>EINVAL</code>. Erasing a user with nothing stored succeeds with zero counts.</p>
 <h3 id="roles-exactly-sb-603">Roles, exactly (SB-603)</h3>
 <table>
 <thead>

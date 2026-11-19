@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.3c Retention and deletion (SB-611)
+
+**Wave/slice:** W6 / S6.3c · **Author:** platform lead + Claude · **Status:** In review (nightly schedule, W7)
+
+**What:** `internal/core/retention` (Sweep, Erase), retention views on the trace store, `internal/adapters/logs/localfs` (daily log files that can expire and erase), `POST /v1/admin/subjects/erase`, the `retention` audit kind, and `laws/law13retention.go`. The manual changed first: sb-tenant(5) gained Retention and deletion, sb-admin(3) the endpoint, and sb-audit(5) the kind.
+
+**Why this way:** Retention is a list of stores that the job is given, and the index and audit are deliberately not on it. The index is derived and ages with its sources (LAW-13). Audit has its own seven-year WORM policy. The law test makes that a checked property instead of a convention. Erasure audits first, the same way the tool bus does (LAW-04): an erasure nobody can prove was asked for is worse than one that waits for the audit log to come back.
+
+**Learned:** Conversations had no timestamp, so they couldn't be aged; they now carry the time of their last question. Log erasure matches the user id as a whole JSON value, never as a substring, so erasing `usr_ann` keeps `usr_anna`'s lines.
+
+**Laws:** LAW-13 extended (`TestLAW13_RetentionLeavesTheIndexDerived`, with two mutations caught). LAW-11 accepts the new kind. All green.
+
+**Next:** S6.4, the pen test and threat model (SB-612) and the DR game day (SB-613). Both are human-led, so this slice builds their tooling and runbooks.
+
 ## 2026-11-19 S6.3b HubSpot CRM connector (SB-610)
 
 **Wave/slice:** W6 / S6.3b · **Author:** platform lead + Claude · **Status:** In review (real sandbox)

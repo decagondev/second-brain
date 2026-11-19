@@ -21,6 +21,7 @@ GET  /v1/admin/kill
 GET  /v1/admin/audit?since=…&kind=…
 GET  /v1/admin/usage?week=2027-W10
 GET  /v1/admin/refusals?since=…
+POST /v1/admin/subjects/erase
 ```
 
 ## DESCRIPTION
@@ -38,6 +39,8 @@ The console is a client of this API and has no other powers. Every endpoint need
 **`GET /v1/admin/usage?week=2027-W10`** returns the weekly report's numbers (sb-observability(7), Weekly leadership report): weekly active users, seats, asks, cited-answer rate, gaps by kind, drafts and their used-to-discarded ratio, actions by outcome and model spend.
 
 **`GET /v1/admin/refusals`** lists refusal counts by connector and reason (`deny`, `unknown`, `timeout`, `missing`), with no document titles, so operators can spot a misbehaving connector.
+
+**`POST /v1/admin/subjects/erase`** takes `{ "user": "usr_…", "reason": "…" }` and erases the user's derived data as sb-tenant(5), Retention and deletion, describes. The response is `{ "erased": { "traces": 3, "conversations": 1, "feedback": 1, "logs": 12 }, "audit": ["aud_…", "aud_…"] }`. A user id that isn't `usr_` followed by `[a-z0-9_]` is `EINVAL`, and a missing reason is `EINVAL`. Erasing a user with nothing stored succeeds with zero counts.
 
 ### Roles, exactly (SB-603)
 

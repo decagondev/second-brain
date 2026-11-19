@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"testing"
+	"time"
 
 	"example.com/second-brain/internal/core/ask"
 )
@@ -32,5 +33,45 @@ func TestOwnership(t *testing.T) {
 	}
 	if _, found, _ := s.GetTrace(ctx, "beta-freight", "tr_1"); found {
 		t.Error("another tenant read the trace")
+	}
+}
+
+func TestRetention(t *testing.T) {
+	ctx := context.Background()
+	old := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	recent := old.Add(400 * 24 * time.Hour)
+	at := old
+	s := New()
+	s.Now = func() time.Time { return at }
+	_ = s.PutTrace(ctx, ask.Trace{ID: "tr_1", Tenant: "acme-logistics", User: "usr_a", At: old})
+	_ = s.PutTrace(ctx, ask.Trace{ID: "tr_2", Tenant: "acme-logistics", User: "usr_a", At: recent})
+	_ = s.PutTrace(ctx, ask.Trace{ID: "tr_3", Tenant: "beta-freight", User: "usr_a", At: old})
+	_ = s.AppendQuestion(ctx, "acme-logistics", "usr_a", "cv_1", "q")
+	at = recent
+	_ = s.AppendQuestion(ctx, "acme-logistics", "usr_b", "cv_2", "q")
+	_ = s.PutFeedback(ctx, ask.Feedback{Tenant: "acme-logistics", User: "usr_a", Trace: "tr_2", At: recent})
+	got := map[string]int{}
+	for _, r := range s.Retention() {
+		n, err := r.Expire(ctx, "acme-logistics", recent.Add(-time.Hour))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got[r.Name()] = n
+	}
+	if got["traces"] != 1 || got["conversations"] != 1 || got["feedback"] != 0 {
+		t.Fatalf("expire: %v", got)
+	}
+	if _, found, _ := s.GetTrace(ctx, "beta-freight", "tr_3"); !found {
+		t.Fatal("another tenant's trace was expired")
+	}
+	for _, r := range s.Retention() {
+		n, _ := r.Erase(ctx, "acme-logistics", "usr_a")
+		got[r.Name()] = n
+	}
+	if got["traces"] != 1 || got["conversations"] != 0 || got["feedback"] != 1 {
+		t.Fatalf("erase: %v", got)
+	}
+	if _, found, _ := s.Questions(ctx, "acme-logistics", "usr_b", "cv_2"); !found {
+		t.Fatal("another user's conversation was erased")
 	}
 }

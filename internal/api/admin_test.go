@@ -12,14 +12,18 @@ import (
 	auditmem "example.com/second-brain/internal/adapters/audit/memory"
 	killmem "example.com/second-brain/internal/adapters/kill/memory"
 	"example.com/second-brain/internal/adapters/policy/cedar"
+	tracemem "example.com/second-brain/internal/adapters/traces/memory"
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
+	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/tenancy"
 )
+
+var traces *tracemem.Store
 
 type applied struct{ m manifest.Tenant }
 
@@ -44,6 +48,9 @@ func adminServer(t *testing.T) (*http.ServeMux, *auditmem.Store) {
 	h := Admin{Tenant: "acme-logistics", Policy: policy.Kernel{Engine: engine, Recorder: log}, Manifests: applied{m},
 		Kill: kill.Control{Store: ks, Audit: log, Now: time.Now}, Switches: ks, Audit: log, AuditRows: rows, Release: "rel_x",
 		Usage: emptyUsage{}, Approvers: []string{"it-leads"}}
+	traces = tracemem.New()
+	_ = traces.PutTrace(context.Background(), ask.Trace{ID: "tr_1", Tenant: "acme-logistics", User: "usr_ann", At: time.Now()})
+	h.Erasure = retention.Job{Tenant: "acme-logistics", Days: 365, Stores: traces.Retention(), Audit: log, Now: time.Now}
 	mux := http.NewServeMux()
 	h.Register(mux)
 	return mux, rows
@@ -132,4 +139,34 @@ func (emptyUsage) Actions(context.Context, string, time.Time, time.Time) ([]appr
 func (emptyUsage) Seats(context.Context, string) (int, error) { return 5, nil }
 func (emptyUsage) Tokens(context.Context, string, time.Time, time.Time) (int, int, error) {
 	return 0, 0, nil
+}
+
+func TestEraseSubject(t *testing.T) {
+	mux, rows := adminServer(t)
+	if w := adminCall(t, mux, []string{"grp_support"}, "POST", "/v1/admin/subjects/erase", `{"user":"usr_ann","reason":"r"}`); w.Code != 403 {
+		t.Fatalf("without the role: %d", w.Code)
+	}
+	op := []string{"sb-operators"}
+	for _, bad := range []string{`{"user":"ann@acme.example","reason":"r"}`, `{"user":"usr_ann"}`, `not json`} {
+		if w := adminCall(t, mux, op, "POST", "/v1/admin/subjects/erase", bad); w.Code != 400 {
+			t.Errorf("%s: %d", bad, w.Code)
+		}
+	}
+	w := adminCall(t, mux, op, "POST", "/v1/admin/subjects/erase", `{"user":"usr_ann","reason":"subject request 42"}`)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"traces":1`) {
+		t.Fatalf("erase: %d %s", w.Code, w.Body)
+	}
+	if _, found, _ := traces.GetTrace(context.Background(), "acme-logistics", "tr_1"); found {
+		t.Fatal("the trace is still there")
+	}
+	all, _ := rows.Range(context.Background(), 1, 100)
+	var states []string
+	for _, r := range all {
+		if r.Kind == "retention" && r.Subject == "erase:usr_ann" && r.Actor == "usr_olga" {
+			states = append(states, r.State)
+		}
+	}
+	if strings.Join(states, ",") != "requested,done" {
+		t.Fatalf("audit: %v", states)
+	}
 }
