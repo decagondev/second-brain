@@ -62,6 +62,12 @@ when { principal.tenant == resource.tenant };
 // stop self-approval and approval across tenants.
 permit (principal, action == Action::&quot;approve&quot;, resource is ProposedAction)
 when { principal.tenant == resource.tenant &amp;&amp; principal in resource.approvers };
+
+// The operator role (SB-603): members of the tenant's own sb-operators group administer
+// their own cell. Groups come from the cell's directory, so this never reaches another
+// tenant; the forbid above is the second guard.
+permit (principal in Group::&quot;sb-operators&quot;, action == Action::&quot;admin&quot;, resource is Cell)
+when { principal.tenant == resource.tenant };
 </code></pre>
 <p><a href="../README.html">Back</a></p><p class="srcline">Source: <code>policy/platform/base.cedar</code></p></main>
   

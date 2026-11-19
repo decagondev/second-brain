@@ -43,3 +43,9 @@ when { principal.tenant == resource.tenant };
 permit (principal, action == Action::"approve", resource is ProposedAction)
 when { principal.tenant == resource.tenant && principal in resource.approvers };
 
+// The operator role (SB-603): members of the tenant's own sb-operators group administer
+// their own cell. Groups come from the cell's directory, so this never reaches another
+// tenant; the forbid above is the second guard.
+permit (principal in Group::"sb-operators", action == Action::"admin", resource is Cell)
+when { principal.tenant == resource.tenant };
+

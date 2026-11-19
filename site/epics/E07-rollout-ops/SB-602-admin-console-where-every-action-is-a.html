@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,26 @@
 <p>One source of truth, two editors.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Connectors, agents, approval rules and kill switches editable</li>
-<li class="task"><span class="box"></span>Each change produces a manifest diff and an audit row</li>
-<li class="task"><span class="box"></span>Kill switches act immediately and offer 'make permanent' as a manifest diff</li>
+<li class="task"><span class="box"></span>Connectors, agents, approval rules and kill switches editable (all of them through the diff API; the console UI covers kill switches and make-permanent so far)</li>
+<li class="task done"><span class="box">✓</span>Each change produces a manifest diff and an audit row</li>
+<li class="task done"><span class="box">✓</span>Kill switches act immediately and offer 'make permanent' as a manifest diff</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Console UI</li>
-<li class="task"><span class="box"></span>Admin API</li>
-<li class="task"><span class="box"></span>Manifest writer</li>
-<li class="task"><span class="box"></span>Audit hooks</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-16</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Console UI</li>
+<li class="task done"><span class="box">✓</span>Admin API</li>
+<li class="task done"><span class="box">✓</span>Manifest writer</li>
+<li class="task done"><span class="box">✓</span>Audit hooks</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-16</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S6.1b, with SB-603): <code>manifest.Format</code> writes a valid tenant back as manifest YAML, and a round-trip test shows <code>Check(Format(t)) == t</code> for the examples. <code>manifest.Patch</code> applies JSON Patch on the console's paths only (never <code>tenant</code>, <code>region</code> or <code>idp</code>), runs the result through the same checker as <code>sb tenant check</code>, and <code>Diff</code> gives the line diff. <code>internal/api.Admin</code> serves the manifest, the diff (which changes nothing and writes a <code>kind: config</code> audit row with the patch's hash), kill, unkill, the kill list, and audit paging with a kind filter. <code>usage</code> and <code>refusals</code> say they arrive with SB-606 and SB-607. Every endpoint needs the operator role through the real cedar policies. The web console (<code>/?admin=1</code>) kills with a required reason, lists switches, clears them, and turns make-permanent into the manifest diff to apply. It is axe-clean.</p>
+<p><strong>Left:</strong> opening the diff as a pull request on the tenant's manifest repository, or signing and applying it (the cell runtime and repo integration), and console screens for connectors and approval rules.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E07-rollout-ops/SB-602-admin-console-where-every-action-is-a.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

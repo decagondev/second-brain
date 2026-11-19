@@ -38,13 +38,43 @@ GET  /v1/admin/refusals?since=…
 <p><strong><code>GET /v1/admin/audit</code></strong> pages through <a href="sb-audit.5.html">sb-audit(5)</a> rows.</p>
 <p><strong><code>GET /v1/admin/usage</code></strong> returns weekly active users, seats, asks, cited-answer rate, refusal rate by connector, drafts, approve-to-reject ratio and model spend.</p>
 <p><strong><code>GET /v1/admin/refusals</code></strong> lists refusal counts by connector and reason (<code>deny</code>, <code>unknown</code>, <code>timeout</code>, <code>missing</code>), with no document titles, so operators can spot a misbehaving connector.</p>
+<h3 id="roles-exactly-sb-603">Roles, exactly (SB-603)</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Who</th>
+<th>May</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>operator</code></td>
+<td>members of the tenant's IdP group <code>sb-operators</code></td>
+<td>every admin endpoint</td>
+</tr>
+<tr>
+<td><code>approver</code></td>
+<td>members of any workflow's approval group in the manifest</td>
+<td><code>usage</code>, and approving actions (sb-approvals(7))</td>
+</tr>
+<tr>
+<td>everyone else</td>
+<td></td>
+<td>none of these endpoints</td>
+</tr>
+</tbody>
+</table>
+<p>Roles are Cedar policies, not code: the base policy permits <code>admin</code> on the tenant's own <code>Cell</code> only for a principal in <code>Group::"sb-operators"</code>, with the tenant condition every permit carries (sb-policy(5)). A tenant policy can narrow it but not widen it. Groups come from the cell's own directory, so an operator of one tenant has no role in another (LAW-02).</p>
+<h3 id="the-manifest-diff-exactly-sb-602">The manifest diff, exactly (SB-602)</h3>
+<p><code>POST /v1/admin/manifest/diff</code> accepts JSON Patch operations (<code>add</code>, <code>remove</code>, <code>replace</code>) on these paths only: <code>/agents</code>, <code>/workflows</code>, <code>/connectors/&lt;kind&gt;</code>, <code>/approval/&lt;workflow&gt;</code>, <code>/exclude/&lt;kind&gt;</code>, <code>/retention_days</code>, <code>/budget_usd_month</code>, <code>/pilot_group</code>, <code>/channel</code>. <code>tenant</code>, <code>region</code> and <code>idp</code> can't be patched here. The patched manifest is checked exactly as <code>sb tenant check</code> checks a file. The response is <code>{ "manifest": "&lt;the whole new manifest as YAML&gt;", "diff": ["- agents: [ask]", "+ agents: [ask, draft-reply]"], "plan": "&lt;the sb tenant apply --plan output&gt;" }</code>. It <strong>changes nothing</strong>: every proposal writes a <code>kind: config</code> audit row with the operator and the patch's hash, and the change takes effect only when the new manifest is applied. Kill switches offer <strong>make permanent</strong>, which is this same endpoint with a patch that removes the agent or connector.</p>
 <h2 id="errors">ERRORS</h2>
 <p><code>EPERM</code> without the role · <code>EMANIFEST</code> for an invalid patch · <code>EDRIFT</code> if the live config has drifted and a diff can't be based on it.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-10">LAW-10</a>, <a href="sb-laws.7.html#law-16">LAW-16</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-kill-switches.7.html">sb-kill-switches(7)</a>, <a href="sb-observability.7.html">sb-observability(7)</a></p><p class="srcline">Source: <code>manual/sb-admin.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#roles-exactly-sb-603">Roles, exactly (SB-603)</a></li><li class="l3"><a href="#the-manifest-diff-exactly-sb-602">The manifest diff, exactly (SB-602)</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

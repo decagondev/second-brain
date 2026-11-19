@@ -63,6 +63,8 @@ func TestBasePolicies(t *testing.T) {
 		{"call another tenant's tool", ann, "call_tool", policy.Entity{Type: "Tool", ID: "lookup", Tenant: "beta-freight", Attrs: map[string]any{"name": "lookup", "connector": "tickets", "consequential": false}}, policy.Deny},
 		{"propose for the workflow", ann, "propose", policy.Entity{Type: "Workflow", ID: "ticket-update", Attrs: map[string]any{"name": "ticket-update", "approvers": policy.Ref{Type: "Group", ID: "it-leads"}}}, policy.Allow},
 		{"admin (no permit)", ann, "admin", policy.Entity{Type: "Cell", ID: "acme-logistics"}, policy.Deny},
+		{"admin as an operator", scope(t, "acme-logistics", "olga", "sb-operators"), "admin", policy.Entity{Type: "Cell", ID: "acme-logistics"}, policy.Allow},
+		{"admin of another tenant's cell", scope(t, "acme-logistics", "olga", "sb-operators"), "admin", policy.Entity{Type: "Cell", ID: "beta-freight", Tenant: "beta-freight"}, policy.Deny},
 		{"no scope", tenancy.Scope{}, "read", policy.Entity{Type: "Chunk", ID: "c1", Attrs: map[string]any{"cite": "x"}}, policy.Unknown},
 	}
 	for _, c := range cases {

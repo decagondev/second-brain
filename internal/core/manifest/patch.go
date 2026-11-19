@@ -1,0 +1,134 @@
+package manifest
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
+// Op is one JSON Patch operation on the manifest (sb-admin(3), The manifest diff).
+type Op struct {
+	Op    string          `json:"op"` // add, remove, replace
+	Path  string          `json:"path"`
+	Value json.RawMessage `json:"value,omitempty"`
+}
+
+// Patchable are the paths the console may change; tenant, region and idp never.
+var Patchable = []string{"/agents", "/workflows", "/connectors/", "/approval/", "/exclude/", "/retention_days", "/budget_usd_month", "/pilot_group", "/channel"}
+
+func patchable(p string) bool {
+	for _, a := range Patchable {
+		if p == a || p == a+"/-" || (strings.HasSuffix(a, "/") && strings.HasPrefix(p, a) && !strings.Contains(p[len(a):], "/")) {
+			return true
+		}
+	}
+	return strings.HasPrefix(p, "/agents/") || strings.HasPrefix(p, "/workflows/")
+}
+
+// Patch applies ops to t and checks the result exactly as sb tenant check does. It
+// returns the new manifest, or the check's diagnostics, or an error for a bad patch.
+func Patch(t Tenant, ops []Op) (Tenant, []Diag, error) {
+	raw, _ := json.Marshal(t)
+	var doc map[string]any
+	_ = json.Unmarshal(raw, &doc)
+	for _, op := range ops {
+		if !patchable(op.Path) {
+			return Tenant{}, nil, fmt.Errorf("manifest: %s can't be changed from the console", op.Path)
+		}
+		if err := apply(doc, op); err != nil {
+			return Tenant{}, nil, err
+		}
+	}
+	b, _ := json.Marshal(doc)
+	var next Tenant
+	if err := json.Unmarshal(b, &next); err != nil {
+		return Tenant{}, nil, fmt.Errorf("manifest: the patch gives a value of the wrong type: %v", err)
+	}
+	checked, ds := Check(Format(next))
+	if len(ds) > 0 {
+		return Tenant{}, ds, nil
+	}
+	return checked, nil, nil
+}
+
+func apply(doc map[string]any, op Op) error {
+	parts := strings.Split(strings.TrimPrefix(op.Path, "/"), "/")
+	var val any
+	if op.Op != "remove" {
+		if err := json.Unmarshal(op.Value, &val); err != nil {
+			return fmt.Errorf("manifest: %s needs a JSON value", op.Path)
+		}
+	}
+	key := parts[0]
+	switch len(parts) {
+	case 1:
+		switch op.Op {
+		case "add", "replace":
+			doc[key] = val
+		case "remove":
+			delete(doc, key)
+		default:
+			return fmt.Errorf("manifest: unknown op %q", op.Op)
+		}
+		return nil
+	case 2:
+		switch cur := doc[key].(type) {
+		case []any, nil:
+			list, _ := cur.([]any)
+			if parts[1] == "-" && op.Op == "add" {
+				doc[key] = append(list, val)
+				return nil
+			}
+			if op.Op == "remove" {
+				for i, x := range list {
+					if fmt.Sprint(x) == parts[1] {
+						doc[key] = append(list[:i:i], list[i+1:]...)
+						return nil
+					}
+				}
+				return fmt.Errorf("manifest: %s isn't in %s", parts[1], key)
+			}
+			return fmt.Errorf("manifest: lists take add at /-, or remove by value")
+		case map[string]any:
+			switch op.Op {
+			case "add", "replace":
+				cur[parts[1]] = val
+			case "remove":
+				if _, ok := cur[parts[1]]; !ok {
+					return fmt.Errorf("manifest: no %s in %s", parts[1], key)
+				}
+				delete(cur, parts[1])
+			default:
+				return fmt.Errorf("manifest: unknown op %q", op.Op)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("manifest: bad path %s", op.Path)
+}
+
+// Diff is a line diff of two formatted manifests: "- old" and "+ new" lines.
+func Diff(a, b Tenant) []string {
+	al := strings.Split(strings.TrimRight(string(Format(a)), "\n"), "\n")
+	bl := strings.Split(strings.TrimRight(string(Format(b)), "\n"), "\n")
+	in := func(xs []string, x string) bool {
+		for _, y := range xs {
+			if y == x {
+				return true
+			}
+		}
+		return false
+	}
+	var out []string
+	for _, l := range al {
+		if !in(bl, l) {
+			out = append(out, "- "+l)
+		}
+	}
+	for _, l := range bl {
+		if !in(al, l) {
+			out = append(out, "+ "+l)
+		}
+	}
+	return out
+}

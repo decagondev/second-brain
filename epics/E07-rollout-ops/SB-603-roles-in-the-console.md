@@ -13,7 +13,7 @@ summary: "Operators, approvers and askers see different consoles."
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-policy(5)`](../../manual/sb-policy.5.md) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02) |
 | Depends on | [SB-602](../E07-rollout-ops/SB-602-admin-console-where-every-action-is-a.md) |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,17 +21,21 @@ Operators, approvers and askers see different consoles.
 
 ## Acceptance criteria
 
-- [ ] Roles map to Cedar policies
-- [ ] No role can see another tenant
+- [x] Roles map to Cedar policies
+- [x] No role can see another tenant
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Role policies
-- [ ] UI gating
-- [ ] Tests
-- [ ] Write or extend the law tests: LAW-02
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Role policies
+- [x] UI gating
+- [x] Tests
+- [x] Write or extend the law tests: LAW-02
+- [x] Devlog entry, ledger and changelog updated
+
+## Progress
+
+2026-11-19 (slice S6.1b): the operator role is a base Cedar permit: `admin` on the tenant's own `Cell` for a principal in `Group::"sb-operators"`, with the tenant condition and the existing cross-tenant forbid. Approvers come from the workflow approval groups (sb-approvals(7)). Cedar tests show that an operator administers their own cell and not another tenant's, and a member without the group gets `EPERM` on every admin endpoint. The API enforces it, and the console simply shows what the API returns. The policy-level LAW-02 law test (random principals, groups and resources) stays green with the new permit.
 
 ## Definition of done
 

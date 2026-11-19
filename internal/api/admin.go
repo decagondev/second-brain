@@ -1,0 +1,177 @@
+package api
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"strconv"
+
+	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/kill"
+	"example.com/second-brain/internal/core/manifest"
+	"example.com/second-brain/internal/core/policy"
+	"example.com/second-brain/internal/core/release"
+	"example.com/second-brain/internal/core/tenancy"
+	"example.com/second-brain/internal/errs"
+)
+
+// Manifests is the applied manifest of this cell's tenant.
+type Manifests interface {
+	Applied(ctx context.Context) (manifest.Tenant, string, error) // manifest and its git commit
+}
+
+// Admin serves sb-admin(3). The console is a client of this API and has no other powers.
+type Admin struct {
+	Tenant    string
+	Policy    policy.Kernel
+	Manifests Manifests
+	Kill      kill.Control
+	Switches  kill.Store
+	Audit     *audit.Log
+	AuditRows audit.Store
+	Release   string
+}
+
+// Register mounts the endpoints.
+func (h Admin) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /v1/admin/manifest", h.guard(h.manifest))
+	mux.HandleFunc("POST /v1/admin/manifest/diff", h.guard(h.diff))
+	mux.HandleFunc("POST /v1/admin/kill", h.guard(h.kill(true)))
+	mux.HandleFunc("POST /v1/admin/unkill", h.guard(h.kill(false)))
+	mux.HandleFunc("GET /v1/admin/kill", h.guard(h.switches))
+	mux.HandleFunc("GET /v1/admin/audit", h.guard(h.audit))
+	for _, p := range []string{"GET /v1/admin/usage", "GET /v1/admin/refusals"} {
+		mux.HandleFunc(p, h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
+			h.fail(w, errs.New(errs.ENOTIMPL, "usage and refusal reports arrive with SB-606 and SB-607"))
+		}))
+	}
+}
+
+// guard requires the operator role: policy must allow admin on this tenant's Cell.
+func (h Admin) guard(next func(http.ResponseWriter, *http.Request, tenancy.Scope)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s, err := tenancy.FromContext(r.Context())
+		if err != nil {
+			h.fail(w, errs.New(errs.EAUTH, "Sign in again."))
+			return
+		}
+		res := h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil)
+		if res.Decision != policy.Allow {
+			h.fail(w, errs.New(errs.EPERM, "You need the operator role for this."))
+			return
+		}
+		next(w, r, s)
+	}
+}
+
+func (h Admin) manifest(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	m, commit, err := h.Manifests.Applied(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The applied manifest can't be read."))
+		return
+	}
+	h.ok(w, map[string]any{"manifest": string(manifest.Format(m)), "commit": commit})
+}
+
+func (h Admin) diff(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	var ops []manifest.Op
+	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &ops) != nil || len(ops) == 0 {
+		h.fail(w, errs.New(errs.EINVAL, "The body must be a JSON Patch array."))
+		return
+	}
+	cur, _, err := h.Manifests.Applied(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The applied manifest can't be read."))
+		return
+	}
+	next, ds, err := manifest.Patch(cur, ops)
+	switch {
+	case err != nil:
+		h.fail(w, errs.New(errs.EMANIFEST, "%v", err))
+		return
+	case len(ds) > 0:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(errs.HTTP(errs.EMANIFEST))
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"code": "EMANIFEST", "message": manifest.Count(len(ds)), "errors": ds, "remedy": errs.Remedy(errs.EMANIFEST)}})
+		return
+	}
+	if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "config", Subject: "manifest", State: "proposed",
+		PayloadSHA256: release.SHA256(b), Reason: "console manifest diff"}); err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The proposal couldn't be audited, so it wasn't made."))
+		return
+	}
+	h.ok(w, map[string]any{"manifest": string(manifest.Format(next)), "diff": manifest.Diff(cur, next)})
+}
+
+func (h Admin) kill(set bool) func(http.ResponseWriter, *http.Request, tenancy.Scope) {
+	return func(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+		var req struct{ Scope, Name, Reason string }
+		b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+		if err != nil || json.Unmarshal(b, &req) != nil || req.Reason == "" {
+			h.fail(w, errs.New(errs.EINVAL, "scope, name and reason are required."))
+			return
+		}
+		scope := req.Scope + ":" + req.Name
+		if req.Scope == "tenant" {
+			scope = "tenant"
+		}
+		if set {
+			err = h.Kill.Kill(r.Context(), h.Tenant, scope, req.Reason, s.User())
+		} else {
+			err = h.Kill.Unkill(r.Context(), h.Tenant, scope, req.Reason, s.User())
+		}
+		switch {
+		case errors.Is(err, kill.ErrScope):
+			h.fail(w, errs.New(errs.EINVAL, "Unknown scope."))
+		case err != nil:
+			h.fail(w, errs.New(errs.EUNAVAIL, "The switch couldn't be changed."))
+		default:
+			h.ok(w, map[string]any{"scope": scope, "killed": set})
+		}
+	}
+}
+
+func (h Admin) switches(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	list, err := h.Switches.List(r.Context(), h.Tenant)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The kill store can't be read."))
+		return
+	}
+	h.ok(w, map[string]any{"switches": list})
+}
+
+func (h Admin) audit(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	since, _ := strconv.ParseInt(r.URL.Query().Get("since"), 10, 64)
+	kind := r.URL.Query().Get("kind")
+	rows, err := h.AuditRows.Range(r.Context(), since, 500)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The audit log can't be read."))
+		return
+	}
+	var out []audit.Row
+	for _, row := range rows {
+		if kind == "" || row.Kind == kind {
+			out = append(out, row)
+		}
+	}
+	next := ""
+	if len(rows) == 500 {
+		next = strconv.FormatInt(rows[len(rows)-1].Seq+1, 10)
+	}
+	h.ok(w, map[string]any{"items": out, "next": next})
+}
+
+func (h Admin) ok(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-SB-Release", h.Release)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+func (h Admin) fail(w http.ResponseWriter, e *errs.Error) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(errs.HTTP(e.Code))
+	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{"code": string(e.Code), "message": e.Msg, "remedy": errs.Remedy(e.Code)}})
+}

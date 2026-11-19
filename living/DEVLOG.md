@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.1b Admin console and roles (SB-602, SB-603)
+
+**Wave/slice:** W6 / S6.1b · **Author:** platform lead + Claude · **Status:** SB-603 Done, SB-602 In review (manifest repo integration)
+
+**What:** The operator role in base policy, `manifest.Format`, `Patch` and `Diff`, the admin API, and the web console. The manual changed first: sb-admin(3) gained "Roles, exactly" and "The manifest diff, exactly".
+
+**Why this way:** The console proposes manifest changes and never applies config directly. The manifest stays the only way the cell's configuration changes (LAW-16), and every proposal is audited even if it's never applied. The patch goes through the exact checker `sb tenant check` uses, by formatting the patched manifest and checking that text. Validation has one implementation, and `Format`'s round-trip test keeps it honest. Kill switches are the one thing that acts at once, as the manual says, and "make permanent" is just a proposed diff.
+
+**Learned:** Writing `Format` needed no new parser knowledge: defaults the checker applies come back out explicitly, so a formatted manifest is a fully spelled-out one. That's exactly what a reviewer of a console proposal wants to see.
+
+**Laws:** all green. LAW-02 at the policy level holds with the new operator permit, and LAW-16 now covers console changes too.
+
+**Next:** S6.2, onboarding: the runbook (SB-604), a friendly tenant unaided (SB-605, human), and the weekly leadership report (SB-606).
+
 ## 2026-11-19 S6.1a Tenant verify (SB-601)
 
 **Wave/slice:** W6 / S6.1a · **Author:** platform lead + Claude · **Status:** In review (a deployed cell's endpoint, W7)
