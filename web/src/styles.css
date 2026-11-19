@@ -1,0 +1,46 @@
+/* Colours meet WCAG 2.2 AA contrast (4.5:1 for text) in both themes. Uncited claims are
+   marked by a word and a border style, never by colour alone. */
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #555555;
+  --accent: #0b57d0;
+  --chip-bg: #e8effc;
+  --uncited-bg: #fff6e0;
+  --uncited-border: #8a5a00;
+  --flag: #a50e0e;
+  --focus: #0b57d0;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --fg: #ececec;
+    --muted: #b8b8b8;
+    --accent: #8ab4f8;
+    --chip-bg: #1f2a3d;
+    --uncited-bg: #2b2310;
+    --uncited-border: #f0c060;
+    --flag: #f28b82;
+    --focus: #8ab4f8;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 48rem; margin: 0 auto; padding: 1rem; }
+h1 { font-size: 1.5rem; }
+h2.question { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.claims { list-style: none; padding: 0; margin: 0; }
+.claim { padding: 0.5rem 0.75rem; margin: 0.25rem 0; border-left: 4px solid transparent; }
+.claim.cited { border-left-color: var(--accent); }
+.claim.uncited { background: var(--uncited-bg); border-left: 4px dashed var(--uncited-border); }
+.badge { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; color: var(--fg); }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; }
+.chip { display: inline-flex; gap: 0.25rem; padding: 0.1rem 0.5rem; border-radius: 1rem; background: var(--chip-bg); color: var(--accent); font-size: 0.85rem; text-decoration: underline; min-height: 24px; align-items: center; }
+.flag { color: var(--flag); font-weight: 700; }
+.notice, .refused, .trace { color: var(--muted); font-size: 0.9rem; }
+.error { border: 2px solid var(--flag); padding: 0.5rem 0.75rem; }
+form.ask { display: grid; gap: 0.5rem; margin-top: 1.5rem; }
+textarea { font: inherit; padding: 0.5rem; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
+button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: start; }

@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Web chat UI (S3.4: SB-307): React, Vite and TypeScript, served by the cell at <code>/</code> with a self-only CSP; citation chips, an "Uncited" label, notices, and axe-checked accessibility. <code>make web</code> and a CI <code>web</code> job.</li>
 <li><code>POST /v1/ask</code> and <code>GET /v1/traces/{id}</code> (S3.3: SB-306): the ask agent, conversations that re-check every source, traces with decision lists, and the sb-api(3) error shape.</li>
 <li>Cited answers and the model gateway (S3.2: SB-304, SB-305): the answer composer decides citations in code; a provider-neutral gateway with OpenAI-compatible, Anthropic, Groq and OpenRouter adapters refuses prompts holding secrets and meters tokens.</li>
 <li>Retrieval and live authorisation (S3.1: SB-301 to SB-303): pgvector index per tenant, hybrid search with the prefilter in the query, batched live ACL per connector, policy <code>read</code> check, a 12-chunk budget.</li>

@@ -102,6 +102,8 @@ type Agent struct {
 	Spoof func(ctx context.Context, trace, label string)
 	NewID func(prefix string) string
 	Now   func() time.Time
+	// Link returns a URL that opens a chunk's source at its version, or "" (sb-ask(3)).
+	Link func(c ports.Chunk) string
 	// IsAuditor says whether a scope may read every trace of this tenant; nil means nobody.
 	IsAuditor func(s tenancy.Scope) bool
 }
@@ -213,6 +215,17 @@ func (a Agent) compose(ctx context.Context, trace, q string, earlier []string, c
 		return nil, fmt.Errorf("%w: model: %v", ErrUnavailable, err)
 	}
 	res := answer.Compose(out.Text, actx, nil)
+	if a.Link != nil {
+		byCite := map[string]ports.Chunk{}
+		for _, ch := range chunks {
+			byCite[ch.Cite] = ch
+		}
+		for i := range res.Claims {
+			for j := range res.Claims[i].Cites {
+				res.Claims[i].Cites[j].URL = a.Link(byCite[res.Claims[i].Cites[j].Cite])
+			}
+		}
+	}
 	for _, l := range res.Spoofs {
 		if a.Spoof != nil {
 			a.Spoof(ctx, trace, l)

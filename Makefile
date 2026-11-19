@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams tools clean
+.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -51,6 +51,10 @@ docs:                  ## build the site and check every link (SB-002, SB-009)
 	$(PY) tools/check/links.py site
 diagrams:              ## render every Mermaid diagram headless (SB-009; needs playwright + npm)
 	$(PY) tools/check/diagrams.py site
+web:                   ## web UI: typecheck, tests (LAW-14 rendering, axe) and build; needs Node 22 (SB-307)
+	npm ci --prefix web --no-audit --no-fund
+	npm run --prefix web build
+	npm test --prefix web
 integration:           ## adapter tests against real services; needs SB_TEST_POSTGRES_DSN (SB-105)
 	@test -n "$$SB_TEST_POSTGRES_DSN" || { echo "integration: set SB_TEST_POSTGRES_DSN"; exit 1; }
 	$(GO) test -count=1 ./internal/adapters/postgres/...

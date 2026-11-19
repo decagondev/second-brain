@@ -154,7 +154,7 @@
 <td>Every claim cited or labelled</td>
 <td>Tested</td>
 <td>—</td>
-<td><code>laws/</code> property test over random model output (valid, spoofed and garbage labels) through <code>answer.Compose</code>, and end to end through the ask agent, + self-tests</td>
+<td><code>laws/</code> property test over random model output (valid, spoofed and garbage labels) through <code>answer.Compose</code>, end to end through the ask agent, and in the web UI's rendering (<code>web/src/ui.test.tsx</code>), + self-tests</td>
 <td>—</td>
 <td>SB-304, SB-309</td>
 </tr>
@@ -368,6 +368,12 @@
 <td>LAW-01, LAW-14</td>
 <td>Tested (extended)</td>
 <td>SB-306: the ask-level law tests run through the real ask agent and composer; <code>TestLAW14_AskAnswersCitedOrLabelled</code> added, with a mutation that cites refused candidates caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-307: the web UI renders every claim as cited or labelled Uncited, never plain text; property test over random answers, mutation caught</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

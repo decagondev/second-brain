@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.4 Web chat UI (SB-307)
+
+**Wave/slice:** W3 / S3.4 · **Author:** platform lead + Claude · **Status:** In review (human WCAG audit, connector links)
+
+**What:** A small React, Vite and TypeScript app in `web/`, served by the cell from the release's built assets with a self-only CSP. It asks, shows cited claims with chips and uncited claims with an "Uncited" label, and shows notices, refused counts and errors with their trace. The manual changed first: sb-ask(3) gained "The web UI", which covers what each element shows, the CSP, and the LAW-14 rendering rule.
+
+**Why this way:** The UI decides "cited" defensively. A claim with `uncited` set, or with no citations, shows as uncited even if the server sent something inconsistent, so the server's label always wins and nothing renders as plain text. A missing `url` falls back to the trace, so every chip leads somewhere honest. Accessibility is tested with axe-core in jsdom. That can't measure colour contrast, so the palette was chosen for 4.5:1 and a human audit stays on the ticket. Five runtime-free dev tools and React itself, all pinned exactly with a lockfile, keep the supply chain small (ADR-0005).
+
+**Learned:** My first LAW-14 rendering property passed against a mutation that ignored `uncited`: it only checked "chips xor label", and the mutated UI still showed chips. The property now also says the server's uncited label must show. Same lesson as S3.1: every property needs a mutation to prove it can fail. Go's mux cleans `..` paths with a redirect before any handler runs, so the static handler never sees one.
+
+**Laws:** LAW-14 extended to the UI. LAW-04 and LAW-05 are still the only red ones.
+
+**Next:** SB-308, the Slack app as an entry point to `POST /v1/ask`.
+
 ## 2026-11-19 S3.3 The ask agent and `POST /v1/ask` (SB-306)
 
 **Wave/slice:** W3 / S3.3 · **Author:** platform lead + Claude · **Status:** In review (audit-chain record waits for SB-401)

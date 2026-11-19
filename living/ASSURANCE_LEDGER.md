@@ -22,7 +22,7 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-11](../manual/sb-laws.7.md#law-11) | Audit chain unbroken | Stated | — | — | — | SB-401, SB-402, SB-412 |
 | [LAW-12](../manual/sb-laws.7.md#law-12) | Deprovision revokes fast | Tested | — | `laws/` timed check on a fake clock, with and without lost fan-out, + self-test | — | SB-107 |
 | [LAW-13](../manual/sb-laws.7.md#law-13) | The index is derived | Tested | — | `laws/` ingest, re-ingest, drop and rebuild give the same `(cite, chunk, ACL)` set, + self-test; scheduled drill SB-210 | — | SB-210 |
-| [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Tested | — | `laws/` property test over random model output (valid, spoofed and garbage labels) through `answer.Compose`, and end to end through the ask agent, + self-tests | — | SB-304, SB-309 |
+| [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Tested | — | `laws/` property test over random model output (valid, spoofed and garbage labels) through `answer.Compose`, end to end through the ask agent, and in the web UI's rendering (`web/src/ui.test.tsx`), + self-tests | — | SB-304, SB-309 |
 | [LAW-15](../manual/sb-laws.7.md#law-15) | Approval binds one payload | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-406 |
 | [LAW-16](../manual/sb-laws.7.md#law-16) | The manifest is the truth | Tested | — | `laws/` manifest check (round trip and rejection) plan check (plan is the manifest diff) and apply check (recorded state equals the manifest; re-apply changes nothing), + self-tests; drift side with SB-510 | — | SB-101, SB-510, SB-602 |
 | [LAW-17](../manual/sb-laws.7.md#law-17) | Hand-off leaves no unlisted access | Modelled | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | — | — | SB-705, SB-706 |
@@ -59,3 +59,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-14 | Stated → Tested | SB-304: `TestLAW14_EveryClaimCitedOrLabelled` green on the real composer |
 | 2026-11-19 | LAW-07 | Tested (extended) | SB-305: `TestLAW07_NoSecretInPrompts` green through the model gateway and the recorded fake provider |
 | 2026-11-19 | LAW-01, LAW-14 | Tested (extended) | SB-306: the ask-level law tests run through the real ask agent and composer; `TestLAW14_AskAnswersCitedOrLabelled` added, with a mutation that cites refused candidates caught |
+| 2026-11-19 | LAW-14 | Tested (extended) | SB-307: the web UI renders every claim as cited or labelled Uncited, never plain text; property test over random answers, mutation caught |

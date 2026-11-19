@@ -125,6 +125,44 @@
 <p><strong>Conversations.</strong> A request without <code>conversation</code> starts one, and the response carries its <code>cv_…</code> id in <code>conversation</code>. A later turn sends only the user's <strong>earlier questions</strong> to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A <code>cv_…</code> id that isn't this user's is <code>EINVAL</code>, the same as one that doesn't exist.</p>
 <p><code>GET /v1/traces/{id}</code> returns the same answer plus the decision list (<code>cite</code>, <code>verdict</code>, <code>reason</code>, one per candidate document), for the user who asked and for auditors. Anyone else gets <code>EPERM</code>, the same as an unknown id. <code>reason</code> is one of <code>allowed</code>, <code>source_denied</code>, <code>source_unknown</code> or <code>policy_denied</code>.</p>
 <p><code>POST /v1/feedback</code> takes <code>{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }</code>.</p>
+<h3 id="the-web-ui">The web UI</h3>
+<p>The cell serves its web chat UI at <code>/</code> on the tenant's own hostname, from the release's built assets (SB-307). It calls only this cell's <code>/v1</code> API, with the session cookie, and loads nothing from anywhere else: the page is served with <code>Content-Security-Policy: default-src 'self'; frame-ancestors 'none'</code> and no third-party scripts, fonts or analytics.</p>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claim with citations</td>
+<td>Followed by one chip per citation, showing <code>cite</code>. With a <code>url</code>, the chip is a link that opens the source at the cited version in a new tab; without one, it links to the answer's trace</td>
+</tr>
+<tr>
+<td><code>uncited</code> claim</td>
+<td>Styled differently <strong>and</strong> labelled with the word "Uncited" (never colour alone), with a tooltip saying no source the user can open supports it</td>
+</tr>
+<tr>
+<td><code>flags</code></td>
+<td>A chip with <code>injection_suspect</code> says "Flagged" next to the cite</td>
+</tr>
+<tr>
+<td><code>notice</code></td>
+<td><code>no_access</code>: "Some sources you don't have access to may answer this. Ask their owner." <code>no_sources</code>: "Nothing indexed answers this yet." <code>most_uncited</code>: "Most of this answer isn't backed by your sources."</td>
+</tr>
+<tr>
+<td><code>refused</code></td>
+<td>"N sources were not shown because you can't open them", never their names</td>
+</tr>
+<tr>
+<td>Errors</td>
+<td>The error's <code>message</code> and <code>remedy</code>, with the trace id to quote to support</td>
+</tr>
+</tbody>
+</table>
+<p>The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an <code>aria-live</code> region, and every chip has an accessible name that includes the cite.</p>
+<p><code>cites[].url</code> is set when the source's connector can link to a version; it is omitted otherwise.</p>
 <h2 id="errors">ERRORS</h2>
 <table>
 <thead>
@@ -170,7 +208,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-citations.7.html">sb-citations(7)</a>, <a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-api.3.html">sb-api(3)</a></p><p class="srcline">Source: <code>manual/sb-ask.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l3"><a href="#the-web-ui">The web UI</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

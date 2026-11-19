@@ -52,6 +52,13 @@ jobs:
       - run: pip install markdown playwright && python -m playwright install --with-deps chromium
       - run: npm install --prefix tools/check
       - run: python3 tools/site/build.py && python3 tools/check/diagrams.py site
+  web:                    # SB-307
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: make web
   proofs:                 # SB-011..013
     runs-on: ubuntu-latest
     steps:

@@ -17,6 +17,7 @@ type Cite struct {
 	Cite  string   `json:"cite"`
 	Title string   `json:"title,omitempty"`
 	Span  [2]int   `json:"span"`
+	URL   string   `json:"url,omitempty"` // opens the source at this version, when the connector can link
 	Flags []string `json:"flags"`
 }
 

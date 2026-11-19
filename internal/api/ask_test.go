@@ -173,9 +173,6 @@ func TestContractMatchesManPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	for k := range cite {
-		if k == "url" {
-			continue // links come with the web UI (SB-307)
-		}
 		if !strings.Contains(strings.Join(tags(answer.Cite{}), ","), k) {
 			t.Errorf("man page cite field %q missing from answer.Cite", k)
 		}

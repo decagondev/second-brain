@@ -81,6 +81,23 @@ POST /v1/ask
 
 `POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }`.
 
+### The web UI
+
+The cell serves its web chat UI at `/` on the tenant's own hostname, from the release's built assets (SB-307). It calls only this cell's `/v1` API, with the session cookie, and loads nothing from anywhere else: the page is served with `Content-Security-Policy: default-src 'self'; frame-ancestors 'none'` and no third-party scripts, fonts or analytics.
+
+| Element | Rule |
+|---|---|
+| Claim with citations | Followed by one chip per citation, showing `cite`. With a `url`, the chip is a link that opens the source at the cited version in a new tab; without one, it links to the answer's trace |
+| `uncited` claim | Styled differently **and** labelled with the word "Uncited" (never colour alone), with a tooltip saying no source the user can open supports it |
+| `flags` | A chip with `injection_suspect` says "Flagged" next to the cite |
+| `notice` | `no_access`: "Some sources you don't have access to may answer this. Ask their owner." `no_sources`: "Nothing indexed answers this yet." `most_uncited`: "Most of this answer isn't backed by your sources." |
+| `refused` | "N sources were not shown because you can't open them", never their names |
+| Errors | The error's `message` and `remedy`, with the trace id to quote to support |
+
+The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
+
+`cites[].url` is set when the source's connector can link to a version; it is omitted otherwise.
+
 ## ERRORS
 
 | Code | When |
