@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Brain · Second Brain</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="active" href="index.html">Home</a><a class="" href="manual/sb-tour.7.html">Tour</a><a class="" href="manual/README.html">Manual</a><a class="" href="docs/README.html">Design</a><a class="" href="epics/README.html">Plan</a><a class="" href="devlog.html">Devlog</a><a class="" href="examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Start here</h4><a class="current" href="README.html">Second Brain</a><a href="CONTRIBUTING.html">Contributing</a><a href="docs/00-problem-statement.html">Problem Statement</a><a href="manual/sb-tour.7.html">sb-tour(7)</a><a href="manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="docs/03-prd.html">Second Brain: Product Requirements Document</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="index.html">second brain</a> / </div><h1 id="second-brain">Second Brain</h1>
+<p><strong>One reusable platform that makes every acquired company AI-first, fast, without giving up who-may-see-what.</strong></p>
+<p>Second Brain (codename <strong>SB</strong>) indexes a company's docs, chat, tickets and CRM. It answers questions with citations to exact document versions the asker can open, and it runs a small set of agent actions that a human always sends or approves. Every company gets its own isolated cell, stamped from one template and configured by one file.</p>
+<pre><code class="language-yaml">tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack }
+agents: [ask, draft-reply]
+</code></pre>
+<pre><code class="language-sh">sb tenant check  acme.yaml     # is the manifest valid?
+sb tenant apply  acme.yaml     # build or update the cell
+sb tenant verify acme.yaml     # do the laws hold on real data?
+</code></pre>
+<p>Those three commands are the whole onboarding story for a company's IT team.</p>
+<h2 id="the-rules-it-will-not-break">The rules it will not break</h2>
+<p>If the platform says it, it holds. These are the <strong>laws</strong>. Each one is tested, model-checked or both, and a breach in production is a Sev-1.</p>
+<table>
+<thead>
+<tr>
+<th>Law</th>
+<th>In one line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAW-01</td>
+<td>No answer cites or uses a document the asker can't open at answer time</td>
+</tr>
+<tr>
+<td>LAW-02</td>
+<td>No retrieval crosses a tenant boundary</td>
+</tr>
+<tr>
+<td>LAW-03</td>
+<td>An unknown permission result means refusal (<code>EPERM</code>), never a pass</td>
+</tr>
+<tr>
+<td>LAW-04</td>
+<td>Every tool call has an audit row before it runs</td>
+</tr>
+<tr>
+<td>LAW-05</td>
+<td>An action "ran" only if the target system returned a receipt</td>
+</tr>
+<tr>
+<td>LAW-15</td>
+<td>An approval approves exactly one payload, and nobody approves their own action</td>
+</tr>
+</tbody>
+</table>
+<p>All 18 are in <a href="manual/sb-laws.7.html"><code>sb-laws(7)</code></a>.</p>
+<h2 id="a-factory-with-hand-off">A factory, with hand-off</h2>
+<p>The control plane, cell template and release train are the <strong>factory</strong>. It produces and runs every company's Second Brain as an isolated cell. After v1, a company can be <strong>handed custody</strong> of its own Second Brain, in its own cloud account under its own keys, or can detach entirely. v1 doesn't build hand-off, but it builds the seams so hand-off won't need a rebuild (<a href="manual/sb-factory.7.html"><code>sb-factory(7)</code></a>, <a href="docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a>).</p>
+<h2 id="whats-in-this-repo">What's in this repo</h2>
+<p>This repo is <strong>manual first</strong>. The design, the plan and the man pages come before the code, and the code follows the manual.</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/</code></td>
+<td>Problem statement, principles, domain model, PRD, testing strategy, standards, threat model</td>
+</tr>
+<tr>
+<td><code>docs/architecture/</code></td>
+<td>One document per subsystem, each with Mermaid diagrams</td>
+</tr>
+<tr>
+<td><code>docs/adr/</code></td>
+<td>Architecture decision records</td>
+</tr>
+<tr>
+<td><code>manual/</code></td>
+<td>Man pages: commands (1), API (3), file formats (5), concepts (7). <strong>The manual is the spec.</strong></td>
+</tr>
+<tr>
+<td><code>epics/</code></td>
+<td>9 epics, 96 tickets with subtasks, in 8 waves (v1 is W0 to W6; W7 is hand-off)</td>
+</tr>
+<tr>
+<td><code>living/</code></td>
+<td>Devlog, bugs and mitigations, assurance ledger, changelog, glossary, open questions, risks</td>
+</tr>
+<tr>
+<td><code>proofs/</code></td>
+<td>TLA+ and Alloy models of approvals, rollout and permissions</td>
+</tr>
+<tr>
+<td><code>examples/</code></td>
+<td>Example manifests, policies, eval suites and a connector</td>
+</tr>
+<tr>
+<td><code>tools/</code></td>
+<td>Site generator, link checker, CI helpers</td>
+</tr>
+<tr>
+<td><code>site/</code></td>
+<td>The generated docs site. Open <code>site/index.html</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="read-in-this-order">Read in this order</h2>
+<ol>
+<li><a href="docs/00-problem-statement.html">Problem statement</a></li>
+<li><a href="docs/01-principles.html">Principles</a></li>
+<li><a href="docs/architecture/00-overview.html">Architecture overview</a></li>
+<li><a href="docs/03-prd.html">PRD</a></li>
+<li><a href="manual/sb-tour.7.html"><code>sb-tour(7)</code></a></li>
+<li><a href="epics/README.html">Plan</a>: start with SB-001</li>
+</ol>
+<h2 id="build-and-check">Build and check</h2>
+<pre><code class="language-sh">pip install pyyaml markdown cedarpy    # Python tools used by the checks
+make check                              # the gate: must be green before any PR
+bin/sb version
+</code></pre>
+<p><code>make check</code> needs Go 1.24, Python 3.12+ and <code>golangci-lint</code> v2. <code>make diagrams</code> (Playwright plus <code>npm install --prefix tools/check</code>) and <code>make proofs</code> (Java 21) run as separate CI jobs.</p>
+<h2 id="build-the-docs-site">Build the docs site</h2>
+<pre><code class="language-sh">pip install markdown
+python3 tools/site/build.py          # writes site/
+python3 tools/check/links.py site    # every link and anchor resolves
+open site/index.html                 # or xdg-open
+</code></pre>
+<h2 id="the-plan-in-one-picture">The plan in one picture</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+    W0[&quot;W0 Manual and Laws&quot;] --&gt; W1[&quot;W1 First Cell&quot;] --&gt; W2[&quot;W2 Ingestion&quot;] --&gt; W3[&quot;W3 Cited Answers&quot;] --&gt; W4[&quot;W4 Safe Actions&quot;] --&gt; W5[&quot;W5 Gated Releases&quot;] --&gt; W6[&quot;W6 Portfolio Roll-out&quot;] -.-&gt; W7[&quot;W7 Factory Hand-off&lt;br/&gt;(after v1)&quot;]
+</pre></div>
+<p>The formal models arrive in <strong>Wave 0</strong>, before the first line of product code.</p>
+<h2 id="contributing">Contributing</h2>
+<p>See <a href="CONTRIBUTING.html">CONTRIBUTING.md</a>. In short: pick the lowest-wave open ticket, write the man page first, write the laws as tests, implement, update the living docs, then open a PR.</p>
+<h2 id="name">Name</h2>
+<p>"Second Brain" and <code>sb</code> are working names. To rename, search and replace <code>Second Brain</code>, <code>SB-</code> and the <code>sb</code> command.</p><p class="srcline">Source: <code>README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#the-rules-it-will-not-break">The rules it will not break</a></li><li class="l2"><a href="#a-factory-with-hand-off">A factory, with hand-off</a></li><li class="l2"><a href="#whats-in-this-repo">What's in this repo</a></li><li class="l2"><a href="#read-in-this-order">Read in this order</a></li><li class="l2"><a href="#build-and-check">Build and check</a></li><li class="l2"><a href="#build-the-docs-site">Build the docs site</a></li><li class="l2"><a href="#the-plan-in-one-picture">The plan in one picture</a></li><li class="l2"><a href="#contributing">Contributing</a></li><li class="l2"><a href="#name">Name</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="";</script>
+<script src="assets/search-index.js"></script>
+<script src="assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

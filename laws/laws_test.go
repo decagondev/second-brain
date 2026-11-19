@@ -1,0 +1,98 @@
+package laws
+
+import (
+	"math/rand"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"example.com/second-brain/internal/core/manifest"
+	"example.com/second-brain/internal/core/plan"
+)
+
+// Law tests run against the system under test (NewSystem). Each is expected red
+// until its ticket wires the real system in; see laws/expected_red.txt.
+
+const runs = 300
+
+func TestLAW01_CiteOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { w := Gen(r); return law01(w, NewSystem(w)) })
+}
+
+func TestLAW02_NoTenantCrossing(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { w := Gen(r); return law02(w, NewSystem(w)) })
+}
+
+func TestLAW03_UnknownMeansRefuse(t *testing.T) {
+	Check(t, "LAW-03", runs, func(r *rand.Rand) error { w := Gen(r); return law03(w, NewSystem(w)) })
+}
+
+func TestLAW04_AuditBeforeAct(t *testing.T) {
+	Check(t, "LAW-04", runs, func(r *rand.Rand) error { w := Gen(r); return law04(w, NewSystem(w), r) })
+}
+
+func TestLAW05_RanMeansReceipt(t *testing.T) {
+	Check(t, "LAW-05", runs, func(r *rand.Rand) error { w := Gen(r); return law05(w, NewSystem(w), r) })
+}
+
+func TestLAW16_TheManifestIsTheTruth(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16(r, manifest.Check) })
+}
+
+func TestLAW16_ThePlanIsTheManifestDiff(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Plan(r, plan.Make) })
+}
+
+func TestLAW02_CellsShareNothing(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Cells(r, NewCellStamper(t.TempDir())) })
+}
+
+func TestLAW16_ApplyMakesTheCellMatch(t *testing.T) {
+	Check(t, "LAW-16", 100, func(r *rand.Rand) error { return law16Apply(r, t.TempDir(), NewApplier()) })
+}
+
+func TestLAW02_RequestsNeverCrossTenants(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Requests(r, NewRouter()) })
+}
+
+func TestLAW02_TokensStayInTheirTenant(t *testing.T) {
+	check := NewTokenCheck()
+	Check(t, "LAW-02", 100, func(r *rand.Rand) error { return law02Tokens(r, check) })
+}
+
+func TestLAW12_DeprovisionRevokesFast(t *testing.T) {
+	Check(t, "LAW-12", runs, func(r *rand.Rand) error { return law12(r, NewDeprovSystem) })
+}
+
+func TestLAW02_ScopeIsTheOnlyWayIn(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Scope(r, NewScopedCell) })
+}
+
+func TestLAW03_PolicyUnknownRefuses(t *testing.T) {
+	k := NewPolicyKernel()
+	Check(t, "LAW-03", 100, func(r *rand.Rand) error { return law03Policy(r, k) })
+}
+
+func TestLAW02_PoliciesNeverCrossTenants(t *testing.T) {
+	ev, err := LoadPolicies()
+	if err != nil {
+		t.Fatal(err)
+	}
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Policies(r, ev) })
+}
+
+func TestLAW04_PolicyDecisionsAreRecordedFirst(t *testing.T) {
+	k := NewDecisionKernel()
+	Check(t, "LAW-04", runs, func(r *rand.Rand) error { return law04Decisions(r, k) })
+}
+
+func TestLAW18_RootKeyAlwaysHasACustodian(t *testing.T) {
+	check := NewCustodyCheck()
+	Check(t, "LAW-18", 60, func(r *rand.Rand) error {
+		root := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(root, "tenants"), 0o755); err != nil {
+			return err
+		}
+		return law18(r, root, check)
+	})
+}

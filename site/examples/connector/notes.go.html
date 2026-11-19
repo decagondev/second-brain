@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notes.go · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="active" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a class="current" href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / examples/connector</div><h1 id="notesgo">notes.go</h1>
+<pre><code class="language-go">// Package notes is a minimal example connector for a fictional &quot;Notes&quot; system.
+// It shows the shape every connector takes: four calls, no state but a cursor,
+// credentials resolved at call time, and Unknown for anything uncertain.
+//
+// Real connectors live in internal/adapters/connectors/&lt;kind&gt;-&lt;vendor&gt;/ and must
+// pass the contract kit (sb-connector(3)) before any manifest can name them.
+package notes
+
+import (
+    &quot;context&quot;
+    &quot;errors&quot;
+    &quot;time&quot;
+
+    &quot;example.com/second-brain/internal/core/ports&quot;
+)
+
+// Client is the vendor API surface we use. Keeping it an interface lets the
+// contract kit run against a recorded sandbox.
+type Client interface {
+    GetNote(ctx context.Context, token, id string) (Note, error)
+    CanView(ctx context.Context, token, userEmail string, ids []string) (map[string]bool, error)
+    ListChanges(ctx context.Context, token, since string) ([]Change, string, error)
+}
+
+type Note struct {
+    ID, Title, Body string
+    Version         int
+    Viewers         []string // emails and group names; used only as a prefilter
+}
+
+type Change struct {
+    ID      string
+    Deleted bool
+    ACLOnly bool
+}
+
+type Connector struct {
+    client  Client
+    secrets ports.Secrets
+    tenant  string
+}
+
+func New(c Client, s ports.Secrets, tenant string) *Connector {
+    return &amp;Connector{client: c, secrets: s, tenant: tenant}
+}
+
+// token is fetched per call and never stored on the struct (LAW-07).
+func (c *Connector) token(ctx context.Context) (string, error) {
+    return c.secrets.Get(ctx, &quot;vault://tenants/&quot;+c.tenant+&quot;/connectors/docs&quot;)
+}
+
+func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Document, error) {
+    tok, err := c.token(ctx)
+    if err != nil {
+        return ports.Document{}, err
+    }
+    n, err := c.client.GetNote(ctx, tok, ref.ID)
+    if err != nil {
+        return ports.Document{}, err
+    }
+    return ports.Document{
+        Ref: ref, Version: n.Version, Title: n.Title, Text: n.Body,
+        ACLPrefilter: n.Viewers,
+    }, nil
+}
+
+// ACL is the authority. Anything we can't answer cleanly is Unknown (LAW-03).
+func (c *Connector) ACL(ctx context.Context, user ports.UserRef, refs []ports.SourceRef) ([]ports.Verdict, error) {
+    out := make([]ports.Verdict, len(refs)) // zero value is VerdictUnknown
+    tok, err := c.token(ctx)
+    if err != nil {
+        return out, nil
+    }
+    ids := make([]string, len(refs))
+    for i, r := range refs {
+        ids[i] = r.ID
+    }
+    ctx, cancel := context.WithTimeout(ctx, 800*time.Millisecond)
+    defer cancel()
+    can, err := c.client.CanView(ctx, tok, user.Email, ids)
+    if err != nil {
+        return out, nil
+    }
+    for i, id := range ids {
+        if v, ok := can[id]; ok {
+            out[i] = ports.VerdictDeny
+            if v {
+                out[i] = ports.VerdictAllow
+            }
+        }
+    }
+    return out, nil
+}
+
+func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.ChangeSet, ports.Cursor, error) {
+    tok, err := c.token(ctx)
+    if err != nil {
+        return ports.ChangeSet{}, cur, err
+    }
+    chs, next, err := c.client.ListChanges(ctx, tok, string(cur))
+    if err != nil {
+        return ports.ChangeSet{}, cur, err
+    }
+    var set ports.ChangeSet
+    for _, ch := range chs {
+        set = append(set, ports.Change{Ref: ports.SourceRef{Kind: &quot;docs&quot;, ID: ch.ID}, Deleted: ch.Deleted, ACLOnly: ch.ACLOnly})
+    }
+    return set, ports.Cursor(next), nil
+}
+
+// Act is not supported: this connector is read-only.
+func (c *Connector) Act(context.Context, ports.Action, ports.IdempotencyKey) (ports.Receipt, error) {
+    return ports.Receipt{}, ErrNotSupported
+}
+
+var ErrNotSupported = errors.New(&quot;ENOTSUP: notes connector is read-only&quot;)
+
+var _ ports.Connector = (*Connector)(nil)
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>examples/connector/notes.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

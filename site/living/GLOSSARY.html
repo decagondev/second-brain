@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="active" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Living documents</h4><a href="../devlog.html">Devlog timeline</a><a href="../living/ASSURANCE_LEDGER.html">Assurance Ledger</a><a href="../living/BUGS_AND_MITIGATIONS.html">Bugs and Mitigations</a><a href="../living/CHANGELOG.html">Changelog</a><a href="../living/DEVLOG.html">Devlog</a><a class="current" href="../living/GLOSSARY.html">Glossary</a><a href="../living/OPEN_QUESTIONS.html">Open Questions</a><a href="../living/RISKS.html">Risks</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / living</div><h1 id="glossary">Glossary</h1>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ACL prefilter</strong></td>
+<td>A copy of a document's permissions taken at ingest, used only to narrow retrieval. Never grants access</td>
+</tr>
+<tr>
+<td><strong>Act</strong></td>
+<td>The connector call that performs a write and returns a receipt</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>A proposed change to a company system, produced by a gated workflow</td>
+</tr>
+<tr>
+<td><strong>Agent</strong></td>
+<td>A pinned definition (prompt, tools, limits) in the release bundle: <code>ask</code>, <code>draft-reply</code>, or a workflow</td>
+</tr>
+<tr>
+<td><strong>Anchor</strong></td>
+<td>The signed hourly copy of the latest audit hash in WORM storage</td>
+</tr>
+<tr>
+<td><strong>Approval</strong></td>
+<td>A record binding one approver to one payload hash</td>
+</tr>
+<tr>
+<td><strong>Bundle</strong></td>
+<td>A signed release: images, prompts, tools, policies, model id, SBOM, eval results</td>
+</tr>
+<tr>
+<td><strong>Cell</strong></td>
+<td>One tenant's isolated stack: database, index, vault namespace, key, queue, region</td>
+</tr>
+<tr>
+<td><strong>Channel</strong></td>
+<td><code>stable</code> or <code>testing</code>. Tenants choose a channel, never a version</td>
+</tr>
+<tr>
+<td><strong>Citation</strong></td>
+<td><code>kind:source-id@version</code> pointing at an allowed chunk</td>
+</tr>
+<tr>
+<td><strong>Claim</strong></td>
+<td>One statement in an answer; cited or <code>uncited</code></td>
+</tr>
+<tr>
+<td><strong>Connector</strong></td>
+<td>Adapter for one kind of company system, implementing <code>fetch</code>, <code>acl</code>, <code>changes</code>, <code>act</code></td>
+</tr>
+<tr>
+<td><strong>Contract kit</strong></td>
+<td>The test suite every connector must pass</td>
+</tr>
+<tr>
+<td><strong>Control plane</strong></td>
+<td>Shared services with no tenant content: registry, releases, kill flags, attestation</td>
+</tr>
+<tr>
+<td><strong>Custody</strong></td>
+<td>Who holds a cell: <code>factory</code>, <code>tenant</code> or <code>detached</code>. A factory record, never a manifest field</td>
+</tr>
+<tr>
+<td><strong>Detach</strong></td>
+<td>A tenant-custody cell leaves the release train with an export package</td>
+</tr>
+<tr>
+<td><strong>Draft</strong></td>
+<td>Text an agent writes for a human to send. Not an action</td>
+</tr>
+<tr>
+<td><strong>Eval</strong></td>
+<td>A test of model-dependent behaviour, scored over cases</td>
+</tr>
+<tr>
+<td><strong>Factory</strong></td>
+<td>The control plane, cell template and release train that produce and run every tenant's Second Brain</td>
+</tr>
+<tr>
+<td><strong>Gate</strong></td>
+<td>The release check: evals, laws, models, signatures</td>
+</tr>
+<tr>
+<td><strong>Hand-off</strong></td>
+<td>Dual-approved transfer of a cell's custody from the factory to its company</td>
+</tr>
+<tr>
+<td><strong>Key custodian</strong></td>
+<td>Whoever's KMS can unwrap a cell's root key</td>
+</tr>
+<tr>
+<td><strong>Kill switch</strong></td>
+<td>Runtime stop for an agent, connector or tenant; effective in 10 seconds or less</td>
+</tr>
+<tr>
+<td><strong>Law</strong></td>
+<td>An invariant the platform guarantees for every input (<code>LAW-nn</code>)</td>
+</tr>
+<tr>
+<td><strong>Live ACL</strong></td>
+<td>The connector's <code>acl</code> call at answer time; the authority on who may see a document</td>
+</tr>
+<tr>
+<td><strong>Manifest</strong></td>
+<td>The one YAML file describing a tenant</td>
+</tr>
+<tr>
+<td><strong>Placement</strong></td>
+<td>Which cloud account a cell's resources live in</td>
+</tr>
+<tr>
+<td><strong>Promote guard</strong></td>
+<td>Rule that a release becomes stable only when all stable tenants run the current stable</td>
+</tr>
+<tr>
+<td><strong>Receipt</strong></td>
+<td>Target-issued id proving an action happened</td>
+</tr>
+<tr>
+<td><strong>Ring</strong></td>
+<td>A rollout stage: 0 internal, 1 friendly (testing), 2 all (stable)</td>
+</tr>
+<tr>
+<td><strong>Scope</strong></td>
+<td><code>tenancy.Scope</code>: tenant + user + groups, carried by every call</td>
+</tr>
+<tr>
+<td><strong>Slice</strong></td>
+<td>A thin, end-to-end, demoable increment inside a wave</td>
+</tr>
+<tr>
+<td><strong>Tenant</strong></td>
+<td>One company using the platform</td>
+</tr>
+<tr>
+<td><strong>Tool bus</strong></td>
+<td>The single path for tool calls: kill, authorise, audit, approve, execute</td>
+</tr>
+<tr>
+<td><strong>Trace</strong></td>
+<td>One ask or agent run (<code>tr_…</code>)</td>
+</tr>
+<tr>
+<td><strong>Uncited</strong></td>
+<td>Label set by code on a claim with no valid citation</td>
+</tr>
+<tr>
+<td><strong>Unknown</strong></td>
+<td>A permission result that isn't a clear allow or deny. Always refused</td>
+</tr>
+<tr>
+<td><strong>Wave</strong></td>
+<td>A release-sized group of slices with an exit gate</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>living/GLOSSARY.md</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

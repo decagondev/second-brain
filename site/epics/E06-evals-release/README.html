@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E06 Evals, Release and Supply Chain · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a class="current" href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E06</h4><a href="../../epics/E06-evals-release/SB-015-eval-harness-scaffold.html">SB-015: Eval harness scaffold</a><a href="../../epics/E06-evals-release/SB-309-citation-faithfulness-eval-set-per-tenant.html">SB-309: Citation-faithfulness eval set per tenant</a><a href="../../epics/E06-evals-release/SB-501-eval-runner-and-suites.html">SB-501: Eval runner and suites</a><a href="../../epics/E06-evals-release/SB-502-eval-gate-blocks-regressions.html">SB-502: Eval gate blocks regressions</a><a href="../../epics/E06-evals-release/SB-503-release-bundle-pins-prompts-tools-policies.html">SB-503: Release bundle pins prompts, tools, policies and model</a><a href="../../epics/E06-evals-release/SB-504-reproducible-builds-sbom-and-signing.html">SB-504: Reproducible builds, SBOM and signing</a><a href="../../epics/E06-evals-release/SB-505-lockfile-regeneration-and-cve-rebuild-path.html">SB-505: Lockfile regeneration and CVE rebuild path</a><a href="../../epics/E06-evals-release/SB-506-deploy-time-signature-verification.html">SB-506: Deploy-time signature verification</a><a href="../../epics/E06-evals-release/SB-507-release-controller-with-channels-and-rings.html">SB-507: Release controller with channels and rings</a><a href="../../epics/E06-evals-release/SB-508-one-step-rollback.html">SB-508: One-step rollback</a><a href="../../epics/E06-evals-release/SB-509-running-build-attestation-per-cell.html">SB-509: Running-build attestation per cell</a><a href="../../epics/E06-evals-release/SB-510-manifest-drift-detection.html">SB-510: Manifest drift detection</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E06-evals-release</div><h1 id="e06-evals-release-and-supply-chain">E06: Evals, Release and Supply Chain</h1>
+<blockquote>
+<p>No agent, prompt, policy or model change reaches a tenant without passing evals, and every running build is a signed build that passed the gate.</p>
+</blockquote>
+<p><strong>Waves:</strong> W0, W3, W5 · <strong>Tickets:</strong> 12 · <strong>Stories:</strong> 4</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-06.1</strong>: As a <em>parent-org platform lead</em>, I want no agent, prompt or model change to reach a tenant without passing evals, so that quality never regresses silently. Delivered by <a href="SB-015-eval-harness-scaffold.html">SB-015</a>, <a href="SB-309-citation-faithfulness-eval-set-per-tenant.html">SB-309</a>, <a href="SB-501-eval-runner-and-suites.html">SB-501</a>, <a href="SB-502-eval-gate-blocks-regressions.html">SB-502</a>.</li>
+<li><strong>US-06.2</strong>: As a <em>security reviewer</em>, I want to prove which build, prompts and model ran for any action, so that every incident is reconstructable. Delivered by <a href="SB-503-release-bundle-pins-prompts-tools-policies.html">SB-503</a>, <a href="SB-504-reproducible-builds-sbom-and-signing.html">SB-504</a>, <a href="SB-506-deploy-time-signature-verification.html">SB-506</a>, <a href="SB-509-running-build-attestation-per-cell.html">SB-509</a>.</li>
+<li><strong>US-06.3</strong>: As a <em>company IT operator</em>, I want a bad release to roll back in one step, so that a bad day stays short. Delivered by <a href="SB-507-release-controller-with-channels-and-rings.html">SB-507</a>, <a href="SB-508-one-step-rollback.html">SB-508</a>.</li>
+<li><strong>US-06.4</strong>: As a <em>security reviewer</em>, I want a CVE fix to be a rebuild that every tenant takes, so that no tenant is left on a vulnerable build. Delivered by <a href="SB-505-lockfile-regeneration-and-cve-rebuild-path.html">SB-505</a>, <a href="SB-507-release-controller-with-channels-and-rings.html">SB-507</a>, <a href="SB-510-manifest-drift-detection.html">SB-510</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB015[&quot;SB-015&lt;br/&gt;Eval harness scaffold&quot;]
+  SB309[&quot;SB-309&lt;br/&gt;Citation-faithfulness eval set…&quot;]
+  SB501[&quot;SB-501&lt;br/&gt;Eval runner and suites&quot;]
+  SB502[&quot;SB-502&lt;br/&gt;Eval gate blocks regressions&quot;]
+  SB503[&quot;SB-503&lt;br/&gt;Release bundle pins prompts,…&quot;]
+  SB504[&quot;SB-504&lt;br/&gt;Reproducible builds, SBOM and…&quot;]
+  SB505[&quot;SB-505&lt;br/&gt;Lockfile regeneration and CVE…&quot;]
+  SB506[&quot;SB-506&lt;br/&gt;Deploy-time signature…&quot;]
+  SB507[&quot;SB-507&lt;br/&gt;Release controller with…&quot;]
+  SB508[&quot;SB-508&lt;br/&gt;One-step rollback&quot;]
+  SB509[&quot;SB-509&lt;br/&gt;Running-build attestation per…&quot;]
+  SB510[&quot;SB-510&lt;br/&gt;Manifest drift detection&quot;]
+  SB015 --&gt; SB309
+  SB015 --&gt; SB501
+  SB309 --&gt; SB501
+  SB501 --&gt; SB502
+  SB503 --&gt; SB504
+  SB504 --&gt; SB505
+  SB504 --&gt; SB506
+  SB502 --&gt; SB507
+  SB506 --&gt; SB507
+  SB507 --&gt; SB508
+  SB506 --&gt; SB509
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-015-eval-harness-scaffold.html">SB-015</a></td>
+<td>W0 / S0.4</td>
+<td>Eval harness scaffold</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-309-citation-faithfulness-eval-set-per-tenant.html">SB-309</a></td>
+<td>W3 / S3.3</td>
+<td>Citation-faithfulness eval set per tenant</td>
+<td>LAW-14</td>
+</tr>
+<tr>
+<td><a href="SB-501-eval-runner-and-suites.html">SB-501</a></td>
+<td>W5 / S5.1</td>
+<td>Eval runner and suites</td>
+<td>LAW-01, LAW-09, LAW-14</td>
+</tr>
+<tr>
+<td><a href="SB-502-eval-gate-blocks-regressions.html">SB-502</a></td>
+<td>W5 / S5.1</td>
+<td>Eval gate blocks regressions</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td><a href="SB-503-release-bundle-pins-prompts-tools-policies.html">SB-503</a></td>
+<td>W5 / S5.1</td>
+<td>Release bundle pins prompts, tools, policies and model</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td><a href="SB-504-reproducible-builds-sbom-and-signing.html">SB-504</a></td>
+<td>W5 / S5.2</td>
+<td>Reproducible builds, SBOM and signing</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td><a href="SB-505-lockfile-regeneration-and-cve-rebuild-path.html">SB-505</a></td>
+<td>W5 / S5.2</td>
+<td>Lockfile regeneration and CVE rebuild path</td>
+<td>LAW-08</td>
+</tr>
+<tr>
+<td><a href="SB-506-deploy-time-signature-verification.html">SB-506</a></td>
+<td>W5 / S5.2</td>
+<td>Deploy-time signature verification</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td><a href="SB-507-release-controller-with-channels-and-rings.html">SB-507</a></td>
+<td>W5 / S5.3</td>
+<td>Release controller with channels and rings</td>
+<td>LAW-06, LAW-08</td>
+</tr>
+<tr>
+<td><a href="SB-508-one-step-rollback.html">SB-508</a></td>
+<td>W5 / S5.3</td>
+<td>One-step rollback</td>
+<td>LAW-08</td>
+</tr>
+<tr>
+<td><a href="SB-509-running-build-attestation-per-cell.html">SB-509</a></td>
+<td>W5 / S5.3</td>
+<td>Running-build attestation per cell</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td><a href="SB-510-manifest-drift-detection.html">SB-510</a></td>
+<td>W5 / S5.3</td>
+<td>Manifest drift detection</td>
+<td>LAW-16</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E06-evals-release/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

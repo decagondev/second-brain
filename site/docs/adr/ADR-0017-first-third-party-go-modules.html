@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="active" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../../docs/README.html">Design</a><a href="../../docs/00-problem-statement.html">Problem Statement</a><a href="../../docs/01-principles.html">Principles</a><a href="../../docs/02-domain-model.html">Domain Model</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../../docs/05-living-documents.html">Living Documents</a><a href="../../docs/06-engineering-standards.html">Engineering Standards</a><a href="../../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../../docs/architecture/00-overview.html">Architecture Overview</a><a href="../../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../../docs/architecture/03-connectors.html">03 Connectors</a><a href="../../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../../docs/adr/README.html">Decision Records</a><a href="../../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a class="current" href="../../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../../policy/README.html">Policy</a><a href="../../proofs/README.html">Proofs</a><a href="../../policy/platform/base.cedar.html">base.cedar</a><a href="../../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../../proofs/crosscheck.py.html">crosscheck.py</a><a href="../../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../../evals/README.html">Evals</a><a href="../../evals/__main__.py.html">__main__.py</a><a href="../../evals/checks.py.html">checks.py</a><a href="../../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../../evals/gate.yaml.html">gate.yaml</a><a href="../../evals/runner.py.html">runner.py</a><a href="../../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../../evals/targets.py.html">targets.py</a><a href="../../evals/tests/test_checks.py.html">test_checks.py</a><a href="../../laws/README.html">Laws</a><a href="../../laws/checks.go.html">checks.go</a><a href="../../laws/law02cell.go.html">law02cell.go</a><a href="../../laws/law02policy.go.html">law02policy.go</a><a href="../../laws/law02route.go.html">law02route.go</a><a href="../../laws/law02scope.go.html">law02scope.go</a><a href="../../laws/law02token.go.html">law02token.go</a><a href="../../laws/law03policy.go.html">law03policy.go</a><a href="../../laws/law04policy.go.html">law04policy.go</a><a href="../../laws/law12.go.html">law12.go</a><a href="../../laws/law16.go.html">law16.go</a><a href="../../laws/law18.go.html">law18.go</a><a href="../../laws/laws_test.go.html">laws_test.go</a><a href="../../laws/prop.go.html">prop.go</a><a href="../../laws/selftest_test.go.html">selftest_test.go</a><a href="../../laws/system.go.html">system.go</a><a href="../../laws/world.go.html">world.go</a><a href="../../tests/regress/README.html">Regression tests</a><a href="../../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../../tests/smoke/README.html">Smoke tests</a><a href="../../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / docs/adr</div><h1 id="adr-0017-first-third-party-go-modules-cedar-go-and-pgx-pinned-vendored-and-allow-listed">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</h1>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Date</th>
+<th>Deciders</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Accepted</td>
+<td>2026-11-19</td>
+<td>Platform lead (the user)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="context">Context</h2>
+<p>ADR-0016 kept W0 on the standard library and said the first module would arrive with its own ADR. W1 needs two: a Cedar evaluator for the policy kernel (SB-109, ADR-0008) and a Postgres driver for the tenant registry and cell databases (SB-105). Every module is supply-chain surface (ADR-0005), so how modules get in matters as much as which ones.</p>
+<h2 id="decision">Decision</h2>
+<ul>
+<li>Add <strong><code>github.com/cedar-policy/cedar-go</code> v1.8.0</strong> (the Cedar team's Go evaluator) and <strong><code>github.com/jackc/pgx/v5</code> v5.8.0</strong> (Postgres driver and pool).</li>
+<li>These are the newest releases that build with the pinned <strong>Go 1.24</strong> (<code>tools/versions.env</code>). cedar-go v1.9 and later needs Go 1.26, and pgx v5.9 and later needs Go 1.25. Moving to them is a separate Go-version bump, recorded in a later ADR.</li>
+<li><strong>Allow-list.</strong> <code>tools/deps/allowed.txt</code> lists every module that may appear in <code>go.mod</code>, direct and indirect, with its exact version and <code>go.sum</code> hash. <code>make deps</code> fails if <code>go.mod</code> or <code>go.sum</code> contain anything that isn't on the list, or a different version or hash. Adding a module means changing that file in review.</li>
+<li><strong>Vendored.</strong> Each module is vendored (<code>go mod vendor</code>) in the change that first imports it, so builds don't need the network and reviewers see the code. CI builds with <code>-mod=vendor</code>.</li>
+<li><strong>Only adapters import vendors.</strong> cedar-go is used only by <code>internal/adapters/policy/cedar</code> and pgx only by <code>internal/adapters/postgres/...</code>. The core sees them through ports, and depguard (SB-008) already enforces this.</li>
+<li><strong>SBOM.</strong> These modules are the first entries for the SPDX SBOM that SB-504 generates. Until SB-504, the allow-list is the inventory.</li>
+</ul>
+<p>The full transitive set at these versions is: <code>github.com/jackc/pgpassfile</code> v1.0.0, <code>github.com/jackc/pgservicefile</code> v0.0.0-20240606120523-5a60cdf6a761, <code>github.com/jackc/puddle/v2</code> v2.2.2, <code>golang.org/x/exp</code> v0.0.0-20220921023135-46d9e7742f1e, <code>golang.org/x/sync</code> v0.17.0 and <code>golang.org/x/text</code> v0.29.0. The test-only modules of those modules are not built into anything.</p>
+<h2 id="alternatives-rejected">Alternatives rejected</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Write our own Cedar evaluator</td>
+<td>Policy semantics must match the Cedar spec and the analysis tools (SB-112); re-implementing them is a correctness risk</td>
+</tr>
+<tr>
+<td>Call Cedar through the Rust CLI or a sidecar</td>
+<td>A process boundary on every decision, and a second toolchain in every cell</td>
+</tr>
+<tr>
+<td><code>database/sql</code> with <code>lib/pq</code></td>
+<td>lib/pq is in maintenance mode; pgx is the maintained driver with a native pool</td>
+</tr>
+<tr>
+<td>Bump Go to 1.26 now for the newest versions</td>
+<td>It changes the toolchain for everything and is a separate decision; the 1.24-compatible versions do what W1 needs</td>
+</tr>
+<tr>
+<td>No allow-list, trust <code>go.sum</code></td>
+<td><code>go.sum</code> proves integrity, not intent. The allow-list makes adding a module a reviewed decision</td>
+</tr>
+</tbody>
+</table>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li><code>go.mod</code> gets its first <code>require</code> lines when SB-105 and SB-109 import these modules. ADR-0016's "no require lines" rule ends there.</li>
+<li>We run releases one or two minor versions behind upstream until the Go bump. Upstream security fixes on newer lines must be checked against these versions (SB-505's CVE rebuild path).</li>
+<li>Vendored code makes the repository larger. That's accepted in exchange for offline, reviewable builds.</li>
+</ul><p class="srcline">Source: <code>docs/adr/ADR-0017-first-third-party-go-modules.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#context">Context</a></li><li class="l2"><a href="#decision">Decision</a></li><li class="l2"><a href="#alternatives-rejected">Alternatives rejected</a></li><li class="l2"><a href="#consequences">Consequences</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

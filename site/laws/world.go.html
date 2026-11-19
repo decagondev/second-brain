@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>world.go · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a class="current" href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / laws</div><h1 id="worldgo">world.go</h1>
+<pre><code class="language-go">package laws
+
+import (
+    &quot;fmt&quot;
+    &quot;math/rand&quot;
+
+    &quot;example.com/second-brain/internal/core/ports&quot;
+)
+
+// Fault is injected into every live ACL call of a world (LAW-03).
+type Fault int
+
+const (
+    FaultNone    Fault = iota
+    FaultTimeout       // every ACL call times out: every verdict is Unknown
+)
+
+type User struct {
+    ID, Tenant string
+    Groups     []string
+}
+
+// Doc is a source document. Prefilter is the ACL copy taken at ingest and may be
+// stale; Live is the source's answer now. A user missing from Live means the
+// source can't say (Unknown). Missing means the document was deleted at the source.
+// Public means &quot;anyone with the link&quot;: the source says Allow to users of *any*
+// tenant, so tenant isolation (LAW-02) must never rely on the live check.
+type Doc struct {
+    ID, Tenant string
+    Version    int
+    Prefilter  []string
+    Live       map[string]ports.Verdict
+    Missing    bool
+    Public     bool
+}
+
+// Event is one step a system takes on a tool call, in order.
+type Event struct {
+    Kind     string // &quot;audit&quot; or &quot;exec&quot;
+    Call     string
+    Approval string
+    Receipt  string
+}
+
+// World is one generated situation: tenants, users, documents, approvals, a target
+// system and the record of everything the system under test did.
+type World struct {
+    Users     []User
+    Docs      []Doc
+    Fault     Fault
+    Approvals map[string]bool // valid approval ids
+    NoReceipt bool            // the target system returns no receipt
+    Log       []Event
+    asked     map[string]bool
+    conseq    map[string]bool // which generated calls are consequential
+}
+
+// Gen builds a random world with 2–3 tenants. It deliberately includes stale
+// prefilters (prefilter says yes, source says no), unknown verdicts and missing docs.
+func Gen(r *rand.Rand) *World {
+    w := &amp;World{Approvals: map[string]bool{&quot;apr_ok&quot;: true}, asked: map[string]bool{}, conseq: map[string]bool{}}
+    tenants := []string{&quot;acme-logistics&quot;, &quot;beta-freight&quot;, &quot;gamma-parts&quot;}[:2+r.Intn(2)]
+    for _, t := range tenants {
+        groups := []string{t + &quot;/g1&quot;, t + &quot;/g2&quot;, t + &quot;/g3&quot;}
+        var users []User
+        for i := 0; i &lt; 2+r.Intn(4); i++ {
+            u := User{ID: fmt.Sprintf(&quot;%s/u%d&quot;, t, i), Tenant: t}
+            for _, g := range groups {
+                if r.Intn(2) == 0 {
+                    u.Groups = append(u.Groups, g)
+                }
+            }
+            users = append(users, u)
+        }
+        w.Users = append(w.Users, users...)
+        for i := 0; i &lt; 3+r.Intn(6); i++ {
+            d := Doc{ID: fmt.Sprintf(&quot;docs:%s-%d&quot;, t, i), Tenant: t, Version: 1 + r.Intn(20), Live: map[string]ports.Verdict{}, Missing: r.Intn(10) == 0, Public: r.Intn(7) == 0}
+            for _, g := range groups {
+                if r.Intn(2) == 0 {
+                    d.Prefilter = append(d.Prefilter, g)
+                }
+            }
+            for _, u := range users {
+                if r.Intn(4) == 0 {
+                    d.Prefilter = append(d.Prefilter, u.ID)
+                }
+                switch n := r.Intn(10); {
+                case n &lt; 6:
+                    d.Live[u.ID] = ports.VerdictAllow
+                case n &lt; 9:
+                    d.Live[u.ID] = ports.VerdictDeny
+                } // else: absent, so Unknown
+            }
+            w.Docs = append(w.Docs, d)
+        }
+    }
+    if r.Intn(4) == 0 {
+        w.Fault = FaultTimeout
+    }
+    w.NoReceipt = r.Intn(3) == 0
+    return w
+}
+
+func (w *World) doc(id string) (Doc, bool) {
+    for _, d := range w.Docs {
+        if d.ID == id {
+            return d, true
+        }
+    }
+    return Doc{}, false
+}
+
+// user looks up a generated user; an unknown id is a harness bug, so it panics.
+func (w *World) user(id string) User {
+    for _, u := range w.Users {
+        if u.ID == id {
+            return u
+        }
+    }
+    panic(&quot;laws: unknown user &quot; + id)
+}
+
+// ACL is the live source check a system under test must call. It records the call.
+func (w *World) ACL(userID, docID string) ports.Verdict {
+    w.asked[userID+&quot;|&quot;+docID] = true
+    d, ok := w.doc(docID)
+    if !ok || d.Missing || w.Fault == FaultTimeout {
+        return ports.VerdictUnknown
+    }
+    if d.Public {
+        return ports.VerdictAllow
+    }
+    return d.Live[userID] // zero value is VerdictUnknown
+}
+
+// PrefilterMatch is what an index prefilter would say. It may be stale.
+func (w *World) PrefilterMatch(userID, docID string) bool {
+    d, ok := w.doc(docID)
+    if !ok {
+        return false
+    }
+    u := w.user(userID)
+    for _, p := range d.Prefilter {
+        if p == u.ID {
+            return true
+        }
+        for _, g := range u.Groups {
+            if p == g {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+// Audit records a write-ahead audit row for a tool call.
+func (w *World) Audit(call, approval string) {
+    w.Log = append(w.Log, Event{Kind: &quot;audit&quot;, Call: call, Approval: approval})
+}
+
+// Act performs a tool call against the target and returns its receipt (&quot;&quot; if none).
+func (w *World) Act(call string) string {
+    rc := &quot;rcpt_&quot; + call
+    if w.NoReceipt {
+        rc = &quot;&quot;
+    }
+    w.Log = append(w.Log, Event{Kind: &quot;exec&quot;, Call: call, Receipt: rc})
+    return rc
+}
+
+// truthAllow is ground truth for checks: does the source allow this right now?
+// It doesn't record a call.
+func (w *World) truthAllow(userID, docID string) bool {
+    d, ok := w.doc(docID)
+    return ok &amp;&amp; !d.Missing &amp;&amp; w.Fault != FaultTimeout &amp;&amp; (d.Public || d.Live[userID] == ports.VerdictAllow)
+}
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/world.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

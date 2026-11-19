@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contributing · Second Brain</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="active" href="index.html">Home</a><a class="" href="manual/sb-tour.7.html">Tour</a><a class="" href="manual/README.html">Manual</a><a class="" href="docs/README.html">Design</a><a class="" href="epics/README.html">Plan</a><a class="" href="devlog.html">Devlog</a><a class="" href="examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Start here</h4><a href="README.html">Second Brain</a><a class="current" href="CONTRIBUTING.html">Contributing</a><a href="docs/00-problem-statement.html">Problem Statement</a><a href="manual/sb-tour.7.html">sb-tour(7)</a><a href="manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="docs/03-prd.html">Second Brain: Product Requirements Document</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="index.html">second brain</a> / </div><h1 id="contributing">Contributing</h1>
+<h2 id="the-workflow">The workflow</h2>
+<ol>
+<li><strong>Pick a ticket.</strong> Take the lowest open wave and slice in <a href="epics/README.html">epics/</a>. Check its dependencies are done.</li>
+<li><strong>Write the manual first.</strong> Update the man pages listed on the ticket and get them reviewed (ADR-0009). CI rejects behaviour changes without a <code>manual/</code> diff.</li>
+<li><strong>Write the laws.</strong> Add or extend the ticket's law tests in <code>laws/</code>, plus regression tests. They should fail first, for the right reason.</li>
+<li><strong>Implement</strong> behind the ports in <code>internal/core</code>. Follow the <a href="docs/06-engineering-standards.html">engineering standards</a>. No vendor import in the core.</li>
+<li><strong>Make it green:</strong> <code>make check</code> (it must pass on a clean clone). If you touched approvals, rollout or permissions, run <code>make proofs</code> and <code>make crosscheck</code> too. If a law your ticket implements turns green, take it off <code>laws/expected_red.txt</code>; the ratchet will tell you.</li>
+<li><strong>Update the living docs:</strong> a <a href="living/DEVLOG.html">devlog</a> entry (always), the <a href="living/ASSURANCE_LEDGER.html">assurance ledger</a>, the <a href="living/CHANGELOG.html">changelog</a>, and <a href="living/BUGS_AND_MITIGATIONS.html">bugs</a> if you fixed one.</li>
+<li><strong>Open a PR</strong> titled <code>SB-123: summary</code> and tick the <a href="docs/05-living-documents.html#definition-of-done">Definition of Done</a>.</li>
+</ol>
+<h2 id="ground-rules">Ground rules</h2>
+<ul>
+<li><strong>Unknown is refusal.</strong> No flag, option or environment variable changes that.</li>
+<li><strong>Three lines beat ten</strong> (P3). If a reviewer can delete half your diff and keep the behaviour, they will ask you to.</li>
+<li>Two reviewers, one from security, for <code>policy</code>, <code>audit</code>, <code>toolbus</code>, <code>approvals</code>, <code>actions</code>, <code>release</code>, <code>proofs</code> and <code>evals/gate.yaml</code>.</li>
+<li>Every bug fix comes with a regression test and an answer to "which law should have caught this?".</li>
+<li>Never delete a regression or smoke test.</li>
+<li>Never hard-code a cloud account id or assume the factory holds a cell's keys. Read the custody record (ADR-0015, SB-114).</li>
+<li>No customer names in code, docs, fixtures or commit messages. Use <code>acme-logistics</code>, <code>beta-freight</code>, <code>gamma-parts</code>.</li>
+</ul>
+<h2 id="docs">Docs</h2>
+<pre><code class="language-sh">pip install markdown
+make docs          # python3 tools/site/build.py &amp;&amp; python3 tools/check/links.py site
+</code></pre><p class="srcline">Source: <code>CONTRIBUTING.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#the-workflow">The workflow</a></li><li class="l2"><a href="#ground-rules">Ground rules</a></li><li class="l2"><a href="#docs">Docs</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="";</script>
+<script src="assets/search-index.js"></script>
+<script src="assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

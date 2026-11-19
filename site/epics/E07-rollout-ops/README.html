@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E07 Roll-out, Admin and Operations · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a class="current" href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E07</h4><a href="../../epics/E07-rollout-ops/SB-601-sb-tenant-verify-on-real-data.html">SB-601: sb tenant verify on real data</a><a href="../../epics/E07-rollout-ops/SB-602-admin-console-where-every-action-is-a.html">SB-602: Admin console where every action is a manifest diff</a><a href="../../epics/E07-rollout-ops/SB-603-roles-in-the-console.html">SB-603: Roles in the console</a><a href="../../epics/E07-rollout-ops/SB-604-sb-onboarding-7-day-0-to-90-runbook.html">SB-604: sb-onboarding(7) day 0 to 90 runbook</a><a href="../../epics/E07-rollout-ops/SB-605-friendly-tenant-onboarding-unaided.html">SB-605: Friendly-tenant onboarding, unaided</a><a href="../../epics/E07-rollout-ops/SB-606-weekly-leadership-report.html">SB-606: Weekly leadership report</a><a href="../../epics/E07-rollout-ops/SB-607-per-tenant-observability.html">SB-607: Per-tenant observability</a><a href="../../epics/E07-rollout-ops/SB-608-sev-1-alert-for-every-law-violation.html">SB-608: Sev-1 alert for every law violation</a><a href="../../epics/E07-rollout-ops/SB-609-cost-controls.html">SB-609: Cost controls</a><a href="../../epics/E07-rollout-ops/SB-611-retention-and-deletion.html">SB-611: Retention and deletion</a><a href="../../epics/E07-rollout-ops/SB-612-external-penetration-test-and-threat-model.html">SB-612: External penetration test and threat model refresh</a><a href="../../epics/E07-rollout-ops/SB-613-disaster-recovery-game-day.html">SB-613: Disaster-recovery game day</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E07-rollout-ops</div><h1 id="e07-roll-out-admin-and-operations">E07: Roll-out, Admin and Operations</h1>
+<blockquote>
+<p>A company onboards itself with one file and three commands, and operators can see and control every tenant.</p>
+</blockquote>
+<p><strong>Waves:</strong> W6 · <strong>Tickets:</strong> 12 · <strong>Stories:</strong> 6</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-07.1</strong>: As a <em>company IT operator</em>, I want to onboard my company with one file and three commands, without calling the platform team, so that we go live in days. Delivered by <a href="SB-601-sb-tenant-verify-on-real-data.html">SB-601</a>, <a href="SB-604-sb-onboarding-7-day-0-to-90-runbook.html">SB-604</a>, <a href="SB-605-friendly-tenant-onboarding-unaided.html">SB-605</a>.</li>
+<li><strong>US-07.2</strong>: As a <em>company IT operator</em>, I want a console for connectors, agents, approval rules and kill switches, so that I don't need to learn YAML to operate. Delivered by <a href="SB-602-admin-console-where-every-action-is-a.html">SB-602</a>, <a href="SB-603-roles-in-the-console.html">SB-603</a>.</li>
+<li><strong>US-07.3</strong>: As a <em>company leader</em>, I want a weekly report on usage, citations and approvals, so that I know if this is working. Delivered by <a href="SB-606-weekly-leadership-report.html">SB-606</a>.</li>
+<li><strong>US-07.4</strong>: As an <em>on-call operator</em>, I want health, cost, freshness and law violations per tenant, so that I see problems before users do. Delivered by <a href="SB-607-per-tenant-observability.html">SB-607</a>, <a href="SB-608-sev-1-alert-for-every-law-violation.html">SB-608</a>, <a href="SB-609-cost-controls.html">SB-609</a>.</li>
+<li><strong>US-07.5</strong>: As a <em>data protection officer</em>, I want retention and deletion to follow the manifest, so that we meet our obligations by configuration. Delivered by <a href="SB-611-retention-and-deletion.html">SB-611</a>.</li>
+<li><strong>US-07.6</strong>: As a <em>parent-org security lead</em>, I want independent testing and a disaster-recovery game day, so that we trust the platform before scaling it. Delivered by <a href="SB-612-external-penetration-test-and-threat-model.html">SB-612</a>, <a href="SB-613-disaster-recovery-game-day.html">SB-613</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB601[&quot;SB-601&lt;br/&gt;sb tenant verify on real data&quot;]
+  SB602[&quot;SB-602&lt;br/&gt;Admin console where every…&quot;]
+  SB603[&quot;SB-603&lt;br/&gt;Roles in the console&quot;]
+  SB604[&quot;SB-604&lt;br/&gt;sb-onboarding(7) day 0 to 90…&quot;]
+  SB605[&quot;SB-605&lt;br/&gt;Friendly-tenant onboarding,…&quot;]
+  SB606[&quot;SB-606&lt;br/&gt;Weekly leadership report&quot;]
+  SB607[&quot;SB-607&lt;br/&gt;Per-tenant observability&quot;]
+  SB608[&quot;SB-608&lt;br/&gt;Sev-1 alert for every law…&quot;]
+  SB609[&quot;SB-609&lt;br/&gt;Cost controls&quot;]
+  SB611[&quot;SB-611&lt;br/&gt;Retention and deletion&quot;]
+  SB612[&quot;SB-612&lt;br/&gt;External penetration test and…&quot;]
+  SB613[&quot;SB-613&lt;br/&gt;Disaster-recovery game day&quot;]
+  SB602 --&gt; SB603
+  SB601 --&gt; SB604
+  SB604 --&gt; SB605
+  SB607 --&gt; SB606
+  SB607 --&gt; SB608
+  SB607 --&gt; SB609
+  SB605 --&gt; SB612
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-601-sb-tenant-verify-on-real-data.html">SB-601</a></td>
+<td>W6 / S6.1</td>
+<td><code>sb tenant verify</code> on real data</td>
+<td>LAW-01, LAW-02, LAW-03, LAW-14</td>
+</tr>
+<tr>
+<td><a href="SB-602-admin-console-where-every-action-is-a.html">SB-602</a></td>
+<td>W6 / S6.1</td>
+<td>Admin console where every action is a manifest diff</td>
+<td>LAW-16</td>
+</tr>
+<tr>
+<td><a href="SB-603-roles-in-the-console.html">SB-603</a></td>
+<td>W6 / S6.1</td>
+<td>Roles in the console</td>
+<td>LAW-02</td>
+</tr>
+<tr>
+<td><a href="SB-604-sb-onboarding-7-day-0-to-90-runbook.html">SB-604</a></td>
+<td>W6 / S6.2</td>
+<td><code>sb-onboarding(7)</code> day 0 to 90 runbook</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-605-friendly-tenant-onboarding-unaided.html">SB-605</a></td>
+<td>W6 / S6.2</td>
+<td>Friendly-tenant onboarding, unaided</td>
+<td>LAW-01, LAW-02, LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-606-weekly-leadership-report.html">SB-606</a></td>
+<td>W6 / S6.2</td>
+<td>Weekly leadership report</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-607-per-tenant-observability.html">SB-607</a></td>
+<td>W6 / S6.3</td>
+<td>Per-tenant observability</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-608-sev-1-alert-for-every-law-violation.html">SB-608</a></td>
+<td>W6 / S6.3</td>
+<td>Sev-1 alert for every law violation</td>
+<td>LAW-01, LAW-02, LAW-06, LAW-07, LAW-11, LAW-16</td>
+</tr>
+<tr>
+<td><a href="SB-609-cost-controls.html">SB-609</a></td>
+<td>W6 / S6.3</td>
+<td>Cost controls</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-611-retention-and-deletion.html">SB-611</a></td>
+<td>W6 / S6.3</td>
+<td>Retention and deletion</td>
+<td>LAW-13</td>
+</tr>
+<tr>
+<td><a href="SB-612-external-penetration-test-and-threat-model.html">SB-612</a></td>
+<td>W6 / S6.4</td>
+<td>External penetration test and threat model refresh</td>
+<td>LAW-02, LAW-07, LAW-09</td>
+</tr>
+<tr>
+<td><a href="SB-613-disaster-recovery-game-day.html">SB-613</a></td>
+<td>W6 / S6.4</td>
+<td>Disaster-recovery game day</td>
+<td>LAW-11, LAW-13</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E07-rollout-ops/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

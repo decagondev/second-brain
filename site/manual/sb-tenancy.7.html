@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-tenancy(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a class="current" href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-TENANCY(7)</span><span>Second Brain Manual</span><span>SB-TENANCY(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-tenancy7">sb-tenancy(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-tenancy — what a tenant cell is and what it shares with nobody</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">one tenant = one cell = { database, index schema, vault namespace, KMS key, queue, region }
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>Every company is a <strong>tenant</strong>, and every tenant is served by exactly one <strong>cell</strong>, stamped from the same template (ADR-0001).</p>
+<table>
+<thead>
+<tr>
+<th>In the cell (yours alone)</th>
+<th>In the control plane (shared, no content)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Postgres database and index schema</td>
+<td>Tenant registry: name → cell endpoint, region</td>
+</tr>
+<tr>
+<td>Vault namespace with connector credentials</td>
+<td>Release controller and signed images</td>
+</tr>
+<tr>
+<td>KMS key encrypting data, backups and exports</td>
+<td>Kill-switch flags</td>
+</tr>
+<tr>
+<td>Queue and ingest workers</td>
+<td>Attestation results</td>
+</tr>
+<tr>
+<td>Audit store</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="cell-anatomy">Cell anatomy</h3>
+<p>The template (<code>internal/core/cell</code>) declares every cell the same way. It takes only <code>tenant</code> and <code>region</code> from the manifest; nothing else changes the shape of a cell.</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Name</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>database</code></td>
+<td><code>sb_TENANT</code> (hyphens become underscores)</td>
+<td>Postgres, this cell's data only</td>
+</tr>
+<tr>
+<td><code>index-schema</code></td>
+<td><code>idx</code></td>
+<td>Inside the cell database; derived, rebuilt from sources (LAW-13)</td>
+</tr>
+<tr>
+<td><code>vault-namespace</code></td>
+<td><code>tenants/TENANT</code></td>
+<td>Connector credentials</td>
+</tr>
+<tr>
+<td><code>root-key</code></td>
+<td><code>cell-TENANT-root</code></td>
+<td>Held by the <code>Keys</code> port. It wraps per-purpose data keys (envelope encryption), so the root can be re-wrapped at hand-off without re-encrypting data (LAW-18)</td>
+</tr>
+<tr>
+<td><code>queue</code></td>
+<td><code>TENANT-jobs</code></td>
+<td>Ingest and action jobs</td>
+</tr>
+</tbody>
+</table>
+<p>Every resource carries its cell's <code>tenant</code> and <code>region</code>. The provider id of each resource is unique to that cell: stamping two cells never returns a shared id, in the same account or in different ones. Stamping is idempotent: stamping a cell again finds what exists and creates only what's missing.</p>
+<p>The template never names a cloud account. The <code>Placement</code> port stamps resources into the account named by the cell's custody record. Each cloud is an adapter behind <code>Placement</code> and <code>Keys</code> (<a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018</a>). The <code>local</code> adapter (development and tests) exists now; AWS, GCP and Azure adapters come later. If a port can't say whether a resource exists, that is an error, never "absent".</p>
+<h3 id="registry-and-routing">Registry and routing</h3>
+<p>The control plane's tenant registry holds one <strong>cell record</strong> per tenant: <code>tenant</code>, <code>region</code>, the cell <code>endpoint</code>, the <code>hosts</code> that reach it (by default <code>TENANT.</code> plus the control plane's base domain), and the custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>). <code>sb tenant apply</code> writes the record when it creates a cell. v1 always writes <code>factory</code>, <code>factory-account</code> and <code>factory</code>. The registry also holds each tenant's applied resources (sb-tenant(1)). In production it is Postgres (ADR-0017); <code>file:///DIR</code> keeps it in <code>DIR/cells</code> and <code>DIR/tenants</code> for development.</p>
+<p>The edge router serves every request in the same order:</p>
+<ol>
+<li>It looks up the request's host in the registry. An unknown host is refused with <code>EPERM</code>: unknown means refuse. If the registry can't answer, the request fails with <code>EUNAVAIL</code>.</li>
+<li>It verifies the token. A missing or invalid token, or one with no tenant claim, is <code>EAUTH</code>.</li>
+<li>If the token's tenant isn't the host's tenant, the request is refused with <code>ETENANT</code>, and it never reaches any cell.</li>
+<li>Otherwise it forwards the request to that cell's endpoint and nowhere else.</li>
+</ol>
+<p>No code anywhere names a company: routing is data in the registry. A cell knows its control plane only through configuration, <code>SB_CONTROL_PLANE</code> (an https URL) and <code>SB_IDENTITY_CERT</code> (a certificate path), both required with no defaults, so it can be re-pointed, for example at hand-off (<a href="sb-factory.7.html">sb-factory(7)</a>).</p>
+<h3 id="custody">Custody</h3>
+<p>Every cell also has a custody record (<code>factory</code>, <code>tenant</code> or <code>detached</code>) that says which cloud account it lives in and who holds its root key. In v1, every cell is <code>factory</code> custody. Custody can later be handed to the company without re-onboarding (<a href="sb-factory.7.html">sb-factory(7)</a>).</p>
+<h3 id="region-pin">Region pin</h3>
+<p><code>region</code> in the manifest is immutable. The supported regions are <code>eu</code> and <code>us</code> (the working answer to Q-04). Data, backups, restores and model calls stay in that region, where the model provider offers it. Moving region means creating a new tenant and re-ingesting, because the index is derived.</p>
+<h3 id="scope-in-code">Scope in code</h3>
+<p>Inside a cell, every operation carries a <code>tenancy.Scope</code> that only the auth middleware can create. There is no API to construct one for another tenant, and no "all tenants" query exists anywhere in cell code.</p>
+<ul>
+<li>A <code>Scope</code> has unexported fields (tenant, user, groups). The only constructor is <code>Issuer.Issue</code>. A cell makes exactly one <code>Issuer</code>, for its own tenant, at start-up, and hands it only to the auth middleware. A CI check fails if <code>tenancy.NewIssuer</code> is called anywhere else outside tests.</li>
+<li><code>Issue</code> refuses a session whose tenant isn't the issuer's tenant. The zero <code>Scope</code> is invalid, and every scoped method refuses it, so a forgotten scope is an error, never "no filter".</li>
+<li>Every port method that reads or writes tenant data takes a <code>Scope</code> first and uses only <code>Scope.Tenant()</code> to choose rows. A query for another tenant's ids returns nothing, exactly as if they didn't exist.</li>
+<li>The middleware puts the scope in the request context. Handlers read it with <code>tenancy.FromContext</code>; a request without one is <code>EAUTH</code>.</li>
+</ul>
+<h3 id="off-boarding">Off-boarding</h3>
+<p>Off-boarding is a maintainer procedure, not a manifest field, and needs two approvals. It exports the audit log to the tenant, deletes the cell, and finally destroys the KMS key, which crypto-shreds anything left in backups.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-13">LAW-13</a>.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-text">$ sb tenant apply acme.yaml --plan
++ cell acme-logistics (region eu): postgres, index schema, vault ns, kms key, queue
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-factory.7.html">sb-factory(7)</a>, <a href="sb-identity.7.html">sb-identity(7)</a>, <a href="../docs/architecture/05-storage-and-index.html">05 Storage and index</a></p><p class="srcline">Source: <code>manual/sb-tenancy.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#cell-anatomy">Cell anatomy</a></li><li class="l3"><a href="#registry-and-routing">Registry and routing</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#region-pin">Region pin</a></li><li class="l3"><a href="#scope-in-code">Scope in code</a></li><li class="l3"><a href="#off-boarding">Off-boarding</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

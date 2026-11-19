@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-policy(5) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a class="current" href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-POLICY(5)</span><span>Second Brain Manual</span><span>SB-POLICY(5)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-policy5">sb-policy(5)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-policy — platform and tenant authorisation policies, written in Cedar</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">policy/schema.cedarschema          platform schema (in the release bundle)
+policy/platform/*.cedar            platform policies (in the release bundle)
+tenants/&lt;tenant&gt;/policy/*.cedar    tenant policies (next to the manifest)
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>Policies decide what principals may do with agents, tools, workflows and approvals. They don't decide who may read a source document: that's the source's live ACL (<a href="sb-permissions.7.html">sb-permissions(7)</a>). Both must say yes.</p>
+<p>Cedar is default-deny, and <code>forbid</code> always beats <code>permit</code>.</p>
+<h3 id="entities">Entities</h3>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Attributes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>User</code></td>
+<td><code>tenant</code>; member of its <code>Group</code>s</td>
+</tr>
+<tr>
+<td><code>Group</code></td>
+<td><code>tenant</code></td>
+</tr>
+<tr>
+<td><code>Document</code></td>
+<td><code>tenant</code>, <code>source</code> (connector kind)</td>
+</tr>
+<tr>
+<td><code>Chunk</code></td>
+<td><code>tenant</code>, <code>cite</code>; in its <code>Document</code></td>
+</tr>
+<tr>
+<td><code>Agent</code></td>
+<td><code>tenant</code>, <code>name</code>, <code>consequential</code></td>
+</tr>
+<tr>
+<td><code>Tool</code></td>
+<td><code>tenant</code>, <code>name</code>, <code>connector</code>, <code>consequential</code></td>
+</tr>
+<tr>
+<td><code>Workflow</code></td>
+<td><code>tenant</code>, <code>name</code>, <code>approvers</code> (group)</td>
+</tr>
+<tr>
+<td><code>ProposedAction</code></td>
+<td><code>tenant</code>, <code>workflow</code>, <code>requester</code></td>
+</tr>
+<tr>
+<td><code>Cell</code></td>
+<td><code>tenant</code></td>
+</tr>
+</tbody>
+</table>
+<p>Every entity carries <code>tenant</code>, so every rule can be scoped. The kernel sets the resource's <code>tenant</code> from the request scope when the caller leaves it empty.</p>
+<h3 id="actions">Actions</h3>
+<p>Cedar's own <code>Action</code> type names the verbs: <code>Action::"read"</code> (on <code>Chunk</code> or <code>Document</code>), <code>"use_agent"</code>, <code>"call_tool"</code>, <code>"propose"</code>, <code>"approve"</code>, <code>"admin"</code>.</p>
+<h3 id="rules-ci-enforces">Rules CI enforces</h3>
+<ol>
+<li>Every file validates against the schema.</li>
+<li>Every <code>permit</code> has a <code>principal.tenant == resource.tenant</code> condition, or is in <code>policy/platform/</code> and carries one in its <code>when</code> (SB-112).</li>
+<li>Tenant policies can only <strong>narrow</strong> platform policy: they may add <code>forbid</code>s, and <code>permit</code>s only for <code>use_agent</code>, <code>propose</code> and <code>approve</code> within the tenant.</li>
+<li>A PR that changes policy shows the permission diff: which principals gained or lost which actions.</li>
+</ol>
+<p><code>make policy</code> (part of <code>make check</code>) runs rules 1 to 3 with <code>tools/check/policy.py</code>. On a pull request, CI also runs <code>tools/check/policy.py --diff BASE</code>, which evaluates a fixed matrix of members, groups, actions and resources against the old and new policies and prints each permission gained (<code>+</code>) or lost (<code>-</code>).</p>
+<h2 id="examples">EXAMPLES</h2>
+<p>Platform base (shipped):</p>
+<pre><code class="language-cedar">permit (principal, action == Action::&quot;read&quot;, resource is Chunk)
+when { principal.tenant == resource.tenant };
+
+forbid (principal, action == Action::&quot;approve&quot;, resource is ProposedAction)
+when { resource.requester == principal };
+</code></pre>
+<p>Tenant policy: only the finance group may use <code>draft-reply</code> on finance tickets.</p>
+<pre><code class="language-cedar">forbid (principal, action == Action::&quot;use_agent&quot;, resource == Agent::&quot;draft-reply&quot;)
+when { context has target_project &amp;&amp; context.target_project == &quot;FIN&quot; &amp;&amp; !(principal in Group::&quot;grp_finance&quot;) };
+</code></pre>
+<p>Approvers for the tenant's workflow:</p>
+<pre><code class="language-cedar">permit (principal in Group::&quot;grp_it_leads&quot;, action == Action::&quot;approve&quot;, resource is ProposedAction)
+when { resource.workflow == &quot;ticket-update&quot; &amp;&amp; principal.tenant == resource.tenant };
+</code></pre>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-15">LAW-15</a>.</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="../docs/architecture/02-policy-engine.html">02 Policy engine</a>, <a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008</a></p><p class="srcline">Source: <code>manual/sb-policy.5.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#entities">Entities</a></li><li class="l3"><a href="#actions">Actions</a></li><li class="l3"><a href="#rules-ci-enforces">Rules CI enforces</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

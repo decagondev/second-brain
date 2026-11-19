@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Devlog · Second Brain</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="index.html">Home</a><a class="" href="manual/sb-tour.7.html">Tour</a><a class="" href="manual/README.html">Manual</a><a class="" href="docs/README.html">Design</a><a class="" href="epics/README.html">Plan</a><a class="active" href="devlog.html">Devlog</a><a class="" href="examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Living documents</h4><a class="current" href="devlog.html">Devlog timeline</a><a href="living/ASSURANCE_LEDGER.html">Assurance Ledger</a><a href="living/BUGS_AND_MITIGATIONS.html">Bugs and Mitigations</a><a href="living/CHANGELOG.html">Changelog</a><a href="living/DEVLOG.html">Devlog</a><a href="living/GLOSSARY.html">Glossary</a><a href="living/OPEN_QUESTIONS.html">Open Questions</a><a href="living/RISKS.html">Risks</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="index.html">second brain</a> / devlog</div><h1>Devlog</h1><p class="lede">The running story of Second Brain, newest first. Every PR adds an entry, and so does every significant design step. The <b>Learned</b> line is the most valuable part.</p><p class="views"><a href="living/DEVLOG.html">Plain view</a> · <a href="living/BUGS_AND_MITIGATIONS.html">Bugs and mitigations</a> · <a href="living/ASSURANCE_LEDGER.html">Assurance ledger</a> · <a href="living/RISKS.html">Risks</a> · <a href="living/OPEN_QUESTIONS.html">Open questions</a></p><div class="timeline"><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-114 Factory seams (design note) and W1 status</h2><p><strong>Wave/slice:</strong> W1 / S1.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The last W1 ticket. It adds the custody constants (one file), a custody lint, read-only <code>sb factory status</code>, and the first LAW-18 law test. The manual changed first: sb-factory(7) now covers status output and the lint.</p>
+<p><strong>Design note, every hand-off seam and its test:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Seam</th>
+<th>Where</th>
+<th>Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>)</td>
+<td>registry (<code>cells</code> table, <code>localfs</code>), <code>ports.CellRecord</code></td>
+<td><code>registrytest.Contract</code> (Postgres and local), <code>TestTenantApply</code> smoke</td>
+</tr>
+<tr>
+<td>Custody values in one place</td>
+<td><code>internal/core/cell/custody.go</code></td>
+<td><code>tools/check/custody.py</code> with self-test</td>
+</tr>
+<tr>
+<td>No hard-coded account</td>
+<td><code>Placement</code> port; local adapter stamps into <code>factory-account</code></td>
+<td><code>celltest.Contract</code> (two mock accounts), custody lint</td>
+</tr>
+<tr>
+<td>Envelope key hierarchy</td>
+<td><code>Keys</code> port, <code>cell.NewDataKey</code></td>
+<td><code>celltest.Contract</code> envelope test, <code>TestLAW18_RootKeyAlwaysHasACustodian</code></td>
+</tr>
+<tr>
+<td>Custody isn't a manifest field</td>
+<td><code>manifest</code> forbidden names</td>
+<td>golden <code>invalid.expected</code>, <code>TestEveryErrorMessage</code></td>
+</tr>
+<tr>
+<td>Cell can be re-pointed</td>
+<td><code>cell.LoadConfig</code> (<code>SB_CONTROL_PLANE</code>, <code>SB_IDENTITY_CERT</code>)</td>
+<td><code>TestConfig</code></td>
+</tr>
+<tr>
+<td>Read-only view</td>
+<td><code>sb factory status</code></td>
+<td>smoke</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why this way:</strong> Hand-off (W7) only works if no code in W1 to W6 assumes the factory holds a cell. With each assumption behind a seam that has a test, W7 becomes a matter of new adapters and a workflow, not a refactor.</p>
+<p><strong>Learned:</strong> This law test had no red phase, because the code it tests landed in earlier tickets. The self-test's mutations stand in for it. That's worth stating rather than hiding.</p>
+<p><strong>Laws:</strong> LAW-18 moves from Modelled to Tested.</p>
+<p><strong>W1 status:</strong> all 13 tickets are In review, <code>make check</code>, <code>make integration</code> and <code>make proofs</code> are green in WSL, and laws stand at 32 tests with 5 expected red (retrieval and tool-call levels, W3 and W4). What's left for every W1 ticket: the user's review and the first CI run (the folder isn't a git repository yet). Real-cloud items (30-minute cell, staging timing, IaC module) wait for a cloud adapter (ADR-0018).</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-112 Policy analysis in CI</h2><p><strong>Wave/slice:</strong> W1 / S1.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> One script, <code>tools/check/policy.py</code>, runs schema validation, the tenant-condition rule and the tenant-policy narrowing rule on every <code>make check</code>. It also produces a permission diff for pull requests. The manual changed first: sb-policy(5) now says how CI enforces its rules.</p>
+<p><strong>Why this way:</strong> A permission diff computed by evaluating a fixed matrix shows what reviewers care about ("IT leads gained approve"), not a text diff of Cedar. The static tenant check complements SB-110's dynamic law test: the static check catches the rule being broken in the source, and the dynamic test catches it being broken in effect.</p>
+<p><strong>Learned:</strong> After BUG-0005, every new checker in this repo has a self-test that runs before it scans. That cost three lines here and would have caught that bug immediately.</p>
+<p><strong>Laws:</strong> LAW-02 is guarded statically and dynamically at the policy level. Status is unchanged (Tested, red, until SB-301).</p>
+<p><strong>Next:</strong> SB-114, factory seams (custody record, placement, key hierarchy), the last W1 ticket.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-111 Policy decisions are audited</h2><p><strong>Wave/slice:</strong> W1 / S1.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The kernel became a value, <code>policy.Kernel</code> (engine plus recorder), and the free <code>Authorise</code> function is gone. Every decision that must be audited is written before it is returned, and a failed write turns it into <code>Unknown</code>. Read allows are sampled. The manual changed first: sb-audit(7) gained "Policy decisions".</p>
+<p><strong>Why this way:</strong> As long as the free function existed, code could ask without being audited. Removing it makes "every decision is audited" true by construction rather than by review. Treating a failed audit write as <code>Unknown</code> applies LAW-04's audit-before-act at the decision itself: if we can't prove we decided, we didn't. Only read allows are sampled, because they're the high-volume, low-risk path, and refusals always matter.</p>
+<p><strong>Learned:</strong> The existing <code>LAW-04 SB-405</code> ratchet line was law-wide, so a green decision-level test would have been reported as "LAW-04 is green". The per-test lines from SB-103 made the change one line.</p>
+<p><strong>Laws:</strong> LAW-04 stays Tested (red), with the decision level now green. The tool-call level stays red until SB-405.</p>
+<p><strong>Next:</strong> SB-112, policy analysis in CI: schema validation, the tenant-condition check, and permission diffs.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-110 Cedar schema and base policies</h2><p><strong>Wave/slice:</strong> W1 / S1.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The schema now covers documents and gives every entity a tenant. Base policies scope every permit. A new law test evaluates the real platform and example tenant policies with the kernel's tenant guard turned off. The manual changed first: the sb-policy(5) entity table and actions.</p>
+<p><strong>Why this way:</strong> The kernel guard (SB-109) and the policies are two independent layers. Testing the policies with the guard off shows each layer holds alone, so removing either one can't silently open a cross-tenant path.</p>
+<p><strong>Learned:</strong> The test was red on its first run for a real reason. The shipped <code>use_agent ask</code> permit had no tenant condition (BUG-0006), and the rule against that existed only in prose. That's the second guardrail this session that existed only on paper (after BUG-0005). The pattern holds: write the test that would fail, run it, and only then believe the rule.</p>
+<p><strong>Laws:</strong> LAW-02 stays Tested (red), with the policy level now green and a self-test for a tenant-less permit. Only retrieval (SB-301) is still red.</p>
+<p><strong>Next:</strong> SB-111, policy decisions are audited.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-109 Policy kernel: three answers, Unknown refuses</h2><p><strong>Wave/slice:</strong> W1 / S1.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> <code>policy.Authorise</code> is the single entry point and <code>policy.Require</code> the caller helper. The Cedar adapter runs on cedar-go v1.8.0, now vendored. The kernel owns everything that can go wrong around the engine: deadline, panic, error, invalid value, missing scope and another tenant's resource. Each of these is <code>Unknown</code> or <code>Deny</code>, never <code>Allow</code>. A new lint, <code>decisions.py</code>, plus <code>exhaustive</code>, stops callers from writing "not denied" or hiding Unknown behind <code>default:</code>. The manual changed first: sb-permissions(7) gained "The policy kernel".</p>
+<p><strong>Why this way:</strong> Cedar itself is default-deny, but LAW-03 is about everything around Cedar: timeouts, crashes and erroring policies, which Cedar skips. Putting those rules in the kernel, not the adapter, means a future engine can't weaken them. The principal comes only from the Scope, so a caller can't authorise as someone else.</p>
+<p><strong>Learned:</strong> cedar-go reports a policy that errors during evaluation in <code>Diagnostic.Errors</code> and otherwise treats it as not applying. That can turn a broken <code>forbid</code> into an Allow. The adapter maps any evaluation error to <code>Unknown</code>, and a test pins it. Mindful of BUG-0005, the new lint runs a self-test before it scans, so it can't silently stop matching. Vendoring cedar-go pulled in 6 MB of its test-corpus archives, because <code>go mod vendor</code> copies whole package directories. That's accepted for now and noted for the SBOM work (SB-504).</p>
+<p><strong>Laws:</strong> LAW-03 stays Tested (red), with the policy level now green. <code>TestLAW03_PolicyUnknownRefuses</code> allows only when a clean engine said Allow for an own-tenant resource with a valid scope. A caller using <code>!= Deny</code> is caught.</p>
+<p><strong>Next:</strong> SB-110, the Cedar schema and base policies validated in CI with cedar-go.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-108 Tenant scope as a type</h2><p><strong>Wave/slice:</strong> W1 / S1.3 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> <code>tenancy.Scope</code> can only be made by the cell's single <code>Issuer</code>, which only the auth middleware holds. The middleware issues the scope after authentication and a directory read of groups, and puts it in the request context. The first cell-data port (<code>People</code>) takes a scope on every method and refuses the zero scope. The manual changed first: sb-tenancy(7) "Scope in code" gained the rules, and the architecture dependency table now lets ports import <code>core/tenancy</code>.</p>
+<p><strong>Why this way:</strong> Go has no "friend" access, so "only auth can make a Scope" is two things: a type with unexported fields and a single constructor on a capability (<code>Issuer</code>), plus a CI rule on who may create the capability. The zero scope is invalid rather than "all tenants", so forgetting a scope fails loudly.</p>
+<p><strong>Learned:</strong> The CI rule was useless at first. A heredoc turned its <code>\b</code> into a backspace character, so it matched nothing (BUG-0005). It was found only because I mutation-checked the rule by adding a violating file. A guardrail without a test isn't a guardrail, and the rule now has a regression test. I then scanned the repository for control characters: none are left.</p>
+<p><strong>Laws:</strong> LAW-02 stays Tested (red). It now has green tests at the cell, routing, sign-in and scope levels; only retrieval (SB-301) is red. <code>TestLAW02_ScopeIsTheOnlyWayIn</code> seeds users of three tenants into one shared store, as the worst case. It requires that only the cell's own tenant's sessions get a scope, that lookups find exactly own-tenant users, that groups are the user's own, and that a scope-less lookup is an error.</p>
+<p><strong>Next:</strong> SB-109, the policy kernel on cedar-go (ADR-0017).</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-107 SCIM and fast deprovisioning</h2><p><strong>Wave/slice:</strong> W1 / S1.3 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> Each cell has a SCIM 2.0 endpoint, which is the only way users and groups enter its directory. A deactivate, whether by <code>PATCH</code>, <code>PUT</code> or <code>DELETE</code>, revokes the user's sessions before the response. Groups are read at decision time. The manual changed first: sb-identity(7) gained the SCIM table and the order of deactivation.</p>
+<p><strong>Why this way:</strong> There are two independent mechanisms: immediate revocation, and re-validation every 60 seconds. Each alone meets the 5-minute bound, so losing one doesn't break LAW-12. A revocation failure fails the SCIM request, because a <code>200</code> that didn't revoke would tell the IdP the leaver is gone when they aren't. <code>DELETE</code> keeps the user, inactive, so the audit trail can still name them.</p>
+<p><strong>Learned:</strong> The law test had to check collateral damage as well. A "revoke everything" implementation passes the leaver check, so the test also requires active users to keep working. Real IdPs differ in small ways, for example <code>op: "Replace"</code> and <code>"value": "False"</code>. The endpoint accepts those, and a test pins them.</p>
+<p><strong>Laws:</strong> LAW-12 moves from Stated to Tested. <code>TestLAW12_DeprovisionRevokesFast</code> provisions 2 to 4 users through SCIM, deactivates one, then replays requests over 20 minutes of fake time. Half the runs drop the revocation fan-out. No request from the leaver may succeed at 5 minutes or later, and every other user must keep being served.</p>
+<p><strong>Next:</strong> SB-108, the tenant-scoped request context (<code>tenancy.Scope</code>) and the session-level LAW-02 test.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-106 OIDC sign-in per tenant</h2><p><strong>Wave/slice:</strong> W1 / S1.3 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> Each cell signs users in with its own tenant's IdP, using the code flow with PKCE, a state and a nonce. It verifies the ID token itself, with RS256 over the issuer's key set, and checks issuer, audience, time, nonce, tenant and subject, all standard library. Sessions follow sb-identity(7): 12 hours with no extension, re-validated every 60 seconds against the directory. A user the directory doesn't know never gets a session. The manual changed first: sb-identity(7) gained the check table and session wording.</p>
+<p><strong>Why this way:</strong> JWT verification is small enough to own, and owning it lets us refuse everything except RS256 with a known <code>kid</code>. That closes the classic <code>alg: none</code> and algorithm-confusion holes by construction. The tenant claim is checked twice: by the cell's provider and by the edge, so either alone stops a cross-tenant sign-in. Sessions are per cell, so a stolen session id is worthless in another cell.</p>
+<p><strong>Learned:</strong> Refreshing the key set on every unknown <code>kid</code> would let anyone with a forged token make the cell hammer the company's IdP. Refreshes are now limited to one a minute, with a test. The cost is up to a minute's delay after a key rotation, and that's now in the manual. httptest TLS servers share one certificate, which made the two-IdP browser fixture simpler than expected.</p>
+<p><strong>Laws:</strong> LAW-02 stays Tested (red). <code>TestLAW02_TokensStayInTheirTenant</code> mints tokens with a random issuer (including an unknown IdP), signer, tenant claim and audience, and presents each at a random cell. It requires exactly the well-formed, own-tenant tokens to sign in. A cell that ignores the tenant claim is caught. The test was red (<code>not implemented</code>) before the adapter existed.</p>
+<p><strong>Next:</strong> SB-107, SCIM provisioning and fast deprovisioning, with the LAW-12 law test on a fake clock.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-105 Tenant registry in Postgres, and the edge router</h2><p><strong>Wave/slice:</strong> W1 / S1.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The registry now holds cell records (endpoint, hosts and custody) next to applied resources and the journal. There are two adapters, Postgres (pgx v5.8.0, the first vendored module, 7.9 MB) and the local directory, and one contract test both must pass. The edge router (<code>internal/edge</code>) refuses with coded JSON errors and forwards only to the host's cell. Apply writes the cell record when it creates a cell. Cells read their control plane from required configuration. The user installed Postgres 17 in WSL, so the Postgres adapter is tested against a real database, and CI gets a <code>postgres</code> job. The manual changed first: sb-tenancy(7) "Registry and routing".</p>
+<p><strong>Why this way:</strong> Routing is data, so no code names a company. The host decides the cell and the token can only confirm it, never redirect it. That's why a router that "helpfully" routes by the token's tenant is the mutation the self-test must catch. A shared host is impossible by schema (primary key), not by a check that could be skipped. The edge sits outside <code>internal/core</code>, because it speaks HTTP and the error registry.</p>
+<p><strong>Learned:</strong> The request-level law found a hole on its first green run: a valid token with an empty tenant claim. The router said <code>EAUTH</code> and the law said <code>ETENANT</code>. <code>EAUTH</code> is right (that token isn't sign-in for any cell), and the manual now says so. A contract test pays off at once: the local adapter needed a <code>tenants/</code> directory to count as an empty registry, which is the same "unknown is not absent" rule written down for a second adapter.</p>
+<p><strong>Laws:</strong> LAW-02 stays Tested (red) overall. <code>TestLAW02_RequestsNeverCrossTenants</code> drives the real router over HTTP with 2 or 3 cells, extra hosts, unknown hosts, bad and foreign tokens. It requires exactly <code>EPERM</code>/<code>EAUTH</code>/<code>ETENANT</code>, or forwarding to the host's own cell. It went red (<code>not implemented</code>) before the router existed.</p>
+<p><strong>Next:</strong> SB-106, OIDC sign-in per tenant, which fills the token-verifier port.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>ADR-0017 First third-party modules, allow-listed</h2><p><strong>Wave/slice:</strong> W1 / S1.2–S1.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> Accepted</p>
+<p><strong>What:</strong> The user approved cedar-go and pgx/v5. ADR-0017 pins cedar-go v1.8.0 and pgx v5.8.0, plus six transitive modules. <code>tools/deps/allowed.txt</code> holds every <code>go.sum</code> line we accept, and <code>make deps</code> now fails on any other <code>go.sum</code> line or <code>go.mod</code> requirement. Mutation-checked: adding <code>require github.com/evil/mod v1.0.0</code> fails <code>make deps</code>, and removing it passes again. <code>go.mod</code> has no <code>require</code> yet; each module is vendored when SB-105 or SB-109 first imports it.</p>
+<p><strong>Why this way:</strong> <code>go.sum</code> proves the bytes, not the intent. With an allow-list, a new module, or a version bump that pulls in a new indirect module, is a visible line in review.</p>
+<p><strong>Learned:</strong> The newest cedar-go needs Go 1.26 and the newest pgx needs Go 1.25. <code>go get</code> silently upgraded the probe module's toolchain to 1.26 until <code>GOTOOLCHAIN=local</code> stopped it. Without that pin, CI would build with a different Go than <code>tools/versions.env</code> says.</p>
+<p><strong>Laws:</strong> none directly. This is supply-chain groundwork for LAW-06 (only signed, gated builds run).</p>
+<p><strong>Next:</strong> SB-105 (registry and router), then SB-106 to SB-109.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-104 Idempotent, resumable `sb tenant apply`</h2><p><strong>Wave/slice:</strong> W1 / S1.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> <code>internal/core/apply</code> enacts the SB-102 plan. It stamps a new cell first, through the SB-103 template, then records each change in the registry, with a write-ahead journal entry before and after each step. The new ports are <code>RegistryWriter</code> and <code>Journal</code>. The local control plane (<code>file:///DIR</code>) implements them in <code>localfs</code>, and stamps into <code>DIR/accounts/factory-account</code>, the v1 placement from sb-factory(7). The manual changed first: sb-tenant(1) "How apply works", and sb(1) describes the local control plane layout.</p>
+<p><strong>Why this way:</strong> Resumability comes from idempotent steps, not from replaying a journal. Stamping finds what exists, and each registry write is the whole state after one change. A rerun therefore just plans what is left. The journal is for people and for audit (SB-401), not for recovery, so a lost journal can't corrupt a cell. The cell is recorded only after every resource exists, so a recorded cell is always a complete one. A no-change apply returns before taking an apply id, so it really does write nothing.</p>
+<p><strong>Learned:</strong> The crash test counts writes and fails each one in turn. It found no bug, but writing it showed that "finding" a resource has to cost nothing: a no-change re-stamp that counted as a write would have broken "touches nothing". The fakes now count only creations.</p>
+<p><strong>Laws:</strong> LAW-16 stays Tested. <code>TestLAW16_ApplyMakesTheCellMatch</code> applies two random manifests in turn on the real local control plane. It requires the recorded state to equal the second manifest's resources, and a repeat apply to change nothing. An applier that skips removals is caught.</p>
+<p><strong>Next:</strong> SB-105, the control-plane tenant registry. Ask about ADR-0017 (cedar-go, pgx) before SB-109.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-103 Cell template behind Placement and Keys</h2><p><strong>Wave/slice:</strong> W1 / S1.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The user decided that cells are cloud-neutral, with a local adapter now and AWS, GCP and Azure later (ADR-0018). The template is Go in <code>internal/core/cell</code>: five resources, each named from the tenant and pinned to the region. <code>Stamp</code> applies it through two new small ports. <code>Placement</code> finds or creates resources in one account, and <code>Keys</code> holds the root key and wraps data keys. <code>celltest.Contract</code> is the test every adapter must pass. The <code>local</code> adapter keeps one directory per mock account and wraps keys with AES-256-GCM. The manual changed first: sb-tenancy(7) now has a Cell anatomy section.</p>
+<p><strong>Why this way:</strong> "Isolation is a property of the template" only holds if the template is code we can test. IaC text per cloud can't be unit-tested the same way, so the template lives in the core and each cloud's IaC sits behind an adapter. The ports are split by job (interface segregation), so a key store and a resource placer can come from different vendors. The core depends only on the ports (dependency inversion). Adding a cloud means adding an adapter folder that passes the contract (open for extension, closed for modification). Envelope keys now mean hand-off (LAW-18) re-wraps one root key instead of re-encrypting data.</p>
+<p><strong>Learned:</strong> The ratchet keyed expected-red by law, so a green cell-level LAW-02 test would have been reported as "LAW-02 is green" while retrieval is still red. <code>laws/expected_red.txt</code> now takes an optional test name. The cell test was listed red, failed with <code>not implemented</code>, then went green, and its line was removed. One <code>make check</code> run hit a transient missing file in <code>site/</code> while building on <code>/mnt/c</code>, and the rerun was clean. Keep an eye on it; building <code>site/</code> inside the WSL filesystem would avoid it.</p>
+<p><strong>Laws:</strong> LAW-02 stays Tested (red) overall. The new <code>TestLAW02_CellsShareNothing</code> stamps 2 or 3 tenants into one or two mock accounts, twice each. It requires unique ids, the right tenant and region on every resource, idempotent re-stamps and all five kinds. Three broken templates are caught by the self-test: one shares the database, one drops the region and one forgets the queue.</p>
+<p><strong>Next:</strong> SB-104, idempotent and resumable <code>sb tenant apply</code> on the local adapter. Ask about ADR-0017 before SB-109.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-102 `sb tenant apply --plan`</h2><p><strong>Wave/slice:</strong> W1 / S1.1 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The plan is a pure function in <code>internal/core/plan</code>: the manifest becomes a sorted list of resources, which is diffed against the applied resources from a new <code>ports.Registry</code>. The human output follows sb-tenant(1) (<code>+</code>, <code>~</code> with <code>was</code>, <code>-</code>, then a summary), and <code>--json</code> is the same plan as data. Until SB-105 there is a local registry adapter, <code>internal/adapters/registry/localfs</code>, chosen with <code>--endpoint file:///DIR</code>. The manual changed first: sb-tenant(1) gained the resource table, plan format and failure modes, and its example now shows settings. sb(1) gained <code>file://</code> endpoints.</p>
+<p><strong>Why this way:</strong> The plan is the manifest diff made concrete, so it lives in core and has no I/O. SB-104's apply engine can then enact exactly what was shown. <code>Registry.Applied</code> returns <code>found</code> separately from <code>err</code>, and the adapter returns "no cell" only when it positively knows. A missing directory or a bad record is <code>EUNAVAIL</code>, never an empty state, because an empty state would plan a second cell. That's the same rule as "unknown is refusal". The region is checked against the applied cell, which is the part of sb-tenant(5) rule 1 that <code>check</code> can't do offline.</p>
+<p><strong>Learned:</strong> Go map order would have made the plan unstable. Sorting by kind order and then name in one place, plus a test that plans 50 times and compares bytes, keeps it deterministic. Settings shown as resources make the first plan longer than the old man page example, which listed 4 lines. I updated the example rather than hide the settings, because a dry run that hides changes is worse than a long one.</p>
+<p><strong>Laws:</strong> LAW-16 stays Tested, now with a plan-side law test. For random pairs of manifests, enacting the plan on the first cell yields the second, a matching cell plans nothing, and a new cell plans only additions. Self-tests catch planners that drop removals or changes.</p>
+<p><strong>Next:</strong> SB-103 (cell template). It needs the cloud and IaC choice (Q-04, CLAUDE.md decision 1) before it starts.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-101 Manifest parser and `sb tenant check`</h2><p><strong>Wave/slice:</strong> W1 / S1.1 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> <code>internal/core/manifest</code> adds a strict YAML-subset parser that keeps the line and column of every node, a checker for every rule in sb-tenant(5), and a JSON Schema built from the same field table and vocabulary. <code>sb tenant check</code> prints compiler-format errors and exits 1 with <code>EMANIFEST</code>. The manual's <code>yaml run</code> manifests and <code>examples/tenants/*.yaml</code> now go through the real binary in <code>make examples</code>, and <code>invalid.yaml</code> must print <code>invalid.expected</code> exactly. The manual changed first: sb-tenant(5) SYNTAX and exact rules, sb-tenant(1) output format, sb-tenancy(7) regions.</p>
+<p><strong>Why this way:</strong> The parser is our own, not a YAML library, as decided for W1 (CLAUDE.md decision 3). A general YAML parser accepts anchors, tags, merge keys and type coercion (the "Norway problem"), and most lose positions after decoding. The manifest needs few constructs, and every one of them gets a position, so the parser and checker come to about 1,000 lines of standard-library Go and stay inside ADR-0016. Errors about a field point at its key; errors about a value point at the value. The first syntax error stops the check, because positions after it can't be trusted.</p>
+<p><strong>Learned:</strong> The golden file fixed the rule order. With two errors at the same spot (a workflow missing both its approval and its connector), the order is the emit order, so the sort has to be stable. Reporting "approval names an unknown workflow" when <code>workflows</code> is itself malformed doubled the noise, so cross-field rules now apply only when the fields they relate are well-formed. Writing the property test found no checker bug, but the generator had to indent nested block lists to be valid YAML at all.</p>
+<p><strong>Laws:</strong> LAW-16 moves from Stated to Tested (manifest side). <code>TestLAW16_TheManifestIsTheTruth</code> renders 300 random valid manifests in mixed flow, block, quote and comment styles. It requires each one to parse to exactly the tenant it describes, and requires one injected forbidden or unknown field to be rejected at its key with nothing applied. Three broken checkers (one ignores unknown fields, one drops <code>exclude</code>, one invents defaults) are caught by the self-test. The drift side of LAW-16 waits for SB-510.</p>
+<p><strong>Next:</strong> SB-102 (<code>sb tenant apply --plan</code>). Then SB-103 and SB-104, which need the cloud/IaC decision (Q-04) first.</p></div></article><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-011 to SB-013 First model-checker run</h2><p><strong>Wave/slice:</strong> W0 / S0.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see tickets (In review)</p>
+<p><strong>What:</strong> Ran <code>make proofs</code> for the first time, locally on Windows (Temurin 25; <code>tla2tools.jar</code> from the pinned v1.8.0 release, which reports TLC2 2026.11.15; Alloy 6.2.0; both checksums match), then again in WSL Debian on OpenJDK 21 with the same results. All four models pass. TLC state counts are identical to <code>crosscheck.py</code>: Approvals 1,068, Rollout 6,290, Handoff 23. All five <code>Permissions.als</code> checks are UNSAT at scope 6, and the sanity <code>run</code> is SAT. Added <code>tools/ci/mutations.py</code>, run by <code>make proofs</code>. It applies the 13 mutations from <code>proofs/README.md</code>, and all 13 give the expected counterexample:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mutation</th>
+<th>Counterexample</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Approvals: no <code>u # requester</code></td>
+<td><code>NoSelfApproval</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Approvals: no <code>payload = approvedHash</code></td>
+<td><code>AuditBeforeExec</code> (through <code>Tamper</code>)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Approvals: no <code>~killed</code></td>
+<td><code>KillWins</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Approvals: no <code>Log</code> in <code>Execute</code></td>
+<td><code>AuditBeforeExec</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Rollout: no promote guard</td>
+<td><code>OneBehindMax</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Rollout: <code>Promote</code> drops <code>r \in gated</code></td>
+<td><code>OnlyGatedRuns</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Rollout: testing tenant deploys a revoked release</td>
+<td><code>RevokedOnlyWhileDraining</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Rollout: rollback without draining</td>
+<td><code>RevokedOnlyWhileDraining</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Handoff: provision without both approvals</td>
+<td><code>DualApproval</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Handoff: destroy factory wrap before tenant wrap</td>
+<td><code>KeyNeverOrphaned</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Handoff: cutover keeps factory paths</td>
+<td><code>NoUnlistedAccess</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td>Handoff: cutover before tenant wrap</td>
+<td><code>ServingCanUnwrap</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td>Permissions: <code>context = candidates - live.Deny</code></td>
+<td><code>UnknownNeverUsed</code>, <code>MissingNeverUsed</code>, <code>CitedImpliesLiveAllow</code> SAT</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why this way:</strong> We automated the mutations instead of only recording them once. That way a later model edit that makes a guard redundant fails <code>make proofs</code>, instead of quietly weakening the evidence behind <em>Modelled</em>.</p>
+<p><strong>Learned:</strong> The first run found two bugs in <code>proofs.sh</code> and none in the models. (1) TLC rejects <code>proofs/tla/X.tla</code> on Windows ("File name ... does not match the name ... of the top level module"), so the script now runs TLC from the model's directory, with <code>-metadir</code> in a temp dir so no <code>states/</code> is left behind. (2) Alloy 6.2 <code>exec</code> runs only the default command, so the old <code>grep -c unsat</code> check could never pass. The script now runs each <code>check</code> and <code>run</code> by name and needs <code>UNSAT</code> or <code>SAT</code> for each. <code>-c '*'</code> is not an option: the Windows Java launcher expands it as a file glob.</p>
+<p><strong>Laws:</strong> LAW-06, LAW-08, LAW-10, LAW-15, LAW-17 and LAW-18 move from Stated to Modelled. LAW-01 to LAW-05 now have model evidence but stay Tested (red), because the ladder only moves up.</p>
+<p><strong>Next:</strong> Get two reviewers and one green CI <code>proofs</code> job, then mark SB-011 to SB-013 Done. W1 starts at SB-101.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>W0 Exit gate status</h2><p><strong>Wave/slice:</strong> W0 / all · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> 10 of 16 W0 tickets Done, 6 In review. <code>make check</code> is green on a clean copy. What's left needs people or CI: two-reviewer sign-off of the first man pages, the ADRs and the threat model (SB-004, SB-005, SB-014), and the first CI run of TLC and Alloy (SB-011 to SB-013).</p>
+<p><strong>Why this way:</strong> W0's exit gate asks for reviews and model-checker runs, and neither can be faked. Marking those tickets <em>In review</em> with an explicit Progress section keeps the ledger honest.</p>
+<p><strong>Learned:</strong> The order of work matters. Writing the manual change (<code>ENOTIMPL</code>) first, then the error generator, then the CLI meant that every later check had a stable vocabulary to test against.</p>
+<p><strong>Laws:</strong> LAW-01 to LAW-05 are now Tested (red). No law is Modelled yet, because none has had a TLC or Alloy run.</p>
+<p><strong>Next:</strong> Push to a repo with CI, watch the <code>proofs</code> job, then collect reviews. W1 can start on SB-101 in parallel.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-012 Rollout model: non-atomic rollback</h2><p><strong>Wave/slice:</strong> W0 / S0.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> Fixed BUG-0001 in <code>Rollout.tla</code> and the cross-check. Rollback now revokes at once and redeploys cell by cell; cells on a revoked build are <em>draining</em>. <code>NoRevokedRuns</code> became <code>RevokedOnlyWhileDraining</code> and <code>DrainingOnlyRevoked</code>. <code>OneBehindMax</code> and <code>StableNotAhead</code> now apply to serving (non-draining) cells.</p>
+<p><strong>Why this way:</strong> The atomic model was simpler but promised something rollback can't do in 10 minutes across many cells.</p>
+<p><strong>Learned:</strong> The promote guard also protects rollback: a draining stable cell isn't on the current stable, so no promotion can happen until every cell has redeployed. The cross-check grew from 2,974 to 6,290 states. The two new mutations (deploying a revoked build, rolling back without draining) are both caught.</p>
+<p><strong>Laws:</strong> LAW-06 and LAW-08 stay Stated until TLC runs.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-011 Proofs wired into CI</h2><p><strong>Wave/slice:</strong> W0 / S0.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> Pinned <code>tla2tools.jar</code> 1.8.0 and <code>alloy.jar</code> 6.2.0 by SHA-256 in <code>tools/versions.env</code>. <code>tools/ci/fetch_tools.sh</code> refuses a jar whose checksum doesn't match. <code>tools/ci/proofs.sh</code> passes a model only when the checker positively reports success. SB-013 and SB-705 use the same script.</p>
+<p><strong>Why this way:</strong> Unknown means no (P1), applied to our own tooling: output we don't recognise is a failure.</p>
+<p><strong>Learned:</strong> The jars could be downloaded and hashed here but not run, so the checksums are real and the first run will happen in CI. The Alloy CLI flags still need confirming on that run.</p>
+<p><strong>Laws:</strong> No change until the first run.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-007 Manual-diff rule tested</h2><p><strong>Wave/slice:</strong> W0 / S0.3 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> <code>tools/ci/test_manual_diff.sh</code> builds a throwaway git repo and proves four cases: code-only fails, code plus manual passes, the override label passes, docs-only passes. It runs in <code>make check</code> and in CI before the real rule.</p>
+<p><strong>Why this way:</strong> A one-off test PR proves the rule once. A scripted test proves it on every build.</p>
+<p><strong>Learned:</strong> POSIX <code>sh</code> has no <code>$RANDOM</code>. The script now uses <code>date +%s%N</code>.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-009 The manual can&#x27;t lie</h2><p><strong>Wave/slice:</strong> W0 / S0.3 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> Added <code>tools/check/examples.py</code> (man-page section order, <code>run</code> blocks, example YAML) and moved the diagram renderer into the repo as <code>tools/check/diagrams.py</code>, with Mermaid pinned in <code>tools/check/package.json</code>. Results: 51 diagrams render, all 32 man pages have their sections in order, and 0 links are broken.</p>
+<p><strong>Why this way:</strong> Checks that report <em>pending by ticket</em>, such as manifest validation until SB-101, keep the gap visible without failing the build for work that isn't due yet.</p>
+<p><strong>Learned:</strong> Mutation-checked with a planted page whose sections were out of order and whose <code>run</code> block didn't parse. Both were caught.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-016 Smoke and regression conventions</h2><p><strong>Wave/slice:</strong> W0 / S0.1 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> <code>tests/smoke/</code> builds the real <code>sb</code> binary and checks the exit-status contract. <code>tests/regress/</code> has the BUG-0003 Cedar test and a README mapping every bug to its test.</p>
+<p><strong>Why this way:</strong> Smoke tests are black-box on purpose: they test the binary users run, not the package.</p>
+<p><strong>Learned:</strong> A missing validator in a regression test is a hard failure, not a skip. The BUG-0003 test exits if <code>cedarpy</code> isn't installed.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-015 Eval harness scaffold</h2><p><strong>Wave/slice:</strong> W0 / S0.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> <code>evals/</code>: loader, the seven checks from <code>sb-eval(5)</code>, worst-of-three runs, a mock target and a smoke suite. <code>sb eval run</code> delegates to it.</p>
+<p><strong>Why this way:</strong> Evals become the main gate in W5. Building the harness now means suites can accumulate from W2 on.</p>
+<p><strong>Learned:</strong> Two rules got sharper by being written as code: an unknown expectation fails rather than being ignored, and <code>faithful_min</code> fails when there are no cited claims at all, because silence can't demonstrate faithfulness.</p>
+<p><strong>Laws:</strong> LAW-09 and LAW-14 have their first harness; their suites arrive with SB-207 and SB-309.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-010 Law harness: five laws red, checks proven</h2><p><strong>Wave/slice:</strong> W0 / S0.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> Added <code>laws/</code>: a seeded <code>Check</code> helper, a world generator, LAW-01 to LAW-05 checks, the red ratchet (<code>expected_red.txt</code> plus <code>tools/check/laws.py</code>), and self-tests against a reference system and six broken systems.</p>
+<p><strong>Why this way:</strong> A red law that fails for the wrong reason proves nothing, and neither does a check that would never fail. The ratchet handles the first; the self-tests handle the second.</p>
+<p><strong>Learned:</strong> The first self-test run failed: the cross-tenant mutation wasn't caught, because the live permission check masked it. Users in another tenant always got Unknown. Real sources can say Allow to outsiders, for example a doc shared with "anyone with the link". The generator now creates public docs, and LAW-02 is proven independent of the live check. Logged as BUG-0004.</p>
+<p><strong>Laws:</strong> LAW-01 to LAW-05: Stated → Tested (red, ratcheted).</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-008 Dependency rule enforced</h2><p><strong>Wave/slice:</strong> W0 / S0.3 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> <code>depguard</code> rules in <code>.golangci.yml</code>, plus <code>tools/check/deps.py</code> reading <code>go list</code>. A planted import of <code>internal/errs</code> from <code>internal/core/ports</code> was caught by both.</p>
+<p><strong>Why this way:</strong> Two independent checks, so a lint config change can't silently drop the rule.</p>
+<p><strong>Learned:</strong> <code>golangci-lint</code> v2 needs <code>version: "2"</code> and the new <code>linters.settings</code> layout.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-006 Error registry generated from the manual</h2><p><strong>Wave/slice:</strong> W0 / S0.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> <code>tools/gen/errs.py</code> turns the registry table in <code>sb-errors(7)</code> into <code>internal/errs/codes.go</code>, formatted with <code>gofmt</code>. <code>make gen-check</code> fails on drift. <code>ENOTIMPL</code> (501, exit 2) was added to the manual first.</p>
+<p><strong>Why this way:</strong> The manual is the spec (P2), so the code is derived from it, never the reverse.</p>
+<p><strong>Learned:</strong> An uncoded error must exit 1, not 0. That's now a unit test.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-001 Repo skeleton and toolchain</h2><p><strong>Wave/slice:</strong> W0 / S0.1 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> <code>go.mod</code>, <code>cmd/sb</code>, <code>internal/cli</code>, <code>internal/core/ports</code>, <code>internal/version</code>, the Makefile, <code>tools/versions.env</code> and CI. Every command in <code>sb(1)</code> exists; unbuilt ones exit <code>ENOTIMPL</code> naming their ticket. <code>make check</code> passes on a clean copy.</p>
+<p><strong>Why this way:</strong> One module rather than a <code>go.work</code> workspace (P3). Standard library only, because the Go module proxy refused the request and every dependency is supply-chain surface (ADR-0016).</p>
+<p><strong>Learned:</strong> A CLI that honestly says <em>not built yet (SB-101)</em> is better than a missing command. Scripts and agents get a stable exit code (2) and a ticket to look at.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-002, SB-003, SB-004, SB-005, SB-014 Closing the design-baseline tickets</h2><p><strong>Wave/slice:</strong> W0 / S0.1 to S0.4 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> see ticket</p>
+<p><strong>What:</strong> The design baseline already delivered the template, the site, the living documents, first drafts of the man pages, the threat model and the ADRs. SB-002 and SB-003 are Done. SB-004, SB-005 and SB-014 are In review, with sign-off tables added for the reviews.</p>
+<p><strong>Why this way:</strong> Reviews are people's work. Leaving them visibly open is better than ticking boxes.</p>
+<p><strong>Learned:</strong> None beyond the sign-off tables.</p>
+<p><strong>Laws:</strong> No change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-000 Factory and hand-off planned, not built</h2><p><strong>Wave/slice:</strong> pre-W0 · <strong>Author:</strong> platform lead + Claude · <strong>PR:</strong> design baseline</p>
+<p><strong>What:</strong> Named the control plane, cell template and release train together as the <strong>factory</strong>. Added custody records (<code>factory</code>, <code>tenant</code>, <code>detached</code>), a dual-approved hand-off workflow, ADR-0015, architecture doc 16, <code>sb-factory(7)</code>, LAW-17 and LAW-18, and <code>Handoff.tla</code>. The hand-off itself is epic E08 in a new wave W7, after v1. v1 gains one ticket (SB-114) and extra acceptance criteria on five others; no v1 wave changes length.</p>
+<p><strong>Why this way:</strong> Building hand-off now would derail v1. Ignoring it would let cheap v1 shortcuts (hard-coded account ids, one factory signing key, push deploys) turn into a migration across every cell. The seams cost almost nothing now.</p>
+<p><strong>Learned:</strong></p>
+<ul>
+<li><strong>Pull beats push for more than security.</strong> Cells that pull signed bundles and push attestations work identically in the factory's account and in a company's own account. Choosing pull in v1 is what makes LAW-06 and LAW-08 survive hand-off with no new mechanism.</li>
+<li><strong>Key order is the whole game.</strong> The cross-check's <code>destroyfirst</code> mutation orphans the root key in 16 states. Re-wrap first, then destroy, and LAW-18 forbids <em>zero</em> custodians, not two.</li>
+<li><strong>Binding approvals to a plan hash makes a forgotten "void approvals on re-plan" harmless.</strong> The <code>keepapprovals</code> probe found no violation, because an approval of an old hash can never satisfy the new one. Same lesson as LAW-15, one level up.</li>
+<li><strong>Custody must not be a manifest field.</strong> If it were, anyone with manifest write access could start a hand-off. So <code>sb tenant check</code> rejects it.</li>
+</ul>
+<p><strong>Laws:</strong> LAW-17 and LAW-18 Stated. <code>Handoff.tla</code> written, cross-checked in Python (23 states, 4 of 4 mutations caught), and not yet run in TLC (SB-705).</p>
+<p><strong>Next:</strong> SB-114 lands in W1 alongside the cell template.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-000 Design logic cross-checked in Python</h2><p><strong>Wave/slice:</strong> pre-W0 · <strong>Author:</strong> platform lead + Claude · <strong>PR:</strong> design baseline</p>
+<p><strong>What:</strong> Wrote <code>proofs/crosscheck.py</code>, a breadth-first search over every reachable state of hand-written Python mirrors of <code>Approvals.tla</code> and <code>Rollout.tla</code>. All invariants hold: 1,068 states for approvals and 2,974 for rollout. Each of the seven mutations in <code>proofs/README.md</code> produces a counterexample.</p>
+<p><strong>Why this way:</strong> TLC couldn't be run in the design environment. A second, independent encoding of the same rules catches design mistakes now, and gives SB-011 and SB-012 an expected result to compare against.</p>
+<p><strong>Learned:</strong></p>
+<ul>
+<li>Removing the hash re-check from <code>Execute</code> trips <code>AuditBeforeExec</code> before <code>ExecutedMatchesApproved</code>, because the audit row carries the payload hash. So the audit log is itself evidence of LAW-15: an auditor can see that the executed hash differs from the approved one.</li>
+<li>The promote-guard counterexample needs only two promotions and one slow tenant: 208 states. It's a small, likely mistake, which is exactly why it's worth a law.</li>
+<li>This is not a proof of the TLA+ text. The ledger keeps these laws at <em>Stated</em> until TLC runs clean in CI.</li>
+</ul>
+<p><strong>Laws:</strong> no status change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-000 Cedar policies validated against the schema</h2><p><strong>Wave/slice:</strong> pre-W0 · <strong>Author:</strong> platform lead + Claude · <strong>PR:</strong> design baseline</p>
+<p><strong>What:</strong> Wrote <code>policy/schema.cedarschema</code> and <code>policy/platform/base.cedar</code>, then validated every Cedar snippet in the repo (platform policy, example tenant policy, <code>sb-policy(5)</code>, architecture doc 02) against the schema with the Cedar validator. All pass.</p>
+<p><strong>Why this way:</strong> Policy snippets in docs are code that people copy. If they don't validate, the manual is lying (P2).</p>
+<p><strong>Learned:</strong></p>
+<ul>
+<li>The first draft named the proposed-action resource <code>Action</code>, which collides with Cedar's built-in action type, so <code>resource is Action</code> could never match. It's now <code>ProposedAction</code>. Logged as <a href="living/BUGS_AND_MITIGATIONS.html#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003</a>.</li>
+<li>An optional context attribute (<code>target_project</code>) must be guarded with <code>has</code>; the validator refuses unguarded access. Good: that's the soundness we want from the policy language (ADR-0008).</li>
+<li>Mutation check: three deliberately broken policies (typo'd attribute, wrong resource type, unguarded optional) were all rejected. The validator is a real gate, so SB-112 uses it.</li>
+</ul>
+<p><strong>Laws:</strong> no status change. LAW-02 and LAW-15 now have platform policies backing them.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-000 Formal models written (not yet run)</h2><p><strong>Wave/slice:</strong> pre-W0 · <strong>Author:</strong> platform lead + Claude · <strong>PR:</strong> design baseline</p>
+<p><strong>What:</strong> Wrote <code>Approvals.tla</code>, <code>Rollout.tla</code> and <code>Permissions.als</code> alongside the man pages, using the same state names as <code>sb-approvals(7)</code> and <code>sb-release(7)</code>. They were reviewed by hand but <strong>not model-checked</strong>: the tool jars couldn't be run in the design environment, so SB-011 to SB-013 start by running them in CI.</p>
+<p><strong>Why this way:</strong> Writing the models while the man pages were still soft meant the models could change the design cheaply, and twice they did (below).</p>
+<p><strong>Learned:</strong></p>
+<ul>
+<li><strong>LAW-08 needs a promote guard.</strong> Writing <code>OneBehindMax</code> made it obvious that "promote when the new release is good" lets a slow tenant fall two behind. The fix is a guard: promote only when every stable tenant runs the current stable. That rule is now in <code>sb-release(1)</code> and SB-507.</li>
+<li><strong>Edits must void approvals, and so must tampering.</strong> Modelling an approval as a flag on the action was not enough; it has to bind to the payload hash, and <code>Execute</code> has to re-check the hash. The <code>Tamper</code> action exists to prove the re-check matters (LAW-15).</li>
+<li><strong>The rollout model is more optimistic than reality.</strong> It treats rollback as atomic across cells; in reality rollback takes up to 10 minutes. Logged as <a href="living/BUGS_AND_MITIGATIONS.html#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001</a>.</li>
+</ul>
+<p><strong>Laws:</strong> 16 Stated. LAW-01, 02, 03, 04, 05, 06, 08, 10 and 15 have models written; none is <em>Modelled</em> until a clean run plus a mutation check.</p>
+<p><strong>Next:</strong> SB-011, SB-012, SB-013.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-000 Plan generated from one data file</h2><p><strong>Wave/slice:</strong> pre-W0 · <strong>Author:</strong> platform lead + Claude · <strong>PR:</strong> design baseline</p>
+<p><strong>What:</strong> 8 epics, 37 user stories, 26 slices and 85 tickets across 7 waves, all generated from a single plan file into <code>epics/**</code> and the wave section of the PRD. The generator refuses to run if a ticket depends on a later wave or names a man page that doesn't exist.</p>
+<p><strong>Why this way:</strong> The plan, the PRD tables and the ticket files used to drift in every project we've seen. One source makes drift impossible at generation time; after that, tickets are edited by hand as the source of truth.</p>
+<p><strong>Learned:</strong> The policy engine deserved its own epic (E02). In the preliminary PRD it was one ticket inside tenancy, but it's the kernel that every later epic depends on, and it has its own laws.</p>
+<p><strong>Laws:</strong> no change.</p></div></article><article class="entry"><div class="date">2026-11-18</div><div class="card"><h2>SB-000 Design baseline from the preliminary PRD</h2><p><strong>Wave/slice:</strong> pre-W0 · <strong>Author:</strong> platform lead + Claude · <strong>PR:</strong> design baseline</p>
+<p><strong>What:</strong> Turned the preliminary PRD (v0.1) into the full design set: problem statement, principles, domain model, 16 architecture documents, 14 ADRs, threat model, 31 man pages, examples, living documents and the docs site.</p>
+<p><strong>Why this way:</strong> Manual first (ADR-0009). Every later ticket links to a man page that already exists, so implementation follows a spec instead of inventing one.</p>
+<p><strong>Learned:</strong></p>
+<ul>
+<li><strong>The preliminary PRD's eight laws weren't enough.</strong> Kill switches, audit tamper-evidence, deprovisioning, index derivation, uncited labelling, approval binding and manifest drift were promises without laws. There are now 16 laws, each with a check.</li>
+<li><strong><code>EPERM</code> should cover unknown as well as deny.</strong> Telling a user "unknown" invites retrying until it flips; telling them "deny" leaks that a document exists. Operators get the breakdown instead.</li>
+<li><strong>Kill switches need a fail-safe direction.</strong> If a cell can't reach the kill-switch store, it should behave as if killed for consequential tools. Losing the ability to be stopped is treated as being stopped.</li>
+<li><strong>Never cache an allow across requests.</strong> Even 60 seconds breaks LAW-01's "at answer time". Denies can be cached; allows can't (ADR-0002).</li>
+</ul>
+<p><strong>Laws:</strong> LAW-01 to LAW-16 Stated in <code>sb-laws(7)</code>.</p>
+<p><strong>Next:</strong> W0 starts with SB-001.</p></div></article></div></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="";</script>
+<script src="assets/search-index.js"></script>
+<script src="assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,11 @@
+# Deliberately invalid. `sb tenant check` must report exactly the errors listed in invalid.expected.
+tenant: Acme_Logistics
+version: 2.3.1
+channel: beta
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint }
+agents: [draft-reply]
+workflows: [ticket-update]
+api_token: abc123
+custody: tenant

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-errors(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a class="current" href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-ERRORS(7)</span><span>Second Brain Manual</span><span>SB-ERRORS(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-errors7">sb-errors(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-errors — the error registry, shared by the CLI, API and UI</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-json">{ &quot;error&quot;: { &quot;code&quot;: &quot;EPERM&quot;, &quot;message&quot;: &quot;…&quot;, &quot;trace&quot;: &quot;tr_…&quot;, &quot;remedy&quot;: &quot;…&quot; } }
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>There is one list of errors. <code>internal/errs/codes.go</code> is generated from the table below (SB-006), so this page can't drift from the code. Codes are stable forever. Messages may improve.</p>
+<h2 id="registry">REGISTRY</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>HTTP</th>
+<th>Exit</th>
+<th>Meaning</th>
+<th>Remedy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EUSAGE</code></td>
+<td>—</td>
+<td>2</td>
+<td>CLI usage error</td>
+<td>See <code>sb COMMAND --help</code></td>
+</tr>
+<tr>
+<td><code>EINVAL</code></td>
+<td>400</td>
+<td>2</td>
+<td>Malformed request</td>
+<td>Fix the request body</td>
+</tr>
+<tr>
+<td><code>EAUTH</code></td>
+<td>401</td>
+<td>3</td>
+<td>Not signed in, or session revoked</td>
+<td>Sign in again</td>
+</tr>
+<tr>
+<td><code>EPERM</code></td>
+<td>403</td>
+<td>3</td>
+<td>Refused: policy deny, source deny, <strong>unknown</strong>, or missing source</td>
+<td>Ask the owner for access; if frequent, check the connector's unknown rate</td>
+</tr>
+<tr>
+<td><code>ETENANT</code></td>
+<td>403</td>
+<td>3</td>
+<td>Request crossed a tenant boundary</td>
+<td>Use the cell for your own tenant</td>
+</tr>
+<tr>
+<td><code>ENOTSUP</code></td>
+<td>501</td>
+<td>2</td>
+<td>Operation not supported by this connector</td>
+<td>Choose a workflow its connector supports</td>
+</tr>
+<tr>
+<td><code>ENOTIMPL</code></td>
+<td>501</td>
+<td>2</td>
+<td>Command or endpoint is specified in this manual but not built in this release</td>
+<td>See the ticket named in the message</td>
+</tr>
+<tr>
+<td><code>EMANIFEST</code></td>
+<td>422</td>
+<td>1</td>
+<td>Manifest invalid</td>
+<td>Fix the lines reported</td>
+</tr>
+<tr>
+<td><code>EDRIFT</code></td>
+<td>409</td>
+<td>1</td>
+<td>Live config differs from the applied manifest</td>
+<td>Re-apply the manifest; investigate the change</td>
+</tr>
+<tr>
+<td><code>ELAW</code></td>
+<td>—</td>
+<td>1</td>
+<td>A law check failed or returned unknown in <code>verify</code></td>
+<td>See the per-law output; do not go live</td>
+</tr>
+<tr>
+<td><code>ECHAIN</code></td>
+<td>—</td>
+<td>1</td>
+<td>Audit chain or anchor verification failed</td>
+<td>Sev-1: preserve evidence, page security</td>
+</tr>
+<tr>
+<td><code>EEVAL</code></td>
+<td>—</td>
+<td>1</td>
+<td>Eval threshold missed</td>
+<td>Fix the regression; thresholds aren't overridable</td>
+</tr>
+<tr>
+<td><code>EKILLED</code></td>
+<td>503</td>
+<td>4</td>
+<td>A kill switch is active for this scope</td>
+<td>Wait for the operator to <code>sb unkill</code></td>
+</tr>
+<tr>
+<td><code>ENOAPPROVAL</code></td>
+<td>409</td>
+<td>5</td>
+<td>Approval missing, expired, self-approved, or hash mismatch</td>
+<td>Request a fresh approval of the current payload</td>
+</tr>
+<tr>
+<td><code>ENORECEIPT</code></td>
+<td>502</td>
+<td>6</td>
+<td>Target returned no receipt; action <strong>did not run</strong></td>
+<td>Check the target; re-propose if needed</td>
+</tr>
+<tr>
+<td><code>EUNAVAIL</code></td>
+<td>503</td>
+<td>7</td>
+<td>A dependency is unavailable or timed out</td>
+<td>Retry later</td>
+</tr>
+<tr>
+<td><code>EBUDGET</code></td>
+<td>429</td>
+<td>8</td>
+<td>Budget or rate limit reached</td>
+<td>Wait for reset, or raise <code>budget_usd_month</code></td>
+</tr>
+<tr>
+<td><code>EUNSIGNED</code></td>
+<td>—</td>
+<td>1</td>
+<td>Image or bundle signature didn't verify</td>
+<td>Sev-1: the release is blocked from starting</td>
+</tr>
+</tbody>
+</table>
+<h2 id="notes">NOTES</h2>
+<ul>
+<li><code>EPERM</code> deliberately covers deny <strong>and</strong> unknown. Telling a user "unknown" invites retry games, and telling them "deny" may leak that a document exists. Operators see the breakdown in <code>/v1/admin/refusals</code>.</li>
+<li>A refused source inside an answer is not an error; it's reported through <code>refused</code> and <code>notice</code> (<a href="sb-ask.3.html">sb-ask(3)</a>).</li>
+</ul>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb.1.html">sb(1)</a>, <a href="sb-api.3.html">sb-api(3)</a></p><p class="srcline">Source: <code>manual/sb-errors.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#registry">REGISTRY</a></li><li class="l2"><a href="#notes">NOTES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

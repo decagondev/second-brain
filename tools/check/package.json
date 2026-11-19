@@ -1,0 +1,6 @@
+{
+  "name": "sb-doc-checks",
+  "private": true,
+  "description": "Pinned Mermaid for tools/check/diagrams.py (SB-009). Install with: npm install --prefix tools/check",
+  "dependencies": { "mermaid": "11.17.2" }
+}

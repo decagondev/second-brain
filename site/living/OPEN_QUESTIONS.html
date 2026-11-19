@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Questions · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="active" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Living documents</h4><a href="../devlog.html">Devlog timeline</a><a href="../living/ASSURANCE_LEDGER.html">Assurance Ledger</a><a href="../living/BUGS_AND_MITIGATIONS.html">Bugs and Mitigations</a><a href="../living/CHANGELOG.html">Changelog</a><a href="../living/DEVLOG.html">Devlog</a><a href="../living/GLOSSARY.html">Glossary</a><a class="current" href="../living/OPEN_QUESTIONS.html">Open Questions</a><a href="../living/RISKS.html">Risks</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / living</div><h1 id="open-questions">Open questions</h1>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Question</th>
+<th>Decides</th>
+<th>Needed by</th>
+<th>Default if unanswered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q-01</td>
+<td>Does the parent organisation ever read portfolio-company data?</td>
+<td>Parent-org leadership + legal</td>
+<td>Before W6</td>
+<td>No. No cross-company features; ADR-0014 stays Proposed</td>
+</tr>
+<tr>
+<td>Q-02</td>
+<td>Does any company ship software or connected devices into the EU (Cyber Resilience Act)?</td>
+<td>Parent-org legal</td>
+<td>W5</td>
+<td>Assume yes for the vulnerability-handling process; SB-505 covers it</td>
+</tr>
+<tr>
+<td>Q-03</td>
+<td>Which IdPs and source systems do the first companies use, and how many companies in year one?</td>
+<td>Parent-org IT + company IT</td>
+<td>W1 (IdPs), W2 (sources)</td>
+<td>One OIDC IdP; docs + chat vendors chosen by the first two tenants</td>
+</tr>
+<tr>
+<td>Q-04</td>
+<td>Data-residency, retention and compliance baselines (SOC 2, ISO 27001, HIPAA, GDPR, others)? Model-provider data terms?</td>
+<td>Parent-org security + legal</td>
+<td>W1 (regions), W3 (provider)</td>
+<td>EU and US regions (confirmed for now by the user, 2026-11-19; <code>eu</code>, <code>us</code> in sb-tenancy(7)); zero-retention model endpoint; SOC 2 controls as baseline. Cloud: cloud-neutral, adapters per cloud (ADR-0018)</td>
+</tr>
+<tr>
+<td>Q-05</td>
+<td>Who owns the eval suite and the approval rules inside each company?</td>
+<td>Each company's leadership</td>
+<td>W4</td>
+<td>Company IT lead owns both; platform team owns shared suites</td>
+</tr>
+<tr>
+<td>Q-06</td>
+<td>Will the parent sign off the proposed metric targets?</td>
+<td>Parent-org leadership</td>
+<td>W3</td>
+<td>Targets in the PRD stand as working targets</td>
+</tr>
+<tr>
+<td>Q-07</td>
+<td>Is the chat-app entry point required for go-live, or web-only acceptable?</td>
+<td>Product owner</td>
+<td>W3</td>
+<td>Both in v1 (SB-307, SB-308)</td>
+</tr>
+<tr>
+<td>Q-08</td>
+<td>Who is on call for Sev-1 law violations: the platform team, company IT, or both?</td>
+<td>Parent-org platform lead</td>
+<td>W6</td>
+<td>Platform team primary, company IT informed</td>
+</tr>
+<tr>
+<td>Q-09</td>
+<td>Which hand-off modes are needed (own cloud account, divestiture detach, both), and how likely is a divestiture in two years?</td>
+<td>Parent-org leadership</td>
+<td>Before W7</td>
+<td>Build both; rehearse detach on a copy only</td>
+</tr>
+<tr>
+<td>Q-10</td>
+<td>After hand-off, who holds the model-provider contract and support terms? Does the factory keep any operational duty?</td>
+<td>Parent-org legal + procurement</td>
+<td>Before W7</td>
+<td>Tenant holds its own model credential; factory keeps only release publishing</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>living/OPEN_QUESTIONS.md</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tenant.schema.json · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="active" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a class="current" href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / examples/tenants</div><h1 id="tenantschemajson">tenant.schema.json</h1>
+<pre><code class="language-json">{
+  &quot;$id&quot;: &quot;https://example.com/second-brain/tenant.schema.json&quot;,
+  &quot;$schema&quot;: &quot;https://json-schema.org/draft/2020-12/schema&quot;,
+  &quot;additionalProperties&quot;: false,
+  &quot;properties&quot;: {
+    &quot;agents&quot;: {
+      &quot;contains&quot;: {
+        &quot;const&quot;: &quot;ask&quot;
+      },
+      &quot;description&quot;: &quot;Enabled agents; ask is required.&quot;,
+      &quot;items&quot;: {
+        &quot;enum&quot;: [
+          &quot;ask&quot;,
+          &quot;draft-reply&quot;
+        ]
+      },
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;uniqueItems&quot;: true
+    },
+    &quot;approval&quot;: {
+      &quot;additionalProperties&quot;: {
+        &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;description&quot;: &quot;Workflow to approving IdP group.&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;enum&quot;: [
+          &quot;ticket-update&quot;
+        ]
+      },
+      &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;budget_usd_month&quot;: {
+      &quot;default&quot;: 1000,
+      &quot;description&quot;: &quot;Monthly model spend cap in USD.&quot;,
+      &quot;minimum&quot;: 1,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;channel&quot;: {
+      &quot;description&quot;: &quot;Release channel; versions are never pinned (ADR-0004).&quot;,
+      &quot;enum&quot;: [
+        &quot;stable&quot;,
+        &quot;testing&quot;
+      ],
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;connectors&quot;: {
+      &quot;additionalProperties&quot;: {
+        &quot;pattern&quot;: &quot;^[a-z0-9-]+$&quot;,
+        &quot;type&quot;: &quot;string&quot;
+      },
+      &quot;description&quot;: &quot;Connector kind to vendor. Read-only unless named in workflows.&quot;,
+      &quot;minProperties&quot;: 1,
+      &quot;propertyNames&quot;: {
+        &quot;enum&quot;: [
+          &quot;docs&quot;,
+          &quot;chat&quot;,
+          &quot;tickets&quot;,
+          &quot;crm&quot;
+        ]
+      },
+      &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;exclude&quot;: {
+      &quot;additionalProperties&quot;: {
+        &quot;items&quot;: {
+          &quot;minLength&quot;: 1,
+          &quot;type&quot;: &quot;string&quot;
+        },
+        &quot;type&quot;: &quot;array&quot;
+      },
+      &quot;default&quot;: {},
+      &quot;description&quot;: &quot;Source paths or channels never ingested, by connector kind.&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;enum&quot;: [
+          &quot;docs&quot;,
+          &quot;chat&quot;,
+          &quot;tickets&quot;,
+          &quot;crm&quot;
+        ]
+      },
+      &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;idp&quot;: {
+      &quot;description&quot;: &quot;OIDC issuer: oidc://ISSUER-HOST[/path].&quot;,
+      &quot;pattern&quot;: &quot;^oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?$&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;pilot_group&quot;: {
+      &quot;description&quot;: &quot;If set, only this IdP group may sign in.&quot;,
+      &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;region&quot;: {
+      &quot;description&quot;: &quot;Region pin. Immutable.&quot;,
+      &quot;enum&quot;: [
+        &quot;eu&quot;,
+        &quot;us&quot;
+      ],
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;retention_days&quot;: {
+      &quot;default&quot;: 365,
+      &quot;description&quot;: &quot;Retention for traces, citations and drafts (not audit).&quot;,
+      &quot;maximum&quot;: 3650,
+      &quot;minimum&quot;: 30,
+      &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;tenant&quot;: {
+      &quot;description&quot;: &quot;Tenant name: a DNS label. Immutable.&quot;,
+      &quot;pattern&quot;: &quot;^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;workflows&quot;: {
+      &quot;default&quot;: [],
+      &quot;description&quot;: &quot;At most one approval-gated workflow in v1.&quot;,
+      &quot;items&quot;: {
+        &quot;enum&quot;: [
+          &quot;ticket-update&quot;
+        ]
+      },
+      &quot;maxItems&quot;: 1,
+      &quot;type&quot;: &quot;array&quot;,
+      &quot;uniqueItems&quot;: true
+    }
+  },
+  &quot;required&quot;: [
+    &quot;tenant&quot;,
+    &quot;channel&quot;,
+    &quot;idp&quot;,
+    &quot;region&quot;,
+    &quot;connectors&quot;,
+    &quot;agents&quot;
+  ],
+  &quot;title&quot;: &quot;Second Brain tenant manifest (sb-tenant(5))&quot;,
+  &quot;type&quot;: &quot;object&quot;
+}
+</code></pre>
+<p><a href="../README.html">Back</a></p><p class="srcline">Source: <code>examples/tenants/tenant.schema.json</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

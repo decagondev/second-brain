@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-103: Cell template (infrastructure as code) · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E01</h4><a href="../../epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.html">SB-101: Manifest schema, parser and sb tenant check</a><a href="../../epics/E01-tenancy-identity/SB-102-sb-tenant-apply-plan-dry-run.html">SB-102: sb tenant apply --plan dry run</a><a class="current" href="../../epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103: Cell template (infrastructure as code)</a><a href="../../epics/E01-tenancy-identity/SB-104-sb-tenant-apply-idempotent-cell-creation.html">SB-104: sb tenant apply idempotent cell creation</a><a href="../../epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.html">SB-105: Control-plane tenant registry and cell routing</a><a href="../../epics/E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.html">SB-106: OIDC sign-in per tenant</a><a href="../../epics/E01-tenancy-identity/SB-107-scim-provisioning-and-fast-deprovisioning.html">SB-107: SCIM provisioning and fast deprovisioning</a><a href="../../epics/E01-tenancy-identity/SB-108-tenant-scoped-request-context.html">SB-108: Tenant-scoped request context</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E01-tenancy-identity</div><h1 id="sb-103-cell-template-infrastructure-as-code">SB-103: Cell template (infrastructure as code)</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E01 Tenancy and Identity</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W1 / S1.2 Cell</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-01.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-tenancy.7.html"><code>sb-tenancy(7)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-02">LAW-02</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.html">SB-101</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>In review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Isolation is a property of the template, not of discipline.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Template creates database, index schema, vault namespace, KMS key, queue and region pin</li>
+<li class="task done"><span class="box">✓</span>No resource is shared between two cells except the control plane</li>
+<li class="task done"><span class="box">✓</span>Template has a test that stamps two cells and checks no shared resource ids</li>
+<li class="task done"><span class="box">✓</span>Placement is a template parameter behind the <code>Placement</code> port; no account id is hard-coded; a test stamps cells into two different mock accounts (ADR-0015)</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task"><span class="box"></span>Write IaC module <code>infra/cell/</code>: deferred to the first cloud adapter, which picks its IaC tool (ADR-0018)</li>
+<li class="task done"><span class="box">✓</span>Parameterise only by manifest fields</li>
+<li class="task done"><span class="box">✓</span>Isolation test stamping two cells</li>
+<li class="task done"><span class="box">✓</span>Document cell anatomy in <code>sb-tenancy(7)</code></li>
+<li class="task done"><span class="box">✓</span>Envelope key hierarchy: cell root key in KMS wraps data keys, so the root can be re-wrapped later</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-02</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: the user decided the cloud question: cells are cloud-neutral, with a local adapter now and AWS, GCP and Azure adapters later (<a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018</a>). Built against that decision:
+- <code>internal/core/cell</code> declares the template (database, index schema, vault namespace, root key, queue), taking only <code>tenant</code> and <code>region</code> from the manifest. <code>Stamp</code> makes it real through the new <code>ports.Placement</code> and <code>ports.Keys</code>, and it is idempotent.
+- <code>NewDataKey</code> gives envelope encryption: data keys are wrapped under the cell root key.
+- <code>internal/core/cell/celltest</code> is the contract every adapter must pass: idempotent ids, no shared ids in the same or different accounts, and a data key that another cell's root key can't unwrap.
+- <code>internal/adapters/placement/local</code> passes the contract and refuses unreadable records ("unknown" is not "absent"), identity mismatches and unsafe names.
+- No account id appears anywhere. Cells are stamped into the mock accounts <code>acct-a</code> to <code>acct-d</code>.</p>
+<p>LAW-02 gains a cell-level law test, <code>TestLAW02_CellsShareNothing</code>, which was red first (<code>not implemented</code>) and is green now. The red ratchet takes per-test lines so the retrieval-level test can stay red until SB-301.</p>
+<p><strong>Left:</strong> the IaC module and real-cloud stamping arrive with the first cloud adapter (ADR-0018). Also left: review by the user, and the first green CI run.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-admin(3) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a class="current" href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-ADMIN(3)</span><span>Second Brain Manual</span><span>SB-ADMIN(3)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-admin3">sb-admin(3)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-admin — manifest diffs, kill switches, audit and usage</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-http">GET  /v1/admin/manifest
+POST /v1/admin/manifest/diff
+POST /v1/admin/kill
+POST /v1/admin/unkill
+GET  /v1/admin/kill
+GET  /v1/admin/audit?since=…&amp;kind=…
+GET  /v1/admin/usage?week=2027-W10
+GET  /v1/admin/refusals?since=…
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>The console is a client of this API and has no other powers. Every endpoint needs the <code>operator</code> role (Cedar policy) except <code>usage</code>, which <code>approver</code> may also read.</p>
+<p><strong><code>GET /v1/admin/manifest</code></strong> returns the applied manifest and its git commit.</p>
+<p><strong><code>POST /v1/admin/manifest/diff</code></strong> takes a JSON patch, e.g. <code>[{ "op": "add", "path": "/agents/-", "value": "draft-reply" }]</code>, validates it as <code>sb tenant check</code> would, and returns the YAML diff. Depending on tenant setup, the diff is either opened as a pull request against the tenant's manifest repo or signed and applied. Either way, the result is a manifest change (LAW-16).</p>
+<p><strong><code>POST /v1/admin/kill</code></strong> takes <code>{ "scope": "agent"|"connector"|"tenant", "name": "…", "reason": "…" }</code> and has the same semantics as <a href="sb-kill.1.html">sb-kill(1)</a>.</p>
+<p><strong><code>GET /v1/admin/audit</code></strong> pages through <a href="sb-audit.5.html">sb-audit(5)</a> rows.</p>
+<p><strong><code>GET /v1/admin/usage</code></strong> returns weekly active users, seats, asks, cited-answer rate, refusal rate by connector, drafts, approve-to-reject ratio and model spend.</p>
+<p><strong><code>GET /v1/admin/refusals</code></strong> lists refusal counts by connector and reason (<code>deny</code>, <code>unknown</code>, <code>timeout</code>, <code>missing</code>), with no document titles, so operators can spot a misbehaving connector.</p>
+<h2 id="errors">ERRORS</h2>
+<p><code>EPERM</code> without the role · <code>EMANIFEST</code> for an invalid patch · <code>EDRIFT</code> if the live config has drifted and a diff can't be based on it.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-10">LAW-10</a>, <a href="sb-laws.7.html#law-16">LAW-16</a>.</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-kill-switches.7.html">sb-kill-switches(7)</a>, <a href="sb-observability.7.html">sb-observability(7)</a></p><p class="srcline">Source: <code>manual/sb-admin.3.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

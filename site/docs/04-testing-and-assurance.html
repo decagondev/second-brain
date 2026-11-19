@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testing and Assurance · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a class="current" href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="testing-and-assurance">Testing and assurance</h1>
+<p>We test to find bugs, and we prove to rule out whole classes of them. Both happen from the first week. What changes over time is which one <strong>gates releases</strong>.</p>
+<h2 id="the-stack">The stack</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart BT
+    subgraph Always[&quot;Always, forever&quot;]
+        UT[&quot;Unit tests&quot;]
+        RG[&quot;Regression tests&lt;br/&gt;one per bug, tests/regress/&quot;]
+        SM[&quot;Smoke tests&lt;br/&gt;tests/smoke/, every deploy&quot;]
+    end
+    subgraph Laws[&quot;Laws (from W0)&quot;]
+        PT[&quot;Property tests&lt;br/&gt;rapid, over ports&quot;]
+        FI[&quot;Fault injection&lt;br/&gt;mock connector&quot;]
+        LT[&quot;Live law checks&lt;br/&gt;sb tenant verify, prod monitors&quot;]
+    end
+    subgraph Models[&quot;Formal models (from W0)&quot;]
+        TLA[&quot;TLA+ / TLC&lt;br/&gt;Approvals, Rollout&quot;]
+        ALS[&quot;Alloy&lt;br/&gt;Permissions&quot;]
+    end
+    subgraph Evals[&quot;Evals (scaffold W0, gate W5)&quot;]
+        EV[&quot;permission · citation · injection · refusal · regression&quot;]
+    end
+    Always --&gt; GATE[&quot;Release gate&quot;]
+    Laws --&gt; GATE
+    Models --&gt; GATE
+    Evals --&gt; GATE
+</pre></div>
+<h2 id="what-gates-what-by-wave">What gates what, by wave</h2>
+<table>
+<thead>
+<tr>
+<th>Wave</th>
+<th>Main gate</th>
+<th>Also required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W0</td>
+<td>Models check in CI; law tests fail <strong>for the right reason</strong></td>
+<td>Unit, smoke, link and diagram checks</td>
+</tr>
+<tr>
+<td>W1–W2</td>
+<td>Unit + regression + smoke; laws green as features land</td>
+<td>Models re-checked on every change to their area</td>
+</tr>
+<tr>
+<td><strong>W3 onward</strong></td>
+<td><strong>Laws + models + evals</strong></td>
+<td>Unit, regression and smoke stay; never deleted</td>
+</tr>
+</tbody>
+</table>
+<p>From W3, a feature is done when its laws are green and its models still check. Unit tests support that; they don't replace it.</p>
+<h2 id="the-assurance-ledger">The assurance ledger</h2>
+<p>Each law has a status in <a href="../living/ASSURANCE_LEDGER.html">living/ASSURANCE_LEDGER.md</a>. Statuses only move up, and moving down is a Sev-1 bug.</p>
+<div class="mermaid-wrap"><pre class="mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; Stated: in sb-laws(7)
+    Stated --&gt; Modelled: TLA+ / Alloy checks it
+    Stated --&gt; Tested: property / fault test exists
+    Modelled --&gt; Tested
+    Tested --&gt; Enforced: green and blocking in CI
+    Enforced --&gt; Watched: production monitor + Sev-1 alert
+</pre></div>
+<h2 id="property-tests">Property tests</h2>
+<p>Property tests express a law over generated worlds. They live in <code>laws/</code> and are named for their law. <code>laws.Check</code> runs seeds 1..300 deterministically; <code>SB_SEED=n</code> reproduces one failure (ADR-0016).</p>
+<h3 id="the-red-ratchet">The red ratchet</h3>
+<p>A law test exists before its feature, so it starts red. <code>laws/expected_red.txt</code> lists each red law and the ticket that will turn it green. <code>make laws</code> (<code>tools/check/laws.py</code>) enforces three rules:</p>
+<ul>
+<li>a listed law must fail, and only with <code>not implemented</code>, which means it is failing for the right reason;</li>
+<li>a listed law that passes is an error: take it off the list and move it up in the ledger;</li>
+<li>every unlisted test must pass.</li>
+</ul>
+<h3 id="self-tests-testing-the-tests">Self-tests: testing the tests</h3>
+<p><code>laws/selftest_test.go</code> runs every law check against a correct <strong>reference system</strong>, which must pass, and against six <strong>broken systems</strong> (prefilter only, cross-tenant, unknown as allow, execute before audit, ignore approvals, claim Ran without a receipt), each of which must be caught. It also checks that the generator produces the hard cases: stale prefilters, unknown verdicts, missing docs, timeouts, public docs and multi-tenant worlds. This is the permanent mutation check for the law harness.</p>
+<pre><code class="language-go">func TestLAW01_CiteOnlyWhatTheAskerCanOpen(t *testing.T) {
+    Check(t, &quot;LAW-01&quot;, runs, func(r *rand.Rand) error { w := Gen(r); return law01(w, NewSystem(w)) })
+}
+</code></pre>
+<p><code>law01</code> fails if any cited or context document isn't allowed by the source now, <strong>or if the source wasn't asked</strong>, so a prefilter match alone can never pass.</p>
+<h2 id="fault-injection">Fault injection</h2>
+<p>The mock connector (SB-202) can return <code>allow</code>, <code>deny</code>, <code>unknown</code>, timeout, 404, a malformed response, or success with no receipt, on demand. Every law that mentions an external answer is tested against the full fault matrix.</p>
+<h2 id="mutation-checking-the-guardrails">Mutation-checking the guardrails</h2>
+<p>A guardrail test that never fails proves nothing. Whenever we add a law test, CI rule or model invariant, we break the rule on purpose once and watch it fail, then record that in the devlog:</p>
+<table>
+<thead>
+<tr>
+<th>Guardrail</th>
+<th>Mutation</th>
+<th>Expected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAW-03 test</td>
+<td>Map <code>Unknown</code> to <code>Allow</code></td>
+<td>Test fails</td>
+</tr>
+<tr>
+<td><code>Approvals.tla</code></td>
+<td>Drop the separation-of-duties guard</td>
+<td>TLC counterexample</td>
+</tr>
+<tr>
+<td><code>Rollout.tla</code></td>
+<td>Drop the promote guard</td>
+<td>TLC counterexample for <code>OneBehindMax</code></td>
+</tr>
+<tr>
+<td>Manual-diff CI rule</td>
+<td>PR touching <code>internal/</code> only</td>
+<td>CI fails</td>
+</tr>
+<tr>
+<td>Dependency rule</td>
+<td>Import an adapter from <code>core</code></td>
+<td>CI fails</td>
+</tr>
+</tbody>
+</table>
+<h2 id="regression-and-smoke">Regression and smoke</h2>
+<ul>
+<li><strong>Regression:</strong> every bug in <a href="../living/BUGS_AND_MITIGATIONS.html">BUGS_AND_MITIGATIONS</a> gets a test named <code>BUG-nnnn_*</code> in <code>tests/regress/</code>. These are never deleted.</li>
+<li><strong>Smoke:</strong> after every deploy to every cell, sign in as a synthetic user, ask a known question, check that the expected citation comes back, and check that a refused document stays refused.</li>
+</ul>
+<h2 id="commands">Commands</h2>
+<pre><code class="language-sh">make check      # the gate: everything that runs offline (see engineering standards)
+make laws       # law tests through the red ratchet
+make smoke      # black-box tests of the real sb binary
+make regress    # one test per bug
+make evals      # eval harness against the mock model (real targets from SB-501)
+make crosscheck # Python mirror of the TLA+ models
+make diagrams   # headless render of every Mermaid diagram
+make proofs     # TLC + Alloy (needs Java)
+</code></pre>
+<h2 id="see-also">See also</h2>
+<p><a href="../manual/sb-laws.7.html"><code>sb-laws(7)</code></a> · <a href="../proofs/README.html">proofs/</a> · <a href="architecture/12-evals-and-gate.html">12 Evals and the gate</a></p><p class="srcline">Source: <code>docs/04-testing-and-assurance.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#the-stack">The stack</a></li><li class="l2"><a href="#what-gates-what-by-wave">What gates what, by wave</a></li><li class="l2"><a href="#the-assurance-ledger">The assurance ledger</a></li><li class="l2"><a href="#property-tests">Property tests</a></li><li class="l3"><a href="#the-red-ratchet">The red ratchet</a></li><li class="l3"><a href="#self-tests-testing-the-tests">Self-tests: testing the tests</a></li><li class="l2"><a href="#fault-injection">Fault injection</a></li><li class="l2"><a href="#mutation-checking-the-guardrails">Mutation-checking the guardrails</a></li><li class="l2"><a href="#regression-and-smoke">Regression and smoke</a></li><li class="l2"><a href="#commands">Commands</a></li><li class="l2"><a href="#see-also">See also</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

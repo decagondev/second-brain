@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a class="current" href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="the-second-brain-manual">The Second Brain manual</h1>
+<p><strong>The manual is the spec.</strong> Code follows these pages, not the other way round. If the platform does something these pages don't describe, that's a bug in the code or a missing page, and both are fixed in the same PR (ADR-0009).</p>
+<p>New here? Take the <a href="sb-tour.7.html">tour</a> first.</p>
+<h2 id="7-concepts">(7) Concepts</h2>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>About</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="sb-tour.7.html">sb-tour(7)</a></td>
+<td>Fifteen minutes from manifest to cited answer to approved action</td>
+</tr>
+<tr>
+<td><a href="sb-laws.7.html">sb-laws(7)</a></td>
+<td>The eighteen laws, and how each is checked</td>
+</tr>
+<tr>
+<td><a href="sb-tenancy.7.html">sb-tenancy(7)</a></td>
+<td>Cells, isolation, regions</td>
+</tr>
+<tr>
+<td><a href="sb-factory.7.html">sb-factory(7)</a></td>
+<td>The factory, custody levels and hand-off (W7)</td>
+</tr>
+<tr>
+<td><a href="sb-identity.7.html">sb-identity(7)</a></td>
+<td>Sign-in, SCIM, sessions, deprovisioning</td>
+</tr>
+<tr>
+<td><a href="sb-permissions.7.html">sb-permissions(7)</a></td>
+<td>Allow, deny, unknown; prefilter versus live check</td>
+</tr>
+<tr>
+<td><a href="sb-ingest.7.html">sb-ingest(7)</a></td>
+<td>Sync, sanitising, provenance, freshness, rebuild</td>
+</tr>
+<tr>
+<td><a href="sb-citations.7.html">sb-citations(7)</a></td>
+<td><code>doc@version</code>, claims and <code>uncited</code></td>
+</tr>
+<tr>
+<td><a href="sb-agents.7.html">sb-agents(7)</a></td>
+<td><code>ask</code>, <code>draft-reply</code>, workflows and the tool bus</td>
+</tr>
+<tr>
+<td><a href="sb-approvals.7.html">sb-approvals(7)</a></td>
+<td>The action state machine and payload binding</td>
+</tr>
+<tr>
+<td><a href="sb-audit.7.html">sb-audit(7)</a></td>
+<td>What is recorded, and how to prove it wasn't changed</td>
+</tr>
+<tr>
+<td><a href="sb-kill-switches.7.html">sb-kill-switches(7)</a></td>
+<td>Stopping agents, connectors and tenants</td>
+</tr>
+<tr>
+<td><a href="sb-evals.7.html">sb-evals(7)</a></td>
+<td>Suites, thresholds and the release gate</td>
+</tr>
+<tr>
+<td><a href="sb-release.7.html">sb-release(7)</a></td>
+<td>Bundles, channels, rings, rollback, attestation</td>
+</tr>
+<tr>
+<td><a href="sb-observability.7.html">sb-observability(7)</a></td>
+<td>Metrics, alerts, reports, telemetry rules</td>
+</tr>
+<tr>
+<td><a href="sb-onboarding.7.html">sb-onboarding(7)</a></td>
+<td>The day 0 to 90 runbook for a company's IT team</td>
+</tr>
+<tr>
+<td><a href="sb-errors.7.html">sb-errors(7)</a></td>
+<td>Every error code, its status, exit code and remedy</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-commands">(1) Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>About</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="sb.1.html">sb(1)</a></td>
+<td>The CLI: global options, output, exit codes</td>
+</tr>
+<tr>
+<td><a href="sb-tenant.1.html">sb-tenant(1)</a></td>
+<td><code>check</code>, <code>apply</code>, <code>verify</code></td>
+</tr>
+<tr>
+<td><a href="sb-kill.1.html">sb-kill(1)</a></td>
+<td><code>kill</code>, <code>unkill</code>, <code>kill list</code></td>
+</tr>
+<tr>
+<td><a href="sb-audit.1.html">sb-audit(1)</a></td>
+<td><code>verify</code>, <code>tail</code>, <code>export</code></td>
+</tr>
+<tr>
+<td><a href="sb-release.1.html">sb-release(1)</a></td>
+<td><code>status</code>, <code>promote</code>, <code>rollback</code> (maintainers)</td>
+</tr>
+<tr>
+<td><a href="sb-eval.1.html">sb-eval(1)</a></td>
+<td><code>run</code>, <code>diff</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-api">(3) API</h2>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>About</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="sb-api.3.html">sb-api(3)</a></td>
+<td>Conventions: auth, versioning, errors, idempotency, pagination</td>
+</tr>
+<tr>
+<td><a href="sb-ask.3.html">sb-ask(3)</a></td>
+<td><code>POST /v1/ask</code>, traces, feedback</td>
+</tr>
+<tr>
+<td><a href="sb-actions.3.html">sb-actions(3)</a></td>
+<td>Drafts, proposed actions, approvals</td>
+</tr>
+<tr>
+<td><a href="sb-admin.3.html">sb-admin(3)</a></td>
+<td>Manifest diffs, kill switches, audit and usage</td>
+</tr>
+<tr>
+<td><a href="sb-connector.3.html">sb-connector(3)</a></td>
+<td>The four-call connector contract</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-file-formats">(5) File formats</h2>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>About</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="sb-tenant.5.html">sb-tenant(5)</a></td>
+<td>The tenant manifest</td>
+</tr>
+<tr>
+<td><a href="sb-policy.5.html">sb-policy(5)</a></td>
+<td>Cedar policy files and schema</td>
+</tr>
+<tr>
+<td><a href="sb-eval.5.html">sb-eval(5)</a></td>
+<td>Eval suite files and the gate file</td>
+</tr>
+<tr>
+<td><a href="sb-audit.5.html">sb-audit(5)</a></td>
+<td>Audit rows and export format</td>
+</tr>
+</tbody>
+</table>
+<h2 id="writing-a-page">Writing a page</h2>
+<p>Copy <a href="TEMPLATE.html">TEMPLATE.md</a>. Every page has the same sections in the same order, so readers and tools always know where to look. Code blocks whose info string ends in <code>run</code> (for example, a <code>yaml</code> block tagged <code>run</code>) are executed in CI (SB-009).</p><p class="srcline">Source: <code>manual/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#7-concepts">(7) Concepts</a></li><li class="l2"><a href="#1-commands">(1) Commands</a></li><li class="l2"><a href="#3-api">(3) API</a></li><li class="l2"><a href="#5-file-formats">(5) File formats</a></li><li class="l2"><a href="#writing-a-page">Writing a page</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-tenant(1) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a class="current" href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-TENANT(1)</span><span>Second Brain Manual</span><span>SB-TENANT(1)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-tenant1">sb-tenant(1)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-tenant — validate a manifest, make a cell match it, and prove the laws hold on real data</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">sb tenant check  FILE
+sb tenant apply  FILE [--plan]
+sb tenant verify FILE [--law LAW-nn]... [--sample N]
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>These three verbs are the whole onboarding story.</p>
+<p><strong>check</strong> parses and validates <code>FILE</code> against <a href="sb-tenant.5.html">sb-tenant(5)</a>. It needs no network and changes nothing. A valid file prints <code>FILE: ok</code> and exits 0. Otherwise errors go to standard output in compiler format, <code>file:line:col: field: message</code>, one per line and sorted by position, so editors and agents can jump to them. A count line (<code>N errors</code>) follows, and the command exits 1 with <code>EMANIFEST</code> on standard error. With <code>--json</code> it prints <code>{"file": …, "errors": [{"line", "col", "field", "message"}]}</code> and the same exit status. An unreadable <code>FILE</code> is a usage error (exit 2).</p>
+<p><strong>apply</strong> makes the tenant's cell match <code>FILE</code>. It creates the cell if it doesn't exist (database, index, vault namespace, KMS key, queue, region pin), enables connectors and agents, and loads approval rules. Apply is <strong>idempotent</strong>: running it twice with the same file changes nothing the second time. It is <strong>resumable</strong>: if interrupted, run it again. <code>--plan</code> prints what would change and exits.</p>
+<p>Immutable fields (<code>tenant</code>, <code>region</code>) can't be changed by apply; changing them is a new tenant. A plan that would change <code>region</code> fails with <code>EMANIFEST</code>.</p>
+<p><strong>How apply works.</strong> Apply computes the plan, then enacts it one change at a time, in plan order. For a new cell, it first stamps the cell from the template into the account named by the cell's custody record (<code>placement</code>, <a href="sb-factory.7.html">sb-factory(7)</a>); the cell is recorded in the registry only after every resource exists. Each later change is recorded in the registry as soon as it is enacted. Before and after each step, apply writes a journal entry (tenant, apply id, step, change, <code>start</code> or <code>done</code>), never content or secrets. If apply stops at any point, running it again plans only what is left and finishes the job. When there is nothing to do, apply prints <code>apply: no changes</code> and writes nothing: no resources, no registry record, no journal entry.</p>
+<p>Apply prints each change as it is enacted, in the plan format, and ends with <code>apply: A added, C changed, R removed</code>. With <code>--json</code> it prints the plan it enacted. Errors from the registry or the placement are <code>EUNAVAIL</code> (exit 7). The changes enacted before the error stay recorded, so a rerun resumes.</p>
+<p><strong>The plan.</strong> <code>--plan</code> checks <code>FILE</code> as <code>check</code> does, reads the tenant's applied state from the control-plane registry, and prints the difference resource by resource. It changes nothing and exits 0, whether or not there are changes. If the registry can't be reached, or its answer can't be read, the plan fails with <code>EUNAVAIL</code> (exit 7). It never assumes the tenant has no cell, because that would plan a second one.</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Name</th>
+<th>Shown as</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cell</code></td>
+<td>tenant</td>
+<td><code>cell acme-logistics (region eu)</code></td>
+</tr>
+<tr>
+<td><code>setting</code></td>
+<td><code>channel</code>, <code>idp</code>, <code>retention_days</code>, <code>budget_usd_month</code>, <code>pilot_group</code></td>
+<td><code>setting channel = stable</code></td>
+</tr>
+<tr>
+<td><code>connector</code></td>
+<td>kind</td>
+<td><code>connector docs (sharepoint, read-only)</code>; <code>read-write</code> if a workflow writes to it</td>
+</tr>
+<tr>
+<td><code>exclude</code></td>
+<td>kind</td>
+<td><code>exclude chat (#hr-*, #legal-*)</code></td>
+</tr>
+<tr>
+<td><code>agent</code></td>
+<td>name</td>
+<td><code>agent ask</code></td>
+</tr>
+<tr>
+<td><code>workflow</code></td>
+<td>name</td>
+<td><code>workflow ticket-update (approval group:it-leads)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Lines start with <code>+</code> (add), <code>~</code> (change, showing the old value after <code>was</code>) or <code>-</code> (remove), in the order of the table, then by name. The last line is <code>plan: A to add, C to change, R to remove</code>, or <code>plan: no changes</code>. With <code>--json</code> the plan is <code>{"tenant": …, "changes": [{"op", "kind", "name", "attrs", "was"}], "add": A, "change": C, "remove": R}</code>, with <code>op</code> one of <code>add</code>, <code>change</code>, <code>remove</code>. The same manifest and the same applied state always give the same plan, byte for byte.</p>
+<p><strong>verify</strong> runs law checks against the tenant's real data and users, without printing any content:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAW-01</td>
+<td>Samples users and questions; asserts every citation is openable by the asker <strong>and that the source was asked</strong></td>
+</tr>
+<tr>
+<td>LAW-02</td>
+<td>Issues adversarial queries using another tenant's known document ids; expects <code>ETENANT</code> or no results</td>
+</tr>
+<tr>
+<td>LAW-03</td>
+<td>Injects a timeout on one connector; expects every chunk from it to be dropped</td>
+</tr>
+<tr>
+<td>LAW-14</td>
+<td>Asserts every claim is cited or labelled <code>uncited</code></td>
+</tr>
+<tr>
+<td>Evals</td>
+<td>Runs the tenant's golden questions (<code>sb-eval(5)</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Any check that returns <em>unknown</em> counts as a <strong>fail</strong>.</p>
+<h2 id="options">OPTIONS</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--plan</code></td>
+<td>(apply) Show the diff only</td>
+</tr>
+<tr>
+<td><code>--law LAW-nn</code></td>
+<td>(verify) Run only the given law; repeatable</td>
+</tr>
+<tr>
+<td><code>--sample N</code></td>
+<td>(verify) Users × questions sampled (default 50)</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Machine output</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exit-status">EXIT STATUS</h2>
+<p>0 success · 1 invalid manifest, apply failed, or any law failed or unknown · 2 usage · 3 not permitted · 7 unavailable. See <a href="sb.1.html">sb(1)</a>.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-14">LAW-14</a>, <a href="sb-laws.7.html#law-16">LAW-16</a>.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-text">$ sb tenant check acme.yaml
+acme.yaml:2:1: version: field not allowed; pick a channel (stable|testing) instead
+acme.yaml:9:3: workflows[0]: &quot;ticket-update&quot; needs an approval rule; add approval: { ticket-update: group:&lt;name&gt; }
+2 errors
+
+$ sb tenant apply acme.yaml --plan
++ cell acme-logistics (region eu)
++ setting budget_usd_month = 1000
++ setting channel = stable
++ setting idp = oidc://login.acme.example
++ setting retention_days = 365
++ connector chat (slack, read-only)
++ connector docs (sharepoint, read-only)
++ agent ask
+plan: 8 to add, 0 to change, 0 to remove
+
+$ sb tenant apply acme.yaml --plan     # later: tickets, drafts and one workflow added
+~ setting budget_usd_month = 1500 (was 1000)
++ connector tickets (jira, read-write)
++ agent draft-reply
++ workflow ticket-update (approval group:it-leads)
+plan: 3 to add, 1 to change, 0 to remove
+
+$ sb tenant verify acme.yaml
+LAW-01  pass   50/50 sampled answers, 212 citations, source asked for all
+LAW-02  pass   40 adversarial queries, 0 cross-tenant results
+LAW-03  pass   chat timeout injected, 0 chat chunks used
+LAW-14  pass   612 claims: 571 cited, 41 labelled uncited, 0 unlabelled
+evals   pass   golden 38/40 (threshold 36)
+verify: 5 passed, 0 failed
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-onboarding.7.html">sb-onboarding(7)</a>, <a href="sb-laws.7.html">sb-laws(7)</a></p><p class="srcline">Source: <code>manual/sb-tenant.1.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#options">OPTIONS</a></li><li class="l2"><a href="#exit-status">EXIT STATUS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E03 Connectors and Ingestion · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a class="current" href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E03</h4><a href="../../epics/E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.html">SB-201: Connector contract, SDK and contract kit</a><a href="../../epics/E03-connectors-ingestion/SB-202-fault-injecting-mock-connector.html">SB-202: Fault-injecting mock connector</a><a href="../../epics/E03-connectors-ingestion/SB-203-docs-connector-first-vendor-read-only.html">SB-203: Docs connector (first vendor, read-only)</a><a href="../../epics/E03-connectors-ingestion/SB-204-chat-connector-read-only.html">SB-204: Chat connector (read-only)</a><a href="../../epics/E03-connectors-ingestion/SB-205-connector-credentials-via-vault-references.html">SB-205: Connector credentials via vault references</a><a href="../../epics/E03-connectors-ingestion/SB-206-ingest-pipeline-chunk-embed-tag-provenance.html">SB-206: Ingest pipeline: chunk, embed, tag provenance</a><a href="../../epics/E03-connectors-ingestion/SB-207-ingest-sanitiser-and-injection-flags.html">SB-207: Ingest sanitiser and injection flags</a><a href="../../epics/E03-connectors-ingestion/SB-208-incremental-sync-via-changes-with-freshness.html">SB-208: Incremental sync via changes with freshness SLA</a><a href="../../epics/E03-connectors-ingestion/SB-209-deletion-and-acl-change-propagation.html">SB-209: Deletion and ACL-change propagation</a><a href="../../epics/E03-connectors-ingestion/SB-210-index-rebuild-from-sources.html">SB-210: Index rebuild from sources</a><a href="../../epics/E03-connectors-ingestion/SB-211-tickets-connector-read-only.html">SB-211: Tickets connector (read-only)</a><a href="../../epics/E03-connectors-ingestion/SB-610-crm-connector-read-only.html">SB-610: CRM connector (read-only)</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E03-connectors-ingestion</div><h1 id="e03-connectors-and-ingestion">E03: Connectors and Ingestion</h1>
+<blockquote>
+<p>Sources flow in read-only through a four-call contract, with ACLs, provenance and freshness, and ingested text is treated as untrusted data.</p>
+</blockquote>
+<p><strong>Waves:</strong> W2, W6 · <strong>Tickets:</strong> 12 · <strong>Stories:</strong> 5</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-03.1</strong>: As a <em>company IT operator</em>, I want to connect docs and chat read-only from the manifest, so that setup is one line per source. Delivered by <a href="SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a>, <a href="SB-203-docs-connector-first-vendor-read-only.html">SB-203</a>, <a href="SB-204-chat-connector-read-only.html">SB-204</a>, <a href="SB-205-connector-credentials-via-vault-references.html">SB-205</a>.</li>
+<li><strong>US-03.2</strong>: As a <em>company staff member</em>, I want new and changed documents to show up within the freshness SLA, so that answers reflect today's truth. Delivered by <a href="SB-206-ingest-pipeline-chunk-embed-tag-provenance.html">SB-206</a>, <a href="SB-208-incremental-sync-via-changes-with-freshness.html">SB-208</a>, <a href="SB-209-deletion-and-acl-change-propagation.html">SB-209</a>.</li>
+<li><strong>US-03.3</strong>: As a <em>security reviewer</em>, I want ingested text treated as data, never as instructions, so that a poisoned document cannot drive an agent. Delivered by <a href="SB-207-ingest-sanitiser-and-injection-flags.html">SB-207</a>.</li>
+<li><strong>US-03.4</strong>: As a <em>platform engineer</em>, I want the index to be rebuildable from sources at any time, so that the index is never a system of record. Delivered by <a href="SB-210-index-rebuild-from-sources.html">SB-210</a>.</li>
+<li><strong>US-03.5</strong>: As a <em>connector author</em>, I want a contract kit and a fault-injecting mock, so that a new connector is correct by test, not by review. Delivered by <a href="SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a>, <a href="SB-202-fault-injecting-mock-connector.html">SB-202</a>, <a href="SB-211-tickets-connector-read-only.html">SB-211</a>, <a href="SB-610-crm-connector-read-only.html">SB-610</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB201[&quot;SB-201&lt;br/&gt;Connector contract, SDK and…&quot;]
+  SB202[&quot;SB-202&lt;br/&gt;Fault-injecting mock connector&quot;]
+  SB203[&quot;SB-203&lt;br/&gt;Docs connector (first vendor,…&quot;]
+  SB204[&quot;SB-204&lt;br/&gt;Chat connector (read-only)&quot;]
+  SB205[&quot;SB-205&lt;br/&gt;Connector credentials via vault…&quot;]
+  SB206[&quot;SB-206&lt;br/&gt;Ingest pipeline: chunk, embed,…&quot;]
+  SB207[&quot;SB-207&lt;br/&gt;Ingest sanitiser and injection…&quot;]
+  SB208[&quot;SB-208&lt;br/&gt;Incremental sync via changes…&quot;]
+  SB209[&quot;SB-209&lt;br/&gt;Deletion and ACL-change…&quot;]
+  SB210[&quot;SB-210&lt;br/&gt;Index rebuild from sources&quot;]
+  SB211[&quot;SB-211&lt;br/&gt;Tickets connector (read-only)&quot;]
+  SB610[&quot;SB-610&lt;br/&gt;CRM connector (read-only)&quot;]
+  SB201 --&gt; SB202
+  SB201 --&gt; SB203
+  SB205 --&gt; SB203
+  SB201 --&gt; SB204
+  SB205 --&gt; SB204
+  SB201 --&gt; SB206
+  SB206 --&gt; SB207
+  SB206 --&gt; SB208
+  SB208 --&gt; SB209
+  SB208 --&gt; SB210
+  SB201 --&gt; SB211
+  SB201 --&gt; SB610
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a></td>
+<td>W2 / S2.1</td>
+<td>Connector contract, SDK and contract kit</td>
+<td>LAW-01, LAW-03, LAW-05</td>
+</tr>
+<tr>
+<td><a href="SB-202-fault-injecting-mock-connector.html">SB-202</a></td>
+<td>W2 / S2.1</td>
+<td>Fault-injecting mock connector</td>
+<td>LAW-03, LAW-05</td>
+</tr>
+<tr>
+<td><a href="SB-203-docs-connector-first-vendor-read-only.html">SB-203</a></td>
+<td>W2 / S2.2</td>
+<td>Docs connector (first vendor, read-only)</td>
+<td>LAW-01, LAW-13</td>
+</tr>
+<tr>
+<td><a href="SB-204-chat-connector-read-only.html">SB-204</a></td>
+<td>W2 / S2.2</td>
+<td>Chat connector (read-only)</td>
+<td>LAW-01</td>
+</tr>
+<tr>
+<td><a href="SB-205-connector-credentials-via-vault-references.html">SB-205</a></td>
+<td>W2 / S2.2</td>
+<td>Connector credentials via vault references</td>
+<td>LAW-07</td>
+</tr>
+<tr>
+<td><a href="SB-206-ingest-pipeline-chunk-embed-tag-provenance.html">SB-206</a></td>
+<td>W2 / S2.3</td>
+<td>Ingest pipeline: chunk, embed, tag provenance</td>
+<td>LAW-13</td>
+</tr>
+<tr>
+<td><a href="SB-207-ingest-sanitiser-and-injection-flags.html">SB-207</a></td>
+<td>W2 / S2.3</td>
+<td>Ingest sanitiser and injection flags</td>
+<td>LAW-09</td>
+</tr>
+<tr>
+<td><a href="SB-208-incremental-sync-via-changes-with-freshness.html">SB-208</a></td>
+<td>W2 / S2.3</td>
+<td>Incremental sync via <code>changes</code> with freshness SLA</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-209-deletion-and-acl-change-propagation.html">SB-209</a></td>
+<td>W2 / S2.3</td>
+<td>Deletion and ACL-change propagation</td>
+<td>LAW-01</td>
+</tr>
+<tr>
+<td><a href="SB-210-index-rebuild-from-sources.html">SB-210</a></td>
+<td>W2 / S2.3</td>
+<td>Index rebuild from sources</td>
+<td>LAW-13</td>
+</tr>
+<tr>
+<td><a href="SB-211-tickets-connector-read-only.html">SB-211</a></td>
+<td>W2 / S2.4</td>
+<td>Tickets connector (read-only)</td>
+<td>LAW-01</td>
+</tr>
+<tr>
+<td><a href="SB-610-crm-connector-read-only.html">SB-610</a></td>
+<td>W6 / S6.3</td>
+<td>CRM connector (read-only)</td>
+<td>LAW-01</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E03-connectors-ingestion/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

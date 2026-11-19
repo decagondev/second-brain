@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-101: Manifest schema, parser and sb tenant check · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E01</h4><a class="current" href="../../epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.html">SB-101: Manifest schema, parser and sb tenant check</a><a href="../../epics/E01-tenancy-identity/SB-102-sb-tenant-apply-plan-dry-run.html">SB-102: sb tenant apply --plan dry run</a><a href="../../epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103: Cell template (infrastructure as code)</a><a href="../../epics/E01-tenancy-identity/SB-104-sb-tenant-apply-idempotent-cell-creation.html">SB-104: sb tenant apply idempotent cell creation</a><a href="../../epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.html">SB-105: Control-plane tenant registry and cell routing</a><a href="../../epics/E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.html">SB-106: OIDC sign-in per tenant</a><a href="../../epics/E01-tenancy-identity/SB-107-scim-provisioning-and-fast-deprovisioning.html">SB-107: SCIM provisioning and fast deprovisioning</a><a href="../../epics/E01-tenancy-identity/SB-108-tenant-scoped-request-context.html">SB-108: Tenant-scoped request context</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E01-tenancy-identity</div><h1 id="sb-101-manifest-schema-parser-and-sb-tenant-check">SB-101: Manifest schema, parser and <code>sb tenant check</code></h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E01 Tenancy and Identity</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W1 / S1.1 Manifest</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-01.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-tenant.5.html"><code>sb-tenant(5)</code></a>, <a href="../../manual/sb-tenant.1.html"><code>sb-tenant(1)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-16">LAW-16</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E00-foundations/SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.html">SB-004</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>In review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>The manifest is the one file a company edits; errors must point at the exact line.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Invalid manifests fail with <code>file:line:col: field: message</code></li>
+<li class="task done"><span class="box">✓</span>Any <code>version:</code> or <code>platform:</code> field is rejected (ADR-0004)</li>
+<li class="task done"><span class="box">✓</span>Unknown fields are errors, not warnings</li>
+<li class="task done"><span class="box">✓</span>JSON Schema published from the same source as the Go types</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Define <code>manifest.Tenant</code> Go type and generate JSON Schema</li>
+<li class="task done"><span class="box">✓</span>YAML parser that keeps line/column positions</li>
+<li class="task done"><span class="box">✓</span>Validation rules from <code>sb-tenant(5)</code></li>
+<li class="task done"><span class="box">✓</span>Golden tests for every error message</li>
+<li class="task done"><span class="box">✓</span>Update man page examples to run in CI</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-16</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: built. <code>internal/core/manifest</code> holds a strict YAML-subset parser that keeps line and column (<code>yaml.go</code>), the checker (<code>manifest.go</code>) and the JSON Schema (<code>schema.go</code>). All three are standard library only, so ADR-0016 still holds. One field table drives the checker, the required list and the schema, and a test keeps the <code>Tenant</code> json tags in step with it. The schema is published as <code>examples/tenants/tenant.schema.json</code>, and a test fails if it's stale. <code>sb tenant check</code> prints <code>FILE: ok</code>, or compiler-format errors and a count line, then exits 1 with <code>EMANIFEST</code>. <code>--json</code> is supported. Golden tests cover all 66 messages at their exact positions, and <code>invalid.yaml</code> prints <code>invalid.expected</code> byte for byte (unit test and <code>make examples</code>). LAW-16 has a law test for the manifest side; the drift side comes with SB-510. <code>make check</code> is green in WSL.</p>
+<p>Manual changes, made first: sb-tenant(5) gains a SYNTAX section and exact rules (regions <code>eu</code>/<code>us</code>, vendor names, known workflows, duplicates, <code>_</code>-separated forbidden names, <code>apply</code> owning the existing-cell comparison). sb-tenant(1) gains output and JSON format. sb-tenancy(7) gains the region list.</p>
+<p>2026-11-19: the user confirmed regions <code>eu</code> and <code>us</code> "for now" and gave the go-ahead.</p>
+<p><strong>Left:</strong> the first green CI run on a real push (the folder isn't a git repository yet).</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

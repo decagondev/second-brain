@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-laws(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a class="current" href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-LAWS(7)</span><span>Second Brain Manual</span><span>SB-LAWS(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-laws7">sb-laws(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-laws — the platform's invariants, how each is checked, and where</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">LAW-01 cite only what the asker can open     LAW-09 data is not instructions
+LAW-02 no tenant crossing                    LAW-10 kill wins
+LAW-03 unknown means refuse                  LAW-11 audit chain unbroken
+LAW-04 audit before act                      LAW-12 deprovision revokes fast
+LAW-05 ran means receipt                     LAW-13 the index is derived
+LAW-06 only signed, gated builds run         LAW-14 every claim cited or labelled
+LAW-07 no secret in prompt, log or audit     LAW-15 approval binds one payload
+LAW-08 at most one behind stable             LAW-16 the manifest is the truth
+LAW-17 hand-off leaves no unlisted access    LAW-18 the root key always has a custodian
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>A <strong>law</strong> is a statement the platform guarantees for every input, every tenant and every release. Laws are written here first, checked by tests, models, evals and production monitors, and tracked in the <a href="../living/ASSURANCE_LEDGER.html">assurance ledger</a>. A law violation in production is <strong>Sev-1</strong>, always.</p>
+<p>Each law lists its <strong>checks</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Model</strong></td>
+<td>A TLA+ or Alloy model in <code>proofs/</code> checks it over all small cases</td>
+</tr>
+<tr>
+<td><strong>Property</strong></td>
+<td>A property-based test in <code>laws/</code> checks it over generated cases</td>
+</tr>
+<tr>
+<td><strong>Fault</strong></td>
+<td>A fault-injection test checks it under connector failures</td>
+</tr>
+<tr>
+<td><strong>Eval</strong></td>
+<td>An eval suite measures it where the model's behaviour matters</td>
+</tr>
+<tr>
+<td><strong>Verify</strong></td>
+<td><code>sb tenant verify</code> checks it on a tenant's real data</td>
+</tr>
+<tr>
+<td><strong>Watch</strong></td>
+<td>A production monitor alerts on it</td>
+</tr>
+</tbody>
+</table>
+<h3 id="law-01">LAW-01: Cite only what the asker can open</h3>
+<p>No answer cites, quotes or uses a chunk from a document that the asker can't open <strong>at answer time</strong>, according to the source's live ACL.</p>
+<p><em>Checks:</em> Model (<code>Permissions.als: CitedImpliesLiveAllow</code>) · Property, which asserts the source <strong>was asked</strong>, not just that the prefilter matched · Fault · Eval (<code>permission</code>) · Verify · Watch (sampled re-checks of citations).</p>
+<h3 id="law-02">LAW-02: No tenant crossing</h3>
+<p>No retrieval, query, cache or log read returns data from another tenant.</p>
+<p><em>Checks:</em> Model (<code>NoCrossTenant</code>) · Property with two seeded tenants on every CI run · adversarial queries · Verify · Watch (<code>ETENANT</code> counter).</p>
+<h3 id="law-03">LAW-03: Unknown means refuse</h3>
+<p>An <code>Unknown</code> permission result (timeout, error, missing source, unmapped model) is treated exactly like <code>Deny</code>.</p>
+<p><em>Checks:</em> Model (<code>UnknownNeverUsed</code>) · Fault: full matrix through the mock connector · Verify (injects a timeout) · lint: exhaustive <code>Decision</code> switches.</p>
+<h3 id="law-04">LAW-04: Audit before act</h3>
+<p>Every tool call has a committed audit row <strong>before</strong> it executes. A consequential call also has a valid approval id in that row.</p>
+<p><em>Checks:</em> Model (<code>Approvals.tla: AuditBeforeExec</code>, <code>ApprovalBeforeExec</code>) · Property: audit replay reconstructs every call · Watch: audit-insert failures.</p>
+<h3 id="law-05">LAW-05: Ran means receipt</h3>
+<p>An action is reported as <code>Ran</code> only if the target returned a receipt. Otherwise it is <code>DidNotRun</code>.</p>
+<p><em>Checks:</em> Model (<code>RanImpliesReceipt</code>) · Fault: a mock with no receipt must yield <code>DidNotRun</code> · contract kit <code>act/receipt-or-error</code>.</p>
+<h3 id="law-06">LAW-06: Only signed, gated builds run</h3>
+<p>The build running in every cell is a signed release whose bundle passed the eval gate.</p>
+<p><em>Checks:</em> Model (<code>Rollout.tla: OnlyGatedRuns</code>) · deploy-time verification · Watch: hourly digest attestation per cell.</p>
+<h3 id="law-07">LAW-07: No secret in prompt, log or audit</h3>
+<p>No secret (credential, token, key) appears in any prompt, log line or audit row.</p>
+<p><em>Checks:</em> canary secrets in vault and fixtures · scanner over prompts, logs and audit in CI · Watch: the same scanner in production.</p>
+<h3 id="law-08">LAW-08: At most one behind stable</h3>
+<p>No stable-channel tenant on the release train (custody <code>factory</code> or <code>tenant</code>) runs a release more than one behind the current stable. Detached cells are off the train (<a href="sb-factory.7.html">sb-factory(7)</a>).</p>
+<p><em>Checks:</em> Model (<code>Rollout.tla: OneBehindMax</code>). Removing the promote guard produces a counterexample · release-controller check on every promotion · Watch: hourly lag.</p>
+<h3 id="law-09">LAW-09: Data is not instructions</h3>
+<p>Ingested content can't cause a tool call or exfiltrate data. Only the user's own request can lead to a tool call.</p>
+<p><em>Checks:</em> Eval (<code>injection</code>, zero tool calls and zero canary leaks) · Property: tool-argument provenance never from flagged spans.</p>
+<h3 id="law-10">LAW-10: Kill wins</h3>
+<p>Within 10 seconds of a kill switch being set, no new tool call or run starts in its scope.</p>
+<p><em>Checks:</em> Model (<code>KillWins</code>: once killed, no <code>Executing</code> transition) · timed test · drill every release.</p>
+<h3 id="law-11">LAW-11: Audit chain unbroken</h3>
+<p>The audit log is append-only. Every row's <code>prev</code> equals the previous row's <code>hash</code>, and every hourly anchor verifies.</p>
+<p><em>Checks:</em> tamper test · <code>sb audit verify</code> in CI, after restore drills and hourly in production.</p>
+<h3 id="law-12">LAW-12: Deprovision revokes fast</h3>
+<p>Within 5 minutes of a SCIM deactivate, no request from that user succeeds.</p>
+<p><em>Checks:</em> timed property test · Watch: requests by deactivated users.</p>
+<h3 id="law-13">LAW-13: The index is derived</h3>
+<p>Dropping and rebuilding a tenant's index from its sources yields the same set of <code>(cite, ACL)</code> pairs.</p>
+<p><em>Checks:</em> scheduled rebuild drill with set equality · Property on the ingest pipeline (idempotent per <code>(cite, span)</code>).</p>
+<h3 id="law-14">LAW-14: Every claim cited or labelled</h3>
+<p>Every claim in an answer or draft either cites an allowed chunk or carries the <code>uncited</code> label, set by code.</p>
+<p><em>Checks:</em> Property over the composer · Eval (<code>citation</code>) · Verify.</p>
+<h3 id="law-15">LAW-15: Approval binds one payload</h3>
+<p>An approval authorises exactly one payload, identified by its hash, approved by someone other than the requester. Any edit voids it.</p>
+<p><em>Checks:</em> Model (<code>ExecutedMatchesApproved</code>, <code>NoSelfApproval</code>) · Property: hash mismatch always refuses.</p>
+<h3 id="law-16">LAW-16: The manifest is the truth</h3>
+<p>A cell's live configuration equals its applied manifest. Every console change is a manifest diff.</p>
+<p><em>Checks:</em> Watch: hourly drift detector · Property: console actions produce manifest diffs.</p>
+<h3 id="law-17">LAW-17: Hand-off leaves no unlisted access</h3>
+<p>After a hand-off to <code>tenant</code> custody completes, the factory holds no access path to the cell (IAM role, deploy credential, break-glass role, network route, key wrap) except the grants listed in the hand-off record.</p>
+<p><em>Checks:</em> Model (<code>Handoff.tla: NoUnlistedAccess</code>) · Verify (<code>sb tenant verify --law LAW-17</code>, which enumerates access paths from IaC state and IAM) · Watch: monthly re-enumeration. Planned for W7; v1 has no hand-offs.</p>
+<h3 id="law-18">LAW-18: The root key always has a custodian</h3>
+<p>At every moment, at least one custodian can unwrap a cell's root key. A hand-off re-wraps under the new custodian <strong>before</strong> destroying the old wrap.</p>
+<p><em>Checks:</em> Model (<code>Handoff.tla: KeyNeverOrphaned</code>) · step-ordering test in the hand-off controller · Watch: key-wrap inventory per cell.</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-factory.7.html">sb-factory(7)</a>, <a href="../living/ASSURANCE_LEDGER.html">Assurance ledger</a>, <a href="../docs/04-testing-and-assurance.html">04 Testing and assurance</a>, <a href="../proofs/README.html">proofs/</a></p><p class="srcline">Source: <code>manual/sb-laws.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#law-01">LAW-01: Cite only what the asker can open</a></li><li class="l3"><a href="#law-02">LAW-02: No tenant crossing</a></li><li class="l3"><a href="#law-03">LAW-03: Unknown means refuse</a></li><li class="l3"><a href="#law-04">LAW-04: Audit before act</a></li><li class="l3"><a href="#law-05">LAW-05: Ran means receipt</a></li><li class="l3"><a href="#law-06">LAW-06: Only signed, gated builds run</a></li><li class="l3"><a href="#law-07">LAW-07: No secret in prompt, log or audit</a></li><li class="l3"><a href="#law-08">LAW-08: At most one behind stable</a></li><li class="l3"><a href="#law-09">LAW-09: Data is not instructions</a></li><li class="l3"><a href="#law-10">LAW-10: Kill wins</a></li><li class="l3"><a href="#law-11">LAW-11: Audit chain unbroken</a></li><li class="l3"><a href="#law-12">LAW-12: Deprovision revokes fast</a></li><li class="l3"><a href="#law-13">LAW-13: The index is derived</a></li><li class="l3"><a href="#law-14">LAW-14: Every claim cited or labelled</a></li><li class="l3"><a href="#law-15">LAW-15: Approval binds one payload</a></li><li class="l3"><a href="#law-16">LAW-16: The manifest is the truth</a></li><li class="l3"><a href="#law-17">LAW-17: Hand-off leaves no unlisted access</a></li><li class="l3"><a href="#law-18">LAW-18: The root key always has a custodian</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

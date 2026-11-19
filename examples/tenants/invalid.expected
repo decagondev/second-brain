@@ -1,0 +1,9 @@
+invalid.yaml:2:9: tenant: "Acme_Logistics" must be a DNS label ([a-z0-9-], 3-40 chars)
+invalid.yaml:3:1: version: field not allowed; pick a channel (stable|testing) instead (ADR-0004)
+invalid.yaml:4:10: channel: "beta" must be one of stable, testing
+invalid.yaml:8:9: agents: "ask" is required
+invalid.yaml:9:13: workflows[0]: "ticket-update" needs an approval rule; add approval: { ticket-update: group:<name> }
+invalid.yaml:9:13: workflows[0]: "ticket-update" needs connector kind "tickets" in connectors
+invalid.yaml:10:1: api_token: field not allowed; secrets live in vault://tenants/<tenant>/connectors/<kind>
+invalid.yaml:11:1: custody: field not allowed; custody changes only through a dual-approved hand-off, see sb-factory(7)
+8 errors

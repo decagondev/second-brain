@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risks · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="active" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Living documents</h4><a href="../devlog.html">Devlog timeline</a><a href="../living/ASSURANCE_LEDGER.html">Assurance Ledger</a><a href="../living/BUGS_AND_MITIGATIONS.html">Bugs and Mitigations</a><a href="../living/CHANGELOG.html">Changelog</a><a href="../living/DEVLOG.html">Devlog</a><a href="../living/GLOSSARY.html">Glossary</a><a href="../living/OPEN_QUESTIONS.html">Open Questions</a><a class="current" href="../living/RISKS.html">Risks</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / living</div><h1 id="risk-register">Risk register</h1>
+<p>Likelihood and impact are 1 (low) to 3 (high). Review at every wave exit.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Risk</th>
+<th>L</th>
+<th>I</th>
+<th>Owner</th>
+<th>Mitigation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R-01</td>
+<td>Live ACL checks push p95 ask latency over 6 s</td>
+<td>2</td>
+<td>2</td>
+<td>Platform lead</td>
+<td>Batching, parallel fan-out, deny caching; measured from W3 (SB-303)</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-02</td>
+<td>A source's permission model can't be mapped faithfully</td>
+<td>2</td>
+<td>3</td>
+<td>Connector owner</td>
+<td><code>Unknown</code> until it can; contract kit; never relax LAW-03</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-03</td>
+<td>Indirect prompt injection via ingested content</td>
+<td>3</td>
+<td>3</td>
+<td>Security lead</td>
+<td>Sanitiser, data wrapping, argument provenance, injection eval gate (LAW-09)</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-04</td>
+<td>Companies demand per-company customisation</td>
+<td>3</td>
+<td>2</td>
+<td>Product owner</td>
+<td>Manifest fields for everyone or nothing (P3); escalation to the parent</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-05</td>
+<td>Formal models drift from code</td>
+<td>2</td>
+<td>2</td>
+<td>Platform lead</td>
+<td>Shared state names; spec review in the DoD</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-06</td>
+<td>Models not yet run may hide a modelling error</td>
+<td>2</td>
+<td>2</td>
+<td>Platform lead</td>
+<td>Run in CI as the first task of SB-011 to SB-013; mutation checks</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-07</td>
+<td>Model provider changes behaviour or terms</td>
+<td>2</td>
+<td>2</td>
+<td>Parent-org procurement</td>
+<td>Model pinned per release; eval gate; provider behind a port</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-08</td>
+<td>Unknown rate makes the product feel broken</td>
+<td>2</td>
+<td>2</td>
+<td>Connector owner</td>
+<td>Unknown-rate dashboards and alerts; fix in connectors</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-09</td>
+<td>Rollback is not atomic across cells (BUG-0001)</td>
+<td>2</td>
+<td>2</td>
+<td>Platform lead</td>
+<td>Revoked builds start no new consequential calls; refine model in SB-012</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-10</td>
+<td>Approvers rubber-stamp</td>
+<td>2</td>
+<td>2</td>
+<td>Company leadership</td>
+<td>Diff view, required click, approve-to-reject tracking, weekly report</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-11</td>
+<td>v1 shortcuts erode the hand-off seams (hard-coded account ids, factory-wide keys, push deploys)</td>
+<td>2</td>
+<td>3</td>
+<td>Platform lead</td>
+<td>SB-114 lint; seams in ADR-0015 each with a test; review checklist</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>R-12</td>
+<td>A detached cell runs unpatched and is still associated with the parent</td>
+<td>2</td>
+<td>2</td>
+<td>Parent-org legal</td>
+<td>Detach requires tenant-owner acceptance; export includes SBOM; registry keeps custody history</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>living/RISKS.md</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

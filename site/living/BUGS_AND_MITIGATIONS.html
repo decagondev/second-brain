@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bugs and Mitigations · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="active" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Living documents</h4><a href="../devlog.html">Devlog timeline</a><a href="../living/ASSURANCE_LEDGER.html">Assurance Ledger</a><a class="current" href="../living/BUGS_AND_MITIGATIONS.html">Bugs and Mitigations</a><a href="../living/CHANGELOG.html">Changelog</a><a href="../living/DEVLOG.html">Devlog</a><a href="../living/GLOSSARY.html">Glossary</a><a href="../living/OPEN_QUESTIONS.html">Open Questions</a><a href="../living/RISKS.html">Risks</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / living</div><h1 id="bugs-and-mitigations">Bugs and mitigations</h1>
+<p>Every defect gets an entry, including design defects found in review. Each entry must answer: <strong>which law or test would have caught this, and why didn't it?</strong> Format: <a href="../docs/05-living-documents.html#bug-entry-format">05-living-documents.md</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Bug</th>
+<th>Title</th>
+<th>Severity</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001</a></td>
+<td>Rollout model assumes atomic rollback</td>
+<td>Design</td>
+<td>Fixed in model (SB-012); implementation SB-508</td>
+</tr>
+<tr>
+<td><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002</a></td>
+<td>Kill check order unspecified in preliminary PRD</td>
+<td>Design</td>
+<td>Fixed in design</td>
+</tr>
+<tr>
+<td><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003</a></td>
+<td>Policy examples used a reserved type and an unguarded optional attribute</td>
+<td>Docs</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004</a></td>
+<td>Law generator masked cross-tenant leaks</td>
+<td>Test harness</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><a href="#bug-0005-issuer-rule-never-matched">BUG-0005</a></td>
+<td>Issuer rule never matched</td>
+<td>Test harness</td>
+<td>Fixed</td>
+</tr>
+<tr>
+<td><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006</a></td>
+<td>Base policy permitted another tenant's agent</td>
+<td>Design</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<h2 id="bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-18, design review</td>
+<td>Design</td>
+<td>SB-508, SB-012</td>
+<td>Fixed in model; implementation SB-508</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>Rollout.tla</code> redeploys every cell running the revoked release in the same step as the rollback. Real rollback takes up to 10 minutes, during which some cells still run the revoked release.</p>
+<p><strong>Root cause:</strong> Modelling shortcut, made to keep the first model small.</p>
+<p><strong>Fix:</strong> In SB-012, split <code>Rollback</code> into <code>Revoke</code> plus per-cell <code>Redeploy</code>. Weaken <code>NoRevokedRuns</code> to "a cell running a revoked release starts no new consequential tool call", which is what the kill-switch path actually guarantees. Add that guarantee to SB-508.</p>
+<p><strong>Caught by now:</strong> <code>Rollout.tla</code> invariants <code>RevokedOnlyWhileDraining</code> and <code>DrainingOnlyRevoked</code>; the cross-check catches <code>deployrevoked</code> and <code>nodrain</code>. SB-508 must implement draining as "no new consequential tool calls" through the kill-switch path.</p>
+<p><strong>Which law should have caught it?</strong> LAW-06 / LAW-08 review. It was caught by review, not by a tool, which is acceptable at design time.</p>
+<h2 id="bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-18, design review</td>
+<td>Design</td>
+<td>SB-405</td>
+<td>Fixed in design</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> The preliminary PRD said kill switches take effect in 10 seconds or less, but didn't say <em>where</em> they're checked. An approved action could pass its kill check, wait hours for approval, and then run after a kill.</p>
+<p><strong>Root cause:</strong> The kill switch was described as a feature, not as a step in the tool path.</p>
+<p><strong>Fix:</strong> The tool bus has a fixed five-step order with a <strong>second</strong> kill check just before execution (<code>sb-agents(7)</code>). <code>Approvals.tla</code> models <code>Kill</code> at any point, and <code>KillWins</code> checks it.</p>
+<p><strong>Caught by now:</strong> <code>KillWins</code> (once run, SB-011); timed test in SB-403.</p>
+<p><strong>Which law should have caught it?</strong> LAW-10. It didn't exist in the preliminary PRD.</p>
+<h2 id="bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-18, Cedar validation</td>
+<td>Docs</td>
+<td>SB-110, SB-112</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> Example policies in <code>sb-policy(5)</code> and <code>examples/policies/</code> used <code>resource is Action</code> and read <code>context.target_project</code> without checking that it exists.</p>
+<p><strong>Root cause:</strong> <code>Action</code> is Cedar's built-in action type, so the resource entity needed its own name. Optional attributes must be guarded with <code>has</code>.</p>
+<p><strong>Fix:</strong> Renamed the resource entity to <code>ProposedAction</code>; added <code>context has target_project &amp;&amp;</code>.</p>
+<p><strong>Caught by now:</strong> the Cedar validator run over every policy file and every <code>cedar</code> block in the docs (SB-112, SB-009).</p>
+<p><strong>Which law should have caught it?</strong> None directly. It's a manual-accuracy bug, caught by P2's "examples are executed" rule applied early.</p>
+<h2 id="bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-18, law self-tests</td>
+<td>Test harness</td>
+<td>SB-010</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A deliberately broken system that ignores the tenant boundary passed LAW-02.</p>
+<p><strong>Root cause:</strong> In generated worlds, the source only ever answered Allow for users in the document's own tenant, so the live check hid the cross-tenant leak. Real sources can say Allow to outsiders, for example a doc shared with "anyone with the link".</p>
+<p><strong>Fix:</strong> The generator now creates public documents, and the generator-coverage self-test requires them.</p>
+<p><strong>Caught by now:</strong> <code>TestSelf_EachMutationIsCaught</code> ("ignores tenant boundary") and <code>TestSelf_GeneratorCoversHardCases</code> ("public doc").</p>
+<p><strong>Which law should have caught it?</strong> LAW-02. It was the self-test of LAW-02's check that caught it, which is exactly the self-tests' purpose. The design point it confirms: tenant scope must be enforced in retrieval itself (SB-301), never left to the source's answer.</p>
+<h2 id="bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-19, mutation check while building SB-108</td>
+<td>Test harness</td>
+<td>SB-108</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> The new rule in <code>tools/check/deps.py</code>, "only <code>internal/auth</code> may call <code>tenancy.NewIssuer</code>", passed even when a package outside <code>internal/auth</code> called it.</p>
+<p><strong>Root cause:</strong> A shell heredoc turned the regex <code>\b</code> into a literal backspace character, so the pattern could never match any source file.</p>
+<p><strong>Fix:</strong> Restored <code>\b</code>. <code>tests/regress/test_bug_0005_issuer_rule_never_matched.py</code> checks that the rule flags a call outside <code>internal/auth</code>, allows <code>internal/auth</code> and tests, and that <code>deps.py</code> contains no control characters.</p>
+<p><strong>Caught by now:</strong> the regression test, run by <code>make regress</code>. Why it wasn't caught before: the rule was written without a test. The mutation check (adding a violating file and running the check) is what exposed it, and that is now a permanent test.</p>
+<h2 id="bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-19, first run of the policy-level LAW-02 test</td>
+<td>Design</td>
+<td>SB-110</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>policy/platform/base.cedar</code> had <code>permit (principal, action == Action::"use_agent", resource == Agent::"ask");</code> with no tenant condition, so the policy alone allowed a user of one tenant to use another tenant's <code>ask</code> agent.</p>
+<p><strong>Root cause:</strong> The rule "every permit carries a tenant condition" (sb-policy(5) rule 2) had no automated check yet (SB-112), and <code>Agent</code> had no <code>tenant</code> attribute to compare.</p>
+<p><strong>Fix:</strong> <code>Agent</code>, <code>Tool</code> and <code>Workflow</code> got a <code>tenant</code> attribute in the schema, and the permit got <code>when { principal.tenant == resource.tenant }</code>. The kernel's own tenant guard (SB-109) had already been stopping this in practice.</p>
+<p><strong>Caught by now:</strong> <code>TestLAW02_PoliciesNeverCrossTenants</code>, which evaluates the real policies with the kernel's guard bypassed, and its self-test. SB-112 will add the static CI check. Why it wasn't caught before: until SB-110 no test evaluated the policies themselves.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

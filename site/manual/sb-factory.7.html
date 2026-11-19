@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-factory(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a class="current" href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-FACTORY(7)</span><span>Second Brain Manual</span><span>SB-FACTORY(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-factory7">sb-factory(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-factory — how Second Brains are produced, who has custody of each, and how custody is handed off</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">custody:  factory  →  tenant  →  detached
+                   ←  (hand-back)
+
+sb factory status   TENANT                                    (W1, read-only)
+sb factory handoff  plan    TENANT --to tenant-account://ID   (W7)
+sb factory handoff  approve PLAN-HASH                         (W7)
+sb factory handoff  execute PLAN-HASH                         (W7)
+sb factory handoff  abort   PLAN-HASH                         (W7)
+sb factory detach   TENANT  --accept-unsupported              (W7)
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>The <strong>factory</strong> is the control plane, the cell template and the release train, run by the parent organisation. It stamps one isolated cell per tenant (<a href="sb-tenancy.7.html">sb-tenancy(7)</a>) and keeps every cell on the release train (<a href="sb-release.7.html">sb-release(7)</a>). The factory's own organisation is a normal tenant (ring 0). There is no superuser.</p>
+<h3 id="custody">Custody</h3>
+<p>Each cell has a <strong>custody record</strong> in the factory registry, which says where the cell lives and who holds its keys:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Values</th>
+<th>v1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>custody</code></td>
+<td><code>factory</code>, <code>tenant</code>, <code>detached</code></td>
+<td>always <code>factory</code></td>
+</tr>
+<tr>
+<td><code>placement</code></td>
+<td><code>factory-account</code>, <code>tenant-account://ID</code></td>
+<td>always <code>factory-account</code></td>
+</tr>
+<tr>
+<td><code>key_custodian</code></td>
+<td><code>factory</code>, <code>tenant</code></td>
+<td>always <code>factory</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>sb factory status TENANT</code> prints the custody record from the registry, the tenant's channel, and whether a hand-off is in progress. It changes nothing. Until the release controller exists (SB-507) it doesn't show the running release. If the registry can't answer, it fails with <code>EUNAVAIL</code>, and a tenant with no cell is <code>EUSAGE</code>.</p>
+<p>The custody values are defined once in code (<code>internal/core/cell</code>, <code>custody.go</code>). A CI check (<code>tools/check/custody.py</code>) fails on any account id, <code>tenant-account://</code> address or custody literal anywhere else. Code learns where a cell lives only from its custody record (ADR-0015).</p>
+<p>Custody is <strong>not</strong> a manifest field. A manifest containing <code>custody:</code>, <code>placement:</code> or <code>key_custodian:</code> fails <code>sb tenant check</code> with a pointer to this page. Custody changes only through the hand-off workflow, with dual approval.</p>
+<h3 id="levels">Levels</h3>
+<ul>
+<li><strong>factory:</strong> the cell runs in the factory's cloud account under a factory-held root key. Company IT operates the manifest, approvals and kill switches; the factory operates infrastructure and releases. This is how every v1 tenant runs.</li>
+<li><strong>tenant:</strong> the cell runs in the company's own cloud account under a company-held root key. It still <strong>pulls</strong> signed releases from the factory train, so every law still holds. The factory keeps only the grants listed in the hand-off record, at minimum <em>publish releases</em>.</li>
+<li><strong>detached:</strong> the company takes an export package and leaves the train. The factory no longer guarantees anything about the cell.</li>
+</ul>
+<h3 id="hand-off">Hand-off</h3>
+<ol>
+<li><strong>plan:</strong> the factory operator generates a plan: target account, resources, key re-wrap, every factory access path to remove, and the grants to retain. The plan has a hash.</li>
+<li><strong>approve:</strong> both a factory operator and the tenant owner approve <strong>that hash</strong>. Changing the plan changes the hash and voids both approvals.</li>
+<li><strong>execute:</strong> provision in the tenant account, re-wrap the root key under the tenant's KMS, move state, verify laws and the audit chain, cut over, revoke factory paths, then destroy the factory key wrap.</li>
+<li><strong>abort:</strong> allowed any time before cutover. The factory cell never stops serving before cutover.</li>
+</ol>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-17">LAW-17</a> no unlisted factory access after hand-off · <a href="sb-laws.7.html#law-18">LAW-18</a> the root key always has a custodian. LAW-01 to LAW-16 continue to hold for <code>factory</code> and <code>tenant</code> custody.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-text">$ sb factory status gamma-parts
+custody        factory
+placement      factory-account
+key_custodian  factory
+channel        stable
+handoff        none
+</code></pre>
+<pre><code class="language-text">$ sb factory handoff plan gamma-parts --to tenant-account://cloud/gamma-prod-7731
+plan 3c09e1…  target tenant-account://cloud/gamma-prod-7731 (region eu)
+  provision   postgres, index schema, vault ns, queue, kms key (tenant-owned)
+  key         re-wrap root key under tenant KMS, then destroy factory wrap
+  revoke      7 factory access paths (deploy role, 2 break-glass roles, 4 IAM bindings)
+  retain      publish-releases
+needs approval from: factory operator, tenant owner (group:gamma-it-owners)
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

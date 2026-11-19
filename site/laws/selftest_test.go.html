@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>selftest_test.go · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a class="current" href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / laws</div><h1 id="selftest_testgo">selftest_test.go</h1>
+<pre><code class="language-go">package laws
+
+import (
+    &quot;context&quot;
+    &quot;math/rand&quot;
+    &quot;os&quot;
+    &quot;path/filepath&quot;
+    &quot;regexp&quot;
+    &quot;strings&quot;
+    &quot;testing&quot;
+
+    &quot;example.com/second-brain/internal/adapters/policy/cedar&quot;
+    &quot;example.com/second-brain/internal/adapters/registry/localfs&quot;
+    &quot;example.com/second-brain/internal/core/manifest&quot;
+    &quot;example.com/second-brain/internal/core/plan&quot;
+    &quot;example.com/second-brain/internal/core/policy&quot;
+    &quot;example.com/second-brain/internal/core/ports&quot;
+    &quot;example.com/second-brain/internal/core/tenancy&quot;
+)
+
+// The law checks are themselves tested: a correct reference system must pass
+// every law, and each deliberately broken system must be caught. This is the
+// permanent mutation check for the guardrails (docs/05-living-documents.md, DoD).
+
+// reference is the simplest correct system: prefilter in own tenant, live check,
+// keep only Allow; audit before every call; approvals for consequential calls; Ran only with a receipt.
+type reference struct {
+    prefilterOnly, crossTenant, unknownAsAllow bool // ask mutations
+    execFirst, ignoreApproval, claimRan        bool // tool mutations
+}
+
+func (s reference) Ask(w *World, userID, _ string) (Answer, error) {
+    u := w.user(userID)
+    var a Answer
+    for _, d := range w.Docs {
+        if (d.Tenant != u.Tenant &amp;&amp; !s.crossTenant) || !w.PrefilterMatch(userID, d.ID) &amp;&amp; !s.crossTenant {
+            continue
+        }
+        v := ports.VerdictAllow
+        if !s.prefilterOnly {
+            v = w.ACL(userID, d.ID)
+        }
+        if v == ports.VerdictAllow || (s.unknownAsAllow &amp;&amp; v == ports.VerdictUnknown) {
+            a.Context = append(a.Context, d.ID)
+            a.Citations = append(a.Citations, Citation{Doc: d.ID, Version: d.Version})
+        }
+    }
+    return a, nil
+}
+
+func (s reference) Call(w *World, _ string, tc ToolCall) (Outcome, error) {
+    if tc.Consequential &amp;&amp; !w.Approvals[tc.Approval] &amp;&amp; !s.ignoreApproval {
+        return Outcome{State: &quot;Refused&quot;}, nil
+    }
+    var rc string
+    if s.execFirst {
+        rc = w.Act(tc.ID)
+        w.Audit(tc.ID, tc.Approval)
+    } else {
+        w.Audit(tc.ID, tc.Approval)
+        rc = w.Act(tc.ID)
+    }
+    if rc == &quot;&quot; &amp;&amp; !s.claimRan {
+        return Outcome{State: &quot;DidNotRun&quot;}, nil
+    }
+    if rc == &quot;&quot; {
+        rc = &quot;rcpt_claimed&quot;
+    }
+    return Outcome{State: &quot;Ran&quot;, Receipt: rc}, nil
+}
+
+type lawFn func(w *World, sys System, r *rand.Rand) error
+
+var allLaws = map[string]lawFn{
+    &quot;LAW-01&quot;: func(w *World, s System, _ *rand.Rand) error { return law01(w, s) },
+    &quot;LAW-02&quot;: func(w *World, s System, _ *rand.Rand) error { return law02(w, s) },
+    &quot;LAW-03&quot;: func(w *World, s System, _ *rand.Rand) error { return law03(w, s) },
+    &quot;LAW-04&quot;: law04,
+    &quot;LAW-05&quot;: law05,
+}
+
+func run(law lawFn, sys System) func(r *rand.Rand) error {
+    return func(r *rand.Rand) error { w := Gen(r); return law(w, sys, r) }
+}
+
+func TestSelf_ReferencePassesEveryLaw(t *testing.T) {
+    for id, law := range allLaws {
+        Check(t, id+&quot; (reference)&quot;, runs, run(law, reference{}))
+    }
+}
+
+func TestSelf_EachMutationIsCaught(t *testing.T) {
+    cases := []struct {
+        name string
+        sys  reference
+        law  string
+    }{
+        {&quot;prefilter only, no live check&quot;, reference{prefilterOnly: true}, &quot;LAW-01&quot;},
+        {&quot;ignores tenant boundary&quot;, reference{crossTenant: true}, &quot;LAW-02&quot;},
+        {&quot;treats unknown as allow&quot;, reference{unknownAsAllow: true}, &quot;LAW-03&quot;},
+        {&quot;executes before auditing&quot;, reference{execFirst: true}, &quot;LAW-04&quot;},
+        {&quot;ignores approvals&quot;, reference{ignoreApproval: true}, &quot;LAW-04&quot;},
+        {&quot;claims Ran without a receipt&quot;, reference{claimRan: true}, &quot;LAW-05&quot;},
+    }
+    for _, c := range cases {
+        if !violates(runs, run(allLaws[c.law], c.sys)) {
+            t.Errorf(&quot;%s: mutation %q was not caught&quot;, c.law, c.name)
+        }
+    }
+}
+
+// The generator must actually produce the hard cases, or the laws prove little.
+func TestSelf_GeneratorCoversHardCases(t *testing.T) {
+    var stale, unknown, missing, timeout, noReceipt, multiTenant, public int
+    for seed := int64(1); seed &lt;= runs; seed++ {
+        w := Gen(rand.New(rand.NewSource(seed)))
+        tenants := map[string]bool{}
+        for _, d := range w.Docs {
+            tenants[d.Tenant] = true
+            if d.Missing {
+                missing++
+            }
+            if d.Public {
+                public++
+            }
+            for _, u := range w.Users {
+                if u.Tenant != d.Tenant {
+                    continue
+                }
+                v, known := d.Live[u.ID]
+                if !known {
+                    unknown++
+                }
+                if w.PrefilterMatch(u.ID, d.ID) &amp;&amp; v == ports.VerdictDeny {
+                    stale++
+                }
+            }
+        }
+        if len(tenants) &gt; 1 {
+            multiTenant++
+        }
+        if w.Fault == FaultTimeout {
+            timeout++
+        }
+        if w.NoReceipt {
+            noReceipt++
+        }
+    }
+    for name, n := range map[string]int{&quot;stale prefilter&quot;: stale, &quot;unknown verdict&quot;: unknown, &quot;missing doc&quot;: missing,
+        &quot;timeout fault&quot;: timeout, &quot;no receipt&quot;: noReceipt, &quot;multi-tenant world&quot;: multiTenant, &quot;public doc&quot;: public} {
+        if n == 0 {
+            t.Errorf(&quot;generator never produced: %s&quot;, name)
+        }
+    }
+}
+
+// LAW-16's check catches checkers that drop, invent or let through fields.
+func TestSelf_LAW16MutationsAreCaught(t *testing.T) {
+    ok := manifest.Check
+    cases := map[string]ManifestChecker{
+        &quot;ignores unknown and forbidden fields&quot;: func(src []byte) (manifest.Tenant, []manifest.Diag) {
+            var kept []string
+            for _, l := range strings.SplitAfter(string(src), &quot;\n&quot;) {
+                if !regexp.MustCompile(`^(version|platform|custody|placement|key_custodian|api_token|secret|password|token|key|colour):`).MatchString(l) {
+                    kept = append(kept, l)
+                }
+            }
+            return ok([]byte(strings.Join(kept, &quot;&quot;)))
+        },
+        &quot;drops exclude&quot;: func(src []byte) (manifest.Tenant, []manifest.Diag) {
+            t, ds := ok(src)
+            t.Exclude = nil
+            return t, ds
+        },
+        &quot;invents a default workflow&quot;: func(src []byte) (manifest.Tenant, []manifest.Diag) {
+            t, ds := ok(src)
+            if t.Workflows == nil &amp;&amp; len(ds) == 0 {
+                t.Workflows = []string{}
+            }
+            return t, ds
+        },
+    }
+    for name, c := range cases {
+        if !violates(runs, func(r *rand.Rand) error { return law16(r, c) }) {
+            t.Errorf(&quot;LAW-16: mutation %q was not caught&quot;, name)
+        }
+    }
+}
+
+// LAW-16's plan check catches planners that forget removals or changes.
+func TestSelf_LAW16PlanMutationsAreCaught(t *testing.T) {
+    drop := func(op string) Planner {
+        return func(m manifest.Tenant, applied []ports.Resource, found bool) (plan.Plan, error) {
+            p, err := plan.Make(m, applied, found)
+            var kept []plan.Change
+            for _, c := range p.Changes {
+                if c.Op != op {
+                    kept = append(kept, c)
+                }
+            }
+            p.Changes = kept
+            return p, err
+        }
+    }
+    for _, op := range []string{plan.OpRemove, plan.OpChange} {
+        if !violates(runs, func(r *rand.Rand) error { return law16Plan(r, drop(op)) }) {
+            t.Errorf(&quot;LAW-16: planner that drops %q changes was not caught&quot;, op)
+        }
+    }
+}
+
+// LAW-02's cell check catches templates that share a resource or lose the region pin.
+func TestSelf_LAW02CellMutationsAreCaught(t *testing.T) {
+    shared := map[string]string{} // one &quot;database&quot; id for every tenant in an account
+    cases := map[string]func(root string) CellStamper{
+        &quot;shares the database&quot;: func(root string) CellStamper {
+            real := NewCellStamper(root)
+            return func(acct string, m manifest.Tenant) ([]Stamped, error) {
+                rs, err := real(acct, m)
+                for i := range rs {
+                    if rs[i].Kind == &quot;database&quot; {
+                        if _, ok := shared[root+acct]; !ok {
+                            shared[root+acct] = rs[i].ID
+                        }
+                        rs[i].ID = shared[root+acct]
+                    }
+                }
+                return rs, err
+            }
+        },
+        &quot;drops the region pin&quot;: func(root string) CellStamper {
+            real := NewCellStamper(root)
+            return func(acct string, m manifest.Tenant) ([]Stamped, error) {
+                rs, err := real(acct, m)
+                for i := range rs {
+                    rs[i].Region = &quot;&quot;
+                }
+                return rs, err
+            }
+        },
+        &quot;forgets the queue&quot;: func(root string) CellStamper {
+            real := NewCellStamper(root)
+            return func(acct string, m manifest.Tenant) ([]Stamped, error) {
+                rs, err := real(acct, m)
+                var kept []Stamped
+                for _, x := range rs {
+                    if x.Kind != &quot;queue&quot; {
+                        kept = append(kept, x)
+                    }
+                }
+                return kept, err
+            }
+        },
+    }
+    for name, mk := range cases {
+        if !violates(20, func(r *rand.Rand) error { return law02Cells(r, mk(t.TempDir())) }) {
+            t.Errorf(&quot;LAW-02 (cells): mutation %q was not caught&quot;, name)
+        }
+    }
+}
+
+// LAW-16's apply check catches an applier that skips removals.
+func TestSelf_LAW16ApplyMutationIsCaught(t *testing.T) {
+    skipRemovals := func(root string, m manifest.Tenant) (plan.Plan, error) {
+        reg := localfs.Dir{Root: root}
+        applied, found, err := reg.Applied(context.Background(), m.Tenant)
+        if err != nil {
+            return plan.Plan{}, err
+        }
+        p, err := plan.Make(m, applied, found)
+        if err != nil {
+            return p, err
+        }
+        var kept []plan.Change
+        for _, c := range p.Changes {
+            if c.Op != plan.OpRemove {
+                kept = append(kept, c)
+            }
+        }
+        p.Changes = kept
+        return p, reg.Put(context.Background(), m.Tenant, plan.Apply(applied, p))
+    }
+    if !violates(40, func(r *rand.Rand) error { return law16Apply(r, t.TempDir(), skipRemovals) }) {
+        t.Error(&quot;LAW-16: an applier that skips removals was not caught&quot;)
+    }
+}
+
+// LAW-02's request check catches a router that trusts the token over the host.
+func TestSelf_LAW02RouteMutationIsCaught(t *testing.T) {
+    trustToken := func(cells []ports.CellRecord, req Request) (Routed, error) {
+        if !req.TokenValid {
+            return Routed{Code: &quot;EAUTH&quot;}, nil
+        }
+        for _, c := range cells {
+            if c.Tenant == req.TokenTenant {
+                return Routed{Cell: c.Tenant}, nil
+            }
+        }
+        return Routed{Code: &quot;EPERM&quot;}, nil
+    }
+    if !violates(runs, func(r *rand.Rand) error { return law02Requests(r, trustToken) }) {
+        t.Error(&quot;LAW-02 (requests): a router that routes by token tenant was not caught&quot;)
+    }
+}
+
+// LAW-02's sign-in check catches a cell that ignores the tenant claim.
+func TestSelf_LAW02TokenMutationIsCaught(t *testing.T) {
+    real := NewTokenCheck()
+    ignoresTenant := func(s TokenSpec) (string, error) {
+        claim := s.Tenant
+        s.Tenant = s.PresentAt
+        got, err := real(s)
+        if got != &quot;&quot; &amp;&amp; claim != s.PresentAt {
+            return s.PresentAt, err
+        }
+        return got, err
+    }
+    if !violates(100, func(r *rand.Rand) error { return law02Tokens(r, ignoresTenant) }) {
+        t.Error(&quot;LAW-02 (sign-in): a cell that ignores the tenant claim was not caught&quot;)
+    }
+}
+
+// LAW-12's check catches a cell that never re-validates sessions when the fan-out is lost.
+func TestSelf_LAW12MutationIsCaught(t *testing.T) {
+    noRevalidation := func(bool) DeprovSystem {
+        d := NewDeprovSystem(true).(*deprov)
+        d.cell.Directory = alwaysActive{}
+        return d
+    }
+    if !violates(runs, func(r *rand.Rand) error { return law12(r, noRevalidation) }) {
+        t.Error(&quot;LAW-12: a cell that ignores the directory after a lost fan-out was not caught&quot;)
+    }
+}
+
+type alwaysActive struct{}
+
+func (alwaysActive) Active(context.Context, string, string) (bool, bool, error) {
+    return true, true, nil
+}
+
+// LAW-02's scope check catches a directory that searches every tenant.
+func TestSelf_LAW02ScopeMutationIsCaught(t *testing.T) {
+    leaky := func(cell string, seed []Seeded) ScopedCell {
+        s := NewScopedCell(cell, seed).(*scoped)
+        return leakyScoped{s, seed}
+    }
+    if !violates(runs, func(r *rand.Rand) error { return law02Scope(r, leaky) }) {
+        t.Error(&quot;LAW-02 (scope): a lookup that ignores the scope's tenant was not caught&quot;)
+    }
+}
+
+type leakyScoped struct {
+    *scoped
+    seed []Seeded
+}
+
+func (l leakyScoped) Person(id string) (bool, error) {
+    for _, s := range l.seed {
+        if s.ID == id {
+            return true, nil
+        }
+    }
+    return false, nil
+}
+
+// LAW-03's policy check catches a caller that tests &quot;not denied&quot; instead of &quot;allowed&quot;.
+func TestSelf_LAW03PolicyMutationIsCaught(t *testing.T) {
+    notDenied := func(c PolicyCase) (bool, error) {
+        s, _ := tenancy.NewIssuer(&quot;acme-logistics&quot;).Issue(&quot;acme-logistics&quot;, &quot;usr_1&quot;, nil)
+        if c.NoScope {
+            s = tenancy.Scope{}
+        }
+        res := policy.Entity{Type: &quot;Chunk&quot;, ID: &quot;c1&quot;}
+        if c.OtherTenant {
+            res.Tenant = &quot;beta-freight&quot;
+        }
+        return policy.Kernel{Engine: faulty{c}, Recorder: okRecorder{}}.Authorise(context.Background(), s, &quot;read&quot;, res, nil).Decision != policy.Deny, nil //nolint:decisions // the mutation under test
+    }
+    if !violates(100, func(r *rand.Rand) error { return law03Policy(r, notDenied) }) {
+        t.Error(&quot;LAW-03 (policy): a caller that treats Unknown as allow was not caught&quot;)
+    }
+}
+
+// LAW-02's policy check catches a permit without the tenant condition.
+func TestSelf_LAW02PolicyMutationIsCaught(t *testing.T) {
+    bad, err := cedar.Load(map[string][]byte{&quot;bad.cedar&quot;: []byte(`permit (principal, action == Action::&quot;read&quot;, resource is Chunk);`)})
+    if err != nil {
+        t.Fatal(err)
+    }
+    if !violates(runs, func(r *rand.Rand) error { return law02Policies(r, bad) }) {
+        t.Error(&quot;LAW-02 (policies): a permit with no tenant condition was not caught&quot;)
+    }
+}
+
+// LAW-04's decision check catches a kernel that records after deciding but ignores a failed write.
+func TestSelf_LAW04DecisionMutationIsCaught(t *testing.T) {
+    ignoresFailure := func(c DecisionCase) (DecisionOutcome, error) {
+        c2 := c
+        c2.RecorderFails = false
+        out, err := NewDecisionKernel()(c2)
+        if c.RecorderFails {
+            out.RecordedBeforeExit = false
+        }
+        return out, err
+    }
+    if !violates(runs, func(r *rand.Rand) error { return law04Decisions(r, ignoresFailure) }) {
+        t.Error(&quot;LAW-04 (decisions): a kernel that allows when the audit write fails was not caught&quot;)
+    }
+}
+
+// LAW-18's check catches a cell recorded without a key custodian, or with a dead root key.
+func TestSelf_LAW18MutationsAreCaught(t *testing.T) {
+    for name, broke := range map[string]func(CustodyState) CustodyState{
+        &quot;no custodian&quot;:  func(s CustodyState) CustodyState { s.KeyCustodian = &quot;&quot;; return s },
+        &quot;dead root key&quot;: func(s CustodyState) CustodyState { s.KeyWorks = false; return s },
+    } {
+        real := NewCustodyCheck()
+        mutant := func(root string, ts []manifest.Tenant) (map[string]CustodyState, error) {
+            got, err := real(root, ts)
+            for k, v := range got {
+                got[k] = broke(v)
+            }
+            return got, err
+        }
+        if !violates(5, func(r *rand.Rand) error {
+            root := t.TempDir()
+            _ = os.MkdirAll(filepath.Join(root, &quot;tenants&quot;), 0o755)
+            return law18(r, root, mutant)
+        }) {
+            t.Errorf(&quot;LAW-18: mutation %q was not caught&quot;, name)
+        }
+    }
+}
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/selftest_test.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

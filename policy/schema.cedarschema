@@ -1,0 +1,19 @@
+// Platform Cedar schema (sb-policy(5)). Shipped in the release bundle.
+// Every entity carries its tenant, so every rule can be tenant-scoped (LAW-02).
+entity Tenant;
+entity Group { tenant: Tenant };
+entity User in [Group] { tenant: Tenant };
+entity Document { tenant: Tenant, source: String };
+entity Chunk in [Document] { tenant: Tenant, cite: String };
+entity Agent { tenant: Tenant, name: String, consequential: Bool };
+entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bool };
+entity Workflow { tenant: Tenant, name: String, approvers: Group };
+entity ProposedAction { tenant: Tenant, workflow: String, requester: User };
+entity Cell { tenant: Tenant };
+
+action "read"      appliesTo { principal: [User], resource: [Chunk, Document] };
+action "use_agent" appliesTo { principal: [User], resource: [Agent], context: { target_project?: String } };
+action "call_tool" appliesTo { principal: [User], resource: [Tool] };
+action "propose"   appliesTo { principal: [User], resource: [Workflow] };
+action "approve"   appliesTo { principal: [User], resource: [ProposedAction] };
+action "admin"     appliesTo { principal: [User], resource: [Cell] };

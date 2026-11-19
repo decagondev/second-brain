@@ -1,0 +1,122 @@
+---
+title: Testing and Assurance
+summary: Tests from day one, laws and models from Wave 0, and laws as the main gate from Wave 3.
+---
+
+# Testing and assurance
+
+We test to find bugs, and we prove to rule out whole classes of them. Both happen from the first week. What changes over time is which one **gates releases**.
+
+## The stack
+
+```mermaid
+flowchart BT
+    subgraph Always["Always, forever"]
+        UT["Unit tests"]
+        RG["Regression tests<br/>one per bug, tests/regress/"]
+        SM["Smoke tests<br/>tests/smoke/, every deploy"]
+    end
+    subgraph Laws["Laws (from W0)"]
+        PT["Property tests<br/>rapid, over ports"]
+        FI["Fault injection<br/>mock connector"]
+        LT["Live law checks<br/>sb tenant verify, prod monitors"]
+    end
+    subgraph Models["Formal models (from W0)"]
+        TLA["TLA+ / TLC<br/>Approvals, Rollout"]
+        ALS["Alloy<br/>Permissions"]
+    end
+    subgraph Evals["Evals (scaffold W0, gate W5)"]
+        EV["permission · citation · injection · refusal · regression"]
+    end
+    Always --> GATE["Release gate"]
+    Laws --> GATE
+    Models --> GATE
+    Evals --> GATE
+```
+
+## What gates what, by wave
+
+| Wave | Main gate | Also required |
+|---|---|---|
+| W0 | Models check in CI; law tests fail **for the right reason** | Unit, smoke, link and diagram checks |
+| W1–W2 | Unit + regression + smoke; laws green as features land | Models re-checked on every change to their area |
+| **W3 onward** | **Laws + models + evals** | Unit, regression and smoke stay; never deleted |
+
+From W3, a feature is done when its laws are green and its models still check. Unit tests support that; they don't replace it.
+
+## The assurance ledger
+
+Each law has a status in [living/ASSURANCE_LEDGER.md](../living/ASSURANCE_LEDGER.md). Statuses only move up, and moving down is a Sev-1 bug.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> Stated: in sb-laws(7)
+    Stated --> Modelled: TLA+ / Alloy checks it
+    Stated --> Tested: property / fault test exists
+    Modelled --> Tested
+    Tested --> Enforced: green and blocking in CI
+    Enforced --> Watched: production monitor + Sev-1 alert
+```
+
+## Property tests
+
+Property tests express a law over generated worlds. They live in `laws/` and are named for their law. `laws.Check` runs seeds 1..300 deterministically; `SB_SEED=n` reproduces one failure (ADR-0016).
+
+### The red ratchet
+
+A law test exists before its feature, so it starts red. `laws/expected_red.txt` lists each red law and the ticket that will turn it green. `make laws` (`tools/check/laws.py`) enforces three rules:
+
+- a listed law must fail, and only with `not implemented`, which means it is failing for the right reason;
+- a listed law that passes is an error: take it off the list and move it up in the ledger;
+- every unlisted test must pass.
+
+### Self-tests: testing the tests
+
+`laws/selftest_test.go` runs every law check against a correct **reference system**, which must pass, and against six **broken systems** (prefilter only, cross-tenant, unknown as allow, execute before audit, ignore approvals, claim Ran without a receipt), each of which must be caught. It also checks that the generator produces the hard cases: stale prefilters, unknown verdicts, missing docs, timeouts, public docs and multi-tenant worlds. This is the permanent mutation check for the law harness.
+
+```go
+func TestLAW01_CiteOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { w := Gen(r); return law01(w, NewSystem(w)) })
+}
+```
+
+`law01` fails if any cited or context document isn't allowed by the source now, **or if the source wasn't asked**, so a prefilter match alone can never pass.
+
+## Fault injection
+
+The mock connector (SB-202) can return `allow`, `deny`, `unknown`, timeout, 404, a malformed response, or success with no receipt, on demand. Every law that mentions an external answer is tested against the full fault matrix.
+
+## Mutation-checking the guardrails
+
+A guardrail test that never fails proves nothing. Whenever we add a law test, CI rule or model invariant, we break the rule on purpose once and watch it fail, then record that in the devlog:
+
+| Guardrail | Mutation | Expected |
+|---|---|---|
+| LAW-03 test | Map `Unknown` to `Allow` | Test fails |
+| `Approvals.tla` | Drop the separation-of-duties guard | TLC counterexample |
+| `Rollout.tla` | Drop the promote guard | TLC counterexample for `OneBehindMax` |
+| Manual-diff CI rule | PR touching `internal/` only | CI fails |
+| Dependency rule | Import an adapter from `core` | CI fails |
+
+## Regression and smoke
+
+- **Regression:** every bug in [BUGS_AND_MITIGATIONS](../living/BUGS_AND_MITIGATIONS.md) gets a test named `BUG-nnnn_*` in `tests/regress/`. These are never deleted.
+- **Smoke:** after every deploy to every cell, sign in as a synthetic user, ask a known question, check that the expected citation comes back, and check that a refused document stays refused.
+
+## Commands
+
+```sh
+make check      # the gate: everything that runs offline (see engineering standards)
+make laws       # law tests through the red ratchet
+make smoke      # black-box tests of the real sb binary
+make regress    # one test per bug
+make evals      # eval harness against the mock model (real targets from SB-501)
+make crosscheck # Python mirror of the TLA+ models
+make diagrams   # headless render of every Mermaid diagram
+make proofs     # TLC + Alloy (needs Java)
+```
+
+## See also
+
+[`sb-laws(7)`](../manual/sb-laws.7.md) · [proofs/](../proofs/README.md) · [12 Evals and the gate](architecture/12-evals-and-gate.md)

@@ -1,0 +1,61 @@
+name: ci
+on: [pull_request, push]
+permissions: { contents: read }
+jobs:
+  manual-diff:            # SB-007
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - run: tools/ci/test_manual_diff.sh
+      - run: tools/ci/manual_diff.sh "origin/${{ github.base_ref }}" "${{ join(github.event.pull_request.labels.*.name, ',') }}"
+      - uses: actions/setup-python@v5   # SB-112: the PR shows the permission diff
+        with: { python-version: "3.12" }
+      - run: pip install cedarpy && python3 tools/check/policy.py --diff "origin/${{ github.base_ref }}"
+  check:                  # SB-001: make check is the gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.24" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml markdown cedarpy
+      - uses: golangci/golangci-lint-action@v8
+        with: { version: v2.5.0, install-only: true }
+      - run: make check
+      - uses: actions/upload-artifact@v4   # SB-002: the docs site for every PR
+        with: { name: site, path: site }
+  postgres:               # SB-105: registry adapter against a real Postgres
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env: { POSTGRES_PASSWORD: sb, POSTGRES_DB: sb_test }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.24" }
+      - run: make integration
+        env: { SB_TEST_POSTGRES_DSN: "postgres://postgres:sb@localhost:5432/sb_test?sslmode=disable" }
+  diagrams:               # SB-009
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: pip install markdown playwright && python -m playwright install --with-deps chromium
+      - run: npm install --prefix tools/check
+      - run: python3 tools/site/build.py && python3 tools/check/diagrams.py site
+  proofs:                 # SB-011..013
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - run: make proofs

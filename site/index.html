@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Brain · Second Brain</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="home">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="active" href="index.html">Home</a><a class="" href="manual/sb-tour.7.html">Tour</a><a class="" href="manual/README.html">Manual</a><a class="" href="docs/README.html">Design</a><a class="" href="epics/README.html">Plan</a><a class="" href="devlog.html">Devlog</a><a class="" href="examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout wide">
+  
+  <main class="content" id="main">
+<section class="hero">
+  <div class="pitch">
+    <p class="kicker">A company second brain for every acquisition</p>
+    <h1>Cited answers.<br>Gated actions.<br>Permissions that hold.</h1>
+    <p class="lede">Second Brain gives every company the parent organisation acquires an isolated, AI-first knowledge platform, configured by <b>one file</b> and stood up by its own IT team with <b>three commands</b>. Answers cite exact document versions the asker can open <b>right now</b>. Agents draft; humans send or approve.</p>
+    <div class="cta"><a class="btn primary" href="manual/sb-tour.7.html">Start the tour →</a><a class="btn" href="docs/00-problem-statement.html">Why Second Brain?</a></div>
+  </div>
+  <div class="sample"><pre><code class="language-yaml">tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack }
+agents: [ask, draft-reply]
+</code></pre>
+<pre><code class="language-sh">sb tenant check  acme.yaml
+sb tenant apply  acme.yaml
+sb tenant verify acme.yaml
+</code></pre><div class="verdict"><span class="ok">✓</span> LAW-01 · LAW-02 · LAW-03 · LAW-14 pass on real data · 0 unknowns</div></div>
+</section>
+<section class="facts">
+  <div><b>Unknown means no</b><span>A timeout, error or missing source is a refusal (<code>EPERM</code>), never a pass.</span></div>
+  <div><b>The source decides</b><span>Every chunk is checked live with the source before the model sees it.</span></div>
+  <div><b>Ran means receipt</b><span>An action is done only when the target system says so.</span></div>
+  <div><b>One cell per company</b><span>Own database, index, keys and region. One template, one release train.</span></div>
+</section>
+<h2 class="band">Where to go</h2>
+<section class="tiles"><a class="tile" href="manual/sb-tour.7.html"><h3>Take the tour</h3><p>Fifteen minutes from a six-line manifest to a cited answer to an approved action.</p></a><a class="tile" href="manual/README.html"><h3>Read the manual</h3><p>32 man pages: commands, API, file formats and concepts. The manual is the spec.</p></a><a class="tile" href="docs/README.html"><h3>Understand the design</h3><p>Problem, principles, an architecture document for every subsystem, ADRs and the threat model.</p></a><a class="tile" href="epics/README.html"><h3>See the plan</h3><p>9 epics and 96 tickets with subtasks, in 8 waves. Formal models land in Wave 0.</p></a><a class="tile" href="manual/sb-onboarding.7.html"><h3>Onboard a company</h3><p>The day 0 to 90 runbook a company's own IT team follows, without calling anyone.</p></a><a class="tile" href="devlog.html"><h3>Follow the devlog</h3><p>Decisions, lessons and progress, newest first.</p></a></section>
+<h2 class="band">Roadmap</h2>
+<section class="waves"><a class="wave" href="docs/03-prd.html#w0-manual-and-laws"><b>W0</b><span>Manual and Laws</span><small>2 weeks</small></a><a class="wave" href="docs/03-prd.html#w1-first-cell"><b>W1</b><span>First Cell</span><small>3 weeks</small></a><a class="wave" href="docs/03-prd.html#w2-ingestion"><b>W2</b><span>Ingestion</span><small>3 weeks</small></a><a class="wave" href="docs/03-prd.html#w3-cited-answers"><b>W3</b><span>Cited Answers</span><small>3 weeks</small></a><a class="wave" href="docs/03-prd.html#w4-safe-actions"><b>W4</b><span>Safe Actions</span><small>3 weeks</small></a><a class="wave" href="docs/03-prd.html#w5-gated-releases"><b>W5</b><span>Gated Releases</span><small>2 weeks</small></a><a class="wave" href="docs/03-prd.html#w6-portfolio-roll-out"><b>W6</b><span>Portfolio Roll-out</span><small>3 weeks</small></a><a class="wave" href="docs/03-prd.html#w7-factory-hand-off"><b>W7</b><span>Factory Hand-off</span><small>3 weeks</small></a></section>
+<h2 class="band">The laws</h2>
+<section class="laws"><a class="law" href="manual/sb-laws.7.html#law-01"><b>LAW-01</b> Cite only what the asker can open</a><a class="law" href="manual/sb-laws.7.html#law-02"><b>LAW-02</b> No tenant crossing</a><a class="law" href="manual/sb-laws.7.html#law-03"><b>LAW-03</b> Unknown means refuse</a><a class="law" href="manual/sb-laws.7.html#law-04"><b>LAW-04</b> Audit before act</a><a class="law" href="manual/sb-laws.7.html#law-05"><b>LAW-05</b> Ran means receipt</a><a class="law" href="manual/sb-laws.7.html#law-06"><b>LAW-06</b> Only signed, gated builds run</a><a class="law" href="manual/sb-laws.7.html#law-07"><b>LAW-07</b> No secret in prompt, log or audit</a><a class="law" href="manual/sb-laws.7.html#law-08"><b>LAW-08</b> At most one behind stable</a><a class="law" href="manual/sb-laws.7.html#law-09"><b>LAW-09</b> Data is not instructions</a><a class="law" href="manual/sb-laws.7.html#law-10"><b>LAW-10</b> Kill wins</a><a class="law" href="manual/sb-laws.7.html#law-11"><b>LAW-11</b> Audit chain unbroken</a><a class="law" href="manual/sb-laws.7.html#law-12"><b>LAW-12</b> Deprovision revokes fast</a><a class="law" href="manual/sb-laws.7.html#law-13"><b>LAW-13</b> The index is derived</a><a class="law" href="manual/sb-laws.7.html#law-14"><b>LAW-14</b> Every claim cited or labelled</a><a class="law" href="manual/sb-laws.7.html#law-15"><b>LAW-15</b> Approval binds one payload</a><a class="law" href="manual/sb-laws.7.html#law-16"><b>LAW-16</b> The manifest is the truth</a><a class="law" href="manual/sb-laws.7.html#law-17"><b>LAW-17</b> Hand-off leaves no unlisted access</a><a class="law" href="manual/sb-laws.7.html#law-18"><b>LAW-18</b> The root key always has a custodian</a></section>
+<h2 class="band">Latest from the devlog</h2>
+<section class="latest"><article class="entry"><div class="date">2026-11-19</div><div class="card"><h2>SB-114 Factory seams (design note) and W1 status</h2><p><strong>Wave/slice:</strong> W1 / S1.2 · <strong>Author:</strong> platform lead + Claude · <strong>Status:</strong> In review</p>
+<p><strong>What:</strong> The last W1 ticket. It adds the custody constants (one file), a custody lint, read-only <code>sb factory status</code>, and the first LAW-18 law test. The manual changed first: sb-factory(7) now covers status output and the lint.</p>
+<p><strong>Design note, every hand-off seam and its test:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Seam</th>
+<th>Where</th>
+<th>Test</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>)</td>
+<td>registry (<code>cells</code> table, <code>localfs</code>), <code>ports.CellRecord</code></td>
+<td><code>registrytest.Contract</code> (Postgres and local), <code>TestTenantApply</code> smoke</td>
+</tr>
+<tr>
+<td>Custody values in one place</td>
+<td><code>internal/core/cell/custody.go</code></td>
+<td><code>tools/check/custody.py</code> with self-test</td>
+</tr>
+<tr>
+<td>No hard-coded account</td>
+<td><code>Placement</code> port; local adapter stamps into <code>factory-account</code></td>
+<td><code>celltest.Contract</code> (two mock accounts), custody lint</td>
+</tr>
+<tr>
+<td>Envelope key hierarchy</td>
+<td><code>Keys</code> port, <code>cell.NewDataKey</code></td>
+<td><code>celltest.Contract</code> envelope test, <code>TestLAW18_RootKeyAlwaysHasACustodian</code></td>
+</tr>
+<tr>
+<td>Custody isn't a manifest field</td>
+<td><code>manifest</code> forbidden names</td>
+<td>golden <code>invalid.expected</code>, <code>TestEveryErrorMessage</code></td>
+</tr>
+<tr>
+<td>Cell can be re-pointed</td>
+<td><code>cell.LoadConfig</code> (<code>SB_CONTROL_PLANE</code>, <code>SB_IDENTITY_CERT</code>)</td>
+<td><code>TestConfig</code></td>
+</tr>
+<tr>
+<td>Read-only view</td>
+<td><code>sb factory status</code></td>
+<td>smoke</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why this way:</strong> Hand-off (W7) only works if no code in W1 to W6 assumes the factory holds a cell. With each assumption behind a seam that has a test, W7 becomes a matter of new adapters and a workflow, not a refactor.</p>
+<p><strong>Learned:</strong> This law test had no red phase, because the code it tests landed in earlier tickets. The self-test's mutations stand in for it. That's worth stating rather than hiding.</p>
+<p><strong>Laws:</strong> LAW-18 moves from Modelled to Tested.</p>
+<p><strong>W1 status:</strong> all 13 tickets are In review, <code>make check</code>, <code>make integration</code> and <code>make proofs</code> are green in WSL, and laws stand at 32 tests with 5 expected red (retrieval and tool-call levels, W3 and W4). What's left for every W1 ticket: the user's review and the first CI run (the folder isn't a git repository yet). Real-cloud items (30-minute cell, staging timing, IaC module) wait for a cloud adapter (ADR-0018).</p></div></article><p><a href="devlog.html">All entries →</a></p></section>
+</main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="";</script>
+<script src="assets/search-index.js"></script>
+<script src="assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

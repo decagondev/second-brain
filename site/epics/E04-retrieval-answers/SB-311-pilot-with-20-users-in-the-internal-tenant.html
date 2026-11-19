@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-311: Pilot with 20 users in the internal tenant · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E04</h4><a href="../../epics/E04-retrieval-answers/SB-301-tenant-scoped-hybrid-retrieval-with-acl.html">SB-301: Tenant-scoped hybrid retrieval with ACL prefilter</a><a href="../../epics/E04-retrieval-answers/SB-302-live-authorisation-of-every-chunk-before.html">SB-302: Live authorisation of every chunk before context</a><a href="../../epics/E04-retrieval-answers/SB-303-batched-acl-checks-and-latency-budget.html">SB-303: Batched ACL checks and latency budget</a><a href="../../epics/E04-retrieval-answers/SB-304-answer-composer-with-doc-version-citations.html">SB-304: Answer composer with doc@version citations and uncited in code</a><a href="../../epics/E04-retrieval-answers/SB-305-model-gateway-adapter.html">SB-305: Model gateway adapter</a><a href="../../epics/E04-retrieval-answers/SB-306-ask-agent-and-post-v1-ask.html">SB-306: ask agent and POST /v1/ask</a><a href="../../epics/E04-retrieval-answers/SB-307-web-chat-ui.html">SB-307: Web chat UI</a><a href="../../epics/E04-retrieval-answers/SB-308-chat-app-entry-point.html">SB-308: Chat-app entry point</a><a href="../../epics/E04-retrieval-answers/SB-310-feedback-capture.html">SB-310: Feedback capture</a><a class="current" href="../../epics/E04-retrieval-answers/SB-311-pilot-with-20-users-in-the-internal-tenant.html">SB-311: Pilot with 20 users in the internal tenant</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E04-retrieval-answers</div><h1 id="sb-311-pilot-with-20-users-in-the-internal-tenant">SB-311: Pilot with 20 users in the internal tenant</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E04 Retrieval and Cited Answers</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W3 / S3.3 Pilot</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-04.5</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-onboarding.7.html"><code>sb-onboarding(7)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-01">LAW-01</a>, <a href="../../manual/sb-laws.7.html#law-02">LAW-02</a>, <a href="../../manual/sb-laws.7.html#law-03">LAW-03</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E04-retrieval-answers/SB-307-web-chat-ui.html">SB-307</a>, <a href="../E04-retrieval-answers/SB-308-chat-app-entry-point.html">SB-308</a>, <a href="../E04-retrieval-answers/SB-310-feedback-capture.html">SB-310</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Real use before wide use.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task"><span class="box"></span>20 users active for two weeks</li>
+<li class="task"><span class="box"></span>Findings logged in devlog and risks</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task"><span class="box"></span>Recruit pilot group</li>
+<li class="task"><span class="box"></span>Run two-week pilot</li>
+<li class="task"><span class="box"></span>Retro and backlog updates</li>
+<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-02, LAW-03</li>
+<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E04-retrieval-answers/SB-311-pilot-with-20-users-in-the-internal-tenant.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain Model · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a class="current" href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="domain-model">Domain model</h1>
+<p>One vocabulary is used everywhere: code, man pages, APIs, logs and the UI. If a word isn't in this page or the <a href="../living/GLOSSARY.html">glossary</a>, don't use it in an interface.</p>
+<h2 id="identifiers">Identifiers</h2>
+<p>Every identifier is a lowercase, prefixed, greppable string. Prefixes make logs readable by humans and parseable by scripts.</p>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Format</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tenant</td>
+<td>DNS label, immutable</td>
+<td><code>acme-logistics</code></td>
+</tr>
+<tr>
+<td>User</td>
+<td><code>usr_</code> + ULID</td>
+<td><code>usr_01JD3Q8Z5X9K2T4M6N8P0R2S4V</code></td>
+</tr>
+<tr>
+<td>Group</td>
+<td><code>grp_</code> + IdP group id hash</td>
+<td><code>grp_7f3a91c2</code></td>
+</tr>
+<tr>
+<td>Source document</td>
+<td><code>&lt;connector&gt;:&lt;source-id&gt;</code></td>
+<td><code>docs:4f2a9c11</code></td>
+</tr>
+<tr>
+<td>Citation</td>
+<td><code>&lt;connector&gt;:&lt;source-id&gt;@&lt;version&gt;</code></td>
+<td><code>docs:4f2a9c11@17</code></td>
+</tr>
+<tr>
+<td>Chunk</td>
+<td><code>chk_</code> + ULID</td>
+<td><code>chk_01JD3QA1…</code></td>
+</tr>
+<tr>
+<td>Trace (one ask or one agent run)</td>
+<td><code>tr_</code> + ULID</td>
+<td><code>tr_01JD3QB4…</code></td>
+</tr>
+<tr>
+<td>Tool call</td>
+<td><code>tc_</code> + ULID</td>
+<td><code>tc_01JD3QC7…</code></td>
+</tr>
+<tr>
+<td>Approval</td>
+<td><code>apr_</code> + ULID</td>
+<td><code>apr_01JD3QD9…</code></td>
+</tr>
+<tr>
+<td>Audit row</td>
+<td><code>aud_</code> + sequence number per cell</td>
+<td><code>aud_000000001234</code></td>
+</tr>
+<tr>
+<td>Release</td>
+<td><code>rel_</code> + date + short digest</td>
+<td><code>rel_2027-03-02_9b1c4e</code></td>
+</tr>
+</tbody>
+</table>
+<p>ULIDs sort by time, so <code>ls</code>, <code>sort</code> and <code>grep</code> behave the way people expect.</p>
+<h2 id="core-entities">Core entities</h2>
+<div class="mermaid-wrap"><pre class="mermaid">erDiagram
+    TENANT ||--|| CELL : &quot;is served by&quot;
+    TENANT ||--o{ USER : has
+    TENANT ||--o{ GROUP : has
+    USER }o--o{ GROUP : &quot;member of&quot;
+    TENANT ||--o{ CONNECTOR : configures
+    CONNECTOR ||--o{ DOCUMENT : &quot;reads&quot;
+    DOCUMENT ||--o{ VERSION : has
+    VERSION ||--o{ CHUNK : &quot;split into&quot;
+    VERSION ||--|| ACL_SNAPSHOT : &quot;prefilter&quot;
+    USER ||--o{ TRACE : starts
+    TRACE ||--o{ CITATION : produces
+    CITATION }o--|| VERSION : &quot;points at&quot;
+    TRACE ||--o{ TOOL_CALL : makes
+    TOOL_CALL ||--o| APPROVAL : &quot;needs if consequential&quot;
+    TOOL_CALL ||--o| RECEIPT : &quot;ran only with&quot;
+    TOOL_CALL ||--|{ AUDIT_ROW : &quot;recorded by&quot;
+    CELL ||--|| RELEASE : runs
+</pre></div>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Lives in</th>
+<th>System of record?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tenant, cell, release</td>
+<td>Control plane</td>
+<td>Yes</td>
+<td>The manifest is the source of truth for tenant config</td>
+</tr>
+<tr>
+<td>User, group</td>
+<td>Cell DB (from SCIM)</td>
+<td>No: the IdP is</td>
+<td>Deactivation propagates in 5 minutes or less (LAW-12)</td>
+</tr>
+<tr>
+<td>Document, version</td>
+<td>Source system</td>
+<td>No: the source is</td>
+<td>We store metadata and chunks only</td>
+</tr>
+<tr>
+<td>Chunk, embedding</td>
+<td>Cell index</td>
+<td>No: derived</td>
+<td>Rebuildable from sources at any time (LAW-13)</td>
+</tr>
+<tr>
+<td>ACL snapshot</td>
+<td>Cell index</td>
+<td>No: a prefilter</td>
+<td>The live <code>acl</code> call is the authority (ADR-0002)</td>
+</tr>
+<tr>
+<td>Trace, citation</td>
+<td>Cell DB</td>
+<td>Yes</td>
+<td>Kept for <code>retention_days</code></td>
+</tr>
+<tr>
+<td>Tool call, approval, receipt</td>
+<td>Cell DB</td>
+<td>Yes</td>
+<td>Approvals bind to a payload hash (LAW-15)</td>
+</tr>
+<tr>
+<td>Audit row</td>
+<td>Cell audit store</td>
+<td>Yes, forever per policy</td>
+<td>Append-only, hash-chained (LAW-11)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-permission-triple">The permission triple</h2>
+<p>Every read and every action asks one question:</p>
+<blockquote>
+<p>may <strong>principal</strong> do <strong>action</strong> on <strong>resource</strong>, given <strong>context</strong>?</p>
+</blockquote>
+<p>The answer is one of three values. Callers have exactly one safe way to treat <code>Unknown</code>, and that is as <code>Deny</code>.</p>
+<div class="mermaid-wrap"><pre class="mermaid">stateDiagram-v2
+    direction LR
+    [*] --&gt; Ask: authorise(p, a, r, ctx)
+    Ask --&gt; Allow: policy permits AND source says allow
+    Ask --&gt; Deny: policy forbids OR source says deny
+    Ask --&gt; Unknown: timeout, error, missing source, no answer
+    Unknown --&gt; Refused: always
+    Deny --&gt; Refused
+    Allow --&gt; Proceed
+</pre></div>
+<h2 id="action-lifecycle">Action lifecycle</h2>
+<p>An action is anything that changes state outside the platform. It moves through a fixed set of states, identical in code, in <a href="../manual/sb-approvals.7.html"><code>sb-approvals(7)</code></a> and in <a href="../proofs/tla/Approvals.tla.html"><code>proofs/tla/Approvals.tla</code></a>.</p>
+<div class="mermaid-wrap"><pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Drafted
+    Drafted --&gt; PendingApproval: audit row written
+    PendingApproval --&gt; Approved: approver ≠ requester, hash matches
+    PendingApproval --&gt; Rejected
+    PendingApproval --&gt; Expired: TTL passed
+    PendingApproval --&gt; Drafted: payload edited (approval void)
+    Approved --&gt; Expired: TTL passed
+    Approved --&gt; Executing: not killed, audit row written
+    Executing --&gt; Ran: receipt from target
+    Executing --&gt; DidNotRun: no receipt, error or timeout
+    Ran --&gt; [*]
+    DidNotRun --&gt; [*]
+    Rejected --&gt; [*]
+    Expired --&gt; [*]
+</pre></div>
+<h2 id="see-also">See also</h2>
+<p><a href="../living/GLOSSARY.html">Glossary</a> · <a href="../manual/sb-permissions.7.html"><code>sb-permissions(7)</code></a> · <a href="../manual/sb-citations.7.html"><code>sb-citations(7)</code></a> · <a href="architecture/00-overview.html">Architecture overview</a></p><p class="srcline">Source: <code>docs/02-domain-model.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#identifiers">Identifiers</a></li><li class="l2"><a href="#core-entities">Core entities</a></li><li class="l2"><a href="#the-permission-triple">The permission triple</a></li><li class="l2"><a href="#action-lifecycle">Action lifecycle</a></li><li class="l2"><a href="#see-also">See also</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

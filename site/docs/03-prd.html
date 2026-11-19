@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Brain: Product Requirements Document · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="active" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a class="current" href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="second-brain-product-requirements-document">Second Brain: Product Requirements Document</h1>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Owner</th>
+<th>Status</th>
+<th>Related</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0-draft</td>
+<td>2026-11-18</td>
+<td>Platform lead</td>
+<td>For review</td>
+<td><a href="00-problem-statement.html">Problem</a> · <a href="01-principles.html">Principles</a> · <a href="architecture/00-overview.html">Architecture</a> · <a href="../epics/README.html">Plan</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="summary">Summary</h2>
+<p>Second Brain is one reusable platform that a parent organisation rolls out to every company it acquires. Each company gets an isolated cell, configured by one manifest. Staff get <strong>cited answers</strong> built only from sources they can open right now. Teams get a small set of <strong>agent actions</strong> that humans send or approve. Operators get <strong>kill switches</strong> and a tamper-evident <strong>audit log</strong>. The parent gets <strong>one template and one release train</strong> instead of a different stack per company.</p>
+<p>v1 ships in seven waves (W0 to W6), roughly 19 weeks. The formal models and law tests come first (W0). Cited answers reach a pilot in W3. Gated actions arrive in W4, and self-serve roll-out in W6.</p>
+<p>The control plane is a <strong>factory</strong>: it produces and runs every tenant's Second Brain. After v1, wave <strong>W7</strong> (3 weeks) adds <strong>hand-off</strong>: transferring custody of one tenant's Second Brain into that company's own cloud account under its own keys, or detaching it entirely. v1 doesn't build hand-off, but it does build the seams that make hand-off a workflow rather than a migration (ADR-0015, SB-114).</p>
+<h2 id="problem">Problem</h2>
+<p>Acquired companies have no single index of what they know, no reliable record of who may see what, and no record of who did what. AI use is ad hoc and unsafe, and every company starts from zero. The full statement is in <a href="00-problem-statement.html">00-problem-statement.md</a>.</p>
+<h2 id="goals-and-non-goals">Goals and non-goals</h2>
+<p><strong>Goals (v1)</strong></p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Goal</th>
+<th>Measure</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G1</td>
+<td>Fast time to value</td>
+<td>Days from contract to first cited answer</td>
+<td>14 or fewer</td>
+</tr>
+<tr>
+<td>G2</td>
+<td>Real adoption</td>
+<td>Weekly active users ÷ seats at day 90</td>
+<td>40% or more</td>
+</tr>
+<tr>
+<td>G3</td>
+<td>Trust</td>
+<td>Approve-to-reject ratio on drafts</td>
+<td>Tracked; reviewed at day 45</td>
+</tr>
+<tr>
+<td>G4</td>
+<td>Soundness</td>
+<td>Law violations in production</td>
+<td>0</td>
+</tr>
+<tr>
+<td>G5</td>
+<td>Self-serve</td>
+<td>Onboarding steps needing the platform team</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Non-goals (v1):</strong> on-prem installs, self-hosted models, fine-tuning, Kubernetes, autonomous or multi-step write agents, ERP or CRM writes, per-company custom agents or forks, anything cross-company, and executing a custody hand-off (planned for W7; v1 builds only the seams).</p>
+<h2 id="personas">Personas</h2>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Primary jobs</th>
+<th>Most important features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Asker</strong> (company staff)</td>
+<td>Find answers, draft replies</td>
+<td>Cited answers, <code>uncited</code> label, chat-app entry point, <code>draft-reply</code></td>
+</tr>
+<tr>
+<td><strong>Operator</strong> (company IT)</td>
+<td>Onboard, configure, operate, stop</td>
+<td>Manifest, <code>sb tenant check/apply/verify</code>, console, kill switches</td>
+</tr>
+<tr>
+<td><strong>Approver</strong> (company leadership)</td>
+<td>Approve consequential actions, track adoption</td>
+<td>Approver view with exact payload, weekly report</td>
+</tr>
+<tr>
+<td><strong>Maintainer</strong> (parent-org platform team)</td>
+<td>Release, support, improve</td>
+<td>Release controller, eval gate, attestation, observability</td>
+</tr>
+<tr>
+<td><strong>Auditor / security</strong></td>
+<td>Prove who saw and did what</td>
+<td>Audit log, <code>sb audit verify</code>, threat model, laws</td>
+</tr>
+<tr>
+<td><strong>Factory operator</strong> (parent-org platform team)</td>
+<td>Produce, run and hand off tenants</td>
+<td>Cell template, custody records, <code>sb factory</code> (W7)</td>
+</tr>
+<tr>
+<td><strong>Tenant owner</strong> (company leadership or IT owner)</td>
+<td>Accept custody of their Second Brain</td>
+<td>Dual approval of the hand-off plan, LAW-17 proof, export package (W7)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="functional-requirements">Functional requirements</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Wave</th>
+<th>Epic</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-01</td>
+<td>A tenant is fully described by one manifest; <code>sb tenant check</code> validates it with line-precise errors</td>
+<td>W1</td>
+<td>E01</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td><code>sb tenant apply</code> creates or updates an isolated cell idempotently in under 30 minutes</td>
+<td>W1</td>
+<td>E01</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Users sign in with their company's OIDC IdP; users and groups are provisioned by SCIM</td>
+<td>W1</td>
+<td>E01</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>Every read and tool call is authorised by one policy engine returning allow, deny or unknown; unknown is refused</td>
+<td>W1</td>
+<td>E02</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Connectors implement <code>fetch</code>, <code>acl</code>, <code>changes</code>, <code>act</code> and pass the contract kit</td>
+<td>W2</td>
+<td>E03</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Docs and chat are ingested read-only with provenance; tickets follow; CRM read-only in W6</td>
+<td>W2, W6</td>
+<td>E03</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Ingested content is sanitised, flagged and treated as data; it can't trigger a tool call</td>
+<td>W2</td>
+<td>E03</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>Retrieval is tenant-scoped and uses the ACL prefilter; every chunk is live-authorised before entering context</td>
+<td>W3</td>
+<td>E04</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>Answers cite <code>doc@version</code> for each claim or label it <code>uncited</code> in code</td>
+<td>W3</td>
+<td>E04</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Users can ask from a web UI and from the company chat app</td>
+<td>W3</td>
+<td>E04</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td><code>draft-reply</code> drafts with citations; a human always sends</td>
+<td>W4</td>
+<td>E05</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>Each tenant may enable one approval-gated write workflow; approvals bind to the exact payload hash</td>
+<td>W4</td>
+<td>E05</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>An action is <code>Ran</code> only with a target receipt; otherwise <code>DidNotRun</code> is shown plainly</td>
+<td>W4</td>
+<td>E05</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>Every tool call has an audit row before it executes; the log is append-only and hash-chained</td>
+<td>W4</td>
+<td>E05</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>Operators can kill any agent, connector or tenant in 10 seconds or less</td>
+<td>W4</td>
+<td>E05</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>No prompt, tool, policy or model change reaches a tenant without passing the eval gate</td>
+<td>W5</td>
+<td>E06</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>Builds are reproducible, signed and carry an SBOM; cells refuse unverified images</td>
+<td>W5</td>
+<td>E06</td>
+</tr>
+<tr>
+<td>FR-18</td>
+<td>Releases roll out by ring and channel; rollback is one step</td>
+<td>W5</td>
+<td>E06</td>
+</tr>
+<tr>
+<td>FR-19</td>
+<td><code>sb tenant verify</code> reports pass or fail per law on the tenant's real data</td>
+<td>W6</td>
+<td>E07</td>
+</tr>
+<tr>
+<td>FR-20</td>
+<td>Every console action is also a manifest diff</td>
+<td>W6</td>
+<td>E07</td>
+</tr>
+<tr>
+<td>FR-21</td>
+<td>Leadership receives a weekly report on usage, citations and approvals</td>
+<td>W6</td>
+<td>E07</td>
+</tr>
+<tr>
+<td>FR-22</td>
+<td>Retention and deletion follow <code>retention_days</code></td>
+<td>W6</td>
+<td>E07</td>
+</tr>
+<tr>
+<td>FR-23</td>
+<td>Every cell has a custody record and a placement; no code assumes the factory account or factory-held keys</td>
+<td>W1</td>
+<td>E08</td>
+</tr>
+<tr>
+<td>FR-24</td>
+<td>A tenant's cell can be handed to tenant custody (own account, own root key) with dual approval, keeping audit continuity</td>
+<td>W7</td>
+<td>E08</td>
+</tr>
+<tr>
+<td>FR-25</td>
+<td>After hand-off the cell still pulls signed releases; a tenant can instead detach with a complete export package</td>
+<td>W7</td>
+<td>E08</td>
+</tr>
+</tbody>
+</table>
+<h2 id="non-functional-requirements">Non-functional requirements</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Target</th>
+<th>Verified by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFR-01</td>
+<td>Ask latency</td>
+<td>p95 6 s or less</td>
+<td>Staging load test, dashboard</td>
+</tr>
+<tr>
+<td>NFR-02</td>
+<td>Freshness</td>
+<td>p95 change-to-answerable 15 min or less</td>
+<td>Ingest lag metric</td>
+</tr>
+<tr>
+<td>NFR-03</td>
+<td>Kill-switch effect</td>
+<td>10 s or less</td>
+<td>Drill every release (SB-404)</td>
+</tr>
+<tr>
+<td>NFR-04</td>
+<td>Deprovisioning</td>
+<td>5 min or less</td>
+<td>LAW-12 timed test</td>
+</tr>
+<tr>
+<td>NFR-05</td>
+<td>Cell creation</td>
+<td>under 30 min</td>
+<td>SB-104 timing in CI</td>
+</tr>
+<tr>
+<td>NFR-06</td>
+<td>Rollback</td>
+<td>under 10 min, all cells</td>
+<td>Drill every release (SB-508)</td>
+</tr>
+<tr>
+<td>NFR-07</td>
+<td>Availability (ask)</td>
+<td>99.5% monthly per cell</td>
+<td>SLO dashboard</td>
+</tr>
+<tr>
+<td>NFR-08</td>
+<td>DR</td>
+<td>RTO 4 h, RPO 15 min, in region</td>
+<td>Game day (SB-613)</td>
+</tr>
+<tr>
+<td>NFR-09</td>
+<td>Accessibility</td>
+<td>WCAG 2.2 AA for web UI and console</td>
+<td>Automated checks plus manual audit</td>
+</tr>
+<tr>
+<td>NFR-10</td>
+<td>Security</td>
+<td>No open critical/high pen-test findings at GA</td>
+<td>SB-612</td>
+</tr>
+<tr>
+<td>NFR-11</td>
+<td>Content in telemetry</td>
+<td>None</td>
+<td>Redaction test (SB-607), scanner (LAW-07)</td>
+</tr>
+<tr>
+<td>NFR-12</td>
+<td>Release lag</td>
+<td>No tenant more than one behind stable</td>
+<td>LAW-08 check</td>
+</tr>
+<tr>
+<td>NFR-13</td>
+<td>Hand-off downtime</td>
+<td>30 min or less at cutover; zero data loss</td>
+<td>Game day (SB-710)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="delivery-model">Delivery model</h2>
+<ul>
+<li><strong>Manual first.</strong> Every ticket's first subtask is the man page (ADR-0009).</li>
+<li><strong>Laws first.</strong> Law tests exist and fail red in W0; features turn them green. TLA+ and Alloy models are checked in CI from W0 (ADR-0010).</li>
+<li><strong>Thin slices.</strong> Each slice is end-to-end and demoable. A wave ends only when its exit gate is met.</li>
+<li><strong>Living documents.</strong> Every PR adds a devlog entry and updates the ledger, changelog and bugs log as needed (<a href="05-living-documents.html">05-living-documents.md</a>).</li>
+<li><strong>Testing stack.</strong> Unit, regression and smoke tests from day one, kept forever. From W3, laws, models and evals are the main gate (<a href="04-testing-and-assurance.html">04-testing-and-assurance.md</a>).</li>
+</ul>
+<h2 id="epics">Epics</h2>
+<table>
+<thead>
+<tr>
+<th>Epic</th>
+<th>Goal</th>
+<th>Stories</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a></td>
+<td>The spec, the laws and the first formal models exist before features, and CI enforces the process.</td>
+<td>5</td>
+<td>15</td>
+</tr>
+<tr>
+<td><a href="../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a></td>
+<td>One manifest and one command make an isolated cell; users sign in with their own SSO and see only their tenant.</td>
+<td>3</td>
+<td>8</td>
+</tr>
+<tr>
+<td><a href="../epics/E02-policy/README.html">E02 Policy Kernel</a></td>
+<td>Every decision about who may see or do what goes through one small, analysable policy engine that treats unknown as deny.</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td><a href="../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a></td>
+<td>Sources flow in read-only through a four-call contract, with ACLs, provenance and freshness, and ingested text is treated as untrusted data.</td>
+<td>5</td>
+<td>12</td>
+</tr>
+<tr>
+<td><a href="../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a></td>
+<td>Users ask in plain language and get answers citing document versions they can open, or a clear <code>uncited</code> label.</td>
+<td>5</td>
+<td>10</td>
+</tr>
+<tr>
+<td><a href="../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a></td>
+<td>Agents draft and propose; humans send and approve; every tool call is audited before it runs; anything can be switched off in seconds.</td>
+<td>6</td>
+<td>12</td>
+</tr>
+<tr>
+<td><a href="../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a></td>
+<td>No agent, prompt, policy or model change reaches a tenant without passing evals, and every running build is a signed build that passed the gate.</td>
+<td>4</td>
+<td>12</td>
+</tr>
+<tr>
+<td><a href="../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a></td>
+<td>A company onboards itself with one file and three commands, and operators can see and control every tenant.</td>
+<td>6</td>
+<td>12</td>
+</tr>
+<tr>
+<td><a href="../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></td>
+<td>One factory produces and runs every tenant's Second Brain, and can hand custody of one to its company without a rebuild.</td>
+<td>5</td>
+<td>11</td>
+</tr>
+</tbody>
+</table>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  E00[&quot;E00 Manual, Laws and Proofs&quot;]
+  E01[&quot;E01 Tenancy and Identity&quot;]
+  E02[&quot;E02 Policy Kernel&quot;]
+  E03[&quot;E03 Connectors and Ingestion&quot;]
+  E04[&quot;E04 Retrieval and Cited Answers&quot;]
+  E05[&quot;E05 Actions, Approvals, Audit and Kill Switches&quot;]
+  E06[&quot;E06 Evals, Release and Supply Chain&quot;]
+  E07[&quot;E07 Roll-out, Admin and Operations&quot;]
+  E08[&quot;E08 Factory and Hand-off&quot;]
+  E00 --&gt; E01
+  E00 --&gt; E03
+  E00 --&gt; E04
+  E00 --&gt; E06
+  E01 --&gt; E02
+  E01 --&gt; E03
+  E01 --&gt; E04
+  E01 --&gt; E05
+  E01 --&gt; E06
+  E01 --&gt; E07
+  E01 --&gt; E08
+  E02 --&gt; E03
+  E02 --&gt; E04
+  E02 --&gt; E05
+  E03 --&gt; E04
+  E03 --&gt; E05
+  E03 --&gt; E07
+  E04 --&gt; E05
+  E04 --&gt; E06
+  E04 --&gt; E07
+  E05 --&gt; E07
+  E05 --&gt; E08
+  E06 --&gt; E07
+  E06 --&gt; E08
+  E07 --&gt; E08
+</pre></div>
+<h2 id="user-stories">User stories</h2>
+<p>Each story is delivered by the listed tickets. Stories are written from the persona's point of view; acceptance lives on the tickets.</p>
+<h3 id="e00-manual-laws-and-proofs">E00 Manual, Laws and Proofs</h3>
+<ul>
+<li><strong>US-00.1</strong>: As a <em>maintainer</em>, I want to read the man page for any feature before code exists, so that I know exactly what to build. Delivered by <a href="../epics/E00-foundations/SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.html">SB-004</a>, <a href="../epics/E00-foundations/SB-005-first-drafts-sb-connector-3-sb-permissions-7.html">SB-005</a>, <a href="../epics/E00-foundations/SB-006-api-conventions-and-the-error-registry.html">SB-006</a>.</li>
+<li><strong>US-00.2</strong>: As a <em>reviewer</em>, I want CI to reject behaviour changes that do not change the manual, so that the manual never drifts from the code. Delivered by <a href="../epics/E00-foundations/SB-007-ci-rule-behaviour-change-needs-a-manual-diff.html">SB-007</a>.</li>
+<li><strong>US-00.3</strong>: As a <em>maintainer</em>, I want the law tests to exist and fail red before features land, so that every feature is born against its laws. Delivered by <a href="../epics/E00-foundations/SB-010-law-harness-and-law-01-to-law-05-as-failing.html">SB-010</a>.</li>
+<li><strong>US-00.4</strong>: As a <em>security reviewer</em>, I want the approval, rollout and permission designs model-checked, so that design flaws are found before code. Delivered by <a href="../epics/E00-foundations/SB-011-approvals-model-in-tla-checked-in-ci.html">SB-011</a>, <a href="../epics/E00-foundations/SB-012-rollout-model-in-tla-checked-in-ci.html">SB-012</a>, <a href="../epics/E00-foundations/SB-013-permissions-model-in-alloy-checked-in-ci.html">SB-013</a>.</li>
+<li><strong>US-00.5</strong>: As a <em>new contributor</em>, I want one command that builds, tests and renders the docs, so that I am productive on day one. Delivered by <a href="../epics/E00-foundations/SB-001-repo-skeleton-and-toolchain.html">SB-001</a>, <a href="../epics/E00-foundations/SB-002-manual-layout-man-page-template-and-docs.html">SB-002</a>, <a href="../epics/E00-foundations/SB-009-link-check-diagram-check-and-manual-example.html">SB-009</a>, <a href="../epics/E00-foundations/SB-016-smoke-and-regression-test-conventions.html">SB-016</a>.</li>
+</ul>
+<h3 id="e01-tenancy-and-identity">E01 Tenancy and Identity</h3>
+<ul>
+<li><strong>US-01.1</strong>: As a <em>parent-org platform engineer</em>, I want to add a company with one manifest and one pipeline run, so that onboarding is repeatable and boring. Delivered by <a href="../epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.html">SB-101</a>, <a href="../epics/E01-tenancy-identity/SB-102-sb-tenant-apply-plan-dry-run.html">SB-102</a>, <a href="../epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103</a>, <a href="../epics/E01-tenancy-identity/SB-104-sb-tenant-apply-idempotent-cell-creation.html">SB-104</a>, <a href="../epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.html">SB-105</a>.</li>
+<li><strong>US-01.2</strong>: As a <em>company staff member</em>, I want to sign in with my company's SSO and see only my company, so that I trust what I see. Delivered by <a href="../epics/E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.html">SB-106</a>, <a href="../epics/E01-tenancy-identity/SB-108-tenant-scoped-request-context.html">SB-108</a>.</li>
+<li><strong>US-01.3</strong>: As a <em>company IT operator</em>, I want deprovisioning in our IdP to remove access within minutes, so that leavers lose access without a ticket to anyone. Delivered by <a href="../epics/E01-tenancy-identity/SB-107-scim-provisioning-and-fast-deprovisioning.html">SB-107</a>.</li>
+</ul>
+<h3 id="e02-policy-kernel">E02 Policy Kernel</h3>
+<ul>
+<li><strong>US-02.1</strong>: As a <em>security reviewer</em>, I want one <code>authorise</code> call that every path goes through, so that there is one place to audit and prove. Delivered by <a href="../epics/E02-policy/SB-109-policy-engine-v0-authorise-returns-allow.html">SB-109</a>.</li>
+<li><strong>US-02.2</strong>: As a <em>company IT operator</em>, I want policies written in a small, readable language with a schema, so that I can review rules without reading code. Delivered by <a href="../epics/E02-policy/SB-110-cedar-schema-and-base-policies.html">SB-110</a>, <a href="../epics/E02-policy/SB-112-policy-analysis-in-ci.html">SB-112</a>.</li>
+<li><strong>US-02.3</strong>: As an <em>auditor</em>, I want every policy decision recorded with its reason, so that I can explain any allow or deny later. Delivered by <a href="../epics/E02-policy/SB-111-policy-decisions-are-audited.html">SB-111</a>.</li>
+</ul>
+<h3 id="e03-connectors-and-ingestion">E03 Connectors and Ingestion</h3>
+<ul>
+<li><strong>US-03.1</strong>: As a <em>company IT operator</em>, I want to connect docs and chat read-only from the manifest, so that setup is one line per source. Delivered by <a href="../epics/E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a>, <a href="../epics/E03-connectors-ingestion/SB-203-docs-connector-first-vendor-read-only.html">SB-203</a>, <a href="../epics/E03-connectors-ingestion/SB-204-chat-connector-read-only.html">SB-204</a>, <a href="../epics/E03-connectors-ingestion/SB-205-connector-credentials-via-vault-references.html">SB-205</a>.</li>
+<li><strong>US-03.2</strong>: As a <em>company staff member</em>, I want new and changed documents to show up within the freshness SLA, so that answers reflect today's truth. Delivered by <a href="../epics/E03-connectors-ingestion/SB-206-ingest-pipeline-chunk-embed-tag-provenance.html">SB-206</a>, <a href="../epics/E03-connectors-ingestion/SB-208-incremental-sync-via-changes-with-freshness.html">SB-208</a>, <a href="../epics/E03-connectors-ingestion/SB-209-deletion-and-acl-change-propagation.html">SB-209</a>.</li>
+<li><strong>US-03.3</strong>: As a <em>security reviewer</em>, I want ingested text treated as data, never as instructions, so that a poisoned document cannot drive an agent. Delivered by <a href="../epics/E03-connectors-ingestion/SB-207-ingest-sanitiser-and-injection-flags.html">SB-207</a>.</li>
+<li><strong>US-03.4</strong>: As a <em>platform engineer</em>, I want the index to be rebuildable from sources at any time, so that the index is never a system of record. Delivered by <a href="../epics/E03-connectors-ingestion/SB-210-index-rebuild-from-sources.html">SB-210</a>.</li>
+<li><strong>US-03.5</strong>: As a <em>connector author</em>, I want a contract kit and a fault-injecting mock, so that a new connector is correct by test, not by review. Delivered by <a href="../epics/E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a>, <a href="../epics/E03-connectors-ingestion/SB-202-fault-injecting-mock-connector.html">SB-202</a>, <a href="../epics/E03-connectors-ingestion/SB-211-tickets-connector-read-only.html">SB-211</a>, <a href="../epics/E03-connectors-ingestion/SB-610-crm-connector-read-only.html">SB-610</a>.</li>
+</ul>
+<h3 id="e04-retrieval-and-cited-answers">E04 Retrieval and Cited Answers</h3>
+<ul>
+<li><strong>US-04.1</strong>: As a <em>company staff member</em>, I want an answer with citations to specific document versions I can open, so that I can check the answer myself. Delivered by <a href="../epics/E04-retrieval-answers/SB-301-tenant-scoped-hybrid-retrieval-with-acl.html">SB-301</a>, <a href="../epics/E04-retrieval-answers/SB-304-answer-composer-with-doc-version-citations.html">SB-304</a>, <a href="../epics/E04-retrieval-answers/SB-306-ask-agent-and-post-v1-ask.html">SB-306</a>.</li>
+<li><strong>US-04.2</strong>: As a <em>company staff member</em>, I want answers with nothing to cite clearly labelled <code>uncited</code>, so that I know when to be sceptical. Delivered by <a href="../epics/E04-retrieval-answers/SB-304-answer-composer-with-doc-version-citations.html">SB-304</a>.</li>
+<li><strong>US-04.3</strong>: As a <em>security reviewer</em>, I want nothing the asker cannot open to ever reach the model's context, so that permissions hold even if the model misbehaves. Delivered by <a href="../epics/E04-retrieval-answers/SB-302-live-authorisation-of-every-chunk-before.html">SB-302</a>, <a href="../epics/E04-retrieval-answers/SB-303-batched-acl-checks-and-latency-budget.html">SB-303</a>.</li>
+<li><strong>US-04.4</strong>: As a <em>company staff member</em>, I want to ask from the web or from our chat app, so that I don't change tools to get help. Delivered by <a href="../epics/E04-retrieval-answers/SB-307-web-chat-ui.html">SB-307</a>, <a href="../epics/E04-retrieval-answers/SB-308-chat-app-entry-point.html">SB-308</a>.</li>
+<li><strong>US-04.5</strong>: As a <em>product owner</em>, I want pilot feedback captured against each answer, so that we improve on evidence. Delivered by <a href="../epics/E04-retrieval-answers/SB-305-model-gateway-adapter.html">SB-305</a>, <a href="../epics/E04-retrieval-answers/SB-310-feedback-capture.html">SB-310</a>, <a href="../epics/E04-retrieval-answers/SB-311-pilot-with-20-users-in-the-internal-tenant.html">SB-311</a>.</li>
+</ul>
+<h3 id="e05-actions-approvals-audit-and-kill-switches">E05 Actions, Approvals, Audit and Kill Switches</h3>
+<ul>
+<li><strong>US-05.1</strong>: As a <em>company staff member</em>, I want the agent to draft a reply or a ticket update that I send, so that I save time without losing control. Delivered by <a href="../epics/E05-actions-approvals-audit/SB-409-draft-reply-agent-where-a-human-always-sends.html">SB-409</a>.</li>
+<li><strong>US-05.2</strong>: As an <em>approver</em>, I want to see exactly what will run, against which system, before I approve, so that approval means something. Delivered by <a href="../epics/E05-actions-approvals-audit/SB-405-tool-bus-policy-audit-then-execute.html">SB-405</a>, <a href="../epics/E05-actions-approvals-audit/SB-406-approval-flow-with-ids-bound-to-content.html">SB-406</a>, <a href="../epics/E05-actions-approvals-audit/SB-407-approver-view.html">SB-407</a>, <a href="../epics/E05-actions-approvals-audit/SB-410-first-approval-gated-workflow-template.html">SB-410</a>.</li>
+<li><strong>US-05.3</strong>: As a <em>company IT operator</em>, I want to switch off any agent, connector or tenant instantly, so that I can stop harm first and investigate second. Delivered by <a href="../epics/E05-actions-approvals-audit/SB-403-kill-switches-per-agent-connector-and-tenant.html">SB-403</a>, <a href="../epics/E05-actions-approvals-audit/SB-404-kill-drill-every-release.html">SB-404</a>.</li>
+<li><strong>US-05.4</strong>: As an <em>auditor</em>, I want an append-only, tamper-evident record of every tool call, so that I can prove who did what. Delivered by <a href="../epics/E05-actions-approvals-audit/SB-401-append-only-hash-chained-audit-log-written.html">SB-401</a>, <a href="../epics/E05-actions-approvals-audit/SB-402-sb-audit-verify-tail-and-export.html">SB-402</a>, <a href="../epics/E05-actions-approvals-audit/SB-412-audit-and-approval-backups-3-2-1-and-restore.html">SB-412</a>.</li>
+<li><strong>US-05.5</strong>: As a <em>company staff member</em>, I want to be told plainly when an action did not run, so that I never act on a false 'done'. Delivered by <a href="../epics/E05-actions-approvals-audit/SB-408-action-executor-with-receipts.html">SB-408</a>.</li>
+<li><strong>US-05.6</strong>: As a <em>security reviewer</em>, I want secrets never to appear in prompts, logs or audit payloads, so that a log leak is not a credential leak. Delivered by <a href="../epics/E05-actions-approvals-audit/SB-411-secret-hygiene-canaries-and-scanner.html">SB-411</a>.</li>
+</ul>
+<h3 id="e06-evals-release-and-supply-chain">E06 Evals, Release and Supply Chain</h3>
+<ul>
+<li><strong>US-06.1</strong>: As a <em>parent-org platform lead</em>, I want no agent, prompt or model change to reach a tenant without passing evals, so that quality never regresses silently. Delivered by <a href="../epics/E06-evals-release/SB-015-eval-harness-scaffold.html">SB-015</a>, <a href="../epics/E06-evals-release/SB-309-citation-faithfulness-eval-set-per-tenant.html">SB-309</a>, <a href="../epics/E06-evals-release/SB-501-eval-runner-and-suites.html">SB-501</a>, <a href="../epics/E06-evals-release/SB-502-eval-gate-blocks-regressions.html">SB-502</a>.</li>
+<li><strong>US-06.2</strong>: As a <em>security reviewer</em>, I want to prove which build, prompts and model ran for any action, so that every incident is reconstructable. Delivered by <a href="../epics/E06-evals-release/SB-503-release-bundle-pins-prompts-tools-policies.html">SB-503</a>, <a href="../epics/E06-evals-release/SB-504-reproducible-builds-sbom-and-signing.html">SB-504</a>, <a href="../epics/E06-evals-release/SB-506-deploy-time-signature-verification.html">SB-506</a>, <a href="../epics/E06-evals-release/SB-509-running-build-attestation-per-cell.html">SB-509</a>.</li>
+<li><strong>US-06.3</strong>: As a <em>company IT operator</em>, I want a bad release to roll back in one step, so that a bad day stays short. Delivered by <a href="../epics/E06-evals-release/SB-507-release-controller-with-channels-and-rings.html">SB-507</a>, <a href="../epics/E06-evals-release/SB-508-one-step-rollback.html">SB-508</a>.</li>
+<li><strong>US-06.4</strong>: As a <em>security reviewer</em>, I want a CVE fix to be a rebuild that every tenant takes, so that no tenant is left on a vulnerable build. Delivered by <a href="../epics/E06-evals-release/SB-505-lockfile-regeneration-and-cve-rebuild-path.html">SB-505</a>, <a href="../epics/E06-evals-release/SB-507-release-controller-with-channels-and-rings.html">SB-507</a>, <a href="../epics/E06-evals-release/SB-510-manifest-drift-detection.html">SB-510</a>.</li>
+</ul>
+<h3 id="e07-roll-out-admin-and-operations">E07 Roll-out, Admin and Operations</h3>
+<ul>
+<li><strong>US-07.1</strong>: As a <em>company IT operator</em>, I want to onboard my company with one file and three commands, without calling the platform team, so that we go live in days. Delivered by <a href="../epics/E07-rollout-ops/SB-601-sb-tenant-verify-on-real-data.html">SB-601</a>, <a href="../epics/E07-rollout-ops/SB-604-sb-onboarding-7-day-0-to-90-runbook.html">SB-604</a>, <a href="../epics/E07-rollout-ops/SB-605-friendly-tenant-onboarding-unaided.html">SB-605</a>.</li>
+<li><strong>US-07.2</strong>: As a <em>company IT operator</em>, I want a console for connectors, agents, approval rules and kill switches, so that I don't need to learn YAML to operate. Delivered by <a href="../epics/E07-rollout-ops/SB-602-admin-console-where-every-action-is-a.html">SB-602</a>, <a href="../epics/E07-rollout-ops/SB-603-roles-in-the-console.html">SB-603</a>.</li>
+<li><strong>US-07.3</strong>: As a <em>company leader</em>, I want a weekly report on usage, citations and approvals, so that I know if this is working. Delivered by <a href="../epics/E07-rollout-ops/SB-606-weekly-leadership-report.html">SB-606</a>.</li>
+<li><strong>US-07.4</strong>: As an <em>on-call operator</em>, I want health, cost, freshness and law violations per tenant, so that I see problems before users do. Delivered by <a href="../epics/E07-rollout-ops/SB-607-per-tenant-observability.html">SB-607</a>, <a href="../epics/E07-rollout-ops/SB-608-sev-1-alert-for-every-law-violation.html">SB-608</a>, <a href="../epics/E07-rollout-ops/SB-609-cost-controls.html">SB-609</a>.</li>
+<li><strong>US-07.5</strong>: As a <em>data protection officer</em>, I want retention and deletion to follow the manifest, so that we meet our obligations by configuration. Delivered by <a href="../epics/E07-rollout-ops/SB-611-retention-and-deletion.html">SB-611</a>.</li>
+<li><strong>US-07.6</strong>: As a <em>parent-org security lead</em>, I want independent testing and a disaster-recovery game day, so that we trust the platform before scaling it. Delivered by <a href="../epics/E07-rollout-ops/SB-612-external-penetration-test-and-threat-model.html">SB-612</a>, <a href="../epics/E07-rollout-ops/SB-613-disaster-recovery-game-day.html">SB-613</a>.</li>
+</ul>
+<h3 id="e08-factory-and-hand-off">E08 Factory and Hand-off</h3>
+<ul>
+<li><strong>US-08.1</strong>: As a <em>parent-org platform lead</em>, I want every cell to carry a custody record and a placement from day one, so that hand-off later is a workflow, not a migration. Delivered by <a href="../epics/E08-factory-handoff/SB-114-factory-seams-custody-record-placement-port.html">SB-114</a>, <a href="../epics/E08-factory-handoff/SB-701-final-sb-factory-7-and-the-hand-off-runbook.html">SB-701</a>, <a href="../epics/E08-factory-handoff/SB-702-factory-roles-and-policies.html">SB-702</a>.</li>
+<li><strong>US-08.2</strong>: As a <em>company owner</em>, I want our Second Brain moved into our own cloud account under our own key, so that we hold custody of our data. Delivered by <a href="../epics/E08-factory-handoff/SB-703-placement-adapter-for-tenant-owned-cloud.html">SB-703</a>, <a href="../epics/E08-factory-handoff/SB-704-root-key-re-wrap-and-key-custody-transfer.html">SB-704</a>, <a href="../epics/E08-factory-handoff/SB-705-hand-off-workflow-with-dual-approval.html">SB-705</a>.</li>
+<li><strong>US-08.3</strong>: As a <em>company security lead</em>, I want proof that the factory keeps no access we didn't agree to, so that custody means what it says. Delivered by <a href="../epics/E08-factory-handoff/SB-706-access-path-enumeration-and-law-17-check.html">SB-706</a>.</li>
+<li><strong>US-08.4</strong>: As a <em>company IT operator</em>, I want to keep receiving signed releases after hand-off, so that we stay patched without a support contract per release. Delivered by <a href="../epics/E08-factory-handoff/SB-707-releases-after-hand-off.html">SB-707</a>.</li>
+<li><strong>US-08.5</strong>: As a <em>company owner after divestiture</em>, I want a complete export so we can leave the factory, so that a sale doesn't strand our knowledge. Delivered by <a href="../epics/E08-factory-handoff/SB-708-detach-and-export-package.html">SB-708</a>, <a href="../epics/E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.html">SB-709</a>, <a href="../epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.html">SB-710</a>.</li>
+</ul>
+<h2 id="waves">Waves</h2>
+<p>A <strong>wave</strong> is a release-sized group of work with an exit gate. A <strong>slice</strong> is a thin, end-to-end, demoable increment inside a wave. Tickets belong to one epic and one slice, so slices cut across epics.</p>
+<table>
+<thead>
+<tr>
+<th>Wave</th>
+<th>Name</th>
+<th>Indicative length</th>
+<th>Goal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W0</td>
+<td>Manual and Laws</td>
+<td>2 weeks</td>
+<td>The spec exists before the code: man pages, laws as red tests, first formal models, CI rules.</td>
+</tr>
+<tr>
+<td>W1</td>
+<td>First Cell</td>
+<td>3 weeks</td>
+<td>One manifest makes one isolated cell; a user signs in with SSO and sees only their tenant; the policy kernel answers allow, deny or unknown.</td>
+</tr>
+<tr>
+<td>W2</td>
+<td>Ingestion</td>
+<td>3 weeks</td>
+<td>Docs and chat flow in read-only, with ACLs, provenance and freshness; ingested text is data, never instructions.</td>
+</tr>
+<tr>
+<td>W3</td>
+<td>Cited Answers</td>
+<td>3 weeks</td>
+<td>A pilot group asks questions and gets answers citing <code>doc@version</code> that they can open, or a clear <code>uncited</code> label.</td>
+</tr>
+<tr>
+<td>W4</td>
+<td>Safe Actions</td>
+<td>3 weeks</td>
+<td>Agents draft; humans send or approve; every tool call is audited first; any agent, connector or tenant can be killed in seconds.</td>
+</tr>
+<tr>
+<td>W5</td>
+<td>Gated Releases</td>
+<td>2 weeks</td>
+<td>Nothing reaches a tenant without passing evals; builds are reproducible and signed; rollout is ringed and rollback is one step.</td>
+</tr>
+<tr>
+<td>W6</td>
+<td>Portfolio Roll-out</td>
+<td>3 weeks</td>
+<td>A company's own IT onboards with one file and three commands, unaided; leadership gets a weekly report; operators see every law violation as Sev-1.</td>
+</tr>
+<tr>
+<td>W7</td>
+<td>Factory Hand-off</td>
+<td>3 weeks</td>
+<td>After v1: the factory can hand custody of a tenant's Second Brain to that company, in its own cloud account, without losing data, audit continuity or the laws.</td>
+</tr>
+</tbody>
+</table>
+<div class="mermaid-wrap"><pre class="mermaid">gantt
+  dateFormat YYYY-MM-DD
+  axisFormat %d %b
+  title Indicative schedule (weeks from kickoff)
+  section W0
+  Manual and Laws :w0, 2027-01-04, 14d
+  section W1
+  First Cell :w1, after w0, 21d
+  section W2
+  Ingestion :w2, after w1, 21d
+  section W3
+  Cited Answers :w3, after w2, 21d
+  section W4
+  Safe Actions :w4, after w3, 21d
+  section W5
+  Gated Releases :w5, after w4, 14d
+  section W6
+  Portfolio Roll-out :w6, after w5, 21d
+  section W7
+  Factory Hand-off :w7, after w6, 21d
+</pre></div>
+<h3 id="wave-exit-gates-and-slices">Wave exit gates and slices</h3>
+<h4 id="w0-manual-and-laws">W0 Manual and Laws</h4>
+<p><em>The spec exists before the code: man pages, laws as red tests, first formal models, CI rules.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>Man pages <code>sb(1)</code>, <code>sb-tenant(5)</code>, <code>sb-tenant(1)</code>, <code>sb-connector(3)</code>, <code>sb-permissions(7)</code>, <code>sb-laws(7)</code> reviewed (drafts done; reviews pending, SB-004, SB-005)</li>
+<li class="task done"><span class="box">✓</span>A PR that changes <code>cmd/</code> or <code>internal/</code> without <code>manual/</code> fails CI</li>
+<li class="task done"><span class="box">✓</span>LAW-01 to LAW-05 run in CI and fail for the right reason</li>
+<li class="task"><span class="box"></span><code>Approvals.tla</code>, <code>Rollout.tla</code> and <code>Permissions.als</code> model-check in CI with no counterexample (CI wired, checksums pinned; first run pending, SB-011 to SB-013)</li>
+<li class="task"><span class="box"></span>Threat model v0 and ADR-0001 to ADR-0016 signed off by two reviewers (sign-off tables ready, SB-014)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S0.1</td>
+<td>Skeleton</td>
+<td>Repo, toolchain, manual layout, living documents and the docs site build</td>
+<td><a href="../epics/E00-foundations/SB-001-repo-skeleton-and-toolchain.html">SB-001</a>, <a href="../epics/E00-foundations/SB-002-manual-layout-man-page-template-and-docs.html">SB-002</a>, <a href="../epics/E00-foundations/SB-003-living-documents-bootstrap.html">SB-003</a>, <a href="../epics/E00-foundations/SB-016-smoke-and-regression-test-conventions.html">SB-016</a></td>
+</tr>
+<tr>
+<td>S0.2</td>
+<td>First pages</td>
+<td>The man pages every later ticket links to</td>
+<td><a href="../epics/E00-foundations/SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.html">SB-004</a>, <a href="../epics/E00-foundations/SB-005-first-drafts-sb-connector-3-sb-permissions-7.html">SB-005</a>, <a href="../epics/E00-foundations/SB-006-api-conventions-and-the-error-registry.html">SB-006</a></td>
+</tr>
+<tr>
+<td>S0.3</td>
+<td>Rules in CI</td>
+<td>Manual-diff rule, dependency rule, link and diagram checks</td>
+<td><a href="../epics/E00-foundations/SB-007-ci-rule-behaviour-change-needs-a-manual-diff.html">SB-007</a>, <a href="../epics/E00-foundations/SB-008-dependency-rule-enforced-in-ci.html">SB-008</a>, <a href="../epics/E00-foundations/SB-009-link-check-diagram-check-and-manual-example.html">SB-009</a></td>
+</tr>
+<tr>
+<td>S0.4</td>
+<td>Laws red, models green</td>
+<td>Law harness failing over mocks; TLA+ and Alloy models checked; threat model; eval scaffold</td>
+<td><a href="../epics/E00-foundations/SB-010-law-harness-and-law-01-to-law-05-as-failing.html">SB-010</a>, <a href="../epics/E00-foundations/SB-011-approvals-model-in-tla-checked-in-ci.html">SB-011</a>, <a href="../epics/E00-foundations/SB-012-rollout-model-in-tla-checked-in-ci.html">SB-012</a>, <a href="../epics/E00-foundations/SB-013-permissions-model-in-alloy-checked-in-ci.html">SB-013</a>, <a href="../epics/E00-foundations/SB-014-threat-model-v0-and-adr-sign-off.html">SB-014</a>, <a href="../epics/E06-evals-release/SB-015-eval-harness-scaffold.html">SB-015</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w1-first-cell">W1 First Cell</h4>
+<p><em>One manifest makes one isolated cell; a user signs in with SSO and sees only their tenant; the policy kernel answers allow, deny or unknown.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span><code>sb tenant check</code> rejects bad manifests with line-precise errors</li>
+<li class="task"><span class="box"></span><code>sb tenant apply</code> creates a cell in under 30 minutes and is idempotent</li>
+<li class="task"><span class="box"></span>LAW-02 green with two seeded tenants; LAW-03 green over mocks</li>
+<li class="task"><span class="box"></span>SCIM deactivate revokes sessions in 5 minutes or less (LAW-12)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1.1</td>
+<td>Manifest</td>
+<td><code>sb tenant check</code> and the manifest schema</td>
+<td><a href="../epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.html">SB-101</a>, <a href="../epics/E01-tenancy-identity/SB-102-sb-tenant-apply-plan-dry-run.html">SB-102</a></td>
+</tr>
+<tr>
+<td>S1.2</td>
+<td>Cell</td>
+<td><code>sb tenant apply</code> stamps an isolated cell from the template</td>
+<td><a href="../epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103</a>, <a href="../epics/E01-tenancy-identity/SB-104-sb-tenant-apply-idempotent-cell-creation.html">SB-104</a>, <a href="../epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.html">SB-105</a>, <a href="../epics/E08-factory-handoff/SB-114-factory-seams-custody-record-placement-port.html">SB-114</a></td>
+</tr>
+<tr>
+<td>S1.3</td>
+<td>Identity</td>
+<td>OIDC sign-in, SCIM provisioning, tenant-scoped request context</td>
+<td><a href="../epics/E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.html">SB-106</a>, <a href="../epics/E01-tenancy-identity/SB-107-scim-provisioning-and-fast-deprovisioning.html">SB-107</a>, <a href="../epics/E01-tenancy-identity/SB-108-tenant-scoped-request-context.html">SB-108</a></td>
+</tr>
+<tr>
+<td>S1.4</td>
+<td>Policy kernel</td>
+<td><code>authorise</code> with allow, deny and unknown; Cedar policies; decision audit</td>
+<td><a href="../epics/E02-policy/SB-109-policy-engine-v0-authorise-returns-allow.html">SB-109</a>, <a href="../epics/E02-policy/SB-110-cedar-schema-and-base-policies.html">SB-110</a>, <a href="../epics/E02-policy/SB-111-policy-decisions-are-audited.html">SB-111</a>, <a href="../epics/E02-policy/SB-112-policy-analysis-in-ci.html">SB-112</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w2-ingestion">W2 Ingestion</h4>
+<p><em>Docs and chat flow in read-only, with ACLs, provenance and freshness; ingested text is data, never instructions.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>Docs and chat connectors pass the contract kit</li>
+<li class="task"><span class="box"></span>p95 change-to-index time is 15 minutes or less in staging</li>
+<li class="task"><span class="box"></span>Injection corpus triggers zero tool calls (LAW-09)</li>
+<li class="task"><span class="box"></span>Index dropped and rebuilt from sources with identical (doc, version, ACL) set (LAW-13)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S2.1</td>
+<td>Contract</td>
+<td>Connector contract, SDK, contract kit and a fault-injecting mock</td>
+<td><a href="../epics/E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a>, <a href="../epics/E03-connectors-ingestion/SB-202-fault-injecting-mock-connector.html">SB-202</a></td>
+</tr>
+<tr>
+<td>S2.2</td>
+<td>First sources</td>
+<td>Docs and chat connectors, read-only, with vault-held credentials</td>
+<td><a href="../epics/E03-connectors-ingestion/SB-203-docs-connector-first-vendor-read-only.html">SB-203</a>, <a href="../epics/E03-connectors-ingestion/SB-204-chat-connector-read-only.html">SB-204</a>, <a href="../epics/E03-connectors-ingestion/SB-205-connector-credentials-via-vault-references.html">SB-205</a></td>
+</tr>
+<tr>
+<td>S2.3</td>
+<td>Pipeline</td>
+<td>Chunk, sanitise, tag, embed, sync incrementally, propagate deletes, rebuild</td>
+<td><a href="../epics/E03-connectors-ingestion/SB-206-ingest-pipeline-chunk-embed-tag-provenance.html">SB-206</a>, <a href="../epics/E03-connectors-ingestion/SB-207-ingest-sanitiser-and-injection-flags.html">SB-207</a>, <a href="../epics/E03-connectors-ingestion/SB-208-incremental-sync-via-changes-with-freshness.html">SB-208</a>, <a href="../epics/E03-connectors-ingestion/SB-209-deletion-and-acl-change-propagation.html">SB-209</a>, <a href="../epics/E03-connectors-ingestion/SB-210-index-rebuild-from-sources.html">SB-210</a></td>
+</tr>
+<tr>
+<td>S2.4</td>
+<td>Tickets</td>
+<td>Tickets connector, read-only</td>
+<td><a href="../epics/E03-connectors-ingestion/SB-211-tickets-connector-read-only.html">SB-211</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w3-cited-answers">W3 Cited Answers</h4>
+<p><em>A pilot group asks questions and gets answers citing <code>doc@version</code> that they can open, or a clear <code>uncited</code> label.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>LAW-01, LAW-03 and LAW-14 green on real indexes, asserting the live <code>acl</code> call</li>
+<li class="task"><span class="box"></span>Citation-faithfulness eval runs in CI</li>
+<li class="task"><span class="box"></span>Pilot group of 20 uses web and chat entry points; feedback captured</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S3.1</td>
+<td>Retrieval</td>
+<td>Tenant-scoped retrieval with prefilter and live per-chunk authorisation</td>
+<td><a href="../epics/E04-retrieval-answers/SB-301-tenant-scoped-hybrid-retrieval-with-acl.html">SB-301</a>, <a href="../epics/E04-retrieval-answers/SB-302-live-authorisation-of-every-chunk-before.html">SB-302</a>, <a href="../epics/E04-retrieval-answers/SB-303-batched-acl-checks-and-latency-budget.html">SB-303</a></td>
+</tr>
+<tr>
+<td>S3.2</td>
+<td>Answers</td>
+<td>Composer with citations, model gateway, ask API, web and chat entry points</td>
+<td><a href="../epics/E04-retrieval-answers/SB-304-answer-composer-with-doc-version-citations.html">SB-304</a>, <a href="../epics/E04-retrieval-answers/SB-305-model-gateway-adapter.html">SB-305</a>, <a href="../epics/E04-retrieval-answers/SB-306-ask-agent-and-post-v1-ask.html">SB-306</a>, <a href="../epics/E04-retrieval-answers/SB-307-web-chat-ui.html">SB-307</a>, <a href="../epics/E04-retrieval-answers/SB-308-chat-app-entry-point.html">SB-308</a></td>
+</tr>
+<tr>
+<td>S3.3</td>
+<td>Pilot</td>
+<td>Faithfulness evals, feedback capture, 20-person pilot</td>
+<td><a href="../epics/E06-evals-release/SB-309-citation-faithfulness-eval-set-per-tenant.html">SB-309</a>, <a href="../epics/E04-retrieval-answers/SB-310-feedback-capture.html">SB-310</a>, <a href="../epics/E04-retrieval-answers/SB-311-pilot-with-20-users-in-the-internal-tenant.html">SB-311</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w4-safe-actions">W4 Safe Actions</h4>
+<p><em>Agents draft; humans send or approve; every tool call is audited first; any agent, connector or tenant can be killed in seconds.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>LAW-04, LAW-05, LAW-10, LAW-11 and LAW-15 green</li>
+<li class="task"><span class="box"></span>Kill switch fired in staging takes effect in 10 seconds or less</li>
+<li class="task"><span class="box"></span><code>draft-reply</code> used end-to-end in pilot; approve and reject rates recorded</li>
+<li class="task"><span class="box"></span>Audit restore drill passes</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S4.1</td>
+<td>Audit and kill</td>
+<td>Hash-chained audit written first; kill switches; drills</td>
+<td><a href="../epics/E05-actions-approvals-audit/SB-401-append-only-hash-chained-audit-log-written.html">SB-401</a>, <a href="../epics/E05-actions-approvals-audit/SB-402-sb-audit-verify-tail-and-export.html">SB-402</a>, <a href="../epics/E05-actions-approvals-audit/SB-403-kill-switches-per-agent-connector-and-tenant.html">SB-403</a>, <a href="../epics/E05-actions-approvals-audit/SB-404-kill-drill-every-release.html">SB-404</a></td>
+</tr>
+<tr>
+<td>S4.2</td>
+<td>Approvals</td>
+<td>Tool bus, approval ids bound to content hashes, approver view</td>
+<td><a href="../epics/E05-actions-approvals-audit/SB-405-tool-bus-policy-audit-then-execute.html">SB-405</a>, <a href="../epics/E05-actions-approvals-audit/SB-406-approval-flow-with-ids-bound-to-content.html">SB-406</a>, <a href="../epics/E05-actions-approvals-audit/SB-407-approver-view.html">SB-407</a></td>
+</tr>
+<tr>
+<td>S4.3</td>
+<td>Execution</td>
+<td>Executor with receipts, <code>draft-reply</code>, first approval-gated workflow</td>
+<td><a href="../epics/E05-actions-approvals-audit/SB-408-action-executor-with-receipts.html">SB-408</a>, <a href="../epics/E05-actions-approvals-audit/SB-409-draft-reply-agent-where-a-human-always-sends.html">SB-409</a>, <a href="../epics/E05-actions-approvals-audit/SB-410-first-approval-gated-workflow-template.html">SB-410</a></td>
+</tr>
+<tr>
+<td>S4.4</td>
+<td>Hygiene</td>
+<td>Secret canaries and scanner; 3-2-1 backups with restore drill</td>
+<td><a href="../epics/E05-actions-approvals-audit/SB-411-secret-hygiene-canaries-and-scanner.html">SB-411</a>, <a href="../epics/E05-actions-approvals-audit/SB-412-audit-and-approval-backups-3-2-1-and-restore.html">SB-412</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w5-gated-releases">W5 Gated Releases</h4>
+<p><em>Nothing reaches a tenant without passing evals; builds are reproducible and signed; rollout is ringed and rollback is one step.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>A seeded eval regression blocks a release</li>
+<li class="task"><span class="box"></span>Two builds of the same commit produce the same hash; signature verified at deploy</li>
+<li class="task"><span class="box"></span>Rollback drill completes in under 10 minutes</li>
+<li class="task"><span class="box"></span>LAW-06, LAW-08 and LAW-16 green</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S5.1</td>
+<td>Eval gate</td>
+<td>Eval runner and suites; gate blocks regressions; release bundles pin prompts and models</td>
+<td><a href="../epics/E06-evals-release/SB-501-eval-runner-and-suites.html">SB-501</a>, <a href="../epics/E06-evals-release/SB-502-eval-gate-blocks-regressions.html">SB-502</a>, <a href="../epics/E06-evals-release/SB-503-release-bundle-pins-prompts-tools-policies.html">SB-503</a></td>
+</tr>
+<tr>
+<td>S5.2</td>
+<td>Supply chain</td>
+<td>Reproducible signed builds with SBOM; lockfile regeneration; deploy-time verification</td>
+<td><a href="../epics/E06-evals-release/SB-504-reproducible-builds-sbom-and-signing.html">SB-504</a>, <a href="../epics/E06-evals-release/SB-505-lockfile-regeneration-and-cve-rebuild-path.html">SB-505</a>, <a href="../epics/E06-evals-release/SB-506-deploy-time-signature-verification.html">SB-506</a></td>
+</tr>
+<tr>
+<td>S5.3</td>
+<td>Rings</td>
+<td>Release controller, channels, rings, one-step rollback, attestation, drift detection</td>
+<td><a href="../epics/E06-evals-release/SB-507-release-controller-with-channels-and-rings.html">SB-507</a>, <a href="../epics/E06-evals-release/SB-508-one-step-rollback.html">SB-508</a>, <a href="../epics/E06-evals-release/SB-509-running-build-attestation-per-cell.html">SB-509</a>, <a href="../epics/E06-evals-release/SB-510-manifest-drift-detection.html">SB-510</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w6-portfolio-roll-out">W6 Portfolio Roll-out</h4>
+<p><em>A company's own IT onboards with one file and three commands, unaided; leadership gets a weekly report; operators see every law violation as Sev-1.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span>A friendly tenant completes day 0 to 14 of <code>sb-onboarding(7)</code> with zero platform-team steps</li>
+<li class="task"><span class="box"></span><code>sb tenant verify</code> prints pass or fail per law on real data</li>
+<li class="task"><span class="box"></span>Dashboards and Sev-1 alerts exist for every law</li>
+<li class="task"><span class="box"></span>External penetration test has no open critical findings</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S6.1</td>
+<td>Verify and console</td>
+<td><code>sb tenant verify</code>; admin console where every action is a manifest diff</td>
+<td><a href="../epics/E07-rollout-ops/SB-601-sb-tenant-verify-on-real-data.html">SB-601</a>, <a href="../epics/E07-rollout-ops/SB-602-admin-console-where-every-action-is-a.html">SB-602</a>, <a href="../epics/E07-rollout-ops/SB-603-roles-in-the-console.html">SB-603</a></td>
+</tr>
+<tr>
+<td>S6.2</td>
+<td>Onboarding</td>
+<td>Day 0 to 90 runbook, unaided friendly-tenant onboarding, weekly report</td>
+<td><a href="../epics/E07-rollout-ops/SB-604-sb-onboarding-7-day-0-to-90-runbook.html">SB-604</a>, <a href="../epics/E07-rollout-ops/SB-605-friendly-tenant-onboarding-unaided.html">SB-605</a>, <a href="../epics/E07-rollout-ops/SB-606-weekly-leadership-report.html">SB-606</a></td>
+</tr>
+<tr>
+<td>S6.3</td>
+<td>Operate</td>
+<td>Observability, Sev-1 law alerts, cost controls, CRM connector, retention</td>
+<td><a href="../epics/E07-rollout-ops/SB-607-per-tenant-observability.html">SB-607</a>, <a href="../epics/E07-rollout-ops/SB-608-sev-1-alert-for-every-law-violation.html">SB-608</a>, <a href="../epics/E07-rollout-ops/SB-609-cost-controls.html">SB-609</a>, <a href="../epics/E03-connectors-ingestion/SB-610-crm-connector-read-only.html">SB-610</a>, <a href="../epics/E07-rollout-ops/SB-611-retention-and-deletion.html">SB-611</a></td>
+</tr>
+<tr>
+<td>S6.4</td>
+<td>Harden</td>
+<td>Penetration test and disaster-recovery game day</td>
+<td><a href="../epics/E07-rollout-ops/SB-612-external-penetration-test-and-threat-model.html">SB-612</a>, <a href="../epics/E07-rollout-ops/SB-613-disaster-recovery-game-day.html">SB-613</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="w7-factory-hand-off">W7 Factory Hand-off</h4>
+<p><em>After v1: the factory can hand custody of a tenant's Second Brain to that company, in its own cloud account, without losing data, audit continuity or the laws.</em></p>
+<p><strong>Exit gate</strong></p>
+<ul>
+<li class="task"><span class="box"></span><code>Handoff.tla</code> model-checks in CI; LAW-17 and LAW-18 Modelled</li>
+<li class="task"><span class="box"></span>A friendly tenant's cell moves to its own cloud account with dual approval; zero data loss; audit chain verifies across the move</li>
+<li class="task"><span class="box"></span><code>sb tenant verify --law LAW-17</code> passes after cutover</li>
+<li class="task"><span class="box"></span>The handed-off cell still pulls signed releases; LAW-06 and LAW-08 hold</li>
+<li class="task"><span class="box"></span>Detach produces a complete export package in a rehearsal</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S7.1</td>
+<td>Custody model</td>
+<td>Factory roles, custody records live, hand-off model checked, placement into a tenant account</td>
+<td><a href="../epics/E08-factory-handoff/SB-701-final-sb-factory-7-and-the-hand-off-runbook.html">SB-701</a>, <a href="../epics/E08-factory-handoff/SB-702-factory-roles-and-policies.html">SB-702</a>, <a href="../epics/E08-factory-handoff/SB-703-placement-adapter-for-tenant-owned-cloud.html">SB-703</a></td>
+</tr>
+<tr>
+<td>S7.2</td>
+<td>Hand-off</td>
+<td>Key re-wrap, dual-approved hand-off workflow, access-path proof, releases after hand-off</td>
+<td><a href="../epics/E08-factory-handoff/SB-704-root-key-re-wrap-and-key-custody-transfer.html">SB-704</a>, <a href="../epics/E08-factory-handoff/SB-705-hand-off-workflow-with-dual-approval.html">SB-705</a>, <a href="../epics/E08-factory-handoff/SB-706-access-path-enumeration-and-law-17-check.html">SB-706</a>, <a href="../epics/E08-factory-handoff/SB-707-releases-after-hand-off.html">SB-707</a></td>
+</tr>
+<tr>
+<td>S7.3</td>
+<td>Exit paths</td>
+<td>Detach export, billing hand-off, game day</td>
+<td><a href="../epics/E08-factory-handoff/SB-708-detach-and-export-package.html">SB-708</a>, <a href="../epics/E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.html">SB-709</a>, <a href="../epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.html">SB-710</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="roll-out-runbook-summary">Roll-out runbook (summary)</h2>
+<p>The full runbook is <a href="../manual/sb-onboarding.7.html"><code>sb-onboarding(7)</code></a>. Each company's own IT team runs it, with no calls to the platform team.</p>
+<table>
+<thead>
+<tr>
+<th>Days</th>
+<th>Steps</th>
+<th>Gate to continue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Fill in the manifest; <code>sb tenant check</code>; <code>sb tenant apply</code></td>
+<td>Cell exists; sign-in works</td>
+</tr>
+<tr>
+<td>1–14</td>
+<td>Connect docs and chat read-only; pilot with about 20 people; <code>sb tenant verify</code></td>
+<td>Every law passes on real data</td>
+</tr>
+<tr>
+<td>15–45</td>
+<td>Everyone gets access; enable <code>draft-reply</code>; weekly report starts</td>
+<td>Adoption and refusal rates reviewed</td>
+</tr>
+<tr>
+<td>46–90</td>
+<td>Enable one approval-gated workflow, only once that tenant's evals pass</td>
+<td>Workflow evals pass; approvers trained</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dependencies">Dependencies</h2>
+<table>
+<thead>
+<tr>
+<th>Dependency</th>
+<th>Needed by</th>
+<th>Owner</th>
+<th>Risk if late</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model provider contract and data-processing terms</td>
+<td>W3</td>
+<td>Parent-org procurement</td>
+<td>Pilot slips</td>
+</tr>
+<tr>
+<td>Managed Postgres with pgvector in each required region</td>
+<td>W1</td>
+<td>Platform</td>
+<td>Cell template blocked</td>
+</tr>
+<tr>
+<td>First tenants' IdPs reachable for OIDC/SCIM tests</td>
+<td>W1</td>
+<td>Company IT</td>
+<td>Identity slice slips</td>
+</tr>
+<tr>
+<td>Sandbox tenants for the first docs, chat and tickets vendors</td>
+<td>W2</td>
+<td>Company IT + vendors</td>
+<td>Contract kit runs on mocks only</td>
+</tr>
+<tr>
+<td>Signing infrastructure (keyless signing or HSM)</td>
+<td>W5</td>
+<td>Platform security</td>
+<td>Gated releases slip</td>
+</tr>
+<tr>
+<td>Pen-test vendor booked</td>
+<td>W6</td>
+<td>Security</td>
+<td>GA slips</td>
+</tr>
+<tr>
+<td>Answers to open questions Q-01 to Q-06</td>
+<td>Before W6</td>
+<td>Parent org</td>
+<td>Scope or compliance rework</td>
+</tr>
+<tr>
+<td>A friendly tenant with its own cloud account for hand-off rehearsal</td>
+<td>W7</td>
+<td>Company IT</td>
+<td>Hand-off untested</td>
+</tr>
+<tr>
+<td>Answers to Q-09 and Q-10 (hand-off modes, post-hand-off contracts)</td>
+<td>Before W7</td>
+<td>Parent org</td>
+<td>W7 scope unclear</td>
+</tr>
+</tbody>
+</table>
+<h2 id="risks">Risks</h2>
+<p>The register is <a href="../living/RISKS.html">living/RISKS.md</a>. The top five:</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R-01</td>
+<td>Live ACL checks make answers too slow</td>
+<td>Batching, parallel fan-out, deny caching; measured from W3</td>
+</tr>
+<tr>
+<td>R-02</td>
+<td>A source's permission model can't be mapped faithfully</td>
+<td><code>Unknown</code> until it can; connector defect tracked; never a relaxed rule</td>
+</tr>
+<tr>
+<td>R-03</td>
+<td>Prompt injection via ingested content</td>
+<td>Sanitiser, data wrapping, argument provenance, injection eval gate (LAW-09)</td>
+</tr>
+<tr>
+<td>R-04</td>
+<td>Companies want per-company customisation</td>
+<td>Manifest fields for everyone or nothing (P3); escalate to parent org</td>
+</tr>
+<tr>
+<td>R-05</td>
+<td>Formal specs drift from code</td>
+<td>Shared state names; spec review in the DoD for any change to approvals or rollout</td>
+</tr>
+<tr>
+<td>R-11</td>
+<td>v1 shortcuts erode the hand-off seams</td>
+<td>SB-114 lint on account ids and key custodians; seams listed in ADR-0015 with a test each</td>
+</tr>
+</tbody>
+</table>
+<h2 id="success-metrics">Success metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Day 14</th>
+<th>Day 45</th>
+<th>Day 90</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First cited answer</td>
+<td>Yes</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Weekly active users ÷ seats</td>
+<td>Pilot only</td>
+<td>20%</td>
+<td>40%</td>
+</tr>
+<tr>
+<td>Cited-answer rate (answers with at least one citation)</td>
+<td>70%</td>
+<td>80%</td>
+<td>85%</td>
+</tr>
+<tr>
+<td>Refusal rate due to <code>Unknown</code></td>
+<td>&lt; 2%</td>
+<td>&lt; 1%</td>
+<td>&lt; 1%</td>
+</tr>
+<tr>
+<td>Approve-to-reject ratio (drafts)</td>
+<td>—</td>
+<td>Reviewed</td>
+<td>Tracked</td>
+</tr>
+<tr>
+<td>Law violations</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="open-questions">Open questions</h2>
+<p>Tracked in <a href="../living/OPEN_QUESTIONS.html">living/OPEN_QUESTIONS.md</a>:</p>
+<ol>
+<li><strong>Q-01:</strong> Does the parent organisation ever read company data? If yes, it gets a separate tenant with explicit grants and its own audit, never a superuser (ADR-0014). Legal should be involved.</li>
+<li><strong>Q-02:</strong> Does any company ship software or connected devices into the EU? If so, the Cyber Resilience Act and a vulnerability-handling process apply.</li>
+<li><strong>Q-03:</strong> Which IdPs and source systems do the first companies use, and how many companies are in scope for year one?</li>
+<li><strong>Q-04:</strong> What are the data-residency, retention and compliance baselines (SOC 2, ISO 27001, HIPAA, GDPR, others)?</li>
+<li><strong>Q-05:</strong> Who owns the eval suite and the approval rules inside each company?</li>
+<li><strong>Q-06:</strong> Will the parent sign off the proposed metric targets?</li>
+<li><strong>Q-09:</strong> Which hand-off modes are actually needed: own cloud account, divestiture detach, or both? How likely is a divestiture in the first two years?</li>
+<li><strong>Q-10:</strong> After hand-off, who holds the model-provider contract and support terms, and does the factory keep any operational responsibility?</li>
+</ol><p class="srcline">Source: <code>docs/03-prd.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#summary">Summary</a></li><li class="l2"><a href="#problem">Problem</a></li><li class="l2"><a href="#goals-and-non-goals">Goals and non-goals</a></li><li class="l2"><a href="#personas">Personas</a></li><li class="l2"><a href="#functional-requirements">Functional requirements</a></li><li class="l2"><a href="#non-functional-requirements">Non-functional requirements</a></li><li class="l2"><a href="#delivery-model">Delivery model</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#user-stories">User stories</a></li><li class="l3"><a href="#e00-manual-laws-and-proofs">E00 Manual, Laws and Proofs</a></li><li class="l3"><a href="#e01-tenancy-and-identity">E01 Tenancy and Identity</a></li><li class="l3"><a href="#e02-policy-kernel">E02 Policy Kernel</a></li><li class="l3"><a href="#e03-connectors-and-ingestion">E03 Connectors and Ingestion</a></li><li class="l3"><a href="#e04-retrieval-and-cited-answers">E04 Retrieval and Cited Answers</a></li><li class="l3"><a href="#e05-actions-approvals-audit-and-kill-switches">E05 Actions, Approvals, Audit and Kill Switches</a></li><li class="l3"><a href="#e06-evals-release-and-supply-chain">E06 Evals, Release and Supply Chain</a></li><li class="l3"><a href="#e07-roll-out-admin-and-operations">E07 Roll-out, Admin and Operations</a></li><li class="l3"><a href="#e08-factory-and-hand-off">E08 Factory and Hand-off</a></li><li class="l2"><a href="#waves">Waves</a></li><li class="l3"><a href="#wave-exit-gates-and-slices">Wave exit gates and slices</a></li><li class="l2"><a href="#roll-out-runbook-summary">Roll-out runbook (summary)</a></li><li class="l2"><a href="#dependencies">Dependencies</a></li><li class="l2"><a href="#risks">Risks</a></li><li class="l2"><a href="#success-metrics">Success metrics</a></li><li class="l2"><a href="#open-questions">Open questions</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

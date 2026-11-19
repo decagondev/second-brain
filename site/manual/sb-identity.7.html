@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-identity(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a class="current" href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-IDENTITY(7)</span><span>Second Brain Manual</span><span>SB-IDENTITY(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-identity7">sb-identity(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-identity — how users get in, and how fast they get out</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">sign-in:  OIDC (your IdP)  →  session (re-validated every 60 s)
+users:    SCIM only        →  deactivate revokes in ≤ 5 min
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<h3 id="sign-in">Sign-in</h3>
+<p>Users sign in with the company's own OIDC IdP, named by <code>idp</code> in the manifest. The cell checks the token's issuer, audience and <code>tenant</code> claim. MFA and conditional access are the IdP's job, and we inherit them.</p>
+<p>Sign-in is the OIDC authorization-code flow with PKCE (<code>S256</code>), a <code>state</code> and a <code>nonce</code>. The cell's OIDC client secret is read from <code>vault://tenants/TENANT/oidc</code> at call time (LAW-07). The ID token is accepted only if <strong>every</strong> check below passes. Any failure, including an IdP or key set that can't be reached, is <code>EAUTH</code>; there is no fallback.</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Issuer</td>
+<td><code>iss</code> equals the manifest's <code>idp</code>, written as <code>https://</code> (<code>oidc://login.acme.example</code> means <code>https://login.acme.example</code>)</td>
+</tr>
+<tr>
+<td>Signature</td>
+<td><code>RS256</code> with a key from the issuer's published key set, matched by <code>kid</code>; <code>none</code> and every other algorithm are refused. An unknown <code>kid</code> refreshes the key set at most once a minute</td>
+</tr>
+<tr>
+<td>Audience</td>
+<td><code>aud</code> contains the cell's client id</td>
+</tr>
+<tr>
+<td>Time</td>
+<td><code>exp</code> in the future and <code>iat</code> not in the future, with 60 seconds of leeway</td>
+</tr>
+<tr>
+<td>Nonce</td>
+<td><code>nonce</code> equals the one sent with this sign-in</td>
+</tr>
+<tr>
+<td>Tenant</td>
+<td><code>tenant</code> equals the cell's tenant. A token from another tenant's IdP, or with another tenant's claim, never signs in here (LAW-02)</td>
+</tr>
+<tr>
+<td>Subject</td>
+<td><code>sub</code> is present; it becomes the user id</td>
+</tr>
+</tbody>
+</table>
+<h3 id="users-and-groups">Users and groups</h3>
+<p>Users and groups exist <strong>only</strong> if SCIM created them. Nobody can add a user by hand, so access always follows the IdP. Groups drive policy (<code>group:NAME</code> in the manifest and Cedar) and are read from the directory at decision time, never from a cached token, so a membership change applies to the very next decision.</p>
+<p>Each cell serves SCIM 2.0 at <code>/scim/v2</code> for its own tenant only. The IdP authenticates with a bearer token, stored at <code>vault://tenants/TENANT/scim</code>. Any other token is <code>401</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /Users</code></td>
+<td>Create a user (<code>userName</code>, optional <code>externalId</code>, <code>active</code>, <code>emails</code>). A duplicate <code>userName</code> is <code>409</code></td>
+</tr>
+<tr>
+<td><code>GET /Users/ID</code></td>
+<td>Read a user</td>
+</tr>
+<tr>
+<td><code>PUT /Users/ID</code></td>
+<td>Replace a user</td>
+</tr>
+<tr>
+<td><code>PATCH /Users/ID</code></td>
+<td><code>replace</code> of <code>active</code> (and other simple attributes)</td>
+</tr>
+<tr>
+<td><code>DELETE /Users/ID</code></td>
+<td>Same as deactivate; the user is kept for the audit trail</td>
+</tr>
+<tr>
+<td><code>POST /Groups</code>, <code>PUT /Groups/ID</code>, <code>PATCH /Groups/ID</code>, <code>DELETE /Groups/ID</code></td>
+<td>Groups and their members (<code>add</code>/<code>remove</code> of <code>members</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Setting <code>active</code> to false (by <code>PUT</code>, <code>PATCH</code> or <code>DELETE</code>) revokes every session of that user in the cell <strong>before</strong> the response is sent. If revocation fails, the request fails with <code>503</code> and the IdP retries. The 60-second re-validation then catches anything a lost revocation missed, so no request from a deactivated user succeeds more than 5 minutes after the deactivate (LAW-12).</p>
+<h3 id="sessions">Sessions</h3>
+<p>Sessions last at most 12 hours from sign-in and are never extended: after 12 hours the user signs in again. Each session is re-validated against the directory every 60 seconds. A user the directory doesn't know, or a directory that can't answer, ends the session with <code>EAUTH</code>. A SCIM deactivate triggers immediate revocation as well, so the 5-minute bound (LAW-12) has plenty of margin. Sessions live in the cell's own session store; no session is valid in any other cell.</p>
+<h3 id="approvals">Approvals</h3>
+<p>Approving a consequential action requires a session less than 15 minutes old, or step-up re-authentication at the IdP.</p>
+<h3 id="service-identities">Service identities</h3>
+<p>The chat-app integration and CI use workload identity with short-lived tokens. There are no static API keys.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-12">LAW-12</a>.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-text">09:00:00  SCIM PATCH /Users/… active=false      (from IdP)
+09:00:01  sessions revoked: 2                    audit kind=access
+09:00:03  request from usr_…: 401 EAUTH
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-api.3.html">sb-api(3)</a>, <a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and tenancy</a></p><p class="srcline">Source: <code>manual/sb-identity.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#sign-in">Sign-in</a></li><li class="l3"><a href="#users-and-groups">Users and groups</a></li><li class="l3"><a href="#sessions">Sessions</a></li><li class="l3"><a href="#approvals">Approvals</a></li><li class="l3"><a href="#service-identities">Service identities</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

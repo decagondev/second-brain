@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>crosscheck.py · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a class="current" href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / proofs</div><h1 id="crosscheckpy">crosscheck.py</h1>
+<pre><code class="language-python">&quot;&quot;&quot;Explicit-state cross-check of the design logic in Approvals.tla, Rollout.tla and Handoff.tla.
+Not a substitute for TLC: it mirrors the specs by hand. Used to sanity-check the
+invariants and the mutation claims before SB-011/SB-012/SB-705 run the real thing.&quot;&quot;&quot;
+from collections import deque
+from itertools import product
+
+def bfs(init, nxt, invs, act_props=()):
+    seen, q = set(init), deque(init)
+    while q:
+        s = q.popleft()
+        for name, f in invs:
+            if not f(s): return f&quot;VIOLATION {name}&quot;, len(seen)
+        for t in nxt(s):
+            for name, p in act_props:
+                if not p(s, t): return f&quot;VIOLATION {name}&quot;, len(seen)
+            if t not in seen: seen.add(t); q.append(t)
+    return &quot;ok&quot;, len(seen)
+
+# ---------------- Approvals
+U, P, MAXE = (&quot;u1&quot;, &quot;u2&quot;), (&quot;p1&quot;, &quot;p2&quot;), 1
+def approvals(mut=None):
+    # state: (st, req, pay, appr_hash, approver, killed, audit(tuple), receipt, edits)
+    init = [(&quot;Drafted&quot;, r, p, None, None, False, (), False, 0) for r in U for p in P]
+    def nxt(s):
+        st, req, pay, ah, ap, k, au, rc, e = s
+        out = []
+        if st == &quot;Drafted&quot;: out.append((&quot;PendingApproval&quot;, req, pay, ah, ap, k, au + ((&quot;PendingApproval&quot;, pay),), rc, e))
+        if st in (&quot;Drafted&quot;, &quot;PendingApproval&quot;, &quot;Approved&quot;) and e &lt; MAXE:
+            for p in P:
+                if p != pay: out.append((&quot;Drafted&quot;, req, p, None, None, k, au + ((&quot;Drafted&quot;, None),), rc, e + 1))
+        if st == &quot;Approved&quot;:
+            for p in P:
+                if p != pay: out.append((st, req, p, ah, ap, k, au, rc, e))          # Tamper
+        if st == &quot;PendingApproval&quot;:
+            for u in U:
+                if mut == &quot;selfapprove&quot; or u != req:
+                    out.append((&quot;Approved&quot;, req, pay, pay, u, k, au + ((&quot;Approved&quot;, pay),), rc, e))
+            out.append((&quot;Rejected&quot;, req, pay, ah, ap, k, au + ((&quot;Rejected&quot;, pay),), rc, e))
+        if st in (&quot;PendingApproval&quot;, &quot;Approved&quot;): out.append((&quot;Expired&quot;, req, pay, ah, ap, k, au + ((&quot;Expired&quot;, None),), rc, e))
+        if st == &quot;Approved&quot; and (mut == &quot;nokill&quot; or not k) and (mut == &quot;nohash&quot; or pay == ah):
+            out.append((&quot;Executing&quot;, req, pay, ah, ap, k, au if mut == &quot;nolog&quot; else au + ((&quot;Executing&quot;, pay),), rc, e))
+        if st == &quot;Executing&quot;:
+            out.append((&quot;Ran&quot;, req, pay, ah, ap, k, au + ((&quot;Ran&quot;, pay),), mut != &quot;noreceipt&quot;, e))
+            out.append((&quot;DidNotRun&quot;, req, pay, ah, ap, k, au + ((&quot;DidNotRun&quot;, pay),), rc, e))
+        if not k: out.append((st, req, pay, ah, ap, True, au + ((&quot;Kill&quot;, None),), rc, e))
+        return out
+    X = (&quot;Executing&quot;, &quot;Ran&quot;, &quot;DidNotRun&quot;)
+    invs = [
+        (&quot;AuditBeforeExec&quot;, lambda s: s[0] not in X or (&quot;Executing&quot;, s[3]) in s[6]),
+        (&quot;ApprovalBeforeExec&quot;, lambda s: s[0] not in X or (s[3] is not None and s[4] is not None)),
+        (&quot;ExecutedMatchesApproved&quot;, lambda s: s[0] not in X or s[2] == s[3]),
+        (&quot;NoSelfApproval&quot;, lambda s: s[4] != s[1]),
+        (&quot;RanImpliesReceipt&quot;, lambda s: s[0] != &quot;Ran&quot; or s[7]),
+        (&quot;AtMostOnce&quot;, lambda s: sum(1 for r in s[6] if r[0] == &quot;Executing&quot;) &lt;= 1),
+    ]
+    props = [(&quot;KillWins&quot;, lambda s, t: not s[5] or t[0] != &quot;Executing&quot; or s[0] == &quot;Executing&quot;)]
+    return bfs(init, nxt, invs, props)
+
+# ---------------- Rollout (non-atomic rollback, BUG-0001)
+ST, TT, MAXR = (&quot;s1&quot;, &quot;s2&quot;), (&quot;t1&quot;,), 4
+TEN = ST + TT
+def rollout(mut=None):
+    # state: (latest, gated, revoked, stable, prev, running(tuple per TEN), draining(frozenset of indexes))
+    init = [(0, frozenset({0}), frozenset(), 0, 0, tuple(0 for _ in TEN), frozenset())]
+    def nxt(s):
+        lat, g, rv, sb, pv, run, dr = s
+        out = []
+        if lat &lt; MAXR:
+            out.append((lat + 1, g | {lat + 1}, rv, sb, pv, run, dr)); out.append((lat + 1, g, rv, sb, pv, run, dr))
+        for i, t in enumerate(TEN):
+            if t in TT and i not in dr:
+                for r in range(MAXR + 1):
+                    if r in g and (r not in rv or mut == &quot;deployrevoked&quot;) and r &gt;= sb:
+                        out.append((lat, g, rv, sb, pv, run[:i] + (r,) + run[i+1:], dr))
+            if t in ST and i not in dr and run[i] != sb:
+                out.append((lat, g, rv, sb, pv, run[:i] + (sb,) + run[i+1:], dr))
+            if i in dr:
+                out.append((lat, g, rv, sb, pv, run[:i] + (sb,) + run[i+1:], dr - {i}))
+        for r in range(MAXR + 1):
+            okg = (mut == &quot;nogate&quot; and r &lt;= lat) or r in g
+            guard = mut == &quot;noguard&quot; or all(run[i] == sb for i, t in enumerate(TEN) if t in ST)
+            if okg and r not in rv and r &gt; sb and guard:
+                out.append((lat, g, rv, r, sb, run, dr))
+            if r in g and r not in rv and r &gt; sb:
+                out.append((lat, g, rv | {r}, sb, pv, run, dr | {i for i, x in enumerate(run) if x == r}))
+        if pv &lt; sb:
+            moved = {i for i, x in enumerate(run) if x == sb}
+            out.append((lat, g, rv | {sb}, pv, pv, run, dr if mut == &quot;nodrain&quot; else dr | moved))
+        return out
+    serving = lambda s: [i for i, t in enumerate(TEN) if t in ST and i not in s[6]]
+    invs = [
+        (&quot;OnlyGatedRuns&quot;, lambda s: all(x in s[1] for x in s[5])),
+        (&quot;RevokedOnlyWhileDraining&quot;, lambda s: all(i in s[6] for i, x in enumerate(s[5]) if x in s[2])),
+        (&quot;DrainingOnlyRevoked&quot;, lambda s: all(s[5][i] in s[2] for i in s[6])),
+        (&quot;OneBehindMax&quot;, lambda s: all(s[5][i] in (s[3], s[4]) for i in serving(s))),
+        (&quot;StableNotAhead&quot;, lambda s: all(s[5][i] &lt;= s[3] for i in serving(s))),
+        (&quot;StableNotRevoked&quot;, lambda s: s[3] not in s[2]),
+    ]
+    return bfs(init, nxt, invs)
+
+# ---------------- Handoff
+PATHS, RETAINED, PLANS = frozenset({&quot;deploy&quot;, &quot;breakglass&quot;, &quot;iam&quot;, &quot;publish&quot;}), frozenset({&quot;publish&quot;}), (&quot;h1&quot;, &quot;h2&quot;)
+INFLIGHT = (&quot;Planned&quot;, &quot;Provisioned&quot;, &quot;KeyDual&quot;, &quot;Moved&quot;, &quot;Verified&quot;)
+def handoff(mut=None):
+    # state: (phase, plan, approvals, wraps, access, serving)
+    init = [(&quot;Managed&quot;, None, frozenset(), frozenset({&quot;factory&quot;}), PATHS, &quot;factoryCell&quot;)]
+    def nxt(s):
+        ph, pl, ap, wr, ac, sv = s
+        both = all((p, pl) in ap for p in (&quot;factory&quot;, &quot;tenant&quot;))
+        out = []
+        if ph in (&quot;Managed&quot;, &quot;Planned&quot;):
+            for h in PLANS: out.append((&quot;Planned&quot;, h, frozenset() if mut != &quot;keepapprovals&quot; else ap, wr, ac, sv))
+        if ph == &quot;Planned&quot;:
+            for p in (&quot;factory&quot;, &quot;tenant&quot;): out.append((ph, pl, ap | {(p, pl)}, wr, ac, sv))
+            if both or mut == &quot;nodual&quot;: out.append((&quot;Provisioned&quot;, pl, ap, wr, ac, sv))
+        if ph == &quot;Provisioned&quot;: out.append((&quot;KeyDual&quot;, pl, ap, wr | {&quot;tenant&quot;}, ac, sv))
+        if ph == &quot;KeyDual&quot;: out.append((&quot;Moved&quot;, pl, ap, wr, ac, sv))
+        if ph == &quot;Moved&quot;: out.append((&quot;Verified&quot;, pl, ap, wr, ac, sv))
+        if ph == &quot;Verified&quot; or (mut == &quot;cutbeforewrap&quot; and ph == &quot;Provisioned&quot;):
+            out.append((&quot;CutOver&quot;, pl, ap, wr, ac if mut == &quot;norevoke&quot; else RETAINED, &quot;tenantCell&quot;))
+        if ph == &quot;CutOver&quot; or (mut == &quot;destroyfirst&quot; and ph == &quot;Provisioned&quot;):
+            out.append((&quot;TenantOwned&quot; if ph == &quot;CutOver&quot; else ph, pl, ap, wr - {&quot;factory&quot;}, ac, sv))
+        if ph in INFLIGHT: out.append((&quot;Managed&quot;, None, frozenset(), frozenset({&quot;factory&quot;}), ac, sv))
+        if ph == &quot;TenantOwned&quot;: out.append((&quot;Detached&quot;, pl, ap, wr, frozenset(), sv))
+        return out
+    invs = [
+        (&quot;KeyNeverOrphaned&quot;, lambda s: len(s[3]) &gt; 0),
+        (&quot;ServingCanUnwrap&quot;, lambda s: (&quot;factory&quot; if s[5] == &quot;factoryCell&quot; else &quot;tenant&quot;) in s[3]),
+        (&quot;NoUnlistedAccess&quot;, lambda s: (s[0] not in (&quot;CutOver&quot;, &quot;TenantOwned&quot;) or s[4] &lt;= RETAINED) and (s[0] != &quot;Detached&quot; or not s[4])),
+        (&quot;FactoryKeyGone&quot;, lambda s: s[0] not in (&quot;TenantOwned&quot;, &quot;Detached&quot;) or &quot;factory&quot; not in s[3]),
+        (&quot;DualApproval&quot;, lambda s: s[0] in (&quot;Managed&quot;, &quot;Planned&quot;) or all((p, s[1]) in s[2] for p in (&quot;factory&quot;, &quot;tenant&quot;))),
+        (&quot;ManagedIsIntact&quot;, lambda s: s[0] != &quot;Managed&quot; or (s[5] == &quot;factoryCell&quot; and s[3] == {&quot;factory&quot;} and s[4] == PATHS)),
+    ]
+    return bfs(init, nxt, invs)
+
+print(&quot;Approvals            &quot;, approvals())
+for m in (&quot;selfapprove&quot;, &quot;nohash&quot;, &quot;nokill&quot;, &quot;nolog&quot;, &quot;noreceipt&quot;):
+    print(f&quot;Approvals mutant {m:11}&quot;, approvals(m))
+print(&quot;Rollout              &quot;, rollout())
+for m in (&quot;noguard&quot;, &quot;nogate&quot;, &quot;deployrevoked&quot;, &quot;nodrain&quot;):
+    print(f&quot;Rollout mutant {m:13}&quot;, rollout(m))
+print(&quot;Handoff              &quot;, handoff())
+for m in (&quot;nodual&quot;, &quot;destroyfirst&quot;, &quot;norevoke&quot;, &quot;cutbeforewrap&quot;):
+    print(f&quot;Handoff mutant {m:13}&quot;, handoff(m))
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>proofs/crosscheck.py</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

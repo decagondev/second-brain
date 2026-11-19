@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-ask(3) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a class="current" href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-ASK(3)</span><span>Second Brain Manual</span><span>SB-ASK(3)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-ask3">sb-ask(3)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-ask — <code>POST /v1/ask</code>, <code>GET /v1/traces/{id}</code>, <code>POST /v1/feedback</code></p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-http">POST /v1/ask
+{ &quot;question&quot;: &quot;What's our refund approval limit?&quot; }
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p><code>POST /v1/ask</code> runs the <code>ask</code> agent for the signed-in user. The answer is built only from chunks that passed <strong>live</strong> authorisation for this user at this moment. Each claim either carries citations to <code>doc@version</code> or is marked <code>uncited</code>.</p>
+<h3 id="request">Request</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>question</code></td>
+<td>string, ≤ 4,000 chars</td>
+<td>yes</td>
+<td>The user's question</td>
+</tr>
+<tr>
+<td><code>conversation</code></td>
+<td>string <code>cv_…</code></td>
+<td>no</td>
+<td>Continue a conversation; earlier turns are re-authorised too</td>
+</tr>
+<tr>
+<td><code>sources</code></td>
+<td>list of kinds</td>
+<td>no</td>
+<td>Restrict to e.g. <code>["docs"]</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="response-200">Response <code>200</code></h3>
+<pre><code class="language-json">{
+  &quot;trace&quot;: &quot;tr_01JD3QB4…&quot;,
+  &quot;release&quot;: &quot;rel_2027-03-02_9b1c4e&quot;,
+  &quot;answer&quot;: {
+    &quot;claims&quot;: [
+      {
+        &quot;text&quot;: &quot;Refunds over £500 need a team lead's approval.&quot;,
+        &quot;cites&quot;: [
+          {
+            &quot;cite&quot;: &quot;docs:4f2a9c11@17&quot;,
+            &quot;title&quot;: &quot;Refund policy&quot;,
+            &quot;span&quot;: [1840, 2615],
+            &quot;url&quot;: &quot;https://…/refund-policy?version=17&quot;,
+            &quot;flags&quot;: []
+          }
+        ]
+      },
+      { &quot;text&quot;: &quot;This changed in March.&quot;, &quot;cites&quot;: [], &quot;uncited&quot;: true }
+    ]
+  },
+  &quot;refused&quot;: 2,
+  &quot;notice&quot;: null
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claims[].cites</code></td>
+<td>Only citations to chunks the user was live-authorised for</td>
+</tr>
+<tr>
+<td><code>claims[].uncited</code></td>
+<td><code>true</code> when no allowed chunk supports the claim. Set by code, never by the model</td>
+</tr>
+<tr>
+<td><code>refused</code></td>
+<td>How many candidate documents were refused (deny or unknown). Never their titles</td>
+</tr>
+<tr>
+<td><code>notice</code></td>
+<td>e.g. <code>"most_uncited"</code>, <code>"no_access"</code>, <code>"no_sources"</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>GET /v1/traces/{id}</code> returns the same answer plus the decision list (cite, verdict, reason), for the user who asked and for auditors.</p>
+<p><code>POST /v1/feedback</code> takes <code>{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }</code>.</p>
+<h2 id="errors">ERRORS</h2>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EAUTH</code></td>
+<td>Not signed in, or session revoked</td>
+</tr>
+<tr>
+<td><code>ETENANT</code></td>
+<td>Token is for another tenant</td>
+</tr>
+<tr>
+<td><code>EKILLED</code></td>
+<td><code>ask</code> agent or the tenant is killed</td>
+</tr>
+<tr>
+<td><code>EBUDGET</code></td>
+<td>Budget or rate limit reached</td>
+</tr>
+<tr>
+<td><code>EUNAVAIL</code></td>
+<td>Index or model unavailable (never falls back to anything shared)</td>
+</tr>
+</tbody>
+</table>
+<p>A refused source is <strong>not</strong> an error. The answer reports it through <code>refused</code> and <code>notice</code>.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-14">LAW-14</a>.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-sh">curl -sS https://acme-logistics.sb.example/v1/ask \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;question&quot;:&quot;What is the refund approval limit?&quot;}' | jq '.answer.claims[] | {text, cites: [.cites[].cite]}'
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-citations.7.html">sb-citations(7)</a>, <a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-api.3.html">sb-api(3)</a></p><p class="srcline">Source: <code>manual/sb-ask.3.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

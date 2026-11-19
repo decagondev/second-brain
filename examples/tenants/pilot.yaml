@@ -1,0 +1,9 @@
+# Day 0-14: pilot. Six required lines, two optional.
+tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack }
+agents: [ask]
+pilot_group: group:sb-pilot
+exclude: { chat: ["#hr-*", "#legal-*"] }

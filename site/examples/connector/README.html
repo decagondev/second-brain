@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Example connector · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="active" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a class="current" href="../../examples/connector/README.html">Example connector</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / examples/connector</div><h1 id="example-connector-notes">Example connector: <code>notes</code></h1>
+<p><a href="notes.go.html"><code>notes.go</code></a> is a complete, minimal, read-only connector for a fictional notes system. It compiles against the <code>ports</code> types in <a href="../../manual/sb-connector.3.html">sb-connector(3)</a> and shows the rules every connector follows:</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Where in the code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials fetched per call from the fixed vault path, never stored</td>
+<td><code>token()</code></td>
+</tr>
+<tr>
+<td><code>ACL</code> answers a batch, with an 800 ms deadline</td>
+<td><code>ACL()</code></td>
+</tr>
+<tr>
+<td>Anything uncertain is <code>VerdictUnknown</code>, the zero value</td>
+<td><code>make([]ports.Verdict, …)</code> and every early <code>return out, nil</code></td>
+</tr>
+<tr>
+<td><code>Changes</code> reports deletes and permission-only changes</td>
+<td><code>Changes()</code></td>
+</tr>
+<tr>
+<td>Read-only connectors return <code>ENOTSUP</code> from <code>Act</code></td>
+<td><code>Act()</code></td>
+</tr>
+<tr>
+<td>Compile-time proof it implements the port</td>
+<td><code>var _ ports.Connector = (*Connector)(nil)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Note what <code>ACL</code> does on error: it returns all-<code>Unknown</code> and <strong>no error</strong>. The caller would treat an error as <code>Unknown</code> anyway, so there's one obvious path (P3).</p>
+<p>To turn this into a real connector: put it under <code>internal/adapters/connectors/docs-&lt;vendor&gt;/</code>, implement <code>Client</code> against the vendor SDK, and make the contract kit pass.</p><p class="srcline">Source: <code>examples/connector/README.md</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

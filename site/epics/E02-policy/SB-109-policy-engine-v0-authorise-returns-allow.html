@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-109: Policy engine v0: authorise returns allow, deny or unknown · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E02</h4><a class="current" href="../../epics/E02-policy/SB-109-policy-engine-v0-authorise-returns-allow.html">SB-109: Policy engine v0: authorise returns allow, deny or unknown</a><a href="../../epics/E02-policy/SB-110-cedar-schema-and-base-policies.html">SB-110: Cedar schema and base policies</a><a href="../../epics/E02-policy/SB-111-policy-decisions-are-audited.html">SB-111: Policy decisions are audited</a><a href="../../epics/E02-policy/SB-112-policy-analysis-in-ci.html">SB-112: Policy analysis in CI</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E02-policy</div><h1 id="sb-109-policy-engine-v0-authorise-returns-allow-deny-or-unknown">SB-109: Policy engine v0: <code>authorise</code> returns allow, deny or unknown</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E02 Policy Kernel</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W1 / S1.4 Policy kernel</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-02.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-permissions.7.html"><code>sb-permissions(7)</code></a>, <a href="../../manual/sb-policy.5.html"><code>sb-policy(5)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-03">LAW-03</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E01-tenancy-identity/SB-108-tenant-scoped-request-context.html">SB-108</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>In review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>The kernel has one entry point and three answers; unknown is never allow.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span><code>authorise(principal, action, resource, context)</code> returns <code>Allow|Deny|Unknown</code> with a reason</li>
+<li class="task done"><span class="box">✓</span>Every caller maps <code>Unknown</code> to refusal; a lint forbids switch statements that fall through on Unknown</li>
+<li class="task done"><span class="box">✓</span>LAW-03 green over mocks (policy level; retrieval level is SB-302)</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Define <code>policy.Decision</code> type</li>
+<li class="task done"><span class="box">✓</span>Cedar evaluator adapter</li>
+<li class="task done"><span class="box">✓</span>Caller helper <code>policy.Require</code></li>
+<li class="task done"><span class="box">✓</span>Custom lint for Decision handling</li>
+<li class="task done"><span class="box">✓</span>LAW-03 fault-injection tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-03</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: built.
+- <code>internal/core/policy</code>: <code>Decision</code> (the zero value is <code>Unknown</code>) and <code>Authorise(scope, action, resource, context)</code>. It builds the principal only from the <code>tenancy.Scope</code>, denies other-tenant resources before any policy runs, and runs the engine with a 50 ms deadline and panic recovery. Anything but a clean Allow or Deny is <code>Unknown</code>, always with a reason. <code>Require</code> returns nil only for Allow.
+- <code>internal/adapters/policy/cedar</code> uses cedar-go v1.8.0 (ADR-0017; vendored now). Policy evaluation errors become <code>Unknown</code>. Tests run the platform <code>base.cedar</code> through the real kernel.
+- <code>tools/check/decisions.py</code> (run by <code>make lint</code>, with a built-in self-test) refuses <code>!= policy.Deny</code> and <code>default:</code> in Decision switches. <code>exhaustive</code> requires the <code>Unknown</code> case.</p>
+<p>LAW-03 gains <code>TestLAW03_PolicyUnknownRefuses</code>, red first, then green. It injects engine errors, timeouts, panics and invalid values, plus other-tenant resources and missing scopes. A "not denied means allowed" caller is caught.</p>
+<p><strong>Left:</strong> policies are loaded from files for now; loading the tenant's policies from the release bundle is SB-503. Also left: review by the user, and the first green CI run.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E02-policy/SB-109-policy-engine-v0-authorise-returns-allow.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

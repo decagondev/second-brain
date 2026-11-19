@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-tenant(5) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a class="current" href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-TENANT(5)</span><span>Second Brain Manual</span><span>SB-TENANT(5)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-tenant5">sb-tenant(5)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-tenant — tenant manifest format</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<p>The smallest valid manifest:</p>
+<pre><code class="language-yaml">tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint }
+agents: [ask]
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>A manifest fully describes one tenant. It is YAML, lives in git, and is the single source of truth: the console edits it, <code>sb tenant apply</code> enacts it, and drift from it is an alert (LAW-16).</p>
+<p>A manifest contains <strong>no secrets and no versions</strong>. Connector credentials are read from the fixed vault path <code>vault://tenants/&lt;tenant&gt;/connectors/&lt;kind&gt;</code>, which the operator fills once during onboarding. The release is chosen by <code>channel</code>, never pinned.</p>
+<p>Unknown fields are errors. There are no per-company extension points.</p>
+<h2 id="fields">FIELDS</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Rules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tenant</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+<td>DNS label, 3–40 chars, <code>[a-z0-9-]</code>. <strong>Immutable</strong></td>
+</tr>
+<tr>
+<td><code>channel</code></td>
+<td><code>stable</code> | <code>testing</code></td>
+<td>yes</td>
+<td></td>
+<td><code>version:</code> and <code>platform:</code> fields are rejected (ADR-0004)</td>
+</tr>
+<tr>
+<td><code>idp</code></td>
+<td>URI</td>
+<td>yes</td>
+<td></td>
+<td><code>oidc://ISSUER-HOST[/path]</code>, where the host is a DNS name. SCIM is served at <code>/scim/v2</code> on the cell</td>
+</tr>
+<tr>
+<td><code>region</code></td>
+<td>string</td>
+<td>yes</td>
+<td></td>
+<td><code>eu</code> or <code>us</code>, the supported regions (<a href="sb-tenancy.7.html">sb-tenancy(7)</a>). <strong>Immutable</strong></td>
+</tr>
+<tr>
+<td><code>connectors</code></td>
+<td>map kind→vendor</td>
+<td>yes</td>
+<td></td>
+<td>Kinds: <code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>. At least one. Vendor is <code>[a-z0-9-]</code>, e.g. <code>sharepoint</code>. Read-only unless named in <code>workflows</code></td>
+</tr>
+<tr>
+<td><code>agents</code></td>
+<td>list</td>
+<td>yes</td>
+<td></td>
+<td><code>ask</code> (required), <code>draft-reply</code>. No duplicates</td>
+</tr>
+<tr>
+<td><code>workflows</code></td>
+<td>list</td>
+<td>no</td>
+<td><code>[]</code></td>
+<td>At most <strong>one</strong> in v1. Known workflows: <code>ticket-update</code> (needs connector kind <code>tickets</code>). Enabled only after the tenant's workflow evals pass</td>
+</tr>
+<tr>
+<td><code>approval</code></td>
+<td>map workflow→principal</td>
+<td>if <code>workflows</code></td>
+<td></td>
+<td>Principal is <code>group:NAME</code> from the IdP. Every workflow needs one</td>
+</tr>
+<tr>
+<td><code>retention_days</code></td>
+<td>int</td>
+<td>no</td>
+<td><code>365</code></td>
+<td>30–3650. Applies to traces, citations and drafts, not to audit</td>
+</tr>
+<tr>
+<td><code>budget_usd_month</code></td>
+<td>int</td>
+<td>no</td>
+<td><code>1000</code></td>
+<td>At least 1. Model spend cap. Over budget, asks fail with <code>EBUDGET</code></td>
+</tr>
+<tr>
+<td><code>pilot_group</code></td>
+<td>string</td>
+<td>no</td>
+<td></td>
+<td><code>group:NAME</code>. If set, only this group may sign in (days 1–14)</td>
+</tr>
+<tr>
+<td><code>exclude</code></td>
+<td>map kind→list</td>
+<td>no</td>
+<td><code>{}</code></td>
+<td>Kinds as in <code>connectors</code>. Source paths or channels never ingested, e.g. <code>chat: ["#hr-*"]</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="validation-rules">VALIDATION RULES</h2>
+<ol>
+<li>Every key is known, no key appears twice, and types match. <code>tenant</code> and <code>region</code> must match the existing cell if one exists; <code>check</code> has no network, so <code>sb tenant apply</code> enforces that part (SB-104).</li>
+<li><code>ask</code> is in <code>agents</code>.</li>
+<li>Each item in <code>workflows</code> has an <code>approval</code> entry, and its connector kind is in <code>connectors</code>.</li>
+<li>No field anywhere is named <code>version</code>, <code>platform</code>, <code>secret</code>, <code>password</code>, <code>token</code> or <code>key</code>, alone or as part of a <code>_</code>-separated name such as <code>api_token</code>.</li>
+<li><code>pilot_group</code> and <code>approval</code> principals are <code>group:</code> references, never individual users. That way access follows the IdP.</li>
+<li><code>custody</code>, <code>placement</code> and <code>key_custodian</code> are rejected: custody is a factory record that changes only through a dual-approved hand-off (<a href="sb-factory.7.html">sb-factory(7)</a>).</li>
+</ol>
+<h2 id="syntax">SYNTAX</h2>
+<p>A manifest is one YAML document in a strict subset of YAML. The parser keeps the line and column of every key and value, so each error points at the exact spot. A syntax error stops the check at the first one, reported as field <code>syntax</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Allowed</th>
+<th>Rejected (error)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A block mapping at the top level</td>
+<td>A second document (<code>---</code>), or a top level that isn't a mapping</td>
+</tr>
+<tr>
+<td>Nested block mappings and <code>- item</code> lists</td>
+<td>Tabs in indentation</td>
+</tr>
+<tr>
+<td>Flow lists <code>[a, b]</code> and flow maps <code>{ k: v }</code>, on one line</td>
+<td>Anchors <code>&amp;</code>, aliases <code>*</code> and tags <code>!</code></td>
+</tr>
+<tr>
+<td>Plain, <code>'single'</code> and <code>"double"</code> quoted scalars</td>
+<td>Block scalars (literal and folded) and multi-line scalars</td>
+</tr>
+<tr>
+<td><code>#</code> comments</td>
+<td>Duplicate keys</td>
+</tr>
+</tbody>
+</table>
+<p>The same Go types that drive the checker generate a JSON Schema, published as <code>examples/tenants/tenant.schema.json</code> for editors. A test fails if the published file is out of date.</p>
+<h2 id="exit-status-errors">EXIT STATUS / ERRORS</h2>
+<p><code>sb tenant check</code> exits 1 with <code>EMANIFEST</code> and one line per error, in the form <code>file:line:col: field: message</code>, sorted by position. Errors about a field point at its key; errors about a value point at the value. See <a href="sb-tenant.1.html">sb-tenant(1)</a>.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-07">LAW-07</a> (no secrets in config), <a href="sb-laws.7.html#law-08">LAW-08</a> (channels, not versions), <a href="sb-laws.7.html#law-16">LAW-16</a> (the manifest is the truth).</p>
+<h2 id="examples">EXAMPLES</h2>
+<p>A day-0 pilot:</p>
+<pre><code class="language-yaml">tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack }
+agents: [ask]
+pilot_group: group:sb-pilot
+exclude: { chat: [&quot;#hr-*&quot;, &quot;#legal-*&quot;] }
+</code></pre>
+<p>Day 46 onward, with one gated workflow:</p>
+<pre><code class="language-yaml">tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack, tickets: jira }
+agents: [ask, draft-reply]
+workflows: [ticket-update]
+approval: { ticket-update: group:it-leads }
+retention_days: 365
+budget_usd_month: 1500
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-tenant.1.html">sb-tenant(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-factory.7.html">sb-factory(7)</a>, <a href="sb-onboarding.7.html">sb-onboarding(7)</a>, <a href="../examples/README.html">examples/tenants/</a></p><p class="srcline">Source: <code>manual/sb-tenant.5.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l2"><a href="#validation-rules">VALIDATION RULES</a></li><li class="l2"><a href="#syntax">SYNTAX</a></li><li class="l2"><a href="#exit-status-errors">EXIT STATUS / ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E00 Manual, Laws and Proofs · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a class="current" href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E00</h4><a href="../../epics/E00-foundations/SB-001-repo-skeleton-and-toolchain.html">SB-001: Repo skeleton and toolchain</a><a href="../../epics/E00-foundations/SB-002-manual-layout-man-page-template-and-docs.html">SB-002: Manual layout, man-page template and docs site in CI</a><a href="../../epics/E00-foundations/SB-003-living-documents-bootstrap.html">SB-003: Living documents bootstrap</a><a href="../../epics/E00-foundations/SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.html">SB-004: First drafts: sb(1), sb-tenant(1), sb-tenant(5)</a><a href="../../epics/E00-foundations/SB-005-first-drafts-sb-connector-3-sb-permissions-7.html">SB-005: First drafts: sb-connector(3), sb-permissions(7), sb-laws(7)</a><a href="../../epics/E00-foundations/SB-006-api-conventions-and-the-error-registry.html">SB-006: API conventions and the error registry</a><a href="../../epics/E00-foundations/SB-007-ci-rule-behaviour-change-needs-a-manual-diff.html">SB-007: CI rule: behaviour change needs a manual diff</a><a href="../../epics/E00-foundations/SB-008-dependency-rule-enforced-in-ci.html">SB-008: Dependency rule enforced in CI</a><a href="../../epics/E00-foundations/SB-009-link-check-diagram-check-and-manual-example.html">SB-009: Link check, diagram check and manual example extraction</a><a href="../../epics/E00-foundations/SB-010-law-harness-and-law-01-to-law-05-as-failing.html">SB-010: Law harness and LAW-01 to LAW-05 as failing tests</a><a href="../../epics/E00-foundations/SB-011-approvals-model-in-tla-checked-in-ci.html">SB-011: Approvals model in TLA+, checked in CI</a><a href="../../epics/E00-foundations/SB-012-rollout-model-in-tla-checked-in-ci.html">SB-012: Rollout model in TLA+, checked in CI</a><a href="../../epics/E00-foundations/SB-013-permissions-model-in-alloy-checked-in-ci.html">SB-013: Permissions model in Alloy, checked in CI</a><a href="../../epics/E00-foundations/SB-014-threat-model-v0-and-adr-sign-off.html">SB-014: Threat model v0 and ADR sign-off</a><a href="../../epics/E00-foundations/SB-016-smoke-and-regression-test-conventions.html">SB-016: Smoke and regression test conventions</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E00-foundations</div><h1 id="e00-manual-laws-and-proofs">E00: Manual, Laws and Proofs</h1>
+<blockquote>
+<p>The spec, the laws and the first formal models exist before features, and CI enforces the process.</p>
+</blockquote>
+<p><strong>Waves:</strong> W0 · <strong>Tickets:</strong> 15 · <strong>Stories:</strong> 5</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-00.1</strong>: As a <em>maintainer</em>, I want to read the man page for any feature before code exists, so that I know exactly what to build. Delivered by <a href="SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.html">SB-004</a>, <a href="SB-005-first-drafts-sb-connector-3-sb-permissions-7.html">SB-005</a>, <a href="SB-006-api-conventions-and-the-error-registry.html">SB-006</a>.</li>
+<li><strong>US-00.2</strong>: As a <em>reviewer</em>, I want CI to reject behaviour changes that do not change the manual, so that the manual never drifts from the code. Delivered by <a href="SB-007-ci-rule-behaviour-change-needs-a-manual-diff.html">SB-007</a>.</li>
+<li><strong>US-00.3</strong>: As a <em>maintainer</em>, I want the law tests to exist and fail red before features land, so that every feature is born against its laws. Delivered by <a href="SB-010-law-harness-and-law-01-to-law-05-as-failing.html">SB-010</a>.</li>
+<li><strong>US-00.4</strong>: As a <em>security reviewer</em>, I want the approval, rollout and permission designs model-checked, so that design flaws are found before code. Delivered by <a href="SB-011-approvals-model-in-tla-checked-in-ci.html">SB-011</a>, <a href="SB-012-rollout-model-in-tla-checked-in-ci.html">SB-012</a>, <a href="SB-013-permissions-model-in-alloy-checked-in-ci.html">SB-013</a>.</li>
+<li><strong>US-00.5</strong>: As a <em>new contributor</em>, I want one command that builds, tests and renders the docs, so that I am productive on day one. Delivered by <a href="SB-001-repo-skeleton-and-toolchain.html">SB-001</a>, <a href="SB-002-manual-layout-man-page-template-and-docs.html">SB-002</a>, <a href="SB-009-link-check-diagram-check-and-manual-example.html">SB-009</a>, <a href="SB-016-smoke-and-regression-test-conventions.html">SB-016</a>.</li>
+</ul>
+<h2 id="ticket-graph">Ticket graph</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  SB001[&quot;SB-001&lt;br/&gt;Repo skeleton and toolchain&quot;]
+  SB002[&quot;SB-002&lt;br/&gt;Manual layout, man-page…&quot;]
+  SB003[&quot;SB-003&lt;br/&gt;Living documents bootstrap&quot;]
+  SB004[&quot;SB-004&lt;br/&gt;First drafts: sb(1),…&quot;]
+  SB005[&quot;SB-005&lt;br/&gt;First drafts: sb-connector(3),…&quot;]
+  SB006[&quot;SB-006&lt;br/&gt;API conventions and the error…&quot;]
+  SB007[&quot;SB-007&lt;br/&gt;CI rule: behaviour change needs…&quot;]
+  SB008[&quot;SB-008&lt;br/&gt;Dependency rule enforced in CI&quot;]
+  SB009[&quot;SB-009&lt;br/&gt;Link check, diagram check and…&quot;]
+  SB010[&quot;SB-010&lt;br/&gt;Law harness and LAW-01 to…&quot;]
+  SB011[&quot;SB-011&lt;br/&gt;Approvals model in TLA+,…&quot;]
+  SB012[&quot;SB-012&lt;br/&gt;Rollout model in TLA+, checked…&quot;]
+  SB013[&quot;SB-013&lt;br/&gt;Permissions model in Alloy,…&quot;]
+  SB014[&quot;SB-014&lt;br/&gt;Threat model v0 and ADR sign-off&quot;]
+  SB016[&quot;SB-016&lt;br/&gt;Smoke and regression test…&quot;]
+  SB001 --&gt; SB002
+  SB001 --&gt; SB003
+  SB002 --&gt; SB004
+  SB002 --&gt; SB005
+  SB002 --&gt; SB006
+  SB001 --&gt; SB007
+  SB002 --&gt; SB007
+  SB001 --&gt; SB008
+  SB002 --&gt; SB009
+  SB001 --&gt; SB010
+  SB001 --&gt; SB011
+  SB001 --&gt; SB012
+  SB001 --&gt; SB013
+  SB005 --&gt; SB014
+  SB001 --&gt; SB016
+</pre></div>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-001-repo-skeleton-and-toolchain.html">SB-001</a></td>
+<td>W0 / S0.1</td>
+<td>Repo skeleton and toolchain</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-002-manual-layout-man-page-template-and-docs.html">SB-002</a></td>
+<td>W0 / S0.1</td>
+<td>Manual layout, man-page template and docs site in CI</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-003-living-documents-bootstrap.html">SB-003</a></td>
+<td>W0 / S0.1</td>
+<td>Living documents bootstrap</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-004-first-drafts-sb-1-sb-tenant-1-sb-tenant-5.html">SB-004</a></td>
+<td>W0 / S0.2</td>
+<td>First drafts: sb(1), sb-tenant(1), sb-tenant(5)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-005-first-drafts-sb-connector-3-sb-permissions-7.html">SB-005</a></td>
+<td>W0 / S0.2</td>
+<td>First drafts: sb-connector(3), sb-permissions(7), sb-laws(7)</td>
+<td>LAW-01, LAW-02, LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-006-api-conventions-and-the-error-registry.html">SB-006</a></td>
+<td>W0 / S0.2</td>
+<td>API conventions and the error registry</td>
+<td>LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-007-ci-rule-behaviour-change-needs-a-manual-diff.html">SB-007</a></td>
+<td>W0 / S0.3</td>
+<td>CI rule: behaviour change needs a manual diff</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-008-dependency-rule-enforced-in-ci.html">SB-008</a></td>
+<td>W0 / S0.3</td>
+<td>Dependency rule enforced in CI</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-009-link-check-diagram-check-and-manual-example.html">SB-009</a></td>
+<td>W0 / S0.3</td>
+<td>Link check, diagram check and manual example extraction</td>
+<td>—</td>
+</tr>
+<tr>
+<td><a href="SB-010-law-harness-and-law-01-to-law-05-as-failing.html">SB-010</a></td>
+<td>W0 / S0.4</td>
+<td>Law harness and LAW-01 to LAW-05 as failing tests</td>
+<td>LAW-01, LAW-02, LAW-03, LAW-04, LAW-05</td>
+</tr>
+<tr>
+<td><a href="SB-011-approvals-model-in-tla-checked-in-ci.html">SB-011</a></td>
+<td>W0 / S0.4</td>
+<td>Approvals model in TLA+, checked in CI</td>
+<td>LAW-04, LAW-05, LAW-10, LAW-15</td>
+</tr>
+<tr>
+<td><a href="SB-012-rollout-model-in-tla-checked-in-ci.html">SB-012</a></td>
+<td>W0 / S0.4</td>
+<td>Rollout model in TLA+, checked in CI</td>
+<td>LAW-06, LAW-08</td>
+</tr>
+<tr>
+<td><a href="SB-013-permissions-model-in-alloy-checked-in-ci.html">SB-013</a></td>
+<td>W0 / S0.4</td>
+<td>Permissions model in Alloy, checked in CI</td>
+<td>LAW-01, LAW-02, LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-014-threat-model-v0-and-adr-sign-off.html">SB-014</a></td>
+<td>W0 / S0.4</td>
+<td>Threat model v0 and ADR sign-off</td>
+<td>LAW-07, LAW-09</td>
+</tr>
+<tr>
+<td><a href="SB-016-smoke-and-regression-test-conventions.html">SB-016</a></td>
+<td>W0 / S0.1</td>
+<td>Smoke and regression test conventions</td>
+<td>—</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E00-foundations/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#ticket-graph">Ticket graph</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

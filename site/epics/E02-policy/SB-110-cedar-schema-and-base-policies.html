@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-110: Cedar schema and base policies · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E02</h4><a href="../../epics/E02-policy/SB-109-policy-engine-v0-authorise-returns-allow.html">SB-109: Policy engine v0: authorise returns allow, deny or unknown</a><a class="current" href="../../epics/E02-policy/SB-110-cedar-schema-and-base-policies.html">SB-110: Cedar schema and base policies</a><a href="../../epics/E02-policy/SB-111-policy-decisions-are-audited.html">SB-111: Policy decisions are audited</a><a href="../../epics/E02-policy/SB-112-policy-analysis-in-ci.html">SB-112: Policy analysis in CI</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E02-policy</div><h1 id="sb-110-cedar-schema-and-base-policies">SB-110: Cedar schema and base policies</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E02 Policy Kernel</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W1 / S1.4 Policy kernel</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-02.2</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-policy.5.html"><code>sb-policy(5)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-02">LAW-02</a>, <a href="../../manual/sb-laws.7.html#law-03">LAW-03</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E02-policy/SB-109-policy-engine-v0-authorise-returns-allow.html">SB-109</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>In review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Policies a company operator can read beat policies hidden in code.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Schema covers principals, groups, documents, chunks, tools and approvals</li>
+<li class="task done"><span class="box">✓</span>Base policy set: tenant scope on every permit; default deny</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Write <code>policy/schema.cedarschema</code></li>
+<li class="task done"><span class="box">✓</span>Write base policies</li>
+<li class="task done"><span class="box">✓</span>Example tenant policies in <code>examples/policies/</code></li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-02, LAW-03</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: the schema gains <code>Document</code> (with <code>Chunk in [Document]</code>) and a <code>tenant</code> on every entity (<code>Agent</code>, <code>Tool</code>, <code>Workflow</code>). <code>read</code> applies to chunks and documents. The base policies now scope every permit to the tenant. A new law test, <code>TestLAW02_PoliciesNeverCrossTenants</code>, runs the real platform and example tenant policies through cedar-go with the kernel's guard bypassed. On its first run it was red for a real reason: <code>permit use_agent ask</code> had no tenant condition (BUG-0006). It is fixed and green, and a self-test catches a tenant-less permit. Every policy file and docs <code>cedar</code> block still validates against the new schema (<code>make regress</code>, BUG-0003 test). LAW-03 for policies is covered by the SB-109 kernel test and the adapter test (an erroring policy is <code>Unknown</code>).</p>
+<p><strong>Left:</strong> review by the user, and the first green CI run. CI's tenant-condition check and permission diffs are SB-112.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E02-policy/SB-110-cedar-schema-and-base-policies.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

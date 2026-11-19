@@ -1,0 +1,43 @@
+# golangci-lint v2. Rules from docs/06-engineering-standards.md.
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - depguard      # SB-008: the dependency rule
+    - exhaustive    # every switch on an enum (e.g. policy.Decision) handles every value
+    - forbidigo     # no fmt.Print*/log.* outside cmd/
+  settings:
+    depguard:
+      rules:
+        core:
+          list-mode: strict
+          files: ["**/internal/core/**/*.go"]
+          allow: ["$gostd", "example.com/second-brain/internal/core"]
+        ports:
+          list-mode: strict
+          files: ["**/internal/core/ports/*.go"]
+          allow: ["$gostd", "example.com/second-brain/internal/core/tenancy"]
+    exhaustive:
+      default-signifies-exhaustive: false
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print.*$
+        - pattern: ^log\.
+    errcheck:
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [forbidigo]
+      - path: ^cmd/
+        linters: [forbidigo]
+formatters:
+  enable: [gofmt]

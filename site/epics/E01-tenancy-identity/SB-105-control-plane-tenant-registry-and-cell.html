@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-105: Control-plane tenant registry and cell routing · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E01</h4><a href="../../epics/E01-tenancy-identity/SB-101-manifest-schema-parser-and-sb-tenant-check.html">SB-101: Manifest schema, parser and sb tenant check</a><a href="../../epics/E01-tenancy-identity/SB-102-sb-tenant-apply-plan-dry-run.html">SB-102: sb tenant apply --plan dry run</a><a href="../../epics/E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103: Cell template (infrastructure as code)</a><a href="../../epics/E01-tenancy-identity/SB-104-sb-tenant-apply-idempotent-cell-creation.html">SB-104: sb tenant apply idempotent cell creation</a><a class="current" href="../../epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.html">SB-105: Control-plane tenant registry and cell routing</a><a href="../../epics/E01-tenancy-identity/SB-106-oidc-sign-in-per-tenant.html">SB-106: OIDC sign-in per tenant</a><a href="../../epics/E01-tenancy-identity/SB-107-scim-provisioning-and-fast-deprovisioning.html">SB-107: SCIM provisioning and fast deprovisioning</a><a href="../../epics/E01-tenancy-identity/SB-108-tenant-scoped-request-context.html">SB-108: Tenant-scoped request context</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E01-tenancy-identity</div><h1 id="sb-105-control-plane-tenant-registry-and-cell-routing">SB-105: Control-plane tenant registry and cell routing</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E01 Tenancy and Identity</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W1 / S1.2 Cell</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-01.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-tenancy.7.html"><code>sb-tenancy(7)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-02">LAW-02</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>In review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Requests must find their cell without any code knowing a company's name.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Registry maps tenant id to cell endpoint and region</li>
+<li class="task done"><span class="box">✓</span>Router refuses requests whose token tenant does not match the cell</li>
+<li class="task done"><span class="box">✓</span>Registry stores the custody record (<code>custody</code>, <code>placement</code>, <code>key_custodian</code>) for every cell; v1 writes <code>factory</code> only</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Registry table and API</li>
+<li class="task done"><span class="box">✓</span>Edge router with tenant check</li>
+<li class="task done"><span class="box">✓</span>Cross-tenant request test returns <code>ETENANT</code></li>
+<li class="task done"><span class="box">✓</span>Cell holds a control-plane endpoint and identity certificate as config, so it can be re-pointed</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-02</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: built.
+- The new ports are <code>Cells</code> and <code>CellsWriter</code> (<code>CellRecord</code>: tenant, region, endpoint, hosts and the custody record).
+- <code>internal/adapters/postgres/registry</code> (pgx, ADR-0017; first vendored module) implements the whole registry: applied resources, cells, hosts and journal. The <code>cell_hosts</code> primary key means a host can serve only one cell, and <code>PutCell</code> is a single transaction.
+- <code>localfs</code> implements the same ports for <code>file:///DIR</code>. Both pass <code>internal/core/registrytest.Contract</code>, and Postgres runs it against a real database (<code>make integration</code>, new CI job <code>postgres</code>).
+- <code>sb tenant apply</code> writes the cell record (custody <code>factory</code>, placement <code>factory-account</code>) when it creates a cell.
+- <code>internal/edge</code> routes in the order of sb-tenancy(7): unknown host is <code>EPERM</code>, registry down is <code>EUNAVAIL</code>, a bad token is <code>EAUTH</code>, and another tenant's token is <code>ETENANT</code>. It forwards only to the host's cell.
+- <code>cell.LoadConfig</code> takes the control-plane URL and identity certificate from configuration, with no defaults.</p>
+<p>LAW-02 gains a request-level law test, which was red first, then green. On its first green run it caught a spec gap: a valid token with no tenant claim. That is now <code>EAUTH</code> in the manual and in the law.</p>
+<p><strong>Left:</strong> token verification is a placeholder port until SB-106 (OIDC). Also left: review by the user, and the first green CI run, including the <code>postgres</code> job.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

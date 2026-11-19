@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-610: CRM connector (read-only) · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E03</h4><a href="../../epics/E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.html">SB-201: Connector contract, SDK and contract kit</a><a href="../../epics/E03-connectors-ingestion/SB-202-fault-injecting-mock-connector.html">SB-202: Fault-injecting mock connector</a><a href="../../epics/E03-connectors-ingestion/SB-203-docs-connector-first-vendor-read-only.html">SB-203: Docs connector (first vendor, read-only)</a><a href="../../epics/E03-connectors-ingestion/SB-204-chat-connector-read-only.html">SB-204: Chat connector (read-only)</a><a href="../../epics/E03-connectors-ingestion/SB-205-connector-credentials-via-vault-references.html">SB-205: Connector credentials via vault references</a><a href="../../epics/E03-connectors-ingestion/SB-206-ingest-pipeline-chunk-embed-tag-provenance.html">SB-206: Ingest pipeline: chunk, embed, tag provenance</a><a href="../../epics/E03-connectors-ingestion/SB-207-ingest-sanitiser-and-injection-flags.html">SB-207: Ingest sanitiser and injection flags</a><a href="../../epics/E03-connectors-ingestion/SB-208-incremental-sync-via-changes-with-freshness.html">SB-208: Incremental sync via changes with freshness SLA</a><a href="../../epics/E03-connectors-ingestion/SB-209-deletion-and-acl-change-propagation.html">SB-209: Deletion and ACL-change propagation</a><a href="../../epics/E03-connectors-ingestion/SB-210-index-rebuild-from-sources.html">SB-210: Index rebuild from sources</a><a href="../../epics/E03-connectors-ingestion/SB-211-tickets-connector-read-only.html">SB-211: Tickets connector (read-only)</a><a class="current" href="../../epics/E03-connectors-ingestion/SB-610-crm-connector-read-only.html">SB-610: CRM connector (read-only)</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E03-connectors-ingestion</div><h1 id="sb-610-crm-connector-read-only">SB-610: CRM connector (read-only)</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E03 Connectors and Ingestion</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W6 / S6.3 Operate</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-03.5</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-connector.3.html"><code>sb-connector(3)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-01">LAW-01</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E03-connectors-ingestion/SB-201-connector-contract-sdk-and-contract-kit.html">SB-201</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Customer context completes the picture for most teams.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task"><span class="box"></span>Passes the contract kit</li>
+<li class="task"><span class="box"></span>Record-level permissions map to ACL</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task"><span class="box"></span>Adapter</li>
+<li class="task"><span class="box"></span>ACL mapping</li>
+<li class="task"><span class="box"></span>Contract kit run</li>
+<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01</li>
+<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E03-connectors-ingestion/SB-610-crm-connector-read-only.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

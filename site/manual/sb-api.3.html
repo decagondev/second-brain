@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-api(3) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a class="current" href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-API(3)</span><span>Second Brain Manual</span><span>SB-API(3)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-api3">sb-api(3)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-api — authentication, versioning, errors, idempotency and pagination for the cell API</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">https://&lt;tenant&gt;.&lt;platform-domain&gt;/v1/&lt;resource&gt;
+Authorization: Bearer &lt;session token&gt;
+Content-Type: application/json
+Idempotency-Key: &lt;client-chosen ULID&gt;        (on POSTs that create actions)
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>Each tenant's cell serves its own API at its own hostname. There is no shared, multi-tenant API endpoint for content.</p>
+<h3 id="authentication">Authentication</h3>
+<p>Session tokens come from the tenant's OIDC sign-in. The token's <code>tenant</code> claim must equal the cell's tenant, or the request fails with <code>ETENANT</code>. Sessions are re-validated against the directory every 60 seconds, so SCIM deactivation takes effect within 5 minutes (LAW-12). Service integrations (the chat-app bot) use workload identity, never static API keys.</p>
+<h3 id="versioning">Versioning</h3>
+<p>The version is in the path (<code>/v1</code>). Within a version, changes are <strong>additive only</strong>: new fields and new endpoints. Clients must ignore fields they don't know. Removing or renaming anything is <code>/v2</code>.</p>
+<h3 id="errors">Errors</h3>
+<p>Every error has the same shape, and the <code>code</code> comes from <a href="sb-errors.7.html">sb-errors(7)</a>:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;EPERM&quot;,
+    &quot;message&quot;: &quot;You don't have access to the sources needed for this.&quot;,
+    &quot;trace&quot;: &quot;tr_01JD3QB4…&quot;,
+    &quot;remedy&quot;: &quot;Ask the document owner for access.&quot;
+  }
+}
+</code></pre>
+<p>Messages are safe to show to the user. They never include the titles or content of refused documents.</p>
+<h3 id="idempotency">Idempotency</h3>
+<p>POSTs that create drafts or actions accept <code>Idempotency-Key</code>. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.</p>
+<h3 id="pagination">Pagination</h3>
+<p>List endpoints return <code>{ "items": [...], "next": "&lt;cursor&gt;" }</code>. Pass <code>?cursor=</code> to continue. Cursors are opaque and expire after 1 hour.</p>
+<h3 id="rate-limits-and-budgets">Rate limits and budgets</h3>
+<p><code>429</code> with <code>EBUDGET</code> when the tenant's <code>budget_usd_month</code> or the per-user rate limit is reached. <code>Retry-After</code> is set for rate limits, but not for budget exhaustion.</p>
+<h3 id="tracing">Tracing</h3>
+<p>Every response carries <code>X-SB-Trace: tr_…</code> and <code>X-SB-Release: rel_…</code>.</p>
+<h2 id="errors_1">ERRORS</h2>
+<p>See <a href="sb-errors.7.html">sb-errors(7)</a>.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-12">LAW-12</a>.</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-ask.3.html">sb-ask(3)</a>, <a href="sb-actions.3.html">sb-actions(3)</a>, <a href="sb-admin.3.html">sb-admin(3)</a>, <a href="sb-errors.7.html">sb-errors(7)</a></p><p class="srcline">Source: <code>manual/sb-api.3.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#authentication">Authentication</a></li><li class="l3"><a href="#versioning">Versioning</a></li><li class="l3"><a href="#errors">Errors</a></li><li class="l3"><a href="#idempotency">Idempotency</a></li><li class="l3"><a href="#pagination">Pagination</a></li><li class="l3"><a href="#rate-limits-and-budgets">Rate limits and budgets</a></li><li class="l3"><a href="#tracing">Tracing</a></li><li class="l2"><a href="#errors_1">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

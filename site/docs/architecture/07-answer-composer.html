@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 Answer Composer and Citations · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="active" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../../docs/README.html">Design</a><a href="../../docs/00-problem-statement.html">Problem Statement</a><a href="../../docs/01-principles.html">Principles</a><a href="../../docs/02-domain-model.html">Domain Model</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../../docs/05-living-documents.html">Living Documents</a><a href="../../docs/06-engineering-standards.html">Engineering Standards</a><a href="../../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../../docs/architecture/00-overview.html">Architecture Overview</a><a href="../../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../../docs/architecture/03-connectors.html">03 Connectors</a><a href="../../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a class="current" href="../../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../../docs/adr/README.html">Decision Records</a><a href="../../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../../policy/README.html">Policy</a><a href="../../proofs/README.html">Proofs</a><a href="../../policy/platform/base.cedar.html">base.cedar</a><a href="../../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../../proofs/crosscheck.py.html">crosscheck.py</a><a href="../../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../../evals/README.html">Evals</a><a href="../../evals/__main__.py.html">__main__.py</a><a href="../../evals/checks.py.html">checks.py</a><a href="../../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../../evals/gate.yaml.html">gate.yaml</a><a href="../../evals/runner.py.html">runner.py</a><a href="../../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../../evals/targets.py.html">targets.py</a><a href="../../evals/tests/test_checks.py.html">test_checks.py</a><a href="../../laws/README.html">Laws</a><a href="../../laws/checks.go.html">checks.go</a><a href="../../laws/law02cell.go.html">law02cell.go</a><a href="../../laws/law02policy.go.html">law02policy.go</a><a href="../../laws/law02route.go.html">law02route.go</a><a href="../../laws/law02scope.go.html">law02scope.go</a><a href="../../laws/law02token.go.html">law02token.go</a><a href="../../laws/law03policy.go.html">law03policy.go</a><a href="../../laws/law04policy.go.html">law04policy.go</a><a href="../../laws/law12.go.html">law12.go</a><a href="../../laws/law16.go.html">law16.go</a><a href="../../laws/law18.go.html">law18.go</a><a href="../../laws/laws_test.go.html">laws_test.go</a><a href="../../laws/prop.go.html">prop.go</a><a href="../../laws/selftest_test.go.html">selftest_test.go</a><a href="../../laws/system.go.html">system.go</a><a href="../../laws/world.go.html">world.go</a><a href="../../tests/regress/README.html">Regression tests</a><a href="../../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../../tests/smoke/README.html">Smoke tests</a><a href="../../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / docs/architecture</div><h1 id="07-answer-composer-and-citations">07 Answer composer and citations</h1>
+<p><strong>Job:</strong> turn the model's draft into an answer where every claim either maps to an allowed chunk at a specific version, or is labelled <code>uncited</code> in code.</p>
+<h2 id="structured-output-not-prose">Structured output, not prose</h2>
+<p>The model is asked to return claims, each with the chunk ids it relied on:</p>
+<pre><code class="language-json">{
+  &quot;claims&quot;: [
+    { &quot;text&quot;: &quot;Refunds over £500 need a team lead's approval.&quot;, &quot;chunks&quot;: [&quot;chk_01JD3QA1&quot;] },
+    { &quot;text&quot;: &quot;This changed in March.&quot;, &quot;chunks&quot;: [] }
+  ]
+}
+</code></pre>
+<p>The composer then validates every claim:</p>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart TD
+    D[&quot;model draft: claims[]&quot;] --&gt; L{&quot;for each claim&quot;}
+    L --&gt; C{&quot;chunks ⊆ allowed context?&quot;}
+    C -- no --&gt; STRIP[&quot;strip bad ids, log citation_spoof&quot;]
+    STRIP --&gt; E
+    C -- yes --&gt; E{&quot;any chunk ids left?&quot;}
+    E -- yes --&gt; CITE[&quot;attach cite doc@version + span&quot;]
+    E -- no --&gt; UNC[&quot;label uncited&quot;]
+    CITE --&gt; OUT[&quot;answer&quot;]
+    UNC --&gt; OUT
+</pre></div>
+<p>A chunk id the model invents, or one from outside the allowed context, can't become a citation. The <code>uncited</code> label is set by this code path, never by the prompt (LAW-14).</p>
+<h2 id="what-the-user-sees">What the user sees</h2>
+<pre><code class="language-text">Refunds over £500 need a team lead's approval. [1]
+This changed in March. (uncited)
+
+[1] Refund policy, docs:4f2a9c11@17, section &quot;Approvals&quot;
+</code></pre>
+<ul>
+<li>Citations open the source at the cited version where the source supports it, or show the cited span otherwise.</li>
+<li><code>uncited</code> claims are styled differently in every UI and are marked as such in the API.</li>
+<li>If more than half the claims are uncited, the answer leads with: "I couldn't find sources for most of this."</li>
+</ul>
+<h2 id="faithfulness">Faithfulness</h2>
+<p>Mapping a claim to a chunk proves the chunk was <em>allowed</em> and <em>offered</em>. It doesn't prove the chunk <em>supports</em> the claim. That's measured by the citation-faithfulness eval (SB-309), which scores support for each claim–chunk pair on golden questions, per tenant, and gates releases (SB-502).</p>
+<h2 id="failure-modes">Failure modes</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model returns invalid JSON</td>
+<td>One repair retry with the same context; otherwise return <code>uncited</code> text with a notice</td>
+</tr>
+<tr>
+<td>Model cites a refused document by title in prose</td>
+<td>Refused titles are never in context, so it can't. If a title appears anyway, the injection eval flags the trace</td>
+</tr>
+<tr>
+<td>Source version changed between retrieval and display</td>
+<td>Citation keeps the version it used; the UI shows "newer version available"</td>
+</tr>
+</tbody>
+</table>
+<h2 id="laws">Laws</h2>
+<p><a href="../../manual/sb-laws.7.html#law-01">LAW-01</a> · <a href="../../manual/sb-laws.7.html#law-14">LAW-14</a>.</p>
+<h2 id="tickets">Tickets</h2>
+<p>SB-304, SB-306, SB-309. Manual: <a href="../../manual/sb-citations.7.html"><code>sb-citations(7)</code></a>.</p><p class="srcline">Source: <code>docs/architecture/07-answer-composer.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#structured-output-not-prose">Structured output, not prose</a></li><li class="l2"><a href="#what-the-user-sees">What the user sees</a></li><li class="l2"><a href="#faithfulness">Faithfulness</a></li><li class="l2"><a href="#failure-modes">Failure modes</a></li><li class="l2"><a href="#laws">Laws</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

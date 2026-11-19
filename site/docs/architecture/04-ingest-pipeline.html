@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 Ingest Pipeline · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="active" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../../docs/README.html">Design</a><a href="../../docs/00-problem-statement.html">Problem Statement</a><a href="../../docs/01-principles.html">Principles</a><a href="../../docs/02-domain-model.html">Domain Model</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../../docs/05-living-documents.html">Living Documents</a><a href="../../docs/06-engineering-standards.html">Engineering Standards</a><a href="../../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../../docs/architecture/00-overview.html">Architecture Overview</a><a href="../../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../../docs/architecture/03-connectors.html">03 Connectors</a><a class="current" href="../../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../../docs/adr/README.html">Decision Records</a><a href="../../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../../policy/README.html">Policy</a><a href="../../proofs/README.html">Proofs</a><a href="../../policy/platform/base.cedar.html">base.cedar</a><a href="../../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../../proofs/crosscheck.py.html">crosscheck.py</a><a href="../../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../../evals/README.html">Evals</a><a href="../../evals/__main__.py.html">__main__.py</a><a href="../../evals/checks.py.html">checks.py</a><a href="../../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../../evals/gate.yaml.html">gate.yaml</a><a href="../../evals/runner.py.html">runner.py</a><a href="../../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../../evals/targets.py.html">targets.py</a><a href="../../evals/tests/test_checks.py.html">test_checks.py</a><a href="../../laws/README.html">Laws</a><a href="../../laws/checks.go.html">checks.go</a><a href="../../laws/law02cell.go.html">law02cell.go</a><a href="../../laws/law02policy.go.html">law02policy.go</a><a href="../../laws/law02route.go.html">law02route.go</a><a href="../../laws/law02scope.go.html">law02scope.go</a><a href="../../laws/law02token.go.html">law02token.go</a><a href="../../laws/law03policy.go.html">law03policy.go</a><a href="../../laws/law04policy.go.html">law04policy.go</a><a href="../../laws/law12.go.html">law12.go</a><a href="../../laws/law16.go.html">law16.go</a><a href="../../laws/law18.go.html">law18.go</a><a href="../../laws/laws_test.go.html">laws_test.go</a><a href="../../laws/prop.go.html">prop.go</a><a href="../../laws/selftest_test.go.html">selftest_test.go</a><a href="../../laws/system.go.html">system.go</a><a href="../../laws/world.go.html">world.go</a><a href="../../tests/regress/README.html">Regression tests</a><a href="../../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../../tests/smoke/README.html">Smoke tests</a><a href="../../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / docs/architecture</div><h1 id="04-ingest-pipeline">04 Ingest pipeline</h1>
+<p><strong>Job:</strong> turn source changes into indexed, provenance-tagged, sanitised chunks within the freshness SLA, and make deletes and permission changes take effect just as fast.</p>
+<h2 id="stages">Stages</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+    CH[&quot;Changes(cursor)&quot;] --&gt; Q1[[&quot;changes queue&quot;]]
+    Q1 --&gt; F[&quot;Fetch&quot;]
+    F --&gt; N[&quot;Normalise&lt;br/&gt;to plain text + structure&quot;]
+    N --&gt; S[&quot;Sanitise&lt;br/&gt;flag instruction-like text&quot;]
+    S --&gt; K[&quot;Chunk&lt;br/&gt;stable boundaries&quot;]
+    K --&gt; P[&quot;Provenance tag&lt;br/&gt;tenant, source, version, hash&quot;]
+    P --&gt; E[&quot;Embed&lt;br/&gt;(model port)&quot;]
+    E --&gt; W[(&quot;Index upsert&lt;br/&gt;chunks + ACL prefilter&quot;)]
+    CH -- &quot;delete / ACL change&quot; --&gt; T[&quot;Tombstone / ACL delta&quot;]
+    T --&gt; W
+</pre></div>
+<p>Each stage is a pure function from one record type to the next, except Fetch, Embed and the index write. That keeps the pipeline easy to test and to replay.</p>
+<h2 id="provenance-record">Provenance record</h2>
+<p>Every chunk carries the following record, and it surfaces in citations:</p>
+<pre><code class="language-json">{
+  &quot;chunk&quot;: &quot;chk_01JD3QA1...&quot;,
+  &quot;tenant&quot;: &quot;acme-logistics&quot;,
+  &quot;cite&quot;: &quot;docs:4f2a9c11@17&quot;,
+  &quot;span&quot;: [1840, 2615],
+  &quot;content_sha256&quot;: &quot;9b1c…&quot;,
+  &quot;flags&quot;: [&quot;instruction_like&quot;],
+  &quot;acl_prefilter&quot;: [&quot;grp_7f3a91c2&quot;, &quot;usr_01JD3Q8Z…&quot;],
+  &quot;ingested_at&quot;: &quot;2027-02-11T09:14:03Z&quot;,
+  &quot;release&quot;: &quot;rel_2027-02-10_4c2d1e&quot;
+}
+</code></pre>
+<h2 id="sanitiser-p4-data-is-not-instructions">Sanitiser (P4: data is not instructions)</h2>
+<p>The sanitiser doesn't try to make hostile text safe. It makes sure hostile text is <strong>treated as data</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strip</td>
+<td>Remove hidden text, zero-width characters, off-screen styles, HTML comments, alt-text payloads</td>
+</tr>
+<tr>
+<td>Flag</td>
+<td>Mark spans that look like instructions to an AI ("ignore previous", tool-call syntax, role markers)</td>
+</tr>
+<tr>
+<td>Wrap</td>
+<td>At prompt time, chunks go inside a quoted-data block with provenance; the system prompt says data blocks are never instructions</td>
+</tr>
+<tr>
+<td>Gate</td>
+<td>The tool bus only accepts tool calls derived from the user's turn. A tool call whose arguments are copied from a flagged span is refused and audited</td>
+</tr>
+</tbody>
+</table>
+<p>The injection eval suite (SB-207, SB-501) must produce <strong>zero</strong> tool calls (LAW-09).</p>
+<h2 id="freshness">Freshness</h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Change detected to indexed (p95)</td>
+<td>15 minutes or less</td>
+</tr>
+<tr>
+<td>Delete or ACL change to prefilter updated (p95)</td>
+<td>15 minutes or less</td>
+</tr>
+<tr>
+<td>Gap between source change and prefilter</td>
+<td>Covered by the live ACL check (LAW-01 holds throughout)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rebuild">Rebuild</h2>
+<p>The index is derived data. <code>sb-ingestd rebuild --tenant T</code> drops the index and replays <code>Fetch</code> for every source document. The drill checks that the <code>(cite, ACL)</code> set before and after is identical (LAW-13, SB-210).</p>
+<h2 id="failure-modes">Failure modes</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embedding provider down</td>
+<td>Records wait in the queue; freshness alert after 15 minutes</td>
+</tr>
+<tr>
+<td>Poison document (crashes a stage)</td>
+<td>Moved to a dead-letter queue after 3 tries; logged with source ref, never content</td>
+</tr>
+<tr>
+<td>Duplicate change events</td>
+<td>Upsert keyed by <code>(cite, span)</code> is idempotent</td>
+</tr>
+</tbody>
+</table>
+<h2 id="laws">Laws</h2>
+<p><a href="../../manual/sb-laws.7.html#law-09">LAW-09</a> · <a href="../../manual/sb-laws.7.html#law-13">LAW-13</a>.</p>
+<h2 id="tickets">Tickets</h2>
+<p>SB-206 to SB-210. Manual: <a href="../../manual/sb-ingest.7.html"><code>sb-ingest(7)</code></a>.</p><p class="srcline">Source: <code>docs/architecture/04-ingest-pipeline.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#stages">Stages</a></li><li class="l2"><a href="#provenance-record">Provenance record</a></li><li class="l2"><a href="#sanitiser-p4-data-is-not-instructions">Sanitiser (P4: data is not instructions)</a></li><li class="l2"><a href="#freshness">Freshness</a></li><li class="l2"><a href="#rebuild">Rebuild</a></li><li class="l2"><a href="#failure-modes">Failure modes</a></li><li class="l2"><a href="#laws">Laws</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

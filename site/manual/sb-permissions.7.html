@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-permissions(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a class="current" href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-PERMISSIONS(7)</span><span>Second Brain Manual</span><span>SB-PERMISSIONS(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-permissions7">sb-permissions(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-permissions — how the platform decides who may see and do what</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">may (principal, action, resource, context)?  →  Allow | Deny | Unknown
+Unknown  ≡  Deny
+read(source content)  ⇒  Cedar permits  ∧  source.ACL(user, doc) = Allow, asked now
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<h3 id="three-answers">Three answers</h3>
+<p>Every authorisation returns <code>Allow</code>, <code>Deny</code> or <code>Unknown</code>. <code>Unknown</code> covers every way of not knowing: timeouts, errors, missing documents, permission models the connector can't map. <strong>Callers treat <code>Unknown</code> exactly as <code>Deny</code></strong> (LAW-03). There is no flag to change this.</p>
+<h3 id="the-policy-kernel">The policy kernel</h3>
+<p>Code asks one question: <code>policy.Authorise(scope, action, resource)</code>. It returns <code>Allow</code>, <code>Deny</code> or <code>Unknown</code>, always with a reason for the audit trail.</p>
+<ul>
+<li>The principal is built from the request's <code>tenancy.Scope</code> (user, tenant, directory groups), never from request input.</li>
+<li>A resource that belongs to another tenant is <code>Deny</code> before any policy runs.</li>
+<li><code>Unknown</code> is returned when the scope is missing, the engine returns an error, a policy fails to evaluate, the engine takes longer than 50 ms, the engine panics, or the engine returns anything that isn't exactly <code>Allow</code> or <code>Deny</code>.</li>
+<li><code>policy.Require</code> returns no error only for <code>Allow</code>. Callers use it or switch on all three values. CI refuses a <code>switch</code> on a <code>Decision</code> without an explicit <code>Unknown</code> case (the <code>exhaustive</code> linter), a <code>default:</code> case in such a switch, and any <code>!= policy.Deny</code> test, which would let <code>Unknown</code> through.</li>
+</ul>
+<h3 id="two-layers">Two layers</h3>
+<ol>
+<li><strong>Policy</strong> (<a href="sb-policy.5.html">sb-policy(5)</a>) decides agent, tool, workflow and approval rights, and always scopes to the principal's tenant.</li>
+<li><strong>The source</strong> decides who can read its documents, live, when the answer is built.</li>
+</ol>
+<p>For source content, both must allow.</p>
+<h3 id="prefilter-versus-live-check">Prefilter versus live check</h3>
+<p>When documents are ingested, their ACL is copied into the index as a <strong>prefilter</strong>. Retrieval uses it to skip documents the user obviously can't see, which keeps search fast. The prefilter can be stale, so it never grants access.</p>
+<p>Before any chunk enters the model's context, its document is checked <strong>live</strong> with the connector's <code>ACL</code> call, batched, with an 800 ms deadline. Only <code>Allow</code> gets through.</p>
+<pre><code class="language-text">candidates ── prefilter (fast, maybe stale) ──▶ live ACL (authoritative) ──▶ context
+</code></pre>
+<p>Allows are never reused across requests. Denies may be cached for 60 seconds.</p>
+<h3 id="what-users-see">What users see</h3>
+<ul>
+<li>Refused documents are never named. The answer says how many were refused and, if all were, "I found sources but you don't have access to them."</li>
+<li><code>EPERM</code> is used for both deny and unknown, so users can't probe for a document's existence.</li>
+</ul>
+<h3 id="what-operators-see">What operators see</h3>
+<p>The console's refusals view breaks refusals down by connector and reason. A connector whose unknown rate exceeds 1% is a defect to fix in the connector.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>.</p>
+<h2 id="examples">EXAMPLES</h2>
+<p>Carol was removed from the finance group at 09:00. At 09:04 the prefilter still lists her. She asks about bonuses:</p>
+<pre><code class="language-text">retrieve:   docs:fin-bonus@3 (prefilter match, stale)
+live ACL:   docs → Deny for usr_carol
+context:    fin-bonus excluded
+answer:     &quot;I found sources but you don't have access to them.&quot; refused: 1
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-policy.5.html">sb-policy(5)</a>, <a href="sb-connector.3.html">sb-connector(3)</a>, <a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and authorisation</a>, <a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002</a></p><p class="srcline">Source: <code>manual/sb-permissions.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#three-answers">Three answers</a></li><li class="l3"><a href="#the-policy-kernel">The policy kernel</a></li><li class="l3"><a href="#two-layers">Two layers</a></li><li class="l3"><a href="#prefilter-versus-live-check">Prefilter versus live check</a></li><li class="l3"><a href="#what-users-see">What users see</a></li><li class="l3"><a href="#what-operators-see">What operators see</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

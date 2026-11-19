@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="active" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Living documents</h4><a href="../devlog.html">Devlog timeline</a><a href="../living/ASSURANCE_LEDGER.html">Assurance Ledger</a><a href="../living/BUGS_AND_MITIGATIONS.html">Bugs and Mitigations</a><a class="current" href="../living/CHANGELOG.html">Changelog</a><a href="../living/DEVLOG.html">Devlog</a><a href="../living/GLOSSARY.html">Glossary</a><a href="../living/OPEN_QUESTIONS.html">Open Questions</a><a href="../living/RISKS.html">Risks</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / living</div><h1 id="changelog">Changelog</h1>
+<p>All notable changes, in <a href="https://keepachangelog.com/en/1.1.0/">Keep a Changelog</a> style. Releases are named <code>rel_DATE_DIGEST</code>.</p>
+<h2 id="unreleased">Unreleased</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li>Factory seams (SB-114): <code>sb factory status TENANT</code>, custody constants in one place, and the custody lint.</li>
+<li>Policy analysis in CI (SB-112): <code>make policy</code> validates and tenant-scopes every policy; pull requests show a permission diff.</li>
+<li>Policy decisions are audited (SB-111): <code>policy.Kernel</code> records before returning, samples read allows (<code>SB_AUDIT_READ_SAMPLE</code>), and a failed record is <code>Unknown</code>.</li>
+<li>Cedar schema v1 and base policies (SB-110): <code>Document</code>, a tenant on every entity, tenant condition on every permit (BUG-0006).</li>
+<li>Policy kernel (SB-109): <code>policy.Authorise</code>/<code>Require</code> with Allow/Deny/Unknown, a cedar-go adapter (vendored), and the <code>decisions</code> lint.</li>
+<li><code>tenancy.Scope</code> (SB-108): unforgeable request scope, issued only by the auth middleware; CI rule against other issuers; first scoped port (<code>People</code>).</li>
+<li>SCIM 2.0 per cell (SB-107): users and groups, deactivate revokes sessions before responding, groups read at decision time.</li>
+<li>OIDC sign-in per tenant (SB-106): code flow with PKCE, RS256 ID-token checks including the tenant claim, 12-hour sessions re-validated every 60 seconds, and a test IdP.</li>
+<li>Tenant registry and routing (SB-105): Postgres registry adapter (pgx, vendored), cell records with custody, edge router (<code>EPERM</code>/<code>EUNAVAIL</code>/<code>EAUTH</code>/<code>ETENANT</code>), <code>make integration</code> and the <code>postgres</code> CI job.</li>
+<li>ADR-0017 and the module allow-list (<code>tools/deps/allowed.txt</code>, checked by <code>make deps</code>): cedar-go v1.8.0 and pgx v5.8.0 are admitted.</li>
+<li><code>sb tenant apply FILE</code> (SB-104): idempotent, resumable apply with a write-ahead step journal, on the local control plane (<code>--endpoint file:///DIR</code>).</li>
+<li>Cell template (SB-103): <code>internal/core/cell</code>, <code>Placement</code> and <code>Keys</code> ports with envelope keys, adapter contract tests, and a <code>local</code> adapter. ADR-0018 (cloud-neutral cells). The law ratchet accepts per-test lines in <code>laws/expected_red.txt</code>.</li>
+<li><code>sb tenant apply FILE --plan</code> (SB-102): resource-level dry run against the tenant registry, <code>--json</code>; <code>--endpoint file:///DIR</code> for a local registry.</li>
+<li><code>sb tenant check FILE</code> (SB-101): strict manifest parser with <code>file:line:col: field: message</code> errors, <code>--json</code>, and a JSON Schema at <code>examples/tenants/tenant.schema.json</code>.</li>
+<li>W0 build: <code>sb</code> CLI (every command in <code>sb(1)</code>; unbuilt ones exit <code>ENOTIMPL</code>), <code>internal/errs</code> generated from <code>sb-errors(7)</code>, <code>internal/core/ports</code>.</li>
+<li><code>make check</code> gate: generated-code check, lint with the dependency rule, unit, law, smoke and regression tests, evals (mock), example and manual checks, cross-check, CI-rule test and docs.</li>
+<li>Law harness with five laws red for the right reason and self-tests proving the checks.</li>
+<li>Eval harness (<code>python3 -m evals</code>, <code>sb eval run --model mock</code>).</li>
+<li>CI jobs: check, manual-diff, diagrams, proofs (TLC and Alloy, checksum-pinned).</li>
+<li><code>ENOTIMPL</code> error code. ADR-0016 (standard library only in W0).</li>
+<li><code>tools/ci/mutations.py</code>: the 13 model mutation checks, run by <code>make proofs</code>.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><code>tools/ci/proofs.sh</code>: TLC runs from the model directory; Alloy runs each <code>check</code>/<code>run</code> by name (first real run, SB-013).</li>
+<li><code>Rollout.tla</code>: rollback is no longer atomic; revoked cells drain (BUG-0001).</li>
+</ul>
+<h3 id="design-baseline">Design baseline</h3>
+<ul>
+<li>Problem statement, principles, domain model, architecture (17 documents), ADRs, threat model.</li>
+<li>Manual: 32 man pages across sections 1, 3, 5 and 7.</li>
+<li>Plan: 9 epics, 42 stories, 29 slices, 96 tickets in 8 waves.</li>
+<li>Formal models: <code>Approvals.tla</code>, <code>Rollout.tla</code>, <code>Permissions.als</code> (written; TLC and Alloy not yet run).</li>
+<li><code>proofs/crosscheck.py</code>: Python mirror of the three TLA+ models; all invariants hold and every listed mutation is caught.</li>
+<li>Cedar schema and platform base policies, validated against the Cedar validator.</li>
+<li>Examples: manifests, tenant policy, eval suites, a read-only connector.</li>
+<li>Docs site generator <code>tools/site/build.py</code>.</li>
+<li>Factory and hand-off design: ADR-0015, architecture doc 16, <code>sb-factory(7)</code>, LAW-17 and LAW-18, <code>Handoff.tla</code>, epic E08 in wave W7, and v1 seams (SB-114 plus extra acceptance on SB-103, SB-105, SB-401, SB-506, SB-509).</li>
+</ul><p class="srcline">Source: <code>living/CHANGELOG.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#unreleased">Unreleased</a></li><li class="l3"><a href="#added">Added</a></li><li class="l3"><a href="#changed">Changed</a></li><li class="l3"><a href="#design-baseline">Design baseline</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

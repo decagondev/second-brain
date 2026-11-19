@@ -1,0 +1,63 @@
+---
+title: "sb-citations(7)"
+man: "7"
+summary: doc@version, claims, and the uncited label.
+---
+
+# sb-citations(7)
+
+## NAME
+
+sb-citations — what a citation promises, and what uncited means
+
+## SYNOPSIS
+
+```text
+cite   = kind ":" source-id "@" version        e.g.  docs:4f2a9c11@17
+answer = claim*      claim = text (cite+ | uncited)
+```
+
+## DESCRIPTION
+
+### What a citation promises
+
+A citation `docs:4f2a9c11@17` promises three things:
+
+1. the asker could open that document **when the answer was built** (LAW-01);
+2. the cited text came from **version 17** of it;
+3. the chunk was in the context the model was given.
+
+Whether the chunk really *supports* the claim is measured by the citation-faithfulness eval, not promised per answer.
+
+### Uncited
+
+A claim with no valid citation is labelled `uncited` **by code** (LAW-14). It may be correct general knowledge or reasoning, but the platform can't point to a source, so it says so. UIs always style `uncited` claims differently.
+
+### What can't become a citation
+
+- A chunk id the model made up.
+- A chunk that wasn't in the allowed context.
+- A document that was refused (deny or unknown).
+
+These are stripped and logged as `citation_spoof`.
+
+### Versions
+
+Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.
+
+## LAWS
+
+[LAW-01](sb-laws.7.md#law-01), [LAW-14](sb-laws.7.md#law-14).
+
+## EXAMPLES
+
+```text
+Refunds over £500 need a team lead's approval. [1]
+This changed in March. (uncited)
+
+[1] Refund policy · docs:4f2a9c11@17 · "Approvals"
+```
+
+## SEE ALSO
+
+[sb-ask(3)](sb-ask.3.md), [07 Answer composer](../docs/architecture/07-answer-composer.md)

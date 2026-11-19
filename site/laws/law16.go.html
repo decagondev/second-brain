@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>law16.go · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a class="current" href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / laws</div><h1 id="law16go">law16.go</h1>
+<pre><code class="language-go">package laws
+
+import (
+    &quot;context&quot;
+    &quot;fmt&quot;
+    &quot;math/rand&quot;
+    &quot;os&quot;
+    &quot;path/filepath&quot;
+    &quot;reflect&quot;
+    &quot;sort&quot;
+    &quot;strings&quot;
+
+    &quot;example.com/second-brain/internal/adapters/placement/local&quot;
+    &quot;example.com/second-brain/internal/adapters/registry/localfs&quot;
+    &quot;example.com/second-brain/internal/core/apply&quot;
+    &quot;example.com/second-brain/internal/core/cell&quot;
+    &quot;example.com/second-brain/internal/core/manifest&quot;
+    &quot;example.com/second-brain/internal/core/plan&quot;
+    &quot;example.com/second-brain/internal/core/ports&quot;
+)
+
+// LAW-16, manifest side (SB-101): what the manifest says is exactly what is applied.
+// A valid manifest, written in any allowed style, parses to exactly the tenant it
+// describes: nothing dropped, nothing invented. A manifest with a field outside
+// sb-tenant(5) is never applied, so nothing can enter a cell beside the manifest.
+// The plan side (SB-102): the plan is exactly the diff between manifests.
+// The apply side (SB-104): after apply, the recorded state is exactly the manifest.
+// The live side (drift detection, SB-510) is checked when it is built.
+
+// ManifestChecker is the system under test: bytes in, tenant or errors out.
+type ManifestChecker func(src []byte) (manifest.Tenant, []manifest.Diag)
+
+func law16(r *rand.Rand, check ManifestChecker) error {
+    want := genTenant(r)
+    entries := renderTenant(r, want)
+    src := strings.Join(entries, &quot;&quot;)
+    got, ds := check([]byte(src))
+    if len(ds) &gt; 0 {
+        return fmt.Errorf(&quot;valid manifest rejected: %s\n%s&quot;, ds[0].Format(&quot;gen.yaml&quot;), src)
+    }
+    if !reflect.DeepEqual(got, want) {
+        return fmt.Errorf(&quot;manifest says %+v but %+v would be applied\n%s&quot;, want, got, src)
+    }
+
+    // Add one field the manifest may not carry, between two fields.
+    bad := []string{&quot;version&quot;, &quot;platform&quot;, &quot;custody&quot;, &quot;placement&quot;, &quot;key_custodian&quot;,
+        &quot;api_token&quot;, &quot;secret&quot;, &quot;password&quot;, &quot;token&quot;, &quot;key&quot;, &quot;colour&quot;}[r.Intn(11)]
+    at := r.Intn(len(entries) + 1)
+    line := 1
+    for _, e := range entries[:at] {
+        line += strings.Count(e, &quot;\n&quot;)
+    }
+    mutated := strings.Join(entries[:at], &quot;&quot;) + bad + &quot;: x\n&quot; + strings.Join(entries[at:], &quot;&quot;)
+    got, ds = check([]byte(mutated))
+    if !reflect.DeepEqual(got, manifest.Tenant{}) {
+        return fmt.Errorf(&quot;manifest with %q was applied:\n%s&quot;, bad, mutated)
+    }
+    for _, d := range ds {
+        if d.Line == line &amp;&amp; d.Col == 1 &amp;&amp; d.Field == bad {
+            return nil
+        }
+    }
+    return fmt.Errorf(&quot;field %q on line %d not reported at its key; got %v\n%s&quot;, bad, line, ds, mutated)
+}
+
+func genTenant(r *rand.Rand) manifest.Tenant {
+    pick := func(xs []string) string { return xs[r.Intn(len(xs))] }
+    t := manifest.Tenant{
+        Tenant:         pick([]string{&quot;acme-logistics&quot;, &quot;beta-freight&quot;, &quot;gamma-parts&quot;}),
+        Channel:        pick(manifest.Channels),
+        IdP:            pick([]string{&quot;oidc://login.acme.example&quot;, &quot;oidc://id.beta.example/realms/main&quot;, &quot;oidc://sso.gamma.example&quot;}),
+        Region:         pick(manifest.Regions),
+        Connectors:     map[string]string{},
+        Agents:         []string{&quot;ask&quot;},
+        RetentionDays:  manifest.DefaultRetentionDays,
+        BudgetUSDMonth: manifest.DefaultBudgetUSD,
+    }
+    vendors := map[string][]string{&quot;docs&quot;: {&quot;sharepoint&quot;, &quot;confluence&quot;}, &quot;chat&quot;: {&quot;slack&quot;, &quot;teams&quot;},
+        &quot;tickets&quot;: {&quot;jira&quot;, &quot;zendesk&quot;}, &quot;crm&quot;: {&quot;salesforce&quot;, &quot;hubspot&quot;}}
+    for _, k := range manifest.ConnectorKinds {
+        if r.Intn(2) == 0 || len(t.Connectors) == 0 &amp;&amp; k == &quot;crm&quot; {
+            t.Connectors[k] = pick(vendors[k])
+        }
+    }
+    if r.Intn(2) == 0 {
+        t.Agents = append(t.Agents, &quot;draft-reply&quot;)
+        if r.Intn(2) == 0 {
+            t.Agents[0], t.Agents[1] = t.Agents[1], t.Agents[0]
+        }
+    }
+    if r.Intn(2) == 0 {
+        t.Connectors[&quot;tickets&quot;] = pick(vendors[&quot;tickets&quot;])
+        t.Workflows = []string{&quot;ticket-update&quot;}
+        t.Approval = map[string]string{&quot;ticket-update&quot;: pick([]string{&quot;group:it-leads&quot;, &quot;group:ops.managers&quot;})}
+    }
+    if r.Intn(2) == 0 {
+        t.RetentionDays = manifest.MinRetentionDays + r.Intn(manifest.MaxRetentionDays-manifest.MinRetentionDays+1)
+    }
+    if r.Intn(2) == 0 {
+        t.BudgetUSDMonth = 1 + r.Intn(100000)
+    }
+    if r.Intn(2) == 0 {
+        t.PilotGroup = &quot;group:sb-pilot&quot;
+    }
+    if r.Intn(2) == 0 {
+        t.Exclude = map[string][]string{}
+        for k := range t.Connectors {
+            if r.Intn(2) == 0 {
+                t.Exclude[k] = []string{&quot;#hr-*&quot;, &quot;/finance/**&quot;, &quot;#legal-*&quot;}[:1+r.Intn(3)]
+            }
+        }
+        if len(t.Exclude) == 0 {
+            t.Exclude = nil
+        }
+    }
+    return t
+}
+
+// renderTenant writes t as top-level entries (each ending in a newline), in random
+// order and style: flow or block collections, plain or quoted scalars, comments.
+func renderTenant(r *rand.Rand, t manifest.Tenant) []string {
+    sc := func(v string) string {
+        switch r.Intn(3) {
+        case 0:
+            return `&quot;` + v + `&quot;`
+        case 1:
+            return &quot;'&quot; + v + &quot;'&quot;
+        }
+        return v
+    }
+    comment := func() string {
+        if r.Intn(4) == 0 {
+            return &quot;  # note&quot;
+        }
+        return &quot;&quot;
+    }
+    scalar := func(k, v string) string { return k + &quot;: &quot; + sc(v) + comment() + &quot;\n&quot; }
+    list := func(k string, vs []string, quote bool) string {
+        q := func(v string) string {
+            if quote {
+                return `&quot;` + v + `&quot;`
+            }
+            return sc(v)
+        }
+        if r.Intn(2) == 0 {
+            var parts []string
+            for _, v := range vs {
+                parts = append(parts, q(v))
+            }
+            return k + &quot;: [&quot; + strings.Join(parts, &quot;, &quot;) + &quot;]&quot; + comment() + &quot;\n&quot;
+        }
+        indent := []string{&quot;&quot;, &quot;  &quot;}[r.Intn(2)]
+        s := k + &quot;:&quot; + comment() + &quot;\n&quot;
+        for _, v := range vs {
+            s += indent + &quot;- &quot; + q(v) + &quot;\n&quot;
+        }
+        return s
+    }
+    dict := func(k string, m map[string]string) string {
+        ks := sortedKeys(m)
+        if r.Intn(2) == 0 {
+            var parts []string
+            for _, x := range ks {
+                parts = append(parts, x+&quot;: &quot;+m[x])
+            }
+            return k + &quot;: { &quot; + strings.Join(parts, &quot;, &quot;) + &quot; }&quot; + comment() + &quot;\n&quot;
+        }
+        s := k + &quot;:\n&quot;
+        for _, x := range ks {
+            s += &quot;  &quot; + x + &quot;: &quot; + sc(m[x]) + comment() + &quot;\n&quot;
+        }
+        return s
+    }
+    es := []string{
+        scalar(&quot;tenant&quot;, t.Tenant), scalar(&quot;channel&quot;, t.Channel), scalar(&quot;idp&quot;, t.IdP),
+        scalar(&quot;region&quot;, t.Region), dict(&quot;connectors&quot;, t.Connectors), list(&quot;agents&quot;, t.Agents, false),
+    }
+    if t.Workflows != nil {
+        es = append(es, list(&quot;workflows&quot;, t.Workflows, false), dict(&quot;approval&quot;, t.Approval))
+    }
+    if t.RetentionDays != manifest.DefaultRetentionDays || r.Intn(2) == 0 {
+        es = append(es, fmt.Sprintf(&quot;retention_days: %d\n&quot;, t.RetentionDays))
+    }
+    if t.BudgetUSDMonth != manifest.DefaultBudgetUSD || r.Intn(2) == 0 {
+        es = append(es, fmt.Sprintf(&quot;budget_usd_month: %d\n&quot;, t.BudgetUSDMonth))
+    }
+    if t.PilotGroup != &quot;&quot; {
+        es = append(es, scalar(&quot;pilot_group&quot;, t.PilotGroup))
+    }
+    if t.Exclude != nil {
+        s := &quot;exclude:\n&quot;
+        for _, k := range sortedKeys(t.Exclude) {
+            for _, l := range strings.SplitAfter(list(k, t.Exclude[k], true), &quot;\n&quot;) {
+                if l != &quot;&quot; {
+                    s += &quot;  &quot; + l
+                }
+            }
+        }
+        es = append(es, s)
+    }
+    r.Shuffle(len(es), func(i, j int) { es[i], es[j] = es[j], es[i] })
+    return es
+}
+
+func sortedKeys[V any](m map[string]V) []string {
+    ks := make([]string, 0, len(m))
+    for k := range m {
+        ks = append(ks, k)
+    }
+    sort.Strings(ks)
+    return ks
+}
+
+// Planner is the system under test for the plan side of LAW-16 (SB-102).
+type Planner func(t manifest.Tenant, applied []ports.Resource, found bool) (plan.Plan, error)
+
+// law16Plan: the plan is exactly the manifest diff. Enacting the plan on a cell built
+// from one manifest yields the cell of the next; a cell that already matches plans nothing.
+func law16Plan(r *rand.Rand, mk Planner) error {
+    before := genTenant(r)
+    after := genTenant(r)
+    after.Tenant, after.Region = before.Tenant, before.Region // immutable fields stay
+    p, err := mk(after, plan.Desired(before), true)
+    if err != nil {
+        return fmt.Errorf(&quot;plan failed: %v&quot;, err)
+    }
+    if got := plan.Apply(plan.Desired(before), p); !reflect.DeepEqual(got, plan.Desired(after)) {
+        return fmt.Errorf(&quot;enacting the plan gives %v, but the manifest says %v&quot;, got, plan.Desired(after))
+    }
+    if p, err := mk(after, plan.Desired(after), true); err != nil || len(p.Changes) != 0 {
+        return fmt.Errorf(&quot;a cell that matches its manifest plans %v (err %v)&quot;, p.Changes, err)
+    }
+    if p, err := mk(after, nil, false); err != nil || p.Add != len(plan.Desired(after)) || p.Change+p.Remove != 0 {
+        return fmt.Errorf(&quot;a new cell plans %+v (err %v)&quot;, p, err)
+    }
+    return nil
+}
+
+// Applier enacts a manifest against a control plane rooted at a directory (SB-104).
+type Applier func(root string, t manifest.Tenant) (plan.Plan, error)
+
+// NewApplier is the system under test: the real apply engine on the local control plane.
+var NewApplier = func() Applier {
+    return func(root string, t manifest.Tenant) (plan.Plan, error) {
+        reg := localfs.Dir{Root: root}
+        acct := local.Account{Root: filepath.Join(root, &quot;accounts&quot;), Name: cell.PlacementFactoryAccount}
+        d := apply.Deps{Registry: reg, Writer: reg, Journal: reg, Cells: reg, BaseDomain: &quot;sb.localhost&quot;, Placement: acct, Keys: acct}
+        return apply.Run(context.Background(), d, t, nil)
+    }
+}
+
+// law16Apply: after apply, the cell's recorded state is exactly the manifest, and
+// applying the same manifest again changes nothing.
+func law16Apply(r *rand.Rand, root string, run Applier) error {
+    if err := os.MkdirAll(filepath.Join(root, &quot;tenants&quot;), 0o755); err != nil {
+        return err
+    }
+    before := genTenant(r)
+    after := genTenant(r)
+    after.Tenant, after.Region = before.Tenant, before.Region
+    for _, t := range []manifest.Tenant{before, after} {
+        if _, err := run(root, t); err != nil {
+            return fmt.Errorf(&quot;apply failed: %v&quot;, err)
+        }
+    }
+    got, found, err := localfs.Dir{Root: root}.Applied(context.Background(), after.Tenant)
+    if err != nil || !found || !reflect.DeepEqual(got, plan.Desired(after)) {
+        return fmt.Errorf(&quot;after apply the registry holds %v (found %v, err %v), but the manifest says %v&quot;, got, found, err, plan.Desired(after))
+    }
+    if p, err := run(root, after); err != nil || len(p.Changes) != 0 {
+        return fmt.Errorf(&quot;re-applying the same manifest changed %v (err %v)&quot;, p.Changes, err)
+    }
+    return nil
+}
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/law16.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

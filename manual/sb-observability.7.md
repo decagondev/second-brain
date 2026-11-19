@@ -1,0 +1,61 @@
+---
+title: "sb-observability(7)"
+man: "7"
+summary: Metrics, alerts, reports and telemetry rules.
+---
+
+# sb-observability(7)
+
+## NAME
+
+sb-observability — see every tenant's health without seeing its content
+
+## SYNOPSIS
+
+```text
+metrics: latency · errors · freshness · acl_unknown_ratio · model_cost · law_violation_total
+alert:   any law_violation_total > 0  →  Sev-1
+```
+
+## DESCRIPTION
+
+### Per-tenant dashboards
+
+Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per connector, refusals by reason, model spend against budget, active users, and agent run outcomes.
+
+### Alerts
+
+| Alert | Condition | Severity |
+|---|---|---|
+| Any law violation | `law_violation_total{law}` increases | **Sev-1** |
+| Attestation mismatch | running digest ≠ signed | Sev-1 |
+| Audit chain break | `sb audit verify` fails | Sev-1 |
+| Ask latency | p95 > 6 s for 15 min | Sev-2 |
+| Freshness | p95 > 15 min | Sev-2 |
+| Unknown ratio | > 1% for 30 min on a connector | Sev-3 |
+| Budget pace | > 120% | Sev-3 |
+
+Every alert links to a runbook.
+
+### Weekly leadership report
+
+Weekly active users ÷ seats, asks, cited-answer rate, top uncited topics (as counts, never content), drafts and their approve-to-reject ratio, approved actions and receipts, spend. Delivered automatically to the tenant's approver group.
+
+### Telemetry rules
+
+Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07).
+
+## LAWS
+
+[LAW-07](sb-laws.7.md#law-07), all laws via Sev-1 alerts.
+
+## EXAMPLES
+
+```text
+law_violation_total{tenant="acme-logistics",law="LAW-01"} 0
+acl_unknown_ratio{tenant="acme-logistics",connector="chat"} 0.004
+```
+
+## SEE ALSO
+
+[sb-admin(3)](sb-admin.3.md), [15 Observability, backup and DR](../docs/architecture/15-observability-backup-dr.md)

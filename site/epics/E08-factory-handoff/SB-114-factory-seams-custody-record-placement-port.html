@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-114: Factory seams: custody record, placement port, key hierarchy · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a></div><div class="group"><h4>Tickets in E08</h4><a class="current" href="../../epics/E08-factory-handoff/SB-114-factory-seams-custody-record-placement-port.html">SB-114: Factory seams: custody record, placement port, key hierarchy</a><a href="../../epics/E08-factory-handoff/SB-701-final-sb-factory-7-and-the-hand-off-runbook.html">SB-701: Final sb-factory(7) and the hand-off runbook</a><a href="../../epics/E08-factory-handoff/SB-702-factory-roles-and-policies.html">SB-702: Factory roles and policies</a><a href="../../epics/E08-factory-handoff/SB-703-placement-adapter-for-tenant-owned-cloud.html">SB-703: Placement adapter for tenant-owned cloud accounts</a><a href="../../epics/E08-factory-handoff/SB-704-root-key-re-wrap-and-key-custody-transfer.html">SB-704: Root-key re-wrap and key custody transfer</a><a href="../../epics/E08-factory-handoff/SB-705-hand-off-workflow-with-dual-approval.html">SB-705: Hand-off workflow with dual approval</a><a href="../../epics/E08-factory-handoff/SB-706-access-path-enumeration-and-law-17-check.html">SB-706: Access-path enumeration and LAW-17 check</a><a href="../../epics/E08-factory-handoff/SB-707-releases-after-hand-off.html">SB-707: Releases after hand-off</a><a href="../../epics/E08-factory-handoff/SB-708-detach-and-export-package.html">SB-708: Detach and export package</a><a href="../../epics/E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.html">SB-709: Billing and model-provider hand-off</a><a href="../../epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.html">SB-710: Hand-off game day with a friendly tenant</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E08-factory-handoff</div><h1 id="sb-114-factory-seams-custody-record-placement-port-key-hierarchy">SB-114: Factory seams: custody record, placement port, key hierarchy</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E08 Factory and Hand-off</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W1 / S1.2 Cell</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-08.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-factory.7.html"><code>sb-factory(7)</code></a>, <a href="../../manual/sb-tenancy.7.html"><code>sb-tenancy(7)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td><a href="../../manual/sb-laws.7.html#law-18">LAW-18</a></td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="../E01-tenancy-identity/SB-103-cell-template-infrastructure-as-code.html">SB-103</a>, <a href="../E01-tenancy-identity/SB-105-control-plane-tenant-registry-and-cell.html">SB-105</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>In review</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Hand-off is planned for W7; these v1 seams make it a workflow later instead of a migration (ADR-0015).</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Custody fields exist in the registry and in <code>sb factory status</code> output (v1 values only)</li>
+<li class="task done"><span class="box">✓</span>A lint fails any code that reads an account id or key custodian from anywhere but the custody record</li>
+<li class="task done"><span class="box">✓</span><code>sb tenant check</code> rejects <code>custody</code>, <code>placement</code> and <code>key_custodian</code> in a manifest with a pointer to <code>sb-factory(7)</code></li>
+<li class="task done"><span class="box">✓</span>Design note in the devlog listing every seam and its test</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Add custody columns and reader API to the registry</li>
+<li class="task done"><span class="box">✓</span>Define the <code>Placement</code> port with a factory-account adapter only</li>
+<li class="task done"><span class="box">✓</span>Write the custody-field lint</li>
+<li class="task done"><span class="box">✓</span>Manifest rejection messages and golden tests</li>
+<li class="task done"><span class="box">✓</span>Read-only <code>sb factory status</code></li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-18</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: most seams arrived with SB-101 (manifest rejections), SB-103 (<code>Placement</code> and <code>Keys</code> ports, envelope keys) and SB-105 (custody columns and the <code>CellByTenant</code> reader). This ticket adds:
+- the custody constants, defined once in <code>internal/core/cell/custody.go</code>;
+- <code>tools/check/custody.py</code> (in <code>make lint</code>, with a self-test), which refuses account addresses, 12-digit ids and custody literals anywhere else;
+- read-only <code>sb factory status TENANT</code>, with a smoke test;
+- the first LAW-18 law test: every recorded cell names a key custodian, and its root key unwraps its data keys.</p>
+<p>There was no red phase for the law test, because the code it tests already existed. Instead, its self-test shows that a missing custodian and a dead root key are both caught. The seams are listed in the devlog design note.</p>
+<p><strong>Left:</strong> review by the user, and the first green CI run. Hand-off itself is W7.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-114-factory-seams-custody-record-placement-port.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

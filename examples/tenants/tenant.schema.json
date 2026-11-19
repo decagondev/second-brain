@@ -1,0 +1,137 @@
+{
+  "$id": "https://example.com/second-brain/tenant.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "agents": {
+      "contains": {
+        "const": "ask"
+      },
+      "description": "Enabled agents; ask is required.",
+      "items": {
+        "enum": [
+          "ask",
+          "draft-reply"
+        ]
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "approval": {
+      "additionalProperties": {
+        "pattern": "^group:[A-Za-z0-9._-]+$",
+        "type": "string"
+      },
+      "description": "Workflow to approving IdP group.",
+      "propertyNames": {
+        "enum": [
+          "ticket-update"
+        ]
+      },
+      "type": "object"
+    },
+    "budget_usd_month": {
+      "default": 1000,
+      "description": "Monthly model spend cap in USD.",
+      "minimum": 1,
+      "type": "integer"
+    },
+    "channel": {
+      "description": "Release channel; versions are never pinned (ADR-0004).",
+      "enum": [
+        "stable",
+        "testing"
+      ],
+      "type": "string"
+    },
+    "connectors": {
+      "additionalProperties": {
+        "pattern": "^[a-z0-9-]+$",
+        "type": "string"
+      },
+      "description": "Connector kind to vendor. Read-only unless named in workflows.",
+      "minProperties": 1,
+      "propertyNames": {
+        "enum": [
+          "docs",
+          "chat",
+          "tickets",
+          "crm"
+        ]
+      },
+      "type": "object"
+    },
+    "exclude": {
+      "additionalProperties": {
+        "items": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "default": {},
+      "description": "Source paths or channels never ingested, by connector kind.",
+      "propertyNames": {
+        "enum": [
+          "docs",
+          "chat",
+          "tickets",
+          "crm"
+        ]
+      },
+      "type": "object"
+    },
+    "idp": {
+      "description": "OIDC issuer: oidc://ISSUER-HOST[/path].",
+      "pattern": "^oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?$",
+      "type": "string"
+    },
+    "pilot_group": {
+      "description": "If set, only this IdP group may sign in.",
+      "pattern": "^group:[A-Za-z0-9._-]+$",
+      "type": "string"
+    },
+    "region": {
+      "description": "Region pin. Immutable.",
+      "enum": [
+        "eu",
+        "us"
+      ],
+      "type": "string"
+    },
+    "retention_days": {
+      "default": 365,
+      "description": "Retention for traces, citations and drafts (not audit).",
+      "maximum": 3650,
+      "minimum": 30,
+      "type": "integer"
+    },
+    "tenant": {
+      "description": "Tenant name: a DNS label. Immutable.",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$",
+      "type": "string"
+    },
+    "workflows": {
+      "default": [],
+      "description": "At most one approval-gated workflow in v1.",
+      "items": {
+        "enum": [
+          "ticket-update"
+        ]
+      },
+      "maxItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "tenant",
+    "channel",
+    "idp",
+    "region",
+    "connectors",
+    "agents"
+  ],
+  "title": "Second Brain tenant manifest (sb-tenant(5))",
+  "type": "object"
+}

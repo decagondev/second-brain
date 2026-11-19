@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Principles · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a class="current" href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="principles">Principles</h1>
+<p>These are opinions, on purpose. When two good ideas conflict, the principle with the lower number wins.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Principle</th>
+<th>In one line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>Soundness over convenience</td>
+<td>If the platform says it, it holds</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>The manual comes first</td>
+<td>Every feature is a man page before it's code</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>Three lines beat ten</td>
+<td>One obvious way per task</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>Data is not instructions</td>
+<td>Ingested content is untrusted input</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>The model is userspace</td>
+<td>Policy is the kernel; the model proposes, code disposes</td>
+</tr>
+<tr>
+<td>P6</td>
+<td>SOLID and modular</td>
+<td>The core depends on ports, never on a vendor or a company</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>Boring at scale</td>
+<td>One trunk, one template, one release train, drills for everything</td>
+</tr>
+<tr>
+<td>P8</td>
+<td>Evidence by default</td>
+<td>If it isn't in the audit log, it didn't happen through us</td>
+</tr>
+</tbody>
+</table>
+<h2 id="p1-soundness-over-convenience">P1: Soundness over convenience</h2>
+<p>The platform makes four kinds of claim: <em>you may see this</em>, <em>this is from that document version</em>, <em>this stayed inside your tenant</em>, and <em>this action ran</em>. Each one is either true or not made.</p>
+<ul>
+<li>An unknown permission result is a refusal (<code>EPERM</code>), never a pass. That includes timeouts, missing sources and connector errors.</li>
+<li>An answer with nothing to cite is labelled <code>uncited</code> <strong>by code</strong>, not by asking the model to say so.</li>
+<li>An action is "ran" only with a receipt from the target. The model's claim that it did something counts for nothing.</li>
+<li>When soundness costs latency, we pay the latency and then optimise. We never cache an <em>allow</em> across requests (ADR-0002).</li>
+</ul>
+<h2 id="p2-the-manual-comes-first">P2: The manual comes first</h2>
+<p>This is the UNIX way: write the man page, then make the program match it.</p>
+<ul>
+<li>Every feature starts as a change to <code>manual/</code>. Review the page, then write the code.</li>
+<li>A PR that changes behaviour without changing <code>manual/</code> is incomplete, and CI rejects it (SB-007). A labelled override exists for pure refactors.</li>
+<li>Manual examples tagged <code>run</code> are extracted and executed in CI, so the manual can't lie (SB-009).</li>
+</ul>
+<h2 id="p3-three-lines-beat-ten">P3: Three lines beat ten</h2>
+<p>If three lines of config, CLI or code do the job well, ten lines is a defect.</p>
+<ul>
+<li><strong>One</strong> manifest per tenant. <strong>Three</strong> onboarding verbs: <code>check</code>, <code>apply</code>, <code>verify</code>. <strong>Four</strong> connector calls: <code>fetch</code>, <code>acl</code>, <code>changes</code>, <code>act</code>.</li>
+<li>Convention over configuration: connector credentials live at a fixed vault path, so the manifest never mentions secrets.</li>
+<li>No per-company code paths. If a company needs something, it becomes a manifest field for everyone, or it doesn't happen.</li>
+<li>Names are greppable and say what they do: <code>sb tenant verify</code>, <code>EPERM</code>, <code>LAW-03</code>, <code>doc@version</code>.</li>
+<li>Formats are friendly to humans, LLMs and scripts alike: YAML for files, JSON for APIs, NDJSON for logs, stable error codes everywhere.</li>
+</ul>
+<h2 id="p4-data-is-not-instructions">P4: Data is not instructions</h2>
+<p>Every document, message and ticket is written by someone who isn't our user, and some of it will be hostile.</p>
+<ul>
+<li>Ingested text is sanitised, flagged and wrapped as quoted data before it reaches a prompt (<code>sb-ingest(7)</code>).</li>
+<li>Content can never cause a tool call. Only the user's request can, and only through the tool bus (LAW-09).</li>
+<li>Provenance travels with every chunk, so a citation can always show where text came from.</li>
+</ul>
+<h2 id="p5-the-model-is-userspace">P5: The model is userspace</h2>
+<p>Think of the policy engine as the kernel and the model as a user process.</p>
+<ul>
+<li>Every tool call goes through one path: kill-switch check, <code>authorise</code>, audit row, approval check, execute (<code>sb-agents(7)</code>).</li>
+<li>The model sees only chunks that passed live authorisation. It can't widen its own context.</li>
+<li>Prompts, tool definitions and the model version are pinned in the release bundle. A prompt change is a release (SB-503).</li>
+</ul>
+<h2 id="p6-solid-and-modular">P6: SOLID and modular</h2>
+<ul>
+<li><strong>Single responsibility.</strong> Each package has one job, named for it: <code>policy</code>, <code>audit</code>, <code>retrieve</code>, <code>compose</code>.</li>
+<li><strong>Open/closed.</strong> New sources, IdPs and models are new adapters. The core doesn't change.</li>
+<li><strong>Liskov.</strong> Every connector passes the same contract kit. If it passes, it's substitutable.</li>
+<li><strong>Interface segregation.</strong> Ports are small. <code>Connector</code> has four methods, not forty.</li>
+<li><strong>Dependency inversion.</strong> <code>internal/core</code> depends only on <code>internal/core/ports</code>. Adapters depend on the core, never the reverse. CI enforces this (SB-008).</li>
+</ul>
+<h2 id="p7-boring-at-scale">P7: Boring at scale</h2>
+<ul>
+<li>One trunk, one cell template, one release train. Tenants choose a <strong>channel</strong> (<code>stable</code> or <code>testing</code>), never a version.</li>
+<li>No tenant is more than one release behind stable (LAW-08).</li>
+<li>Reproducible, signed builds with an SBOM. A CVE fix is a rebuild that every tenant takes.</li>
+<li>Managed services over self-run ones. No Kubernetes in v1 (ADR-0011).</li>
+<li>Drills, not hopes: kill switches every release, rollback every release, restore monthly, index rebuild on a schedule.</li>
+</ul>
+<h2 id="p8-evidence-by-default">P8: Evidence by default</h2>
+<ul>
+<li>Every tool call writes an audit row <strong>before</strong> it executes (LAW-04). The log is append-only and hash-chained (LAW-11).</li>
+<li>Every decision records its reason: which policy, which release, which model.</li>
+<li>Every bug gets a root cause and the name of the law or test that now catches it (<code>living/BUGS_AND_MITIGATIONS.md</code>).</li>
+</ul>
+<h2 id="consequences-we-accept">Consequences we accept</h2>
+<ul>
+<li>Some answers will be refused because a source was slow. That is correct behaviour, and the fix is a better connector.</li>
+<li>Onboarding a company with an unusual system waits for a connector that passes the contract kit. We won't add a special case.</li>
+<li>The first agent can't send anything by itself. That's a feature.</li>
+</ul>
+<h2 id="see-also">See also</h2>
+<p><a href="00-problem-statement.html">Problem statement</a> · <a href="06-engineering-standards.html">Engineering standards</a> · <a href="adr/README.html">ADRs</a></p><p class="srcline">Source: <code>docs/01-principles.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#p1-soundness-over-convenience">P1: Soundness over convenience</a></li><li class="l2"><a href="#p2-the-manual-comes-first">P2: The manual comes first</a></li><li class="l2"><a href="#p3-three-lines-beat-ten">P3: Three lines beat ten</a></li><li class="l2"><a href="#p4-data-is-not-instructions">P4: Data is not instructions</a></li><li class="l2"><a href="#p5-the-model-is-userspace">P5: The model is userspace</a></li><li class="l2"><a href="#p6-solid-and-modular">P6: SOLID and modular</a></li><li class="l2"><a href="#p7-boring-at-scale">P7: Boring at scale</a></li><li class="l2"><a href="#p8-evidence-by-default">P8: Evidence by default</a></li><li class="l2"><a href="#consequences-we-accept">Consequences we accept</a></li><li class="l2"><a href="#see-also">See also</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

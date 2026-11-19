@@ -1,0 +1,7 @@
+tools/vendor/
+*.tlc/
+states/
+__pycache__/
+.DS_Store
+bin/
+tools/check/node_modules/

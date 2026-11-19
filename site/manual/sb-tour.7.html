@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-tour(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="active" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a class="current" href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-TOUR(7)</span><span>Second Brain Manual</span><span>SB-TOUR(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-tour7">sb-tour(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-tour — a guided walk through Second Brain</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-sh">sb tenant check acme.yaml &amp;&amp; sb tenant apply acme.yaml &amp;&amp; sb tenant verify acme.yaml
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>This tour follows one company, <code>acme-logistics</code>, from an empty manifest to its first approved action. Each step links to the page that specifies it.</p>
+<h3 id="1-write-the-manifest">1. Write the manifest</h3>
+<p>One file describes the whole tenant (<a href="sb-tenant.5.html">sb-tenant(5)</a>):</p>
+<pre><code class="language-yaml">tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack }
+agents: [ask]
+pilot_group: group:sb-pilot
+</code></pre>
+<p>Six lines and an optional seventh. There are no secrets: connector credentials go into the vault at <code>vault://tenants/acme-logistics/connectors/docs</code> and <code>…/chat</code>, once. There's no version: <code>channel: stable</code> means "the current stable release, always".</p>
+<h3 id="2-check-it">2. Check it</h3>
+<pre><code class="language-text">$ sb tenant check acme.yaml
+ok
+</code></pre>
+<p>Mistakes come back like compiler errors, with file, line, column and a fix (<a href="sb-tenant.1.html">sb-tenant(1)</a>).</p>
+<h3 id="3-apply-it">3. Apply it</h3>
+<pre><code class="language-text">$ sb tenant apply acme.yaml
++ cell acme-logistics (region eu)     database, index, vault ns, kms key, queue
++ connector docs (sharepoint, read-only)
++ connector chat (slack, read-only)
++ agent ask
+applied in 22m14s
+</code></pre>
+<p>The cell is yours alone: its own database, index, keys and region (<a href="sb-tenancy.7.html">sb-tenancy(7)</a>). Sign-in uses your IdP; users and groups arrive over SCIM (<a href="sb-identity.7.html">sb-identity(7)</a>).</p>
+<h3 id="4-wait-for-the-first-sync">4. Wait for the first sync</h3>
+<p>Connectors pull documents and messages, read-only. Every chunk gets a provenance tag and suspicious, instruction-like text is flagged as data (<a href="sb-ingest.7.html">sb-ingest(7)</a>).</p>
+<h3 id="5-ask">5. Ask</h3>
+<p>A pilot user asks in chat: <em>"What's our refund approval limit?"</em></p>
+<pre><code class="language-text">Refunds over £500 need a team lead's approval. [1]
+This changed in March. (uncited)
+
+[1] Refund policy · docs:4f2a9c11@17 · &quot;Approvals&quot;
+</code></pre>
+<p>Behind that answer:</p>
+<ul>
+<li>retrieval searched <strong>only</strong> this tenant's index;</li>
+<li>every candidate document was checked <strong>live</strong> with the source: "can this user open this, right now?" (<a href="sb-permissions.7.html">sb-permissions(7)</a>);</li>
+<li>anything uncertain was dropped. Unknown means no;</li>
+<li>the model proposed citations, and code kept only those pointing at allowed chunks;</li>
+<li>the second sentence had no support, so code labelled it <code>uncited</code> (<a href="sb-citations.7.html">sb-citations(7)</a>).</li>
+</ul>
+<h3 id="6-verify-the-laws-on-your-own-data">6. Verify the laws on your own data</h3>
+<pre><code class="language-text">$ sb tenant verify acme.yaml
+LAW-01  pass   LAW-02  pass   LAW-03  pass   LAW-14  pass   evals  pass
+</code></pre>
+<p>These are the platform's guarantees (<a href="sb-laws.7.html">sb-laws(7)</a>), checked on your real users and documents without printing any content.</p>
+<h3 id="7-draft">7. Draft</h3>
+<p>Add <code>draft-reply</code> to <code>agents</code>, apply, and staff can ask for a cited draft reply to a ticket or thread. The platform never sends it. A person does (<a href="sb-agents.7.html">sb-agents(7)</a>).</p>
+<h3 id="8-approve-an-action">8. Approve an action</h3>
+<p>From day 46, add one gated workflow:</p>
+<pre><code class="language-yaml">workflows: [ticket-update]
+approval: { ticket-update: group:it-leads }
+</code></pre>
+<p>Now an agent can propose a ticket update. An IT lead sees the exact payload and target, then approves <strong>that payload's hash</strong>. The executor runs it once, and it's <code>Ran</code> only when the ticket system returns a receipt (<a href="sb-approvals.7.html">sb-approvals(7)</a>). Every step was written to the audit log first (<a href="sb-audit.7.html">sb-audit(7)</a>).</p>
+<h3 id="9-stop-it">9. Stop it</h3>
+<p>Something looks wrong:</p>
+<pre><code class="language-sh">sb kill agent draft-reply --tenant acme-logistics --reason &quot;drafts quoting old policy&quot;
+</code></pre>
+<p>Within 10 seconds, nothing new starts (<a href="sb-kill-switches.7.html">sb-kill-switches(7)</a>).</p>
+<h3 id="10-stay-current">10. Stay current</h3>
+<p>You never upgrade. New releases pass the eval gate, roll through rings and reach <code>stable</code>; no tenant is ever more than one release behind (<a href="sb-release.7.html">sb-release(7)</a>).</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-onboarding.7.html">sb-onboarding(7)</a> for the full day 0 to 90 runbook. <a href="../docs/architecture/00-overview.html">Architecture overview</a> for how it works.</p><p class="srcline">Source: <code>manual/sb-tour.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#1-write-the-manifest">1. Write the manifest</a></li><li class="l3"><a href="#2-check-it">2. Check it</a></li><li class="l3"><a href="#3-apply-it">3. Apply it</a></li><li class="l3"><a href="#4-wait-for-the-first-sync">4. Wait for the first sync</a></li><li class="l3"><a href="#5-ask">5. Ask</a></li><li class="l3"><a href="#6-verify-the-laws-on-your-own-data">6. Verify the laws on your own data</a></li><li class="l3"><a href="#7-draft">7. Draft</a></li><li class="l3"><a href="#8-approve-an-action">8. Approve an action</a></li><li class="l3"><a href="#9-stop-it">9. Stop it</a></li><li class="l3"><a href="#10-stay-current">10. Stay current</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

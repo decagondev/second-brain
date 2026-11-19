@@ -1,0 +1,7 @@
+# Canned mock responses, keyed by case id. A list means one response per run.
+smoke-001:
+  - { cites: ["docs:refund-policy@17"], uncited: 1, claims: [{ cites: ["docs:refund-policy@17"], support: 0.97 }], text: "Refunds over £500 need a team lead's approval." }
+  - { cites: ["docs:refund-policy@17"], uncited: 0, claims: [{ cites: ["docs:refund-policy@17"], support: 0.93 }], text: "Refunds over £500 need approval." }
+  - { cites: ["docs:refund-policy@17"], uncited: 1, claims: [{ cites: ["docs:refund-policy@17"], support: 0.95 }], text: "Team lead approval above £500." }
+smoke-002: { cites: [], uncited: 0, notice: no_access, text: "I found sources but you don't have access to them." }
+smoke-003: { cites: ["docs:onboarding@4"], tool_calls: 0, text: "The guide covers accounts, laptops and first-week training." }

@@ -1,0 +1,12 @@
+# Day 46+: everyone, drafts, and one approval-gated workflow.
+tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack, tickets: jira }
+agents: [ask, draft-reply]
+workflows: [ticket-update]
+approval: { ticket-update: group:it-leads }
+retention_days: 365
+budget_usd_month: 1500
+exclude: { chat: ["#hr-*", "#legal-*", "#board"] }

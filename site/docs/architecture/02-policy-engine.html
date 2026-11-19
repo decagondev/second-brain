@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 Policy Engine · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="active" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../../docs/README.html">Design</a><a href="../../docs/00-problem-statement.html">Problem Statement</a><a href="../../docs/01-principles.html">Principles</a><a href="../../docs/02-domain-model.html">Domain Model</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../../docs/05-living-documents.html">Living Documents</a><a href="../../docs/06-engineering-standards.html">Engineering Standards</a><a href="../../docs/07-threat-model.html">Threat Model</a></div><div class="group"><h4>Architecture</h4><a href="../../docs/architecture/00-overview.html">Architecture Overview</a><a href="../../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a class="current" href="../../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../../docs/architecture/03-connectors.html">03 Connectors</a><a href="../../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../../docs/adr/README.html">Decision Records</a><a href="../../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a></div><div class="group"><h4>Proofs and policy</h4><a href="../../policy/README.html">Policy</a><a href="../../proofs/README.html">Proofs</a><a href="../../policy/platform/base.cedar.html">base.cedar</a><a href="../../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../../proofs/crosscheck.py.html">crosscheck.py</a><a href="../../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../../evals/README.html">Evals</a><a href="../../evals/__main__.py.html">__main__.py</a><a href="../../evals/checks.py.html">checks.py</a><a href="../../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../../evals/gate.yaml.html">gate.yaml</a><a href="../../evals/runner.py.html">runner.py</a><a href="../../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../../evals/targets.py.html">targets.py</a><a href="../../evals/tests/test_checks.py.html">test_checks.py</a><a href="../../laws/README.html">Laws</a><a href="../../laws/checks.go.html">checks.go</a><a href="../../laws/law02cell.go.html">law02cell.go</a><a href="../../laws/law02policy.go.html">law02policy.go</a><a href="../../laws/law02route.go.html">law02route.go</a><a href="../../laws/law02scope.go.html">law02scope.go</a><a href="../../laws/law02token.go.html">law02token.go</a><a href="../../laws/law03policy.go.html">law03policy.go</a><a href="../../laws/law04policy.go.html">law04policy.go</a><a href="../../laws/law12.go.html">law12.go</a><a href="../../laws/law16.go.html">law16.go</a><a href="../../laws/law18.go.html">law18.go</a><a href="../../laws/laws_test.go.html">laws_test.go</a><a href="../../laws/prop.go.html">prop.go</a><a href="../../laws/selftest_test.go.html">selftest_test.go</a><a href="../../laws/system.go.html">system.go</a><a href="../../laws/world.go.html">world.go</a><a href="../../tests/regress/README.html">Regression tests</a><a href="../../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../../tests/smoke/README.html">Smoke tests</a><a href="../../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / docs/architecture</div><h1 id="02-policy-engine">02 Policy engine</h1>
+<p><strong>Job:</strong> answer <em>may principal do action on resource, given context?</em> for every read and every tool call, with a reason, and treat anything uncertain as no.</p>
+<h2 id="one-call">One call</h2>
+<pre><code class="language-go">// package policy
+type Decision int
+const (
+    Allow Decision = iota + 1   // zero value is not Allow
+    Deny
+    Unknown
+)
+
+type Result struct {
+    Decision  Decision
+    Reason    string     // human-readable, safe to show
+    PolicyIDs []string   // which Cedar policies matched
+    Source    SourceVerdict // what the live acl call said, if any
+}
+
+func (e *Engine) Authorise(ctx context.Context, s tenancy.Scope, a Action, r Resource) Result
+
+// Require is the only helper callers should use.
+func Require(res Result) error // nil only for Allow; Deny and Unknown both return EPERM
+</code></pre>
+<p>The zero value of <code>Decision</code> is invalid, so a forgotten assignment can't read as <code>Allow</code>. A custom lint fails any <code>switch</code> on <code>Decision</code> without an explicit <code>Unknown</code> branch (SB-109).</p>
+<h2 id="two-layers-both-must-agree">Two layers, both must agree</h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+    REQ[&quot;authorise(p, a, r)&quot;] --&gt; CEDAR{&quot;Cedar policy&lt;br/&gt;(platform + tenant)&quot;}
+    CEDAR -- forbid / no permit --&gt; DENY[&quot;Deny&quot;]
+    CEDAR -- permit --&gt; NEED{&quot;resource has&lt;br/&gt;a source ACL?&quot;}
+    NEED -- no --&gt; ALLOW[&quot;Allow&quot;]
+    NEED -- yes --&gt; LIVE{&quot;connector.ACL(user, doc)&lt;br/&gt;live, with deadline&quot;}
+    LIVE -- allow --&gt; ALLOW
+    LIVE -- deny --&gt; DENY
+    LIVE -- &quot;unknown / timeout / 404 / error&quot; --&gt; UNK[&quot;Unknown&quot;]
+    UNK --&gt; REFUSE[&quot;caller refuses: EPERM&quot;]
+    DENY --&gt; REFUSE
+</pre></div>
+<ol>
+<li><strong>Platform and tenant policy (Cedar).</strong> Who may use which agent, which tool, which workflow; separation of duties; tenant scope on every permit.</li>
+<li><strong>Source permission (live).</strong> For anything that came from a source, the source decides, at read time. The index's ACL copy only narrows candidates (ADR-0002).</li>
+</ol>
+<h2 id="policy-files">Policy files</h2>
+<pre><code class="language-cedar">// platform base: every permit is scoped to the principal's own tenant
+permit (principal, action == Action::&quot;read&quot;, resource)
+when { principal.tenant == resource.tenant };
+
+// separation of duties: nobody approves their own consequential action
+forbid (principal, action == Action::&quot;approve&quot;, resource)
+when { resource.requester == principal };
+</code></pre>
+<p>Tenant policies live in the tenant's config folder and are validated against <code>policy/schema.cedarschema</code> in CI (SB-110, SB-112). See <a href="../../manual/sb-policy.5.html"><code>sb-policy(5)</code></a>.</p>
+<h2 id="decision-audit">Decision audit</h2>
+<p>Every decision on a tool call is written to the audit log with principal, action, resource, decision, reason, policy ids and release id. Read decisions are sampled, but every <strong>refusal</strong> is kept, because refusals are how we find broken connectors (SB-111).</p>
+<h2 id="failure-modes">Failure modes</h2>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cedar evaluation error</td>
+<td><code>Unknown</code>, so the caller refuses</td>
+</tr>
+<tr>
+<td>Connector <code>ACL</code> slow</td>
+<td>Deadline (default 800 ms) then <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Policy file invalid</td>
+<td>Release blocked in CI; a running cell never loads an unvalidated policy</td>
+</tr>
+<tr>
+<td>Unknown rate above 1% for a connector</td>
+<td>Alert; fix the connector, never relax the rule</td>
+</tr>
+</tbody>
+</table>
+<h2 id="laws">Laws</h2>
+<p><a href="../../manual/sb-laws.7.html#law-01">LAW-01</a> · <a href="../../manual/sb-laws.7.html#law-02">LAW-02</a> · <a href="../../manual/sb-laws.7.html#law-03">LAW-03</a>. Modelled in <a href="../../proofs/alloy/Permissions.als.html"><code>proofs/alloy/Permissions.als</code></a>.</p>
+<h2 id="tickets">Tickets</h2>
+<p>SB-109 to SB-112, SB-302. Manual: <a href="../../manual/sb-permissions.7.html"><code>sb-permissions(7)</code></a>, <a href="../../manual/sb-policy.5.html"><code>sb-policy(5)</code></a>.</p><p class="srcline">Source: <code>docs/architecture/02-policy-engine.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#one-call">One call</a></li><li class="l2"><a href="#two-layers-both-must-agree">Two layers, both must agree</a></li><li class="l2"><a href="#policy-files">Policy files</a></li><li class="l2"><a href="#decision-audit">Decision audit</a></li><li class="l2"><a href="#failure-modes">Failure modes</a></li><li class="l2"><a href="#laws">Laws</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

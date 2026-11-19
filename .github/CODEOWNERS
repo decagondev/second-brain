@@ -1,0 +1,11 @@
+# Replace these placeholder teams with your organisation's teams before enabling branch protection.
+# Two reviewers, one from security, for the trust layer.
+/internal/core/policy/     @platform-leads @security-reviewers
+/internal/core/audit/      @platform-leads @security-reviewers
+/internal/core/toolbus/    @platform-leads @security-reviewers
+/internal/core/approvals/  @platform-leads @security-reviewers
+/internal/core/actions/    @platform-leads @security-reviewers
+/internal/core/release/    @platform-leads @security-reviewers
+/proofs/                   @platform-leads @security-reviewers
+/evals/gate.yaml           @platform-leads @security-reviewers
+/policy/                   @platform-leads @security-reviewers

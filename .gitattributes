@@ -1,0 +1,4 @@
+# Keep LF everywhere: the Makefile and tools/ci/*.sh run in WSL (CLAUDE.md).
+* text=auto eol=lf
+*.tar.gz binary
+*.jar binary
