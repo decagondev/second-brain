@@ -44,3 +44,8 @@ h2.question { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
 form.ask { display: grid; gap: 0.5rem; margin-top: 1.5rem; }
 textarea { font: inherit; padding: 0.5rem; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
 button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: start; }
+.feedback { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.feedback button[aria-pressed="true"] { outline: 2px solid var(--accent); font-weight: 700; }
+.feedback input, .feedback select { font: inherit; min-height: 44px; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
+.feedback-status { flex-basis: 100%; color: var(--muted); margin: 0; }
+

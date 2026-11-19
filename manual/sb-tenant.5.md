@@ -82,7 +82,7 @@ A manifest is one YAML document in a strict subset of YAML. The parser keeps the
 | Plain, `'single'` and `"double"` quoted scalars | Block scalars (literal and folded) and multi-line scalars |
 | `#` comments | Duplicate keys |
 
-The same Go types that drive the checker generate a JSON Schema, published as `examples/tenants/tenant.schema.json` for editors. A test fails if the published file is out of date.
+The same Go types that drive the checker generate a JSON Schema, published as [`examples/tenants/tenant.schema.json`](../examples/tenants/tenant.schema.json) for editors. A test fails if the published file is out of date.
 
 ## EXIT STATUS / ERRORS
 

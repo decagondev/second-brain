@@ -11,7 +11,7 @@ Every example here is referenced from the manual, and CI checks them (SB-009): v
 |---|---|---|
 | [tenants/pilot.yaml](tenants/pilot.yaml) | Day 0–14 pilot manifest | [sb-tenant(5)](../manual/sb-tenant.5.md) |
 | [tenants/full.yaml](tenants/full.yaml) | Day 46+ manifest with one gated workflow | [sb-tenant(5)](../manual/sb-tenant.5.md) |
-| `tenants/tenant.schema.json` | JSON Schema for editors, generated from the checker's types | [sb-tenant(5)](../manual/sb-tenant.5.md) |
+| [tenants/tenant.schema.json](tenants/tenant.schema.json) | JSON Schema for editors, generated from the checker's types | [sb-tenant(5)](../manual/sb-tenant.5.md) |
 | [tenants/invalid.yaml](tenants/invalid.yaml) | Every common mistake, and [the errors `check` prints](tenants/invalid.expected) | [sb-tenant(1)](../manual/sb-tenant.1.md) |
 | [policies/acme-logistics.cedar](policies/acme-logistics.cedar) | Tenant policies that narrow platform policy | [sb-policy(5)](../manual/sb-policy.5.md) |
 | [evals/permission.yaml](evals/permission.yaml) | Permission suite, including a stale prefilter and an injected timeout | [sb-eval(5)](../manual/sb-eval.5.md) |

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Feedback (S3.7: SB-310): `POST /v1/feedback` stores ratings, wrong-citation reports and comments against the trace, asker only; a weekly JSON-lines export with no question or answer text; Helpful/Not helpful controls in the web UI.
 - Citation-faithfulness eval (S3.6: SB-309): a strict lexical support scorer, a local eval cell running the real ask path over fixture worlds, the shared `citation` suite and per-tenant golden questions in `tenants/<name>/evals/`, all in `make evals`.
 - Slack `/ask` (S3.5: SB-308): signed and workspace-checked requests, one-active-user identity mapping by email, ephemeral answers through `response_url`, and a Share button that posts citation links only.
 - Web chat UI (S3.4: SB-307): React, Vite and TypeScript, served by the cell at `/` with a self-only CSP; citation chips, an "Uncited" label, notices, and axe-checked accessibility. `make web` and a CI `web` job.

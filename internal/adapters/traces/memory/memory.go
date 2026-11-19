@@ -5,16 +5,19 @@ package memory
 import (
 	"context"
 	"errors"
+	"sort"
 	"sync"
+	"time"
 
 	"example.com/second-brain/internal/core/ask"
 )
 
 // Store is safe for concurrent use.
 type Store struct {
-	mu     sync.Mutex
-	traces map[string]ask.Trace
-	convs  map[string]conv
+	mu       sync.Mutex
+	traces   map[string]ask.Trace
+	convs    map[string]conv
+	feedback map[string]ask.Feedback // tenant/trace
 }
 
 type conv struct {
@@ -23,7 +26,9 @@ type conv struct {
 }
 
 // New returns an empty store.
-func New() *Store { return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}} }
+func New() *Store {
+	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{}}
+}
 
 // PutTrace implements ask.Store.
 func (s *Store) PutTrace(_ context.Context, t ask.Trace) error {
@@ -70,4 +75,28 @@ func (s *Store) AppendQuestion(_ context.Context, tenant, user, id, q string) er
 	c.questions = append(c.questions, q)
 	s.convs[id] = c
 	return nil
+}
+
+// PutFeedback implements ask.FeedbackStore; a later feedback on a trace replaces it.
+func (s *Store) PutFeedback(_ context.Context, f ask.Feedback) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.feedback[f.Tenant+"/"+f.Trace] = f
+	return nil
+}
+
+// FeedbackBetween implements ask.FeedbackStore: the tenant's feedback in [from, to), oldest first.
+func (s *Store) FeedbackBetween(_ context.Context, tenant string, from, to time.Time) ([]ask.Feedback, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []ask.Feedback
+	for _, f := range s.feedback {
+		if f.Tenant == tenant && !f.At.Before(from) && f.At.Before(to) {
+			out = append(out, f)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At) || (out[i].At.Equal(out[j].At) && out[i].Trace < out[j].Trace)
+	})
+	return out, nil
 }

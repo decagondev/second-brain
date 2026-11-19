@@ -24,17 +24,45 @@ type Asker interface {
 	Trace(ctx context.Context, s tenancy.Scope, id string) (ask.Trace, error)
 }
 
+// FeedbackGiver stores feedback on a trace (SB-310).
+type FeedbackGiver interface {
+	Give(ctx context.Context, s tenancy.Scope, req ask.FeedbackRequest) error
+}
+
 // Ask serves POST /v1/ask and GET /v1/traces/{id} (sb-ask(3)).
 type Ask struct {
-	Agent   Asker
-	Release string
-	NewID   func(prefix string) string // trace ids for errors before an answer exists
+	Agent    Asker
+	Feedback FeedbackGiver // nil: POST /v1/feedback is not mounted
+	Release  string
+	NewID    func(prefix string) string // trace ids for errors before an answer exists
 }
 
 // Register mounts the endpoints on mux.
 func (h Ask) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/ask", h.ask)
 	mux.HandleFunc("GET /v1/traces/{id}", h.trace)
+	if h.Feedback != nil {
+		mux.HandleFunc("POST /v1/feedback", h.feedback)
+	}
+}
+
+func (h Ask) feedback(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		h.fail(w, "", errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	var req ask.FeedbackRequest
+	body, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	if err != nil || len(body) > MaxBody || json.Unmarshal(body, &req) != nil {
+		h.fail(w, "", errs.New(errs.EINVAL, "The request body must be JSON with a trace and a rating."))
+		return
+	}
+	if err := h.Feedback.Give(r.Context(), s, req); err != nil {
+		h.fail(w, req.Trace, mapErr(err))
+		return
+	}
+	h.ok(w, req.Trace, map[string]any{"trace": req.Trace, "stored": true})
 }
 
 type traceBody struct {

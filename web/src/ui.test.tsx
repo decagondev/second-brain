@@ -3,6 +3,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { AnswerView } from "./Answer";
 import { App } from "./App";
+import { FeedbackBar } from "./Feedback";
 import type { AskResponse, Claim, Fetch } from "./api";
 
 afterEach(cleanup);
@@ -130,3 +131,37 @@ describe("conversation", () => {
     expect(JSON.parse(bodies[1]!)).toEqual({ question: "two", conversation: "cv_1" });
   });
 });
+
+describe("feedback", () => {
+  it("sends the rating, wrong citation and comment against the trace", async () => {
+    const sent: unknown[] = [];
+    const fetcher: Fetch = async (url, init) => {
+      if (url === "/v1/feedback") {
+        sent.push(JSON.parse(String(init?.body)));
+        return new Response(JSON.stringify({ trace: "tr_1", stored: true }), { status: 200 });
+      }
+      return new Response(JSON.stringify(response([cited, uncited])), { status: 200 });
+    };
+    const { container } = render(<App fetcher={fetcher} />);
+    fireEvent.change(screen.getByLabelText("Ask a question"), { target: { value: "refund limit?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    });
+    fireEvent.change(screen.getByLabelText("Wrong citation"), { target: { value: "docs:4f2a9c11@17" } });
+    fireEvent.change(screen.getByLabelText("Comment"), { target: { value: " cites the old policy " } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Not helpful" }));
+    });
+    expect(sent).toEqual([{ trace: "tr_1", rating: "down", wrong_citation: "docs:4f2a9c11@17", comment: "cites the old policy" }]);
+    expect(screen.getByRole("status").textContent).toMatch(/saved/);
+    expect(screen.getByRole("button", { name: "Not helpful" }).getAttribute("aria-pressed")).toBe("true");
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("offers only cited claims' citations as wrong", () => {
+    render(<FeedbackBar answer={response([cited, { ...uncited, cites: [{ cite: "docs:x@1", span: [0, 1], flags: [] }] }])} />);
+    const options = Array.from(screen.getByLabelText("Wrong citation").querySelectorAll("option")).map((o) => o.value);
+    expect(options).toEqual(["", "docs:4f2a9c11@17"]);
+  });
+});
+

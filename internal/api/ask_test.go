@@ -178,3 +178,29 @@ func TestContractMatchesManPage(t *testing.T) {
 		}
 	}
 }
+
+type fakeFeedback struct{ err error }
+
+func (f fakeFeedback) Give(context.Context, tenancy.Scope, ask.FeedbackRequest) error { return f.err }
+
+func TestFeedbackEndpoint(t *testing.T) {
+	post := func(fb FeedbackGiver, body string) *httptest.ResponseRecorder {
+		mux := http.NewServeMux()
+		Ask{Agent: &fakeAgent{}, Feedback: fb, Release: "rel_x"}.Register(mux)
+		req := httptest.NewRequest("POST", "/v1/feedback", strings.NewReader(body))
+		s, _ := tenancy.NewIssuer("acme-logistics").Issue("acme-logistics", "alice", nil)
+		req = req.WithContext(tenancy.WithScope(req.Context(), s))
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		return w
+	}
+	if w := post(fakeFeedback{}, `{"trace":"tr_1","rating":"up"}`); w.Code != 200 || !strings.Contains(w.Body.String(), `"stored":true`) {
+		t.Errorf("%d %s", w.Code, w.Body)
+	}
+	if w := post(fakeFeedback{err: ask.ErrNotFound}, `{"trace":"tr_2","rating":"up"}`); w.Code != 403 {
+		t.Errorf("not the asker: %d", w.Code)
+	}
+	if w := post(fakeFeedback{err: ask.ErrInvalid}, `{"trace":"tr_1","rating":"meh"}`); w.Code != 400 {
+		t.Errorf("invalid: %d", w.Code)
+	}
+}

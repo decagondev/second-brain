@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { ask, AskError } from "./api";
 import type { ApiError, AskResponse, Fetch } from "./api";
 import { AnswerView } from "./Answer";
+import { FeedbackBar } from "./Feedback";
 
 interface Turn {
   question: string;
@@ -43,6 +44,7 @@ export function App({ fetcher }: { fetcher?: Fetch }) {
           <div className="turn" key={i}>
             <h2 className="question">{t.question}</h2>
             {t.answer && <AnswerView answer={t.answer} />}
+            {t.answer && <FeedbackBar answer={t.answer} fetcher={fetcher} />}
             {t.error && (
               <div className="error" role="alert">
                 <p>{t.error.message}</p>

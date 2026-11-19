@@ -67,3 +67,28 @@ export async function ask(question: string, conversation: string | undefined, f:
 export function isCited(c: Claim): boolean {
   return !c.uncited && Array.isArray(c.cites) && c.cites.length > 0;
 }
+
+export interface FeedbackRequest {
+  trace: string;
+  rating: "up" | "down";
+  wrong_citation?: string;
+  comment?: string;
+}
+
+export async function sendFeedback(req: FeedbackRequest, f: Fetch = fetch): Promise<void> {
+  let res: Response;
+  try {
+    res = await f("/v1/feedback", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    });
+  } catch {
+    throw new AskError({ code: "EUNAVAIL", message: "Feedback couldn't be sent.", trace: req.trace, remedy: "Try again in a minute." });
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: ApiError } | null;
+    throw new AskError(data?.error ?? { code: "EUNAVAIL", message: "Feedback couldn't be sent.", trace: req.trace, remedy: "Try again in a minute." });
+  }
+}

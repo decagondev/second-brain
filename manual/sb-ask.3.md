@@ -79,7 +79,18 @@ POST /v1/ask
 
 `GET /v1/traces/{id}` returns the same answer plus the decision list (`cite`, `verdict`, `reason`, one per candidate document), for the user who asked and for auditors. Anyone else gets `EPERM`, the same as an unknown id. `reason` is one of `allowed`, `source_denied`, `source_unknown` or `policy_denied`.
 
-`POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }`.
+`POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }` (SB-310):
+
+| Rule | Detail |
+|---|---|
+| Who | Only the user who asked. Anyone else, or an unknown or expired trace, gets `EPERM` |
+| `rating` | Required, `up` or `down` |
+| `wrong_citation` | Optional. It must be a citation **in that trace's answer**, or the request is `EINVAL` |
+| `comment` | Optional, at most 2,000 characters |
+| Repeats | One feedback per trace: a later one replaces the earlier one |
+| Response | `200 { "trace": "tr_…", "stored": true }` |
+
+Feedback is stored against the trace id with the release, and exported weekly (Monday 00:00 UTC, the previous seven days) as JSON lines for the pilot review. Each line holds the trace, release, rating, wrong citation, comment, time, and the answer's claim, uncited and refused counts, but never the question or the answer text. Reviewers who need those open the trace with auditor rights.
 
 ### The web UI
 

@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S3.7 Feedback (SB-310)
+
+**Wave/slice:** W3 / S3.7 · **Author:** platform lead + Claude · **Status:** In review (weekly schedule with the cell runtime)
+
+**What:** `POST /v1/feedback`, the feedback store, a weekly export and the web UI controls. The manual changed first: sb-ask(3) now gives the endpoint's rules and the export's contents.
+
+**Why this way:** Feedback goes through `Agent.Trace`, so the trace's ownership check is the same code that guards `GET /v1/traces`, with no second copy to drift. Only the asker rates: an auditor reading a trace isn't the person the answer was for. The export carries ids, counts and the user's own comment, never the question or the answer (AGENTS.md: no content in exports, logs or golden files). A reviewer who needs the text opens the trace with auditor rights, and that access is audited.
+
+**Learned:** It is tempting to offer every citation in the wrong-citation picker. Limiting it to cited claims keeps the UI consistent with the rule that uncited claims have no citations (LAW-14).
+
+**Laws:** none new. LAW-04 and LAW-05 are still the only red ones.
+
+**Next:** SB-311, the pilot. It is human-only, so it gets a runbook, and then W4.
+
 ## 2026-11-19 S3.6 Citation-faithfulness eval (SB-309)
 
 **Wave/slice:** W3 / S3.6 · **Author:** platform lead + Claude · **Status:** In review (`sb tenant verify`, staging model)
