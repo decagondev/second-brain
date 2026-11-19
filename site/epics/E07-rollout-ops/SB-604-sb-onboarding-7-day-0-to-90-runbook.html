@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,20 +60,23 @@
 <p>The runbook is the product for portfolio IT.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Every step is a command or a console action with an expected output</li>
-<li class="task"><span class="box"></span>Checklists for each phase</li>
+<li class="task done"><span class="box">✓</span>Every step is a command or a console action with an expected output</li>
+<li class="task done"><span class="box">✓</span>Checklists for each phase</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Write runbook</li>
-<li class="task"><span class="box"></span>Dry-run with internal tenant</li>
-<li class="task"><span class="box"></span>Fix every confusing step</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Write runbook</li>
+<li class="task"><span class="box"></span>Dry-run with internal tenant (human; needs a deployed internal cell)</li>
+<li class="task"><span class="box"></span>Fix every confusing step (after the dry run)</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S6.2): every step of sb-onboarding(7) now ends with what to expect, and each phase ends with its gate and a checklist. Steps name the real commands built so far: <code>sb tenant check</code> and <code>apply</code>, <code>sb tenant verify</code>, <code>python3 -m evals.pilot report</code>, <code>evals run --record</code>, <code>sb kill</code> and <code>unkill</code>, the approver view, and the usage API. <code>tools/check/runbook.py</code> (in <code>make examples</code>, with a self-test) fails the build if a step has no expected result or a phase has no gate or checklist.</p>
+<p><strong>Left:</strong> the dry run with the internal tenant, and fixing what it finds (human, deployed cell).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E07-rollout-ops/SB-604-sb-onboarding-7-day-0-to-90-runbook.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

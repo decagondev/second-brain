@@ -35,7 +35,7 @@ The console is a client of this API and has no other powers. Every endpoint need
 
 **`GET /v1/admin/audit`** pages through [sb-audit(5)](sb-audit.5.md) rows.
 
-**`GET /v1/admin/usage`** returns weekly active users, seats, asks, cited-answer rate, refusal rate by connector, drafts, approve-to-reject ratio and model spend.
+**`GET /v1/admin/usage?week=2027-W10`** returns the weekly report's numbers (sb-observability(7), Weekly leadership report): weekly active users, seats, asks, cited-answer rate, gaps by kind, drafts and their used-to-discarded ratio, actions by outcome and model spend.
 
 **`GET /v1/admin/refusals`** lists refusal counts by connector and reason (`deny`, `unknown`, `timeout`, `missing`), with no document titles, so operators can spot a misbehaving connector.
 

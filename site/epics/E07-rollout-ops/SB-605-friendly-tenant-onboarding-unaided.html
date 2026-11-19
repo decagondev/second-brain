@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -65,16 +65,19 @@
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
 <li class="task"><span class="box"></span>Run onboarding</li>
 <li class="task"><span class="box"></span>Observe silently</li>
 <li class="task"><span class="box"></span>Log gaps as tickets</li>
 <li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-02, LAW-03</li>
 <li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S6.2): this ticket is a human exercise: a friendly tenant runs day 0 to 14 unaided while we watch silently. It gets tooling, not code. The runbook is checked by <code>tools/check/runbook.py</code>, the gates call <code>sb tenant verify</code> (SB-601) and the pilot report (SB-311), and questions go into the retro template, where each becomes a ticket or a manual fix. The LAW-01 to LAW-03 checks on their real data are <code>sb tenant verify</code>.</p>
+<p><strong>Left (people):</strong> run it with a friendly tenant on a deployed cell (W7), observe, and log every gap.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E07-rollout-ops/SB-605-friendly-tenant-onboarding-unaided.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

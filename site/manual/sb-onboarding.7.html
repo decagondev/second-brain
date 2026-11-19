@@ -38,9 +38,9 @@ Days 46–90 one approval-gated workflow, once its evals pass
 </ul>
 <h3 id="day-0-create-the-cell">Day 0: create the cell</h3>
 <ol>
-<li>Write <code>tenant.yaml</code> from <a href="sb-tenant.5.html#examples">the pilot example</a>.</li>
+<li>Write <code>tenant.yaml</code> from <a href="sb-tenant.5.html#examples">the pilot example</a>. → expect six required lines and no secrets in the file.</li>
 <li><code>sb tenant check tenant.yaml</code> → expect <code>ok</code>.</li>
-<li><code>sb tenant apply tenant.yaml --plan</code> → review: one cell, your connectors, <code>ask</code>.</li>
+<li><code>sb tenant apply tenant.yaml --plan</code> → expect a plan with one cell, your connectors and <code>ask</code>, and nothing else.</li>
 <li><code>sb tenant apply tenant.yaml</code> → expect <code>applied</code> in under 30 minutes.</li>
 <li>Sign in as a pilot user → expect the empty-state home page with your company name.</li>
 </ol>
@@ -48,12 +48,20 @@ Days 46–90 one approval-gated workflow, once its evals pass
 <h3 id="days-114-pilot">Days 1–14: pilot</h3>
 <ol>
 <li>Watch first sync in the console (<strong>Sources</strong>). Expect the backlog to drain and freshness under 15 minutes.</li>
-<li>Add 20 or so pilot users to <code>sb-pilot</code> in your IdP. They appear within 5 minutes.</li>
-<li>Pilot users ask real questions on the web and in chat.</li>
-<li>Check <strong>Refusals</strong> daily. An <code>unknown</code> rate above 1% on a connector means a connector problem; send the console's diagnostic bundle (ids only) to the platform team. This is the one sanctioned contact.</li>
-<li>Day 10 or later: <code>sb tenant verify tenant.yaml</code>.</li>
+<li>Add 20 or so pilot users to <code>sb-pilot</code> in your IdP. → expect them under <strong>Users</strong> in the console within 5 minutes.</li>
+<li>Pilot users ask real questions on the web and with <code>/ask</code> in chat. → expect answers with citation chips, and <code>Uncited</code> labels where nothing supports a claim.</li>
+<li>Check <strong>Refusals</strong> daily. → expect an <code>unknown</code> rate under 1% per connector. Above that, there's a connector problem: send the console's diagnostic bundle (ids only) to the platform team. This is the one sanctioned contact.</li>
+<li>Day 10 or later: <code>sb tenant verify tenant.yaml</code>. → expect <code>verify: 5 passed, 0 failed</code>.</li>
 </ol>
 <p><strong>Gate 1:</strong> <code>verify</code> passes every law; the pilot's thumbs-up rate is at least 70%.</p>
+<ul>
+<li class="task"><span class="box"></span>First sync drained; freshness under 15 minutes</li>
+<li class="task"><span class="box"></span>Pilot group visible in the console</li>
+<li class="task"><span class="box"></span><code>unknown</code> refusals under 1% on every connector</li>
+<li class="task"><span class="box"></span><code>sb tenant verify</code> passes</li>
+<li class="task"><span class="box"></span><code>python3 -m evals.pilot report</code> passes (thumbs-up at least 70%)</li>
+<li class="task"><span class="box"></span>Retro held and logged</li>
+</ul>
 <h4 id="running-the-pilot-review">Running the pilot review</h4>
 <p>The pilot needs about 20 people who will ask real work questions for two weeks (SB-311). Pick them from at least three teams, so that the documents and permissions they hit differ. Then:</p>
 <ol>
@@ -64,22 +72,36 @@ Days 46–90 one approval-gated workflow, once its evals pass
 <p>The report holds ids, counts and comments only. It never shows a question or an answer.</p>
 <h3 id="days-1545-everyone-plus-drafts">Days 15–45: everyone, plus drafts</h3>
 <ol>
-<li>Remove <code>pilot_group</code>; add <code>draft-reply</code> to <code>agents</code>; <code>check</code>, then <code>apply</code>.</li>
-<li>Announce to staff, with the one-page user guide from the console.</li>
-<li>The weekly report starts automatically for the approvers group.</li>
-<li>Day 45: review adoption, refusal rate and draft approve-to-reject ratio with leadership.</li>
+<li>Remove <code>pilot_group</code>; add <code>draft-reply</code> to <code>agents</code>; <code>sb tenant check tenant.yaml</code> → expect <code>ok</code>; then <code>sb tenant apply tenant.yaml</code> → expect <code>- setting pilot_group</code> and <code>+ agent draft-reply</code>.</li>
+<li>Announce to staff, with the one-page user guide from the console (<strong>Help → User guide</strong>). → expect weekly active users to climb in <strong>Usage</strong> within a week.</li>
+<li>The weekly report starts automatically for the approvers group. → expect it on Monday at 07:00 UTC; the same numbers are at <code>GET /v1/admin/usage?week=…</code> (sb-admin(3)).</li>
+<li>Day 45: review adoption, refusal rate and the drafts' used-to-discarded ratio with leadership, from the weekly report. → expect a decision recorded: go on to a workflow, or not yet.</li>
 </ol>
 <p><strong>Gate 2:</strong> weekly active users ÷ seats is at least 20%; zero law alerts.</p>
+<ul>
+<li class="task"><span class="box"></span><code>pilot_group</code> removed and <code>draft-reply</code> applied</li>
+<li class="task"><span class="box"></span>Staff announcement sent</li>
+<li class="task"><span class="box"></span>Weekly report arriving</li>
+<li class="task"><span class="box"></span>Active users per seat at least 20% (weekly report)</li>
+<li class="task"><span class="box"></span>No Sev-1 law alerts since day 15</li>
+</ul>
 <h3 id="days-4690-one-gated-workflow">Days 46–90: one gated workflow</h3>
 <ol>
-<li>Choose <strong>one</strong> workflow (e.g. <code>ticket-update</code>) and its approver group.</li>
-<li>Add your golden examples to <code>tenants/&lt;tenant&gt;/evals/</code> (<a href="sb-eval.5.html">sb-eval(5)</a>).</li>
-<li><code>sb eval run tenant/&lt;tenant&gt;</code> → expect pass.</li>
-<li>Add <code>workflows</code> and <code>approval</code> to the manifest; <code>check</code>, then <code>apply</code>. Apply refuses if the workflow's evals haven't passed.</li>
-<li>Train approvers: they approve the <strong>exact payload shown</strong>, and they can't approve their own requests.</li>
-<li>Rehearse <code>sb kill agent &lt;workflow&gt;</code> with your on-call.</li>
+<li>Choose <strong>one</strong> workflow (<code>ticket-update</code> in v1) and its approver group. → expect the group to exist in your IdP and to appear under <strong>Users → Groups</strong>.</li>
+<li>Add your golden examples to <code>tenants/&lt;tenant&gt;/evals/</code> (<a href="sb-eval.5.html">sb-eval(5)</a>). → expect <code>python3 -m evals run --tenant-dir tenants/&lt;tenant&gt; --model extractive</code> to run them on the local cell.</li>
+<li><code>python3 -m evals run --tenant-dir tenants/&lt;tenant&gt; --model &lt;the release model&gt; --record DIR/evals/&lt;tenant&gt;/ticket-update.json</code> (sb-eval(1)) → expect every case to pass and the record to be written.</li>
+<li>Add <code>workflows</code> and <code>approval</code> to the manifest; <code>sb tenant check</code> → expect <code>ok</code>; then <code>sb tenant apply</code> → expect <code>+ workflow ticket-update</code>. Apply refuses with <code>EEVAL</code> if the workflow's evals haven't passed in the last 30 days.</li>
+<li>Train approvers: they approve the <strong>exact payload shown</strong>, and they can't approve their own requests. → expect a practice action approved in the approver view (<code>/?action=…</code>), and a self-approval attempt refused with <code>ENOAPPROVAL</code>.</li>
+<li>Rehearse <code>sb kill agent ticket-update --tenant &lt;tenant&gt; --reason drill</code> with your on-call. → expect <code>killed</code>, new proposals refused with <code>EKILLED</code> within 10 seconds, then <code>sb unkill</code> clears it.</li>
 </ol>
 <p><strong>Gate 3:</strong> first 20 approved actions all show <code>Ran</code> with receipts; kill rehearsal succeeds.</p>
+<ul>
+<li class="task"><span class="box"></span>Tenant golden questions pass, and the eval record is written</li>
+<li class="task"><span class="box"></span>Workflow applied</li>
+<li class="task"><span class="box"></span>Approvers trained (practice approval and refused self-approval)</li>
+<li class="task"><span class="box"></span>Kill rehearsal done</li>
+<li class="task"><span class="box"></span>First 20 approved actions show <code>Ran</code> with receipts</li>
+</ul>
 <h2 id="laws">LAWS</h2>
 <p>Every gate includes <a href="sb-tenant.1.html"><code>sb tenant verify</code></a>, which checks <a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a> and <a href="sb-laws.7.html#law-14">LAW-14</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>

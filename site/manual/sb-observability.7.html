@@ -80,6 +80,46 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 <p>The scanner looks for every canary, and for every value resolved from the vault, in three places: each log line as it is written, each model request before it leaves the gateway, and each audit row and export. A finding names the place and the canary's id, <strong>never the value</strong>. It is a <strong>Sev-1</strong> alert (<code>kind: secret_leak</code>), sent through the alert webhook. In CI, <code>tests/canary</code> runs the ask path, the tool bus and the audit export with canaries planted and fails on any finding. The same test also shows that a path that leaks on purpose is found.</p>
 <h3 id="weekly-leadership-report">Weekly leadership report</h3>
 <p>Weekly active users ÷ seats, asks, cited-answer rate, top uncited topics (as counts, never content), drafts and their approve-to-reject ratio, approved actions and receipts, spend. Delivered automatically to the tenant's approver group.</p>
+<p>Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report goes out on Monday at 07:00 UTC. It is built from the cell's own traces, draft outcomes, actions and metering, and never from content.</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Weekly active users ÷ seats</td>
+<td>distinct users who asked or drafted at least once, divided by the directory's active users</td>
+</tr>
+<tr>
+<td>Asks</td>
+<td>answers given (traces)</td>
+</tr>
+<tr>
+<td>Cited-answer rate</td>
+<td>answers with at least one cited claim ÷ answers</td>
+</tr>
+<tr>
+<td>Gaps</td>
+<td>answers by notice, <code>no_sources</code>, <code>no_access</code> and <code>most_uncited</code>, each as a count. These are the places where people asked and the platform had nothing to show them. They are counted by kind, never by question</td>
+</tr>
+<tr>
+<td>Drafts</td>
+<td><code>used</code> and <code>discarded</code>, and the ratio of the two</td>
+</tr>
+<tr>
+<td>Actions</td>
+<td>proposed, approved, rejected, expired, <code>Ran</code> with a receipt, <code>DidNotRun</code></td>
+</tr>
+<tr>
+<td>Spend</td>
+<td>model tokens and their cost at the release's price table</td>
+</tr>
+</tbody>
+</table>
+<p>The same numbers answer <code>GET /v1/admin/usage?week=2027-W10</code> (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat).</p>
 <h3 id="telemetry-rules">Telemetry rules</h3>
 <p>Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07).</p>
 <h2 id="laws">LAWS</h2>

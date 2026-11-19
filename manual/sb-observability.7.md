@@ -47,6 +47,20 @@ The scanner looks for every canary, and for every value resolved from the vault,
 
 Weekly active users ÷ seats, asks, cited-answer rate, top uncited topics (as counts, never content), drafts and their approve-to-reject ratio, approved actions and receipts, spend. Delivered automatically to the tenant's approver group.
 
+Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report goes out on Monday at 07:00 UTC. It is built from the cell's own traces, draft outcomes, actions and metering, and never from content.
+
+| Line | Definition |
+|---|---|
+| Weekly active users ÷ seats | distinct users who asked or drafted at least once, divided by the directory's active users |
+| Asks | answers given (traces) |
+| Cited-answer rate | answers with at least one cited claim ÷ answers |
+| Gaps | answers by notice, `no_sources`, `no_access` and `most_uncited`, each as a count. These are the places where people asked and the platform had nothing to show them. They are counted by kind, never by question |
+| Drafts | `used` and `discarded`, and the ratio of the two |
+| Actions | proposed, approved, rejected, expired, `Ran` with a receipt, `DidNotRun` |
+| Spend | model tokens and their cost at the release's price table |
+
+The same numbers answer `GET /v1/admin/usage?week=2027-W10` (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat).
+
 ### Telemetry rules
 
 Ids only: no content, prompts, answers or secrets in metrics, logs or traces. A CI redaction test and the production secret scanner enforce this (LAW-07).

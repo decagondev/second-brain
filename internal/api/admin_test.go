@@ -12,6 +12,8 @@ import (
 	auditmem "example.com/second-brain/internal/adapters/audit/memory"
 	killmem "example.com/second-brain/internal/adapters/kill/memory"
 	"example.com/second-brain/internal/adapters/policy/cedar"
+	"example.com/second-brain/internal/core/approvals"
+	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
@@ -40,7 +42,8 @@ func adminServer(t *testing.T) (*http.ServeMux, *auditmem.Store) {
 	log := &audit.Log{Tenant: "acme-logistics", Release: func() string { return "rel_x" }, Store: rows, Now: time.Now}
 	ks := killmem.New()
 	h := Admin{Tenant: "acme-logistics", Policy: policy.Kernel{Engine: engine, Recorder: log}, Manifests: applied{m},
-		Kill: kill.Control{Store: ks, Audit: log, Now: time.Now}, Switches: ks, Audit: log, AuditRows: rows, Release: "rel_x"}
+		Kill: kill.Control{Store: ks, Audit: log, Now: time.Now}, Switches: ks, Audit: log, AuditRows: rows, Release: "rel_x",
+		Usage: emptyUsage{}, Approvers: []string{"it-leads"}}
 	mux := http.NewServeMux()
 	h.Register(mux)
 	return mux, rows
@@ -104,7 +107,29 @@ func TestDiffKillAndAudit(t *testing.T) {
 	if kinds["config"] != 1 || kinds["kill"] != 1 || kinds["decision"] == 0 {
 		t.Fatalf("audit kinds %v", kinds)
 	}
-	if w := adminCall(t, mux, op, "GET", "/v1/admin/usage", ""); w.Code != 501 {
-		t.Fatalf("usage: %d", w.Code)
+	if w := adminCall(t, mux, op, "GET", "/v1/admin/refusals", ""); w.Code != 501 {
+		t.Fatalf("refusals: %d", w.Code)
 	}
+	if w := adminCall(t, mux, []string{"it-leads"}, "GET", "/v1/admin/usage?week=2027-W10", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"week":"2027-W10"`) {
+		t.Fatalf("usage as an approver: %d %s", w.Code, w.Body)
+	}
+	if w := adminCall(t, mux, []string{"grp_support"}, "GET", "/v1/admin/usage?week=2027-W10", ""); w.Code != 403 {
+		t.Fatalf("usage without a role: %d", w.Code)
+	}
+}
+
+type emptyUsage struct{}
+
+func (emptyUsage) Traces(context.Context, string, time.Time, time.Time) ([]ask.Trace, error) {
+	return nil, nil
+}
+func (emptyUsage) Drafts(context.Context, string, time.Time, time.Time) (int, int, error) {
+	return 0, 0, nil
+}
+func (emptyUsage) Actions(context.Context, string, time.Time, time.Time) ([]approvals.Action, error) {
+	return nil, nil
+}
+func (emptyUsage) Seats(context.Context, string) (int, error) { return 5, nil }
+func (emptyUsage) Tokens(context.Context, string, time.Time, time.Time) (int, int, error) {
+	return 0, 0, nil
 }

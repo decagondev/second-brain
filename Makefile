@@ -48,6 +48,7 @@ evals:                 ## eval harness: mock smoke, citation suite on the local 
 	@echo "evals: the misattributing model fails the citation suite, as it must"
 examples:              ## manual and example files are valid (SB-009)
 	$(PY) tools/check/examples.py
+	$(PY) tools/check/runbook.py
 policy:                ## policies validate, every permit is tenant-scoped (SB-112)
 	$(PY) tools/check/policy.py
 crosscheck:            ## Python mirror of the TLA+ models (not a substitute for TLC)

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Onboarding and the weekly report (S6.2: SB-604 to SB-606): every runbook step states what to expect and every phase has a gate checklist, enforced by `tools/check/runbook.py`; the weekly leadership report and `GET /v1/admin/usage`, counts only.
 - Admin console and roles (S6.1b: SB-602, SB-603): an operator role as a Cedar policy, the admin API (manifest, diff by JSON Patch through the manifest checker, kill switches, audit paging), `manifest.Format` with a round-trip guarantee, and a web console for kill switches and make-permanent.
 - Tenant verify (S6.1a: SB-601): law checks against a cell's own data and users (LAW-01 re-asked live, LAW-02 adversarial ids, LAW-03 injected timeout, LAW-14 claim labels), counts only, unknown fails; runs on the local cell with `tools/evalcell --verify`.
 - Attestation and drift (S5.3b: SB-509, SB-510): signed cell attestations checked against the deployed bundle with Sev-1 findings for mismatch, replay and silence; manifest drift detection that names each resource and field.

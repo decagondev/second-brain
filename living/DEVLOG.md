@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.2 Onboarding and the weekly report (SB-604 to SB-606)
+
+**Wave/slice:** W6 / S6.2 · **Author:** platform lead + Claude · **Status:** In review (dry run, friendly tenant, delivery)
+
+**What:** The runbook's steps and gates tightened and checked by a lint, `internal/core/report`, and the usage endpoint. The manual changed first: sb-onboarding(7) now gives an expected result for every step and a checklist for every gate, and sb-observability(7) defines every line of the weekly report.
+
+**Why this way:** A runbook a company's IT team follows unaided can't have a step whose success they have to guess, so the lint makes "every step says what to expect" a build rule rather than a style hope. The report counts gaps by kind, not by question, because a "top unanswered questions" list would be content. It is built from the same records the rest of the platform keeps, so there is no second analytics store to secure.
+
+**Learned:** The first lint run found three steps without expectations, two of them on day 0, the first day a company meets the platform. The tenant-eval step had also pointed at `--model mock`, which needs canned responses a tenant doesn't have; it now uses the local cell.
+
+**Laws:** unchanged, all green.
+
+**Next:** S6.3: per-tenant observability (SB-607), a Sev-1 for every law violation (SB-608), cost controls (SB-609), the HubSpot CRM connector (SB-610), and retention and deletion (SB-611).
+
 ## 2026-11-19 S6.1b Admin console and roles (SB-602, SB-603)
 
 **Wave/slice:** W6 / S6.1b · **Author:** platform lead + Claude · **Status:** SB-603 Done, SB-602 In review (manifest repo integration)

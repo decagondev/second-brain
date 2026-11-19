@@ -36,7 +36,7 @@ GET  /v1/admin/refusals?since=…
 <p><strong><code>POST /v1/admin/manifest/diff</code></strong> takes a JSON patch, e.g. <code>[{ "op": "add", "path": "/agents/-", "value": "draft-reply" }]</code>, validates it as <code>sb tenant check</code> would, and returns the YAML diff. Depending on tenant setup, the diff is either opened as a pull request against the tenant's manifest repo or signed and applied. Either way, the result is a manifest change (LAW-16).</p>
 <p><strong><code>POST /v1/admin/kill</code></strong> takes <code>{ "scope": "agent"|"connector"|"tenant", "name": "…", "reason": "…" }</code> and has the same semantics as <a href="sb-kill.1.html">sb-kill(1)</a>.</p>
 <p><strong><code>GET /v1/admin/audit</code></strong> pages through <a href="sb-audit.5.html">sb-audit(5)</a> rows.</p>
-<p><strong><code>GET /v1/admin/usage</code></strong> returns weekly active users, seats, asks, cited-answer rate, refusal rate by connector, drafts, approve-to-reject ratio and model spend.</p>
+<p><strong><code>GET /v1/admin/usage?week=2027-W10</code></strong> returns the weekly report's numbers (sb-observability(7), Weekly leadership report): weekly active users, seats, asks, cited-answer rate, gaps by kind, drafts and their used-to-discarded ratio, actions by outcome and model spend.</p>
 <p><strong><code>GET /v1/admin/refusals</code></strong> lists refusal counts by connector and reason (<code>deny</code>, <code>unknown</code>, <code>timeout</code>, <code>missing</code>), with no document titles, so operators can spot a misbehaving connector.</p>
 <h3 id="roles-exactly-sb-603">Roles, exactly (SB-603)</h3>
 <table>

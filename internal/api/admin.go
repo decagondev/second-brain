@@ -13,6 +13,7 @@ import (
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/release"
+	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
@@ -32,6 +33,10 @@ type Admin struct {
 	Audit     *audit.Log
 	AuditRows audit.Store
 	Release   string
+	// Usage: the weekly numbers (SB-606), readable by operators and approvers.
+	Usage     report.Source
+	Price     report.Price
+	Approvers []string // the manifest's approval groups
 }
 
 // Register mounts the endpoints.
@@ -42,11 +47,40 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/unkill", h.guard(h.kill(false)))
 	mux.HandleFunc("GET /v1/admin/kill", h.guard(h.switches))
 	mux.HandleFunc("GET /v1/admin/audit", h.guard(h.audit))
-	for _, p := range []string{"GET /v1/admin/usage", "GET /v1/admin/refusals"} {
-		mux.HandleFunc(p, h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
-			h.fail(w, errs.New(errs.ENOTIMPL, "usage and refusal reports arrive with SB-606 and SB-607"))
-		}))
+	mux.HandleFunc("GET /v1/admin/usage", h.usage)
+	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
+		h.fail(w, errs.New(errs.ENOTIMPL, "refusal reports arrive with SB-607"))
+	}))
+}
+
+// usage is open to operators and to approvers (sb-admin(3)).
+func (h Admin) usage(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EAUTH, "Sign in again."))
+		return
 	}
+	approver := false
+	for _, g := range s.Groups() {
+		for _, a := range h.Approvers {
+			approver = approver || g == a
+		}
+	}
+	if !approver && h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow {
+		h.fail(w, errs.New(errs.EPERM, "You need the operator or approver role for this."))
+		return
+	}
+	from, to, err := report.ParseWeek(r.URL.Query().Get("week"))
+	if err != nil {
+		h.fail(w, errs.New(errs.EINVAL, "week must be like 2027-W10"))
+		return
+	}
+	rep, err := report.Build(r.Context(), h.Usage, h.Tenant, from, to, h.Price)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Usage can't be read right now."))
+		return
+	}
+	h.ok(w, rep)
 }
 
 // guard requires the operator role: policy must allow admin on this tenant's Cell.
