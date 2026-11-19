@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/keywrap"
@@ -81,17 +82,36 @@ func (x xorKeys) Unwrap(_ context.Context, id string, w []byte) ([]byte, error) 
 	return x.mask(id, w[:len(w)-len(id)]), nil
 }
 
-type access struct{ m map[string]bool }
+type fakeAccess struct{ m map[string]bool }
 
-func (a *access) Paths(context.Context, string) ([]string, error) {
-	var out []string
+func (a *fakeAccess) Paths(context.Context, string) ([]access.Path, error) {
+	var ids []string
 	for k := range a.m {
-		out = append(out, k)
+		ids = append(ids, k)
 	}
-	sort.Strings(out)
+	sort.Strings(ids)
+	var out []access.Path
+	for _, k := range ids {
+		g := ""
+		for _, known := range Grants {
+			if k == known {
+				g = k // in this fake a grant's path is named after it
+			}
+		}
+		out = append(out, access.Path{ID: k, Grant: g})
+	}
 	return out, nil
 }
-func (a *access) Revoke(_ context.Context, _, p string) error { delete(a.m, p); return nil }
+
+func (a *fakeAccess) ids() []string {
+	ps, _ := a.Paths(context.Background(), "")
+	var out []string
+	for _, p := range ps {
+		out = append(out, p.ID)
+	}
+	return out
+}
+func (a *fakeAccess) Revoke(_ context.Context, _, p string) error { delete(a.m, p); return nil }
 
 type target struct{ calls []string }
 
@@ -130,7 +150,7 @@ func (r *rows) Write(_ context.Context, e audit.Event) (audit.Row, error) {
 	return audit.Row{}, nil
 }
 
-func setup(t *testing.T) (*Controller, *access, *target, *custody, *rows) {
+func setup(t *testing.T) (*Controller, *fakeAccess, *target, *custody, *rows) {
 	t.Helper()
 	ctx := context.Background()
 	f := keywrap.Custodian{Name: "factory", Keys: xorKeys{}, KeyID: "factory-root"}
@@ -139,7 +159,7 @@ func setup(t *testing.T) (*Controller, *access, *target, *custody, *rows) {
 	if err := keywrap.Seed(ctx, "gamma-parts", st, f, keywrap.PurposeAuditSigning); err != nil {
 		t.Fatal(err)
 	}
-	a := &access{m: map[string]bool{"deploy-role": true, "break-glass": true, "publish-releases": true, "platform-kill": true}}
+	a := &fakeAccess{m: map[string]bool{"deploy-role": true, "break-glass": true, "publish-releases": true, "platform-kill": true}}
 	tg, cu, r := &target{}, &custody{}, &rows{}
 	return &Controller{Store: &MemoryStore{}, Access: a, Target: tg, Custody: cu, Audit: r, Wraps: st,
 		Factory: func(string) keywrap.Custodian { return f }, Tenant: func(string, Plan) keywrap.Custodian { return tn }}, a, tg, cu, r
@@ -172,7 +192,7 @@ func TestAFullHandoff(t *testing.T) {
 	if strings.Join(tg.calls, ",") != "provision,move,verify,cutover" {
 		t.Fatalf("target calls: %v", tg.calls)
 	}
-	left, _ := a.Paths(ctx, "gamma-parts")
+	left := a.ids()
 	if strings.Join(left, ",") != "platform-kill,publish-releases" {
 		t.Fatalf("paths left: %v", left)
 	}
@@ -212,7 +232,7 @@ func TestAbortBeforeCutoverOnly(t *testing.T) {
 	}
 	s, _ := c.State(ctx, "gamma-parts")
 	ws, _ := c.Wraps.List(ctx, "gamma-parts")
-	paths, _ := a.Paths(ctx, "gamma-parts")
+	paths := a.ids()
 	if s.Phase != Managed || s.Serving != "factoryCell" || len(ws) != 1 || ws[0].Custodian != "factory" || len(paths) != 4 || tg.calls[len(tg.calls)-1] != "teardown" {
 		t.Fatalf("after abort: %+v %+v %v %v", s, ws, paths, tg.calls)
 	}
@@ -228,7 +248,7 @@ func TestAbortBeforeCutoverOnly(t *testing.T) {
 	if err := c.Detach(ctx, "gamma-parts", "to_cy"); err != nil {
 		t.Fatal(err)
 	}
-	if paths, _ := a.Paths(ctx, "gamma-parts"); len(paths) != 0 {
+	if paths := a.ids(); len(paths) != 0 {
 		t.Fatalf("detached with paths %v", paths)
 	}
 }

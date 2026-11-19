@@ -88,3 +88,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-17 | Tested (extended) | SB-706: `TestLAW17_AccessCheckFindsEveryUnlistedPath` over IAM policies and key wraps; a failed read never passes; skipped-key-policy mutation caught; `sb factory access` |
 | 2026-11-19 | LAW-06, LAW-08 | Tested (extended) | SB-707: admission through the HTTPS pull path with a pull token; one-behind with tenant-custody cells; a guard skipping them is caught |
 | 2026-11-19 | LAW-11 | Tested (extended) | SB-708: `TestLAW11_ExportPackageVerifiesOffline`, six tamperings caught; digest-only verifier mutation caught |
+| 2026-11-19 | LAW-11, LAW-17, LAW-18 | Tested (extended) | SB-710: `tests/handoff` rehearses a hand-off and detach end to end over the GCP fake; found and fixed BUG-0012 (a retained grant revoked at cutover) |

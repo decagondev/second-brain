@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/canonjson"
 	"example.com/second-brain/internal/core/cell"
@@ -60,8 +61,9 @@ type Plan struct {
 	Tenant  string   `json:"tenant"`
 	Target  string   `json:"target"`
 	Region  string   `json:"region"`
-	Revoke  []string `json:"revoke"`
-	Retain  []string `json:"retain"`
+	Revoke  []string `json:"revoke"` // path ids to revoke at cutover
+	Keep    []string `json:"keep"`   // path ids that serve a retained grant
+	Retain  []string `json:"retain"` // the retained grants
 	Planner string   `json:"planner"`
 	Serial  int      `json:"serial"` // a new plan for the same contents still has a new hash
 }
@@ -101,10 +103,11 @@ type Store interface {
 	Put(ctx context.Context, tenant string, s State) error
 }
 
-// Access enumerates and revokes the factory's access paths to a cell (SB-706).
+// Access enumerates the factory's access paths to a cell, each with the grant it serves,
+// and revokes one by id (SB-706). A path is kept only if its grant is retained (BUG-0012).
 type Access interface {
-	Paths(ctx context.Context, tenant string) ([]string, error)
-	Revoke(ctx context.Context, tenant, path string) error
+	Paths(ctx context.Context, tenant string) ([]access.Path, error)
+	Revoke(ctx context.Context, tenant, id string) error
 }
 
 // Target does the infrastructure work of each step in the tenant's account.
@@ -205,14 +208,18 @@ func (c *Controller) Plan(ctx context.Context, tenant, planner, target, region s
 		return "", fmt.Errorf("%w: target must be %sPROVIDER/ID", ErrPlan, cell.TenantAccountPrefix)
 	}
 	p := Plan{Tenant: tenant, Target: target, Region: region, Planner: planner}
+	for g := range keep {
+		p.Retain = append(p.Retain, g)
+	}
 	for _, x := range paths {
-		if keep[x] {
-			p.Retain = append(p.Retain, x)
+		if x.Grant != "" && keep[x.Grant] {
+			p.Keep = append(p.Keep, x.ID)
 		} else {
-			p.Revoke = append(p.Revoke, x)
+			p.Revoke = append(p.Revoke, x.ID)
 		}
 	}
 	sort.Strings(p.Retain)
+	sort.Strings(p.Keep)
 	sort.Strings(p.Revoke)
 	if s.Plan != nil {
 		p.Serial = s.Plan.Serial + 1
@@ -331,8 +338,8 @@ func (c *Controller) cutover(ctx context.Context, tenant string, p Plan) error {
 		return err
 	}
 	for _, x := range paths {
-		if !keep[x] {
-			if err := c.Access.Revoke(ctx, tenant, x); err != nil {
+		if x.Grant == "" || !keep[x.Grant] {
+			if err := c.Access.Revoke(ctx, tenant, x.ID); err != nil {
 				return err
 			}
 		}
@@ -343,8 +350,8 @@ func (c *Controller) cutover(ctx context.Context, tenant string, p Plan) error {
 	}
 	var extra []string
 	for _, x := range left {
-		if !keep[x] {
-			extra = append(extra, x)
+		if x.Grant == "" || !keep[x.Grant] {
+			extra = append(extra, x.ID)
 		}
 	}
 	if len(extra) > 0 {
@@ -419,7 +426,7 @@ func (c *Controller) Detach(ctx context.Context, tenant, actor string) error {
 		return err
 	}
 	for _, x := range paths {
-		if err := c.Access.Revoke(ctx, tenant, x); err != nil {
+		if err := c.Access.Revoke(ctx, tenant, x.ID); err != nil {
 			return err
 		}
 	}

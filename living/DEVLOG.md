@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.3c The hand-off game day (SB-710)
+
+**Wave/slice:** W7 / S7.3c · **Author:** platform lead + Claude · **Status:** In review (the day with a friendly tenant)
+
+**What:** `tests/handoff` (in `make check`), `docs/runbooks/handoff-game-day.md`, the day's checks in sb-factory(7), and the fix for BUG-0012 in `internal/core/handoff` and its tests and law world.
+
+**Why this way:** A game day is a rehearsal, so the code can rehearse it too. The test wires the real controller to the same adapters a real day uses, including the GCP fake with IAM bindings shaped like the bootstrap script's. Every check on the day is then also a check in CI.
+
+**Learned:** That wiring found BUG-0012 at once. The controller and the access check had two different ideas of what a path is, and every earlier test used fakes shaped to the controller's idea. Fakes that mirror the code under test confirm it rather than test it. The rehearsal is the first test where the paths come from somewhere else.
+
+**Laws:** LAW-11, LAW-17 and LAW-18 checked end to end. All law tests are green. **W7 is built.**
+
+**Next:** what's left is human (reviews, the pilot, game days, the pen test), real cloud and sandbox runs that need the user's accounts, and the runtime that runs cells and the control plane for real.
+
 ## 2026-11-19 S7.3b Model billing and cost statements (SB-709)
 
 **Wave/slice:** W7 / S7.3b · **Author:** platform lead + Claude · **Status:** In review (usage meter in a running cell)

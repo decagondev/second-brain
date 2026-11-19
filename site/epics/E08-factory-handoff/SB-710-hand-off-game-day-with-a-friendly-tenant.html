@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,24 @@
 <p>Rehearse it before anyone needs it.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A friendly tenant's cell handed off end to end; laws pass; audit chain verifies across the move</li>
-<li class="task"><span class="box"></span>Detach rehearsed on a copy</li>
+<li class="task"><span class="box"></span>A friendly tenant's cell handed off end to end; laws pass; audit chain verifies across the move (rehearsed in <code>tests/handoff</code>; the day with a friendly tenant is human)</li>
+<li class="task"><span class="box"></span>Detach rehearsed on a copy (rehearsed in <code>tests/handoff</code>; on the day, by people)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Plan</li>
-<li class="task"><span class="box"></span>Run</li>
-<li class="task"><span class="box"></span>Retro, bugs and runbook fixes</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-17, LAW-18</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Plan</li>
+<li class="task"><span class="box"></span>Run (human, with a friendly tenant: <a href="../../docs/runbooks/handoff-game-day.html">runbook</a>)</li>
+<li class="task"><span class="box"></span>Retro, bugs and runbook fixes (the rehearsal's own retro: BUG-0012, fixed)</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-17, LAW-18</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S7.3c): sb-factory(7) gained "Hand-off game day, exactly", the six checks a day must pass. <code>docs/runbooks/handoff-game-day.md</code> covers plan, run and retro, with an expected result for every step. <code>tests/handoff</code>, now in <code>make check</code>, rehearses the whole day. A factory cell in a local account, with audit rows, approvals, an index and a key wrap, is handed to a tenant's GCP project (the recorded fake, with the bootstrap's bindings and two factory paths that must go). It goes through the real controller, wrap inventory, backup and restore, index rebuild, access check and registry, and is then detached. It checks LAW-17 (only the retained <code>platform-kill</code> binding is left), LAW-18 (only the tenant's KMS key unwraps), the audit chain moved intact with nine custody rows, the custody record, and after detach, no paths and a tombstone. The rehearsal found a real bug, BUG-0012. The controller matched retained grants against path names, so cutover revoked the retained <code>platform-kill</code> binding. Its Access port now returns paths with the grant each serves, and the hand-off law tests and unit tests follow.</p>
+<p><strong>Left:</strong> the game day itself with a friendly tenant (human).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

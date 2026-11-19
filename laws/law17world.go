@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"example.com/second-brain/internal/adapters/placement/local"
+	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/cell"
 	"example.com/second-brain/internal/core/handoff"
@@ -20,14 +21,29 @@ var hoPaths = []string{"break-glass-1", "break-glass-2", "deploy-role", "iam-1",
 
 type hoAccess struct{ paths map[string]bool }
 
-func (a *hoAccess) Paths(context.Context, string) ([]string, error) {
-	var out []string
+func (a *hoAccess) Paths(context.Context, string) ([]access.Path, error) {
+	var out []access.Path
 	for _, p := range hoPaths {
 		if a.paths[p] {
-			out = append(out, p)
+			g := ""
+			for _, known := range handoff.Grants {
+				if p == known {
+					g = p // grant paths are named after their grant here
+				}
+			}
+			out = append(out, access.Path{ID: p, Grant: g})
 		}
 	}
 	return out, nil
+}
+
+func (a *hoAccess) ids() []string {
+	ps, _ := a.Paths(context.Background(), "")
+	var out []string
+	for _, p := range ps {
+		out = append(out, p.ID)
+	}
+	return out
 }
 func (a *hoAccess) Revoke(_ context.Context, _ string, p string) error {
 	delete(a.paths, p)
@@ -163,7 +179,7 @@ func (w *handoffWorld) State() HandoffState {
 			out.Wraps[c] = true // one purpose today; a custodian counts if it unwraps it
 		}
 	}
-	out.Access, _ = w.access.Paths(ctx, hoTenant)
+	out.Access = w.access.ids()
 	if w.target.serving != s.Serving {
 		out.Serving = "inconsistent: target " + w.target.serving + ", controller " + s.Serving
 	}

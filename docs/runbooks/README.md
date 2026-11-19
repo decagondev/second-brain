@@ -29,4 +29,6 @@ Releases:
 
 Game days:
 
+- [Hand-off game day](handoff-game-day.md): hand a friendly tenant's cell off end to end, and detach a copy (SB-710)
+
 - [DR game day](dr-game-day.md): lose a cell's database, restore it inside its region, and score it (SB-613)

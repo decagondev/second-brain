@@ -261,6 +261,43 @@ sb factory detach   TENANT --accept-unsupported --out DIR
 <li>The registry replaces the cell record with a <strong>tombstone</strong>: the cell stops routing, and only the custody history stays (<code>custody</code>, <code>placement</code> and <code>key_custodian</code> with the time of each change). No content, manifest or audit row stays with the factory.</li>
 </ol>
 <p>The <strong>hand-off record</strong> is written at <code>TenantOwned</code> and kept in the registry's custody history: the plan hash, both approvals, the new custody record (<code>custody: tenant</code>, <code>placement: tenant-account://PROVIDER/ID</code>, <code>key_custodian: tenant</code>), the retained grants, and the <code>sb factory access</code> result. LAW-17 is checked against this record.</p>
+<h3 id="hand-off-game-day-exactly-sb-710">Hand-off game day, exactly (SB-710)</h3>
+<p>Before any company's real hand-off, the factory hands off a friendly tenant's staging cell end to end and detaches a copy of it, following <a href="../docs/runbooks/handoff-game-day.html">the game day runbook</a>. The day passes only if all of these hold:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Pass</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The hand-off reaches <code>TenantOwned</code> with both approvals of one plan hash</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>sb factory access</code> after cutover lists only retained grants (LAW-17)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Every data key unwraps with the tenant's key only (LAW-18)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>The audit chain after the move is the chain before it, continued, and verifies with the cell's key (LAW-11)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>sb tenant verify</code> passes on the tenant's cell</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>The detached copy's export package verifies offline, and the factory holds no path to the copy</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p><code>tests/handoff</code> rehearses the whole day in <code>make check</code>, on the real controller, wrap inventory, backups, restore, access check and registry, with the GCP adapter against its recorded fake.</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-17">LAW-17</a> no unlisted factory access after hand-off · <a href="sb-laws.7.html#law-18">LAW-18</a> the root key always has a custodian. LAW-01 to LAW-16 continue to hold for <code>factory</code> and <code>tenant</code> custody.</p>
 <h2 id="examples">EXAMPLES</h2>
@@ -282,7 +319,7 @@ needs approval from: factory operator, tenant owner (group:gamma-it-owners)
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-factory.1.html">sb-factory(1)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a>, <a href="sb-release.7.html">sb-release(7)</a>, <a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and hand-off</a>, <a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015</a></p><p class="srcline">Source: <code>manual/sb-factory.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l3"><a href="#access-paths-exactly-sb-706">Access paths, exactly (SB-706)</a></li><li class="l3"><a href="#detach-exactly-sb-708">Detach, exactly (SB-708)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#custody">Custody</a></li><li class="l3"><a href="#levels">Levels</a></li><li class="l3"><a href="#hand-off">Hand-off</a></li><li class="l3"><a href="#the-hand-off-exactly-sb-701">The hand-off, exactly (SB-701)</a></li><li class="l3"><a href="#key-wraps-exactly-sb-704">Key wraps, exactly (SB-704)</a></li><li class="l3"><a href="#access-paths-exactly-sb-706">Access paths, exactly (SB-706)</a></li><li class="l3"><a href="#detach-exactly-sb-708">Detach, exactly (SB-708)</a></li><li class="l3"><a href="#hand-off-game-day-exactly-sb-710">Hand-off game day, exactly (SB-710)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

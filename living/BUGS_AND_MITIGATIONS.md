@@ -20,6 +20,7 @@ Every defect gets an entry, including design defects found in review. Each entry
 | [BUG-0009](#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place) | The TLA+ checker was pinned to a prerelease rebuilt in place | Tooling | Fixed |
 | [BUG-0010](#bug-0010-the-log-redactor-missed-encoded-secrets) | The log redactor missed encoded secrets | Security | Fixed |
 | [BUG-0011](#bug-0011-markdown-role-labels-escaped-the-injection-flags) | Markdown role labels escaped the injection flags | Security | Fixed |
+| [BUG-0012](#bug-0012-cutover-revoked-a-retained-grant) | Cutover revoked a retained grant | Code | Fixed |
 
 ## BUG-0001 Rollout model assumes atomic rollback
 
@@ -182,3 +183,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** The rule allows leading `#`, `>`, `*`, `_` and `-` markers, and markers between the role name and its colon.
 
 **Caught by now:** `TestLAW09_PenTestCorpusIsFlagged` over `security/attacks/injection.txt`, written first and red on seed 1. Why it wasn't caught before: LAW-09's ingest test drew from five fixed attacks, none in Markdown. The corpus is now a file that testers add to.
+
+## BUG-0012 Cutover revoked a retained grant
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-19, the hand-off game day rehearsal (`tests/handoff`) | Code | SB-705, SB-710 | Fixed |
+
+**Symptom:** A plan that retained `platform-kill` still lost the factory's `sbPlatformKill` binding at cutover, and `sb factory access` afterwards listed no paths at all.
+
+**Root cause:** The controller's `Access` port returned path names, and the plan kept a path only if its name was a retained grant's name. Real paths are IAM bindings (`project:ROLE:MEMBER`), so no real path ever matched, and every one was revoked. The controller's unit tests and the LAW-17 law world both named paths after grants, which hid the mismatch. The access check (SB-706) already carried each path's grant, but the controller didn't use it.
+
+**Fix:** `handoff.Access` returns `access.Path`s, and a path is kept only if its `Grant` is retained. The plan records retained grants, kept path ids and revoked path ids separately.
+
+**Caught by now:** `TestHandoffGameDay` (`tests/handoff`, in `make check`), which hands off over the GCP fake's real IAM bindings. Why it wasn't caught before: every earlier test used fakes whose path names were the grants. Rule: test the controller at least once against the same adapters a real day uses.

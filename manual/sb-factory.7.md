@@ -143,6 +143,21 @@ Detach runs in this order, and stops at the first failure:
 
 The **hand-off record** is written at `TenantOwned` and kept in the registry's custody history: the plan hash, both approvals, the new custody record (`custody: tenant`, `placement: tenant-account://PROVIDER/ID`, `key_custodian: tenant`), the retained grants, and the `sb factory access` result. LAW-17 is checked against this record.
 
+### Hand-off game day, exactly (SB-710)
+
+Before any company's real hand-off, the factory hands off a friendly tenant's staging cell end to end and detaches a copy of it, following [the game day runbook](../docs/runbooks/handoff-game-day.md). The day passes only if all of these hold:
+
+| Check | Pass |
+|---|---|
+| The hand-off reaches `TenantOwned` with both approvals of one plan hash | yes |
+| `sb factory access` after cutover lists only retained grants (LAW-17) | yes |
+| Every data key unwraps with the tenant's key only (LAW-18) | yes |
+| The audit chain after the move is the chain before it, continued, and verifies with the cell's key (LAW-11) | yes |
+| `sb tenant verify` passes on the tenant's cell | yes |
+| The detached copy's export package verifies offline, and the factory holds no path to the copy | yes |
+
+`tests/handoff` rehearses the whole day in `make check`, on the real controller, wrap inventory, backups, restore, access check and registry, with the GCP adapter against its recorded fake.
+
 ## LAWS
 
 [LAW-17](sb-laws.7.md#law-17) no unlisted factory access after hand-off · [LAW-18](sb-laws.7.md#law-18) the root key always has a custodian. LAW-01 to LAW-16 continue to hold for `factory` and `tenant` custody.

@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>handoff_test.go · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="active" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../../docs/README.html">Design</a><a href="../../docs/00-problem-statement.html">Problem Statement</a><a href="../../docs/01-principles.html">Principles</a><a href="../../docs/02-domain-model.html">Domain Model</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../../docs/05-living-documents.html">Living Documents</a><a href="../../docs/06-engineering-standards.html">Engineering Standards</a><a href="../../docs/07-threat-model.html">Threat Model</a><a href="../../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../../docs/pilot-retro-template.html">Pilot retro template</a></div><div class="group"><h4>Architecture</h4><a href="../../docs/architecture/00-overview.html">Architecture Overview</a><a href="../../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../../docs/architecture/03-connectors.html">03 Connectors</a><a href="../../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../../docs/adr/README.html">Decision Records</a><a href="../../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a></div><div class="group"><h4>Proofs and policy</h4><a href="../../policy/README.html">Policy</a><a href="../../proofs/README.html">Proofs</a><a href="../../policy/platform/base.cedar.html">base.cedar</a><a href="../../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../../proofs/crosscheck.py.html">crosscheck.py</a><a href="../../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../../evals/README.html">Evals</a><a href="../../evals/__main__.py.html">__main__.py</a><a href="../../evals/checks.py.html">checks.py</a><a href="../../evals/corpus/injection.json.html">injection.json</a><a href="../../evals/faithfulness.py.html">faithfulness.py</a><a href="../../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../../evals/gate.py.html">gate.py</a><a href="../../evals/gate.yaml.html">gate.yaml</a><a href="../../evals/pilot.py.html">pilot.py</a><a href="../../evals/runner.py.html">runner.py</a><a href="../../evals/suites/citation.yaml.html">citation.yaml</a><a href="../../evals/suites/injection.yaml.html">injection.yaml</a><a href="../../evals/suites/permission.yaml.html">permission.yaml</a><a href="../../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../../evals/suites/regression.yaml.html">regression.yaml</a><a href="../../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../../evals/targets.py.html">targets.py</a><a href="../../evals/tests/test_checks.py.html">test_checks.py</a><a href="../../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../../laws/README.html">Laws</a><a href="../../laws/checks.go.html">checks.go</a><a href="../../laws/law01chat.go.html">law01chat.go</a><a href="../../laws/law01crm.go.html">law01crm.go</a><a href="../../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../../laws/law02attack.go.html">law02attack.go</a><a href="../../laws/law02cell.go.html">law02cell.go</a><a href="../../laws/law02gcp.go.html">law02gcp.go</a><a href="../../laws/law02policy.go.html">law02policy.go</a><a href="../../laws/law02route.go.html">law02route.go</a><a href="../../laws/law02scope.go.html">law02scope.go</a><a href="../../laws/law02token.go.html">law02token.go</a><a href="../../laws/law03policy.go.html">law03policy.go</a><a href="../../laws/law04policy.go.html">law04policy.go</a><a href="../../laws/law06.go.html">law06.go</a><a href="../../laws/law06pull.go.html">law06pull.go</a><a href="../../laws/law07.go.html">law07.go</a><a href="../../laws/law07encoded.go.html">law07encoded.go</a><a href="../../laws/law08.go.html">law08.go</a><a href="../../laws/law09.go.html">law09.go</a><a href="../../laws/law09corpus.go.html">law09corpus.go</a><a href="../../laws/law10.go.html">law10.go</a><a href="../../laws/law11.go.html">law11.go</a><a href="../../laws/law11export.go.html">law11export.go</a><a href="../../laws/law11restore.go.html">law11restore.go</a><a href="../../laws/law12.go.html">law12.go</a><a href="../../laws/law13.go.html">law13.go</a><a href="../../laws/law13retention.go.html">law13retention.go</a><a href="../../laws/law14.go.html">law14.go</a><a href="../../laws/law15.go.html">law15.go</a><a href="../../laws/law16.go.html">law16.go</a><a href="../../laws/law17.go.html">law17.go</a><a href="../../laws/law17access.go.html">law17access.go</a><a href="../../laws/law17world.go.html">law17world.go</a><a href="../../laws/law18.go.html">law18.go</a><a href="../../laws/law18wrap.go.html">law18wrap.go</a><a href="../../laws/lawconnector.go.html">lawconnector.go</a><a href="../../laws/laws_test.go.html">laws_test.go</a><a href="../../laws/prop.go.html">prop.go</a><a href="../../laws/selftest_test.go.html">selftest_test.go</a><a href="../../laws/system.go.html">system.go</a><a href="../../laws/system_ask.go.html">system_ask.go</a><a href="../../laws/system_audit.go.html">system_audit.go</a><a href="../../laws/system_bus.go.html">system_bus.go</a><a href="../../laws/system_chat.go.html">system_chat.go</a><a href="../../laws/system_drift.go.html">system_drift.go</a><a href="../../laws/system_kill.go.html">system_kill.go</a><a href="../../laws/system_prompt.go.html">system_prompt.go</a><a href="../../laws/system_release.go.html">system_release.go</a><a href="../../laws/system_rollout.go.html">system_rollout.go</a><a href="../../laws/world.go.html">world.go</a><a href="../../tests/backup/backup_test.go.html">backup_test.go</a><a href="../../tests/canary/canary_test.go.html">canary_test.go</a><a href="../../tests/gameday/gameday_test.go.html">gameday_test.go</a><a class="current" href="../../tests/handoff/handoff_test.go.html">handoff_test.go</a><a href="../../tests/regress/README.html">Regression tests</a><a href="../../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../../tests/smoke/README.html">Smoke tests</a><a href="../../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / tests/handoff</div><h1 id="handoff_testgo">handoff_test.go</h1>
+<pre><code class="language-go">// Package handoff rehearses the hand-off game day end to end (sb-factory(7), Hand-off game
+// day, exactly; SB-710): a cell in the factory's account is handed to a tenant's GCP project
+// (the recorded fake) through the real controller, wrap inventory, backups, restore, access
+// check and registry, then detached on a copy. Every law the day checks is checked here.
+package handoff
+
+import (
+    &quot;bytes&quot;
+    &quot;context&quot;
+    &quot;fmt&quot;
+    &quot;os&quot;
+    &quot;path/filepath&quot;
+    &quot;strings&quot;
+    &quot;sync&quot;
+    &quot;testing&quot;
+    &quot;time&quot;
+
+    actmem &quot;example.com/second-brain/internal/adapters/actions/memory&quot;
+    auditmem &quot;example.com/second-brain/internal/adapters/audit/memory&quot;
+    backupfs &quot;example.com/second-brain/internal/adapters/backup/localfs&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
+    &quot;example.com/second-brain/internal/adapters/embed/hashing&quot;
+    memindex &quot;example.com/second-brain/internal/adapters/index/memory&quot;
+    &quot;example.com/second-brain/internal/adapters/placement/gcp&quot;
+    &quot;example.com/second-brain/internal/adapters/placement/gcp/gcptest&quot;
+    &quot;example.com/second-brain/internal/adapters/placement/local&quot;
+    regfs &quot;example.com/second-brain/internal/adapters/registry/localfs&quot;
+    &quot;example.com/second-brain/internal/core/access&quot;
+    &quot;example.com/second-brain/internal/core/approvals&quot;
+    &quot;example.com/second-brain/internal/core/audit&quot;
+    &quot;example.com/second-brain/internal/core/backup&quot;
+    &quot;example.com/second-brain/internal/core/cell&quot;
+    &quot;example.com/second-brain/internal/core/gameday&quot;
+    &quot;example.com/second-brain/internal/core/handoff&quot;
+    &quot;example.com/second-brain/internal/core/ingest&quot;
+    &quot;example.com/second-brain/internal/core/keywrap&quot;
+    &quot;example.com/second-brain/internal/core/manifest&quot;
+    &quot;example.com/second-brain/internal/core/ports&quot;
+)
+
+const (
+    tenant  = &quot;gamma-parts&quot;
+    project = &quot;gamma-prod-7731&quot;
+)
+
+var (
+    factorySA  = &quot;serviceAccount:sb-factory@factory-prod.iam.gserviceaccount.com&quot;
+    breakGlass = &quot;group:sb-breakglass@factory.example&quot;
+    deployRes  = &quot;projects/&quot; + project + &quot;/serviceAccounts/sb-cell-deployer@&quot; + project + &quot;.iam.gserviceaccount.com&quot;
+)
+
+// switchLog is the cell's audit log: the factory cell's until the move, the tenant cell's after.
+type switchLog struct {
+    mu  sync.Mutex
+    cur *audit.Log
+}
+
+func (s *switchLog) Write(ctx context.Context, e audit.Event) (audit.Row, error) {
+    s.mu.Lock()
+    l := s.cur
+    s.mu.Unlock()
+    return l.Write(ctx, e)
+}
+
+// iamAccess is the controller's Access: the factory's IAM paths in the tenant project, revoked
+// by removing the binding. (Key wraps go in the controller's last step, not at cutover.)
+type iamAccess struct {
+    src gcp.IAM
+    f   *gcptest.Fake
+}
+
+func (a iamAccess) Paths(ctx context.Context, t string) ([]access.Path, error) {
+    return a.src.Paths(ctx, t)
+}
+
+func (a iamAccess) Revoke(_ context.Context, _ string, id string) error {
+    parts := strings.SplitN(id, &quot;:&quot;, 3) // resource:role:member (the role holds no ':'; the member does)
+    if len(parts) != 3 {
+        return fmt.Errorf(&quot;bad path %q&quot;, id)
+    }
+    res := map[string]string{&quot;project&quot;: &quot;projects/&quot; + project, &quot;deploy-account&quot;: deployRes,
+        &quot;cell-key&quot;: &quot;projects/&quot; + project + &quot;/locations/europe-west1/keyRings/sb-&quot; + tenant + &quot;/cryptoKeys/cell-&quot; + tenant + &quot;-root&quot;}[parts[0]]
+    a.f.Unbind(res, parts[1], parts[2])
+    return nil
+}
+
+// target does the day's infrastructure work.
+type target struct {
+    t        *testing.T
+    proj     gcp.Project
+    log      *switchLog
+    rows     *auditmem.Store // the factory cell's audit store
+    signer   audit.Signer
+    acts     *actmem.Store
+    src      *mock.Source
+    before   []string // the index before the move
+    newRows  *auditmem.Store
+    newIndex *memindex.Index
+    reg      regfs.Dir
+    now      func() time.Time
+}
+
+func (g *target) Provision(ctx context.Context, _ string, _ handoff.Plan) error {
+    _, err := cell.Stamp(ctx, g.proj, g.proj, manifest.Tenant{Tenant: tenant, Region: &quot;eu&quot;})
+    return err
+}
+
+func (g *target) Teardown(context.Context, string, handoff.Plan) error { return nil }
+
+// Move backs up the factory cell, restores the chain and approvals into the tenant cell's
+// empty stores, rebuilds its index from the sources, and points the audit log at it.
+func (g *target) Move(ctx context.Context, _ string, _ handoff.Plan) error {
+    ts := []backup.Target{backupfs.Dir{Root: g.t.TempDir(), Label: &quot;primary&quot;, Media: &quot;disk&quot;},
+        backupfs.Dir{Root: g.t.TempDir(), Label: &quot;nas&quot;, Media: &quot;nas&quot;},
+        backupfs.Dir{Root: g.t.TempDir(), Label: &quot;offsite&quot;, Media: &quot;object-store&quot;, Away: true}}
+    job := backup.Job{Tenant: tenant, Audit: g.rows, Signer: g.signer, Approvals: g.acts, Targets: ts, Now: g.now}
+    if _, err := job.Run(ctx); err != nil {
+        return err
+    }
+    g.newRows = auditmem.New()
+    if _, err := gameday.Restore(ctx, tenant, g.signer.Key(), ts, g.newRows, actmem.New()); err != nil {
+        return err
+    }
+    g.newIndex = memindex.New()
+    p := ingest.Pipeline{Tenant: tenant, Release: &quot;rel_x&quot;, Connector: mock.New(g.src, false), Embedder: hashing.Embedder{}, Index: g.newIndex}
+    if err := p.Rebuild(ctx); err != nil {
+        return err
+    }
+    g.log.mu.Lock()
+    g.log.cur = &amp;audit.Log{Tenant: tenant, Release: func() string { return &quot;rel_x&quot; }, Store: g.newRows, Now: g.now}
+    g.log.mu.Unlock()
+    return nil
+}
+
+func snapshot(ctx context.Context, idx *memindex.Index) []string {
+    cs, _ := idx.All(ctx, tenant)
+    out := make([]string, len(cs))
+    for i, c := range cs {
+        out[i] = c.Cite + &quot;|&quot; + strings.Join(c.ACLPrefilter, &quot;,&quot;)
+    }
+    return out
+}
+
+func (g *target) Verify(ctx context.Context, _ string, _ handoff.Plan) error {
+    var buf bytes.Buffer
+    if _, err := audit.Export(ctx, g.newRows, g.signer, 1, g.now(), &amp;buf); err != nil {
+        return err
+    }
+    if _, err := audit.Verify(&amp;buf, tenant, g.signer.Key()); err != nil {
+        return err
+    }
+    if !gameday.SameIndex(g.before, snapshot(ctx, g.newIndex)) {
+        return fmt.Errorf(&quot;the rebuilt index differs&quot;)
+    }
+    return nil
+}
+
+func (g *target) Cutover(ctx context.Context, _ string, _ handoff.Plan) error {
+    c, _, err := g.reg.CellByTenant(ctx, tenant)
+    if err != nil {
+        return err
+    }
+    c.Endpoint = &quot;https://cell.&quot; + project + &quot;.example&quot;
+    return g.reg.PutCell(ctx, c)
+}
+
+func TestHandoffGameDay(t *testing.T) {
+    ctx := context.Background()
+    at := time.Date(2027, 5, 4, 9, 0, 0, 0, time.UTC)
+    now := func() time.Time { at = at.Add(time.Second); return at }
+
+    // The factory cell: a local account, its registry record, audit, approvals, index, key wrap.
+    root := t.TempDir()
+    fa := local.Account{Root: filepath.Join(root, &quot;accounts&quot;), Name: cell.PlacementFactoryAccount}
+    rs, err := cell.Stamp(ctx, fa, fa, manifest.Tenant{Tenant: tenant, Region: &quot;eu&quot;})
+    if err != nil {
+        t.Fatal(err)
+    }
+    var factoryKey string
+    for _, r := range rs {
+        if r.Kind == cell.KindRootKey {
+            factoryKey = r.ID
+        }
+    }
+    reg := regfs.Dir{Root: filepath.Join(root, &quot;registry&quot;)}
+    if err := os.MkdirAll(reg.Root, 0o755); err != nil {
+        t.Fatal(err)
+    }
+    if err := reg.PutCell(ctx, ports.CellRecord{Tenant: tenant, Region: &quot;eu&quot;, Endpoint: &quot;local://&quot; + tenant, Hosts: []string{tenant + &quot;.sb.example&quot;},
+        Custody: cell.CustodyFactory, Placement: cell.PlacementFactoryAccount, KeyCustodian: cell.KeyCustodianFactory}); err != nil {
+        t.Fatal(err)
+    }
+    rows, acts := auditmem.New(), actmem.New()
+    log := &amp;switchLog{cur: &amp;audit.Log{Tenant: tenant, Release: func() string { return &quot;rel_x&quot; }, Store: rows, Now: now}}
+    for i := 0; i &lt; 9; i++ {
+        id := fmt.Sprintf(&quot;tc_%d&quot;, i)
+        if _, err := log.Write(ctx, audit.Event{Actor: &quot;usr_ann&quot;, Kind: &quot;approval&quot;, Subject: id, Reason: &quot;ok&quot;}); err != nil {
+            t.Fatal(err)
+        }
+        _ = acts.Put(ctx, approvals.Action{ID: id, Tenant: tenant, State: approvals.Ran})
+    }
+    src := mock.NewSource(&quot;docs&quot;)
+    src.Put(&quot;d1&quot;, &quot;Parts policy&quot;, &quot;Returns over 500 need a supervisor.&quot;, &quot;ann@gamma.example&quot;)
+    src.Put(&quot;d2&quot;, &quot;Suppliers&quot;, &quot;The north depot closes on Fridays.&quot;, &quot;ann@gamma.example&quot;, &quot;bob@gamma.example&quot;)
+    idx := memindex.New()
+    if _, err := (ingest.Pipeline{Tenant: tenant, Release: &quot;rel_x&quot;, Connector: mock.New(src, false), Embedder: hashing.Embedder{}, Index: idx}).Sync(ctx, &quot;&quot;); err != nil {
+        t.Fatal(err)
+    }
+    wraps := &amp;keywrap.MemoryStore{}
+    factory := keywrap.Custodian{Name: cell.KeyCustodianFactory, Keys: fa, KeyID: factoryKey}
+    if err := keywrap.Seed(ctx, tenant, wraps, factory, keywrap.PurposeAuditSigning); err != nil {
+        t.Fatal(err)
+    }
+    signer, _ := audit.NewSigner(tenant, bytes.Repeat([]byte{5}, 32))
+
+    // The tenant's project, as the bootstrap script leaves it, plus two factory paths it must lose.
+    f := gcptest.New()
+    defer f.Server.Close()
+    f.Grant(&quot;tok-deploy&quot;, project, gcp.DeployPermissions...)
+    f.Grant(&quot;tok-verifier&quot;, project, gcp.VerifierPermissions...)
+    f.Bind(deployRes, &quot;roles/iam.serviceAccountTokenCreator&quot;, factorySA)
+    f.Bind(&quot;projects/&quot;+project, &quot;roles/owner&quot;, breakGlass)
+    f.Bind(&quot;projects/&quot;+project, &quot;projects/&quot;+project+&quot;/roles/sbPlatformKill&quot;, factorySA)
+    f.Bind(&quot;projects/&quot;+project, &quot;roles/owner&quot;, &quot;group:gamma-it@gamma.example&quot;) // the tenant's own
+    ep := gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL()}
+    deploy := gcp.Project{ID: project, HTTP: f.Server.Client(), Poll: time.Millisecond, Endpoints: ep,
+        Token: func(context.Context) (string, error) { return &quot;tok-deploy&quot;, nil }}
+    verifier := deploy
+    verifier.Token = func(context.Context) (string, error) { return &quot;tok-verifier&quot;, nil }
+    iam := gcp.IAM{Project: verifier, Factory: []string{factorySA, breakGlass}, Location: &quot;europe-west1&quot;}
+    iam.Endpoints.CRM, iam.Endpoints.IAM = f.URL(), f.URL()
+
+    tg := &amp;target{t: t, proj: deploy, log: log, rows: rows, signer: signer, acts: acts, src: src, before: snapshot(ctx, idx), reg: reg, now: now}
+    tenantKey := &quot;projects/&quot; + project + &quot;/locations/europe-west1/keyRings/sb-&quot; + tenant + &quot;/cryptoKeys/cell-&quot; + tenant + &quot;-root&quot;
+    ctl := &amp;handoff.Controller{Store: &amp;handoff.MemoryStore{}, Access: iamAccess{src: iam, f: f}, Target: tg, Custody: reg, Audit: log, Wraps: wraps,
+        Factory: func(string) keywrap.Custodian { return factory },
+        Tenant: func(string, handoff.Plan) keywrap.Custodian {
+            return keywrap.Custodian{Name: cell.KeyCustodianTenant, Keys: deploy, KeyID: tenantKey}
+        }}
+
+    // The day.
+    to := cell.TenantAccountPrefix + &quot;gcp/&quot; + project
+    h, err := ctl.Plan(ctx, tenant, &quot;fo_ann&quot;, to, &quot;eu&quot;, []string{&quot;platform-kill&quot;})
+    if err != nil {
+        t.Fatal(err)
+    }
+    if err := ctl.Approve(ctx, tenant, &quot;factory&quot;, &quot;fo_ann&quot;, h); err == nil {
+        t.Fatal(&quot;the planner approved&quot;)
+    }
+    _ = ctl.Approve(ctx, tenant, &quot;factory&quot;, &quot;fo_bob&quot;, h)
+    _ = ctl.Approve(ctx, tenant, &quot;tenant&quot;, &quot;to_dee&quot;, h)
+    if ph, err := ctl.Execute(ctx, tenant, &quot;fo_ann&quot;, h); err != nil || ph != handoff.TenantOwned {
+        t.Fatalf(&quot;execute: %s %v&quot;, ph, err)
+    }
+
+    // LAW-17: only the retained grant's path is left, and no key wrap.
+    res, err := access.Check(ctx, tenant, []access.Source{iam, access.Wraps{Store: wraps}}, []string{&quot;publish-releases&quot;, &quot;platform-kill&quot;})
+    if err != nil || len(res.Unlisted) != 0 || len(res.Paths) != 1 || res.Paths[0].Grant != &quot;platform-kill&quot; {
+        t.Fatalf(&quot;access after hand-off: %+v %v&quot;, res, err)
+    }
+    // LAW-18: the tenant's KMS key unwraps the cell's data key; the factory's wrap is gone.
+    inv, _ := keywrap.Inventory(ctx, tenant, wraps, map[string]ports.Keys{cell.KeyCustodianFactory: fa, cell.KeyCustodianTenant: deploy})
+    if len(inv) != 1 || fmt.Sprint(inv[0].Working) != &quot;[tenant]&quot; || len(inv[0].Broken) != 0 {
+        t.Fatalf(&quot;wraps: %+v&quot;, inv)
+    }
+    // LAW-11 across the move: the tenant cell's chain is the factory's, continued, and verifies.
+    old, _ := rows.Range(ctx, 1, 1000)
+    moved, _ := rows.Range(ctx, 1, 1000)
+    cur, _ := tg.newRows.Range(ctx, 1, 1000)
+    if len(cur) &lt;= len(old) || fmt.Sprint(cur[:len(moved)]) != fmt.Sprint(moved) {
+        t.Fatalf(&quot;the chain didn't move intact: %d rows before, %d after&quot;, len(old), len(cur))
+    }
+    var buf bytes.Buffer
+    _, _ = audit.Export(ctx, tg.newRows, signer, 1, now(), &amp;buf)
+    if _, err := audit.Verify(&amp;buf, tenant, signer.Key()); err != nil {
+        t.Fatalf(&quot;the moved chain: %v&quot;, err)
+    }
+    custodyRows := 0
+    for _, r := range cur {
+        if r.Kind == &quot;custody&quot; {
+            custodyRows++
+        }
+    }
+    if custodyRows != 9 { // planned, 2 approvals, 6 steps
+        t.Fatalf(&quot;%d custody rows, want 9&quot;, custodyRows)
+    }
+    c, _, _ := reg.CellByTenant(ctx, tenant)
+    if c.Custody != cell.CustodyTenant || c.Placement != to || c.KeyCustodian != cell.KeyCustodianTenant || !strings.Contains(c.Endpoint, project) {
+        t.Fatalf(&quot;custody record: %+v&quot;, c)
+    }
+
+    // Detach, on the same cell (in the game day, a copy of it).
+    if err := ctl.Detach(ctx, tenant, &quot;to_dee&quot;); err != nil {
+        t.Fatal(err)
+    }
+    res, err = access.Check(ctx, tenant, []access.Source{iam, access.Wraps{Store: wraps}}, nil)
+    if err != nil || len(res.Paths) != 0 {
+        t.Fatalf(&quot;access after detach: %+v %v&quot;, res, err)
+    }
+    if err := reg.Tombstone(ctx, tenant); err != nil {
+        t.Fatal(err)
+    }
+    if _, found, _ := reg.CellByHost(ctx, tenant+&quot;.sb.example&quot;); found {
+        t.Fatal(&quot;the detached cell still routes&quot;)
+    }
+    hist, _ := reg.History(ctx, tenant)
+    if len(hist) != 2 || hist[1].Custody != cell.CustodyDetached {
+        t.Fatalf(&quot;custody history: %+v&quot;, hist)
+    }
+}
+</code></pre>
+<p><a href="../../README.html">Back</a></p><p class="srcline">Source: <code>tests/handoff/handoff_test.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

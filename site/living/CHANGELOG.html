@@ -22,6 +22,7 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>Hand-off game day (S7.3c: SB-710): the day's checks in sb-factory(7), its runbook, and <code>tests/handoff</code>, a full rehearsal of hand-off and detach in <code>make check</code>. <strong>W7 built.</strong></li>
 <li>Model billing (S7.3b: SB-709): monthly cost statements (<code>internal/core/costs</code>, <code>GET /v1/admin/costs</code> as JSON or CSV) and a tenant-held provider key, read from the vault at every call.</li>
 <li>Detach and export (S7.3a: SB-708): the export package writer and offline verifier, <code>sb factory verify-export</code>, the registry's custody history and tombstone, and a LAW-11 law test over tampered packages.</li>
 <li>Releases after hand-off (S7.2d: SB-707): the HTTPS release-store client with a pull token, custody and detach in the release controller, the pause-pulls runbook, and LAW-06 and LAW-08 law tests for tenant-custody cells.</li>
@@ -97,6 +98,7 @@
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li>Cutover no longer revokes a retained grant's binding: the hand-off controller keeps paths by the grant they serve (BUG-0012).</li>
 <li>The log redactor scrubs URL-escaped, base64 and hex forms of secrets, and credential-named attributes (BUG-0010). Markdown role labels are flagged as injection (BUG-0011).</li>
 <li><code>make proofs</code> pins TLA+ v1.7.4 (stable) instead of the v1.8.0 prerelease, which upstream rebuilt in place (BUG-0009).</li>
 <li><code>make smoke</code> is never cached, so a rebuilt <code>sb</code> is always tested; the smoke test covers the workflow eval gate (BUG-0008).</li>
