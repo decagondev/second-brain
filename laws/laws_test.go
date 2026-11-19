@@ -187,3 +187,7 @@ func TestLAW06_OnlySignedGatedBuildsRun(t *testing.T) {
 func TestLAW08_AtMostOneBehindStable(t *testing.T) {
 	Check(t, "LAW-08", runs, func(r *rand.Rand) error { return law08(r, NewRolloutWorld(stableTenants, testingTenants)) })
 }
+
+func TestLAW16_DriftIsReported(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Drift(r, NewDriftDetector()) })
+}

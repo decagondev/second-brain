@@ -75,6 +75,16 @@ A gated release goes to ring 0 (the internal tenant), then ring 1 (friendly tena
 
 Cells verify signatures before starting a container, and report running digests hourly. Any mismatch is Sev-1 (LAW-06).
 
+Exactly (SB-509): every cell **pushes** a signed attestation on start, after each deploy, and every hour. The controller never reaches into a cell, so this works for cells in any account. An attestation is `{ "tenant", "release", "digests": { artefact: sha256 }, "seq", "at" }`, signed with the cell's attestation key (Ed25519, its seed wrapped under the cell's root key, like the audit anchors). The controller checks it against its own records:
+
+| Finding | When | Alert |
+|---|---|---|
+| `attestation_mismatch` | a digest isn't the bundle's digest for that artefact, an artefact isn't in the bundle, the release isn't the one the controller deployed to that tenant, or the signature doesn't verify for that cell's key | Sev-1 |
+| `attestation_replay` | `seq` isn't greater than the last accepted one | Sev-1 |
+| `attestation_missing` | no accepted attestation for 2 hours | Sev-1 |
+
+An accepted attestation updates the tenant's attested release and digests, which `sb release status` shows.
+
 ### CVEs
 
 A CVE fix is a patch release through the normal path, within 24 hours on `testing`. Because no one is more than one behind, everyone has it after one promotion.

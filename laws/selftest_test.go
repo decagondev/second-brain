@@ -671,3 +671,10 @@ func TestSelf_LAW08MutationIsCaught(t *testing.T) {
 		t.Error("LAW-08: promoting without the promote guard was not caught")
 	}
 }
+
+// LAW-16's drift check catches a detector that only compares attributes.
+func TestSelf_LAW16DriftMutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law16Drift(r, detectDrift(true)) }) {
+		t.Error("LAW-16: a drift detector that misses added and removed resources was not caught")
+	}
+}

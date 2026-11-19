@@ -89,6 +89,10 @@ The same Go types that drive the checker generate a JSON Schema, published as [`
 
 `sb tenant check` exits 1 with `EMANIFEST` and one line per error, in the form `file:line:col: field: message`, sorted by position. Errors about a field point at its key; errors about a value point at the value. See [sb-tenant(1)](sb-tenant.1.md).
 
+## DRIFT
+
+Every hour, each cell reports its live configuration as resources in the plan's terms (kind, name, attributes), and the control plane compares it with what was last applied from the manifest (SB-510). Any difference is a `manifest_drift` alert that names the resource and the field, for example `connector tickets: attribute vendor: applied jira, live linear`, or `agent draft-reply: present live, not applied`. Values are configuration, never secrets (secrets aren't in the manifest). Drift isn't fixed automatically: `sb tenant apply` with the manifest makes the cell match again, and if the live change was intended, the manifest changes first (LAW-16).
+
 ## LAWS
 
 [LAW-07](sb-laws.7.md#law-07) (no secrets in config), [LAW-08](sb-laws.7.md#law-08) (channels, not versions), [LAW-16](sb-laws.7.md#law-16) (the manifest is the truth).

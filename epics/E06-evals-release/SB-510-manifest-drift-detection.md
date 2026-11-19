@@ -13,7 +13,7 @@ summary: "The manifest is the truth; drift is a defect."
 | Manual | [`sb-tenant(5)`](../../manual/sb-tenant.5.md) |
 | Laws | [LAW-16](../../manual/sb-laws.7.md#law-16) |
 | Depends on | [SB-104](../E01-tenancy-identity/SB-104-sb-tenant-apply-idempotent-cell-creation.md) |
-| Status | Open |
+| Status | In review |
 
 ## Why
 
@@ -21,16 +21,22 @@ The manifest is the truth; drift is a defect.
 
 ## Acceptance criteria
 
-- [ ] Hourly comparison of live cell config with the applied manifest; drift alert names the field
+- [x] Hourly comparison of live cell config with the applied manifest; drift alert names the field
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Live config reader
-- [ ] Diff
-- [ ] Alert
-- [ ] Write or extend the law tests: LAW-16
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [ ] Live config reader (cells report live resources in plan terms; the reader in a running cell comes with W7)
+- [x] Diff
+- [x] Alert
+- [x] Write or extend the law tests: LAW-16
+- [x] Devlog entry, ledger and changelog updated
+
+## Progress
+
+2026-11-19 (slice S5.3b): `internal/core/drift.Detect` compares live resources with the applied ones and reports each changed attribute, and each resource present on one side only, with a message that names the resource and field (for example `connector tickets: attribute vendor: applied "jira", live "linear"`). It never changes anything: `sb tenant apply` is the fix. `TestLAW16_DriftIsReported` went red first, then green. It is a property over random applied states and live changes, and it requires every change to be reported and nothing else. A detector that only compares attributes is caught.
+
+**Left:** the cell's live-config reporter and the hourly schedule (W7).
 
 ## Definition of done
 

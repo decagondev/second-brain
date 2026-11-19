@@ -93,6 +93,34 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 <p><code>sb release rollback</code> makes the previous stable current, revokes the bad release and redeploys affected cells, in under 10 minutes.</p>
 <h3 id="attestation">Attestation</h3>
 <p>Cells verify signatures before starting a container, and report running digests hourly. Any mismatch is Sev-1 (LAW-06).</p>
+<p>Exactly (SB-509): every cell <strong>pushes</strong> a signed attestation on start, after each deploy, and every hour. The controller never reaches into a cell, so this works for cells in any account. An attestation is <code>{ "tenant", "release", "digests": { artefact: sha256 }, "seq", "at" }</code>, signed with the cell's attestation key (Ed25519, its seed wrapped under the cell's root key, like the audit anchors). The controller checks it against its own records:</p>
+<table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>When</th>
+<th>Alert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>attestation_mismatch</code></td>
+<td>a digest isn't the bundle's digest for that artefact, an artefact isn't in the bundle, the release isn't the one the controller deployed to that tenant, or the signature doesn't verify for that cell's key</td>
+<td>Sev-1</td>
+</tr>
+<tr>
+<td><code>attestation_replay</code></td>
+<td><code>seq</code> isn't greater than the last accepted one</td>
+<td>Sev-1</td>
+</tr>
+<tr>
+<td><code>attestation_missing</code></td>
+<td>no accepted attestation for 2 hours</td>
+<td>Sev-1</td>
+</tr>
+</tbody>
+</table>
+<p>An accepted attestation updates the tenant's attested release and digests, which <code>sb release status</code> shows.</p>
 <h3 id="cves">CVEs</h3>
 <p>A CVE fix is a patch release through the normal path, within 24 hours on <code>testing</code>. Because no one is more than one behind, everyone has it after one promotion.</p>
 <p>Exactly (SB-505):</p>

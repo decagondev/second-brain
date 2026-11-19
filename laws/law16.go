@@ -283,3 +283,65 @@ type passedEvals struct{}
 func (passedEvals) EvalRecord(context.Context, string, string) (ports.EvalRecord, bool, error) {
 	return ports.EvalRecord{Passed: true, At: time.Now().Add(-time.Hour), Suites: []string{"tenant/law"}, Model: "law"}, true, nil
 }
+
+// DriftDetector compares live resources with applied ones and names each difference as
+// "kind/name/field" (field is "" for a resource that is present on one side only).
+type DriftDetector func(applied, live []ports.Resource) []string
+
+// NewDriftDetector builds the system under test (SB-510).
+var NewDriftDetector = func() DriftDetector {
+	return func([]ports.Resource, []ports.Resource) []string { return []string{"pending"} }
+}
+
+// law16Drift: every live change to applied state is reported, by resource and field, and
+// nothing else is (SB-510).
+func law16Drift(r *rand.Rand, detect DriftDetector) error {
+	if got := detect(nil, nil); len(got) == 1 && got[0] == "pending" {
+		return fmt.Errorf("%w: drift detection arrives with SB-510", ErrPending)
+	}
+	kinds := []string{"connector", "agent", "setting", "workflow"}
+	var applied []ports.Resource
+	for i := 0; i < 2+r.Intn(5); i++ {
+		applied = append(applied, ports.Resource{Kind: kinds[r.Intn(len(kinds))], Name: fmt.Sprintf("r%d", i),
+			Attrs: map[string]string{"a": fmt.Sprint(r.Intn(3)), "b": "x"}})
+	}
+	live := make([]ports.Resource, 0, len(applied))
+	want := map[string]bool{}
+	for _, res := range applied {
+		c := ports.Resource{Kind: res.Kind, Name: res.Name, Attrs: map[string]string{}}
+		for k, v := range res.Attrs {
+			c.Attrs[k] = v
+		}
+		switch r.Intn(5) {
+		case 0:
+			c.Attrs["a"] = c.Attrs["a"] + "!"
+			want[c.Kind+"/"+c.Name+"/a"] = true
+		case 1:
+			delete(c.Attrs, "b")
+			want[c.Kind+"/"+c.Name+"/b"] = true
+		case 2:
+			want[c.Kind+"/"+c.Name+"/"] = true
+			continue // gone live
+		}
+		live = append(live, c)
+	}
+	if r.Intn(2) == 0 {
+		live = append(live, ports.Resource{Kind: "agent", Name: "rogue", Attrs: map[string]string{}})
+		want["agent/rogue/"] = true
+	}
+	got := map[string]bool{}
+	for _, g := range detect(applied, live) {
+		got[g] = true
+	}
+	for k := range want {
+		if !got[k] {
+			return fmt.Errorf("drift %s was not reported (got %v)", k, got)
+		}
+	}
+	for k := range got {
+		if !want[k] {
+			return fmt.Errorf("reported drift %s that isn't there", k)
+		}
+	}
+	return nil
+}

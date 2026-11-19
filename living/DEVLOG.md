@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S5.3b Attestation and drift (SB-509, SB-510), W5 built
+
+**Wave/slice:** W5 / S5.3b · **Author:** platform lead + Claude · **Status:** In review (cell loops, W7)
+
+**What:** `internal/core/attest` (signed cell reports and the controller's check) and `internal/core/drift` (live config against the applied manifest). The manual changed first: sb-release(7) gained the attestation rules and findings, and sb-tenant(5) gained "DRIFT".
+
+**Why this way:** Cells push and the controller only listens, so attestation works for a cell in any account, including after hand-off (W7). The report is signed with the cell's own key, so a compromised control plane can't fake a healthy cell and a compromised cell can't impersonate another. `seq` makes a replayed good report useless. Silence is a finding in its own right, because a cell that stops reporting is the one to worry about. Drift reports and never repairs: repairing would make the live state the source of truth, which LAW-16 forbids.
+
+**Learned:** The drift law's first draft compared only attributes, and its mutation (missing whole resources) showed why the property must also require resources present on one side only. W5 is built. Releases are bundles with derived ids; they are reproducible, SBOM'd and signed (keyless in CI), admitted only when gated, rolled out by a controller that is the TLA+ model in code, attested while running, and checked for drift.
+
+**Laws:** all green, LAW-06 and LAW-16 extended.
+
+**Next:** W6, starting with `sb tenant verify` (SB-601).
+
 ## 2026-11-19 S5.3a The release controller and rollback (SB-507, SB-508)
 
 **Wave/slice:** W5 / S5.3a · **Author:** platform lead + Claude · **Status:** In review (real cells, W7)

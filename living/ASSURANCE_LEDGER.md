@@ -74,3 +74,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-01, LAW-03, LAW-09, LAW-14 | Tested (measured) | SB-501, SB-502: permission, injection, refusal, citation and regression suites on the local cell, gated on every `make check` |
 | 2026-11-19 | LAW-06 | Tested (red) → Tested | SB-504, SB-506: green on real bundles, Ed25519 and cosign verifiers, and admission; a cell ignoring the gate is caught |
 | 2026-11-19 | LAW-08 | Stated → Tested | SB-507, SB-508: `TestLAW08_AtMostOneBehindStable` red first, then green; promote-without-guard mutation caught |
+| 2026-11-19 | LAW-06, LAW-16 | Tested (extended) | SB-509: attestations compared with the deployed bundle (mismatch, replay, silence are Sev-1); SB-510: `TestLAW16_DriftIsReported` red first, then green, detector mutation caught |
