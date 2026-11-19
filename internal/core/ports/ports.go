@@ -252,3 +252,30 @@ type People interface {
 	Person(ctx context.Context, s tenancy.Scope, id string) (u User, found bool, err error)
 	MyGroups(ctx context.Context, s tenancy.Scope) ([]string, error)
 }
+
+// Chunk is one indexed span of one source document, with its provenance (sb-ingest(7)).
+type Chunk struct {
+	ID, Tenant, Cite, Kind, SourceID string
+	Version                          int
+	Start, End                       int // rune offsets in the normalised text
+	Text, ContentSHA256              string
+	Flags, ACLPrefilter              []string
+	Release                          string
+	Vector                           []float32
+}
+
+// Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.
+type Embedder interface {
+	Model() string
+	Embed(ctx context.Context, texts []string) ([][]float32, error)
+}
+
+// Index stores a tenant's chunks (SB-206). Replace swaps all of one source document's
+// chunks in one write; the index is derived data and can be dropped and rebuilt (LAW-13).
+type Index interface {
+	Indexed(ctx context.Context, tenant string, ref SourceRef) (version int, found bool, err error)
+	Replace(ctx context.Context, tenant string, ref SourceRef, version int, chunks []Chunk) error
+	Delete(ctx context.Context, tenant string, ref SourceRef) error
+	All(ctx context.Context, tenant string) ([]Chunk, error)
+	Drop(ctx context.Context, tenant string) error
+}

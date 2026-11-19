@@ -21,7 +21,7 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-10](../manual/sb-laws.7.md#law-10) | Kill wins | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-403, SB-404 |
 | [LAW-11](../manual/sb-laws.7.md#law-11) | Audit chain unbroken | Stated | — | — | — | SB-401, SB-402, SB-412 |
 | [LAW-12](../manual/sb-laws.7.md#law-12) | Deprovision revokes fast | Tested | — | `laws/` timed check on a fake clock, with and without lost fan-out, + self-test | — | SB-107 |
-| [LAW-13](../manual/sb-laws.7.md#law-13) | The index is derived | Stated | — | — | — | SB-210 |
+| [LAW-13](../manual/sb-laws.7.md#law-13) | The index is derived | Tested | — | `laws/` ingest, re-ingest, drop and rebuild give the same `(cite, chunk, ACL)` set, + self-test; scheduled drill SB-210 | — | SB-210 |
 | [LAW-14](../manual/sb-laws.7.md#law-14) | Every claim cited or labelled | Stated | — | — | — | SB-304, SB-309 |
 | [LAW-15](../manual/sb-laws.7.md#law-15) | Approval binds one payload | Modelled | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | — | — | SB-011, SB-406 |
 | [LAW-16](../manual/sb-laws.7.md#law-16) | The manifest is the truth | Tested | — | `laws/` manifest check (round trip and rejection) plan check (plan is the manifest diff) and apply check (recorded state equals the manifest; re-apply changes nothing), + self-tests; drift side with SB-510 | — | SB-101, SB-510, SB-602 |
@@ -51,3 +51,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-18 | Modelled → Tested | SB-114: `TestLAW18_RootKeyAlwaysHasACustodian` green on the local control plane; missing custodian and dead root key caught |
 | 2026-11-19 | LAW-03, LAW-05 | stay Tested (red) | SB-201: connector-level tests green on the mock (no Allow under any fault; receipt or error, idempotent Act); the retrieval and tool-call levels are still red |
 | 2026-11-19 | LAW-07 | Stated → Tested | SB-205: `TestLAW07_NoSecretInLogs` green through the real Resolver, local vault and redacting logger |
+| 2026-11-19 | LAW-13 | Stated → Tested | SB-206: `TestLAW13_TheIndexIsDerived` green on the real pipeline over the mock source |

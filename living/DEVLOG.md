@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-206 Ingest pipeline
+
+**Wave/slice:** W2 / S2.3 · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** Source changes now become provenance-tagged, embedded chunks in an index. The pure parts (normalise, chunk, cite, chunk id) are in `internal/core/ingest`, and Fetch, Embed and the index write go through ports. The manual changed first: sb-ingest(7) gained a Chunks section.
+
+**Why this way:** LAW-13 needs the index to be a function of the sources. So everything that ends up in the index is derived: chunk boundaries from the text, ids from tenant, cite and span, and the prefilter sorted. There's no clock or randomness in a chunk. A rebuild is simply "drop, then replay the change feed from the start", which uses the same code path as normal sync. The embedder follows the cloud decision's pattern: a port with a deterministic local adapter until the provider is chosen.
+
+**Learned:** Sync must collapse multiple changes per document (the last one wins) and carry a "permission changed" flag through, so a permission-only change re-ingests the same version. Otherwise the version check would skip it, and the prefilter would go stale until the next content edit.
+
+**Laws:** LAW-13 moves from Stated to Tested.
+
+**Next:** SB-207 (sanitiser and injection flags), then SB-208 (durable cursor and freshness).
+
 ## 2026-11-19 SB-205 Secrets by reference, and a logger that can't leak them
 
 **Wave/slice:** W2 / S2.1 · **Author:** platform lead + Claude · **Status:** Done

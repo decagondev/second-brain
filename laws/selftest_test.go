@@ -485,3 +485,23 @@ func TestSelf_LAW07MutationsAreCaught(t *testing.T) {
 type silent struct{ SecretWorld }
 
 func (silent) Log([]LogEvent) (string, error) { return "", nil }
+
+// LAW-13's check catches a pipeline whose chunk ids aren't derived (random per run).
+func TestSelf_LAW13MutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error { return law13(r, nondeterministic{NewIngestWorld().(*ingestWorld), r}) }) {
+		t.Error("LAW-13: an index that differs after rebuild was not caught")
+	}
+}
+
+type nondeterministic struct {
+	*ingestWorld
+	r *rand.Rand
+}
+
+func (n nondeterministic) Snapshot() ([]string, error) {
+	got, err := n.ingestWorld.Snapshot()
+	if len(got) > 0 && n.r.Intn(2) == 0 {
+		got[0] += "#" + fmt.Sprint(n.r.Int())
+	}
+	return got, err
+}

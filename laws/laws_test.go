@@ -108,3 +108,7 @@ func TestLAW05_ConnectorActNeedsReceipt(t *testing.T) {
 func TestLAW07_NoSecretInLogs(t *testing.T) {
 	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07(r, NewSecretWorld(t.TempDir())) })
 }
+
+func TestLAW13_TheIndexIsDerived(t *testing.T) {
+	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law13(r, NewIngestWorld()) })
+}

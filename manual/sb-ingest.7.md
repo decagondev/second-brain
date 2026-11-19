@@ -40,6 +40,14 @@ Tool arguments derived from flagged spans are refused by the tool bus (LAW-09). 
 
 Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flags and the release that ingested it.
 
+### Chunks
+
+A document becomes chunks in a fixed order: normalise (line endings, trailing space), split into paragraphs, then pack paragraphs into chunks of at most 1,200 characters. A paragraph longer than that is cut at the last space before the limit. Boundaries depend only on the text, so the same text always gives the same chunks, and an edit to one paragraph changes only the chunks that contain it.
+
+Each chunk's id is derived from tenant, `cite` and span, so ingesting the same `(source, version)` twice writes exactly the same chunks: ingest is idempotent. A newer version replaces all of the document's chunks in one write. An older or equal version than the one indexed changes nothing.
+
+Embeddings come through the `Embedder` port. Until the model provider is chosen (Q-04), cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. Chunks are written through the `Index` port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.
+
 ### Rebuild
 
 The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13).
