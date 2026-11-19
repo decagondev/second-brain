@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-9 epics, 42 user stories and 96 tickets across 8 waves. The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+14 epics, 63 user stories and 138 tickets across 14 waves. W8 to W13 add department brains ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -16,6 +16,7 @@ summary: Epics, waves, slices and tickets.
 | W0 Manual and Laws | 10 | 6 | 0 | Left: human reviews (SB-004, SB-005, SB-014) and, for SB-011 to SB-013, two reviewers (models and mutations green locally and in CI, 2026-11-19) |
 | W1 First Cell | 8 | 5 | 0 | Done: SB-101 to SB-103, SB-105 to SB-108, SB-114. In review: SB-104 (needs a cloud adapter), SB-109 to SB-112 (second reviewer for policy and audit) |
 | W2 to W7 | 12 | 55 | 0 | W2 built (4 done, 7 in review); W3 S3.1 to S3.6: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain), SB-307 (WCAG audit, connector links), SB-308 (real Slack workspace), SB-309 (tenant verify, staging model) SB-310 (weekly schedule) and SB-311 (the pilot itself, human) in review; W4 S4.1 to S4.3: SB-409 done; SB-401 to SB-408 and SB-410 to SB-412 in review (W4 built); W5 built: SB-501 to SB-510 in review; W6 S6.1 and S6.2: SB-603 done; SB-601, SB-602, SB-604 to SB-609 in review; S6.3b: SB-610 (HubSpot, real sandbox) in review; S6.3c: SB-611 (nightly schedule in a running cell) in review; S6.4a: SB-613 (the game day itself, human) in review; S6.4b: SB-612 (the external pen test, human) in review; **W6 built**; W7 S7.1a: SB-701 (security and tenant review, human) in review; S7.1b: SB-702 done; S7.1c: SB-703 (real GCP project) in review; S7.2a: SB-704 done; S7.2b: SB-705 (CLI and a cloud Target) in review; LAW-17 and LAW-18 hand-off tests green; S7.2c: SB-706 (verify on a deployed cell, monthly schedule) in review; S7.2d: SB-707 (a cell in a real tenant account) in review; S7.3a: SB-708 (detach on a running cell) in review; S7.3b: SB-709 (usage meter in a running cell) in review; S7.3c: SB-710 (the game day with a friendly tenant, human) in review; **W7 built** |
+| W8 to W13 | 0 | 0 | 42 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. W13 starts only if Q-01 is answered yes |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
 
@@ -57,13 +58,29 @@ flowchart LR
   E06 --> E07
   E06 --> E08
   E07 --> E08
+  E09["E09 Cells on GCP"]
+  E10["E10 Department Spaces"]
+  E11["E11 Department Templates and Connectors"]
+  E12["E12 Space Governance"]
+  E13["E13 Portfolio Department Grants"]
+  E01 --> E09
+  E08 --> E09
+  E02 --> E10
+  E04 --> E10
+  E09 --> E10
+  E03 --> E11
+  E10 --> E11
+  E05 --> E12
+  E10 --> E12
+  E10 --> E13
+  E12 --> E13
 ```
 
 ## Epics
 
 | Epic | Goal | Waves | Tickets |
 |---|---|---|---|
-| [E00 Manual, Laws and Proofs](E00-foundations/README.md) | The spec, the laws and the first formal models exist before features, and CI enforces the process. | W0 | 15 |
+| [E00 Manual, Laws and Proofs](E00-foundations/README.md) | The spec, the laws and the first formal models exist before features, and CI enforces the process. | W0, W8 | 22 |
 | [E01 Tenancy and Identity](E01-tenancy-identity/README.md) | One manifest and one command make an isolated cell; users sign in with their own SSO and see only their tenant. | W1 | 8 |
 | [E02 Policy Kernel](E02-policy/README.md) | Every decision about who may see or do what goes through one small, analysable policy engine that treats unknown as deny. | W1 | 4 |
 | [E03 Connectors and Ingestion](E03-connectors-ingestion/README.md) | Sources flow in read-only through a four-call contract, with ACLs, provenance and freshness, and ingested text is treated as untrusted data. | W2, W6 | 12 |
@@ -72,6 +89,11 @@ flowchart LR
 | [E06 Evals, Release and Supply Chain](E06-evals-release/README.md) | No agent, prompt, policy or model change reaches a tenant without passing evals, and every running build is a signed build that passed the gate. | W0, W3, W5 | 12 |
 | [E07 Roll-out, Admin and Operations](E07-rollout-ops/README.md) | A company onboards itself with one file and three commands, and operators can see and control every tenant. | W6 | 12 |
 | [E08 Factory and Hand-off](E08-factory-handoff/README.md) | One factory produces and runs every tenant's Second Brain, and can hand custody of one to its company without a rebuild. | W1, W7 | 11 |
+| [E09 Cells on GCP](E09-gcp-runtime/README.md) | A real cell runs on Google Cloud in its own project, with its schedules, metrics and verifier, and nothing in the core knows it's GCP. | W9 | 8 |
+| [E10 Department Spaces](E10-department-spaces/README.md) | A company's brain holds all its knowledge, split into department spaces that can only narrow what each source allows. | W10 | 8 |
+| [E11 Department Templates and Connectors](E11-department-templates/README.md) | Every common department starts from a template with its sources, labels, agents and evals, including code, HR and accounting systems. | W11 | 7 |
+| [E12 Space Governance](E12-space-governance/README.md) | Department leads run their own spaces; barriers, segregation of duties, access reviews and reorgs work the way a real organisation needs. | W12 | 8 |
+| [E13 Portfolio Department Grants](E13-portfolio-grants/README.md) | If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser. | W13 | 4 |
 
 ## All tickets by wave
 
@@ -210,3 +232,75 @@ flowchart LR
 | [SB-708](E08-factory-handoff/SB-708-detach-and-export-package.md) | S7.3 | E08 | Detach and export package |
 | [SB-709](E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.md) | S7.3 | E08 | Billing and model-provider hand-off |
 | [SB-710](E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.md) | S7.3 | E08 | Hand-off game day with a friendly tenant |
+
+### W8 Space Manual and Laws
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-801](E00-foundations/SB-801-sb-spaces-7-and-sb-space-5-first-drafts.md) | S8.1 | E00 | First drafts: `sb-spaces(7)` and `sb-space(5)` | Open |
+| [SB-802](E00-foundations/SB-802-permissions-and-policy-pages-for-spaces.md) | S8.1 | E00 | `sb-permissions(7)` and `sb-policy(5)` for spaces, labels and barriers | Open |
+| [SB-803](E00-foundations/SB-803-department-catalogue-sb-departments-7.md) | S8.1 | E00 | Department catalogue: `sb-departments(7)` | Open |
+| [SB-804](E00-foundations/SB-804-law-19-to-law-23-as-failing-tests.md) | S8.2 | E00 | LAW-19 to LAW-23 as failing tests | Open |
+| [SB-805](E00-foundations/SB-805-spaces-model-in-alloy-checked-in-ci.md) | S8.2 | E00 | Spaces model in Alloy, checked in CI | Open |
+| [SB-806](E00-foundations/SB-806-threat-model-v1-for-spaces-and-adr-sign-off.md) | S8.2 | E00 | Threat model v1 for spaces and ADR-0020, ADR-0021 sign-off | Open |
+| [SB-807](E00-foundations/SB-807-space-leak-eval-scaffold.md) | S8.2 | E00 | Space leak eval scaffold | Open |
+
+### W9 Cells on GCP
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-901](E09-gcp-runtime/SB-901-cloud-run-services-per-cell.md) | S9.1 | E09 | Cloud Run services and jobs per cell | Open |
+| [SB-902](E09-gcp-runtime/SB-902-private-cloud-sql-with-cmek-and-a-perimeter.md) | S9.1 | E09 | Private Cloud SQL with CMEK and a VPC Service Controls perimeter | Open |
+| [SB-903](E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.md) | S9.1 | E09 | `sb tenant apply` in a real GCP project in under 30 minutes | Open |
+| [SB-904](E09-gcp-runtime/SB-904-schedules-in-the-cell.md) | S9.2 | E09 | Every schedule running in the cell | Open |
+| [SB-905](E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.md) | S9.2 | E09 | `/metrics` and the verifier endpoint | Open |
+| [SB-906](E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.md) | S9.3 | E09 | Firebase Hosting for the web UI | Open |
+| [SB-907](E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.md) | S9.3 | E09 | Identity Platform adapter for companies without an OIDC IdP | Open |
+| [SB-908](E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.md) | S9.4 | E09 | A staging cell closes the W1 to W7 items waiting for a real cloud | Open |
+
+### W10 Spaces in a Cell
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1001](E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.md) | S10.1 | E10 | Spaces in the manifest and `sb tenant check` | Open |
+| [SB-1002](E10-department-spaces/SB-1002-space-registry-and-space-scoped-request-context.md) | S10.1 | E10 | Space registry and space-scoped request context | Open |
+| [SB-1003](E10-department-spaces/SB-1003-per-space-data-keys.md) | S10.1 | E10 | Per-space data keys wrapped by the cell root | Open |
+| [SB-1004](E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.md) | S10.2 | E10 | Cedar schema v2: spaces and labels, narrowing only | Open |
+| [SB-1005](E10-department-spaces/SB-1005-ingest-routes-and-labels-every-document.md) | S10.2 | E10 | Ingest routes and labels every document | Open |
+| [SB-1006](E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.md) | S10.3 | E10 | Ask in a space or company-wide | Open |
+| [SB-1007](E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.md) | S10.3 | E10 | Spaces in the web UI and the chat app | Open |
+| [SB-1008](E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.md) | S10.3 | E10 | Audit and kill switch per space | Open |
+
+### W11 Department Templates
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1101](E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.md) | S11.1 | E11 | Template catalogue as data and `sb space init` | Open |
+| [SB-1102](E11-department-templates/SB-1102-department-agents.md) | S11.1 | E11 | Department agents | Open |
+| [SB-1103](E11-department-templates/SB-1103-code-connector-read-only.md) | S11.2 | E11 | Code connector (read-only) | Open |
+| [SB-1104](E11-department-templates/SB-1104-hris-connector-read-only.md) | S11.3 | E11 | HRIS connector (read-only, restricted) | Open |
+| [SB-1105](E11-department-templates/SB-1105-accounting-connector-read-only.md) | S11.3 | E11 | Accounting connector (read-only, restricted) | Open |
+| [SB-1106](E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.md) | S11.3 | E11 | Field-level allow-lists for restricted sources | Open |
+| [SB-1107](E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.md) | S11.4 | E11 | Per-template eval suites in the gate | Open |
+
+### W12 Space Governance
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1201](E12-space-governance/SB-1201-stewards-and-delegated-space-changes.md) | S12.1 | E12 | Stewards and delegated space changes | Open |
+| [SB-1202](E12-space-governance/SB-1202-quarterly-access-reviews.md) | S12.1 | E12 | Quarterly access reviews | Open |
+| [SB-1203](E12-space-governance/SB-1203-information-barriers.md) | S12.2 | E12 | Information barriers | Open |
+| [SB-1204](E12-space-governance/SB-1204-segregation-of-duties.md) | S12.2 | E12 | Segregation of duties for workflows | Open |
+| [SB-1205](E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.md) | S12.3 | E12 | SCIM attributes and five-minute moves | Open |
+| [SB-1206](E12-space-governance/SB-1206-reorg-preview.md) | S12.3 | E12 | Reorg preview: who gains and loses before it happens | Open |
+| [SB-1207](E12-space-governance/SB-1207-legal-hold-per-space.md) | S12.4 | E12 | Legal hold per space | Open |
+| [SB-1208](E12-space-governance/SB-1208-cross-space-red-team-and-game-day.md) | S12.4 | E12 | Cross-space red team and game day | Open |
+
+### W13 Portfolio Department Grants
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1301](E13-portfolio-grants/SB-1301-space-grant-model-and-consent.md) | S13.1 | E13 | Space grant model and consent | Open |
+| [SB-1302](E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.md) | S13.1 | E13 | Aggregate-only grant delivery | Open |
+| [SB-1303](E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.md) | S13.1 | E13 | Grant revocation and expiry | Open |
+| [SB-1304](E13-portfolio-grants/SB-1304-finance-roll-up-pilot.md) | S13.2 | E13 | Finance roll-up pilot with friendly tenants | Open |

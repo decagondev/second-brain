@@ -17,6 +17,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 05 | [Living documents](05-living-documents.md) | Devlog, bugs, ledger formats, and the Definition of Done |
 | 06 | [Engineering standards](06-engineering-standards.md) | Layout, dependency rule, style, errors, logging, review |
 | 07 | [Threat model](07-threat-model.md) | STRIDE and LLM threats mapped to laws |
+| 08 | [Department brains](08-department-brains.md) | How companies organise and control access, department spaces, and running cells on GCP (W8 to W13) |
 
 ## Architecture
 
@@ -24,4 +25,4 @@ Start with the [overview](architecture/00-overview.md), then the subsystem you'r
 
 ## Decisions
 
-[ADR index](adr/README.md). Sixteen decisions so far; ADR-0014 is still Proposed pending Q-01, and ADR-0015 (factory and hand-off) is accepted as a direction, with implementation in W7.
+[ADR index](adr/README.md). Twenty-one decisions so far; ADR-0014 is still Proposed pending Q-01. ADR-0020 (department spaces) and ADR-0021 (the GCP runtime) are accepted as the plan for W8 to W13.

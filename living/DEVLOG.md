@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 W8 to W13 planned: department brains and the GCP runtime
+
+**Wave/slice:** W8 to W13 (plan) · **Author:** platform lead + Claude · **Status:** Planned
+
+**What:** [08-department-brains.md](../docs/08-department-brains.md), ADR-0020 (department spaces inside the cell) and ADR-0021 (the GCP cell runtime), five new epics (E09 to E13), seven W8 tickets in E00, and 42 tickets in all across six waves. The PRD, the plan index, open questions Q-11 and Q-12, risks R-13 to R-15 and the glossary follow.
+
+**Why this way:** Companies organise by function and control access by role, attribute, label and barrier, so a department brain is a space with exactly those four layers, inside the company's cell. A cell per department would treat colleagues like strangers. A space can only narrow what the source allows, so ADR-0002 and every existing law still hold, and the new laws (LAW-19 to LAW-23) are about the inside of a company. The GCP runtime comes first (W9) because spaces need a cell that really runs, and it closes most of what W1 to W7 left In review.
+
+**Learned:** The hard part isn't splitting the index, it's the company-wide ask. It has to union what someone may see across spaces without pulling restricted content along, so LAW-20 is the law the design turns on, and the Alloy model checks it before any code.
+
+**Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
+
 ## 2026-11-19 S7.3c The hand-off game day (SB-710)
 
 **Wave/slice:** W7 / S7.3c · **Author:** platform lead + Claude · **Status:** In review (the day with a friendly tenant)

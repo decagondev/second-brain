@@ -13,6 +13,7 @@ summary: One line per term used in any interface.
 | **Agent** | A pinned definition (prompt, tools, limits) in the release bundle: `ask`, `draft-reply`, or a workflow |
 | **Anchor** | The signed hourly copy of the latest audit hash in WORM storage |
 | **Approval** | A record binding one approver to one payload hash |
+| **Barrier** | An information barrier: two groups in the manifest whose members never see each other's content, drafts or actions (LAW-22) |
 | **Bundle** | A signed release: images, prompts, tools, policies, model id, SBOM, eval results |
 | **Cell** | One tenant's isolated stack: database, index, vault namespace, key, queue, region |
 | **Channel** | `stable` or `testing`. Tenants choose a channel, never a version |
@@ -30,6 +31,7 @@ summary: One line per term used in any interface.
 | **Hand-off** | Dual-approved transfer of a cell's custody from the factory to its company |
 | **Key custodian** | Whoever's KMS can unwrap a cell's root key |
 | **Kill switch** | Runtime stop for an agent, connector or tenant; effective in 10 seconds or less |
+| **Label** | A document's sensitivity: `public`, `internal`, `confidential` or `restricted`. From the source if it has one, else the space default |
 | **Law** | An invariant the platform guarantees for every input (`LAW-nn`) |
 | **Live ACL** | The connector's `acl` call at answer time; the authority on who may see a document |
 | **Manifest** | The one YAML file describing a tenant |
@@ -39,6 +41,8 @@ summary: One line per term used in any interface.
 | **Ring** | A rollout stage: 0 internal, 1 friendly (testing), 2 all (stable) |
 | **Scope** | `tenancy.Scope`: tenant + user + groups, carried by every call |
 | **Slice** | A thin, end-to-end, demoable increment inside a wave |
+| **Space** | A department brain inside a company's cell: a scope over its sources, with its own members, stewards, agents, label default, retention and data key. It can only narrow access (ADR-0020) |
+| **Steward** | A department lead who proposes changes to their space and re-certifies its members; the tenant operator approves |
 | **Tenant** | One company using the platform |
 | **Tool bus** | The single path for tool calls: kill, authorise, audit, approve, execute |
 | **Trace** | One ask or agent run (`tr_…`) |

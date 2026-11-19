@@ -17,6 +17,8 @@ v1 ships in seven waves (W0 to W6), roughly 19 weeks. The formal models and law 
 
 The control plane is a **factory**: it produces and runs every tenant's Second Brain. After v1, wave **W7** (3 weeks) adds **hand-off**: transferring custody of one tenant's Second Brain into that company's own cloud account under its own keys, or detaching it entirely. v1 doesn't build hand-off, but it does build the seams that make hand-off a workflow rather than a migration (ADR-0015, SB-114).
 
+After W7, waves **W8 to W13** (17 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md).
+
 ## Problem
 
 Acquired companies have no single index of what they know, no reliable record of who may see what, and no record of who did what. AI use is ad hoc and unsafe, and every company starts from zero. The full statement is in [00-problem-statement.md](00-problem-statement.md).
@@ -46,6 +48,7 @@ Acquired companies have no single index of what they know, no reliable record of
 | **Auditor / security** | Prove who saw and did what | Audit log, `sb audit verify`, threat model, laws |
 | **Factory operator** (parent-org platform team) | Produce, run and hand off tenants | Cell template, custody records, `sb factory` (W7) |
 | **Tenant owner** (company leadership or IT owner) | Accept custody of their Second Brain | Dual approval of the hand-off plan, LAW-17 proof, export package (W7) |
+| **Steward** (a department lead, such as the HR or Finance lead) | Run their department's space, re-certify its members | Space changes as approved diffs, access reviews, legal hold (W12) |
 
 ## Functional requirements
 
@@ -107,7 +110,7 @@ Acquired companies have no single index of what they know, no reliable record of
 
 | Epic | Goal | Stories | Tickets |
 |---|---|---|---|
-| [E00 Manual, Laws and Proofs](../epics/E00-foundations/README.md) | The spec, the laws and the first formal models exist before features, and CI enforces the process. | 5 | 15 |
+| [E00 Manual, Laws and Proofs](../epics/E00-foundations/README.md) | The spec, the laws and the first formal models exist before features, and CI enforces the process. | 7 | 22 |
 | [E01 Tenancy and Identity](../epics/E01-tenancy-identity/README.md) | One manifest and one command make an isolated cell; users sign in with their own SSO and see only their tenant. | 3 | 8 |
 | [E02 Policy Kernel](../epics/E02-policy/README.md) | Every decision about who may see or do what goes through one small, analysable policy engine that treats unknown as deny. | 3 | 4 |
 | [E03 Connectors and Ingestion](../epics/E03-connectors-ingestion/README.md) | Sources flow in read-only through a four-call contract, with ACLs, provenance and freshness, and ingested text is treated as untrusted data. | 5 | 12 |
@@ -116,6 +119,11 @@ Acquired companies have no single index of what they know, no reliable record of
 | [E06 Evals, Release and Supply Chain](../epics/E06-evals-release/README.md) | No agent, prompt, policy or model change reaches a tenant without passing evals, and every running build is a signed build that passed the gate. | 4 | 12 |
 | [E07 Roll-out, Admin and Operations](../epics/E07-rollout-ops/README.md) | A company onboards itself with one file and three commands, and operators can see and control every tenant. | 6 | 12 |
 | [E08 Factory and Hand-off](../epics/E08-factory-handoff/README.md) | One factory produces and runs every tenant's Second Brain, and can hand custody of one to its company without a rebuild. | 5 | 11 |
+| [E09 Cells on GCP](../epics/E09-gcp-runtime/README.md) | A real cell runs on Google Cloud in its own project, with its schedules, metrics and verifier, and nothing in the core knows it's GCP. | 4 | 8 |
+| [E10 Department Spaces](../epics/E10-department-spaces/README.md) | A company's brain holds all its knowledge, split into department spaces that can only narrow what each source allows. | 4 | 8 |
+| [E11 Department Templates and Connectors](../epics/E11-department-templates/README.md) | Every common department starts from a template with its sources, labels, agents and evals, including code, HR and accounting systems. | 4 | 7 |
+| [E12 Space Governance](../epics/E12-space-governance/README.md) | Department leads run their own spaces; barriers, segregation of duties, access reviews and reorgs work the way a real organisation needs. | 5 | 8 |
+| [E13 Portfolio Department Grants](../epics/E13-portfolio-grants/README.md) | If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser. | 2 | 4 |
 
 ```mermaid
 flowchart LR
@@ -153,6 +161,22 @@ flowchart LR
   E06 --> E07
   E06 --> E08
   E07 --> E08
+  E09["E09 Cells on GCP"]
+  E10["E10 Department Spaces"]
+  E11["E11 Department Templates and Connectors"]
+  E12["E12 Space Governance"]
+  E13["E13 Portfolio Department Grants"]
+  E01 --> E09
+  E08 --> E09
+  E02 --> E10
+  E04 --> E10
+  E09 --> E10
+  E03 --> E11
+  E10 --> E11
+  E05 --> E12
+  E10 --> E12
+  E10 --> E13
+  E12 --> E13
 ```
 
 ## User stories
@@ -166,6 +190,8 @@ Each story is delivered by the listed tickets. Stories are written from the pers
 - **US-00.3**: As a *maintainer*, I want the law tests to exist and fail red before features land, so that every feature is born against its laws. Delivered by [SB-010](../epics/E00-foundations/SB-010-law-harness-and-law-01-to-law-05-as-failing.md).
 - **US-00.4**: As a *security reviewer*, I want the approval, rollout and permission designs model-checked, so that design flaws are found before code. Delivered by [SB-011](../epics/E00-foundations/SB-011-approvals-model-in-tla-checked-in-ci.md), [SB-012](../epics/E00-foundations/SB-012-rollout-model-in-tla-checked-in-ci.md), [SB-013](../epics/E00-foundations/SB-013-permissions-model-in-alloy-checked-in-ci.md).
 - **US-00.5**: As a *new contributor*, I want one command that builds, tests and renders the docs, so that I am productive on day one. Delivered by [SB-001](../epics/E00-foundations/SB-001-repo-skeleton-and-toolchain.md), [SB-002](../epics/E00-foundations/SB-002-manual-layout-man-page-template-and-docs.md), [SB-009](../epics/E00-foundations/SB-009-link-check-diagram-check-and-manual-example.md), [SB-016](../epics/E00-foundations/SB-016-smoke-and-regression-test-conventions.md).
+- **US-00.6**: As a *maintainer*, I want read the space, policy and department pages before any space code exists, so that spaces are built to a spec, not invented in a pull request. Delivered by [SB-801](../epics/E00-foundations/SB-801-sb-spaces-7-and-sb-space-5-first-drafts.md), [SB-802](../epics/E00-foundations/SB-802-permissions-and-policy-pages-for-spaces.md), [SB-803](../epics/E00-foundations/SB-803-department-catalogue-sb-departments-7.md).
+- **US-00.7**: As a *security reviewer*, I want the space laws red and the spaces model checked before spaces exist, so that every space feature is born against its laws. Delivered by [SB-804](../epics/E00-foundations/SB-804-law-19-to-law-23-as-failing-tests.md), [SB-805](../epics/E00-foundations/SB-805-spaces-model-in-alloy-checked-in-ci.md), [SB-806](../epics/E00-foundations/SB-806-threat-model-v1-for-spaces-and-adr-sign-off.md), [SB-807](../epics/E00-foundations/SB-807-space-leak-eval-scaffold.md).
 
 ### E01 Tenancy and Identity
 
@@ -228,6 +254,40 @@ Each story is delivered by the listed tickets. Stories are written from the pers
 - **US-08.4**: As a *company IT operator*, I want to keep receiving signed releases after hand-off, so that we stay patched without a support contract per release. Delivered by [SB-707](../epics/E08-factory-handoff/SB-707-releases-after-hand-off.md).
 - **US-08.5**: As a *company owner after divestiture*, I want a complete export so we can leave the factory, so that a sale doesn't strand our knowledge. Delivered by [SB-708](../epics/E08-factory-handoff/SB-708-detach-and-export-package.md), [SB-709](../epics/E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.md), [SB-710](../epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.md).
 
+### E09 Cells on GCP
+
+- **US-09.1**: As a *factory operator*, I want a cell to run on Cloud Run and Cloud SQL in its own project, so that companies get a real Second Brain, not a local one. Delivered by [SB-901](../epics/E09-gcp-runtime/SB-901-cloud-run-services-per-cell.md), [SB-902](../epics/E09-gcp-runtime/SB-902-private-cloud-sql-with-cmek-and-a-perimeter.md), [SB-903](../epics/E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.md).
+- **US-09.2**: As a *company IT operator*, I want every schedule, metric and check to run inside the cell, so that sync, retention, reports and checks happen without anyone remembering. Delivered by [SB-904](../epics/E09-gcp-runtime/SB-904-schedules-in-the-cell.md), [SB-905](../epics/E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.md).
+- **US-09.3**: As a *asker*, I want to reach my company's brain at its own address and sign in even if we have no corporate IdP, so that every acquired company can use it from day one. Delivered by [SB-906](../epics/E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.md), [SB-907](../epics/E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.md).
+- **US-09.4**: As a *maintainer*, I want the W1 to W7 items that waited for a real cloud closed on a staging cell, so that v1 is finished, not just built. Delivered by [SB-908](../epics/E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.md).
+
+### E10 Department Spaces
+
+- **US-10.1**: As a *company IT operator*, I want to declare our departments as spaces in the manifest, so that our brain mirrors how we're organised. Delivered by [SB-1001](../epics/E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.md), [SB-1002](../epics/E10-department-spaces/SB-1002-space-registry-and-space-scoped-request-context.md), [SB-1003](../epics/E10-department-spaces/SB-1003-per-space-data-keys.md).
+- **US-10.2**: As a *company security lead*, I want space policy that can only narrow what each source allows, so that adding a space can never leak anything. Delivered by [SB-1004](../epics/E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.md), [SB-1005](../epics/E10-department-spaces/SB-1005-ingest-routes-and-labels-every-document.md).
+- **US-10.3**: As a *asker*, I want to ask my department's brain or the whole company and see where each citation came from, so that I get the right answer from the right place. Delivered by [SB-1006](../epics/E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.md), [SB-1007](../epics/E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.md).
+- **US-10.4**: As a *company IT operator*, I want to audit and stop one space on its own, so that a problem in one department doesn't stop the company. Delivered by [SB-1008](../epics/E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.md).
+
+### E11 Department Templates and Connectors
+
+- **US-11.1**: As a *company IT operator*, I want ready templates for common departments, so that we pick departments instead of designing them. Delivered by [SB-1101](../epics/E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.md), [SB-1102](../epics/E11-department-templates/SB-1102-department-agents.md).
+- **US-11.2**: As a *engineer*, I want our repositories, issues and pull requests in the Engineering brain, so that I can ask how our systems work. Delivered by [SB-1103](../epics/E11-department-templates/SB-1103-code-connector-read-only.md).
+- **US-11.3**: As a *people or finance lead*, I want our HR and accounting systems in our spaces with sensitive fields never ingested, so that we get answers without exposing pay, cases or bank details. Delivered by [SB-1104](../epics/E11-department-templates/SB-1104-hris-connector-read-only.md), [SB-1105](../epics/E11-department-templates/SB-1105-accounting-connector-read-only.md), [SB-1106](../epics/E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.md).
+- **US-11.4**: As a *maintainer*, I want every template to pass its own suites, leak suites included, before it reaches a tenant, so that a template change can't quietly open a department. Delivered by [SB-1107](../epics/E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.md).
+
+### E12 Space Governance
+
+- **US-12.1**: As a *department steward*, I want to run my space and re-certify its members without IT doing every change, so that my department's brain stays right and stays ours. Delivered by [SB-1201](../epics/E12-space-governance/SB-1201-stewards-and-delegated-space-changes.md), [SB-1202](../epics/E12-space-governance/SB-1202-quarterly-access-reviews.md).
+- **US-12.2**: As a *compliance officer*, I want information barriers and segregation of duties, so that deal teams, investigations and finance controls work as our policies say. Delivered by [SB-1203](../epics/E12-space-governance/SB-1203-information-barriers.md), [SB-1204](../epics/E12-space-governance/SB-1204-segregation-of-duties.md).
+- **US-12.3**: As a *people operations lead*, I want reorgs to change access within 5 minutes, and to preview them first, so that a move never leaves someone with yesterday's access. Delivered by [SB-1205](../epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.md), [SB-1206](../epics/E12-space-governance/SB-1206-reorg-preview.md).
+- **US-12.4**: As a *legal lead*, I want to put a space or scope on legal hold, so that nothing under a matter is deleted. Delivered by [SB-1207](../epics/E12-space-governance/SB-1207-legal-hold-per-space.md).
+- **US-12.5**: As a *company security lead*, I want the spaces red-teamed before we rely on them, so that we trust the People and Finance brains. Delivered by [SB-1208](../epics/E12-space-governance/SB-1208-cross-space-red-team-and-game-day.md).
+
+### E13 Portfolio Department Grants
+
+- **US-13.1**: As a *parent-org finance lead*, I want consented, aggregate-only roll-ups from each company's Finance space, so that I see the portfolio without a superuser or raw documents. Delivered by [SB-1301](../epics/E13-portfolio-grants/SB-1301-space-grant-model-and-consent.md), [SB-1302](../epics/E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.md), [SB-1304](../epics/E13-portfolio-grants/SB-1304-finance-roll-up-pilot.md).
+- **US-13.2**: As a *company owner*, I want to revoke a grant and see every delivery it made, so that consent stays ours. Delivered by [SB-1303](../epics/E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.md).
+
 ## Waves
 
 A **wave** is a release-sized group of work with an exit gate. A **slice** is a thin, end-to-end, demoable increment inside a wave. Tickets belong to one epic and one slice, so slices cut across epics.
@@ -242,6 +302,12 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W5 | Gated Releases | 2 weeks | Nothing reaches a tenant without passing evals; builds are reproducible and signed; rollout is ringed and rollback is one step. |
 | W6 | Portfolio Roll-out | 3 weeks | A company's own IT onboards with one file and three commands, unaided; leadership gets a weekly report; operators see every law violation as Sev-1. |
 | W7 | Factory Hand-off | 3 weeks | After v1: the factory can hand custody of a tenant's Second Brain to that company, in its own cloud account, without losing data, audit continuity or the laws. |
+| W8 | Space Manual and Laws | 2 weeks | The spec for spaces exists before the code: space and department pages, LAW-19 to LAW-23 as red tests, the spaces model checked, threat model v1. |
+| W9 | Cells on GCP | 3 weeks | A real cell runs on Cloud Run and Cloud SQL in its own project, with every schedule, metric and check that W1 to W7 left to the runtime. |
+| W10 | Spaces in a Cell | 3 weeks | Spaces live in the manifest, the policy and the index; people ask one department's brain or the whole company; LAW-19 and LAW-20 green. |
+| W11 | Department Templates | 3 weeks | Twelve department templates with agents and evals; code, HR and accounting sources read-only; restricted fields never ingested. |
+| W12 | Space Governance | 3 weeks | Stewards run their spaces; barriers, segregation of duties, access reviews and 5-minute reorgs; LAW-21 and LAW-22 green. |
+| W13 | Portfolio Department Grants | 3 weeks | Only if Q-01 says yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green. |
 
 ```mermaid
 gantt
@@ -264,6 +330,18 @@ gantt
   Portfolio Roll-out :w6, after w5, 21d
   section W7
   Factory Hand-off :w7, after w6, 21d
+  section W8
+  Space Manual and Laws :w8, after w7, 14d
+  section W9
+  Cells on GCP :w9, after w8, 21d
+  section W10
+  Spaces in a Cell :w10, after w9, 21d
+  section W11
+  Department Templates :w11, after w10, 21d
+  section W12
+  Space Governance :w12, after w11, 21d
+  section W13
+  Portfolio Department Grants :w13, after w12, 21d
 ```
 
 ### Wave exit gates and slices
@@ -410,6 +488,108 @@ gantt
 | S7.2 | Hand-off | Key re-wrap, dual-approved hand-off workflow, access-path proof, releases after hand-off | [SB-704](../epics/E08-factory-handoff/SB-704-root-key-re-wrap-and-key-custody-transfer.md), [SB-705](../epics/E08-factory-handoff/SB-705-hand-off-workflow-with-dual-approval.md), [SB-706](../epics/E08-factory-handoff/SB-706-access-path-enumeration-and-law-17-check.md), [SB-707](../epics/E08-factory-handoff/SB-707-releases-after-hand-off.md) |
 | S7.3 | Exit paths | Detach export, billing hand-off, game day | [SB-708](../epics/E08-factory-handoff/SB-708-detach-and-export-package.md), [SB-709](../epics/E08-factory-handoff/SB-709-billing-and-model-provider-hand-off.md), [SB-710](../epics/E08-factory-handoff/SB-710-hand-off-game-day-with-a-friendly-tenant.md) |
 
+#### W8 Space Manual and Laws
+
+*The spec for spaces exists before the code: space and department pages, LAW-19 to LAW-23 as red tests, the spaces model checked, threat model v1.*
+
+**Exit gate**
+
+- [ ] Man pages `sb-spaces(7)`, `sb-space(5)` and `sb-departments(7)` drafted; `sb-permissions(7)` and `sb-policy(5)` updated
+- [ ] LAW-19 to LAW-23 run in CI and fail for the right reason
+- [ ] `Spaces.als` model-checks in CI with no counterexample; its mutations fail
+- [ ] Threat model v1 and ADR-0020, ADR-0021 signed off by two reviewers
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S8.1 | Space pages | The man pages and catalogue every later ticket links to | [SB-801](../epics/E00-foundations/SB-801-sb-spaces-7-and-sb-space-5-first-drafts.md), [SB-802](../epics/E00-foundations/SB-802-permissions-and-policy-pages-for-spaces.md), [SB-803](../epics/E00-foundations/SB-803-department-catalogue-sb-departments-7.md) |
+| S8.2 | Laws red, model green | LAW-19 to LAW-23 failing over mocks; `Spaces.als` checked; threat model v1; leak eval scaffold | [SB-804](../epics/E00-foundations/SB-804-law-19-to-law-23-as-failing-tests.md), [SB-805](../epics/E00-foundations/SB-805-spaces-model-in-alloy-checked-in-ci.md), [SB-806](../epics/E00-foundations/SB-806-threat-model-v1-for-spaces-and-adr-sign-off.md), [SB-807](../epics/E00-foundations/SB-807-space-leak-eval-scaffold.md) |
+
+#### W9 Cells on GCP
+
+*A real cell runs on Cloud Run and Cloud SQL in its own project, with every schedule, metric and check that W1 to W7 left to the runtime.*
+
+**Exit gate**
+
+- [ ] A new cell in a real GCP project in under 30 minutes, idempotent; SB-104 and SB-703 Done
+- [ ] Only verified images run (Binary Authorization); the database is private with CMEK inside a perimeter
+- [ ] Every schedule runs in the cell; a missed run alerts
+- [ ] A staging cell closes the W1 to W7 items that waited for a real cloud
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S9.1 | Run a cell | Cloud Run services, private Cloud SQL with CMEK, the perimeter, and a real `sb tenant apply` | [SB-901](../epics/E09-gcp-runtime/SB-901-cloud-run-services-per-cell.md), [SB-902](../epics/E09-gcp-runtime/SB-902-private-cloud-sql-with-cmek-and-a-perimeter.md), [SB-903](../epics/E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.md) |
+| S9.2 | Runtime jobs | Every schedule, `/metrics` and the verifier endpoint running in the cell | [SB-904](../epics/E09-gcp-runtime/SB-904-schedules-in-the-cell.md), [SB-905](../epics/E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.md) |
+| S9.3 | Edge and identity | Firebase Hosting for the web UI; Identity Platform for companies with no IdP | [SB-906](../epics/E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.md), [SB-907](../epics/E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.md) |
+| S9.4 | Staging | A staging cell that closes the W1 to W7 items waiting for a real cloud | [SB-908](../epics/E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.md) |
+
+#### W10 Spaces in a Cell
+
+*Spaces live in the manifest, the policy and the index; people ask one department's brain or the whole company; LAW-19 and LAW-20 green.*
+
+**Exit gate**
+
+- [ ] A manifest with spaces passes `sb tenant check` and applies
+- [ ] LAW-19 and LAW-20 green; policy analysis proves narrowing for every policy
+- [ ] Asks in a space and company-wide, with space and label on every citation
+- [ ] A space can be killed and crypto-shredded on its own
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S10.1 | Space model | Spaces in the manifest, the registry and the request context, each with its own key | [SB-1001](../epics/E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.md), [SB-1002](../epics/E10-department-spaces/SB-1002-space-registry-and-space-scoped-request-context.md), [SB-1003](../epics/E10-department-spaces/SB-1003-per-space-data-keys.md) |
+| S10.2 | Space policy | Cedar for spaces and labels; ingest routes and labels every document | [SB-1004](../epics/E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.md), [SB-1005](../epics/E10-department-spaces/SB-1005-ingest-routes-and-labels-every-document.md) |
+| S10.3 | Ask in a space | Ask a space or the whole company; the UI and chat app know spaces; audit and kill per space | [SB-1006](../epics/E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.md), [SB-1007](../epics/E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.md), [SB-1008](../epics/E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.md) |
+
+#### W11 Department Templates
+
+*Twelve department templates with agents and evals; code, HR and accounting sources read-only; restricted fields never ingested.*
+
+**Exit gate**
+
+- [ ] Thirteen templates in the bundle; `sb space init` works for each
+- [ ] Code, HRIS and accounting connectors pass the contract kit on recorded fakes
+- [ ] Restricted fields are dropped before chunking, logged by name only
+- [ ] Every template's citation and leak suites gate releases
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S11.1 | Catalogue | Templates as data and the department agents | [SB-1101](../epics/E11-department-templates/SB-1101-template-catalogue-as-data-and-sb-space-init.md), [SB-1102](../epics/E11-department-templates/SB-1102-department-agents.md) |
+| S11.2 | Engineering sources | Code hosting read-only | [SB-1103](../epics/E11-department-templates/SB-1103-code-connector-read-only.md) |
+| S11.3 | People and Finance sources | HRIS and accounting read-only, with field allow-lists | [SB-1104](../epics/E11-department-templates/SB-1104-hris-connector-read-only.md), [SB-1105](../epics/E11-department-templates/SB-1105-accounting-connector-read-only.md), [SB-1106](../epics/E11-department-templates/SB-1106-field-level-allow-lists-for-restricted-sources.md) |
+| S11.4 | Department evals | A suite per template, leak suites included, in the gate | [SB-1107](../epics/E11-department-templates/SB-1107-per-template-eval-suites-in-the-gate.md) |
+
+#### W12 Space Governance
+
+*Stewards run their spaces; barriers, segregation of duties, access reviews and 5-minute reorgs; LAW-21 and LAW-22 green.*
+
+**Exit gate**
+
+- [ ] Stewards change their spaces only through approved diffs
+- [ ] LAW-21 and LAW-22 green; `Approvals.tla` re-checked with segregation of duties
+- [ ] A quarterly access review produces audit-ready evidence
+- [ ] Cross-space red team run; no open critical or high findings
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S12.1 | Stewards | Delegated space administration and quarterly access reviews | [SB-1201](../epics/E12-space-governance/SB-1201-stewards-and-delegated-space-changes.md), [SB-1202](../epics/E12-space-governance/SB-1202-quarterly-access-reviews.md) |
+| S12.2 | Barriers and duties | Information barriers and segregation of duties | [SB-1203](../epics/E12-space-governance/SB-1203-information-barriers.md), [SB-1204](../epics/E12-space-governance/SB-1204-segregation-of-duties.md) |
+| S12.3 | Reorgs | SCIM attributes in policy; joiner, mover, leaver in 5 minutes; reorg preview | [SB-1205](../epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.md), [SB-1206](../epics/E12-space-governance/SB-1206-reorg-preview.md) |
+| S12.4 | Harden | Legal hold and a cross-space red team | [SB-1207](../epics/E12-space-governance/SB-1207-legal-hold-per-space.md), [SB-1208](../epics/E12-space-governance/SB-1208-cross-space-red-team-and-game-day.md) |
+
+#### W13 Portfolio Department Grants
+
+*Only if Q-01 says yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green.*
+
+**Exit gate**
+
+- [ ] Q-01 answered yes and ADR-0014 Accepted (otherwise the wave doesn't start)
+- [ ] LAW-23 green; LAW-02 still green
+- [ ] A friendly tenant's grant delivers a roll-up and is revoked within 5 minutes
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S13.1 | Grants | Consented, aggregate-only grants and their revocation | [SB-1301](../epics/E13-portfolio-grants/SB-1301-space-grant-model-and-consent.md), [SB-1302](../epics/E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.md), [SB-1303](../epics/E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.md) |
+| S13.2 | Roll-up pilot | A finance roll-up with friendly tenants | [SB-1304](../epics/E13-portfolio-grants/SB-1304-finance-roll-up-pilot.md) |
+
 ## Roll-out runbook (summary)
 
 The full runbook is [`sb-onboarding(7)`](../manual/sb-onboarding.7.md). Each company's own IT team runs it, with no calls to the platform team.
@@ -434,6 +614,10 @@ The full runbook is [`sb-onboarding(7)`](../manual/sb-onboarding.7.md). Each com
 | Answers to open questions Q-01 to Q-06 | Before W6 | Parent org | Scope or compliance rework |
 | A friendly tenant with its own cloud account for hand-off rehearsal | W7 | Company IT | Hand-off untested |
 | Answers to Q-09 and Q-10 (hand-off modes, post-hand-off contracts) | Before W7 | Parent org | W7 scope unclear |
+| A GCP organisation, billing account and a staging project for the factory | W9 | Parent-org platform | Real-cloud items stay In review |
+| Sandboxes for GitHub, BambooHR and QuickBooks Online | W11 | Company IT + vendors | Connectors run on recorded fakes only |
+| Answers to Q-11 and Q-12 (department systems, HR data and works councils) | Before W11 | Parent org + company HR | People and Finance spaces slip |
+| Answer to Q-01 | Before W13 | Parent-org leadership + legal | W13 doesn't start |
 
 ## Risks
 
@@ -471,3 +655,5 @@ Tracked in [living/OPEN_QUESTIONS.md](../living/OPEN_QUESTIONS.md):
 6. **Q-06:** Will the parent sign off the proposed metric targets?
 7. **Q-09:** Which hand-off modes are actually needed: own cloud account, divestiture detach, or both? How likely is a divestiture in the first two years?
 8. **Q-10:** After hand-off, who holds the model-provider contract and support terms, and does the factory keep any operational responsibility?
+9. **Q-11:** Which HRIS and accounting systems do the first companies use (BambooHR and QuickBooks Online are the defaults), and which departments do they actually have?
+10. **Q-12:** For HR data in the EU, does any company need a works-council or DPIA sign-off before a People space ingests anything beyond policies?

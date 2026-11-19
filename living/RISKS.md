@@ -21,3 +21,6 @@ Likelihood and impact are 1 (low) to 3 (high). Review at every wave exit.
 | R-10 | Approvers rubber-stamp | 2 | 2 | Company leadership | Diff view, required click, approve-to-reject tracking, weekly report | Open |
 | R-11 | v1 shortcuts erode the hand-off seams (hard-coded account ids, factory-wide keys, push deploys) | 2 | 3 | Platform lead | SB-114 lint; seams in ADR-0015 each with a test; review checklist | Open |
 | R-12 | A detached cell runs unpatched and is still associated with the parent | 2 | 2 | Parent-org legal | Detach requires tenant-owner acceptance; export includes SBOM; registry keeps custody history | Open |
+| R-13 | A mislabelled or over-scoped source puts restricted content in a wide space | 2 | 3 | Company stewards | Stricter label wins; source labels win; leak eval suites; quarterly access reviews (SB-1005, SB-1107, SB-1202) | Open |
+| R-14 | Too many small spaces make answers worse and people go back to asking around | 2 | 2 | Product owner | Company-wide ask by default; templates merge easily; adoption per space in the weekly report | Open |
+| R-15 | Cloud Run cold starts push ask p95 over budget | 2 | 2 | Platform lead | Minimum instances per tenant; measured on staging in W9 (SB-908) | Open |

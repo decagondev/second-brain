@@ -7,7 +7,7 @@ summary: "The spec, the laws and the first formal models exist before features, 
 
 > The spec, the laws and the first formal models exist before features, and CI enforces the process.
 
-**Waves:** W0 · **Tickets:** 15 · **Stories:** 5
+**Waves:** W0, W8 · **Tickets:** 22 · **Stories:** 7
 
 ## User stories
 
@@ -16,6 +16,8 @@ summary: "The spec, the laws and the first formal models exist before features, 
 - **US-00.3**: As a *maintainer*, I want the law tests to exist and fail red before features land, so that every feature is born against its laws. Delivered by [SB-010](SB-010-law-harness-and-law-01-to-law-05-as-failing.md).
 - **US-00.4**: As a *security reviewer*, I want the approval, rollout and permission designs model-checked, so that design flaws are found before code. Delivered by [SB-011](SB-011-approvals-model-in-tla-checked-in-ci.md), [SB-012](SB-012-rollout-model-in-tla-checked-in-ci.md), [SB-013](SB-013-permissions-model-in-alloy-checked-in-ci.md).
 - **US-00.5**: As a *new contributor*, I want one command that builds, tests and renders the docs, so that I am productive on day one. Delivered by [SB-001](SB-001-repo-skeleton-and-toolchain.md), [SB-002](SB-002-manual-layout-man-page-template-and-docs.md), [SB-009](SB-009-link-check-diagram-check-and-manual-example.md), [SB-016](SB-016-smoke-and-regression-test-conventions.md).
+- **US-00.6**: As a *maintainer*, I want read the space, policy and department pages before any space code exists, so that spaces are built to a spec, not invented in a pull request. Delivered by [SB-801](SB-801-sb-spaces-7-and-sb-space-5-first-drafts.md), [SB-802](SB-802-permissions-and-policy-pages-for-spaces.md), [SB-803](SB-803-department-catalogue-sb-departments-7.md).
+- **US-00.7**: As a *security reviewer*, I want the space laws red and the spaces model checked before spaces exist, so that every space feature is born against its laws. Delivered by [SB-804](SB-804-law-19-to-law-23-as-failing-tests.md), [SB-805](SB-805-spaces-model-in-alloy-checked-in-ci.md), [SB-806](SB-806-threat-model-v1-for-spaces-and-adr-sign-off.md), [SB-807](SB-807-space-leak-eval-scaffold.md).
 
 ## Ticket graph
 
@@ -72,3 +74,10 @@ flowchart LR
 | [SB-013](SB-013-permissions-model-in-alloy-checked-in-ci.md) | W0 / S0.4 | Permissions model in Alloy, checked in CI | LAW-01, LAW-02, LAW-03 |
 | [SB-014](SB-014-threat-model-v0-and-adr-sign-off.md) | W0 / S0.4 | Threat model v0 and ADR sign-off | LAW-07, LAW-09 |
 | [SB-016](SB-016-smoke-and-regression-test-conventions.md) | W0 / S0.1 | Smoke and regression test conventions | — |
+| [SB-801](SB-801-sb-spaces-7-and-sb-space-5-first-drafts.md) | W8 / S8.1 | First drafts: `sb-spaces(7)` and `sb-space(5)` | LAW-16, LAW-19 |
+| [SB-802](SB-802-permissions-and-policy-pages-for-spaces.md) | W8 / S8.1 | `sb-permissions(7)` and `sb-policy(5)` for spaces, labels and barriers | LAW-03, LAW-19, LAW-20, LAW-22 |
+| [SB-803](SB-803-department-catalogue-sb-departments-7.md) | W8 / S8.1 | Department catalogue: `sb-departments(7)` | LAW-20 |
+| [SB-804](SB-804-law-19-to-law-23-as-failing-tests.md) | W8 / S8.2 | LAW-19 to LAW-23 as failing tests | LAW-19, LAW-20, LAW-21, LAW-22, LAW-23 |
+| [SB-805](SB-805-spaces-model-in-alloy-checked-in-ci.md) | W8 / S8.2 | Spaces model in Alloy, checked in CI | LAW-19, LAW-20, LAW-22 |
+| [SB-806](SB-806-threat-model-v1-for-spaces-and-adr-sign-off.md) | W8 / S8.2 | Threat model v1 for spaces and ADR-0020, ADR-0021 sign-off | LAW-19, LAW-20, LAW-22 |
+| [SB-807](SB-807-space-leak-eval-scaffold.md) | W8 / S8.2 | Space leak eval scaffold | LAW-20, LAW-22 |
