@@ -678,3 +678,27 @@ func TestSelf_LAW16DriftMutationIsCaught(t *testing.T) {
 		t.Error("LAW-16: a drift detector that misses added and removed resources was not caught")
 	}
 }
+
+// LAW-01's CRM check catches a connector that reads a team-level role as view-all.
+func TestSelf_LAW01CRMMutationIsCaught(t *testing.T) {
+	mutant := func() CRMWorld { return teamAsAll{NewCRMWorld()} }
+	if !violates(runs, func(r *rand.Rand) error { return law01CRM(r, mutant()) }) {
+		t.Error("LAW-01 (CRM): reading a team role as view-all was not caught")
+	}
+}
+
+type teamAsAll struct{ CRMWorld }
+
+func (m teamAsAll) AddUser(email, level string, teams ...string) {
+	if level == "team" {
+		level = "all"
+	}
+	m.CRMWorld.AddUser(email, level, teams...)
+}
+
+func (m teamAsAll) SetLevel(email, level string) {
+	if level == "team" {
+		level = "all"
+	}
+	m.CRMWorld.SetLevel(email, level)
+}

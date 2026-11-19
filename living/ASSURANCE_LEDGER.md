@@ -9,7 +9,7 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 
 | Law | Short name | Status | Model | Tests | Production | Tickets |
 |---|---|---|---|---|---|---|
-| [LAW-01](../manual/sb-laws.7.md#law-01) | Cite only what the asker can open | Tested | `Permissions.als`: 5 checks UNSAT at scope 6; mutation caught | `laws/` check + self-tests; red until SB-302 | — | SB-010, SB-013, SB-302, SB-601 |
+| [LAW-01](../manual/sb-laws.7.md#law-01) | Cite only what the asker can open | Tested | `Permissions.als`: 5 checks UNSAT at scope 6; mutation caught | `laws/` check + self-tests; red until SB-302 | — | SB-010, SB-013, SB-302, SB-601, SB-610 |
 | [LAW-02](../manual/sb-laws.7.md#law-02) | No tenant crossing | Tested | `Permissions.als`: 5 checks UNSAT at scope 6; mutation caught | `laws/` check + self-tests; retrieval level red until SB-301; cell level (`TestLAW02_CellsShareNothing`, SB-103) request level (`TestLAW02_RequestsNeverCrossTenants`, SB-105) sign-in (`TestLAW02_TokensStayInTheirTenant`, SB-106) request context (`TestLAW02_ScopeIsTheOnlyWayIn`, SB-108) and policies (`TestLAW02_PoliciesNeverCrossTenants`, SB-110) green | — | SB-010, SB-013, SB-103, SB-108, SB-301 |
 | [LAW-03](../manual/sb-laws.7.md#law-03) | Unknown means refuse | Tested | `Permissions.als`: 5 checks UNSAT at scope 6; mutation caught | `laws/` check + self-tests; retrieval level red until SB-302; policy level (`TestLAW03_PolicyUnknownRefuses`, SB-109) green | — | SB-010, SB-013, SB-109, SB-302 |
 | [LAW-04](../manual/sb-laws.7.md#law-04) | Audit before act | Tested | `Approvals.tla`: TLC clean (1,068 states); 4 mutations caught | `laws/` check + self-tests through the real tool bus and audit log; ordering tests in `internal/core/toolbus` | — | SB-010, SB-011, SB-111, SB-401, SB-405 |
@@ -76,3 +76,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-08 | Stated → Tested | SB-507, SB-508: `TestLAW08_AtMostOneBehindStable` red first, then green; promote-without-guard mutation caught |
 | 2026-11-19 | LAW-06, LAW-16 | Tested (extended) | SB-509: attestations compared with the deployed bundle (mismatch, replay, silence are Sev-1); SB-510: `TestLAW16_DriftIsReported` red first, then green, detector mutation caught |
 | 2026-11-19 | LAW-01, LAW-02, LAW-03, LAW-14 | Tested (verify) | SB-601: `verify` checks the laws against a cell's own data and users, content-free; passes on the local cell, fails a leaky one, and unknown fails |
+| 2026-11-19 | LAW-01, LAW-03 | Tested (extended) | SB-610: `TestLAW01_CRMRecordPermissionsAreLive` checks HubSpot record verdicts against a reference model of role level, teams and owner; team-read-as-all mutation caught; LAW-03 over the HubSpot connector |

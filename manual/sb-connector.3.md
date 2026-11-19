@@ -124,6 +124,22 @@ Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `t
 
 Tested against `lineartest`, a recorded fake of the GraphQL operations the connector sends (by `operationName`).
 
+### `crm: hubspot` (SB-610)
+
+Read-only. Name it as `connectors: { crm: hubspot }`. Contacts are personal data and are never indexed; only companies and deals are.
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A HubSpot private app's access token with `crm.objects.companies.read`, `crm.objects.deals.read`, `crm.objects.owners.read` and `settings.users.read`, and the tenant's role map, at `vault://tenants/TENANT/connectors/crm` as JSON `{"token": "…", "roles": {"ROLE_ID": "all" \| "team" \| "owned"}}`. The role map says what each HubSpot role may view for companies and deals, as set in HubSpot's permission sets, because HubSpot's API doesn't expose permission sets |
+| Documents | One document per company (`companies/ID`, title the company name) and per deal (`deals/ID`, title the deal name). Text is the record's fixed properties: name, domain, industry, stage, amount, close date and description, one per line. Version is `hs_lastmodifieddate` in microseconds |
+| Prefilter | The owner's email and the broad token `hubspot:users`, so every HubSpot user's search includes CRM records and the live check decides. Because the prefilter doesn't depend on roles or teams, role and team changes need no permission-only changes |
+| ACL | Live, per record (LAW-01). The user is found by email in the users and owners APIs: none, or a deactivated owner → `Deny`. A super admin, or a role mapped to `all` → `Allow`; `team` → `Allow` if the user owns the record or is in the record's team (`hubspot_team_id`); `owned` → `Allow` only if the user owns it; otherwise `Deny`. A role missing from the role map, or an archived or missing record → `Unknown` |
+| Changes | Polled with the CRM search API, so no public endpoint is needed: records with `hs_lastmodifieddate` at or after the cursor, oldest first. Archived records (listed with `archived=true`, by `archivedAt`) are deletes. A record whose `hubspot_owner_assigneddate` is within a second of its `hs_lastmodifieddate`, and whose `createdate` isn't, was just reassigned, and is reported as a permission-only change. An empty cursor lists every record |
+| Rate limits | HTTP 429 is retried with backoff while the deadline allows; then `Unknown` |
+| Act | `ENOTSUP` (read-only) |
+
+Tested against `hubspottest`, a recorded fake of the CRM v3 objects, search, owners and settings users endpoints the connector calls.
+
 ## MOCK CONNECTOR
 
 `internal/adapters/connectors/mock` is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:

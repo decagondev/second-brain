@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S6.3b HubSpot CRM connector (SB-610)
+
+**Wave/slice:** W6 / S6.3b · **Author:** platform lead + Claude · **Status:** In review (real sandbox)
+
+**What:** `internal/adapters/connectors/hubspot` and its recorded fake `hubspottest`, plus `laws/law01crm.go` (the CRM LAW-01 world, the reference model, and the LAW-03 world). The manual changed first: sb-connector(3) gained `crm: hubspot`, and sb-permissions(7) the `hubspot:users` broad token.
+
+**Why this way:** HubSpot's API doesn't expose permission sets, so the tenant states each role's view level (`all`, `team` or `owned`) in the vault next to the token. A role that isn't stated is `Unknown`, not a guess. The prefilter is the owner's email plus a broad token, so role and team edits can't leave a stale prefilter that hides a record from someone who can now see it, and the live check does all the deciding. Contacts are personal data, and we don't index them.
+
+**Learned:** The contract kit wants reassignments reported as permission-only changes. HubSpot's search results carry `hubspot_owner_assigneddate`, and comparing it with `hs_lastmodifieddate` and `createdate` tells a reassignment apart from an edit or a new record without keeping any per-record state in the cursor.
+
+**Laws:** LAW-01 extended (`TestLAW01_CRMRecordPermissionsAreLive`, with its mutation caught), and LAW-03 over the new connector. All green.
+
+**Next:** S6.3c, retention and deletion (SB-611).
+
 ## 2026-11-19 S6.3a Alerts, telemetry and budgets (SB-607 to SB-609)
 
 **Wave/slice:** W6 / S6.3a · **Author:** platform lead + Claude · **Status:** In review (running cell, staging)

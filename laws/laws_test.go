@@ -191,3 +191,12 @@ func TestLAW08_AtMostOneBehindStable(t *testing.T) {
 func TestLAW16_DriftIsReported(t *testing.T) {
 	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Drift(r, NewDriftDetector()) })
 }
+
+func TestLAW01_CRMRecordPermissionsAreLive(t *testing.T) {
+	Check(t, "LAW-01", 40, func(r *rand.Rand) error { return law01CRM(r, NewCRMWorld()) })
+}
+
+func TestLAW03_HubSpotUnknownIsNeverAllow(t *testing.T) {
+	w := NewHubSpotWorld()
+	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
+}

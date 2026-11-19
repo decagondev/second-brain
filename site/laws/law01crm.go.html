@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>law01crm.go · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a><a href="../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../docs/pilot-retro-template.html">Pilot retro template</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/corpus/injection.json.html">injection.json</a><a href="../evals/faithfulness.py.html">faithfulness.py</a><a href="../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/gate.py.html">gate.py</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/pilot.py.html">pilot.py</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/citation.yaml.html">citation.yaml</a><a href="../evals/suites/injection.yaml.html">injection.yaml</a><a href="../evals/suites/permission.yaml.html">permission.yaml</a><a href="../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../evals/suites/regression.yaml.html">regression.yaml</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law01chat.go.html">law01chat.go</a><a class="current" href="../laws/law01crm.go.html">law01crm.go</a><a href="../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law06.go.html">law06.go</a><a href="../laws/law07.go.html">law07.go</a><a href="../laws/law08.go.html">law08.go</a><a href="../laws/law09.go.html">law09.go</a><a href="../laws/law10.go.html">law10.go</a><a href="../laws/law11.go.html">law11.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law13.go.html">law13.go</a><a href="../laws/law14.go.html">law14.go</a><a href="../laws/law15.go.html">law15.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/system_ask.go.html">system_ask.go</a><a href="../laws/system_audit.go.html">system_audit.go</a><a href="../laws/system_bus.go.html">system_bus.go</a><a href="../laws/system_chat.go.html">system_chat.go</a><a href="../laws/system_drift.go.html">system_drift.go</a><a href="../laws/system_kill.go.html">system_kill.go</a><a href="../laws/system_prompt.go.html">system_prompt.go</a><a href="../laws/system_release.go.html">system_release.go</a><a href="../laws/system_rollout.go.html">system_rollout.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/backup/backup_test.go.html">backup_test.go</a><a href="../tests/canary/canary_test.go.html">canary_test.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / laws</div><h1 id="law01crmgo">law01crm.go</h1>
+<pre><code class="language-go">package laws
+
+import (
+    &quot;context&quot;
+    &quot;fmt&quot;
+    &quot;math/rand&quot;
+
+    &quot;example.com/second-brain/internal/adapters/connectors/hubspot&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/hubspot/hubspottest&quot;
+    &quot;example.com/second-brain/internal/core/ports&quot;
+    &quot;example.com/second-brain/internal/obs&quot;
+)
+
+// LAW-01 on CRM records (SB-610): the live verdict on a company or deal follows HubSpot's
+// record-level permissions at this moment (the user's role level, teams, the record's
+// owner and team) through reassignments, role and team changes, deactivation and
+// archiving. A level the tenant hasn't mapped is Unknown, never Allow.
+
+// CRMWorld is a HubSpot portal and the connector over it. Levels are &quot;all&quot;, &quot;team&quot;,
+// &quot;owned&quot;, &quot;admin&quot; (super admin) and &quot;none&quot; (a role missing from the role map).
+type CRMWorld interface {
+    AddUser(email, level string, teams ...string)
+    SetLevel(email, level string)
+    SetTeams(email string, teams ...string)
+    Deactivate(email string)
+    Put(id, owner, team string) // id is companies/N or deals/N; owner is an email
+    Reassign(id, owner, team string)
+    Archive(id string)
+    Live(email, id string) (string, error)
+}
+
+// NewCRMWorld builds the system under test: the HubSpot connector and its fake.
+var NewCRMWorld = func() CRMWorld {
+    f := hubspottest.New()
+    c := &amp;hubspot.Connector{Base: f.Base(), HTTP: f.Server.Client(), Redact: obs.NewRedactor(),
+        Creds: func(context.Context) (string, error) {
+            return `{&quot;token&quot;: &quot;` + f.Token + `&quot;, &quot;roles&quot;: {&quot;r_all&quot;: &quot;all&quot;, &quot;r_team&quot;: &quot;team&quot;, &quot;r_owned&quot;: &quot;owned&quot;}}`, nil
+        }}
+    return &amp;crmWorld{f: f, c: c}
+}
+
+type crmWorld struct {
+    f *hubspottest.Fake
+    c *hubspot.Connector
+    n int
+}
+
+func crmRole(level string) (string, bool) {
+    if level == &quot;admin&quot; {
+        return &quot;r_none&quot;, true
+    }
+    return &quot;r_&quot; + level, false
+}
+
+func (w *crmWorld) AddUser(email, level string, teams ...string) {
+    w.n++
+    role, admin := crmRole(level)
+    w.f.AddUser(fmt.Sprintf(&quot;U%d&quot;, w.n), email, role, admin, teams...)
+}
+func (w *crmWorld) SetLevel(email, level string) {
+    role, admin := crmRole(level)
+    w.f.SetRole(email, role, admin)
+}
+func (w *crmWorld) SetTeams(email string, teams ...string) { w.f.SetTeams(email, teams...) }
+func (w *crmWorld) Deactivate(email string)                { w.f.Deactivate(email) }
+func (w *crmWorld) Put(id, owner, team string) {
+    w.f.Put(id, &quot;Record &quot;+id, &quot;x&quot;, w.f.Owner(owner), team)
+}
+func (w *crmWorld) Reassign(id, owner, team string) { w.f.Reassign(id, w.f.Owner(owner), team) }
+func (w *crmWorld) Archive(id string)               { w.f.Archive(id) }
+func (w *crmWorld) Live(email, id string) (string, error) {
+    vs, err := w.c.ACL(context.Background(), ports.UserRef{Email: email}, []ports.SourceRef{{Kind: &quot;crm&quot;, ID: id}})
+    if err != nil || len(vs) != 1 {
+        return &quot;unknown&quot;, err
+    }
+    return vs[0].String(), nil
+}
+
+// crmModel is the reference: HubSpot's permissions as sb-connector(3) states them.
+type crmModel struct {
+    level  map[string]string
+    teams  map[string]map[string]bool
+    gone   map[string]bool
+    owner  map[string]string
+    team   map[string]string
+    archiv map[string]bool
+}
+
+func (m crmModel) want(email, id string) string {
+    if m.gone[email] {
+        return &quot;deny&quot;
+    }
+    if m.archiv[id] || m.owner[id] == &quot;&quot; {
+        return &quot;unknown&quot;
+    }
+    mine := m.owner[id] == email
+    switch m.level[email] {
+    case &quot;all&quot;, &quot;admin&quot;:
+        return &quot;allow&quot;
+    case &quot;team&quot;:
+        if mine || m.teams[email][m.team[id]] {
+            return &quot;allow&quot;
+        }
+    case &quot;owned&quot;:
+        if mine {
+            return &quot;allow&quot;
+        }
+    default:
+        return &quot;unknown&quot;
+    }
+    return &quot;deny&quot;
+}
+
+func law01CRM(r *rand.Rand, w CRMWorld) error {
+    users := []string{&quot;ann@acme.example&quot;, &quot;bob@acme.example&quot;, &quot;cy@acme.example&quot;, &quot;dee@acme.example&quot;}
+    levels := []string{&quot;all&quot;, &quot;team&quot;, &quot;owned&quot;, &quot;admin&quot;, &quot;none&quot;}
+    teamNames := []string{&quot;T1&quot;, &quot;T2&quot;, &quot;T3&quot;}
+    m := crmModel{level: map[string]string{}, teams: map[string]map[string]bool{}, gone: map[string]bool{},
+        owner: map[string]string{}, team: map[string]string{}, archiv: map[string]bool{}}
+    pickTeams := func() []string {
+        var out []string
+        for _, t := range teamNames {
+            if r.Intn(2) == 0 {
+                out = append(out, t)
+            }
+        }
+        return out
+    }
+    setTeams := func(u string, ts []string) {
+        m.teams[u] = map[string]bool{}
+        for _, t := range ts {
+            m.teams[u][t] = true
+        }
+    }
+    for _, u := range users {
+        l, ts := levels[r.Intn(len(levels))], pickTeams()
+        w.AddUser(u, l, ts...)
+        m.level[u] = l
+        setTeams(u, ts)
+    }
+    var ids []string
+    for i := 0; i &lt; 2+r.Intn(4); i++ {
+        id := fmt.Sprintf(&quot;%s/%d&quot;, []string{&quot;companies&quot;, &quot;deals&quot;}[r.Intn(2)], i)
+        o, t := users[r.Intn(len(users))], teamNames[r.Intn(len(teamNames))]
+        w.Put(id, o, t)
+        m.owner[id], m.team[id] = o, t
+        ids = append(ids, id)
+    }
+    check := func(step string) error {
+        for _, u := range users {
+            for _, id := range append(ids, &quot;deals/missing&quot;) {
+                got, err := w.Live(u, id)
+                if err != nil {
+                    return err
+                }
+                want := m.want(u, id)
+                if got != want {
+                    return fmt.Errorf(&quot;after %s, %s on %s is %s; HubSpot's permissions say %s (level %s, teams %v, owner %s, team %s)&quot;,
+                        step, u, id, got, want, m.level[u], m.teams[u], m.owner[id], m.team[id])
+                }
+            }
+        }
+        return nil
+    }
+    if err := check(&quot;setup&quot;); err != nil {
+        return err
+    }
+    for round := 0; round &lt; 4; round++ {
+        u, id := users[r.Intn(len(users))], ids[r.Intn(len(ids))]
+        var step string
+        switch r.Intn(5) {
+        case 0:
+            o, t := users[r.Intn(len(users))], teamNames[r.Intn(len(teamNames))]
+            if !m.archiv[id] {
+                w.Reassign(id, o, t)
+                m.owner[id], m.team[id] = o, t
+            }
+            step = &quot;reassigning &quot; + id
+        case 1:
+            l := levels[r.Intn(len(levels))]
+            w.SetLevel(u, l)
+            m.level[u] = l
+            step = &quot;changing &quot; + u + &quot;'s role&quot;
+        case 2:
+            ts := pickTeams()
+            w.SetTeams(u, ts...)
+            setTeams(u, ts)
+            step = &quot;changing &quot; + u + &quot;'s teams&quot;
+        case 3:
+            w.Deactivate(u)
+            m.gone[u] = true
+            step = &quot;deactivating &quot; + u
+        default:
+            if !m.archiv[id] {
+                w.Archive(id)
+                m.archiv[id] = true
+            }
+            step = &quot;archiving &quot; + id
+        }
+        if err := check(step); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+// NewHubSpotWorld is the connector-level world (LAW-03) over the HubSpot connector. Access
+// means the asker (role &quot;owned&quot;) owns the record; &quot;script&quot; archives the first record.
+var NewHubSpotWorld = func() ConnectorWorld {
+    w := NewCRMWorld().(*crmWorld)
+    w.AddUser(&quot;ann@acme.example&quot;, &quot;owned&quot;, &quot;T1&quot;)
+    w.AddUser(&quot;bob@acme.example&quot;, &quot;owned&quot;, &quot;T1&quot;)
+    return &amp;hubspotWorld{w: w}
+}
+
+type hubspotWorld struct {
+    w *crmWorld
+    n int
+}
+
+func (h *hubspotWorld) ACL(access []bool, fault string) ([]string, error) {
+    h.n++
+    refs := make([]ports.SourceRef, len(access))
+    for i, ok := range access {
+        owner := &quot;bob@acme.example&quot;
+        if ok {
+            owner = &quot;ann@acme.example&quot;
+        }
+        id := fmt.Sprintf(&quot;deals/%d_%d&quot;, h.n, i)
+        h.w.Put(id, owner, &quot;T1&quot;)
+        refs[i] = ports.SourceRef{Kind: &quot;crm&quot;, ID: id}
+    }
+    switch fault {
+    case &quot;script&quot;:
+        h.w.Archive(refs[0].ID)
+    case &quot;404&quot;: // every record read fails: one fault per ref
+        for range refs {
+            h.w.f.FailNext(&quot;404&quot;)
+        }
+    case &quot;&quot;:
+    default:
+        h.w.f.FailNext(fault)
+    }
+    vs, err := h.w.c.ACL(context.Background(), ports.UserRef{ID: &quot;usr_ann&quot;, Email: &quot;ann@acme.example&quot;}, refs)
+    out := make([]string, len(vs))
+    for i, v := range vs {
+        out[i] = v.String()
+    }
+    return out, err
+}
+
+func (h *hubspotWorld) Act(string, bool) (string, error) { return &quot;&quot;, fmt.Errorf(&quot;ENOTSUP&quot;) }
+func (h *hubspotWorld) Effects() int                     { return 0 }
+</code></pre>
+<p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/law01crm.go</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -39,7 +39,7 @@
 <td><code>Permissions.als</code>: 5 checks UNSAT at scope 6; mutation caught</td>
 <td><code>laws/</code> check + self-tests; red until SB-302</td>
 <td>—</td>
-<td>SB-010, SB-013, SB-302, SB-601</td>
+<td>SB-010, SB-013, SB-302, SB-601, SB-610</td>
 </tr>
 <tr>
 <td><a href="../manual/sb-laws.7.html#law-02">LAW-02</a></td>
@@ -470,6 +470,12 @@
 <td>LAW-01, LAW-02, LAW-03, LAW-14</td>
 <td>Tested (verify)</td>
 <td>SB-601: <code>verify</code> checks the laws against a cell's own data and users, content-free; passes on the local cell, fails a leaky one, and unknown fails</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-01, LAW-03</td>
+<td>Tested (extended)</td>
+<td>SB-610: <code>TestLAW01_CRMRecordPermissionsAreLive</code> checks HubSpot record verdicts against a reference model of role level, teams and owner; team-read-as-all mutation caught; LAW-03 over the HubSpot connector</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
