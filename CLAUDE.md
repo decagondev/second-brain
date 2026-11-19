@@ -18,6 +18,18 @@ Read `AGENTS.md` first: those rules apply to every change. This file says where 
 3. **Manifest YAML (SB-101):** the default plan is a strict in-repo parser for the manifest's subset, keeping line and column for errors. Unknown fields are errors.
 4. **Planning fix:** add a W1-level LAW-02 law test (requests and sessions never cross tenants) and a LAW-12 test (deprovisioning within 5 minutes, using a fake clock). Both go through the red ratchet (`laws/expected_red.txt`, which now takes per-test lines). The retrieval-level LAW-02 test stays red until SB-301. Done so far: the cell-level (SB-103) and request-level (SB-105) LAW-02 tests. LAW-12 (SB-107) and the session/scope one (SB-108) are done too.
 
+## Decisions for W2 to W7 (the user, 2026-11-19)
+
+1. **LLM:** an abstract model gateway (SB-305) with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter (ADR-0019). Tests use fakes.
+2. **Embeddings:** the free local hashing embedder for now.
+3. **Vector store:** Postgres with pgvector (`sudo apt install -y postgresql-17-pgvector` in WSL).
+4. **Vendors:** Google Drive (docs), Slack (chat and the chat-app entry point), Linear (tickets), HubSpot (CRM). Every vendor is built against a recorded fake; real-sandbox runs stay In review.
+5. **Web UI:** TypeScript, React and Vite, served by the cell.
+6. **Go modules:** standing approval for vetted modules, each with an ADR and allow-list entry; tell the user. Go stays 1.24.
+7. **Release and ops:** cosign keyless signing in CI with an in-repo SPDX SBOM; local adapters plus Postgres for audit anchors, kill switches and backups; logs via `internal/obs`, a Prometheus text endpoint, and Sev-1 alerts through a webhook adapter.
+8. **First real cloud (W7):** GCP (and Firebase where it fits).
+9. **Process:** one commit per slice, pushed to `main` after `make check` passes; no PRs, no attribution. Human-only items (pilot, onboarding, pen test, game days, second reviewers) get tooling and runbooks and stay In review. Stop only for new decisions, installs, or a failing check that can't be fixed.
+
 ## How to work a ticket
 
 1. Update the man pages listed on the ticket **first** (CI enforces this).

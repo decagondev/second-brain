@@ -27,6 +27,7 @@ An ADR records one decision, the alternatives we rejected and the consequences w
 | [ADR-0016](ADR-0016-stdlib-only-go-in-w0.md) | Go standard library only in W0; property tests use an in-repo helper | Accepted |
 | [ADR-0017](ADR-0017-first-third-party-go-modules.md) | First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed | Accepted |
 | [ADR-0018](ADR-0018-cloud-neutral-cells-behind-ports.md) | Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports | Accepted |
+| [ADR-0019](ADR-0019-provider-neutral-model-gateway.md) | A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter | Accepted |
 
 ## Sign-off (SB-014)
 
@@ -52,6 +53,7 @@ Every ADR needs two reviewers before W0 can exit. Fill in names and dates; an em
 | ADR-0016 | | |
 | ADR-0017 | | |
 | ADR-0018 | | |
+| ADR-0019 | | |
 
 ## Template
 
