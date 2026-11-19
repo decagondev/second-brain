@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Factory roles (S7.1b: SB-702): `factory-operator` and `tenant-owner` in Cedar, a `CellCustody` entity and six custody actions; no self-approval of a plan, no content reads across tenants, and custody records must name their tenant.
 - Hand-off specified (S7.1a: SB-701): `sb-factory(1)`, the phases and invariants of a hand-off in sb-factory(7), the hand-off runbook, and LAW-17 and LAW-18 law tests (red until SB-705).
 - Pen-test readiness (S6.4b: SB-612): `security/` with the scope, the rules of engagement, the findings register and the injection corpus; a `make check` gate on open critical or high findings; law tests for hostile hosts, encoded secrets and the corpus.
 - DR game day (S6.4a: SB-613): the scoring rules in sb-observability(7), `internal/core/gameday` (restore from the first good copy into empty stores, and the score), a rehearsal in `tests/gameday` run by `make check`, the game day runbook, and a LAW-11 law test for a restore.

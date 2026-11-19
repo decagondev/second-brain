@@ -68,6 +68,36 @@ when { principal.tenant == resource.tenant &amp;&amp; principal in resource.appr
 // tenant; the forbid above is the second guard.
 permit (principal in Group::&quot;sb-operators&quot;, action == Action::&quot;admin&quot;, resource is Cell)
 when { principal.tenant == resource.tenant };
+
+
+// Factory operators (SB-702): the sb-factory-operators group of the factory's own tenant,
+// on custody records the factory holds. Custody records always carry the factory's tenant;
+// the kernel never fills it in for them.
+permit (
+  principal in Group::&quot;sb-factory-operators&quot;,
+  action in [Action::&quot;view_custody&quot;, Action::&quot;plan_handoff&quot;, Action::&quot;approve_handoff&quot;, Action::&quot;execute_handoff&quot;, Action::&quot;abort_handoff&quot;],
+  resource is CellCustody
+)
+when { principal.tenant == resource.tenant };
+
+// Tenant owners (SB-702): the sb-owners group of the tenant's own IdP, on their own cell.
+permit (
+  principal in Group::&quot;sb-owners&quot;,
+  action in [Action::&quot;view_custody&quot;, Action::&quot;approve_handoff&quot;, Action::&quot;detach&quot;],
+  resource is Cell
+)
+when { principal.tenant == resource.tenant };
+
+// Nobody approves their own hand-off plan: the factory side needs a second operator.
+forbid (principal, action == Action::&quot;approve_handoff&quot;, resource)
+when { context has planner &amp;&amp; context.planner == principal };
+
+// Neither role reads content outside its own tenant (LAW-02); they add no read permit.
+forbid (principal in Group::&quot;sb-factory-operators&quot;, action == Action::&quot;read&quot;, resource)
+unless { principal.tenant == resource.tenant };
+
+forbid (principal in Group::&quot;sb-owners&quot;, action == Action::&quot;read&quot;, resource)
+unless { principal.tenant == resource.tenant };
 </code></pre>
 <p><a href="../README.html">Back</a></p><p class="srcline">Source: <code>policy/platform/base.cedar</code></p></main>
   

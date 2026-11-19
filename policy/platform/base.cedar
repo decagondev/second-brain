@@ -49,3 +49,32 @@ when { principal.tenant == resource.tenant && principal in resource.approvers };
 permit (principal in Group::"sb-operators", action == Action::"admin", resource is Cell)
 when { principal.tenant == resource.tenant };
 
+
+// Factory operators (SB-702): the sb-factory-operators group of the factory's own tenant,
+// on custody records the factory holds. Custody records always carry the factory's tenant;
+// the kernel never fills it in for them.
+permit (
+  principal in Group::"sb-factory-operators",
+  action in [Action::"view_custody", Action::"plan_handoff", Action::"approve_handoff", Action::"execute_handoff", Action::"abort_handoff"],
+  resource is CellCustody
+)
+when { principal.tenant == resource.tenant };
+
+// Tenant owners (SB-702): the sb-owners group of the tenant's own IdP, on their own cell.
+permit (
+  principal in Group::"sb-owners",
+  action in [Action::"view_custody", Action::"approve_handoff", Action::"detach"],
+  resource is Cell
+)
+when { principal.tenant == resource.tenant };
+
+// Nobody approves their own hand-off plan: the factory side needs a second operator.
+forbid (principal, action == Action::"approve_handoff", resource)
+when { context has planner && context.planner == principal };
+
+// Neither role reads content outside its own tenant (LAW-02); they add no read permit.
+forbid (principal in Group::"sb-factory-operators", action == Action::"read", resource)
+unless { principal.tenant == resource.tenant };
+
+forbid (principal in Group::"sb-owners", action == Action::"read", resource)
+unless { principal.tenant == resource.tenant };

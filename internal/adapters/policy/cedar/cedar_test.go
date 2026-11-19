@@ -98,3 +98,50 @@ type discard struct{}
 func (discard) RecordDecision(context.Context, policy.Record) error { return nil }
 
 func kernel(e Engine) policy.Kernel { return policy.Kernel{Engine: e, Recorder: discard{}} }
+
+// SB-702: the factory-operator and tenant-owner roles, through the real kernel.
+func TestFactoryRoles(t *testing.T) {
+	e := base(t)
+	ctx := context.Background()
+	fo := scope(t, "sb-factory", "fo_ann", "sb-factory-operators")
+	fo2 := scope(t, "sb-factory", "fo_bob", "sb-factory-operators")
+	staff := scope(t, "sb-factory", "dev_cy", "engineering")
+	owner := scope(t, "gamma-parts", "to_dee", "sb-owners")
+	acmeOp := scope(t, "acme-logistics", "olga", "sb-operators")
+	impostor := scope(t, "acme-logistics", "eve", "sb-factory-operators") // a tenant group with the factory's name
+	custody := func(tenant string) policy.Entity {
+		return policy.Entity{Type: "CellCustody", ID: "gamma-parts", Tenant: tenant, Attrs: map[string]any{"cell": policy.Ref{Type: "Tenant", ID: "gamma-parts"}}}
+	}
+	planner := map[string]any{"planner": policy.Ref{Type: "User", ID: "fo_ann"}}
+	cases := []struct {
+		name   string
+		s      tenancy.Scope
+		action string
+		res    policy.Entity
+		ctx    map[string]any
+		want   policy.Decision
+	}{
+		{"operator plans", fo, "plan_handoff", custody("sb-factory"), nil, policy.Allow},
+		{"operator views", fo, "view_custody", custody("sb-factory"), nil, policy.Allow},
+		{"operator executes", fo, "execute_handoff", custody("sb-factory"), nil, policy.Allow},
+		{"planner approves own plan", fo, "approve_handoff", custody("sb-factory"), planner, policy.Deny},
+		{"second operator approves", fo2, "approve_handoff", custody("sb-factory"), planner, policy.Allow},
+		{"factory staff without the role", staff, "plan_handoff", custody("sb-factory"), nil, policy.Deny},
+		{"tenant group named like the factory's, explicit tenant", impostor, "plan_handoff", custody("sb-factory"), nil, policy.Deny},
+		{"tenant group named like the factory's, tenant left empty", impostor, "plan_handoff", custody(""), nil, policy.Unknown},
+		{"owner approves own cell", owner, "approve_handoff", policy.Entity{Type: "Cell", ID: "gamma-parts"}, planner, policy.Allow},
+		{"owner detaches own cell", owner, "detach", policy.Entity{Type: "Cell", ID: "gamma-parts"}, nil, policy.Allow},
+		{"owner approves another tenant's cell", owner, "approve_handoff", policy.Entity{Type: "Cell", ID: "acme-logistics", Tenant: "acme-logistics"}, planner, policy.Deny},
+		{"owner can't plan", owner, "plan_handoff", custody("gamma-parts"), nil, policy.Deny},
+		{"tenant operator isn't an owner", acmeOp, "detach", policy.Entity{Type: "Cell", ID: "acme-logistics"}, nil, policy.Deny},
+		{"operator reads a tenant's chunk", fo, "read", policy.Entity{Type: "Chunk", ID: "c1", Tenant: "gamma-parts", Attrs: map[string]any{"cite": "docs:a@1"}}, nil, policy.Deny},
+		{"owner reads another tenant's document", owner, "read", policy.Entity{Type: "Document", ID: "d1", Tenant: "acme-logistics", Attrs: map[string]any{"source": "docs"}}, nil, policy.Deny},
+		{"owner reads own chunk as a user", owner, "read", policy.Entity{Type: "Chunk", ID: "c2", Attrs: map[string]any{"cite": "docs:b@1"}}, nil, policy.Allow},
+		{"operator administers a tenant cell", fo, "admin", policy.Entity{Type: "Cell", ID: "gamma-parts", Tenant: "gamma-parts"}, nil, policy.Deny},
+	}
+	for _, c := range cases {
+		if got := kernel(e).Authorise(ctx, c.s, c.action, c.res, c.ctx); got.Decision != c.want || got.Reason == "" {
+			t.Errorf("%s: %v (%s), want %v", c.name, got.Decision, got.Reason, c.want)
+		}
+	}
+}

@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 S7.1b Factory roles (SB-702)
+
+**Wave/slice:** W7 / S7.1b · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** the schema gains `CellCustody` and six custody actions, `base.cedar` the two roles and three forbids, and the policy kernel an explicit-tenant rule for custody records. Tests are in `cedar_test.go` and the LAW-02 policy law. The manual changed first: sb-policy(5) gained "Factory roles, exactly", and sb-factory(7) points to it.
+
+**Why this way:** Every permit in the platform carries `principal.tenant == resource.tenant`, and CI enforces it. The factory roles keep that rule. A custody record belongs to the factory's own tenant and names the cell it is about in a separate attribute, so a factory operator's permit is still tenant-scoped, and no new kind of permit is needed.
+
+**Learned:** The kernel's convenience of filling an empty resource tenant from the caller is a hole for any entity owned by someone other than the caller. A tenant could name a group `sb-factory-operators` and build a custody record with no tenant. Such entities are now listed, and an empty tenant on them is `Unknown`.
+
+**Laws:** LAW-02 extended. LAW-17 and LAW-18 are still red, as planned, until SB-705. Everything else is green.
+
+**Next:** S7.1c, the GCP placement adapter (SB-703).
+
 ## 2026-11-19 S7.1a The hand-off, specified (SB-701)
 
 **Wave/slice:** W7 / S7.1a · **Author:** platform lead + Claude · **Status:** In review (security and tenant review)

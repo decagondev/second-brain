@@ -40,7 +40,7 @@ func LoadPolicies() (policy.Evaluator, error) {
 
 func law02Policies(r *rand.Rand, ev policy.Evaluator) error {
 	tenants := []string{"acme-logistics", "beta-freight"}
-	groups := []string{"grp_it_leads", "grp_contractors", "grp_finance", "grp_everyone"}
+	groups := []string{"grp_it_leads", "grp_contractors", "grp_finance", "grp_everyone", "sb-operators", "sb-owners", "sb-factory-operators"}
 	type shape struct {
 		action string
 		res    func(id string) policy.Entity
@@ -61,6 +61,11 @@ func law02Policies(r *rand.Rand, ev policy.Evaluator) error {
 				"requester": policy.Ref{Type: "User", ID: "usr_req"}}}
 		}},
 		{"admin", func(id string) policy.Entity { return policy.Entity{Type: "Cell", ID: id} }},
+		// Factory roles (SB-702): custody verbs on custody records and on cells.
+		{[]string{"view_custody", "plan_handoff", "approve_handoff", "execute_handoff", "abort_handoff"}[r.Intn(5)], func(id string) policy.Entity {
+			return policy.Entity{Type: "CellCustody", ID: id, Attrs: map[string]any{"cell": policy.Ref{Type: "Tenant", ID: "gamma-parts"}}}
+		}},
+		{[]string{"view_custody", "approve_handoff", "detach"}[r.Intn(3)], func(id string) policy.Entity { return policy.Entity{Type: "Cell", ID: id} }},
 	}
 	for i := 0; i < 20; i++ {
 		pt, rt := tenants[r.Intn(2)], tenants[r.Intn(2)]

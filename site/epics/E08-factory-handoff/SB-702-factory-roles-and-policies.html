@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,23 @@
 <p>Factory operators and tenant owners are roles, never superusers.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Roles <code>factory-operator</code> and <code>tenant-owner</code> defined in Cedar</li>
-<li class="task"><span class="box"></span>No role can read tenant content; factory actions are control-plane calls, audited</li>
+<li class="task done"><span class="box">✓</span>Roles <code>factory-operator</code> and <code>tenant-owner</code> defined in Cedar</li>
+<li class="task done"><span class="box">✓</span>No role can read tenant content; factory actions are control-plane calls, audited</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Role policies</li>
-<li class="task"><span class="box"></span>Owner designation via the tenant's IdP group</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-02, LAW-17</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Role policies</li>
+<li class="task done"><span class="box">✓</span>Owner designation via the tenant's IdP group</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-02, LAW-17</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19 (slice S7.1b): sb-policy(5) gained "Factory roles, exactly". <code>factory-operator</code> is the <code>sb-factory-operators</code> group of the factory's own tenant, acting on <code>CellCustody</code> records (a new entity whose <code>tenant</code> is the factory's tenant, and whose <code>cell</code> is the tenant the record is about). <code>tenant-owner</code> is the tenant IdP's <code>sb-owners</code> group, acting on its own <code>Cell</code>. Both are base Cedar permits with the tenant condition. A forbid stops anyone approving a plan they made, and two forbids keep both roles from reading any other tenant's content. The policy kernel no longer fills an empty <code>tenant</code> for a <code>CellCustody</code>: it returns <code>Unknown</code>. Without that, a tenant with its own group named <code>sb-factory-operators</code> could act on a custody record it built itself, and a test now shows that case refused. <code>TestFactoryRoles</code> covers 17 cases through the real kernel, and every decision is recorded before it's returned. The LAW-02 policy law test now draws custody verbs, custody records and the three role groups, and finds no cross-tenant allow. LAW-17's own tests are SB-701's, red until SB-705.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E08-factory-handoff/SB-702-factory-roles-and-policies.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

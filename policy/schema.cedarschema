@@ -10,6 +10,8 @@ entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bo
 entity Workflow { tenant: Tenant, name: String, approvers: Group };
 entity ProposedAction { tenant: Tenant, workflow: String, requester: User, approvers: Group };
 entity Cell { tenant: Tenant };
+// A cell's custody record, held by the factory: tenant is the factory's own tenant (SB-702).
+entity CellCustody { tenant: Tenant, cell: Tenant };
 
 action "read"      appliesTo { principal: [User], resource: [Chunk, Document] };
 action "use_agent" appliesTo { principal: [User], resource: [Agent], context: { target_project?: String } };
@@ -17,3 +19,11 @@ action "call_tool" appliesTo { principal: [User], resource: [Tool] };
 action "propose"   appliesTo { principal: [User], resource: [Workflow] };
 action "approve"   appliesTo { principal: [User], resource: [ProposedAction] };
 action "admin"     appliesTo { principal: [User], resource: [Cell] };
+
+// Custody and hand-off (SB-702, sb-factory(1)).
+action "view_custody"    appliesTo { principal: [User], resource: [CellCustody, Cell] };
+action "plan_handoff"    appliesTo { principal: [User], resource: [CellCustody] };
+action "approve_handoff" appliesTo { principal: [User], resource: [CellCustody, Cell], context: { planner?: User } };
+action "execute_handoff" appliesTo { principal: [User], resource: [CellCustody] };
+action "abort_handoff"   appliesTo { principal: [User], resource: [CellCustody] };
+action "detach"          appliesTo { principal: [User], resource: [Cell] };

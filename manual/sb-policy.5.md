@@ -37,12 +37,27 @@ Cedar is default-deny, and `forbid` always beats `permit`.
 | `Workflow` | `tenant`, `name`, `approvers` (group) |
 | `ProposedAction` | `tenant`, `workflow`, `requester` |
 | `Cell` | `tenant` |
+| `CellCustody` | `tenant` (always the factory's own tenant), `cell` (the tenant whose cell it is) |
 
 Every entity carries `tenant`, so every rule can be scoped. The kernel sets the resource's `tenant` from the request scope when the caller leaves it empty.
 
 ### Actions
 
-Cedar's own `Action` type names the verbs: `Action::"read"` (on `Chunk` or `Document`), `"use_agent"`, `"call_tool"`, `"propose"`, `"approve"`, `"admin"`.
+Cedar's own `Action` type names the verbs: `Action::"read"` (on `Chunk` or `Document`), `"use_agent"`, `"call_tool"`, `"propose"`, `"approve"`, `"admin"`, and the custody verbs `"view_custody"`, `"plan_handoff"`, `"approve_handoff"`, `"execute_handoff"`, `"abort_handoff"` and `"detach"` (Factory roles, below).
+
+### Factory roles, exactly (SB-702)
+
+The factory and the tenant owner are roles, never superusers. Both are Cedar policies in `policy/platform/base.cedar`, and both carry the tenant condition like every other permit.
+
+| Role | Who | May | On |
+|---|---|---|---|
+| `factory-operator` | members of the group `sb-factory-operators` in the **factory's own tenant** (ring 0) | `view_custody`, `plan_handoff`, `approve_handoff`, `execute_handoff`, `abort_handoff` | `CellCustody` records, whose `tenant` is the factory's tenant |
+| `tenant-owner` | members of the group `sb-owners` in the tenant's own IdP | `view_custody`, `approve_handoff`, `detach` | the tenant's own `Cell` |
+
+- **Nobody approves their own plan.** `approve_handoff` is forbidden when `context.planner` is the principal, so the factory approval needs a second operator.
+- **No role reads content.** Neither role adds a `read` permit, and a base `forbid` refuses `read` to `sb-factory-operators` and `sb-owners` on any tenant other than their own. A factory operator reads ring 0's own documents only as an ordinary user of ring 0.
+- **Custody records always name their tenant.** The kernel normally fills an empty resource `tenant` from the caller's scope. For `CellCustody` it doesn't: an empty `tenant` is `Unknown`, which refuses. Otherwise a tenant with its own group called `sb-factory-operators` could act on a custody record it built itself.
+- **Factory actions are control-plane calls.** They go through the policy kernel, so every decision is recorded before it is returned (LAW-04), and each step of a hand-off is also a `kind: custody` audit row (sb-factory(1)).
 
 ### Rules CI enforces
 

@@ -73,11 +73,47 @@ tenants/&lt;tenant&gt;/policy/*.cedar    tenant policies (next to the manifest)
 <td><code>Cell</code></td>
 <td><code>tenant</code></td>
 </tr>
+<tr>
+<td><code>CellCustody</code></td>
+<td><code>tenant</code> (always the factory's own tenant), <code>cell</code> (the tenant whose cell it is)</td>
+</tr>
 </tbody>
 </table>
 <p>Every entity carries <code>tenant</code>, so every rule can be scoped. The kernel sets the resource's <code>tenant</code> from the request scope when the caller leaves it empty.</p>
 <h3 id="actions">Actions</h3>
-<p>Cedar's own <code>Action</code> type names the verbs: <code>Action::"read"</code> (on <code>Chunk</code> or <code>Document</code>), <code>"use_agent"</code>, <code>"call_tool"</code>, <code>"propose"</code>, <code>"approve"</code>, <code>"admin"</code>.</p>
+<p>Cedar's own <code>Action</code> type names the verbs: <code>Action::"read"</code> (on <code>Chunk</code> or <code>Document</code>), <code>"use_agent"</code>, <code>"call_tool"</code>, <code>"propose"</code>, <code>"approve"</code>, <code>"admin"</code>, and the custody verbs <code>"view_custody"</code>, <code>"plan_handoff"</code>, <code>"approve_handoff"</code>, <code>"execute_handoff"</code>, <code>"abort_handoff"</code> and <code>"detach"</code> (Factory roles, below).</p>
+<h3 id="factory-roles-exactly-sb-702">Factory roles, exactly (SB-702)</h3>
+<p>The factory and the tenant owner are roles, never superusers. Both are Cedar policies in <code>policy/platform/base.cedar</code>, and both carry the tenant condition like every other permit.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Who</th>
+<th>May</th>
+<th>On</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>factory-operator</code></td>
+<td>members of the group <code>sb-factory-operators</code> in the <strong>factory's own tenant</strong> (ring 0)</td>
+<td><code>view_custody</code>, <code>plan_handoff</code>, <code>approve_handoff</code>, <code>execute_handoff</code>, <code>abort_handoff</code></td>
+<td><code>CellCustody</code> records, whose <code>tenant</code> is the factory's tenant</td>
+</tr>
+<tr>
+<td><code>tenant-owner</code></td>
+<td>members of the group <code>sb-owners</code> in the tenant's own IdP</td>
+<td><code>view_custody</code>, <code>approve_handoff</code>, <code>detach</code></td>
+<td>the tenant's own <code>Cell</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Nobody approves their own plan.</strong> <code>approve_handoff</code> is forbidden when <code>context.planner</code> is the principal, so the factory approval needs a second operator.</li>
+<li><strong>No role reads content.</strong> Neither role adds a <code>read</code> permit, and a base <code>forbid</code> refuses <code>read</code> to <code>sb-factory-operators</code> and <code>sb-owners</code> on any tenant other than their own. A factory operator reads ring 0's own documents only as an ordinary user of ring 0.</li>
+<li><strong>Custody records always name their tenant.</strong> The kernel normally fills an empty resource <code>tenant</code> from the caller's scope. For <code>CellCustody</code> it doesn't: an empty <code>tenant</code> is <code>Unknown</code>, which refuses. Otherwise a tenant with its own group called <code>sb-factory-operators</code> could act on a custody record it built itself.</li>
+<li><strong>Factory actions are control-plane calls.</strong> They go through the policy kernel, so every decision is recorded before it is returned (LAW-04), and each step of a hand-off is also a <code>kind: custody</code> audit row (sb-factory(1)).</li>
+</ul>
 <h3 id="rules-ci-enforces">Rules CI enforces</h3>
 <ol>
 <li>Every file validates against the schema.</li>
@@ -106,7 +142,7 @@ when { resource.workflow == &quot;ticket-update&quot; &amp;&amp; principal.tenan
 <p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-15">LAW-15</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="../docs/architecture/02-policy-engine.html">02 Policy engine</a>, <a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008</a></p><p class="srcline">Source: <code>manual/sb-policy.5.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#entities">Entities</a></li><li class="l3"><a href="#actions">Actions</a></li><li class="l3"><a href="#rules-ci-enforces">Rules CI enforces</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#entities">Entities</a></li><li class="l3"><a href="#actions">Actions</a></li><li class="l3"><a href="#factory-roles-exactly-sb-702">Factory roles, exactly (SB-702)</a></li><li class="l3"><a href="#rules-ci-enforces">Rules CI enforces</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

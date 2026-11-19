@@ -115,12 +115,19 @@ func (k Kernel) Authorise(ctx context.Context, s tenancy.Scope, action string, r
 	return r
 }
 
+// ExplicitTenant are entity types whose tenant the kernel never fills in from the caller's
+// scope: a custody record belongs to the factory's tenant, whoever asks (sb-policy(5)).
+var ExplicitTenant = map[string]bool{"CellCustody": true}
+
 func decide(ctx context.Context, ev Evaluator, s tenancy.Scope, action string, res Entity, rctx map[string]any) Result {
 	if err := s.Check(); err != nil {
 		return Result{Unknown, "no valid scope"}
 	}
 	if res.Tenant != "" && res.Tenant != s.Tenant() {
 		return Result{Deny, "resource belongs to another tenant"}
+	}
+	if res.Tenant == "" && ExplicitTenant[res.Type] {
+		return Result{Unknown, res.Type + " must name its tenant"} // never filled from the caller (SB-702)
 	}
 	if res.Tenant == "" {
 		res.Tenant = s.Tenant()
