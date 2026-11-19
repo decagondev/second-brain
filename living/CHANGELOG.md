@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Linear tickets connector (SB-211): read-only GraphQL, team-based ACL, polled changes with an exact tie-break; tested against a recorded fake.
 - Slack chat connector (SB-204): read-only, channel-membership ACL, DMs never read, Events API with signature checks; tested against a recorded fake.
 - Weekly rebuild drill (SB-210): `ingest.Drill` compares the index before and after a rebuild from sources.
 - LAW-01 ingest-gap test (SB-209): deletes and permission changes reach the prefilter in one sync; the live check holds in between.

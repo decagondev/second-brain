@@ -7,6 +7,20 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-19 SB-211 Linear connector (W2 built)
+
+**Wave/slice:** W2 / S2.4 · **Author:** platform lead + Claude · **Status:** In review
+
+**What:** A read-only Linear connector over GraphQL, with team-based ACL and polled changes. The manual changed first: sb-connector(3) gained a `tickets: linear` section. This completes Wave 2's build. Every W2 ticket is Done or In review, and each one's Progress says what a human, a staging cell or a later ticket must add.
+
+**Why this way:** Linear's API can filter by `updatedAt`, so polling gives a complete change feed without a public endpoint. Polling team and membership changes turns permission changes into permission-only changes for that team's issues, which is the same shape the ingest pipeline already handles for Drive and Slack.
+
+**Learned:** The contract kit caught a real bug on the first run: a poll timestamp moved during pagination. My first fix, a one-second overlap, failed the kit's "nothing after the latest cursor" case. That was right, because overlap pushes the duplicate problem onto every consumer. An exact tie-break on (timestamp, ids seen) is the correct cursor.
+
+**Laws:** connector-level LAW-03 (with LAW-01's truth) now runs on four connectors: mock, Drive, Slack and Linear.
+
+**Next:** W3 at SB-301 (tenant-scoped hybrid retrieval with the ACL prefilter, on pgvector).
+
 ## 2026-11-19 SB-204 Slack connector
 
 **Wave/slice:** W2 / S2.2 · **Author:** platform lead + Claude · **Status:** In review

@@ -108,6 +108,21 @@ Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"]
 
 Tested against `slacktest`, a recorded fake of the Web API and the Events API's signed delivery.
 
+### `tickets: linear` (SB-211)
+
+Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `ticket-update` workflow arrive with SB-410, through the tool bus.
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A Linear API key with read access at `vault://tenants/TENANT/connectors/tickets` |
+| Documents | One document per issue: id is Linear's issue id, title `KEY-123 title`, text the description and comments. Version is `updatedAt` in microseconds |
+| ACL | Live: the user is found by email (none, or inactive → `Deny`). A **private** team's issues → `Allow` only for team members; a public team's issues → `Allow` for full members, and for guests only if they're in the team. An archived, trashed or missing issue → `Unknown` |
+| Changes | Polled from the GraphQL API, so no public endpoint is needed. The cursor holds the last `updatedAt` seen for issues and for team changes. Updated issues are content changes; archived or trashed issues are deletes; a team made private or public, or a membership added or removed, is a permission-only change for every issue in that team. An empty cursor lists every issue |
+| Rate limits | HTTP 429 or a `RATELIMITED` error is retried with backoff while the deadline allows; then `Unknown` |
+| Act | `ENOTSUP` until SB-410 |
+
+Tested against `lineartest`, a recorded fake of the GraphQL operations the connector sends (by `operationName`).
+
 ## MOCK CONNECTOR
 
 `internal/adapters/connectors/mock` is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:

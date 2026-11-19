@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,29 @@
 <p>Tickets hold the how and why of operational work.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Passes the contract kit</li>
-<li class="task"><span class="box"></span>Project permissions map to ACL</li>
+<li class="task done"><span class="box">✓</span>Passes the contract kit</li>
+<li class="task done"><span class="box">✓</span>Project permissions map to ACL</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Adapter</li>
-<li class="task"><span class="box"></span>ACL mapping</li>
-<li class="task"><span class="box"></span>Contract kit run</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Adapter</li>
+<li class="task done"><span class="box">✓</span>ACL mapping</li>
+<li class="task done"><span class="box">✓</span>Contract kit run</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-19: the user chose Linear. <code>internal/adapters/connectors/linear</code> is read-only, standard-library GraphQL with fixed named operations, and passes the contract kit against <code>lineartest</code>.
+- Each issue (with its comments) is a document, and its version is <code>updatedAt</code> in microseconds.
+- ACL: private team means members only; public team means full members, and guests only if they're in the team; no account or deactivated means Deny; archived or missing means Unknown. Rate limits are retried.
+- Changes are polled. Issues are <code>updatedAt &gt;= cursor</code>, with an exact tie-break on ids already seen at the cursor's timestamp; archived means delete. Team privacy and membership changes are permission-only changes for every issue in the team. An empty cursor lists everything.
+- <code>TestLAW03_LinearUnknownIsNeverAllow</code> (with LAW-01's truth check) runs on it.</p>
+<p>The kit found a real bug on the first run: the poll timestamp advanced mid-pagination, so later pages used a different filter and skipped issues. It's fixed. A one-second overlap was tried and rejected, because the kit requires nothing new after the latest cursor; the tie-break is exact instead.</p>
+<p><strong>Left:</strong> a real Linear workspace run; team-membership pages beyond 250 members (a large team's extra members would get a safe false Deny); a test for issues tied at the same timestamp (the fake's clock never ties).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E03-connectors-ingestion/SB-211-tickets-connector-read-only.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

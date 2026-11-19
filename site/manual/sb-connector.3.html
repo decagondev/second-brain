@@ -171,6 +171,43 @@ type Connector interface {
 </tbody>
 </table>
 <p>Tested against <code>slacktest</code>, a recorded fake of the Web API and the Events API's signed delivery.</p>
+<h3 id="tickets-linear-sb-211"><code>tickets: linear</code> (SB-211)</h3>
+<p>Read-only in W2. Name it as <code>connectors: { tickets: linear }</code>. Writes for the <code>ticket-update</code> workflow arrive with SB-410, through the tool bus.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials</td>
+<td>A Linear API key with read access at <code>vault://tenants/TENANT/connectors/tickets</code></td>
+</tr>
+<tr>
+<td>Documents</td>
+<td>One document per issue: id is Linear's issue id, title <code>KEY-123 title</code>, text the description and comments. Version is <code>updatedAt</code> in microseconds</td>
+</tr>
+<tr>
+<td>ACL</td>
+<td>Live: the user is found by email (none, or inactive → <code>Deny</code>). A <strong>private</strong> team's issues → <code>Allow</code> only for team members; a public team's issues → <code>Allow</code> for full members, and for guests only if they're in the team. An archived, trashed or missing issue → <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Changes</td>
+<td>Polled from the GraphQL API, so no public endpoint is needed. The cursor holds the last <code>updatedAt</code> seen for issues and for team changes. Updated issues are content changes; archived or trashed issues are deletes; a team made private or public, or a membership added or removed, is a permission-only change for every issue in that team. An empty cursor lists every issue</td>
+</tr>
+<tr>
+<td>Rate limits</td>
+<td>HTTP 429 or a <code>RATELIMITED</code> error is retried with backoff while the deadline allows; then <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code> until SB-410</td>
+</tr>
+</tbody>
+</table>
+<p>Tested against <code>lineartest</code>, a recorded fake of the GraphQL operations the connector sends (by <code>operationName</code>).</p>
 <h2 id="mock-connector">MOCK CONNECTOR</h2>
 <p><code>internal/adapters/connectors/mock</code> is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:</p>
 <table>
@@ -214,7 +251,7 @@ type Connector interface {
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l3"><a href="#tickets-linear-sb-211">tickets: linear (SB-211)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

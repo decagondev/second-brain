@@ -30,6 +30,8 @@ import (
 
     &quot;example.com/second-brain/internal/adapters/connectors/gdrive&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/gdrive/drivetest&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/linear&quot;
+    &quot;example.com/second-brain/internal/adapters/connectors/linear/lineartest&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/mock&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/slack&quot;
     &quot;example.com/second-brain/internal/adapters/connectors/slack/slacktest&quot;
@@ -267,6 +269,59 @@ func (w *slackWorld) ACL(access []bool, fault string) ([]string, error) {
 
 func (w *slackWorld) Act(string, bool) (string, error) { return &quot;&quot;, errors.New(&quot;ENOTSUP&quot;) }
 func (w *slackWorld) Effects() int                     { return 0 }
+
+// NewLinearWorld is the connector-level world over the Linear connector (SB-211) and its
+// fake. Access means the asker is in the private team; &quot;script&quot; archives the first issue.
+var NewLinearWorld = func() ConnectorWorld {
+    f := lineartest.New()
+    f.AddUser(&quot;U1&quot;, &quot;ann@acme.example&quot;, false)
+    f.AddUser(&quot;U2&quot;, &quot;bob@acme.example&quot;, false)
+    f.AddTeam(&quot;TIN&quot;, &quot;IN&quot;, true, &quot;U1&quot;)
+    f.AddTeam(&quot;TOUT&quot;, &quot;OUT&quot;, true, &quot;U2&quot;)
+    c := &amp;linear.Connector{Endpoint: f.Endpoint(), HTTP: f.Server.Client(), Redact: obs.NewRedactor(),
+        Key: func(context.Context) (string, error) { return f.Key, nil }}
+    return &amp;linearWorld{f: f, c: c}
+}
+
+type linearWorld struct {
+    f *lineartest.Fake
+    c *linear.Connector
+    n int
+}
+
+func (w *linearWorld) ACL(access []bool, fault string) ([]string, error) {
+    w.n++
+    refs := make([]ports.SourceRef, len(access))
+    for i, ok := range access {
+        team := &quot;TOUT&quot;
+        if ok {
+            team = &quot;TIN&quot;
+        }
+        id := fmt.Sprintf(&quot;i%d_%d&quot;, w.n, i)
+        w.f.Put(id, team, &quot;t&quot;, &quot;x&quot;)
+        refs[i] = ports.SourceRef{Kind: &quot;tickets&quot;, ID: id}
+    }
+    switch fault {
+    case &quot;script&quot;:
+        w.f.Archive(refs[0].ID)
+    case &quot;404&quot;: // every issue lookup fails: one fault per ref
+        for range refs {
+            w.f.FailNext(&quot;404&quot;)
+        }
+    case &quot;&quot;:
+    default:
+        w.f.FailNext(fault)
+    }
+    vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: &quot;usr_ann&quot;, Email: &quot;ann@acme.example&quot;}, refs)
+    out := make([]string, len(vs))
+    for i, v := range vs {
+        out[i] = v.String()
+    }
+    return out, err
+}
+
+func (w *linearWorld) Act(string, bool) (string, error) { return &quot;&quot;, errors.New(&quot;ENOTSUP&quot;) }
+func (w *linearWorld) Effects() int                     { return 0 }
 </code></pre>
 <p><a href="README.html">Back</a></p><p class="srcline">Source: <code>laws/lawconnector.go</code></p></main>
   

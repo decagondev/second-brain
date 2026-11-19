@@ -138,3 +138,8 @@ func TestLAW03_SlackUnknownIsNeverAllow(t *testing.T) {
 	w := NewSlackWorld()
 	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
 }
+
+func TestLAW03_LinearUnknownIsNeverAllow(t *testing.T) {
+	w := NewLinearWorld()
+	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
+}

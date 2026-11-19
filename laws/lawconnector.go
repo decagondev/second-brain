@@ -10,6 +10,8 @@ import (
 
 	"example.com/second-brain/internal/adapters/connectors/gdrive"
 	"example.com/second-brain/internal/adapters/connectors/gdrive/drivetest"
+	"example.com/second-brain/internal/adapters/connectors/linear"
+	"example.com/second-brain/internal/adapters/connectors/linear/lineartest"
 	"example.com/second-brain/internal/adapters/connectors/mock"
 	"example.com/second-brain/internal/adapters/connectors/slack"
 	"example.com/second-brain/internal/adapters/connectors/slack/slacktest"
@@ -247,3 +249,56 @@ func (w *slackWorld) ACL(access []bool, fault string) ([]string, error) {
 
 func (w *slackWorld) Act(string, bool) (string, error) { return "", errors.New("ENOTSUP") }
 func (w *slackWorld) Effects() int                     { return 0 }
+
+// NewLinearWorld is the connector-level world over the Linear connector (SB-211) and its
+// fake. Access means the asker is in the private team; "script" archives the first issue.
+var NewLinearWorld = func() ConnectorWorld {
+	f := lineartest.New()
+	f.AddUser("U1", "ann@acme.example", false)
+	f.AddUser("U2", "bob@acme.example", false)
+	f.AddTeam("TIN", "IN", true, "U1")
+	f.AddTeam("TOUT", "OUT", true, "U2")
+	c := &linear.Connector{Endpoint: f.Endpoint(), HTTP: f.Server.Client(), Redact: obs.NewRedactor(),
+		Key: func(context.Context) (string, error) { return f.Key, nil }}
+	return &linearWorld{f: f, c: c}
+}
+
+type linearWorld struct {
+	f *lineartest.Fake
+	c *linear.Connector
+	n int
+}
+
+func (w *linearWorld) ACL(access []bool, fault string) ([]string, error) {
+	w.n++
+	refs := make([]ports.SourceRef, len(access))
+	for i, ok := range access {
+		team := "TOUT"
+		if ok {
+			team = "TIN"
+		}
+		id := fmt.Sprintf("i%d_%d", w.n, i)
+		w.f.Put(id, team, "t", "x")
+		refs[i] = ports.SourceRef{Kind: "tickets", ID: id}
+	}
+	switch fault {
+	case "script":
+		w.f.Archive(refs[0].ID)
+	case "404": // every issue lookup fails: one fault per ref
+		for range refs {
+			w.f.FailNext("404")
+		}
+	case "":
+	default:
+		w.f.FailNext(fault)
+	}
+	vs, err := w.c.ACL(context.Background(), ports.UserRef{ID: "usr_ann", Email: "ann@acme.example"}, refs)
+	out := make([]string, len(vs))
+	for i, v := range vs {
+		out[i] = v.String()
+	}
+	return out, err
+}
+
+func (w *linearWorld) Act(string, bool) (string, error) { return "", errors.New("ENOTSUP") }
+func (w *linearWorld) Effects() int                     { return 0 }
