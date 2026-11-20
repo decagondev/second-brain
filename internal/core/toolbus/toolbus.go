@@ -45,7 +45,9 @@ func (d *Duty) Needs(payload json.RawMessage) int {
 	if d == nil {
 		return 1
 	}
-	if amount, ok := approvals.Amount(payload); ok && amount <= d.Above {
+	// The size of the amount decides, whatever its sign: a refund or a credit of a million
+	// moves as much money as a payment of one (SB-1401).
+	if amount, ok := approvals.Amount(payload); ok && amount >= -d.Above && amount <= d.Above {
 		return 1
 	}
 	return 2
@@ -87,10 +89,60 @@ type Bus struct {
 	Barriers Barriers
 }
 
+// acrossBarrier reads an approval context: the requester's groups meet the viewer's barred
+// groups.
+func acrossBarrier(actx map[string]any) bool {
+	barred, _ := actx["barred_groups"].([]string)
+	req, _ := actx["requester_groups"].([]string)
+	for _, g := range req {
+		for _, x := range barred {
+			if g == x {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Barriers is barrier.Cell as the bus uses it.
 type Barriers interface {
 	Target(ctx context.Context, s tenancy.Scope, target string) (map[string]any, error)
 	Approval(ctx context.Context, s tenancy.Scope, requester string) (map[string]any, error)
+}
+
+// mayDecide is every check an approval or a rejection shares (SB-1204, SB-1401): not in
+// the requester's reporting line, and policy allows deciding for the group whose turn it is
+// (the workflow's first, the duty's second), with the barrier facts. Under a duty, a cell
+// that can't read reporting lines refuses.
+func (b *Bus) mayDecide(ctx context.Context, s tenancy.Scope, a approvals.Action) error {
+	switch {
+	case b.Managers == nil && a.Needs == 2:
+		return fmt.Errorf("%w: segregation of duties needs the directory's reporting lines, and this cell has none", ErrNoApproval)
+	case b.Managers != nil:
+		line, err := approvals.ReportingLine(ctx, b.Managers, a.Requester)
+		if err != nil {
+			return fmt.Errorf("%w: %v", ErrNoApproval, err)
+		}
+		for _, m := range line {
+			if m == s.User() {
+				return fmt.Errorf("%w: the requester reports to you", ErrNoApproval)
+			}
+		}
+	}
+	group := a.Approvers
+	if a.Needs == 2 && a.FirstApprovedBy != "" {
+		group = a.SecondApprovers // the duty's group decides second
+	}
+	actx, err := b.approveContext(ctx, s, a)
+	if err != nil {
+		return err
+	}
+	if err := b.Policy.Require(ctx, s, "approve", policy.Entity{Type: "ProposedAction", ID: a.ID, Tenant: b.Tenant,
+		Attrs: map[string]any{"workflow": a.Workflow, "requester": policy.Ref{Type: "User", ID: a.Requester},
+			"approvers": policy.Ref{Type: "Group", ID: group}}}, actx); err != nil {
+		return fmt.Errorf("%w: %v", ErrNoApproval, err)
+	}
+	return nil
 }
 
 // approveContext is the barrier context of deciding on a's approval.
@@ -260,6 +312,14 @@ func (b *Bus) Get(ctx context.Context, s tenancy.Scope, id string) (View, error)
 	if a.Requester != s.User() && !member && (b.IsAuditor == nil || !b.IsAuditor(s)) {
 		return View{}, fmt.Errorf("%w: no such action", ErrPerm)
 	}
+	// Someone across a barrier from the requester never sees the payload or the target,
+	// even as an approver (sb-permissions(7), Barriers beyond reads; SB-1401).
+	if a.Requester != s.User() && b.Barriers != nil {
+		actx, err := b.Barriers.Approval(ctx, s, a.Requester)
+		if err != nil || acrossBarrier(actx) {
+			return View{}, fmt.Errorf("%w: no such action", ErrPerm)
+		}
+	}
 	v := View{Action: a}
 	if cur, ok := b.Connectors[b.Tools[a.Tool].Connector].(Current); ok {
 		if before, err := cur.Current(ctx, a.Target); err == nil {
@@ -335,6 +395,14 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 		x.State, x.Payload, x.PayloadSHA256 = approvals.Drafted, canon, hash
 		x.Approval, x.ApprovedBy, x.ApprovedHash = "", "", ""
 		x.FirstApproval, x.FirstApprovedBy, x.FirstHash = "", "", "" // an edit voids every approval
+		// The new payload decides how many approvals it needs (SB-1401): an edit that raises
+		// the amount above a duty's threshold needs both again.
+		if tool := b.Tools[x.Tool]; tool.Consequential {
+			x.Needs, x.SecondApprovers = tool.Duty.Needs(canon), ""
+			if x.Needs == 2 {
+				x.SecondApprovers = tool.Duty.Second
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -345,7 +413,8 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 		return approvals.Action{}, ErrUnaudited
 	}
 	return b.Actions.Move(ctx, b.Tenant, id, approvals.Drafted, func(x *approvals.Action) error {
-		x.State, x.ExpiresAt = approvals.PendingApproval, b.Now().Add(approvals.TTL).UTC()
+		// Expiry still counts from the proposal: edits never keep an action alive (SB-1401).
+		x.State = approvals.PendingApproval
 		return nil
 	})
 }
@@ -386,31 +455,9 @@ func (b *Bus) Approve(ctx context.Context, s tenancy.Scope, id, echoedHash, note
 	case a.FirstApprovedBy != "" && echoedHash != a.FirstHash:
 		return a, fmt.Errorf("%w: the hash shown isn't the one first approved", ErrNoApproval)
 	}
-	if b.Managers != nil {
-		line, err := approvals.ReportingLine(ctx, b.Managers, a.Requester)
-		if err != nil {
-			return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
-		}
-		for _, m := range line {
-			if m == s.User() {
-				return a, fmt.Errorf("%w: the requester reports to you", ErrNoApproval)
-			}
-		}
-	}
 	first := a.Needs == 2 && a.FirstApprovedBy == ""
-	group := a.Approvers
-	if a.Needs == 2 && !first {
-		group = a.SecondApprovers // the duty's group approves second
-	}
-	actx, err := b.approveContext(ctx, s, a)
-	if err != nil {
+	if err := b.mayDecide(ctx, s, a); err != nil {
 		return a, err
-	}
-	err = b.Policy.Require(ctx, s, "approve", policy.Entity{Type: "ProposedAction", ID: a.ID, Tenant: b.Tenant,
-		Attrs: map[string]any{"workflow": a.Workflow, "requester": policy.Ref{Type: "User", ID: a.Requester},
-			"approvers": policy.Ref{Type: "Group", ID: group}}}, actx)
-	if err != nil {
-		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
 	}
 	tool := b.Tools[a.Tool]
 	if err := b.Kill.Check(kill.Op{Connector: tool.Connector, Consequential: true, Space: strings.TrimPrefix(a.Space, "spc_")}); err != nil {
@@ -461,15 +508,11 @@ func (b *Bus) Reject(ctx context.Context, s tenancy.Scope, id, note string) (app
 	if a.State != approvals.PendingApproval {
 		return a, fmt.Errorf("%w: the action is %s", ErrNoApproval, a.State)
 	}
-	actx, err := b.approveContext(ctx, s, a)
-	if err != nil {
-		return a, err
+	if s.User() == a.Requester {
+		return a, fmt.Errorf("%w: you can't decide on your own action", ErrNoApproval)
 	}
-	err = b.Policy.Require(ctx, s, "approve", policy.Entity{Type: "ProposedAction", ID: a.ID, Tenant: b.Tenant,
-		Attrs: map[string]any{"workflow": a.Workflow, "requester": policy.Ref{Type: "User", ID: a.Requester},
-			"approvers": policy.Ref{Type: "Group", ID: a.Approvers}}}, actx)
-	if err != nil {
-		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
+	if err := b.mayDecide(ctx, s, a); err != nil {
+		return a, err
 	}
 	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "approval", Subject: a.ID, State: string(approvals.Rejected),
 		PayloadSHA256: a.PayloadSHA256, Reason: "reject: " + a.Workflow}); err != nil {

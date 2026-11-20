@@ -91,8 +91,12 @@ func Route(spaces []ports.Space, kind, location, sourceLabel string) (holders []
 	return holders, label
 }
 
-// Fingerprint identifies a space configuration for routing: every space's id, label and
-// scope. A cell without spaces has the empty fingerprint.
+// RoutingVersion is mixed into every fingerprint.
+const RoutingVersion = "v2"
+
+// Fingerprint identifies a space configuration for routing: every space's id, label,
+// scope and field allow-lists, and the routing version. A cell without spaces has the
+// empty fingerprint.
 func Fingerprint(spaces []ports.Space) string {
 	if len(spaces) == 0 {
 		return ""
@@ -100,13 +104,17 @@ func Fingerprint(spaces []ports.Space) string {
 	type entry struct {
 		ID, Label string
 		Scope     map[string][]string
+		Fields    map[string][]string `json:",omitempty"`
 	}
 	es := make([]entry, len(spaces))
 	for i, s := range spaces {
-		es[i] = entry{s.ID, s.Label, s.Scope}
+		es[i] = entry{s.ID, s.Label, s.Scope, s.Fields}
 	}
 	sort.Slice(es, func(i, j int) bool { return es[i].ID < es[j].ID })
 	b, _ := json.Marshal(es) // map keys marshal sorted
-	h := sha256.Sum256(b)
+	// RoutingVersion changes when what ingest records about a document changes (v2: the
+	// source owner, SB-1203), so every document is routed again once (SB-1401). Fields are
+	// in it too: an allow-list change re-ingests what it covers.
+	h := sha256.Sum256(append([]byte(RoutingVersion), b...))
 	return "rt_" + hex.EncodeToString(h[:8])
 }

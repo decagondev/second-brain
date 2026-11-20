@@ -255,3 +255,31 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestStewardChangeRefusesValuesThatReadBackDifferently` and `TestDiffNamesTheSpace` in `internal/core/manifest`. Why it wasn't caught before: the steward law test generated only well-formed values, and no test had two spaces sharing a line.
 
+## BUG-0016 Segregation of duties could be evaded
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0008) | Security (high) | SB-1401 | Fixed |
+
+**Symptom:** A payment proposed at 50 and edited to 900,000,000 kept needing one approval. Each edit restarted the 24-hour expiry. `{"amount": -5000000}` needed one approval. A requester's manager could reject, and a duty-group member couldn't reject after a first approval. A bus with no reporting lines approved under a duty.
+
+**Root cause:** `Needs` was computed once, at proposal; `Edit` reset the expiry; the threshold compared a signed amount; `Reject` had its own, older checks; a nil `Managers` meant "nobody manages anyone".
+
+**Fix:** An edit decides `Needs` again from the new payload and keeps the expiry; the amount's size decides; approve and reject share `mayDecide`; a duty without reporting lines refuses.
+
+**Caught by now:** `TestEditRecomputesTheDuty`, `TestEditKeepsTheExpiry`, `TestNegativeAmountNeedsBoth` and `TestRejectTakesTheApprovalChecks` in `internal/core/toolbus`. Why it wasn't caught before: the duty law test never edited an action, never used a negative amount, and never rejected.
+
+## BUG-0017 Information barriers could be evaded
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0009) | Security (high) | SB-1401 | Fixed |
+
+**Symptom:** A deal-team member whose SCIM userName wasn't their email owned a file shared company-wide; the owner lookup missed them, so the file had no owner groups and crossed the barrier. A manifest with barriers and no spaces enforced them on actions but not on reads. An approver across a barrier could read the action's payload and target. Chat asks carried no directory attributes. Chunks indexed before owners existed never got one.
+
+**Root cause:** The lookup used `UserByName`, an exact match on the sign-in name; the read path's space step ran only with spaces; `Get` checked group membership only; the chat app built its scope without attributes; the routing fingerprint didn't change when what ingest records changed.
+
+**Fix:** Owners are found by any email, ignoring case, with every match's groups; `sb tenant check` refuses barriers without spaces (sb-space(5) rule 14); `Get` refuses anyone across a barrier from the requester; the chat app passes the directory user's attributes; the routing version makes every document re-route once.
+
+**Caught by now:** `TestOwnerByEmail`, `TestBarriersNeedSpaces`, `TestGetHidesTheActionAcrossABarrier` and `TestChatScopeCarriesAttributes`. Why it wasn't caught before: the law tests used user ids as owner emails, never declared barriers without spaces, and only drove approvals, not reads of actions.
+

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.1b Authorisation and approval findings (SB-1401)
+
+**Wave/slice:** W13 / S13.1b · **Status:** In progress (two more fix slices)
+
+**What:** In the tool bus: `Edit` re-decides the duty and keeps the expiry, the duty counts the amount's size, `mayDecide` is shared by approve and reject, a duty without reporting lines refuses, and `Get` hides an action across a barrier. Owners by email (`barrier.Directory`), barriers need spaces (sb-space(5) rule 14), chat scopes carry attributes, and routing version 2. PT-0008, PT-0009; BUG-0016, BUG-0017.
+
+**Why this way:** Each fix makes one rule hold in every path it applies to, instead of the first path it was written for: approval checks in one function for both decisions, attributes in every scope, and the barrier for reading an action as well as deciding on it.
+
+**Learned:** Most of these were "the second path": reject beside approve, chat beside web, edit beside propose. A law test that drives only the main path proves only the main path.
+
+**Laws:** LAW-15 and LAW-22 hold in the paths they missed; a regression test for each.
+
+**Next:** S13.1c, the governance findings.
+
 ## 2026-11-20 S13.1a The review's critical findings (SB-1401)
 
 **Wave/slice:** W13 / S13.1a · **Status:** In progress (more fixes follow)

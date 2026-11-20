@@ -68,3 +68,24 @@ func TestDiffNamesTheSpace(t *testing.T) {
 		}
 	}
 }
+
+// SB-1401: barriers need spaces, which run the checks that enforce them.
+func TestBarriersNeedSpaces(t *testing.T) {
+	src := `tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint }
+agents: [ask]
+barriers:
+  - [group:deal-team, group:everyone]
+`
+	_, ds := Check([]byte(src))
+	found := false
+	for _, d := range ds {
+		found = found || strings.Contains(d.Msg, "barriers need spaces")
+	}
+	if !found {
+		t.Fatalf("barriers without spaces were accepted: %v", ds)
+	}
+}

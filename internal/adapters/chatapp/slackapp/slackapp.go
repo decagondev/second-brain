@@ -214,7 +214,7 @@ func (a *App) inSpace(ctx context.Context, s tenancy.Scope, channel string) (ten
 			if err != nil {
 				return tenancy.Scope{}, MsgNoMatch
 			}
-			return in, ""
+			return in.WithAttrs(s.Attrs()), ""
 		}
 	}
 	return s, ""
@@ -242,7 +242,8 @@ func (a *App) scope(ctx context.Context, slackUser string) (tenancy.Scope, error
 	if err != nil {
 		return tenancy.Scope{}, ErrNoMatch
 	}
-	return s, nil
+	// The directory's attributes, as the web path reads them at every request (SB-1401).
+	return s.WithAttrs(users[0].Attributes()), nil
 }
 
 // Render is the ephemeral answer: claims with citation links, uncited claims labelled,

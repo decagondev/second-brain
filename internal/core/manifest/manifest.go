@@ -573,6 +573,11 @@ func (c *checker) crossChecks() {
 		}
 	}
 	c.spaceChecks()
+	if b := c.seen["barriers"]; b != nil && len(c.t.Spaces) == 0 {
+		// Barriers are enforced by the space checks, which a cell without spaces doesn't run;
+		// a barrier with nothing to enforce it would only look like protection (SB-1401).
+		c.add(b, "barriers", "barriers need spaces: declare at least one space, or remove the barriers")
+	}
 	for _, k := range c.exKeys {
 		if c.connectorKindAbsent(k.value) {
 			c.add(k, "exclude."+k.value, "no connector kind %q in connectors", k.value)

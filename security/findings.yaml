@@ -58,3 +58,19 @@ findings:
     found: 2026-11-20
     bug: BUG-0015
     source: internal
+  - id: PT-0008
+    title: Approval rules could be evaded - an edit kept a payment at one approval, edits kept actions alive, a negative amount needed one approval, rejection skipped the duty and reporting-line checks, and a duty ran without reporting lines
+    severity: high
+    status: fixed
+    laws: [LAW-15]
+    found: 2026-11-20
+    bug: BUG-0016
+    source: internal
+  - id: PT-0009
+    title: Barriers could be evaded - an owner whose sign-in name wasn't their email, barriers in a cell without spaces, approvers across a barrier reading the action, chat asks without directory attributes, and old chunks without an owner
+    severity: high
+    status: fixed
+    laws: [LAW-22]
+    found: 2026-11-20
+    bug: BUG-0017
+    source: internal

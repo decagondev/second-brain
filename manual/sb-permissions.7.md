@@ -96,7 +96,8 @@ A barrier holds for everything the brain does, not only for what an answer reads
 
 - **Drafts.** The ticket or thread a draft replies to passes steps 1 to 4 like a retrieved chunk: it is routed to its spaces and labelled as ingest would, with its source owner, before it is used. Every chunk the draft retrieves takes the read path above. An item across a barrier is refused with the same answer as one that doesn't exist (`EPERM`, sb-actions(3)).
 - **Actions.** A tool call or proposal is refused (`EPERM`, `EBARRIER` in the audit reason) if its target item is held by a space across a barrier from the requester or owned at the source by someone in a barred group. A target the cell can't place now refuses.
-- **Approvals.** Nobody approves an action whose requester is across a barrier from them: the approver would see the other side's payload.
+- **Approvals.** Nobody approves or rejects an action whose requester is across a barrier from them, and nobody across it can read the action (`GET /v1/actions/ID` is `EPERM`, as if it didn't exist): the approver would see the other side's payload (SB-1401).
+- **Owners are found by email.** A document's owner at the source is matched to the directory by any of a user's emails, ignoring case, never by their sign-in name; an email several users share counts all their groups (SB-1401).
 
 In a cell without barriers none of these facts is set, and nothing changes.
 

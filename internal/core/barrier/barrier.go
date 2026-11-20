@@ -26,18 +26,35 @@ func Barred(barriers [][2]string, groups []string) []string {
 // OwnerGroups resolves a source owner (an email) to their directory groups, as NAME.
 type OwnerGroups func(ctx context.Context, owner string) ([]string, error)
 
-// Directory resolves owners through the cell's directory: an owner the directory doesn't
-// know (someone outside the company) has no groups; a directory error is an error.
-func Directory(dir ports.DirectoryStore, tenant string) OwnerGroups {
+// EmailDirectory is the directory as owner lookups need it.
+type EmailDirectory interface {
+	UsersByEmail(ctx context.Context, tenant, email string) ([]ports.User, error)
+	GroupsOf(ctx context.Context, tenant, user string) ([]string, error)
+}
+
+// Directory resolves owners through the cell's directory, by any of a user's emails and
+// ignoring case (SB-1401: a userName that isn't the email never hides an owner). An owner
+// the directory doesn't know (someone outside the company) has no groups; an owner several
+// users share has all their groups, so the barrier errs on the side of refusing; a
+// directory error is an error.
+func Directory(dir EmailDirectory, tenant string) OwnerGroups {
 	return func(ctx context.Context, owner string) ([]string, error) {
-		u, found, err := dir.UserByName(ctx, tenant, owner)
+		users, err := dir.UsersByEmail(ctx, tenant, owner)
 		if err != nil {
 			return nil, err
 		}
-		if !found {
-			return []string{}, nil
+		var all []string
+		for _, u := range users {
+			gs, err := dir.GroupsOf(ctx, tenant, u.ID)
+			if err != nil {
+				return nil, err
+			}
+			all = append(all, gs...)
 		}
-		return dir.GroupsOf(ctx, tenant, u.ID)
+		if all == nil {
+			all = []string{}
+		}
+		return all, nil
 	}
 }
 
