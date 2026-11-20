@@ -245,17 +245,21 @@ func TestWorkflowWaitsForEvals(t *testing.T) {
 	}
 }
 
-// SB-1001: a manifest with spaces is checked and planned, but apply refuses it, before any
-// write, until the whole cell enforces spaces (SB-1008).
-func TestSpacesAreNotAppliedYet(t *testing.T) {
+// SB-1001, SB-1008: a manifest with spaces applies; every space and barrier is recorded.
+func TestSpacesAreApplied(t *testing.T) {
 	w := newWorld()
-	for _, extra := range []string{
-		"spaces:\n  eng:\n    members: [group:eng]\n    scope: { docs: [\"/Eng/**\"] }\n",
-		"barriers:\n  - [group:a, group:b]\n",
-	} {
-		_, err := Run(context.Background(), w.deps(), tenant(t, pilot+extra), nil)
-		if !errors.Is(err, ErrSpacesNotEnforced) || w.writes != 0 {
-			t.Fatalf("err %v, writes %d", err, w.writes)
+	m := tenant(t, pilot+"spaces:\n  eng:\n    members: [group:eng]\n    scope: { docs: [\"/Eng/**\"] }\nbarriers:\n  - [group:a, group:b]\n")
+	p, err := Run(context.Background(), w.deps(), m, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spaces := 0
+	for _, r := range w.reg[m.Tenant] {
+		if r.Kind == plan.KindSpace || r.Kind == plan.KindBarrier {
+			spaces++
 		}
+	}
+	if spaces != 2 || p.Add == 0 {
+		t.Fatalf("recorded %d spaces and barriers; plan %+v", spaces, p)
 	}
 }

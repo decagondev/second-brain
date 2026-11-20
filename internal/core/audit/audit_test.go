@@ -150,3 +150,19 @@ func TestExportVerify(t *testing.T) {
 		t.Error("an empty export verified")
 	}
 }
+
+// SB-1008: a row's space is hashed, company is never recorded, and InSpace filters.
+func TestSpaceField(t *testing.T) {
+	base := Row{Seq: 1, ID: "aud_000000000001", At: "2026-11-20T09:00:00.000Z", Tenant: "acme-logistics", Actor: "usr_1",
+		Kind: "decision", Subject: "Chunk::\"c\"", Release: "rel_x", Reason: "read", Prev: Zero}
+	plain, _ := HashOf(base)
+	in := base
+	in.Space = "spc_finance"
+	h, _ := HashOf(in)
+	if plain == h {
+		t.Fatal("the space must be part of the hash")
+	}
+	if !InSpace(in, "finance") || InSpace(base, "finance") || !InSpace(Row{Kind: "kill", Subject: "space:finance"}, "finance") {
+		t.Fatal("InSpace")
+	}
+}

@@ -23,7 +23,7 @@ const (
 
 // Switch is one set kill switch.
 type Switch struct {
-	Scope  string    `json:"scope"` // "agent:NAME", "connector:KIND" or "tenant"
+	Scope  string    `json:"scope"` // "agent:NAME", "connector:KIND", "space:NAME" or "tenant"
 	Reason string    `json:"reason"`
 	Actor  string    `json:"actor"`
 	At     time.Time `json:"at"`
@@ -43,7 +43,7 @@ var (
 	ErrNoAudit = errors.New("kill: no audit log; refusing to change a switch untraced")
 )
 
-var scopeRe = regexp.MustCompile(`^(agent:[a-z][a-z0-9-]{0,40}|connector:(docs|chat|tickets|crm)|tenant)$`)
+var scopeRe = regexp.MustCompile(`^(agent:[a-z][a-z0-9-]{0,40}|connector:(docs|chat|tickets|crm)|space:[a-z][a-z0-9-]{1,30}|tenant)$`)
 
 // ValidScope reports whether s is a scope sb-kill(1) accepts.
 func ValidScope(s string) bool { return scopeRe.MatchString(s) }
@@ -90,6 +90,7 @@ type Op struct {
 	Connector     string // "" for none
 	Consequential bool   // a tool call with effects outside the platform
 	Admin         bool   // admin, audit read or unkill: allowed even when the tenant is killed
+	Space         string // the space it runs in, by name ("" or "company" for none; SB-1008)
 }
 
 // Checker is one cell's view of its tenant's switches.
@@ -158,8 +159,18 @@ func (c *Checker) Check(op Op) error {
 		return fmt.Errorf("%w: agent:%s", ErrKilled, op.Agent)
 	case op.Connector != "" && c.scopes["connector:"+op.Connector]:
 		return fmt.Errorf("%w: connector:%s", ErrKilled, op.Connector)
+	case op.Space != "" && op.Space != "company" && c.scopes["space:"+op.Space]:
+		return fmt.Errorf("%w: space:%s", ErrKilled, op.Space)
 	}
 	return nil
+}
+
+// SpaceKilled reports whether a space (by name) is killed, or the list isn't loaded yet:
+// retrieval drops every chunk such a space holds (sb-kill-switches(7); SB-1008).
+func (c *Checker) SpaceKilled(name string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return !c.loaded || c.scopes["space:"+name] || c.scopes["tenant"]
 }
 
 // Killed lists the scopes the checker believes are set, sorted (sb kill list).

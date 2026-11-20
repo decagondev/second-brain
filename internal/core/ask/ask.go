@@ -100,6 +100,8 @@ type Agent struct {
 	Emails func(ctx context.Context, user string) ([]string, error)
 	// Killed reports a kill switch on the ask agent or the tenant (W5 wires the real one).
 	Killed func(ctx context.Context) bool
+	// SpaceKilled reports a killed space, by name (SB-1008); nil is a cell without spaces.
+	SpaceKilled func(name string) bool
 	// Spoof logs one stripped citation label (citation_spoof), with no claim text.
 	Spoof func(ctx context.Context, trace, label string)
 	NewID func(prefix string) string
@@ -150,6 +152,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 	}
 	if a.Killed == nil || a.Killed(ctx) {
 		return Response{}, ErrKilled // no kill-switch reader is treated as killed
+	}
+	if spaceKilled(a.SpaceKilled, s) {
+		return Response{}, ErrKilled
 	}
 	conv := req.Conversation
 	var earlier []string
@@ -287,6 +292,12 @@ func (a Agent) Trace(ctx context.Context, s tenancy.Scope, id string) (Trace, er
 		return Trace{}, ErrNotFound
 	}
 	return t, nil
+}
+
+// spaceKilled is a request in a space whose kill switch is set (sb-kill-switches(7)).
+func spaceKilled(killed func(string) bool, s tenancy.Scope) bool {
+	sp := s.Space()
+	return sp != "company" && killed != nil && killed(strings.TrimPrefix(sp, "spc_"))
 }
 
 type userKey struct{}

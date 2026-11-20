@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Audit and kill switch per space (S10.3c: SB-1008): the `space:NAME` kill scope (`sb kill space`), `space` on audit rows and actions, the admin audit `space=` filter, spaces in the kill drill, and `sb tenant apply` accepting spaces. W10 is built.
 - Spaces in the web UI and the chat app (S10.3b: SB-1007): `GET /v1/spaces`, spaces and label on every citation, the "Ask in" switcher and place badges, a space's `channels` in the manifest, and the Slack app asking in a channel's space.
 - Ask in a space or company-wide (S10.3a: SB-1006): space, label and barrier checks before the live ACL batch, `?space=` on asks, three trace reasons, spaces in the local eval cell, and `space-leak` in the release gate. LAW-20 is green.
 - Ingest routes and labels every document (S10.2b: SB-1005): `internal/core/route`, location and label from every connector (Drive folder path and classification label, Slack private channels), routing on chunks in both indexes, and re-routing on the next sync after a scope change.

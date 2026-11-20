@@ -58,7 +58,7 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 	if instr == "" || utf8.RuneCountInString(instr) > MaxInstruction {
 		return DraftResponse{}, fmt.Errorf("%w: instruction must be 1 to %d characters", ErrInvalid, MaxInstruction)
 	}
-	if d.Killed == nil || d.Killed(ctx) {
+	if d.Killed == nil || d.Killed(ctx) || spaceKilled(d.Agent.SpaceKilled, s) {
 		return DraftResponse{}, ErrKilled
 	}
 	pctx := map[string]any{}

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.3c Audit and kill switch per space (SB-1008)
+
+**Wave/slice:** W10 / S10.3c · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** the `space:NAME` kill scope through the checker, the ask and draft agents, the tool bus and retrieval; `space` on audit rows and actions; `audit.InSpace` and the admin filter; `kill.DrillScopes`; `sb kill space`; apply accepting spaces; `laws/law10spaces.go`. The manual changed first: sb-kill-switches(7), sb-kill(1), sb-audit(5), sb-audit(7), sb-audit(1) and sb-admin(3).
+
+**Why this way:** A killed space has to disappear from company-wide answers too, or killing Finance would only stop people asking Finance directly. A document another space also holds is dropped as well, because a kill that leaves part of a space readable isn't one. The audit field is omitted for company-wide rows, so every row written before spaces still hashes as it did and old exports keep verifying.
+
+**Learned:** An unkill has the same 10-second bound as a kill; the law test first expected recovery at once and was wrong about the system, not the system about the law.
+
+**Laws:** LAW-10 and LAW-11 extended (two law tests, two mutations caught). W10 is built; LAW-21 to LAW-23 stay red for W12 and W13.
+
+**Next:** W11, department templates (E11).
+
 ## 2026-11-20 S10.3b Spaces in the web UI and the chat app (SB-1007)
 
 **Wave/slice:** W10 / S10.3b · **Author:** platform lead + Claude · **Status:** In review (WCAG audit, real Slack)

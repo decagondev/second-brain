@@ -18,7 +18,7 @@ POST /v1/admin/manifest/diff
 POST /v1/admin/kill
 POST /v1/admin/unkill
 GET  /v1/admin/kill
-GET  /v1/admin/audit?since=…&kind=…
+GET  /v1/admin/audit?since=…&kind=…&space=…
 GET  /v1/admin/usage?week=2027-W10
 GET  /v1/admin/refusals?since=…
 POST /v1/admin/subjects/erase
@@ -35,7 +35,7 @@ The console is a client of this API and has no other powers. Every endpoint need
 
 **`POST /v1/admin/kill`** takes `{ "scope": "agent"|"connector"|"tenant", "name": "…", "reason": "…" }` and has the same semantics as [sb-kill(1)](sb-kill.1.md).
 
-**`GET /v1/admin/audit`** pages through [sb-audit(5)](sb-audit.5.md) rows.
+**`GET /v1/admin/audit`** pages through [sb-audit(5)](sb-audit.5.md) rows. `space=NAME` keeps the rows written in that space and the `kill` rows about it (SB-1008).
 
 **`GET /v1/admin/usage?week=2027-W10`** returns the weekly report's numbers (sb-observability(7), Weekly leadership report): weekly active users, seats, asks, cited-answer rate, gaps by kind, drafts and their used-to-discarded ratio, actions by outcome and model spend.
 

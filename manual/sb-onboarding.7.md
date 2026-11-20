@@ -33,7 +33,7 @@ Each phase ends with a **gate**. Don't move on until the gate passes. Every step
 
 ### Day 0: create the cell
 
-1. Choose your spaces: pick the departments that need their own brain from [sb-departments(7)](sb-departments.7.md), and for each one the IdP groups that are its members and the folders and channels it covers. → expect a short list, usually 3 to 6 spaces, with People, Finance, Legal and Executive marked `restricted`. Until SB-1008 the list waits in the manifest: `sb tenant check` and `apply --plan` show it, but the pilot runs as one brain until spaces are enforced.
+1. Choose your spaces: pick the departments that need their own brain from [sb-departments(7)](sb-departments.7.md), and for each one the IdP groups that are its members and the folders and channels it covers. → expect a short list, usually 3 to 6 spaces, with People, Finance, Legal and Executive marked `restricted`. The list goes into the manifest's `spaces:` block (sb-space(5)).
 2. Write `tenant.yaml` from [the pilot example](sb-tenant.5.md#examples). → expect six required lines and no secrets in the file.
 3. `sb tenant check tenant.yaml` → expect `ok`.
 4. `sb tenant apply tenant.yaml --plan` → expect a plan with one cell, your connectors and `ask`, and nothing else.

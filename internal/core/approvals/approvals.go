@@ -68,6 +68,7 @@ type Action struct {
 	ApprovedHash  string          `json:"approved_hash,omitempty"`
 	Note          string          `json:"note,omitempty"`
 	Receipt       string          `json:"receipt,omitempty"`
+	Space         string          `json:"space,omitempty"` // spc_NAME it was proposed in (SB-1008)
 	Reason        string          `json:"reason,omitempty"`
 	PolicyReason  string          `json:"policy_reason,omitempty"`
 	Unconfirmed   bool            `json:"unconfirmed,omitempty"` // Act failed or timed out: the target may have it

@@ -44,7 +44,7 @@ func (e *env) kill(verb string, args []string) int {
 	name := "sb " + verb
 	args = e.localArgs(args)
 	if len(args) == 0 {
-		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb %s agent NAME|connector KIND|tenant --tenant T --reason TEXT", verb))
+		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb %s agent NAME|connector KIND|space NAME|tenant --tenant T --reason TEXT", verb))
 	}
 	if verb == "kill" && args[0] == "list" {
 		return e.killList(args[1:])
@@ -52,7 +52,7 @@ func (e *env) kill(verb string, args []string) int {
 	what, rest := args[0], args[1:]
 	var scope string
 	switch what {
-	case "agent", "connector":
+	case "agent", "connector", "space":
 		if len(rest) == 0 || strings.HasPrefix(rest[0], "--") {
 			return e.fail(name, errs.New(errs.EUSAGE, "sb %s %s needs a name", verb, what))
 		}
@@ -63,7 +63,7 @@ func (e *env) kill(verb string, args []string) int {
 			rest = rest[1:] // sb unkill tenant [NAME]
 		}
 	default:
-		return e.fail(name, errs.New(errs.EUSAGE, "unknown scope %q: agent, connector or tenant", what))
+		return e.fail(name, errs.New(errs.EUSAGE, "unknown scope %q: agent, connector, space or tenant", what))
 	}
 	var reason string
 	for i := 0; i < len(rest); i++ {

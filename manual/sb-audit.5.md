@@ -35,6 +35,7 @@ sb-audit — audit row fields, hash rules and the NDJSON export format
 | `receipt` | string | `Ran` | Target-issued receipt id |
 | `release` | id | yes | Release running when written |
 | `reason` | string | yes | Policy ids, kill reason, or error code |
+| `space` | id | in a space | The space the row's request was in (`spc_NAME`), for decisions, tool calls and approvals asked in a space (SB-1008). Absent for company-wide requests and cell-level rows, so rows from before spaces hash exactly as they did |
 | `prev` | hex | yes | `hash` of row `seq-1` (all zeros for row 1) |
 | `hash` | hex | yes | SHA-256 of `prev` concatenated with the RFC 8785 canonical JSON of the row without `hash` |
 

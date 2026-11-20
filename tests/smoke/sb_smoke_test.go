@@ -167,13 +167,10 @@ func TestTenantApply(t *testing.T) {
 	if code, out := runSB("--endpoint", ep, "tenant", "apply", "../../examples/tenants/full.yaml", "--plan"); code != 0 || out != "plan: no changes\n" {
 		t.Fatalf("after apply, plan: exit %d %q", code, out)
 	}
-	// Spaces are checked and planned, but apply refuses them until SB-1008 (sb-space(5)).
+	// Spaces are checked and planned (SB-1001); the spaces apply runs at the end (SB-1008).
 	if code, out := runSB("--endpoint", ep, "tenant", "apply", "../../examples/tenants/spaces.yaml", "--plan"); code != 0 ||
 		!strings.Contains(out, "+ space finance (template finance, label restricted") || !strings.Contains(out, "+ barrier group:deal-team-orion / group:everyone") {
 		t.Fatalf("spaces plan: exit %d\n%s", code, out)
-	}
-	if code, out := apply("spaces.yaml"); code != 2 || !strings.Contains(out, "[ENOTIMPL]") || !strings.Contains(out, "SB-1008") {
-		t.Fatalf("spaces apply: exit %d\n%s", code, out)
 	}
 	want := "custody        factory\nplacement      factory-account\nkey_custodian  factory\nkey_wraps      audit-signing: factory\nchannel        stable\nhandoff        none\n"
 	if code, out := runSB("--endpoint", ep, "factory", "status", "acme-logistics"); code != 0 || out != want {
@@ -186,6 +183,13 @@ func TestTenantApply(t *testing.T) {
 	if code, out := runSB("--endpoint", ep, "factory", "access", "acme-logistics"); code != 0 ||
 		!strings.Contains(out, "LAW-17 applies after hand-off") || !strings.Contains(out, "key-wrap     key-wrap:audit-signing:") {
 		t.Fatalf("factory access: exit %d %q", code, out)
+	}
+	// SB-1008: spaces apply like any other field, and a second apply changes nothing.
+	if code, out := apply("spaces.yaml"); code != 0 || !strings.Contains(out, "+ space finance (template finance, label restricted") {
+		t.Fatalf("spaces apply: exit %d\n%s", code, out)
+	}
+	if code, out := apply("spaces.yaml"); code != 0 || out != "apply: no changes\n" {
+		t.Fatalf("spaces apply again: exit %d %q", code, out)
 	}
 }
 
@@ -208,6 +212,12 @@ func TestKillLocal(t *testing.T) {
 	audit, err := os.ReadFile(filepath.Join(strings.TrimPrefix(ep, "file://"), "audit", "acme-logistics.ndjson"))
 	if err != nil || strings.Count(string(audit), `"kind":"kill"`) != 2 || !strings.Contains(string(audit), `"state":"cleared"`) {
 		t.Fatalf("audit rows: %v %s", err, audit)
+	}
+	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "kill", "space", "finance", "--reason", "smoke drill"); code != 0 || !strings.Contains(out, "space:finance killed for acme-logistics") {
+		t.Fatalf("kill space: %d %s", code, out)
+	}
+	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "unkill", "space", "finance", "--reason", "done"); code != 0 {
+		t.Fatalf("unkill space: %d %s", code, out)
 	}
 	if code, out := runSB("--endpoint", ep, "--tenant", "acme-logistics", "kill", "connector", "email", "--reason", "x"); code != 2 || !strings.Contains(out, "[EUSAGE]") {
 		t.Fatalf("bad scope: %d %s", code, out)

@@ -62,6 +62,22 @@ func Drill(ctx context.Context, c Control, t Target, tenant string, scopes []str
 	return out
 }
 
+// DrillScopes are the scopes a release drill fires for one tenant: the tenant, each agent
+// and connector kind it enables, and each of its spaces (sb-kill-switches(7), Drills).
+func DrillScopes(agents, connectorKinds, spaces []string) []string {
+	out := []string{"tenant"}
+	for _, a := range agents {
+		out = append(out, "agent:"+a)
+	}
+	for _, k := range connectorKinds {
+		out = append(out, "connector:"+k)
+	}
+	for _, s := range spaces {
+		out = append(out, "space:"+s)
+	}
+	return out
+}
+
 // DrillPassed reports whether every scope took effect in time.
 func DrillPassed(rs []DrillResult) bool {
 	for _, r := range rs {

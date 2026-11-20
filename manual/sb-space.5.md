@@ -1,7 +1,7 @@
 ---
 title: "sb-space(5)"
 man: "5"
-summary: The spaces and barriers blocks of a tenant manifest (checked and planned from SB-1001; applied once the whole cell enforces them, SB-1008).
+summary: The spaces and barriers blocks of a tenant manifest (checked and planned from SB-1001, applied from SB-1008).
 ---
 
 # sb-space(5)
@@ -23,7 +23,7 @@ spaces:
 
 ## DESCRIPTION
 
-These blocks sit at the top level of a tenant manifest ([sb-tenant(5)](sb-tenant.5.md)), next to `connectors` and `agents`. What a space means is in [sb-spaces(7)](sb-spaces.7.md). `sb tenant check` accepts both blocks and checks every rule below (SB-1001), and `sb tenant apply --plan` shows each space and barrier as its own line. **`sb tenant apply` refuses a manifest with either block until SB-1008**, with `ENOTIMPL` and `spaces are checked and planned, but not enforced until SB-1008`. Asks enforce spaces since SB-1006; the web UI, the chat app and per-space kill switches and audit come with SB-1007 and SB-1008, and until all of them do, no cell runs with spaces, so a manifest that declares spaces never runs without them. Both blocks are optional, and a manifest without them behaves exactly as today.
+These blocks sit at the top level of a tenant manifest ([sb-tenant(5)](sb-tenant.5.md)), next to `connectors` and `agents`. What a space means is in [sb-spaces(7)](sb-spaces.7.md). `sb tenant check` accepts both blocks and checks every rule below (SB-1001), and `sb tenant apply --plan` shows each space and barrier as its own line. `sb tenant apply` applies them like any other field since SB-1008, when the last part of the cell that has to enforce spaces (per-space kill switches and audit) was built; until then it refused them, so no cell ran with spaces only partly enforced. Both blocks are optional, and a manifest without them behaves exactly as today.
 
 ## FIELDS
 
@@ -71,7 +71,7 @@ A field a space leaves out takes its template's value: the label, the agents (th
 
 ## EXIT STATUS / ERRORS
 
-`sb tenant check` exits 1 with `EMANIFEST` on any rule above. Until SB-1008, `sb tenant apply` (without `--plan`) exits 2 with `ENOTIMPL` on any manifest that has a `spaces:` or `barriers:` block at all.
+`sb tenant check` exits 1 with `EMANIFEST` on any rule above.
 
 ## LAWS
 

@@ -33,6 +33,7 @@ The policy kernel writes a `decision` row for every decision it records, **befor
 | `subject` | the resource, as `Type::"ID"` |
 | `state` | `allow`, `deny` or `unknown` |
 | `reason` | the action, then the deciding policy ids and the kernel's reason, e.g. `call_tool: permitted by base.cedar#3` |
+| `space` | the space the request was in, when it was in one (SB-1008) |
 
 What is recorded: every `Deny` and `Unknown`, and every decision on `call_tool`, `propose`, `approve`, `admin` and `use_agent`. `Allow` on `read` is sampled, 1% by default (`SB_AUDIT_READ_SAMPLE`, 0 to 1). If the row can't be written, the decision becomes `Unknown`: nothing that should have been audited goes ahead unaudited (LAW-04). Rows hold ids and policy ids only, never content (LAW-07).
 

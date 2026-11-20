@@ -46,6 +46,7 @@ type Row struct {
 	Receipt       string `json:"receipt,omitempty"`
 	Release       string `json:"release"`
 	Reason        string `json:"reason"`
+	Space         string `json:"space,omitempty"` // spc_NAME for a row written in a space (SB-1008)
 	Prev          string `json:"prev"`
 	Hash          string `json:"hash,omitempty"`
 }
@@ -53,6 +54,7 @@ type Row struct {
 // Event is what a writer supplies; the log fills in seq, id, at, tenant, release, prev and hash.
 type Event struct {
 	Actor, Kind, Subject, State, Approval, PayloadSHA256, Receipt, Reason string
+	Space                                                                 string // "" or "company" for none
 }
 
 // ErrInvalid is a row that can't be written (bad kind, missing field, unsafe string).
@@ -63,7 +65,7 @@ func Canonical(r Row) ([]byte, error) {
 	fields := map[string]any{"seq": r.Seq}
 	for k, v := range map[string]string{"id": r.ID, "at": r.At, "tenant": r.Tenant, "actor": r.Actor, "kind": r.Kind,
 		"subject": r.Subject, "state": r.State, "approval": r.Approval, "payload_sha256": r.PayloadSHA256,
-		"receipt": r.Receipt, "release": r.Release, "reason": r.Reason, "prev": r.Prev} {
+		"receipt": r.Receipt, "release": r.Release, "reason": r.Reason, "space": r.Space, "prev": r.Prev} {
 		if err := safe(k, v); err != nil {
 			return nil, err
 		}
@@ -112,6 +114,12 @@ func safe(field, v string) error {
 	return nil
 }
 
+// InSpace reports whether a row belongs to a space's audit trail (sb audit tail --space):
+// written in it, or a kill row about it.
+func InSpace(r Row, name string) bool {
+	return r.Space == "spc_"+name || (r.Kind == "kill" && r.Subject == "space:"+name)
+}
+
 // HashOf is hex(SHA-256(prev ‖ canonical(r))).
 func HashOf(r Row) (string, error) {
 	c, err := Canonical(r)
@@ -153,7 +161,7 @@ func (l *Log) Write(ctx context.Context, e Event) (Row, error) {
 		return Row{}, fmt.Errorf("%w: actor, subject and reason are required", ErrInvalid)
 	}
 	if l.Redact != nil {
-		for _, f := range []*string{&e.Actor, &e.Subject, &e.State, &e.Approval, &e.PayloadSHA256, &e.Receipt, &e.Reason} {
+		for _, f := range []*string{&e.Actor, &e.Subject, &e.State, &e.Approval, &e.PayloadSHA256, &e.Receipt, &e.Reason, &e.Space} {
 			*f = l.Redact.Scrub(*f)
 		}
 	}
@@ -163,6 +171,9 @@ func (l *Log) Write(ctx context.Context, e Event) (Row, error) {
 		r := Row{Seq: lastSeq + 1, At: l.Now().UTC().Format("2006-01-02T15:04:05.000Z"), Tenant: l.Tenant,
 			Actor: e.Actor, Kind: e.Kind, Subject: e.Subject, State: e.State, Approval: e.Approval,
 			PayloadSHA256: e.PayloadSHA256, Receipt: e.Receipt, Release: l.Release(), Reason: e.Reason, Prev: lastHash}
+		if e.Space != "company" {
+			r.Space = e.Space
+		}
 		r.ID = fmt.Sprintf("aud_%012d", r.Seq)
 		h, err := HashOf(r)
 		if err != nil {
@@ -181,7 +192,7 @@ func (l *Log) RecordDecision(ctx context.Context, d policy.Record) error {
 		actor = "sys_kernel"
 	}
 	_, err := l.Write(ctx, Event{Actor: actor, Kind: "decision", Subject: d.Subject, State: d.Decision.String(),
-		Reason: d.Reason}) // the kernel's reason already starts with the action
+		Reason: d.Reason, Space: d.Space}) // the kernel's reason already starts with the action
 	return err
 }
 

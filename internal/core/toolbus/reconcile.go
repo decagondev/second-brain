@@ -48,7 +48,7 @@ func (b *Bus) Reconcile(ctx context.Context) (ReconcileResult, error) {
 		case err != nil:
 			continue // try again next pass
 		case found && rc.TargetID != "":
-			if _, err := b.Audit.Write(ctx, audit.Event{Actor: "sys_reconciler", Kind: "tool_call", Subject: a.ID, State: string(approvals.Ran),
+			if _, err := b.Audit.Write(ctx, audit.Event{Actor: "sys_reconciler", Space: a.Space, Kind: "tool_call", Subject: a.ID, State: string(approvals.Ran),
 				Approval: a.Approval, PayloadSHA256: a.PayloadSHA256, Receipt: rc.TargetID, Reason: "reconciled"}); err != nil {
 				continue // no audit row, no change
 			}

@@ -14,7 +14,7 @@ sb-audit — verify the audit hash chain, tail it, or export it
 
 ```text
 sb audit verify [--tenant T] [--since TIME] [--export FILE [--key ed25519:PUB]]
-sb audit tail   [--tenant T] [--kind KIND]... [--actor ID]
+sb audit tail   [--tenant T] [--kind KIND]... [--actor ID] [--space NAME]
 sb audit export [--tenant T] --since TIME [--until TIME] --out FILE
 ```
 
@@ -24,7 +24,7 @@ sb audit export [--tenant T] --since TIME [--until TIME] --out FILE
 
 The forms with `--tenant` talk to a running cell and arrive with the cell runtime. Until then they exit `ENOTIMPL`, and `--export` works offline today (SB-402).
 
-**tail** streams new rows as NDJSON or a short human line per row. Filter by `--kind` (`tool_call`, `decision`, `approval`, `kill`, `config`, `release`, `access`).
+**tail** streams new rows as NDJSON or a short human line per row. Filter by `--kind` (`tool_call`, `decision`, `approval`, `kill`, `config`, `release`, `access`) or by `--space NAME`, which keeps the rows written in that space and the `kill` rows about it (`subject` `space:NAME`). The admin API takes the same filter, `GET /v1/admin/audit?space=NAME` (sb-admin(3)).
 
 **export** writes signed, encrypted NDJSON in the [sb-audit(5)](sb-audit.5.md) format.
 

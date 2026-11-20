@@ -3,6 +3,7 @@ package kill
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,5 +119,34 @@ func TestChecker(t *testing.T) {
 	_ = ch.Refresh(ctx)
 	if ch.Check(Op{Agent: "ask", Consequential: true}) != nil || len(ch.Killed()) != 0 {
 		t.Fatal("recovery")
+	}
+}
+
+// SB-1008: space scopes are valid, stop only their space, and the drill fires each space.
+func TestSpaceScope(t *testing.T) {
+	for s, ok := range map[string]bool{"space:finance": true, "space:it-security": true, "space:Finance": false, "space:": false, "space:a": false} {
+		if ValidScope(s) != ok {
+			t.Errorf("ValidScope(%q) = %v", s, !ok)
+		}
+	}
+	c := &Checker{Tenant: "acme-logistics", Now: func() time.Time { return time.Unix(0, 0) }}
+	if !c.SpaceKilled("finance") {
+		t.Fatal("before the first load every space counts as killed")
+	}
+	c.Push([]Switch{{Scope: "space:finance"}})
+	if c.Check(Op{Agent: "ask", Space: "finance"}) == nil || c.Check(Op{Agent: "ask", Space: "eng"}) != nil || c.Check(Op{Agent: "ask"}) != nil {
+		t.Fatal("a space kill must stop that space only")
+	}
+	if !c.SpaceKilled("finance") || c.SpaceKilled("eng") {
+		t.Fatal("SpaceKilled")
+	}
+	c.Push([]Switch{{Scope: "tenant"}})
+	if !c.SpaceKilled("eng") {
+		t.Fatal("a killed tenant kills every space")
+	}
+	got := DrillScopes([]string{"ask"}, []string{"docs"}, []string{"finance", "people"})
+	want := []string{"tenant", "agent:ask", "connector:docs", "space:finance", "space:people"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("DrillScopes = %v", got)
 	}
 }

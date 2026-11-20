@@ -58,8 +58,8 @@ const usage = `usage: sb [--json] [--tenant NAME] [--endpoint URL] [-q] COMMAND 
 
 commands:
   tenant  check|apply|verify FILE      validate, apply and verify a tenant manifest
-  kill    agent|connector|tenant ...   set a kill switch
-  unkill  agent|connector|tenant ...   clear a kill switch
+  kill    agent|connector|space|tenant ...   set a kill switch
+  unkill  agent|connector|space|tenant ...   clear a kill switch
   audit   verify|tail|export           audit log tools
   release status|promote|rollback      release controller (maintainers)
   eval    run|diff SUITE               evaluation suites
@@ -379,8 +379,6 @@ func (e *env) tenantApply(args []string) int {
 		return e.fail(name, errs.New(errs.EMANIFEST, "%s: %v", file, err))
 	case errors.As(err, &ee):
 		return e.fail(name, errs.New(errs.EEVAL, "%v", err))
-	case errors.Is(err, apply.ErrSpacesNotEnforced):
-		return e.fail(name, errs.New(errs.ENOTIMPL, "%s: %v", file, err))
 	case err != nil:
 		return e.fail(name, errs.New(errs.EUNAVAIL, "%v; run apply again to resume", err))
 	case e.g.JSON:

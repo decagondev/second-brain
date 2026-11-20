@@ -98,7 +98,8 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 		return approvals.Action{}, fmt.Errorf("%w: tool %q is not in the release's registry", ErrPerm, c.Tool)
 	}
 	// 1. Kill check.
-	if err := b.Kill.Check(kill.Op{Agent: c.Agent, Connector: tool.Connector, Consequential: tool.Consequential}); err != nil {
+	if err := b.Kill.Check(kill.Op{Agent: c.Agent, Connector: tool.Connector, Consequential: tool.Consequential,
+		Space: strings.TrimPrefix(s.Space(), "spc_")}); err != nil {
 		return approvals.Action{}, err
 	}
 	// 2. Authorise.
@@ -125,10 +126,13 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 	canon, _ := approvals.Canonical(c.Payload)
 	a := approvals.Action{ID: b.NewID("tc_"), Tenant: b.Tenant, Workflow: tool.Workflow, Tool: tool.Name, Target: c.Target,
 		Payload: canon, PayloadSHA256: hash, Requester: s.User(), Approvers: tool.Approvers, PolicyReason: clean(decision.Reason)}
+	if sp := s.Space(); sp != "company" {
+		a.Space = sp
+	}
 	if !tool.Consequential {
 		// 3. Audit row, then 5. execute (no approval needed).
 		a.State = approvals.Executing
-		if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "tool_call", Subject: a.ID, State: string(approvals.Executing),
+		if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "tool_call", Subject: a.ID, State: string(approvals.Executing),
 			PayloadSHA256: hash, Reason: "call_tool: " + tool.Name}); err != nil {
 			return approvals.Action{}, ErrUnaudited
 		}
@@ -139,7 +143,7 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 	}
 	// 3. Audit row for PendingApproval, written before the action exists for approvers.
 	a.State, a.ExpiresAt = approvals.PendingApproval, b.Now().Add(approvals.TTL).UTC()
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "tool_call", Subject: a.ID, State: string(approvals.PendingApproval),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "tool_call", Subject: a.ID, State: string(approvals.PendingApproval),
 		PayloadSHA256: hash, Reason: "propose: " + tool.Workflow}); err != nil {
 		return approvals.Action{}, ErrUnaudited
 	}
@@ -262,7 +266,7 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 		return approvals.Action{}, err
 	}
 	canon, _ := approvals.Canonical(payload)
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "tool_call", Subject: a.ID, State: string(approvals.Drafted),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "tool_call", Subject: a.ID, State: string(approvals.Drafted),
 		PayloadSHA256: hash, Reason: "edit: approval void"}); err != nil {
 		return approvals.Action{}, ErrUnaudited
 	}
@@ -277,7 +281,7 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 	if err != nil {
 		return a, err
 	}
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "tool_call", Subject: a.ID, State: string(approvals.PendingApproval),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "tool_call", Subject: a.ID, State: string(approvals.PendingApproval),
 		PayloadSHA256: hash, Reason: "propose: " + a.Workflow}); err != nil {
 		return approvals.Action{}, ErrUnaudited
 	}
@@ -326,11 +330,11 @@ func (b *Bus) Approve(ctx context.Context, s tenancy.Scope, id, echoedHash, note
 		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
 	}
 	tool := b.Tools[a.Tool]
-	if err := b.Kill.Check(kill.Op{Connector: tool.Connector, Consequential: true}); err != nil {
+	if err := b.Kill.Check(kill.Op{Connector: tool.Connector, Consequential: true, Space: strings.TrimPrefix(a.Space, "spc_")}); err != nil {
 		return a, err
 	}
 	apr := b.NewID("apr_")
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "approval", Subject: a.ID, State: string(approvals.Approved),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "approval", Subject: a.ID, State: string(approvals.Approved),
 		Approval: apr, PayloadSHA256: a.PayloadSHA256, Reason: "approve: " + a.Workflow}); err != nil {
 		return a, ErrUnaudited
 	}
@@ -362,7 +366,7 @@ func (b *Bus) Reject(ctx context.Context, s tenancy.Scope, id, note string) (app
 	if err != nil {
 		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
 	}
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "approval", Subject: a.ID, State: string(approvals.Rejected),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "approval", Subject: a.ID, State: string(approvals.Rejected),
 		PayloadSHA256: a.PayloadSHA256, Reason: "reject: " + a.Workflow}); err != nil {
 		return a, ErrUnaudited
 	}
@@ -373,7 +377,7 @@ func (b *Bus) Reject(ctx context.Context, s tenancy.Scope, id, note string) (app
 }
 
 func (b *Bus) expire(ctx context.Context, a approvals.Action) {
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: "sys_toolbus", Kind: "tool_call", Subject: a.ID, State: string(approvals.Expired),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: "sys_toolbus", Space: a.Space, Kind: "tool_call", Subject: a.ID, State: string(approvals.Expired),
 		PayloadSHA256: a.PayloadSHA256, Reason: "expired"}); err != nil {
 		return
 	}
@@ -391,13 +395,13 @@ func (b *Bus) Execute(ctx context.Context, id string) (approvals.Action, error) 
 		return a, fmt.Errorf("%w: execute without an approval", ErrNoApproval)
 	}
 	tool := b.Tools[a.Tool]
-	if err := b.Kill.Check(kill.Op{Connector: tool.Connector, Consequential: true}); err != nil {
+	if err := b.Kill.Check(kill.Op{Connector: tool.Connector, Consequential: true, Space: strings.TrimPrefix(a.Space, "spc_")}); err != nil {
 		return a, err // stays Approved; it may run after an unkill, before it expires
 	}
 	if h, err := approvals.Hash(a.Workflow, a.Target, a.Payload); err != nil || h != a.ApprovedHash {
 		return a, fmt.Errorf("%w: the payload no longer matches the approval", ErrNoApproval)
 	}
-	if _, err := b.Audit.Write(ctx, audit.Event{Actor: "sys_executor", Kind: "tool_call", Subject: a.ID, State: string(approvals.Executing),
+	if _, err := b.Audit.Write(ctx, audit.Event{Actor: "sys_executor", Space: a.Space, Kind: "tool_call", Subject: a.ID, State: string(approvals.Executing),
 		Approval: a.Approval, PayloadSHA256: a.PayloadSHA256, Reason: "execute: " + a.Workflow}); err != nil {
 		return a, ErrUnaudited
 	}
@@ -449,7 +453,7 @@ func (b *Bus) act(ctx context.Context, a approvals.Action, tool Tool, key string
 	}
 	reason = clean(reason)
 	// The outcome is audited; if that write fails the state still records what happened.
-	_, _ = b.Audit.Write(ctx, audit.Event{Actor: "sys_executor", Kind: "tool_call", Subject: a.ID, State: string(state),
+	_, _ = b.Audit.Write(ctx, audit.Event{Actor: "sys_executor", Space: a.Space, Kind: "tool_call", Subject: a.ID, State: string(state),
 		Approval: a.Approval, PayloadSHA256: a.PayloadSHA256, Receipt: receipt, Reason: reason})
 	final, err := b.Actions.Move(ctx, b.Tenant, a.ID, approvals.Executing, func(x *approvals.Action) error {
 		x.State, x.Receipt, x.Reason, x.Unconfirmed, x.FinishedAt = state, receipt, reason, unconfirmed, b.Now().UTC()

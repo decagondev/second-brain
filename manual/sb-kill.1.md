@@ -15,9 +15,10 @@ sb-kill — set and clear kill switches
 ```text
 sb kill   agent NAME     --tenant T --reason TEXT
 sb kill   connector KIND --tenant T --reason TEXT
+sb kill   space NAME     --tenant T --reason TEXT
 sb kill   tenant         --tenant T --reason TEXT
 sb kill   agent NAME     --all-tenants --reason TEXT      (maintainers)
-sb unkill agent|connector|tenant [NAME] --tenant T --reason TEXT
+sb unkill agent|connector|space|tenant [NAME] --tenant T --reason TEXT
 sb kill   list [--tenant T]
 ```
 
@@ -29,6 +30,7 @@ A kill switch stops new work immediately, without a deploy or a manifest change.
 |---|---|
 | `agent NAME` | New runs and new tool calls of that agent |
 | `connector KIND` | `fetch`, `changes`, `acl` and `act` on that connector. Its chunks become `Unknown`, so answers stop using them |
+| `space NAME` | Asks, drafts and tool calls in that space, and its chunks in every answer, company-wide ones too (sb-kill-switches(7)). The rest of the company keeps working |
 | `tenant` | Everything except admin, audit read and `sb unkill` |
 
 A tool call that already passed its final kill check finishes. Nothing new starts once the switch is seen (LAW-10).

@@ -81,6 +81,8 @@ type Authoriser struct {
 	// Spaces returns the cell's spaces and barriers now (SB-1006); nil is a cell without
 	// spaces. An error fails the request: space checks are never skipped.
 	Spaces func(ctx context.Context) ([]ports.Space, [][2]string, error)
+	// SpaceKilled reports a killed space by name (SB-1008): every chunk it holds is refused.
+	SpaceKilled func(name string) bool
 	// Metrics counts live verdicts per connector (sb_acl_verdicts_total), ids only.
 	Metrics interface {
 		Add(name, help string, labels map[string]string, v float64)
@@ -207,6 +209,10 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 			rctx := spaces.ReadContext(all, barriers, s.Groups(), s.Space())
 			kept := chunks[:0:0]
 			for _, c := range chunks {
+				if a.heldByKilled(c) {
+					decide(c, "space_killed")
+					continue
+				}
 				ent := policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}
 				for k, v := range spaces.ChunkAttrs(c.Label, c.Spaces) {
 					ent.Attrs[k] = v
@@ -252,6 +258,20 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 	}
 	res.Refused = len(refused)
 	return res, nil
+}
+
+// heldByKilled is a chunk any of whose holding spaces is killed: a kill never leaves part
+// of a space readable, even through another space that holds the same document.
+func (a Authoriser) heldByKilled(c ports.Chunk) bool {
+	if a.SpaceKilled == nil {
+		return false
+	}
+	for _, h := range c.Spaces {
+		if a.SpaceKilled(strings.TrimPrefix(h, "spc_")) {
+			return true
+		}
+	}
+	return false
 }
 
 // spaceReason names which space check refused a chunk, for the trace (sb-ask(3)): its

@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
@@ -107,16 +106,9 @@ type UnavailableError struct{ Err error }
 func (e *UnavailableError) Error() string { return "tenant registry unavailable: " + e.Err.Error() }
 func (e *UnavailableError) Unwrap() error { return e.Err }
 
-// ErrSpacesNotEnforced refuses a manifest with spaces or barriers until the cell enforces
-// them (sb-space(5)): a company must never believe a space protects what nothing enforces.
-var ErrSpacesNotEnforced = errors.New("spaces are checked and planned, but not enforced by the whole cell until SB-1008; apply refuses a manifest that declares spaces or barriers")
-
 // Run enacts t's plan and returns it. done is called after each change is recorded.
 // With nothing to do it writes nothing at all. A region change returns *plan.ImmutableError.
 func Run(ctx context.Context, d Deps, t manifest.Tenant, done func(plan.Change)) (plan.Plan, error) {
-	if len(t.Spaces) > 0 || len(t.Barriers) > 0 {
-		return plan.Plan{}, ErrSpacesNotEnforced
-	}
 	applied, found, err := d.Registry.Applied(ctx, t.Tenant)
 	if err != nil {
 		return plan.Plan{}, &UnavailableError{err}

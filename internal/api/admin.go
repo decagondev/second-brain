@@ -261,6 +261,7 @@ func (h Admin) switches(w http.ResponseWriter, r *http.Request, _ tenancy.Scope)
 func (h Admin) audit(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	since, _ := strconv.ParseInt(r.URL.Query().Get("since"), 10, 64)
 	kind := r.URL.Query().Get("kind")
+	space := r.URL.Query().Get("space")
 	rows, err := h.AuditRows.Range(r.Context(), since, 500)
 	if err != nil {
 		h.fail(w, errs.New(errs.EUNAVAIL, "The audit log can't be read."))
@@ -268,7 +269,7 @@ func (h Admin) audit(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	}
 	var out []audit.Row
 	for _, row := range rows {
-		if kind == "" || row.Kind == kind {
+		if (kind == "" || row.Kind == kind) && (space == "" || audit.InSpace(row, space)) {
 			out = append(out, row)
 		}
 	}

@@ -22,7 +22,7 @@ use a chunk         ⇔  member ∧ label allowed ∧ no barrier ∧ source ACL 
 
 ## DESCRIPTION
 
-This page is the W8 draft that W10 to W12 build against ([ADR-0020](../docs/adr/ADR-0020-department-spaces-inside-the-cell.md), [08 Department brains](../docs/08-department-brains.md)). `sb tenant check` checks a manifest's spaces from SB-1001, asks enforce them from SB-1006, and until the whole cell does (SB-1008), `sb tenant apply` **refuses** a manifest that declares any, with an error naming that ticket. The cell never runs with spaces silently ignored, because a company would believe its People brain was restricted when it wasn't.
+This page was the W8 draft that W10 to W12 build against ([ADR-0020](../docs/adr/ADR-0020-department-spaces-inside-the-cell.md), [08 Department brains](../docs/08-department-brains.md)); W10 built spaces in the cell (SB-1001 to SB-1008), and `sb tenant apply` applies them since SB-1008. Until then it refused a manifest that declared any, so a company never believed its People brain was restricted before the whole cell enforced it.
 
 ### What a space is
 

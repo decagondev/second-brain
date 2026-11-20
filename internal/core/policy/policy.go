@@ -73,6 +73,7 @@ type Evaluator interface {
 // Record is one audited decision (sb-audit(7), Policy decisions): ids and policy ids only.
 type Record struct {
 	Tenant, Actor, Action, Subject string
+	Space                          string // the scope's space, "" for company-wide (SB-1008)
 	Decision                       Decision
 	Reason                         string
 }
@@ -106,6 +107,9 @@ func (k Kernel) Authorise(ctx context.Context, s tenancy.Scope, action string, r
 	}
 	rec := Record{Tenant: s.Tenant(), Actor: s.User(), Action: action, Subject: res.Type + "::\"" + res.ID + "\"",
 		Decision: r.Decision, Reason: action + ": " + r.Reason}
+	if sp := s.Space(); sp != "company" {
+		rec.Space = sp
+	}
 	if k.Recorder == nil {
 		return Result{Unknown, "no decision recorder"}
 	}
