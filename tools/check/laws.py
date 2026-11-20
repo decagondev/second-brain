@@ -28,7 +28,9 @@ def expected_red(t, law):
             return e
     return None
 
-p = subprocess.run(["go", "test", "-json", "-count=1", "./laws/..."], cwd=ROOT, capture_output=True, text=True)
+(ROOT / "build" / "cover").mkdir(parents=True, exist_ok=True)
+p = subprocess.run(["go", "test", "-json", "-count=1", "-coverpkg=./internal/core/...", "-coverprofile=build/cover/laws.out", "./laws/..."],
+                   cwd=ROOT, capture_output=True, text=True)
 result, output = {}, defaultdict(str)
 for line in p.stdout.splitlines():
     try:

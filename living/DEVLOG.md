@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.5 Coverage gaps (SB-1405)
+
+**Wave/slice:** W13 / S13.5 · **Status:** Done. **W13 built.**
+
+**What:** Coverage profiles from `make test`, `make laws` and `make smoke`, merged by `tools/check/coverage.py` with a 75% floor per core package; tests for `proposals` and the `barrier` cell facts.
+
+**Why this way:** Most core code is tested through its laws, so a per-package unit-test figure would say `runtime` is 14% covered when its laws drive four fifths of it. Merging every suite measures what the tests really exercise, and the floor stops a new package arriving untested.
+
+**Learned:** The one package below the floor was the one the review's concurrency fix had just changed: new code with its test in another package's law.
+
+**Laws:** none changed; every core package now has a figure and a floor.
+
+**Next:** W13 is built. What's left is outside the code (see the project notes' State).
+
 ## 2026-11-20 S13.4 The manual and the code agree (SB-1404)
 
 **Wave/slice:** W13 / S13.4 · **Status:** Done

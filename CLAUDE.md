@@ -4,10 +4,10 @@ Read `AGENTS.md` first: those rules apply to every change. This file says where 
 
 ## State (2026-11-20)
 
-- **Built:** every ticket in W0 to W12 is Done or In review, and W13 Hardening (E14) is under way. The status of every ticket is in `epics/README.md` (Progress) and in each ticket's `Status` row and Progress section; read those, not this file, for detail.
+- **Built:** every ticket in W0 to W12 is Done or In review, and W13 Hardening (E14) is built. The status of every ticket is in `epics/README.md` (Progress) and in each ticket's `Status` row and Progress section; read those, not this file, for detail.
 - **What's left is outside the code:** human items (second reviewers, pilots, game days, the pen test), real-cloud and real-sandbox runs (SB-903 and SB-908 need a real GCP project from the user, asked 2026-11-20), and the cell and control-plane runtime (schedulers, CLI `handoff` and `detach` against running cells). The cell runtime must wire legal holds and reporting lines (PT-0011).
 - **Laws:** every law test is green except LAW-23, which belongs to the parked E13 portfolio grants; `laws/expected_red.txt` holds only it. `evals/expected_red.yaml` is empty.
-- **Q-01 stays no** (the user, 2026-11-20): E13 portfolio grants are parked. **W13 is Hardening (E14, SB-1401 to SB-1405)**, approved 2026-11-20. SB-1401 to SB-1404 Done. Next: **S13.5 (SB-1405 coverage gaps)**.
+- **Q-01 stays no** (the user, 2026-11-20): E13 portfolio grants are parked. **W13 is Hardening (E14, SB-1401 to SB-1405)**, approved 2026-11-20. **W13 built**: SB-1401 to SB-1405 Done (2 critical and 6 high review findings fixed; fuzzing, race detector, stricter lint, manual-and-code check, 75% coverage floor). No wave is next: what's left is human, real-cloud and runtime work, and anything the user asks for.
 - **Findings:** `security/findings.yaml` (PT-nnnn) and `living/BUGS_AND_MITIGATIONS.md` (BUG-nnnn). No critical or high finding is open.
 - Other threads may edit `site/` and `tools/site/` in this folder: commit only your own paths.
 

@@ -69,6 +69,10 @@ Every parser of outside input has a Go fuzz target: the tenant manifest (`FuzzCh
 
 `make test` runs every unit test, and the `tests/spaces` and `tests/groupsync` suites, under Go's race detector.
 
+### Coverage (SB-1405)
+
+`make test`, `make laws` and `make smoke` write coverage profiles of `internal/core` to `build/cover`, and `tools/check/coverage.py` (the last step of `make smoke`) merges them: a statement counts once, covered if any suite covered it, because most core code is tested through its laws rather than beside it. Every core package must be at or above **75%**; test helpers (`*test` packages, `connectorkit`) are reported without a floor. The floor only rises: raise it when the lowest package does.
+
 ### The red ratchet
 
 A law test exists before its feature, so it starts red. `laws/expected_red.txt` lists each red law and the ticket that will turn it green. `make laws` (`tools/check/laws.py`) enforces three rules:

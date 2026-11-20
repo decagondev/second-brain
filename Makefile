@@ -14,8 +14,10 @@ check: gen-check lint deps build test laws smoke regress evals examples policy c
 build:                 ## compile everything; the sb binary goes to bin/
 	$(GO) build ./...
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb ./cmd/sb
-test:                  ## unit tests (Go and Python), under the race detector (SB-1402)
-	$(GO) test -race ./internal/... ./cmd/... ./tests/spaces/... ./tests/groupsync/...
+COVER = -coverpkg=./internal/core/... -coverprofile=build/cover
+test:                  ## unit tests (Go and Python), under the race detector (SB-1402); coverage profiles to build/cover (SB-1405)
+	@mkdir -p build/cover
+	$(GO) test -race $(COVER)/unit.out ./internal/... ./cmd/... ./tests/spaces/... ./tests/groupsync/...
 	$(PY) -m unittest discover -s evals/tests -t . -q
 fuzz:                  ## each fuzz target for FUZZTIME (default 30s); make check runs their corpora as tests (SB-1402)
 	$(GO) test -run=^$$ -fuzz=^FuzzCheck$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/manifest
@@ -41,10 +43,12 @@ laws:                  ## law tests; expected-red laws must fail for the right r
 	$(PY) tools/check/laws.py
 smoke:                 ## black-box smoke tests of the sb binary (SB-016)
 	$(GO) test -count=1 ./tests/smoke/...   # never cached: it runs the freshly built bin/sb (BUG-0008)
-	$(GO) test ./tests/canary/...   # the CI secret scan with planted canaries (SB-411)
-	$(GO) test ./tests/backup/...   # backup 3-2-1 and the restore drill (SB-412)
-	$(GO) test ./tests/gameday/...  # the DR game day rehearsed on local adapters (SB-613)
-	$(GO) test ./tests/handoff/...  # the hand-off game day rehearsed end to end (SB-710)
+	@mkdir -p build/cover
+	$(GO) test $(COVER)/canary.out ./tests/canary/...   # the CI secret scan with planted canaries (SB-411)
+	$(GO) test $(COVER)/backup.out ./tests/backup/...   # backup 3-2-1 and the restore drill (SB-412)
+	$(GO) test $(COVER)/gameday.out ./tests/gameday/...  # the DR game day rehearsed on local adapters (SB-613)
+	$(GO) test $(COVER)/handoff.out ./tests/handoff/...  # the hand-off game day rehearsed end to end (SB-710)
+	$(PY) tools/check/coverage.py   # every core package above its floor, over every suite (SB-1405)
 regress:               ## one test per bug, forever (SB-016)
 	@if ls tests/regress/*_test.go >/dev/null 2>&1; then $(GO) test ./tests/regress/...; fi
 	$(PY) -m unittest discover -s tests/regress -p "test_*.py" -q
