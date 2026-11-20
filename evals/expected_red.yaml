@@ -1,0 +1,8 @@
+# Eval suites that must still fail, and exactly how, until their ticket lands (SB-807).
+# tools/check/evals_red.py runs each with the extractive model: the listed cases must fail
+# and every other case must pass. When the ticket lands, the suite passes, this check fails,
+# and the entry is removed (the suite then joins the gate).
+space-leak:
+  ticket: SB-1006
+  suite: evals/suites/space-leak.yaml
+  failing: [leak-people-001, leak-finance-001, leak-exec-001]

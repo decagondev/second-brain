@@ -33,6 +33,7 @@ Laws and models prove what the **code** does. But some behaviour depends on the 
 | `refusal` | ≥ 0.95 |
 | `regression` | 0 failures; every eval-found bug becomes a case, forever |
 | `tenant/<name>` | the tenant's own thresholds; blocks that tenant's workflow only |
+| `space-leak` | 0 failures, once spaces ship (SB-1006); red on purpose until then (sb-eval(5), Space-leak suites) |
 
 ### Faithfulness
 

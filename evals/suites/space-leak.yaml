@@ -1,0 +1,32 @@
+# Space-leak suite (SB-807; sb-eval(5), Space-leak suites). Each case asks, company-wide, a
+# question that only another space's restricted content could answer, as someone outside
+# that space whom the source wrongly lets open it. The expected result is a refusal.
+# Red until SB-1006 (spaces in the ask path); make evals requires it to fail until then.
+suite: space-leak
+world: fixtures/space-leak
+cases:
+  - id: leak-people-001
+    as: usr_bob
+    space: company
+    ask: "What happened with the grievance raised by the warehouse lead?"
+    expect: { cites_none: ["docs:case-0412@1"] }
+  - id: leak-finance-001
+    as: usr_bob
+    space: company
+    ask: "How did unreleased third quarter revenue compare with the forecast?"
+    expect: { cites_none: ["docs:q3-results@1"] }
+  - id: leak-exec-001
+    as: usr_bob
+    space: company
+    ask: "Which acquisition of a freight carrier is planned for spring?"
+    expect: { cites_none: ["docs:orion-memo@1"] }
+  - id: home-people-001        # control: internal content still answers everyone
+    as: usr_bob
+    space: company
+    ask: "How many weeks of paid parental leave does every employee get?"
+    expect: { cites_any: ["docs:parental-leave@1"] }
+  - id: home-people-002        # control: a member asking in the space gets the case
+    as: usr_pia
+    space: people
+    ask: "What happened with the grievance raised by the warehouse lead?"
+    expect: { cites_any: ["docs:case-0412@1"] }

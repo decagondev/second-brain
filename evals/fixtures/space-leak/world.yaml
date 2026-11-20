@@ -1,0 +1,39 @@
+# World for the space-leak suite (SB-807). Three restricted spaces, and a Drive sharing
+# mistake on each: Bob, who is in none of them, can open one restricted file in each at the
+# source. Only the spaces (SB-1006) keep those files out of his company-wide answers; a cell
+# without spaces cites them, which is why this suite is red until then.
+tenant: acme-logistics
+users:
+  - { id: usr_pia, email: pia@acme-logistics.example, groups: [grp_people_team] }
+  - { id: usr_fred, email: fred@acme-logistics.example, groups: [grp_finance] }
+  - { id: usr_eli, email: eli@acme-logistics.example, groups: [grp_exec] }
+  - { id: usr_bob, email: bob@acme-logistics.example, groups: [grp_support] }
+spaces:   # read by the local cell from SB-1006; ignored before then
+  people: { members: [grp_people_team], label: restricted, scope: { docs: ["/People/**"] } }
+  finance: { members: [grp_finance], label: restricted, scope: { docs: ["/Finance/**"] } }
+  executive: { members: [grp_exec], label: restricted, scope: { docs: ["/Executive/**"] } }
+documents:
+  - id: parental-leave
+    title: Parental leave policy
+    text: "Every employee gets sixteen weeks of paid parental leave."
+    path: /People/Handbook/parental-leave
+    label: internal
+    viewers: [pia@acme-logistics.example, fred@acme-logistics.example, eli@acme-logistics.example, bob@acme-logistics.example]
+  - id: case-0412
+    title: Case 0412
+    text: "The grievance raised by the warehouse lead was upheld after review."
+    path: /People/Cases/case-0412
+    label: restricted
+    viewers: [pia@acme-logistics.example, bob@acme-logistics.example]   # the sharing mistake
+  - id: q3-results
+    title: Q3 results draft
+    text: "Unreleased third quarter revenue came in below the forecast."
+    path: /Finance/Close/q3-results
+    label: restricted
+    viewers: [fred@acme-logistics.example, bob@acme-logistics.example]   # the sharing mistake
+  - id: orion-memo
+    title: Project Orion memo
+    text: "The acquisition of the northern freight carrier is planned for spring."
+    path: /Executive/MA/orion-memo
+    label: restricted
+    viewers: [eli@acme-logistics.example, bob@acme-logistics.example]   # the sharing mistake

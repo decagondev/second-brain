@@ -142,3 +142,48 @@ for m in ("noguard", "nogate", "deployrevoked", "nodrain"):
 print("Handoff              ", handoff())
 for m in ("nodual", "destroyfirst", "norevoke", "cutbeforewrap"):
     print(f"Handoff mutant {m:13}", handoff(m))
+
+# ---------------- Spaces (SB-805): the decision of Spaces.als, checked exhaustively over a
+# small company: 2 groups, 2 spaces, every label, every membership, viewer and barrier choice.
+LABELS = ("public", "internal", "confidential", "restricted")
+
+def spaces(mut=None):
+    groups, spaces_ = ("g1", "g2"), ("s1", "s2")
+    count = 0
+    for user_groups, s1m, s2m, label, holders, viewer, barrier, target in product(
+            [frozenset(x) for x in ((), ("g1",), ("g2",), ("g1", "g2"))],
+            [frozenset(x) for x in ((), ("g1",), ("g2",))],
+            [frozenset(x) for x in ((), ("g1",), ("g2",))],
+            LABELS,
+            [frozenset(x) for x in ((), ("s1",), ("s2",), ("s1", "s2"))],
+            (False, True),
+            (None, ("g1", "g2")),
+            ("s1", "s2", "company")):
+        count += 1
+        members = {"s1": s1m, "s2": s2m}
+        member = lambda s: bool(user_groups & members[s])
+        holder_member = any(member(s) for s in holders)
+        barred = barrier is not None and any(
+            (barrier[0] in user_groups and barrier[1] in members[s]) or (barrier[1] in user_groups and barrier[0] in members[s])
+            for s in holders)
+        ok = True
+        if target != "company":
+            ok = ok and target in holders and member(target)
+        else:
+            ok = ok and (holder_member or label in ("public", "internal") or (mut == "restrictedwide" and label == "restricted"))
+        if label in ("confidential", "restricted") and not (mut == "restrictedwide" and label == "restricted"):
+            ok = ok and holder_member
+        if mut != "nobarrier":
+            ok = ok and not barred
+        ok = ok and (viewer or (mut == "pastsource" and target in holders))
+        if ok and not viewer:
+            return "VIOLATION SpacesOnlyNarrow", count
+        if ok and label == "restricted" and not holder_member:
+            return "VIOLATION RestrictedStaysHome", count
+        if ok and barred:
+            return "VIOLATION BarriersHold", count
+    return "ok", count
+
+print("Spaces               ", spaces())
+for m in ("pastsource", "restrictedwide", "nobarrier"):
+    print(f"Spaces mutant {m:14}", spaces(m))

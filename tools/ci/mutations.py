@@ -60,5 +60,25 @@ for c in ["NoCrossTenant", "CitedImpliesLiveAllow", "UnknownNeverUsed", "Missing
 hit = res["UnknownNeverUsed"] == "SAT" and res["MissingNeverUsed"] == "SAT"
 ok += hit
 print(f"13 Permissions context = candidates - Deny: {res} {'CAUGHT' if hit else 'MISSED'}")
-print(f"caught {ok} of {len(M) + 1}")
-sys.exit(0 if ok == len(M) + 1 else 1)
+
+# Spaces.als mutations (SB-805): each must make exactly its law's check SAT.
+SPACES = [
+ ("    k.asker in d.viewers\n", "    (k.asker in d.viewers or k.target in d.holders)\n", "SpacesOnlyNarrow", "a permit past the source"),
+ ("    not barred[k.asker, d] and\n", "", "BarriersHold", "a missing barrier"),
+ ("(k.target = Company implies (holderMember[k.asker, d] or d.label in Public + Internal)) and\n    (d.label in Confidential + Restricted implies holderMember[k.asker, d]) and",
+  "(k.target = Company implies (holderMember[k.asker, d] or d.label in Public + Internal + Restricted)) and\n    (d.label in Confidential implies holderMember[k.asker, d]) and",
+  "RestrictedStaysHome", "restricted in company-wide asks"),
+]
+sp_src = open(os.path.join(R, "proofs", "alloy", "Spaces.als")).read()
+for j, (old, new, exp, what) in enumerate(SPACES, 14):
+    assert sp_src.count(old) == 1, (exp, "pattern not unique/found")
+    d = tempfile.mkdtemp(); p = os.path.join(d, "Spaces.als")
+    open(p, "w", newline="\n").write(sp_src.replace(old, new))
+    out = subprocess.run(["java", "-jar", ALLOY, "exec", "-f", "-c", exp, "-t", "none", "-o", os.path.join(d, exp), p],
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+    hit = re.search(r"check\s+%s\s.*\sSAT\s*$" % exp, out, re.M) is not None  # SAT lines carry an instance count
+    ok += hit
+    print(f"{j} Spaces    {what:34} -> {exp:22} {'CAUGHT' if hit else 'MISSED'}")
+total = len(M) + 1 + len(SPACES)
+print(f"caught {ok} of {total}")
+sys.exit(0 if ok == total else 1)

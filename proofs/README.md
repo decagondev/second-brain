@@ -13,7 +13,8 @@ Formal models of the four designs where a subtle mistake would break a law. They
 | [tla/Rollout.tla](tla/Rollout.tla) | TLA+ / TLC | LAW-06, LAW-08 | SB-012 | TLC clean, 6,290 states; 4 of 4 mutations caught |
 | [alloy/Permissions.als](alloy/Permissions.als) | Alloy 6 | LAW-01, LAW-02, LAW-03 | SB-013 | 5 checks UNSAT at scope 6; mutation caught |
 | [tla/Handoff.tla](tla/Handoff.tla) | TLA+ / TLC | LAW-17, LAW-18 | SB-705 | TLC clean, 23 states; 4 of 4 mutations caught |
-| [crosscheck.py](crosscheck.py) | Python | mirrors the three TLA+ models | — | Runs clean; all mutations caught |
+| [alloy/Spaces.als](alloy/Spaces.als) | Alloy 6 | LAW-19, LAW-20, LAW-22 | SB-805 | 4 checks UNSAT at scope 5, 2 sanity runs SAT; 3 of 3 mutations caught |
+| [crosscheck.py](crosscheck.py) | Python | mirrors the three TLA+ models and the decision of `Spaces.als` | — | Runs clean; all mutations caught |
 
 The models were written during design on 2026-11-18 and first run on 2026-11-19 (`make proofs`, locally; the first CI run is still to come). The ledger moves a law to *Modelled* only after a clean run **and** a mutation check. The mutation table below is automated in `tools/ci/mutations.py`, which `make proofs` runs after the models.
 
@@ -26,6 +27,7 @@ The models were written during design on 2026-11-18 and first run on 2026-11-19 
 | Approvals | 1,068 | all hold, including `KillWins` | 5 of 5 |
 | Rollout | 6,290 | all hold | 4 of 4 |
 | Handoff | 23 | all hold | 4 of 4 |
+| Spaces (exhaustive over 2 groups, 2 spaces) | 6,912 cases | all hold | 3 of 3 |
 
 ```sh
 python3 proofs/crosscheck.py
@@ -55,9 +57,11 @@ Tool jars are pinned by version and SHA-256 in `tools/versions.env` and fetched 
 
 **Handoff.** One cell moves from factory to tenant custody: plan, dual approval of the plan hash, provision, re-wrap the root key, move, verify, cut over, destroy the factory wrap, and optionally detach. Abort is possible any time before cutover. Invariants: `KeyNeverOrphaned`, `ServingCanUnwrap`, `NoUnlistedAccess`, `FactoryKeyGone`, `DualApproval`, `ManagedIsIntact`. Hand-back isn't modelled yet.
 
+**Spaces.** One company's cell with groups, spaces, labelled documents, barriers and the source's live ACL. An ask targets a space or the whole company, and its context is exactly what the decision in sb-permissions(7) lets through: membership, label, barrier, then the source. Assertions: `SpacesOnlyNarrow` (LAW-19), `RestrictedStaysHome` (LAW-20), `BarriersHold` (LAW-22), `SpaceAskStaysInSpace`; two runs show company-wide and in-space asks really reach content.
+
 **Permissions.** Tenants, users, groups and documents with a possibly stale prefilter; a live verdict per candidate that may be `Allow`, `Deny`, `Unknown` or missing. Assertions: `NoCrossTenant`, `CitedImpliesLiveAllow`, `UnknownNeverUsed`, `MissingNeverUsed`, `StalePrefilterHarmless`.
 
-## Mutation checks (all 13 caught on 2026-11-19)
+## Mutation checks (all 16 caught on 2026-11-20)
 
 | Mutation | Expected counterexample |
 |---|---|
@@ -74,3 +78,6 @@ Tool jars are pinned by version and SHA-256 in `tools/versions.env` and fetched 
 | Handoff: cut over without revoking factory paths | `NoUnlistedAccess` |
 | Handoff: cut over before the tenant wrap exists | `ServingCanUnwrap` |
 | Permissions: `context = candidates - live.Deny` | `UnknownNeverUsed`, `MissingNeverUsed` |
+| Spaces: a document in the asked space passes even if the source denies it (a permit past the source) | `SpacesOnlyNarrow` |
+| Spaces: drop the barrier check | `BarriersHold` |
+| Spaces: restricted counts as company-wide and needs no holder membership | `RestrictedStaysHome` |

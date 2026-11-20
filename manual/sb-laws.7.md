@@ -1,7 +1,7 @@
 ---
 title: "sb-laws(7)"
 man: "7"
-summary: The eighteen laws the platform must never break, and how each is checked.
+summary: The twenty-three laws the platform must never break, and how each is checked.
 ---
 
 # sb-laws(7)
@@ -22,6 +22,9 @@ LAW-06 only signed, gated builds run         LAW-14 every claim cited or labelle
 LAW-07 no secret in prompt, log or audit     LAW-15 approval binds one payload
 LAW-08 at most one behind stable             LAW-16 the manifest is the truth
 LAW-17 hand-off leaves no unlisted access    LAW-18 the root key always has a custodian
+LAW-19 spaces only narrow                    LAW-20 restricted stays home
+LAW-21 moves revoke fast                     LAW-22 barriers hold
+LAW-23 grants are consented and revocable
 ```
 
 ## DESCRIPTION
@@ -146,6 +149,36 @@ After a hand-off to `tenant` custody completes, the factory holds no access path
 At every moment, at least one custodian can unwrap a cell's root key. A hand-off re-wraps under the new custodian **before** destroying the old wrap.
 
 *Checks:* Model (`Handoff.tla: KeyNeverOrphaned`) · the wrap inventory's ordering guard: the factory wrap can't be destroyed unless every data key's tenant wrap unwraps now (`TestLAW18_DestroyNeedsAWorkingWrap`, SB-704) · step-ordering property over random hand-offs, aborts and failures in the controller (`TestLAW18_HandoffNeverOrphansTheKey`, red until SB-704 and SB-705) · Watch: key-wrap inventory per cell.
+
+### LAW-19: Spaces only narrow {#law-19}
+
+No answer, citation, draft or action uses a chunk that the source's live ACL would deny, whatever any space policy says. A space can hide what someone could open, never show what they can't (ADR-0020, [sb-spaces(7)](sb-spaces.7.md)).
+
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: SpacesOnlyNarrow`) · Property over random companies with spaces, labels, barriers and ACLs (`TestLAW19_SpacesOnlyNarrow`, red until SB-1004) · Eval (`space-leak`).
+
+### LAW-20: Restricted stays home {#law-20}
+
+Content labelled `restricted` reaches only members of a space that holds it, including in company-wide asks.
+
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: RestrictedStaysHome`) · Property (`TestLAW20_RestrictedStaysHome`, red until SB-1006) · Eval (`space-leak`, People, Finance and Executive cases).
+
+### LAW-21: Moves revoke fast {#law-21}
+
+When the directory removes someone from a space's member groups, they lose that space within 5 minutes. A new membership grants nothing until the cell has confirmed it from the directory.
+
+*Owner:* identity lead. *Checks:* Property on a fake clock (`TestLAW21_MovesRevokeFast`, red until SB-1205) · Watch (move-to-revoke latency, W12).
+
+### LAW-22: Barriers hold {#law-22}
+
+No answer, citation, draft or action crosses a declared information barrier, in either direction.
+
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: BarriersHold`) · Property (`TestLAW22_BarriersHold`, red until SB-1203) · Eval (`space-leak`).
+
+### LAW-23: Grants are consented and revocable {#law-23}
+
+A parent-org grant on a company space carries only the aggregates the company approved, never content, and stops within 5 minutes of being revoked (ADR-0014; built only if Q-01 is yes).
+
+*Owner:* portfolio lead. *Checks:* Property (`TestLAW23_GrantsAreConsentedAndRevocable`, red until SB-1302).
 
 ### External review (SB-612)
 

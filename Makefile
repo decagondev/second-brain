@@ -48,6 +48,7 @@ evals:                 ## eval harness: mock smoke, citation suite on the local 
 	@for t in tenants/*/; do $(PY) -m evals run --tenant-dir $$t --model extractive || exit 1; done
 	@! $(PY) -m evals run evals/suites/citation.yaml --model misattributing >/dev/null 2>&1 || { echo "evals: a misattributing model passed the citation suite"; exit 1; }
 	@echo "evals: the misattributing model fails the citation suite, as it must"
+	$(PY) tools/check/evals_red.py   # suites red on purpose fail only as expected (SB-807)
 examples:              ## manual and example files are valid (SB-009)
 	$(PY) tools/check/examples.py
 	$(PY) tools/check/runbook.py

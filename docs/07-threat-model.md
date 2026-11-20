@@ -105,6 +105,22 @@ flowchart LR
 | Root key orphaned mid-transfer | Re-wrap before destroying the old wrap | LAW-18 |
 | Audit chain unverifiable after the move | Per-cell anchor key moves with the cell; verify before cutover | LAW-11 |
 
+## Inside-the-company threats (spaces, W8)
+
+Spaces divide one company's cell (ADR-0020). The tenant boundary doesn't move, but new ways to leak appear inside a company. Each is mapped to the law and the test that guard it (SB-806).
+
+| Threat | Example | Mitigation | Law | Test |
+|---|---|---|---|---|
+| A sharing mistake at the source | A People case file is shared with "anyone at the company" in Drive | The file is `restricted` and held only by the People space, so it never reaches a non-member's answer, even though the source allows it | LAW-20 | `TestLAW20_RestrictedStaysHome`; `space-leak` eval (People case) |
+| A mislabelled document | A board memo is uploaded with no label | An unknown or missing label is `restricted`; the space default applies before `internal` | LAW-20 | `Spaces.als: RestrictedStaysHome`; label tests in SB-1005 |
+| An over-broad scope | A space's scope `/**` pulls in every folder | The scope only narrows: the source's ACL still decides, and `restricted` content stays with its holders. Scope changes are manifest diffs approved by an operator | LAW-19, LAW-16 | `TestLAW19_SpacesOnlyNarrow`; `Spaces.als: SpacesOnlyNarrow` |
+| A space policy that grants | Someone writes a `permit read` for a space | A space policy can only forbid; CI refuses any other read permit | LAW-19 | `Spaces.als` mutation "a permit past the source"; policy check in SB-1004 |
+| A company-wide ask pulls HR, Legal or Finance content | "What are we paying the new VP?" asked company-wide | Company-wide asks take `confidential` and `restricted` content only from the asker's own spaces | LAW-20 | `space-leak` eval; `Spaces.als` mutation "restricted in company-wide asks" |
+| Crossing an ethical wall | A deal team member asks about the other side's work | Barriers are checked in both directions, after membership and label, for every holder of the document | LAW-22 | `TestLAW22_BarriersHold`; `Spaces.als: BarriersHold` and its mutation |
+| A mover keeps access | Someone moves from Finance to Sales and can still ask in Finance | Directory removals revoke within 5 minutes; an unconfirmed join grants nothing | LAW-21 | `TestLAW21_MovesRevokeFast` |
+| A steward widens their own space | A steward adds their friend's group | Stewards propose diffs; a tenant operator approves; finance needs a different approver | LAW-16 | SB-1201, SB-1204 |
+| A parent-org grant reads content | The parent asks for a subsidiary's payroll lines | Grants carry only approved aggregates, never content, and stop within 5 minutes of revocation | LAW-23 | `TestLAW23_GrantsAreConsentedAndRevocable` |
+
 ## Pen-test findings (SB-612)
 
 The register is `security/findings.yaml`. Fixed findings and what changed in this model:
@@ -131,9 +147,18 @@ The external test itself hasn't run yet. This section and the register take its 
 | | Security lead | | |
 | | Platform lead | | |
 
+## Sign-off for spaces and the GCP runtime (SB-806)
+
+ADR-0020 and ADR-0021, and the inside-the-company threats above, need two reviewers.
+
+| Reviewer | Role | Date | Notes |
+|---|---|---|---|
+| | Security lead | | |
+| | Platform lead | | |
+
 ## Review cadence
 
-Last refreshed 2026-11-19 with PT-0001 and PT-0002 (SB-612); refresh again with the external test's findings.
+Last refreshed 2026-11-20 with the inside-the-company threats (SB-806), after 2026-11-19 with PT-0001 and PT-0002 (SB-612); refresh again with the external test's findings.
 
 
 Every wave exit, after any trust-boundary change, and after the pen test (SB-612).

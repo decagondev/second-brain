@@ -27,6 +27,11 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | [LAW-16](../manual/sb-laws.7.md#law-16) | The manifest is the truth | Tested | — | `laws/` manifest check (round trip and rejection) plan check (plan is the manifest diff) and apply check (recorded state equals the manifest; re-apply changes nothing), + self-tests; drift side with SB-510 | — | SB-101, SB-510, SB-602 |
 | [LAW-17](../manual/sb-laws.7.md#law-17) | Hand-off leaves no unlisted access | Tested | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | `TestLAW17_HandoffLeavesOnlyRetainedGrants` on the controller (SB-705); reference controller + 4 mutants | Sev-1 rule on `sb_unlisted_access_paths`, set by `access.Watch` (SB-706; monthly schedule in the runtime) | SB-701, SB-705, SB-706 |
 | [LAW-18](../manual/sb-laws.7.md#law-18) | The root key always has a custodian | Tested | `Handoff.tla`: TLC clean (23 states); 4 mutations caught | `laws/` W1 check: recorded custodian and working root key, + self-test; `TestLAW18_DestroyNeedsAWorkingWrap` (SB-704); `TestLAW18_HandoffNeverOrphansTheKey` on the controller (SB-705) | `sb factory status` key wraps, checked live | SB-114, SB-701, SB-704, SB-705 |
+| [LAW-19](../manual/sb-laws.7.md#law-19) | Spaces only narrow | Tested (red) | `Spaces.als`: 4 checks UNSAT at scope 5; mutation caught | `TestLAW19_SpacesOnlyNarrow`, red until SB-1004; reference + mutations in `selftest_spaces_test.go` | — | SB-804, SB-1004 |
+| [LAW-20](../manual/sb-laws.7.md#law-20) | Restricted stays home | Tested (red) | `Spaces.als`: 4 checks UNSAT at scope 5; mutation caught | `TestLAW20_RestrictedStaysHome`, red until SB-1006; reference + mutations in `selftest_spaces_test.go` | — | SB-804, SB-1006 |
+| [LAW-21](../manual/sb-laws.7.md#law-21) | Moves revoke fast | Tested (red) | — | `TestLAW21_MovesRevokeFast`, red until SB-1205; reference + mutations in `selftest_spaces_test.go` | — | SB-804, SB-1205 |
+| [LAW-22](../manual/sb-laws.7.md#law-22) | Barriers hold | Tested (red) | `Spaces.als`: 4 checks UNSAT at scope 5; mutation caught | `TestLAW22_BarriersHold`, red until SB-1203; reference + mutations in `selftest_spaces_test.go` | — | SB-804, SB-1203 |
+| [LAW-23](../manual/sb-laws.7.md#law-23) | Grants are consented and revocable | Tested (red) | — | `TestLAW23_GrantsAreConsentedAndRevocable`, red until SB-1302; reference + mutations in `selftest_spaces_test.go` | — | SB-804, SB-1302 |
 
 ## History
 
@@ -90,3 +95,5 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-11 | Tested (extended) | SB-708: `TestLAW11_ExportPackageVerifiesOffline`, six tamperings caught; digest-only verifier mutation caught |
 | 2026-11-19 | LAW-11, LAW-17, LAW-18 | Tested (extended) | SB-710: `tests/handoff` rehearses a hand-off and detach end to end over the GCP fake; found and fixed BUG-0012 (a retained grant revoked at cutover) |
 | 2026-11-19 | LAW-16 | Tested (extended) | SB-801: `TestLAW16_UnbuiltFieldsAreRefused`: a manifest declaring spaces or barriers is refused until SB-1001; a parser that drops them is caught |
+| 2026-11-19 | LAW-19 to LAW-23 | — → Stated → Tested (red) | SB-804: in sb-laws(7) with owners; five red tests in the ratchet; references pass and six mutations are caught |
+| 2026-11-20 | LAW-19, LAW-20, LAW-22 | Modelled | SB-805: `Spaces.als` 4 checks UNSAT at scope 5, 2 runs SAT; 3 mutations caught; crosscheck mirror (6,912 cases) |

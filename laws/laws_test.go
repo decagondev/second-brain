@@ -272,3 +272,23 @@ func TestLAW11_ExportPackageVerifiesOffline(t *testing.T) {
 func TestLAW16_UnbuiltFieldsAreRefused(t *testing.T) {
 	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Planned(r, manifest.Check) })
 }
+
+func TestLAW19_SpacesOnlyNarrow(t *testing.T) {
+	Check(t, "LAW-19", runs, func(r *rand.Rand) error { return law19(r, NewSpaceSystem()) })
+}
+
+func TestLAW20_RestrictedStaysHome(t *testing.T) {
+	Check(t, "LAW-20", runs, func(r *rand.Rand) error { return law20(r, NewSpaceSystem()) })
+}
+
+func TestLAW21_MovesRevokeFast(t *testing.T) {
+	Check(t, "LAW-21", runs, func(r *rand.Rand) error { return law21(r, NewMoveSystem()) })
+}
+
+func TestLAW22_BarriersHold(t *testing.T) {
+	Check(t, "LAW-22", runs, func(r *rand.Rand) error { return law22(r, NewSpaceSystem()) })
+}
+
+func TestLAW23_GrantsAreConsentedAndRevocable(t *testing.T) {
+	Check(t, "LAW-23", runs, func(r *rand.Rand) error { return law23(r, NewGrantSystem()) })
+}

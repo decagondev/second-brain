@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S8.2 Space laws, model, threats and leak evals (SB-804 to SB-807)
+
+**Wave/slice:** W8 / S8.2 · **Author:** platform lead + Claude · **Status:** Done (SB-806 In review for two reviewers)
+
+**What:** LAW-19 to LAW-23 in sb-laws(7). Red law tests (`laws/law19.go`, `law21.go`, `law23.go`) and reference systems with mutations (`laws/selftest_spaces_test.go`). `proofs/alloy/Spaces.als` with three mutations in `tools/ci/mutations.py` and a mirror in `proofs/crosscheck.py`. The inside-the-company threats in `docs/07-threat-model.md`. The `space-leak` eval suite and `tools/check/evals_red.py`. The manual changed first: sb-laws(7), sb-eval(5) and sb-evals(7).
+
+**Why this way:** Space features are born against their laws, as W1 to W7 were. A red test alone only proves that something is red, so each law also has a reference system that passes it and broken ones that fail it. The Alloy model is the same decision as sb-permissions(7), checked over every small company. The eval suite is red for the reason that matters: today's cell really does cite a sharing-mistake HR file to a company-wide asker. The new check makes sure it stays red for that reason and no other.
+
+**Learned:** Alloy prints SAT results with an instance count column (`1/1  SAT`), so the mutation check now matches the result at the end of the line rather than a fixed column layout. The eval runner's table runs a long case id straight into its result (`leak-people-001FAIL`), and the expected-red check parses that too.
+
+**Laws:** LAW-19 to LAW-23 Stated and Tested (red), and LAW-19, LAW-20 and LAW-22 Modelled. Every other law test is green. **W8 built.**
+
+**Next:** W9, cells on GCP (SB-901 to SB-908).
+
 ## 2026-11-19 S8.1 Department spaces, specified (SB-801 to SB-803)
 
 **Wave/slice:** W8 / S8.1 · **Author:** platform lead + Claude · **Status:** Done
