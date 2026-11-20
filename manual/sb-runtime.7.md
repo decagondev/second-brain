@@ -84,6 +84,18 @@ Both verifier endpoints require the control plane's identity. Anyone else gets `
 
 **Alerts.** The `jobs` runner evaluates the Sev-1 law rules (sb-observability(7), Law alerts) over each scrape, and sends every firing alert through the alert webhook adapter, with the law, the tenant and the runbook, never content.
 
+### Web UI hosting, exactly (SB-906)
+
+Each tenant's web UI is a **Firebase Hosting site in that cell's own project**, named `sb-TENANT`. It serves the built `web/` from the release bundle, and its configuration is generated, never written by hand (`internal/core/hosting`):
+
+| Rule | Value |
+|---|---|
+| `/v1/**` | rewrite to the Cloud Run service `api` in the cell's region, in the same project |
+| `**` | the single-page app's `index.html` |
+| headers | `Content-Security-Policy: default-src 'self'; frame-ancestors 'none'` (as sb-ask(3), The web UI), `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` |
+
+Firebase Hosting can only rewrite to a Cloud Run service in its own project, and the generator checks that too. A configuration is refused if it rewrites to any service other than `api`, to another region, to a function, or to any absolute URL, or if the site isn't in the cell's project. So no site can ever send a request to another tenant's cell (LAW-02). A tenant may instead serve the same files from its own host, provided that host sends `/v1/` only to its own cell's `api`.
+
 ## LAWS
 
 [LAW-02](sb-laws.7.md#law-02): every resource and role is in the cell's own project. [LAW-06](sb-laws.7.md#law-06): only admitted, attested images run. [LAW-18](sb-laws.7.md#law-18): the database key is in the cell's key ring.

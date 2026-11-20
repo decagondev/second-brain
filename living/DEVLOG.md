@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S9.3a Firebase Hosting for the web UI (SB-906)
+
+**Wave/slice:** W9 / S9.3a · **Author:** platform lead + Claude · **Status:** In review (a real site, SB-903)
+
+**What:** `internal/core/hosting`, `gcp.Hosting`, Firebase Hosting in `gcptest`, and `laws/law02hosting.go`. The manual changed first: sb-runtime(7) and sb-ask(3).
+
+**Why this way:** The site lives in the cell's own project, so Firebase Hosting's own rule (it rewrites only to Cloud Run services in its project) already keeps it on its cell. The generator and its check make that a property of the code too, with one allowed shape and everything else refused. The law test tries the realistic mistakes: a site config copied from another tenant, a rewrite to another tenant's `web.app`, a scheme-less URL, and publishing the other tenant's site name.
+
+**Learned:** The first draft of the generated CSP was looser than sb-ask(3)'s, which also forbids framing. The generator now uses the page's policy, word for word.
+
+**Laws:** LAW-02 extended (one law test, one mutation caught). LAW-19 to LAW-23 are still red, as planned.
+
+**Next:** S9.3b, the Identity Platform adapter (SB-907).
+
 ## 2026-11-20 S9.2b Metrics and the verifier endpoint (SB-905)
 
 **Wave/slice:** W9 / S9.2b · **Author:** platform lead + Claude · **Status:** In review (a real cell, SB-903 and SB-908)

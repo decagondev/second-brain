@@ -37,8 +37,12 @@ type Fake struct {
 	attested map[string]map[string]bool
 	// Scheduler jobs by name; buckets by name (with their project and retention); objects by bucket/name
 	Schedules map[string]map[string]any
-	buckets   map[string]*bucket
-	objects   map[string][]byte
+	// sites: Firebase Hosting site -> its project; Released: site -> the released config
+	sites    map[string]string
+	Released map[string]map[string]any
+	versions map[string]map[string]any
+	buckets  map[string]*bucket
+	objects  map[string][]byte
 	// destroyed CMEK keys; perimeters: project -> principals allowed through; principals: token -> member
 	destroyed  map[string]bool
 	perimeters map[string]map[string]bool
@@ -52,7 +56,7 @@ type Fake struct {
 
 // New starts the fake.
 func New() *Fake {
-	f := &Fake{Schedules: map[string]map[string]any{}, buckets: map[string]*bucket{}, objects: map[string][]byte{}, destroyed: map[string]bool{}, perimeters: map[string]map[string]bool{}, principals: map[string]string{}, attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
+	f := &Fake{sites: map[string]string{}, Released: map[string]map[string]any{}, versions: map[string]map[string]any{}, Schedules: map[string]map[string]any{}, buckets: map[string]*bucket{}, objects: map[string][]byte{}, destroyed: map[string]bool{}, perimeters: map[string]map[string]bool{}, principals: map[string]string{}, attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
 	f.Server = httptest.NewTLSServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -181,6 +185,10 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 		code := f.faults[0]
 		f.faults = f.faults[1:]
 		reply(w, code, errBody(code, "UNAVAILABLE"))
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v1beta1/sites/") {
+		f.hosting(w, r)
 		return
 	}
 	if strings.HasPrefix(r.URL.Path, "/storage/v1/b/") || strings.HasPrefix(r.URL.Path, "/upload/storage/v1/b/") {
@@ -678,5 +686,73 @@ func (f *Fake) storage(w http.ResponseWriter, r *http.Request) {
 			items = append(items, map[string]any{"name": k})
 		}
 		reply(w, 200, map[string]any{"items": items})
+	}
+}
+
+// Site makes a Firebase Hosting site in project.
+func (f *Fake) Site(project, site string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.sites[site] = project
+}
+
+// hosting serves Firebase Hosting's versions and releases. Like the real service, a version
+// may rewrite only to a Cloud Run service that exists in the site's own project.
+func (f *Fake) hosting(w http.ResponseWriter, r *http.Request) {
+	rest := strings.TrimPrefix(r.URL.Path, "/v1beta1/sites/")
+	site := strings.SplitN(rest, "/", 2)[0]
+	project, ok := f.sites[site]
+	if !ok {
+		reply(w, 404, errBody(404, "NOT_FOUND"))
+		return
+	}
+	f.Calls[project]++
+	tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if !f.grants[tok][project]["firebasehosting.sites.update"] {
+		reply(w, 403, errBody(403, "PERMISSION_DENIED"))
+		return
+	}
+	var body map[string]any
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	switch {
+	case strings.HasSuffix(r.URL.Path, "/versions") && r.Method == http.MethodPost:
+		cfg, _ := body["config"].(map[string]any)
+		rws, _ := cfg["rewrites"].([]any)
+		for _, x := range rws {
+			rw, _ := x.(map[string]any)
+			run, _ := rw["run"].(map[string]any)
+			if run == nil {
+				continue
+			}
+			svc, _ := run["serviceId"].(string)
+			region, _ := run["region"].(string)
+			if _, exists := f.Run["projects/"+project+"/locations/"+region+"/services/"+svc]; !exists {
+				reply(w, 400, errBody(400, "INVALID_ARGUMENT: rewrite to a Cloud Run service not in this project"))
+				return
+			}
+		}
+		name := "sites/" + site + "/versions/v" + strconv.Itoa(len(f.versions)+1)
+		f.versions[name] = map[string]any{"name": name, "config": cfg, "status": "CREATED"}
+		reply(w, 200, f.versions[name])
+	case r.Method == http.MethodPatch:
+		name := strings.TrimPrefix(r.URL.Path, "/v1beta1/")
+		v, ok := f.versions[name]
+		if !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+		v["status"] = "FINALIZED"
+		reply(w, 200, v)
+	case strings.HasSuffix(r.URL.Path, "/releases") && r.Method == http.MethodPost:
+		v, ok := f.versions[r.URL.Query().Get("versionName")]
+		if !ok || v["status"] != "FINALIZED" || !strings.HasPrefix(v["name"].(string), "sites/"+site+"/") {
+			reply(w, 400, errBody(400, "FAILED_PRECONDITION: release a finalized version of this site"))
+			return
+		}
+		cfg, _ := v["config"].(map[string]any)
+		f.Released[site] = cfg
+		reply(w, 200, map[string]any{"name": "sites/" + site + "/releases/r" + strconv.Itoa(len(f.Released))})
+	default:
+		reply(w, 404, errBody(404, "NOT_FOUND"))
 	}
 }

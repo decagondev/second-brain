@@ -341,3 +341,7 @@ func TestLAW06_AttestationReportsWhatRuns(t *testing.T) {
 func TestLAW17_VerifyReportsAccessPaths(t *testing.T) {
 	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return law17Verify(r, verify.Run) })
 }
+
+func TestLAW02_SitesReachOnlyTheirOwnCell(t *testing.T) {
+	Check(t, "LAW-02", 40, func(r *rand.Rand) error { return law02Hosting(r, NewPublisher()) })
+}

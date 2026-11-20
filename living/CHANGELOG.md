@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Firebase Hosting for the web UI (S9.3a: SB-906): `internal/core/hosting` (the generated config and its check), `gcp.Hosting`, Hosting in the GCP fake, and a LAW-02 law test on rewrites.
 - Cell endpoints (S9.2b: SB-905): `/metrics` and the verifier endpoints in `internal/api.Verifier`, `runtime.Attestor`, LAW-17 in `verify`, `alerts.Dispatch`, and `sb tenant verify --cell URL`.
 - Schedules in the cell (S9.2a: SB-904): `internal/core/schedule` (six jobs and the missed-run watchdog), `gcp.Scheduler` and the WORM `gcp.Bucket`, Cloud Scheduler and Cloud Storage retention in the GCP fake, and law tests for write-once anchors and missed runs.
 - Private Cloud SQL with CMEK and a perimeter (S9.1b: SB-902): private-IP, `pgvector`, CMEK instances from the gcp adapter; the perimeter bootstrap script; CMEK, crypto-shredding and VPC Service Controls in the GCP fake; and a LAW-02 law test over two perimeters.

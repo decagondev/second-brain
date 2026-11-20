@@ -16,7 +16,7 @@ summary: Epics, waves, slices and tickets.
 | W0 Manual and Laws | 10 | 6 | 0 | Left: human reviews (SB-004, SB-005, SB-014) and, for SB-011 to SB-013, two reviewers (models and mutations green locally and in CI, 2026-11-19) |
 | W1 First Cell | 8 | 5 | 0 | Done: SB-101 to SB-103, SB-105 to SB-108, SB-114. In review: SB-104 (needs a cloud adapter), SB-109 to SB-112 (second reviewer for policy and audit) |
 | W2 to W7 | 12 | 55 | 0 | W2 built (4 done, 7 in review); W3 S3.1 to S3.6: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain), SB-307 (WCAG audit, connector links), SB-308 (real Slack workspace), SB-309 (tenant verify, staging model) SB-310 (weekly schedule) and SB-311 (the pilot itself, human) in review; W4 S4.1 to S4.3: SB-409 done; SB-401 to SB-408 and SB-410 to SB-412 in review (W4 built); W5 built: SB-501 to SB-510 in review; W6 S6.1 and S6.2: SB-603 done; SB-601, SB-602, SB-604 to SB-609 in review; S6.3b: SB-610 (HubSpot, real sandbox) in review; S6.3c: SB-611 (nightly schedule in a running cell) in review; S6.4a: SB-613 (the game day itself, human) in review; S6.4b: SB-612 (the external pen test, human) in review; **W6 built**; W7 S7.1a: SB-701 (security and tenant review, human) in review; S7.1b: SB-702 done; S7.1c: SB-703 (real GCP project) in review; S7.2a: SB-704 done; S7.2b: SB-705 (CLI and a cloud Target) in review; LAW-17 and LAW-18 hand-off tests green; S7.2c: SB-706 (verify on a deployed cell, monthly schedule) in review; S7.2d: SB-707 (a cell in a real tenant account) in review; S7.3a: SB-708 (detach on a running cell) in review; S7.3b: SB-709 (usage meter in a running cell) in review; S7.3c: SB-710 (the game day with a friendly tenant, human) in review; **W7 built** |
-| W8 to W13 | 6 | 5 | 31 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. W13 starts only if Q-01 is answered yes |
+| W8 to W13 | 6 | 6 | 30 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. W13 starts only if Q-01 is answered yes |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
 
@@ -254,7 +254,7 @@ flowchart LR
 | [SB-903](E09-gcp-runtime/SB-903-sb-tenant-apply-in-a-real-gcp-project.md) | S9.1 | E09 | `sb tenant apply` in a real GCP project in under 30 minutes | Open |
 | [SB-904](E09-gcp-runtime/SB-904-schedules-in-the-cell.md) | S9.2 | E09 | Every schedule running in the cell | In review |
 | [SB-905](E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.md) | S9.2 | E09 | `/metrics` and the verifier endpoint | In review |
-| [SB-906](E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.md) | S9.3 | E09 | Firebase Hosting for the web UI | Open |
+| [SB-906](E09-gcp-runtime/SB-906-firebase-hosting-for-the-web-ui.md) | S9.3 | E09 | Firebase Hosting for the web UI | In review |
 | [SB-907](E09-gcp-runtime/SB-907-identity-platform-adapter-for-companies-without-an-idp.md) | S9.3 | E09 | Identity Platform adapter for companies without an OIDC IdP | Open |
 | [SB-908](E09-gcp-runtime/SB-908-staging-cell-closes-the-real-cloud-items.md) | S9.4 | E09 | A staging cell closes the W1 to W7 items waiting for a real cloud | Open |
 

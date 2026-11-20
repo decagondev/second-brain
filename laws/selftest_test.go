@@ -21,6 +21,7 @@ import (
 	"example.com/second-brain/internal/adapters/registry/localfs"
 	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/attest"
+	"example.com/second-brain/internal/core/hosting"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/policy"
@@ -1139,5 +1140,20 @@ func TestSelf_LAW17VerifyMutationIsCaught(t *testing.T) {
 	}
 	if !violates(runs, func(r *rand.Rand) error { return law17Verify(r, lenient) }) {
 		t.Error("LAW-17 (verify): unknown counted as a pass was not caught")
+	}
+}
+
+// LAW-02's hosting check catches a publisher that skips hosting.Check.
+func TestSelf_LAW02HostingMutationIsCaught(t *testing.T) {
+	unchecked := func(ctx context.Context, h gcp.Hosting, tenant, region string, c hosting.Config) error {
+		hc := c
+		hc.Project, hc.Site = h.Project.ID, "sb-"+tenant // make Check pass, keep the rewrites
+		if err := hosting.Check(hosting.Generate(tenant, h.Project.ID, region), tenant, h.Project.ID, region); err != nil {
+			return err
+		}
+		return publishRaw(ctx, h, hc)
+	}
+	if !violates(40, func(r *rand.Rand) error { return law02Hosting(r, unchecked) }) {
+		t.Error("LAW-02 (hosting): a publisher that doesn't check rewrites was not caught")
 	}
 }
