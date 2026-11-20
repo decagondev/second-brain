@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/prompts"
 	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/workflow"
@@ -108,5 +109,6 @@ func build(root string, arts []string, created string) (release.Manifest, error)
 		return release.Manifest{}, err
 	}
 	b.Gate = release.SHA256(gate)
+	b.Catalogue = release.SHA256(manifest.Catalogue)
 	return b.Seal()
 }

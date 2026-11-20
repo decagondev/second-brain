@@ -16,8 +16,10 @@ sb — operate Second Brain tenants, kill switches, audit, releases and evals
 sb [--json] [--tenant NAME] [--endpoint URL] COMMAND [ARGS]
 
 sb tenant  check|apply|verify FILE
-sb kill    agent|connector|tenant [NAME] --reason TEXT
-sb unkill  agent|connector|tenant [NAME] --reason TEXT
+sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
+sb space   templates
+sb kill    agent|connector|space|tenant [NAME] --reason TEXT
+sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
 sb release status|promote|rollback       (maintainers)
 sb factory status|handoff|access|detach  (factory operators and tenant owners, sb-factory(1))
@@ -94,4 +96,4 @@ $ echo $?
 
 ## SEE ALSO
 
-[sb-tenant(1)](sb-tenant.1.md), [sb-kill(1)](sb-kill.1.md), [sb-audit(1)](sb-audit.1.md), [sb-release(1)](sb-release.1.md), [sb-eval(1)](sb-eval.1.md), [sb-factory(1)](sb-factory.1.md), [sb-factory(7)](sb-factory.7.md), [sb-errors(7)](sb-errors.7.md)
+[sb-space(1)](sb-space.1.md), [sb-tenant(1)](sb-tenant.1.md), [sb-kill(1)](sb-kill.1.md), [sb-audit(1)](sb-audit.1.md), [sb-release(1)](sb-release.1.md), [sb-eval(1)](sb-eval.1.md), [sb-factory(1)](sb-factory.1.md), [sb-factory(7)](sb-factory.7.md), [sb-errors(7)](sb-errors.7.md)

@@ -37,8 +37,10 @@ type Bundle struct {
 	Tools    []Tool            `json:"tools"`    // sorted by name
 	Policies map[string]string `json:"policies"` // file -> sha256
 	Model    Model             `json:"model"`
-	Gate     string            `json:"gate"`    // sha256 of evals/gate.yaml
-	Created  string            `json:"created"` // YYYY-MM-DD
+	Gate     string            `json:"gate"` // sha256 of evals/gate.yaml
+	// Catalogue is the sha256 of the department template catalogue (SB-1101).
+	Catalogue string `json:"catalogue,omitempty"`
+	Created   string `json:"created"` // YYYY-MM-DD
 }
 
 // Manifest is bundle.json: the bundle and its id.
@@ -69,6 +71,9 @@ func (b Bundle) Validate() error {
 		if t.Name == "" || !hexRe.MatchString(t.SchemaSHA256) {
 			return fmt.Errorf("release: tool %q needs a schema hash", t.Name)
 		}
+	}
+	if b.Catalogue != "" && !hexRe.MatchString(b.Catalogue) {
+		return fmt.Errorf("release: the catalogue has a bad sha256")
 	}
 	if b.Model.Provider == "" || b.Model.Model == "" || !hexRe.MatchString(b.Gate) || !dateRe.MatchString(b.Created) {
 		return fmt.Errorf("release: bundle needs model, gate hash and created date")

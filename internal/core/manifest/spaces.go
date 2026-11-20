@@ -1,6 +1,9 @@
 package manifest
 
 import (
+	"bytes"
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -24,26 +27,68 @@ type Space struct {
 // Template is a department template's defaults (sb-departments(7), The catalogue).
 // RetentionDays 0 means the tenant's.
 type Template struct {
-	Label         string
-	Agents        []string
-	RetentionDays int
+	Name          string   `json:"name"`
+	Label         string   `json:"label"`
+	Sources       []string `json:"sources"`
+	Agents        []string `json:"agents"`
+	RetentionDays int      `json:"retention_days"`
+	Suite         string   `json:"suite"`
 }
 
-// Templates is the catalogue of sb-departments(7). It becomes data in W11 (SB-1101).
-var Templates = map[string]Template{
-	"engineering": {"internal", []string{"ask", "incident-summary"}, 0},
-	"product":     {"internal", []string{"ask", "spec-digest"}, 0},
-	"design":      {"internal", []string{"ask"}, 0},
-	"sales":       {"confidential", []string{"ask", "draft-reply"}, 0},
-	"marketing":   {"internal", []string{"ask", "draft-reply"}, 0},
-	"support":     {"internal", []string{"ask", "draft-reply"}, 0},
-	"people":      {"restricted", []string{"ask"}, 365},
-	"finance":     {"restricted", []string{"ask", "close-checklist"}, 0},
-	"legal":       {"restricted", []string{"ask"}, 0},
-	"it-security": {"confidential", []string{"ask", "runbook-answer"}, 0},
-	"operations":  {"internal", []string{"ask"}, 0},
-	"executive":   {"restricted", []string{"ask"}, 0},
-	"custom":      {"internal", []string{"ask"}, 0},
+// Catalogue is the department template catalogue as shipped: data, never code (SB-1101).
+// Its hash is pinned in every release bundle (sb-release(7)).
+//
+//go:embed catalogue.json
+var Catalogue []byte
+
+// Templates is the catalogue by name, read from Catalogue when the package loads. A
+// catalogue that doesn't parse, or breaks a rule, stops the binary: no cell runs on one.
+var Templates = mustCatalogue(Catalogue)
+
+// ParseCatalogue reads a catalogue and checks it: unique names, a known label, agents
+// that include ask, a retention of 0 or 30 and over, and a custom template.
+func ParseCatalogue(b []byte) (map[string]Template, error) {
+	var c struct {
+		Version   int        `json:"version"`
+		About     string     `json:"about"`
+		Templates []Template `json:"templates"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&c); err != nil {
+		return nil, fmt.Errorf("catalogue: %w", err)
+	}
+	if c.Version != 1 {
+		return nil, fmt.Errorf("catalogue: version %d isn't 1", c.Version)
+	}
+	out := map[string]Template{}
+	for _, t := range c.Templates {
+		switch {
+		case !spaceName.MatchString(t.Name) || t.Name == "company":
+			return nil, fmt.Errorf("catalogue: bad template name %q", t.Name)
+		case out[t.Name].Name != "":
+			return nil, fmt.Errorf("catalogue: %s twice", t.Name)
+		case !contains(Labels, t.Label):
+			return nil, fmt.Errorf("catalogue: %s has label %q", t.Name, t.Label)
+		case !contains(t.Agents, "ask"):
+			return nil, fmt.Errorf("catalogue: %s has no ask agent", t.Name)
+		case t.RetentionDays != 0 && t.RetentionDays < MinSpaceRetention:
+			return nil, fmt.Errorf("catalogue: %s keeps less than %d days", t.Name, MinSpaceRetention)
+		}
+		out[t.Name] = t
+	}
+	if _, ok := out["custom"]; !ok {
+		return nil, fmt.Errorf("catalogue: no custom template")
+	}
+	return out, nil
+}
+
+func mustCatalogue(b []byte) map[string]Template {
+	t, err := ParseCatalogue(b)
+	if err != nil {
+		panic(err) // the catalogue is part of the release; a bad one is a build error
+	}
+	return t
 }
 
 // Labels are the four labels, least to most sensitive (sb-spaces(7)).

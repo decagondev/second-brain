@@ -58,6 +58,7 @@ const usage = `usage: sb [--json] [--tenant NAME] [--endpoint URL] [-q] COMMAND 
 
 commands:
   tenant  check|apply|verify FILE      validate, apply and verify a tenant manifest
+  space   init|templates ...           start a department space from a template
   kill    agent|connector|space|tenant ...   set a kill switch
   unkill  agent|connector|space|tenant ...   clear a kill switch
   audit   verify|tail|export           audit log tools
@@ -120,6 +121,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.factoryVerifyExport(rest[2:])
 	case "audit verify":
 		return e.auditVerify(rest[2:])
+	case "space init":
+		return e.spaceInit(rest[2:])
+	case "space templates":
+		return e.spaceTemplates(rest[2:])
 	}
 	if t, ok := planned[name]; ok {
 		return e.fail("sb "+name, errs.New(errs.ENOTIMPL, "not built yet (%s)", t))
@@ -131,7 +136,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" {
+	if cmd == "tenant" || cmd == "space" {
 		return true
 	}
 	for k := range planned {

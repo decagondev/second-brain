@@ -31,6 +31,7 @@ The bundle manifest, `bundle.json` (SB-503):
 | `prompts` | Each bundled prompt's name and SHA-256 |
 | `tools` | Each registered tool: name, connector, consequential, workflow, and the SHA-256 of its payload schema |
 | `policies` | Each platform policy file and the schema, with SHA-256 |
+| `catalogue` | SHA-256 of the department template catalogue, `internal/core/manifest/catalogue.json` (sb-departments(7); SB-1101) |
 | `model` | `provider`, `model` and parameters (`max_tokens`) |
 | `gate` | The SHA-256 of `evals/gate.yaml` the release was gated with |
 | `created` | The build date, `YYYY-MM-DD` |

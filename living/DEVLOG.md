@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.1a The template catalogue as data, and sb space init (SB-1101)
+
+**Wave/slice:** W11 / S11.1a · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** `internal/core/manifest/catalogue.json` and `ParseCatalogue`, the bundle's `catalogue` hash, `internal/cli/space.go`, and `laws/law16catalogue.go`. The manual changed first: sb-space(1) (new), sb-departments(7), sb-release(7) and sb(1).
+
+**Why this way:** A template decides what a department's brain shows by default, so it belongs with the other things a release pins (prompts, policies, the gate), not in code that only a build changes. `sb space init` edits text rather than re-rendering the manifest, because a manifest is a reviewed file and a tool that drops its comments would make every review harder.
+
+**Learned:** The manual's catalogue table and the data file are two copies of one fact; the test that compares them is what lets the manual stay the authority.
+
+**Laws:** LAW-16 extended (one law test, one mutation caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S11.1b, department agents (SB-1102).
+
 ## 2026-11-20 S10.3c Audit and kill switch per space (SB-1008)
 
 **Wave/slice:** W10 / S10.3c · **Author:** platform lead + Claude · **Status:** Done

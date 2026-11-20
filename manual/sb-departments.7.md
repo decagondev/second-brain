@@ -19,7 +19,7 @@ finance · legal · it-security · operations · executive · custom
 
 ## DESCRIPTION
 
-A **template** is data: a label default, default sources, default agents, retention and an eval suite. A space names one ([sb-space(5)](sb-space.5.md)), and every field it sets itself wins. Companies rename, merge or drop templates, and add their own spaces from `custom`. Every template field is an ordinary manifest field, for everyone, never per-company code (P3). The templates become data in W11 (SB-1101); this page is the catalogue they are written from.
+A **template** is data: a label default, default sources, default agents, retention and an eval suite. A space names one ([sb-space(5)](sb-space.5.md)), and every field it sets itself wins. Companies rename, merge or drop templates, and add their own spaces from `custom`. Every template field is an ordinary manifest field, for everyone, never per-company code (P3). The catalogue is data: `internal/core/manifest/catalogue.json`, which `sb tenant check` reads and every release bundle pins by hash (sb-release(7), Bundles; SB-1101). A test holds the file and the table below to each other, so neither can change alone. `sb space init` starts a space from a template (sb-space(1)), and `sb space templates` prints the catalogue.
 
 ### The catalogue
 

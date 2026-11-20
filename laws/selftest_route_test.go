@@ -6,6 +6,7 @@ import (
 
 	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/route"
 )
 
@@ -61,5 +62,24 @@ func TestSelf_LAW20ChatMutationIsCaught(t *testing.T) {
 		return law20Chat(r, func(st *spacemem.Store) ports.SpaceStore { return forgetful{st} })
 	}) {
 		t.Error("LAW-20 (chat): a registry that answers nothing was not caught")
+	}
+}
+
+func TestLAW16_TheCatalogueIsPinned(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Catalogue(r, bundleWith) })
+}
+
+// LAW-16's catalogue test catches a bundle that leaves the catalogue out.
+func TestSelf_LAW16CatalogueMutationIsCaught(t *testing.T) {
+	unpinned := func(c []byte) (release.Manifest, error) {
+		m, err := bundleWith(c)
+		if err != nil {
+			return m, err
+		}
+		m.Catalogue = ""
+		return m.Seal()
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law16Catalogue(r, unpinned) }) {
+		t.Error("LAW-16 (catalogue): a bundle without the catalogue was not caught")
 	}
 }

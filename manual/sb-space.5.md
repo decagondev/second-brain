@@ -110,4 +110,4 @@ barriers:
 
 ## SEE ALSO
 
-[sb-spaces(7)](sb-spaces.7.md), [sb-departments(7)](sb-departments.7.md), [sb-tenant(5)](sb-tenant.5.md), [sb-tenant(1)](sb-tenant.1.md)
+[sb-spaces(7)](sb-spaces.7.md), [sb-space(1)](sb-space.1.md), [sb-departments(7)](sb-departments.7.md), [sb-tenant(5)](sb-tenant.5.md), [sb-tenant(1)](sb-tenant.1.md)
