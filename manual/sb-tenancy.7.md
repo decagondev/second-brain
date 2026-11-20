@@ -58,6 +58,8 @@ The `gcp` adapter (`internal/adapters/placement/gcp`) implements `Placement` and
 
 The manifest's region maps to one GCP location: `eu` is `europe-west1`, `us` is `us-central1`. Any other region is an error. Every resource is labelled `sb-tenant` and `sb-kind`, and has its location. A resource that already exists with a different tenant, kind or location is an error, never reused. Only an HTTP 404 means a resource is absent. Any other failure, a 403 included, is an error, so the adapter never creates a second copy of something it couldn't read. Long-running operations are polled until they finish or the context ends.
 
+What runs in the project, and how it updates itself, is in [sb-runtime(7)](sb-runtime.7.md).
+
 **The deploy role.** The tenant creates it in their own project with `deploy/gcp/bootstrap-deploy-role.sh PROJECT FACTORY_PRINCIPAL`. The script creates a custom role, `sbCellDeployer`, whose permissions are exactly those the adapter uses (`gcp.DeployPermissions`, which a test compares with the script). It creates a service account, `sb-cell-deployer`, with that role on the project and nothing else, and lets only the factory's principal impersonate it. The role can't read secret values, decrypt anything other than through the cell's own key, or change IAM. At hand-off the factory loses this impersonation grant, unless the hand-off record retains it (sb-factory(7)).
 
 

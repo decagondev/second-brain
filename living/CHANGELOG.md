@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Cloud Run per cell (S9.1a: SB-901): `sb-runtime(7)`, `internal/core/runtime` (the in-cell updater), `gcp.CloudRun` with Binary Authorization in the GCP fake, and LAW-06 and LAW-02 law tests over the runtime.
 - Space laws and models (S8.2: SB-804 to SB-807): LAW-19 to LAW-23 in sb-laws(7) and as red law tests with reference systems and mutations; `proofs/alloy/Spaces.als` with three mutations and a crosscheck mirror; the inside-the-company threats in the threat model; and the `space-leak` eval suite, red on purpose until SB-1006.
 - Department spaces, specified (S8.1: SB-801 to SB-803): `sb-spaces(7)`, `sb-space(5)` and `sb-departments(7)`; spaces, labels and barriers in sb-permissions(7) and sb-policy(5); `ESPACE`, `ELABEL` and `EBARRIER`; a "choose your spaces" onboarding step; and `sb tenant check` refusing `spaces:` and `barriers:` by name until SB-1001.
 - Hand-off game day (S7.3c: SB-710): the day's checks in sb-factory(7), its runbook, and `tests/handoff`, a full rehearsal of hand-off and detach in `make check`. **W7 built.**
@@ -89,6 +90,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- Law tests no longer leave their release stores in `/tmp` (BUG-0013).
 - Cutover no longer revokes a retained grant's binding: the hand-off controller keeps paths by the grant they serve (BUG-0012).
 - The log redactor scrubs URL-escaped, base64 and hex forms of secrets, and credential-named attributes (BUG-0010). Markdown role labels are flagged as injection (BUG-0011).
 - `make proofs` pins TLA+ v1.7.4 (stable) instead of the v1.8.0 prerelease, which upstream rebuilt in place (BUG-0009).

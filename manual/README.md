@@ -16,6 +16,7 @@ New here? Take the [tour](sb-tour.7.md) first.
 | [sb-tour(7)](sb-tour.7.md) | Fifteen minutes from manifest to cited answer to approved action |
 | [sb-laws(7)](sb-laws.7.md) | The eighteen laws, and how each is checked |
 | [sb-tenancy(7)](sb-tenancy.7.md) | Cells, isolation, regions |
+| [sb-runtime(7)](sb-runtime.7.md) | How a cell runs on GCP: Cloud Run services, the in-cell updater, Binary Authorization, Cloud SQL (W9) |
 | [sb-spaces(7)](sb-spaces.7.md) | Department spaces inside a cell: membership, labels, barriers, company-wide asks (W8 draft) |
 | [sb-departments(7)](sb-departments.7.md) | The twelve department templates and the access practices behind them (W8 draft) |
 | [sb-factory(7)](sb-factory.7.md) | The factory, custody levels and hand-off |

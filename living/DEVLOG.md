@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S9.1a Cloud Run services and the in-cell updater (SB-901)
+
+**Wave/slice:** W9 / S9.1a · **Author:** platform lead + Claude · **Status:** In review (a real project, SB-903)
+
+**What:** `manual/sb-runtime.7.md`, `internal/core/runtime`, `gcp.CloudRun` and its roles, Cloud Run and Binary Authorization in `gcptest`, `laws/law06runtime.go`, and the fix for BUG-0013. The manual changed first.
+
+**Why this way:** The factory never deploys into a cell, so the cell's own updater pulls, admits and deploys. It does that through the same admission code a cell has always used, so LAW-06 has one implementation, not two. Binary Authorization makes the platform itself refuse anything the cell didn't attest, so even someone holding the updater's rights can't sideload an image. Deploying by digest only removes the tag-moved-under-you case entirely.
+
+**Learned:** The law tests had been leaking a temporary release store per LAW-06 run, and today they finally filled `/tmp`'s inodes (BUG-0013). Bytes were fine; inodes weren't.
+
+**Laws:** LAW-06 and LAW-02 extended over the runtime (one mutation caught). LAW-19 to LAW-23 stay red, as planned.
+
+**Next:** S9.1b, private Cloud SQL with CMEK and a perimeter (SB-902).
+
 ## 2026-11-20 S8.2 Space laws, model, threats and leak evals (SB-804 to SB-807)
 
 **Wave/slice:** W8 / S8.2 · **Author:** platform lead + Claude · **Status:** Done (SB-806 In review for two reviewers)

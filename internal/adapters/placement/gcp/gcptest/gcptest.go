@@ -27,14 +27,18 @@ type Fake struct {
 	faults []int
 	// policies: resource name -> role -> members (getIamPolicy answers; empty if unset)
 	policies map[string]map[string][]string
-	n        int
+	// attested: project -> image references the project's attestor has signed (Binary Authorization)
+	attested map[string]map[string]bool
+	// Run is Cloud Run's state: "projects/P/locations/L/services/NAME" -> resource.
+	Run map[string]map[string]any
+	n   int
 	// Calls counts requests by project, so a test can show no call reached a project.
 	Calls map[string]int
 }
 
 // New starts the fake.
 func New() *Fake {
-	f := &Fake{policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
+	f := &Fake{attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
 	f.Server = httptest.NewTLSServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -156,6 +160,10 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 		code := f.faults[0]
 		f.faults = f.faults[1:]
 		reply(w, code, errBody(code, "UNAVAILABLE"))
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v2/projects/") || strings.HasSuffix(r.URL.Path, "/occurrences") {
+		f.runtime(w, r)
 		return
 	}
 	perm, project, path, create := route(r.Method, r.URL.Path)
@@ -293,4 +301,111 @@ func (f *Fake) Unbind(resource, role, member string) {
 		}
 	}
 	f.policies[resource][role] = keep
+}
+
+// runtime serves Cloud Run Admin v2 and Container Analysis occurrences, enforcing a Binary
+// Authorization policy that admits only images this project attested, and service accounts
+// only from this project (SB-901).
+func (f *Fake) runtime(w http.ResponseWriter, r *http.Request) {
+	p := strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, "/v2/"), "/v1/")
+	parts := strings.Split(p, "/")
+	if len(parts) < 3 {
+		reply(w, 404, errBody(404, "NOT_FOUND"))
+		return
+	}
+	project := parts[1]
+	f.Calls[project]++
+	tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	var body map[string]any
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+	}
+	if parts[2] == "occurrences" {
+		if !f.grants[tok][project]["containeranalysis.occurrences.create"] {
+			reply(w, 403, errBody(403, "PERMISSION_DENIED"))
+			return
+		}
+		uri, _ := body["resourceUri"].(string)
+		if f.attested[project] == nil {
+			f.attested[project] = map[string]bool{}
+		}
+		f.attested[project][uri] = true
+		reply(w, 200, map[string]any{"name": p + "/occ-1"})
+		return
+	}
+	// projects/P/locations/L/{services|jobs}[/NAME]
+	if len(parts) < 5 || (parts[4] != "services" && parts[4] != "jobs") {
+		reply(w, 404, errBody(404, "NOT_FOUND"))
+		return
+	}
+	kind := parts[4]
+	verb := map[string]string{http.MethodGet: "get", http.MethodPost: "create", http.MethodPatch: "update"}[r.Method]
+	if verb == "" || !f.grants[tok][project]["run."+kind+"."+verb] {
+		reply(w, 403, errBody(403, "PERMISSION_DENIED"))
+		return
+	}
+	name := ""
+	if len(parts) == 6 {
+		name = parts[5]
+	} else {
+		name = r.URL.Query().Get(map[string]string{"services": "serviceId", "jobs": "jobId"}[kind])
+	}
+	key := strings.Join(parts[:5], "/") + "/" + name
+	switch r.Method {
+	case http.MethodGet:
+		v, ok := f.Run[key]
+		if !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+		reply(w, 200, v)
+		return
+	case http.MethodPost:
+		if _, dup := f.Run[key]; dup {
+			reply(w, 409, errBody(409, "ALREADY_EXISTS"))
+			return
+		}
+	case http.MethodPatch:
+		if _, ok := f.Run[key]; !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+	}
+	tmpl, _ := body["template"].(map[string]any)
+	cs, _ := tmpl["containers"].([]any)
+	sa, _ := tmpl["serviceAccount"].(string)
+	image := ""
+	if len(cs) == 1 {
+		c, _ := cs[0].(map[string]any)
+		image, _ = c["image"].(string)
+	}
+	if !f.attested[project][image] {
+		reply(w, 400, errBody(400, "FAILED_PRECONDITION: denied by Binary Authorization"))
+		return
+	}
+	if !strings.HasSuffix(sa, "@"+project+".iam.gserviceaccount.com") {
+		reply(w, 400, errBody(400, "INVALID_ARGUMENT: service account from another project"))
+		return
+	}
+	body["name"] = key
+	f.Run[key] = body
+	reply(w, 200, body)
+}
+
+// Running is what a service or job runs in the fake, or "".
+func (f *Fake) Running(project, location, kind, name string) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	v, ok := f.Run["projects/"+project+"/locations/"+location+"/"+kind+"/"+name]
+	if !ok {
+		return ""
+	}
+	tmpl, _ := v["template"].(map[string]any)
+	cs, _ := tmpl["containers"].([]any)
+	if len(cs) == 0 {
+		return ""
+	}
+	c, _ := cs[0].(map[string]any)
+	img, _ := c["image"].(string)
+	return img
 }

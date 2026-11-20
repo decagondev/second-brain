@@ -21,6 +21,7 @@ Every defect gets an entry, including design defects found in review. Each entry
 | [BUG-0010](#bug-0010-the-log-redactor-missed-encoded-secrets) | The log redactor missed encoded secrets | Security | Fixed |
 | [BUG-0011](#bug-0011-markdown-role-labels-escaped-the-injection-flags) | Markdown role labels escaped the injection flags | Security | Fixed |
 | [BUG-0012](#bug-0012-cutover-revoked-a-retained-grant) | Cutover revoked a retained grant | Code | Fixed |
+| [BUG-0013](#bug-0013-law-tests-leaked-release-stores-into-tmp) | Law tests leaked release stores into /tmp | Test harness | Fixed |
 
 ## BUG-0001 Rollout model assumes atomic rollback
 
@@ -197,3 +198,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** `handoff.Access` returns `access.Path`s, and a path is kept only if its `Grant` is retained. The plan records retained grants, kept path ids and revoked path ids separately.
 
 **Caught by now:** `TestHandoffGameDay` (`tests/handoff`, in `make check`), which hands off over the GCP fake's real IAM bindings. Why it wasn't caught before: every earlier test used fakes whose path names were the grants. Rule: test the controller at least once against the same adapters a real day uses.
+
+## BUG-0013 Law tests leaked release stores into /tmp
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, a law test failed with `no space left on device` while SB-901's world was being built | Test harness | SB-506, SB-901 | Fixed |
+
+**Symptom:** `TestLAW06_TenantAccountPullsOnlySignedGatedBuilds` failed writing to `/tmp` with plenty of bytes free. `/tmp` held about 20,000 `sb-law06-*` directories.
+
+**Root cause:** `newReleaseWorld` made a temporary release store with `os.MkdirTemp` for every run of every LAW-06 world, and nothing removed it. Each `make check` added several hundred more, until the tmpfs ran out of inodes.
+
+**Fix:** The worlds record each directory they make, and `laws/main_test.go` removes them all when the test binary ends.
+
+**Caught by now:** the failure itself, and a run of `make check` now leaves no `sb-law06-*` behind. Why it wasn't caught before: nothing checked what a test run leaves behind, and the leak only failed once enough runs had piled up. Rule: a test that makes a directory removes it, through `t.TempDir()` or the shared cleanup.

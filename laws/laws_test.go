@@ -292,3 +292,19 @@ func TestLAW22_BarriersHold(t *testing.T) {
 func TestLAW23_GrantsAreConsentedAndRevocable(t *testing.T) {
 	Check(t, "LAW-23", runs, func(r *rand.Rand) error { return law23(r, NewGrantSystem()) })
 }
+
+func TestLAW06_CellsRunOnlyAdmittedImages(t *testing.T) {
+	Check(t, "LAW-06", 40, func(r *rand.Rand) error {
+		w, done := NewRuntimeWorld()
+		defer done()
+		return law06Runtime(r, w)
+	})
+}
+
+func TestLAW02_RuntimeStaysInItsProject(t *testing.T) {
+	Check(t, "LAW-02", 40, func(r *rand.Rand) error {
+		w, done := NewRuntimeWorld()
+		defer done()
+		return law02Runtime(r, w)
+	})
+}

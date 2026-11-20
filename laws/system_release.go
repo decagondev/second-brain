@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 
 	relfs "example.com/second-brain/internal/adapters/release/localfs"
 	"example.com/second-brain/internal/core/release"
@@ -37,6 +38,7 @@ func newReleaseWorld(lax bool) *releaseWorld {
 	if err != nil {
 		panic(err)
 	}
+	tempDirs.add(dir) // removed after the tests (main_test.go)
 	w := &releaseWorld{store: relfs.Dir{Root: dir}, art: map[string][]byte{}, lax: lax,
 		signer: release.Ed25519{Priv: ed25519.NewKeyFromSeed(bytes.Repeat([]byte{1}, 32))},
 		forger: release.Ed25519{Priv: ed25519.NewKeyFromSeed(bytes.Repeat([]byte{2}, 32))}}
@@ -74,6 +76,9 @@ func (w *releaseWorld) bundle(change string) (release.Bundle, []byte) {
 		b.Gate = release.SHA256([]byte("gate, edited"))
 	case "fresh":
 		b.Model.MaxTokens = 1024 + w.n // never built before
+	}
+	for _, svc := range []string{"api", "ingest", "web", "jobs", "updater"} { // the cell's images (SB-901)
+		b.Code["image/"+svc] = release.SHA256([]byte(fmt.Sprintf("%s image %d", svc, b.Model.MaxTokens)))
 	}
 	return b, art
 }
@@ -185,4 +190,25 @@ func (w *releaseWorld) Admit(id, tamper string) (bool, error) {
 	}
 	_, _, err := release.Admit(context.Background(), st, id, w.trusted, []string{"sb"})
 	return err == nil, nil
+}
+
+// tempDirs are the release stores worlds made, removed when the test binary ends. Without
+// this every run left thousands behind and filled /tmp's inodes (BUG-0013).
+var tempDirs = &dirList{}
+
+type dirList struct {
+	mu   sync.Mutex
+	dirs []string
+}
+
+func (d *dirList) add(dir string) { d.mu.Lock(); d.dirs = append(d.dirs, dir); d.mu.Unlock() }
+
+// RemoveAll removes every directory recorded so far.
+func (d *dirList) RemoveAll() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for _, dir := range d.dirs {
+		_ = os.RemoveAll(dir)
+	}
+	d.dirs = nil
 }

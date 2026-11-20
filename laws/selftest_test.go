@@ -23,6 +23,7 @@ import (
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retention"
+	"example.com/second-brain/internal/core/runtime"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/obs"
 )
@@ -1014,4 +1015,35 @@ func TestSelf_LAW16PlannedMutationIsCaught(t *testing.T) {
 	if !violates(runs, func(r *rand.Rand) error { return law16Planned(r, drops) }) {
 		t.Error("LAW-16 (planned fields): a parser that drops spaces was not caught")
 	}
+}
+
+// LAW-06's runtime check catches an updater that deploys without admitting the release.
+func TestSelf_LAW06RuntimeMutationIsCaught(t *testing.T) {
+	if !violates(40, func(r *rand.Rand) error {
+		w, done := NewRuntimeWorld()
+		defer done()
+		return law06Runtime(r, skipAdmit{w.(*runtimeWorld)})
+	}) {
+		t.Error("LAW-06 (runtime): an updater that skips admission was not caught")
+	}
+}
+
+type skipAdmit struct{ *runtimeWorld }
+
+func (s skipAdmit) Update(target string) error {
+	m, err := s.rw.manifest(target)
+	if err != nil {
+		return err
+	}
+	u := s.updater(target)
+	for _, svc := range runtime.Services {
+		img := u.Image(svc, m.Code[svc.Image])
+		if err := s.cr.Attest(context.Background(), img); err != nil {
+			return err
+		}
+		if err := s.cr.Deploy(context.Background(), svc, img, target); err != nil {
+			return err
+		}
+	}
+	return nil
 }
