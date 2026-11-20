@@ -78,6 +78,19 @@ Every chunk passes all of these before it reaches a model's context, in this ord
 
 The exact checks, the Cedar entities and the error codes are in [sb-permissions(7), Spaces, labels and barriers](sb-permissions.7.md#spaces-labels-and-barriers-exactly-sb-802) and [sb-policy(5), Spaces](sb-policy.5.md#spaces-labels-and-barriers-sb-802).
 
+### The space registry and the request context (SB-1002)
+
+The cell keeps its spaces in its own database, one row per space, with the id `spc_<name>` (for example `spc_finance`) and every field of sb-space(5) after the template's defaults are filled in. Only `sb tenant apply` writes the registry: it makes the rows match the manifest, so a space the manifest drops is deleted, and nothing else in the cell can create, change or delete a space (LAW-16).
+
+Every request carries the space it is in, the same way it carries its tenant (sb-tenancy(7), Scope in code). The auth middleware sets it, and nothing else can:
+
+- a request names its space with `?space=NAME` (sb-api(3), Spaces). No `space`, or `space=company`, is a **company-wide** request;
+- a space the registry doesn't hold is `ESPACE`, never a company-wide request instead;
+- a space the asker isn't a member of is `ESPACE` too, with the same message, so the error never tells a non-member whether a space exists;
+- a registry that can't answer is `EUNAVAIL`. Unknown never means company-wide.
+
+Membership is read from the asker's directory groups on every request, so a move takes effect at the next request (LAW-21). A space's members are matched by group name: `group:finance` is the directory group `finance`.
+
 ### Stewards
 
 Stewards don't approve their own changes. They propose a space change as a manifest diff, and a tenant operator approves it (LAW-16, W12). Finance spaces add segregation of duties: whoever requests a change can't approve it.

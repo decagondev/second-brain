@@ -89,7 +89,7 @@ Every cell also has a custody record (`factory`, `tenant` or `detached`) that sa
 
 Inside a cell, every operation carries a `tenancy.Scope` that only the auth middleware can create. There is no API to construct one for another tenant, and no "all tenants" query exists anywhere in cell code.
 
-- A `Scope` has unexported fields (tenant, user, groups). The only constructor is `Issuer.Issue`. A cell makes exactly one `Issuer`, for its own tenant, at start-up, and hands it only to the auth middleware. A CI check fails if `tenancy.NewIssuer` is called anywhere else outside tests.
+- A `Scope` has unexported fields (tenant, user, groups, and from SB-1002 the space). The only constructors are `Issuer.Issue` and `Issuer.IssueIn`, which adds a space the middleware has already resolved; `Scope.Space()` is the space's id, or `company` for a company-wide request (sb-spaces(7)). A cell makes exactly one `Issuer`, for its own tenant, at start-up, and hands it only to the auth middleware. A CI check fails if `tenancy.NewIssuer` is called anywhere else outside tests.
 - `Issue` refuses a session whose tenant isn't the issuer's tenant. The zero `Scope` is invalid, and every scoped method refuses it, so a forgotten scope is an error, never "no filter".
 - Every port method that reads or writes tenant data takes a `Scope` first and uses only `Scope.Tenant()` to choose rows. A query for another tenant's ids returns nothing, exactly as if they didn't exist.
 - The middleware puts the scope in the request context. Handlers read it with `tenancy.FromContext`; a request without one is `EAUTH`.

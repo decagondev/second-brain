@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The space registry and request context (S10.1b: SB-1002): `ports.SpaceStore` with memory and Postgres adapters, `spaces.Sync` and `spaces.Resolve`, `Scope.Space()`, and `?space=` on every API call (`ESPACE`, never a company-wide fallback).
 - Spaces in the manifest (S10.1a: SB-1001): `sb tenant check` accepts and checks `spaces:` and `barriers:` (sb-space(5)), `apply --plan` shows them, and `apply` refuses them with `ENOTIMPL` until SB-1006 enforces them.
 - Identity Platform sign-in (S9.3b: SB-907): the `identity-platform://` idp and `groups:` manifest field, the `firebase.tenant` check in the `oidc` adapter, `internal/core/groupsync`, and LAW-02 and LAW-12 law tests.
 - Firebase Hosting for the web UI (S9.3a: SB-906): `internal/core/hosting` (the generated config and its check), `gcp.Hosting`, Hosting in the GCP fake, and a LAW-02 law test on rewrites.

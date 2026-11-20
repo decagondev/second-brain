@@ -14,6 +14,7 @@ import (
 	"example.com/second-brain/internal/adapters/oidc"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/session"
+	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
@@ -37,6 +38,9 @@ type Cell struct {
 	// Issuer is the cell's one tenancy.Issuer (SB-108); GroupsOf reads the directory.
 	Issuer   tenancy.Issuer
 	GroupsOf func(ctx context.Context, tenant, user string) ([]string, error)
+	// Spaces is the cell's space registry (SB-1002); nil is a cell with no spaces, where
+	// any ?space= other than company is ESPACE.
+	Spaces ports.SpaceStore
 
 	mu      sync.Mutex
 	pending map[string]started
@@ -157,7 +161,25 @@ func (c *Cell) Middleware(next http.Handler) http.Handler {
 			refuse(w, errs.New(errs.EUNAVAIL, "directory unavailable"))
 			return
 		}
-		scope, err := c.Issuer.Issue(s.Tenant, s.User, groups)
+		asked := r.URL.Query()["space"]
+		if len(asked) > 1 {
+			refuse(w, errs.New(errs.ESPACE, "name one space, or none for company-wide"))
+			return
+		}
+		requested := ""
+		if len(asked) == 1 {
+			requested = asked[0]
+		}
+		space, err := spaces.Resolve(r.Context(), c.Spaces, s.Tenant, groups, requested)
+		switch {
+		case errors.Is(err, spaces.ErrUnavailable):
+			refuse(w, errs.New(errs.EUNAVAIL, "space registry unavailable"))
+			return
+		case err != nil:
+			refuse(w, errs.New(errs.ESPACE, "no space %q for you; ask its stewards for membership, or ask company-wide", requested))
+			return
+		}
+		scope, err := c.Issuer.IssueIn(s.Tenant, s.User, groups, space)
 		if err != nil {
 			refuse(w, errs.New(errs.EAUTH, "sign in again"))
 			return

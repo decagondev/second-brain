@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.1b The space registry and the request context (SB-1002)
+
+**Wave/slice:** W10 / S10.1b · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** `ports.SpaceStore`, `internal/adapters/spaces/memory`, `internal/adapters/postgres/spaces`, `internal/core/spaces` (Sync, Resolve), `internal/core/spacestest`, the scope's space in `tenancy` and `auth`, and `laws/law19context.go`. The manual changed first: sb-spaces(7), sb-api(3) and sb-tenancy(7).
+
+**Why this way:** The space joins the scope because the scope is already the one thing every handler must carry and nothing can forge. Resolving it in the middleware means no handler ever sees a space name it would have to check. Every way a space can fail to resolve is a refusal, because the tempting default, company-wide, is the wider answer.
+
+**Learned:** A non-member and an unknown space must get the same error; otherwise `?space=` becomes a way to list another department's spaces.
+
+**Laws:** LAW-19 gains a green law test at the request context (one mutation caught); LAW-02's cross-tenant case is in it. LAW-19 to LAW-23's planned tests stay red.
+
+**Next:** S10.1c, per-space data keys (SB-1003).
+
 ## 2026-11-20 S10.1a Spaces in the manifest (SB-1001)
 
 **Wave/slice:** W10 / S10.1a · **Author:** platform lead + Claude · **Status:** Done

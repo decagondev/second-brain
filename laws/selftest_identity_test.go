@@ -45,3 +45,27 @@ func TestSelf_LAW12GroupsMutationIsCaught(t *testing.T) {
 		t.Error("LAW-12 (groups): an apply that never deactivates removed people was not caught")
 	}
 }
+
+func TestLAW19_TheSpaceContextNeverWidens(t *testing.T) {
+	Check(t, "LAW-19", runs, func(r *rand.Rand) error { return law19Context(r, NewSpaceCell) })
+}
+
+// fallbackCell is the mistake LAW-19's context test exists for: a request in a space it
+// can't resolve becomes a company-wide request.
+type fallbackCell struct{ SpaceCell }
+
+func (f fallbackCell) Request(user string, space []string) string {
+	if got := f.SpaceCell.Request(user, space); got != "" {
+		return got
+	}
+	return "company"
+}
+
+func TestSelf_LAW19ContextMutationIsCaught(t *testing.T) {
+	mk := func(c string, u map[string]string, s []SpaceSeed) SpaceCell {
+		return fallbackCell{NewSpaceCell(c, u, s)}
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law19Context(r, mk) }) {
+		t.Error("LAW-19 (context): a cell that falls back to company-wide was not caught")
+	}
+}

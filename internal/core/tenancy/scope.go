@@ -13,6 +13,16 @@ import (
 type Scope struct {
 	tenant, user string
 	groups       []string
+	space        string // "" is company-wide (SB-1002)
+}
+
+// Space is the space the request is in: a space id (spc_NAME), or "company" for a
+// company-wide request (sb-spaces(7)). Only IssueIn sets it.
+func (s Scope) Space() string {
+	if s.space == "" {
+		return "company"
+	}
+	return s.space
 }
 
 // Tenant is the scope's tenant; the only value repositories may filter rows by.
@@ -47,6 +57,19 @@ func NewIssuer(cellTenant string) Issuer { return Issuer{tenant: cellTenant} }
 
 // ErrOtherTenant means a session of another tenant reached this cell.
 var ErrOtherTenant = errors.New("tenancy: session belongs to another tenant")
+
+// IssueIn makes the scope for a request in a space the middleware has already resolved
+// (spaces.Resolve). space is a space id or "company".
+func (i Issuer) IssueIn(sessionTenant, user string, groups []string, space string) (Scope, error) {
+	s, err := i.Issue(sessionTenant, user, groups)
+	if err != nil {
+		return Scope{}, err
+	}
+	if space != "company" {
+		s.space = space
+	}
+	return s, nil
+}
 
 // Issue makes the scope for a signed-in user of this cell's tenant.
 func (i Issuer) Issue(sessionTenant, user string, groups []string) (Scope, error) {
