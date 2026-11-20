@@ -126,7 +126,7 @@ The UI renders a claim only as cited (with at least one chip) or as uncited, nev
 
 ### The chat app (Slack)
 
-Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `ask` agent with the same laws. Only the entry point differs.
+Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `ask` agent with the same laws. Only the entry point differs: Slack calls `POST /chat/slack/commands` for the command and `POST /chat/slack/interactions` for the Share button.
 
 1. **Verify.** The cell checks Slack's request signature with the signing secret from `vault://tenants/TENANT/connectors/chat` and refuses any request older than 5 minutes. The `team_id` must be the tenant's workspace. Anything else gets HTTP 401 and no reply.
 2. **Map the person.** The bot looks up the Slack user's email (`users.info`) and finds the **one active** directory user with that email (SCIM-provisioned, sb-identity(7)). No match, more than one match, or an inactive user gets an ephemeral reply saying the account can't be matched, and **no answer**. The bot never falls back to a shared or service identity.

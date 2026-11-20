@@ -21,7 +21,7 @@ Idempotency-Key: <client-chosen ULID>        (on POSTs that create actions)
 
 ## DESCRIPTION
 
-Each tenant's cell serves its own API at its own hostname. There is no shared, multi-tenant API endpoint for content.
+Each tenant's cell serves its own API at its own hostname. There is no shared, multi-tenant API endpoint for content. The same host serves the web UI (SB-307) on `GET /` and every path outside `/v1`, so the browser app can route; an API path is never answered by the UI.
 
 ### Authentication
 
@@ -50,7 +50,7 @@ Messages are safe to show to the user. They never include the titles or content 
 
 ### Spaces
 
-Every request is in one space or company-wide (sb-spaces(7)). A request names its space with the query parameter `space`, for example `GET /v1/answers?space=finance`. Without it, or with `space=company`, the request is company-wide. A space the cell doesn't hold, or one the asker isn't a member of, is `ESPACE` (403), never a company-wide request instead. A space name is never read from a body or a header, so one request can't name two spaces.
+Every request is in one space or company-wide (sb-spaces(7)). A request names its space with the query parameter `space`, for example `POST /v1/ask?space=finance`. Without it, or with `space=company`, the request is company-wide. A space the cell doesn't hold, or one the asker isn't a member of, is `ESPACE` (403), never a company-wide request instead. A space name is never read from a body or a header, so one request can't name two spaces.
 
 ### Idempotency
 

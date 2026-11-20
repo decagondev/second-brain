@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.4 The manual and the code agree (SB-1404)
+
+**Wave/slice:** W13 / S13.4 · **Status:** Done
+
+**What:** `tools/check/manual_code.py` in `make lint`; six manual drifts fixed (sb-api(3), sb-ask(3), sb(1)); CLAUDE.md's state section cut to a summary.
+
+**Why this way:** The manual is the spec (P2), so the check runs both ways: code the manual doesn't describe is unspecified behaviour, and a manual promise the code doesn't keep is a broken spec. Not-built endpoints have a named place to wait, with their ticket, so a gap is a decision rather than an accident.
+
+**Learned:** Every drift found was in a place no law watches: an example request, a UI route, a chat webhook, a synopsis line.
+
+**Laws:** LAW-16 (the manual as the spec of the manifest-driven cell) gains a static check.
+
+**Next:** S13.5, coverage gaps (SB-1405).
+
 ## 2026-11-20 S13.3 Stricter lint and tidier files (SB-1403)
 
 **Wave/slice:** W13 / S13.3 · **Status:** Done

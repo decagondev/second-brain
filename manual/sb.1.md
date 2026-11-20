@@ -23,7 +23,7 @@ sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
 sb release status|promote|rollback       (maintainers)
-sb factory status|handoff|access|detach  (factory operators and tenant owners, sb-factory(1))
+sb factory status|handoff|access|detach|verify-export  (factory operators and tenant owners, sb-factory(1))
 sb eval    run|diff SUITE
 sb version
 ```
