@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-space(1) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a class="current" href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-SPACE(1)</span><span>Second Brain Manual</span><span>SB-SPACE(1)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-space1">sb-space(1)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-space — start a department space from the template catalogue</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">sb space init FILE --template NAME --members GROUP[,GROUP…] [--name NAME] [--stewards GROUP[,GROUP…]]
+sb space templates
+sb space diff FILE --idp-snapshot SNAPSHOT [--json]
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p><strong>init</strong> adds one space to the manifest <code>FILE</code>, filled in from a template of the catalogue (sb-departments(7)), and writes the file back only if the result passes every rule of <code>sb tenant check</code> (sb-space(5)). It changes nothing else in the file: comments and the order of the other fields stay as they are. The new space is added under an existing block-style <code>spaces:</code> key, or a new <code>spaces:</code> key is added at the end.</p>
+<p>The space is named <code>--name</code>, or the template's name. Its <code>members</code> and <code>stewards</code> are the groups given. Its <code>scope</code> comes from the template's default sources that the manifest has connectors for: <code>docs</code> gets <code>["/Title/**"]</code>, <code>chat</code> gets <code>["#name-*"]</code>, <code>tickets</code> gets the name in capitals, and <code>code</code>, <code>hris</code>, <code>accounting</code> and <code>crm</code> get <code>["*"]</code>, where Title and name are the space's name. A template whose sources the manifest has no connector for is an error that names the connector to add. A restricted template needs <code>--stewards</code>, as a restricted space does.</p>
+<p>The label, agents and retention are left out of the entry, so they keep coming from the template; set them in the manifest to override them. Then review the new scope patterns, which are only a starting point, and run <code>sb tenant apply FILE --plan</code>.</p>
+<p><strong>templates</strong> prints the catalogue this release ships: each template's name, label, default sources, default agents and eval suite.</p>
+<p><strong>diff</strong> previews a reorg before the IdP changes (SB-1206). <code>SNAPSHOT</code> is a JSON file of the people a reorg moves, with their groups before and after:</p>
+<pre><code class="language-json">{&quot;version&quot;: 1, &quot;people&quot;: [
+  {&quot;user&quot;: &quot;ana@acme.example&quot;, &quot;before&quot;: [&quot;group:finance&quot;], &quot;after&quot;: [&quot;group:finance&quot;, &quot;group:deal-team&quot;]},
+  {&quot;user&quot;: &quot;bo@acme.example&quot;,  &quot;before&quot;: [&quot;group:eng&quot;],     &quot;after&quot;: []}
+]}
+</code></pre>
+<p>Unknown fields, a version other than 1, a person listed twice, an empty <code>user</code>, or a group not in <code>group:NAME</code> form are errors. For each person, <code>diff</code> lists the spaces of manifest <code>FILE</code> they could use before and after (a person can use a space when one of their groups is one of its <code>members</code>), and prints the spaces they <strong>gain</strong> and <strong>lose</strong>. It flags:</p>
+<ul>
+<li><code>loses-all</code>: a person who could use at least one space before and none after;</li>
+<li><code>gains-restricted</code>: a person who gains a space whose label is <code>restricted</code> (the template's, unless the manifest sets one);</li>
+<li><code>barrier</code>: a person whose groups after the reorg sit on both sides of one of the manifest's <code>barriers</code>, so the barrier would wall them off from themselves.</li>
+</ul>
+<p>People whose spaces don't change are counted, not listed. <code>diff</code> reads only its two files: it needs no cell, no network and no credentials, and it writes nothing and changes nothing (LAW-16: the change happens only when the IdP and the manifest change). <code>--json</code> prints <code>{"people": [{"user", "gains", "loses", "flags"}], "unchanged": N}</code>.</p>
+<p>The catalogue is data, <code>internal/core/manifest/catalogue.json</code>, and every release bundle pins its hash (sb-release(7)), so two cells on the same release read the same templates.</p>
+<h2 id="options">OPTIONS</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--template NAME</code></td>
+<td>One of the catalogue's templates, or <code>custom</code></td>
+</tr>
+<tr>
+<td><code>--members GROUP,…</code></td>
+<td>The space's member groups, <code>group:NAME</code> each</td>
+</tr>
+<tr>
+<td><code>--name NAME</code></td>
+<td>The space's name; default the template's</td>
+</tr>
+<tr>
+<td><code>--stewards GROUP,…</code></td>
+<td>The space's stewards; required for a restricted template</td>
+</tr>
+<tr>
+<td><code>--idp-snapshot FILE</code></td>
+<td>diff: the reorg's people, with their groups before and after</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>diff: machine-readable output</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exit-status">EXIT STATUS</h2>
+<p>0 when the space was added, or <code>diff</code> ran (flags are output, not failures). 1 with <code>EMANIFEST</code> for a manifest <code>diff</code> can't read. 2 with <code>EUSAGE</code> for a snapshot that breaks its format. 1 with <code>EMANIFEST</code> when the manifest, before or after, fails <code>sb tenant check</code>, or the space already exists. 2 with <code>EUSAGE</code> for a missing or bad option, or an unknown template.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-16">LAW-16</a>: the space exists only once it is in the manifest and applied.</p>
+<h2 id="examples">EXAMPLES</h2>
+<pre><code class="language-text">$ sb space init acme.yaml --template people --members group:people-team --stewards group:people-leads
+space people added to acme.yaml (template people, label restricted)
+$ sb tenant apply acme.yaml --plan
++ space people (template people, label restricted, members group:people-team, stewards group:people-leads, agents ask, retention 365, scope docs /People/**)
+plan: 1 to add, 0 to change, 0 to remove
+</code></pre>
+<pre><code class="language-text">$ sb space diff acme.yaml --idp-snapshot reorg-q1.json
+ana@acme.example  gains people  loses -  [gains-restricted]
+bo@acme.example  gains -  loses engineering  [loses-all]
+1 unchanged
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-departments.7.html">sb-departments(7)</a>, <a href="sb-tenant.1.html">sb-tenant(1)</a>, <a href="sb.1.html">sb(1)</a></p><p class="srcline">Source: <code>manual/sb-space.1.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#options">OPTIONS</a></li><li class="l2"><a href="#exit-status">EXIT STATUS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

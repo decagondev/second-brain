@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,25 @@
 <p>Spaces are configuration; the manifest stays the truth.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>The parser accepts <code>spaces:</code> and <code>barriers:</code> exactly as <code>sb-space(5)</code> says, with line-precise errors</li>
-<li class="task"><span class="box"></span>Rules: unknown template, member or steward groups not in <code>group:</code> form, a scope naming a connector the tenant lacks, and a restricted space with no steward are all errors</li>
-<li class="task"><span class="box"></span><code>sb tenant apply --plan</code> shows space changes</li>
+<li class="task done"><span class="box">✓</span>The parser accepts <code>spaces:</code> and <code>barriers:</code> exactly as <code>sb-space(5)</code> says, with line-precise errors</li>
+<li class="task done"><span class="box">✓</span>Rules: unknown template, member or steward groups not in <code>group:</code> form, a scope naming a connector the tenant lacks, and a restricted space with no steward are all errors</li>
+<li class="task done"><span class="box">✓</span><code>sb tenant apply --plan</code> shows space changes</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Schema and parser</li>
-<li class="task"><span class="box"></span>Validation rules</li>
-<li class="task"><span class="box"></span>Plan output</li>
-<li class="task"><span class="box"></span>Examples in <code>examples/tenants</code></li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-16</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Schema and parser</li>
+<li class="task done"><span class="box">✓</span>Validation rules</li>
+<li class="task done"><span class="box">✓</span>Plan output</li>
+<li class="task done"><span class="box">✓</span>Examples in <code>examples/tenants</code></li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-16</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S10.1a): sb-space(5) is no longer a draft: it gained rules 7 to 9 (group form and duplicates, a restricted space needs stewards, a space's agents must be enabled), the template defaults, and the apply refusal. sb-tenant(5), sb-tenant(1) (the <code>space</code> and <code>barrier</code> plan lines), sb-spaces(7) and sb-onboarding(7) changed with it. <code>manifest.Check</code> parses both blocks with line-precise errors for every rule, fills each space's label, agents and retention from its template (<code>manifest.Templates</code>, the sb-departments(7) catalogue), and <code>Format</code> writes them back; the published JSON Schema has both. <code>plan.Desired</code> lists each space and barrier, so <code>apply --plan</code> shows them. <code>apply.Run</code> refuses a manifest with either block, before any write, with <code>ENOTIMPL</code> naming SB-1006, so a company never runs believing a space protects what nothing enforces yet. <code>examples/tenants/spaces.yaml</code> passes check, round-trips, plans, and is refused by apply in the smoke test. The SB-801 law test that refused spaces became <code>TestLAW16_SpacesAreExactlyAsDeclared</code>: every declared space and barrier is in the checked tenant and the plan, exactly as written, and none other; the parser that drops spaces is still caught.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E10-department-spaces/SB-1001-spaces-in-the-manifest-and-sb-tenant-check.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

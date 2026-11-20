@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,24 @@
 <p>A few departments have one job that a plain ask does badly.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Read-only agents pinned in the bundle: <code>incident-summary</code> (Engineering), <code>spec-digest</code> (Product), <code>close-checklist</code> (Finance), <code>runbook-answer</code> (IT)</li>
-<li class="task"><span class="box"></span>Each agent runs only in its template's spaces and cites every claim</li>
-<li class="task"><span class="box"></span>Each has an eval suite</li>
+<li class="task done"><span class="box">✓</span>Read-only agents pinned in the bundle: <code>incident-summary</code> (Engineering), <code>spec-digest</code> (Product), <code>close-checklist</code> (Finance), <code>runbook-answer</code> (IT)</li>
+<li class="task done"><span class="box">✓</span>Each agent runs only in its template's spaces and cites every claim</li>
+<li class="task done"><span class="box">✓</span>Each has an eval suite</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Agent definitions</li>
-<li class="task"><span class="box"></span>Space binding</li>
-<li class="task"><span class="box"></span>Eval suites</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-09, LAW-14</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Agent definitions</li>
+<li class="task done"><span class="box">✓</span>Space binding</li>
+<li class="task done"><span class="box">✓</span>Eval suites</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-09, LAW-14</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S11.1b): sb-agents(7) gained "Department agents" and four rows; sb-ask(3) the <code>agent</code> field, <code>agent</code> and <code>dropped</code> in the response and the agent <code>EINVAL</code>; sb-space(5) rule 11; sb-tenant(5), sb-eval(5) and sb-evals(7) changed with them. The four prompts are bundled (<code>internal/core/prompts/set/</code>, so the release pins their hashes), and <code>ask.Departments</code> binds each to its template with no tools. The ask agent runs one only when the manifest enables it, the ask is in a space of its template that lists it, its kill switch is clear and the kernel permits <code>use_agent</code> (a new base permit for the four, enabled and not consequential); otherwise <code>EINVAL</code> before retrieval. It composes with its own prompt and drops every uncited claim, counting them. The manifest knows the four agents and refuses another department's agent in a space. The local eval cell takes a case's <code>agent</code>, a world's <code>agents</code> and a space's <code>template</code> and <code>agents</code>, and an <code>error</code> expectation; four suites, <code>agent-*.yaml</code>, pass and are in the gate. Law tests: <code>TestLAW14_DepartmentAgentsCiteEveryClaimInTheirOwnSpaces</code> (the real ask path with a model that spoofs and leaves claims uncited; an agent that keeps uncited claims, and one that ignores the template, are caught) and <code>TestLAW09_DepartmentAgentsCantAct</code> (a department agent with a tool is caught).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E11-department-templates/SB-1102-department-agents.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

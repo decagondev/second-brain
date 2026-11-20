@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,26 @@
 <p>A cell needs to run somewhere real; Cloud Run gives a managed runtime without Kubernetes (ADR-0011).</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>api</code>, <code>ingest</code> and <code>web</code> services and the job runner deploy into the cell's project, each with its own service account and least privilege</li>
-<li class="task"><span class="box"></span>Only images the release controller verified are admitted (Binary Authorization), and an unsigned image is refused (LAW-06)</li>
-<li class="task"><span class="box"></span>The deploy is pulled by the cell, never pushed by the factory (ADR-0015)</li>
+<li class="task"><span class="box"></span><code>api</code>, <code>ingest</code> and <code>web</code> services and the job runner deploy into the cell's project, each with its own service account and least privilege (against the recorded fake; granting the roles in a real project is SB-903)</li>
+<li class="task done"><span class="box">✓</span>Only images the release controller verified are admitted (Binary Authorization), and an unsigned image is refused (LAW-06)</li>
+<li class="task done"><span class="box">✓</span>The deploy is pulled by the cell, never pushed by the factory (ADR-0015)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span><code>sb-runtime(7)</code> first</li>
-<li class="task"><span class="box"></span>Runtime port and Cloud Run adapter</li>
-<li class="task"><span class="box"></span>Admission policy</li>
-<li class="task"><span class="box"></span>Contract test against a recorded fake</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-02, LAW-06</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span><code>sb-runtime(7)</code> first</li>
+<li class="task done"><span class="box">✓</span>Runtime port and Cloud Run adapter</li>
+<li class="task done"><span class="box">✓</span>Admission policy</li>
+<li class="task done"><span class="box">✓</span>Contract test against a recorded fake</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-02, LAW-06</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S9.1a): the new man page <code>sb-runtime(7)</code> has the services, their accounts and roles, the pulled update, and Binary Authorization as a second guard. It also drafts the SB-902 data section. <code>internal/core/runtime</code> has the services and the <code>Updater</code>, which reads the channel's target release, admits it with the four checks of sb-release(7), and changes nothing if it fails. It then attests each image and deploys every service by digest, never by tag, labelled with the release id. <code>gcp.CloudRun</code> is the <code>Deployer</code> over the Cloud Run Admin v2 and Container Analysis APIs, and <code>gcp.ServiceRoles</code> and <code>gcp.UpdaterPermissions</code> define the accounts' rights. The GCP fake now runs Cloud Run services and jobs with a Binary Authorization policy: only images the project attested, and only service accounts from the same project. The new law test <code>TestLAW06_CellsRunOnlyAdmittedImages</code> deploys random signed, unsigned and ungated releases and shows services only ever run admitted images, and that a sideloaded image is refused. A self-test catches an updater that skips admission. <code>TestLAW02_RuntimeStaysInItsProject</code> shows every account is the cell's own and that one cell's updater can't deploy into another's project. Building the law world surfaced BUG-0013: the law tests' release stores leaked into <code>/tmp</code> until its inodes ran out. They are now removed when the tests end.</p>
+<p><strong>Left:</strong> deploying into a real GCP project (SB-903).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E09-gcp-runtime/SB-901-cloud-run-services-per-cell.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,25 @@
 <p>SOX and SOC 2 expect owners to re-certify who has access; the brain should make that a ten-minute job.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Each quarter a steward gets the member list of each restricted space with last-use dates</li>
-<li class="task"><span class="box"></span>Certify or remove per member; removals become a manifest or IdP change request</li>
-<li class="task"><span class="box"></span>An uncertified review after 14 days alerts the tenant operator; the evidence export is audit-ready</li>
+<li class="task done"><span class="box">✓</span>Each quarter a steward gets the member list of each restricted space with last-use dates</li>
+<li class="task done"><span class="box">✓</span>Certify or remove per member; removals become a manifest or IdP change request</li>
+<li class="task done"><span class="box">✓</span>An uncertified review after 14 days alerts the tenant operator; the evidence export is audit-ready</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Review job</li>
-<li class="task"><span class="box"></span>Console view</li>
-<li class="task"><span class="box"></span>Evidence export</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-16</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Review job</li>
+<li class="task"><span class="box"></span>Console view (the API is built; the console's screens are left)</li>
+<li class="task done"><span class="box">✓</span>Evidence export</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-16</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S12.1b): sb-spaces(7) gained "Access reviews, exactly", sb-admin(3) four endpoints, sb-runtime(7) the quarterly <code>review</code> job and sb-observability(7) the overdue alert; the schema and base policy gained <code>review_space</code> for a space's stewards. <code>internal/core/reviews</code> opens one review per restricted space per quarter, listing each person in its member groups once with the groups that give the access and their last use from the audit trail, and opens none if a group can't be read; <code>Decide</code> refuses a decision on your own access, a removal without a reason, and a second decision; <code>Requests</code> turns a complete review's removals into a manifest change for groups in <code>groups:</code> and IdP requests for the rest; <code>Overdue</code> is open 14 days; <code>Watch</code> sets <code>sb_access_review_overdue{space}</code> and raises a Sev-2 <code>review_overdue</code> alert; <code>Evidence</code> is the review with its SHA-256, each decision pointing at its <code>kind: access</code> audit row. <code>api.Reviews</code> serves it, and the manifest change goes to the operator as a proposal approved by hash (SB-1201), so a review never changes access by itself. The new law test <code>TestLAW16_AccessReviews</code> drives the real handler and policies; a review reading only the first member group, an alert a day late, and removals that vanish are caught, and the test fails if no removal ever became a proposal.</p>
+<p><strong>Left:</strong> the console's review screens, and wiring the job and endpoints into a running cell (the cell runtime).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E12-space-governance/SB-1202-quarterly-access-reviews.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a class="current" href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a class="current" href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-POLICY(5)</span><span>Second Brain Manual</span><span>SB-POLICY(5)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-policy5">sb-policy(5)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-policy — platform and tenant authorisation policies, written in Cedar</p>
@@ -39,7 +39,7 @@ tenants/&lt;tenant&gt;/policy/*.cedar    tenant policies (next to the manifest)
 <tbody>
 <tr>
 <td><code>User</code></td>
-<td><code>tenant</code>; member of its <code>Group</code>s</td>
+<td><code>tenant</code>; member of its <code>Group</code>s; and, when the directory has them, <code>department</code>, <code>division</code>, <code>cost_center</code>, <code>title</code> and <code>manager</code> (a user id), read at each request (SB-1205). Each is optional: a rule that uses one tests <code>has</code> first, and a missing one never matches</td>
 </tr>
 <tr>
 <td><code>Group</code></td>
@@ -114,14 +114,144 @@ tenants/&lt;tenant&gt;/policy/*.cedar    tenant policies (next to the manifest)
 <li><strong>Custody records always name their tenant.</strong> The kernel normally fills an empty resource <code>tenant</code> from the caller's scope. For <code>CellCustody</code> it doesn't: an empty <code>tenant</code> is <code>Unknown</code>, which refuses. Otherwise a tenant with its own group called <code>sb-factory-operators</code> could act on a custody record it built itself.</li>
 <li><strong>Factory actions are control-plane calls.</strong> They go through the policy kernel, so every decision is recorded before it is returned (LAW-04), and each step of a hand-off is also a <code>kind: custody</code> audit row (sb-factory(1)).</li>
 </ul>
+<h3 id="spaces-labels-and-barriers-sb-802-built-in-sb-1004">Spaces, labels and barriers (SB-802, built in SB-1004)</h3>
+<p>Schema v2 (<code>policy/schema.cedarschema</code>) carries spaces as facts the kernel sets, not as new entities, so a rule can never look a space up for itself:</p>
+<table>
+<thead>
+<tr>
+<th>Where</th>
+<th>Attribute</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Chunk</code></td>
+<td><code>label</code> (String, optional)</td>
+<td>the chunk's label: <code>public</code>, <code>internal</code>, <code>confidential</code> or <code>restricted</code> (sb-spaces(7))</td>
+</tr>
+<tr>
+<td><code>Chunk</code></td>
+<td><code>spaces</code> (Set of String, optional)</td>
+<td>the ids (<code>spc_NAME</code>) of the spaces that hold its document</td>
+</tr>
+<tr>
+<td><code>read</code> context</td>
+<td><code>space</code> (String, optional)</td>
+<td>the space asked in, or <code>company</code></td>
+</tr>
+<tr>
+<td><code>read</code> context</td>
+<td><code>member_spaces</code> (Set of String, optional)</td>
+<td>the spaces the asker is a member of, from the directory now</td>
+</tr>
+<tr>
+<td><code>read</code> context</td>
+<td><code>barred_spaces</code> (Set of String, optional)</td>
+<td>the spaces held across a barrier from the asker, from the manifest's barriers</td>
+</tr>
+<tr>
+<td><code>Chunk</code></td>
+<td><code>owners</code> (Set of String, optional)</td>
+<td>the groups (<code>group:NAME</code>) of the person who owns its document at the source, from the directory now; empty for a document with no owner (SB-1203)</td>
+</tr>
+<tr>
+<td><code>read</code>, <code>call_tool</code>, <code>propose</code>, <code>approve</code> context</td>
+<td><code>barred_groups</code> (Set of String, optional)</td>
+<td>the groups across a barrier from the asker (<code>group:NAME</code>)</td>
+</tr>
+<tr>
+<td><code>call_tool</code>, <code>propose</code> context</td>
+<td><code>barred_spaces</code>, <code>target_spaces</code>, <code>target_owners</code> (Sets of String, optional)</td>
+<td>the spaces across a barrier from the requester, and the spaces holding and groups owning the action's target item</td>
+</tr>
+<tr>
+<td><code>approve</code> context</td>
+<td><code>requester_groups</code> (Set of String, optional)</td>
+<td>the requester's groups (<code>group:NAME</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>In a cell without spaces the kernel sets none of them, and the space rules don't apply. In a cell with spaces it sets all of them; <code>spaces.ReadContext</code> and <code>spaces.ChunkAttrs</code> build them. The rules are <code>policy/platform/spaces.cedar</code>:</p>
+<pre><code class="language-cedar">// A cell with spaces gives every fact, or the read is refused.
+forbid (principal, action == Action::&quot;read&quot;, resource is Chunk)
+when {
+  context has space &amp;&amp;
+  !(context has member_spaces &amp;&amp; context has barred_spaces &amp;&amp; context has barred_groups &amp;&amp;
+    resource has label &amp;&amp; resource has spaces &amp;&amp; resource has owners)
+};
+
+// An ask in a space reads only what that space holds, and only for its members.
+forbid (principal, action == Action::&quot;read&quot;, resource is Chunk)
+when {
+  context has space &amp;&amp; context has member_spaces &amp;&amp; resource has spaces &amp;&amp;
+  context.space != &quot;company&quot; &amp;&amp;
+  !(resource.spaces.contains(context.space) &amp;&amp; context.member_spaces.contains(context.space))
+};
+
+// Only public and internal reach people outside the spaces that hold a chunk.
+forbid (principal, action == Action::&quot;read&quot;, resource is Chunk)
+when {
+  context has space &amp;&amp; context has member_spaces &amp;&amp; resource has label &amp;&amp; resource has spaces &amp;&amp;
+  !(resource.label == &quot;public&quot; || resource.label == &quot;internal&quot;) &amp;&amp;
+  !resource.spaces.containsAny(context.member_spaces)
+};
+
+// Nothing held by a space across a barrier from the asker.
+forbid (principal, action == Action::&quot;read&quot;, resource is Chunk)
+when {
+  context has barred_spaces &amp;&amp; resource has spaces &amp;&amp;
+  resource.spaces.containsAny(context.barred_spaces)
+};
+
+// Nothing owned at the source by someone across a barrier (SB-1203).
+forbid (principal, action == Action::&quot;read&quot;, resource is Chunk)
+when { context has barred_groups &amp;&amp; resource has owners &amp;&amp; resource.owners.containsAny(context.barred_groups) };
+
+// No tool call or proposal on an item across a barrier; a target that can't be placed refuses.
+forbid (principal, action in [Action::&quot;call_tool&quot;, Action::&quot;propose&quot;], resource)
+when {
+  context has barred_groups &amp;&amp;
+  !(context has barred_spaces &amp;&amp; context has target_spaces &amp;&amp; context has target_owners)
+};
+
+forbid (principal, action in [Action::&quot;call_tool&quot;, Action::&quot;propose&quot;], resource)
+when {
+  context has barred_spaces &amp;&amp; context has target_spaces &amp;&amp;
+  context.target_spaces.containsAny(context.barred_spaces)
+};
+
+forbid (principal, action in [Action::&quot;call_tool&quot;, Action::&quot;propose&quot;], resource)
+when {
+  context has barred_groups &amp;&amp; context has target_owners &amp;&amp;
+  context.target_owners.containsAny(context.barred_groups)
+};
+
+// Nobody approves for a requester across a barrier.
+forbid (principal, action == Action::&quot;approve&quot;, resource is ProposedAction)
+when { context has barred_groups &amp;&amp; !(context has requester_groups) };
+
+forbid (principal, action == Action::&quot;approve&quot;, resource is ProposedAction)
+when {
+  context has barred_groups &amp;&amp; context has requester_groups &amp;&amp;
+  context.requester_groups.containsAny(context.barred_groups)
+};
+</code></pre>
+<p>The rules every space policy is held to:</p>
+<ol>
+<li><strong>A space policy can only forbid.</strong> No file but <code>policy/platform/base.cedar</code> may <code>permit</code> <code>read</code>, and a <code>permit</code> with an unconstrained action counts as one. Space and label rules are <code>forbid</code>s, so a space can never make a chunk usable that the base policy and the source don't allow (LAW-19). <code>tools/check/policy.py</code> enforces this for every policy, base and tenant.</li>
+<li><strong>Barriers come from the manifest</strong>: the kernel turns the manifest's barriers into <code>barred_spaces</code> and <code>barred_groups</code>, never a hand-written rule (<code>internal/core/barrier</code>).</li>
+<li><strong>A missing fact refuses.</strong> In a cell with spaces, a chunk with no <code>label</code>, <code>spaces</code> or <code>owners</code>, or a context with no <code>member_spaces</code>, <code>barred_spaces</code> or <code>barred_groups</code>, is refused by the first rule (LAW-03). A label that isn't one of the four is treated as <code>restricted</code>.</li>
+</ol>
 <h3 id="rules-ci-enforces">Rules CI enforces</h3>
 <ol>
 <li>Every file validates against the schema.</li>
 <li>Every <code>permit</code> has a <code>principal.tenant == resource.tenant</code> condition, or is in <code>policy/platform/</code> and carries one in its <code>when</code> (SB-112).</li>
 <li>Tenant policies can only <strong>narrow</strong> platform policy: they may add <code>forbid</code>s, and <code>permit</code>s only for <code>use_agent</code>, <code>propose</code> and <code>approve</code> within the tenant.</li>
 <li>A PR that changes policy shows the permission diff: which principals gained or lost which actions.</li>
+<li><strong>Narrowing (SB-1004).</strong> Only <code>base.cedar</code> may permit <code>read</code>, and over a matrix of space contexts, memberships, barriers, labels (including an unknown one and none) and holders, the whole policy set allows no read that <code>base.cedar</code>'s read permits alone don't (LAW-19).</li>
 </ol>
-<p><code>make policy</code> (part of <code>make check</code>) runs rules 1 to 3 with <code>tools/check/policy.py</code>. On a pull request, CI also runs <code>tools/check/policy.py --diff BASE</code>, which evaluates a fixed matrix of members, groups, actions and resources against the old and new policies and prints each permission gained (<code>+</code>) or lost (<code>-</code>).</p>
+<p><code>make policy</code> (part of <code>make check</code>) runs rules 1 to 3 and 5 with <code>tools/check/policy.py</code>. On a pull request, CI also runs <code>tools/check/policy.py --diff BASE</code>, which evaluates a fixed matrix of members, groups, actions and resources against the old and new policies and prints each permission gained (<code>+</code>) or lost (<code>-</code>).</p>
 <h2 id="examples">EXAMPLES</h2>
 <p>Platform base (shipped):</p>
 <pre><code class="language-cedar">permit (principal, action == Action::&quot;read&quot;, resource is Chunk)
@@ -142,7 +272,7 @@ when { resource.workflow == &quot;ticket-update&quot; &amp;&amp; principal.tenan
 <p><a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a>, <a href="sb-laws.7.html#law-15">LAW-15</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="../docs/architecture/02-policy-engine.html">02 Policy engine</a>, <a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008</a></p><p class="srcline">Source: <code>manual/sb-policy.5.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#entities">Entities</a></li><li class="l3"><a href="#actions">Actions</a></li><li class="l3"><a href="#factory-roles-exactly-sb-702">Factory roles, exactly (SB-702)</a></li><li class="l3"><a href="#rules-ci-enforces">Rules CI enforces</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#entities">Entities</a></li><li class="l3"><a href="#actions">Actions</a></li><li class="l3"><a href="#factory-roles-exactly-sb-702">Factory roles, exactly (SB-702)</a></li><li class="l3"><a href="#spaces-labels-and-barriers-sb-802-built-in-sb-1004">Spaces, labels and barriers (SB-802, built in SB-1004)</a></li><li class="l3"><a href="#rules-ci-enforces">Rules CI enforces</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a class="current" href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a href="../../examples/tenants/spaces.yaml.html">spaces.yaml</a><a class="current" href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
   <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / examples/tenants</div><h1 id="tenantschemajson">tenant.schema.json</h1>
 <pre><code class="language-json">{
   &quot;$id&quot;: &quot;https://example.com/second-brain/tenant.schema.json&quot;,
@@ -31,7 +31,11 @@
       &quot;items&quot;: {
         &quot;enum&quot;: [
           &quot;ask&quot;,
-          &quot;draft-reply&quot;
+          &quot;draft-reply&quot;,
+          &quot;incident-summary&quot;,
+          &quot;spec-digest&quot;,
+          &quot;close-checklist&quot;,
+          &quot;runbook-answer&quot;
         ]
       },
       &quot;type&quot;: &quot;array&quot;,
@@ -49,6 +53,21 @@
         ]
       },
       &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;barriers&quot;: {
+      &quot;description&quot;: &quot;Information barriers: pairs of groups that never meet (sb-space(5)).&quot;,
+      &quot;items&quot;: {
+        &quot;items&quot;: {
+          &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        },
+        &quot;maxItems&quot;: 2,
+        &quot;minItems&quot;: 2,
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;uniqueItems&quot;: true
+      },
+      &quot;maxItems&quot;: 20,
+      &quot;type&quot;: &quot;array&quot;
     },
     &quot;budget_usd_month&quot;: {
       &quot;default&quot;: 1000,
@@ -76,7 +95,37 @@
           &quot;docs&quot;,
           &quot;chat&quot;,
           &quot;tickets&quot;,
-          &quot;crm&quot;
+          &quot;crm&quot;,
+          &quot;code&quot;,
+          &quot;hris&quot;,
+          &quot;accounting&quot;
+        ]
+      },
+      &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;duties&quot;: {
+      &quot;additionalProperties&quot;: {
+        &quot;additionalProperties&quot;: false,
+        &quot;properties&quot;: {
+          &quot;above&quot;: {
+            &quot;minimum&quot;: 0,
+            &quot;type&quot;: &quot;integer&quot;
+          },
+          &quot;second&quot;: {
+            &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+            &quot;type&quot;: &quot;string&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;second&quot;,
+          &quot;above&quot;
+        ],
+        &quot;type&quot;: &quot;object&quot;
+      },
+      &quot;description&quot;: &quot;Segregation of duties per workflow: a second approver group above a threshold (sb-approvals(7)).&quot;,
+      &quot;propertyNames&quot;: {
+        &quot;enum&quot;: [
+          &quot;ticket-update&quot;
         ]
       },
       &quot;type&quot;: &quot;object&quot;
@@ -96,14 +145,33 @@
           &quot;docs&quot;,
           &quot;chat&quot;,
           &quot;tickets&quot;,
-          &quot;crm&quot;
+          &quot;crm&quot;,
+          &quot;code&quot;,
+          &quot;hris&quot;,
+          &quot;accounting&quot;
         ]
       },
       &quot;type&quot;: &quot;object&quot;
     },
+    &quot;groups&quot;: {
+      &quot;additionalProperties&quot;: {
+        &quot;items&quot;: {
+          &quot;pattern&quot;: &quot;^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        },
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;uniqueItems&quot;: true
+      },
+      &quot;description&quot;: &quot;Only with an identity-platform idp: group to member emails (SB-907).&quot;,
+      &quot;maxProperties&quot;: 200,
+      &quot;propertyNames&quot;: {
+        &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;
+      },
+      &quot;type&quot;: &quot;object&quot;
+    },
     &quot;idp&quot;: {
-      &quot;description&quot;: &quot;OIDC issuer: oidc://ISSUER-HOST[/path].&quot;,
-      &quot;pattern&quot;: &quot;^oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?$&quot;,
+      &quot;description&quot;: &quot;Identity provider: oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT.&quot;,
+      &quot;pattern&quot;: &quot;^(oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?|identity-platform://[a-z][a-z0-9-]{4,28}[a-z0-9]/[A-Za-z0-9-]{1,63})$&quot;,
       &quot;type&quot;: &quot;string&quot;
     },
     &quot;pilot_group&quot;: {
@@ -125,6 +193,129 @@
       &quot;maximum&quot;: 3650,
       &quot;minimum&quot;: 30,
       &quot;type&quot;: &quot;integer&quot;
+    },
+    &quot;spaces&quot;: {
+      &quot;additionalProperties&quot;: {
+        &quot;additionalProperties&quot;: false,
+        &quot;properties&quot;: {
+          &quot;agents&quot;: {
+            &quot;items&quot;: {
+              &quot;enum&quot;: [
+                &quot;ask&quot;,
+                &quot;draft-reply&quot;,
+                &quot;incident-summary&quot;,
+                &quot;spec-digest&quot;,
+                &quot;close-checklist&quot;,
+                &quot;runbook-answer&quot;
+              ]
+            },
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
+          },
+          &quot;channels&quot;: {
+            &quot;items&quot;: {
+              &quot;pattern&quot;: &quot;^#[a-z0-9][a-z0-9_-]{0,79}$&quot;,
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
+          },
+          &quot;fields&quot;: {
+            &quot;additionalProperties&quot;: {
+              &quot;items&quot;: {
+                &quot;pattern&quot;: &quot;^[a-z][a-z0-9_]*$&quot;,
+                &quot;type&quot;: &quot;string&quot;
+              },
+              &quot;type&quot;: &quot;array&quot;
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;label&quot;: {
+            &quot;enum&quot;: [
+              &quot;public&quot;,
+              &quot;internal&quot;,
+              &quot;confidential&quot;,
+              &quot;restricted&quot;
+            ]
+          },
+          &quot;members&quot;: {
+            &quot;items&quot;: {
+              &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;minItems&quot;: 1,
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
+          },
+          &quot;retention_days&quot;: {
+            &quot;maximum&quot;: 3650,
+            &quot;minimum&quot;: 30,
+            &quot;type&quot;: &quot;integer&quot;
+          },
+          &quot;scope&quot;: {
+            &quot;additionalProperties&quot;: {
+              &quot;items&quot;: {
+                &quot;minLength&quot;: 1,
+                &quot;type&quot;: &quot;string&quot;
+              },
+              &quot;minItems&quot;: 1,
+              &quot;type&quot;: &quot;array&quot;
+            },
+            &quot;minProperties&quot;: 1,
+            &quot;propertyNames&quot;: {
+              &quot;enum&quot;: [
+                &quot;docs&quot;,
+                &quot;chat&quot;,
+                &quot;tickets&quot;,
+                &quot;crm&quot;,
+                &quot;code&quot;,
+                &quot;hris&quot;,
+                &quot;accounting&quot;
+              ]
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;stewards&quot;: {
+            &quot;items&quot;: {
+              &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
+          },
+          &quot;template&quot;: {
+            &quot;enum&quot;: [
+              &quot;custom&quot;,
+              &quot;design&quot;,
+              &quot;engineering&quot;,
+              &quot;executive&quot;,
+              &quot;finance&quot;,
+              &quot;it-security&quot;,
+              &quot;legal&quot;,
+              &quot;marketing&quot;,
+              &quot;operations&quot;,
+              &quot;people&quot;,
+              &quot;product&quot;,
+              &quot;sales&quot;,
+              &quot;support&quot;
+            ]
+          }
+        },
+        &quot;required&quot;: [
+          &quot;members&quot;,
+          &quot;scope&quot;
+        ],
+        &quot;type&quot;: &quot;object&quot;
+      },
+      &quot;description&quot;: &quot;Department spaces (sb-space(5)); they only narrow access.&quot;,
+      &quot;maxProperties&quot;: 50,
+      &quot;propertyNames&quot;: {
+        &quot;not&quot;: {
+          &quot;const&quot;: &quot;company&quot;
+        },
+        &quot;pattern&quot;: &quot;^[a-z][a-z0-9-]{1,30}$&quot;
+      },
+      &quot;type&quot;: &quot;object&quot;
     },
     &quot;tenant&quot;: {
       &quot;description&quot;: &quot;Tenant name: a DNS label. Immutable.&quot;,

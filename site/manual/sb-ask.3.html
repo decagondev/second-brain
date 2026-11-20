@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a class="current" href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a class="current" href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-ASK(3)</span><span>Second Brain Manual</span><span>SB-ASK(3)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-ask3">sb-ask(3)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-ask — <code>POST /v1/ask</code>, <code>GET /v1/traces/{id}</code>, <code>POST /v1/feedback</code></p>
@@ -55,8 +55,15 @@
 <td>no</td>
 <td>Restrict to e.g. <code>["docs"]</code></td>
 </tr>
+<tr>
+<td><code>agent</code></td>
+<td>string</td>
+<td>no</td>
+<td><code>ask</code> (default), or a department agent in its own template's space: <code>incident-summary</code>, <code>spec-digest</code>, <code>close-checklist</code>, <code>runbook-answer</code> (sb-agents(7), Department agents)</td>
+</tr>
 </tbody>
 </table>
+<p>In a cell with spaces, the space to ask in is the query parameter <code>?space=NAME</code> (sb-api(3), Spaces), never a body field: <code>POST /v1/ask?space=finance</code>. Without it the ask is company-wide.</p>
 <h3 id="response-200">Response <code>200</code></h3>
 <pre><code class="language-json">{
   &quot;trace&quot;: &quot;tr_01JD3QB4…&quot;,
@@ -71,7 +78,9 @@
             &quot;title&quot;: &quot;Refund policy&quot;,
             &quot;span&quot;: [1840, 2615],
             &quot;url&quot;: &quot;https://…/refund-policy?version=17&quot;,
-            &quot;flags&quot;: []
+            &quot;flags&quot;: [],
+            &quot;spaces&quot;: [&quot;support&quot;],
+            &quot;label&quot;: &quot;internal&quot;
           }
         ]
       },
@@ -80,7 +89,9 @@
   },
   &quot;refused&quot;: 2,
   &quot;notice&quot;: null,
-  &quot;conversation&quot;: &quot;cv_01JD3QB9…&quot;
+  &quot;conversation&quot;: &quot;cv_01JD3QB9…&quot;,
+  &quot;agent&quot;: &quot;ask&quot;,
+  &quot;dropped&quot;: 0
 }
 </code></pre>
 <table>
@@ -115,15 +126,15 @@
 </table>
 <h3 id="how-the-ask-agent-runs-exactly">How the <code>ask</code> agent runs, exactly</h3>
 <ol>
-<li><strong>Validate.</strong> <code>question</code> must be 1 to 4,000 characters after trimming, and <code>sources</code> may name only <code>docs</code>, <code>chat</code>, <code>tickets</code> or <code>crm</code>. Unknown fields are ignored (sb-api(3), Versioning). Anything else is <code>EINVAL</code>.</li>
-<li><strong>Retrieve and check live</strong> as in sb-permissions(7). With <code>sources</code>, candidates of other kinds are dropped before the live check.</li>
+<li><strong>Validate.</strong> <code>question</code> must be 1 to 4,000 characters after trimming, and <code>sources</code> may name only <code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>, <code>code</code>, <code>hris</code> or <code>accounting</code>. Unknown fields are ignored (sb-api(3), Versioning). Anything else is <code>EINVAL</code>.</li>
+<li><strong>Retrieve and check live</strong> as in sb-permissions(7). With <code>sources</code>, candidates of other kinds are dropped before the live check. In a cell with spaces, every candidate first passes the space, label and barrier checks (sb-permissions(7), Spaces, labels and barriers) with the asker's read context; only the chunks they allow go into the live ACL batch, and the ACL still decides each of those. An ask in a space uses only what that space holds. A company-wide ask uses the union of the asker's spaces, plus <code>public</code> and <code>internal</code> content from spaces they aren't in; <code>confidential</code> and <code>restricted</code> content comes only from spaces they're a member of (SB-1006).</li>
 <li><strong>No allowed context:</strong> the model is <strong>not</strong> called. The answer is one uncited claim saying nothing the user can open answers this, with <code>notice</code> <code>no_access</code> if any candidate was refused, or <code>no_sources</code> if there were none.</li>
 <li><strong>Compose:</strong> the bundled <code>answer</code> prompt, the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as <code>citation_spoof</code> with the trace id and the label, never the claim text.</li>
 <li><strong>Notice:</strong> <code>most_uncited</code> when more than half the claims are uncited.</li>
 <li><strong>Trace:</strong> every answer gets a new trace id <code>tr_…</code>, returned in the body and in <code>X-SB-Trace</code>, and stored with the answer and its decision list for 30 days.</li>
 </ol>
 <p><strong>Conversations.</strong> A request without <code>conversation</code> starts one, and the response carries its <code>cv_…</code> id in <code>conversation</code>. A later turn sends only the user's <strong>earlier questions</strong> to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A <code>cv_…</code> id that isn't this user's is <code>EINVAL</code>, the same as one that doesn't exist.</p>
-<p><code>GET /v1/traces/{id}</code> returns the same answer plus the decision list (<code>cite</code>, <code>verdict</code>, <code>reason</code>, one per candidate document), for the user who asked and for auditors. Anyone else gets <code>EPERM</code>, the same as an unknown id. <code>reason</code> is one of <code>allowed</code>, <code>source_denied</code>, <code>source_unknown</code> or <code>policy_denied</code>.</p>
+<p><code>GET /v1/traces/{id}</code> returns the same answer plus the decision list (<code>cite</code>, <code>verdict</code>, <code>reason</code>, one per candidate document), for the user who asked and for auditors. Anyone else gets <code>EPERM</code>, the same as an unknown id. <code>reason</code> is one of <code>allowed</code>, <code>source_denied</code>, <code>source_unknown</code> or <code>policy_denied</code>, and in a cell with spaces <code>space_denied</code> (not held by the space asked in), <code>label_denied</code> (a <code>confidential</code> or <code>restricted</code> chunk held only by spaces the asker isn't in) or <code>barrier_denied</code>. The policy kernel makes every one of these decisions; the reason only explains it, and a refused document is never named in the answer.</p>
 <p><code>POST /v1/feedback</code> takes <code>{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }</code> (SB-310):</p>
 <table>
 <thead>
@@ -161,6 +172,7 @@
 </table>
 <p>Feedback is stored against the trace id with the release, and exported weekly (Monday 00:00 UTC, the previous seven days) as JSON lines for the pilot review. Each line holds the trace, release, rating, wrong citation, comment, time, and the answer's claim, uncited and refused counts, but never the question or the answer text. Reviewers who need those open the trace with auditor rights.</p>
 <h3 id="the-web-ui">The web UI</h3>
+<p>On GCP the web UI is served from a Firebase Hosting site in the cell's own project, which rewrites <code>/v1/</code> to that cell's <code>api</code> only (sb-runtime(7), Web UI hosting).</p>
 <p>The cell serves its web chat UI at <code>/</code> on the tenant's own hostname, from the release's built assets (SB-307). It calls only this cell's <code>/v1</code> API, with the session cookie, and loads nothing from anywhere else: the page is served with <code>Content-Security-Policy: default-src 'self'; frame-ancestors 'none'</code> and no third-party scripts, fonts or analytics.</p>
 <table>
 <thead>
@@ -191,19 +203,30 @@
 <td>"N sources were not shown because you can't open them", never their names</td>
 </tr>
 <tr>
+<td>Space switcher</td>
+<td>In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from <code>GET /v1/spaces</code>, and nothing else. The chosen space goes on the ask as <code>?space=</code>. Changing it starts a new conversation. A cell without spaces shows no switcher</td>
+</tr>
+<tr>
+<td>Space and label</td>
+<td>Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name</td>
+</tr>
+<tr>
 <td>Errors</td>
 <td>The error's <code>message</code> and <code>remedy</code>, with the trace id to quote to support</td>
 </tr>
 </tbody>
 </table>
 <p>The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an <code>aria-live</code> region, and every chip has an accessible name that includes the cite.</p>
-<p><code>cites[].url</code> is set when the source's connector can link to a version; it is omitted otherwise.</p>
+<p><code>cites[].url</code> is set when the source's connector can link to a version; it is omitted otherwise. <code>agent</code> names the agent that answered, and <code>dropped</code> counts the uncited claims a department agent left out, always 0 for <code>ask</code> (sb-agents(7), Department agents). In a cell with spaces, <code>cites[].spaces</code> names the spaces that hold the cited document and <code>cites[].label</code> its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).</p>
+<h3 id="spaces">Spaces</h3>
+<p><code>GET /v1/spaces</code> lists the spaces the asker is a member of, now, as <code>{"spaces": [{"name": "finance", "label": "restricted"}]}</code>, sorted by name. Spaces the asker isn't in are never listed, and a cell without spaces returns an empty list. A registry that can't answer is <code>EUNAVAIL</code>.</p>
 <h3 id="the-chat-app-slack">The chat app (Slack)</h3>
 <p>Staff can also ask from Slack with <code>/ask &lt;question&gt;</code> (SB-308). It is the same <code>ask</code> agent with the same laws. Only the entry point differs.</p>
 <ol>
 <li><strong>Verify.</strong> The cell checks Slack's request signature with the signing secret from <code>vault://tenants/TENANT/connectors/chat</code> and refuses any request older than 5 minutes. The <code>team_id</code> must be the tenant's workspace. Anything else gets HTTP 401 and no reply.</li>
 <li><strong>Map the person.</strong> The bot looks up the Slack user's email (<code>users.info</code>) and finds the <strong>one active</strong> directory user with that email (SCIM-provisioned, sb-identity(7)). No match, more than one match, or an inactive user gets an ephemeral reply saying the account can't be matched, and <strong>no answer</strong>. The bot never falls back to a shared or service identity.</li>
 <li><strong>Answer privately.</strong> Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's <code>response_url</code> (only <code>https://hooks.slack.com/</code>), also <strong>ephemeral</strong>, so only the asker sees it. Claims show as text with their citations as links (<code>&lt;url|cite&gt;</code>). Uncited claims start with <em>Uncited:</em>. The reply ends with the notice, the refused count and the trace id.</li>
+<li><strong>Spaces.</strong> In a cell with spaces, the channel the command was typed in picks the space: a space's <code>channels</code> in the manifest (sb-space(5)) list the channels that ask in it. A mapped channel asks in that space, and someone who isn't a member gets an ephemeral reply saying so and <strong>no answer</strong>, never a company-wide one. An unmapped channel, or a direct message, asks company-wide.</li>
 <li><strong>Share.</strong> A <em>Share in channel</em> button posts the question and the <strong>citation links only, never the claim text</strong>, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.</li>
 </ol>
 <p>Errors are ephemeral replies with the error's <code>message</code> and trace id. Slack scopes added for the bot: <code>commands</code> only. The bot uses no Slack write scopes, because replies go through <code>response_url</code>.</p>
@@ -219,6 +242,14 @@
 <tr>
 <td><code>EINVAL</code></td>
 <td>Missing or over-long <code>question</code>, an unknown <code>sources</code> kind, or a <code>conversation</code> that isn't the user's</td>
+</tr>
+<tr>
+<td><code>ESPACE</code></td>
+<td><code>?space=</code> names a space the cell doesn't hold or the asker isn't a member of (never asked company-wide instead)</td>
+</tr>
+<tr>
+<td><code>EINVAL</code> (agent)</td>
+<td>A department <code>agent</code> asked company-wide, in a space of another template, or not enabled by the manifest or the space</td>
 </tr>
 <tr>
 <td><code>EAUTH</code></td>
@@ -252,7 +283,7 @@
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-citations.7.html">sb-citations(7)</a>, <a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-api.3.html">sb-api(3)</a></p><p class="srcline">Source: <code>manual/sb-ask.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l3"><a href="#the-web-ui">The web UI</a></li><li class="l3"><a href="#the-chat-app-slack">The chat app (Slack)</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#request">Request</a></li><li class="l3"><a href="#response-200">Response 200</a></li><li class="l3"><a href="#how-the-ask-agent-runs-exactly">How the ask agent runs, exactly</a></li><li class="l3"><a href="#the-web-ui">The web UI</a></li><li class="l3"><a href="#spaces">Spaces</a></li><li class="l3"><a href="#the-chat-app-slack">The chat app (Slack)</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

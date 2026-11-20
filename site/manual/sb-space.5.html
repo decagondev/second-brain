@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-space(5) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a class="current" href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-SPACE(5)</span><span>Second Brain Manual</span><span>SB-SPACE(5)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-space5">sb-space(5)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-space — the <code>spaces:</code> and <code>barriers:</code> blocks of a tenant manifest</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-yaml">spaces:
+  engineering:
+    template: engineering
+    members: [group:eng]
+    scope:
+      docs: [&quot;/Engineering/**&quot;]
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>These blocks sit at the top level of a tenant manifest (<a href="sb-tenant.5.html">sb-tenant(5)</a>), next to <code>connectors</code> and <code>agents</code>. What a space means is in <a href="sb-spaces.7.html">sb-spaces(7)</a>. <code>sb tenant check</code> accepts both blocks and checks every rule below (SB-1001), and <code>sb tenant apply --plan</code> shows each space and barrier as its own line. <code>sb tenant apply</code> applies them like any other field since SB-1008, when the last part of the cell that has to enforce spaces (per-space kill switches and audit) was built; until then it refused them, so no cell ran with spaces only partly enforced. Both blocks are optional, and a manifest without them behaves exactly as today.</p>
+<h2 id="fields">FIELDS</h2>
+<h3 id="spaces"><code>spaces</code></h3>
+<p>A map from a space name to its definition. A space name is <code>[a-z][a-z0-9-]{1,30}</code>, unique in the manifest, and the name <code>company</code> is reserved for company-wide asks. At most 50 spaces.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Rules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>template</code></td>
+<td>string</td>
+<td>no</td>
+<td><code>custom</code></td>
+<td>One of the templates in <a href="sb-departments.7.html">sb-departments(7)</a>. It supplies the defaults below; any field set here wins</td>
+</tr>
+<tr>
+<td><code>members</code></td>
+<td>list of <code>group:NAME</code></td>
+<td>yes</td>
+<td></td>
+<td>At least one, each once. Groups come from the cell's directory (SCIM). An unknown group is an error at <code>apply</code>, never ignored</td>
+</tr>
+<tr>
+<td><code>stewards</code></td>
+<td>list of <code>group:NAME</code></td>
+<td>no</td>
+<td><code>[]</code></td>
+<td>May propose changes to this space (W12). Stewards aren't members unless listed in <code>members</code> too. A <code>restricted</code> space needs at least one</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>label</td>
+<td>no</td>
+<td>from the template</td>
+<td>The default label for documents in this space whose source carries none: <code>public</code>, <code>internal</code>, <code>confidential</code> or <code>restricted</code></td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td>map kind → list of patterns</td>
+<td>yes</td>
+<td></td>
+<td>Kinds are the manifest's connector kinds (<code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>, and from W11 <code>code</code>, <code>hris</code>, <code>accounting</code>). Every kind used must be in <code>connectors</code>. Patterns are as in <code>exclude</code> (sb-tenant(5)): <code>/Folder/**</code> for docs, <code>#name-*</code> for chat, a project or repository name for the others</td>
+</tr>
+<tr>
+<td><code>agents</code></td>
+<td>list</td>
+<td>no</td>
+<td>from the template</td>
+<td>A subset of the manifest's <code>agents</code>. An agent not listed in <code>agents</code> is an error</td>
+</tr>
+<tr>
+<td><code>retention_days</code></td>
+<td>int</td>
+<td>no</td>
+<td>the tenant's</td>
+<td>30 to the tenant's <code>retention_days</code>. A space can keep less, never more</td>
+</tr>
+<tr>
+<td><code>fields</code></td>
+<td>map kind → list of field names</td>
+<td>no</td>
+<td><code>{}</code></td>
+<td>For a structured source (sb-connector(3), Fields): the sensitive fields this space lets ingest index, for example <code>{ hris: [salary_band] }</code>. A document with one of them is <code>restricted</code>. Non-sensitive declared fields need no listing. Every kind used must be in the space's <code>scope</code></td>
+</tr>
+<tr>
+<td><code>channels</code></td>
+<td>list of <code>#name</code></td>
+<td>no</td>
+<td><code>[]</code></td>
+<td>The chat-app channels whose <code>/ask</code> asks in this space (sb-ask(3), The chat app). A channel belongs to at most one space</td>
+</tr>
+</tbody>
+</table>
+<h3 id="barriers"><code>barriers</code></h3>
+<p>A list of pairs of groups. Each pair is a barrier between the two groups, in both directions (sb-spaces(7), Information barriers). At most 20 barriers. A barrier covers reads (content held by a space across it, or owned at the source by someone across it), drafts, tool calls and proposals, and approvals (sb-permissions(7), Barriers beyond reads). The kernel turns these pairs into the facts the barrier forbids read; there is no barrier rule to write by hand.</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Each entry is a list of exactly two <code>group:NAME</code> values</td>
+<td><code>[group:deal-team-orion, group:everyone]</code></td>
+</tr>
+<tr>
+<td>The two groups are different</td>
+<td>a group can't be walled off from itself</td>
+</tr>
+<tr>
+<td>A pair appears once, in either order</td>
+<td>duplicates are errors</td>
+</tr>
+</tbody>
+</table>
+<h2 id="validation-rules">VALIDATION RULES</h2>
+<p>All of these are errors, reported with line and column like every manifest error (<a href="sb-tenant.5.html">sb-tenant(5)</a>, Validation rules):</p>
+<ol>
+<li>An unknown field in a space or a barrier.</li>
+<li>A space with no <code>members</code> or no <code>scope</code>, or a <code>scope</code> kind the manifest has no connector for.</li>
+<li>A label that isn't one of the four, or a template that isn't in <a href="sb-departments.7.html">sb-departments(7)</a>.</li>
+<li>A space whose <code>retention_days</code> is below 30 or above the tenant's.</li>
+<li>The space name <code>company</code>, or a name that breaks the pattern. More than 50 spaces, or more than 20 barriers.</li>
+<li>A barrier between two groups that are both members of one space. That space could never answer either side, so it is a mistake, not a policy.</li>
+<li>A member, steward or barrier group not in <code>group:NAME</code> form, or listed twice in one list.</li>
+<li>A space whose label is <code>restricted</code>, set or from its template, with no <code>stewards</code>. Someone has to own who can read it.</li>
+<li>An agent in a space that isn't in the manifest's <code>agents</code>.</li>
+<li>A channel that isn't <code>#name</code> (lower case letters, digits, <code>-</code> and <code>_</code>), or a channel listed in two spaces.</li>
+<li>A department agent (sb-agents(7)) in a space whose template doesn't list it, such as <code>close-checklist</code> in an <code>engineering</code> space.</li>
+<li>A <code>fields</code> kind that isn't in the space's <code>scope</code>, or a field name that isn't <code>[a-z][a-z0-9_]*</code>.</li>
+</ol>
+<p>A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always <code>ask</code>), and the retention (the template's, or else the tenant's, never more than the tenant's).</p>
+<h2 id="exit-status-errors">EXIT STATUS / ERRORS</h2>
+<p><code>sb tenant check</code> exits 1 with <code>EMANIFEST</code> on any rule above.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-16">LAW-16</a>: spaces and barriers are manifest only, and no space exists that the manifest doesn't declare. LAW-19 to LAW-22 (<a href="sb-spaces.7.html">sb-spaces(7)</a>).</p>
+<h2 id="examples">EXAMPLES</h2>
+<p>Engineering and Product share a spec folder; Finance is restricted; a deal team is walled off:</p>
+<pre><code class="language-yaml">spaces:
+  engineering:
+    template: engineering
+    members: [group:eng, group:product]
+    stewards: [group:eng-leads]
+    scope:
+      docs: [&quot;/Engineering/**&quot;, &quot;/Specs/**&quot;]
+      chat: [&quot;#eng-*&quot;]
+      tickets: [ENG, OPS]
+  product:
+    template: product
+    members: [group:product]
+    scope:
+      docs: [&quot;/Product/**&quot;, &quot;/Specs/**&quot;]
+  finance:
+    template: finance
+    members: [group:finance]
+    stewards: [group:finance-leads]
+    label: restricted
+    retention_days: 365
+    scope:
+      docs: [&quot;/Finance/**&quot;]
+barriers:
+  - [group:deal-team-orion, group:everyone]
+</code></pre>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-spaces.7.html">sb-spaces(7)</a>, <a href="sb-space.1.html">sb-space(1)</a>, <a href="sb-departments.7.html">sb-departments(7)</a>, <a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-tenant.1.html">sb-tenant(1)</a></p><p class="srcline">Source: <code>manual/sb-space.5.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l3"><a href="#spaces">spaces</a></li><li class="l3"><a href="#barriers">barriers</a></li><li class="l2"><a href="#validation-rules">VALIDATION RULES</a></li><li class="l2"><a href="#exit-status-errors">EXIT STATUS / ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

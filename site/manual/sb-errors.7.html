@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a class="current" href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a class="current" href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-ERRORS(7)</span><span>Second Brain Manual</span><span>SB-ERRORS(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-errors7">sb-errors(7)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-errors — the error registry, shared by the CLI, API and UI</p>
@@ -73,6 +73,27 @@
 <td>Use the cell for your own tenant</td>
 </tr>
 <tr>
+<td><code>ESPACE</code></td>
+<td>403</td>
+<td>3</td>
+<td>Asked in a space the asker isn't a member of</td>
+<td>Ask the space's stewards for membership, or ask company-wide</td>
+</tr>
+<tr>
+<td><code>ELABEL</code></td>
+<td>403</td>
+<td>3</td>
+<td>A chunk's label isn't allowed for this asker (a refusal reason, never shown with the chunk)</td>
+<td>Nothing to do as a user; operators see it in refusals</td>
+</tr>
+<tr>
+<td><code>EBARRIER</code></td>
+<td>403</td>
+<td>3</td>
+<td>An information barrier separates the asker from a chunk's space (a refusal reason)</td>
+<td>Nothing to do as a user; barriers are set in the manifest</td>
+</tr>
+<tr>
 <td><code>ENOTSUP</code></td>
 <td>501</td>
 <td>2</td>
@@ -99,6 +120,13 @@
 <td>1</td>
 <td>Live config differs from the applied manifest</td>
 <td>Re-apply the manifest; investigate the change</td>
+</tr>
+<tr>
+<td><code>EHOLD</code></td>
+<td>409</td>
+<td>1</td>
+<td>A legal hold covers what would be deleted</td>
+<td>Ask a Legal steward; deletion waits for the hold's release</td>
 </tr>
 <tr>
 <td><code>ELAW</code></td>
@@ -168,6 +196,7 @@
 <h2 id="notes">NOTES</h2>
 <ul>
 <li><code>EPERM</code> deliberately covers deny <strong>and</strong> unknown. Telling a user "unknown" invites retry games, and telling them "deny" may leak that a document exists. Operators see the breakdown in <code>/v1/admin/refusals</code>.</li>
+<li><code>ELABEL</code> and <code>EBARRIER</code> follow the same rule as <code>EPERM</code>: they are reasons in traces and refusal counts, and a user is never told which chunk a label or barrier refused (sb-permissions(7), Spaces, labels and barriers).</li>
 <li>A refused source inside an answer is not an error; it's reported through <code>refused</code> and <code>notice</code> (<a href="sb-ask.3.html">sb-ask(3)</a>).</li>
 </ul>
 <h2 id="see-also">SEE ALSO</h2>

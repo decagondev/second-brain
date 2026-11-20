@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,24 @@
 <p>When someone changes team, their access should change with them, quickly.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>SCIM enterprise attributes (<code>department</code>, <code>division</code>, <code>costCenter</code>, <code>manager</code>) and title level are stored and passed to Cedar</li>
-<li class="task"><span class="box"></span>Leaving a space's group revokes that space within 5 minutes on a fake clock; joining grants only after the cell confirms the membership</li>
-<li class="task"><span class="box"></span>LAW-21 green</li>
+<li class="task done"><span class="box">✓</span>SCIM enterprise attributes (<code>department</code>, <code>division</code>, <code>costCenter</code>, <code>manager</code>) and title level are stored and passed to Cedar</li>
+<li class="task done"><span class="box">✓</span>Leaving a space's group revokes that space within 5 minutes on a fake clock; joining grants only after the cell confirms the membership</li>
+<li class="task done"><span class="box">✓</span>LAW-21 green</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Attribute mapping</li>
-<li class="task"><span class="box"></span>Move handling</li>
-<li class="task"><span class="box"></span>LAW-21 law test green</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-12, LAW-21</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Attribute mapping</li>
+<li class="task done"><span class="box">✓</span>Move handling</li>
+<li class="task done"><span class="box">✓</span>LAW-21 law test green</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-12, LAW-21</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S12.3a): sb-identity(7) gained "Attributes and moves, exactly", sb-permissions(7) "Who the asker is, now", and sb-policy(5) the <code>User</code> attributes. SCIM keeps the core <code>title</code> and the enterprise <code>department</code>, <code>division</code>, <code>costCenter</code> and <code>manager</code> (POST, PUT and PATCH by full path); <code>ports.User.Attributes</code> maps them, <code>auth.Cell.Attributes</code> (<code>auth.DirectoryAttributes</code>) reads them at every request, <code>Scope.WithAttrs</code> carries them, and the kernel passes them to Cedar as the principal's optional attributes (schema updated), so a rule can use them with <code>has</code>. A directory that can't give them refuses with <code>EUNAVAIL</code>. Moves needed no cache to expire: the middleware reads groups from the directory at each request, and nothing about the asker comes from the token. <code>TestLAW21_MovesRevokeFast</code> now runs through the real SCIM endpoint and the auth middleware on a fake clock and is green, out of the ratchet; groups cached across requests, and groups taken from the IdP's claims, are caught. "Title level" is the SCIM <code>title</code>: SCIM has no standard level, so none is invented.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

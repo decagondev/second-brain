@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,25 @@
 <p>People ask their department's brain most days and the whole company's sometimes.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>POST /v1/ask</code> takes a space; company-wide is the union of the asker's spaces minus restricted content they don't hold</li>
-<li class="task"><span class="box"></span>Space, label and barrier checks run before the live ACL batch, and the ACL is still checked for every chunk</li>
-<li class="task"><span class="box"></span>LAW-20 green; the space-leak evals (SB-807) pass</li>
+<li class="task done"><span class="box">✓</span><code>POST /v1/ask</code> takes a space; company-wide is the union of the asker's spaces minus restricted content they don't hold</li>
+<li class="task done"><span class="box">✓</span>Space, label and barrier checks run before the live ACL batch, and the ACL is still checked for every chunk</li>
+<li class="task done"><span class="box">✓</span>LAW-20 green; the space-leak evals (SB-807) pass</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Retrieval filter</li>
-<li class="task"><span class="box"></span>Company-wide union</li>
-<li class="task"><span class="box"></span>Leak evals</li>
-<li class="task"><span class="box"></span>LAW-20 law test green</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-19, LAW-20</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Retrieval filter</li>
+<li class="task done"><span class="box">✓</span>Company-wide union</li>
+<li class="task done"><span class="box">✓</span>Leak evals</li>
+<li class="task done"><span class="box">✓</span>LAW-20 law test green</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01, LAW-19, LAW-20</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S10.3a): sb-ask(3) gained the space parameter (<code>?space=</code>, never a body field), the space step of the ask, the three new trace reasons and <code>ESPACE</code>; sb-citations(7), sb-spaces(7), sb-eval(5), sb-evals(7) and sb-laws(7) changed with it. <code>retrieve.Authoriser</code> takes the cell's spaces and barriers: in a cell with spaces every candidate is decided first by the kernel with its label, holders and the asker's read context (SB-1004), and only the chunks it allows go into the live ACL batch, which still decides each of them. A registry that can't answer fails the request. The trace says <code>space_denied</code>, <code>label_denied</code> or <code>barrier_denied</code>, explained after the kernel's decision, never deciding it. The local eval cell reads a world's <code>spaces:</code>, <code>barriers:</code>, document <code>path</code> and <code>label</code>, routes at ingest and resolves each case's <code>space</code> as the middleware does. <code>space-leak</code> passes (every leak refused, both controls answered), left <code>evals/expected_red.yaml</code> and joined the release gate with <code>failures_max: 0</code>. <code>TestLAW20_RestrictedStaysHome</code> runs on the real retrieval path and left the ratchet; <code>TestLAW19_AsksOnlyNarrow</code> covers LAW-19 (and LAW-01: the source ACL decides every chunk) on the same path; a retrieval without its space step is caught, and the ask path agrees with the reference cell on every ask. LAW-22 stays red on its own system until SB-1203 adds drafts, actions and ownership. Apply still refuses a manifest with spaces, now until SB-1008, so no cell runs with spaces until the web UI, the chat app and per-space kill switches enforce them too.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E10-department-spaces/SB-1006-ask-in-a-space-or-company-wide.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

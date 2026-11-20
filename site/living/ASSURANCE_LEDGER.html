@@ -194,6 +194,51 @@
 <td><code>sb factory status</code> key wraps, checked live</td>
 <td>SB-114, SB-701, SB-704, SB-705</td>
 </tr>
+<tr>
+<td><a href="../manual/sb-laws.7.html#law-19">LAW-19</a></td>
+<td>Spaces only narrow</td>
+<td>Tested (red)</td>
+<td><code>Spaces.als</code>: 4 checks UNSAT at scope 5; mutation caught</td>
+<td><code>TestLAW19_SpacesOnlyNarrow</code>, red until SB-1004; reference + mutations in <code>selftest_spaces_test.go</code></td>
+<td>—</td>
+<td>SB-804, SB-1004</td>
+</tr>
+<tr>
+<td><a href="../manual/sb-laws.7.html#law-20">LAW-20</a></td>
+<td>Restricted stays home</td>
+<td>Tested (red)</td>
+<td><code>Spaces.als</code>: 4 checks UNSAT at scope 5; mutation caught</td>
+<td><code>TestLAW20_RestrictedStaysHome</code>, red until SB-1006; reference + mutations in <code>selftest_spaces_test.go</code></td>
+<td>—</td>
+<td>SB-804, SB-1006</td>
+</tr>
+<tr>
+<td><a href="../manual/sb-laws.7.html#law-21">LAW-21</a></td>
+<td>Moves revoke fast</td>
+<td>Tested (red)</td>
+<td>—</td>
+<td><code>TestLAW21_MovesRevokeFast</code>, red until SB-1205; reference + mutations in <code>selftest_spaces_test.go</code></td>
+<td>—</td>
+<td>SB-804, SB-1205</td>
+</tr>
+<tr>
+<td><a href="../manual/sb-laws.7.html#law-22">LAW-22</a></td>
+<td>Barriers hold</td>
+<td>Tested (red)</td>
+<td><code>Spaces.als</code>: 4 checks UNSAT at scope 5; mutation caught</td>
+<td><code>TestLAW22_BarriersHold</code>, red until SB-1203; reference + mutations in <code>selftest_spaces_test.go</code></td>
+<td>—</td>
+<td>SB-804, SB-1203</td>
+</tr>
+<tr>
+<td><a href="../manual/sb-laws.7.html#law-23">LAW-23</a></td>
+<td>Grants are consented and revocable</td>
+<td>Tested (red)</td>
+<td>—</td>
+<td><code>TestLAW23_GrantsAreConsentedAndRevocable</code>, red until SB-1302; reference + mutations in <code>selftest_spaces_test.go</code></td>
+<td>—</td>
+<td>SB-804, SB-1302</td>
+</tr>
 </tbody>
 </table>
 <h2 id="history">History</h2>
@@ -548,6 +593,192 @@
 <td>LAW-11, LAW-17, LAW-18</td>
 <td>Tested (extended)</td>
 <td>SB-710: <code>tests/handoff</code> rehearses a hand-off and detach end to end over the GCP fake; found and fixed BUG-0012 (a retained grant revoked at cutover)</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-801: <code>TestLAW16_UnbuiltFieldsAreRefused</code>: a manifest declaring spaces or barriers is refused until SB-1001; a parser that drops them is caught</td>
+</tr>
+<tr>
+<td>2026-11-19</td>
+<td>LAW-19 to LAW-23</td>
+<td>— → Stated → Tested (red)</td>
+<td>SB-804: in sb-laws(7) with owners; five red tests in the ratchet; references pass and six mutations are caught</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-19, LAW-20, LAW-22</td>
+<td>Modelled</td>
+<td>SB-805: <code>Spaces.als</code> 4 checks UNSAT at scope 5, 2 runs SAT; 3 mutations caught; crosscheck mirror (6,912 cases)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-02, LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-901: services run only images from admitted releases, Binary Authorization refuses a sideload, an updater skipping admission is caught; every account is the cell's own and no updater crosses projects</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-02, LAW-18</td>
+<td>Tested (extended)</td>
+<td>SB-902: two cell perimeters hold even with a cross-cell IAM mistake (mutation caught); the database's CMEK key is the cell's own, and destroying it makes the data unreadable</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-11, LAW-13, LAW-17</td>
+<td>Tested (extended)</td>
+<td>SB-904: anchors in the WORM bucket can't be overwritten or deleted; a missed anchor, backup, sync or access check alerts (Sev-1 for law jobs), unknown counts as missed; two watchdog mutations caught</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-06, LAW-17</td>
+<td>Tested (extended)</td>
+<td>SB-905: the cell's attestation reports what runs (half-applied updates are a mismatch; intent-attesting mutation caught); verify's LAW-17 line is unknown when enumeration fails (lenient mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-02</td>
+<td>Tested (extended)</td>
+<td>SB-906: no released web UI site rewrites to another tenant's cell, another service or another host; an unchecked publisher is caught</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-02, LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-907: tokens from another company's Identity Platform tenant are refused (project-only mutation caught); removal from a manifest <code>groups:</code> list is refused within 5 minutes (add-only mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-1001: <code>TestLAW16_SpacesAreExactlyAsDeclared</code> replaces SB-801's refusal test: declared spaces and barriers are checked, planned and never dropped or invented (drop mutation caught); apply refuses them until SB-1006</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-19, LAW-02</td>
+<td>Tested (new, green)</td>
+<td>SB-1002: <code>TestLAW19_TheSpaceContextNeverWidens</code>: an unknown space, a non-member, another tenant's space or a failing registry is refused, never company-wide (fallback mutation caught). <code>TestLAW19_SpacesOnlyNarrow</code> stays red until SB-1004</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-18</td>
+<td>Tested (extended)</td>
+<td>SB-1003: per-space data keys: every live key always unwraps through hand-off, a dropped space's records never open again, and only space keys shred (never-shred and shred-anything mutations caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-19, LAW-03</td>
+<td>Tested (green)</td>
+<td>SB-1004: <code>TestLAW19_SpacesOnlyNarrow</code> green on the real kernel and space policies (left the ratchet; source-ACL-skip mutation caught); <code>make policy</code> proves narrowing statically; <code>TestLAW03_MissingSpaceFactsRefuse</code> (missing-fact rule mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-13, LAW-20</td>
+<td>Tested (extended)</td>
+<td>SB-1005: routing to spaces and labels is derived (rebuild and re-route equal the reference; stale-configuration mutation caught) and never below restricted for a restricted holder or an unknown label (first-holder mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-20, LAW-19, LAW-01</td>
+<td>Tested (green)</td>
+<td>SB-1006: <code>TestLAW20_RestrictedStaysHome</code> green on the ask path (left the ratchet; no-space-step mutation caught); <code>TestLAW19_AsksOnlyNarrow</code>; <code>space-leak</code> eval green and in the gate</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-20, LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-1007: a space's chat channel asks only in that space, for members only (empty-registry mutation caught); the web UI's LAW-14 property holds with spaces and labels on chips; axe passes on the switcher</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-10, LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-1008: a space kill stops that space and drops its content everywhere within 10 seconds, the rest keeps working (kill-blind retrieval caught); a row's space is in the hash chain (space-blind hash caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-1101: the template catalogue is data pinned by every release; any template edit is a new release id (unpinned-bundle mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-14, LAW-09</td>
+<td>Tested (extended)</td>
+<td>SB-1102: department agents cite every claim and run only in their own template's spaces (keeps-uncited and any-template mutations caught); none has a tool (armed-agent mutation caught); four agent suites in the gate</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-01, LAW-03, LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-1103: the GitHub connector's verdicts are live and Unknown on any fault (stale-check mutation caught); no chunk holding a secret is ever stored, for any connector (scanner-less mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-07, LAW-20</td>
+<td>Tested (extended)</td>
+<td>SB-1106: a structured field is indexed only if declared and not sensitive, or allow-listed by a holding space (then restricted); dropped fields are reported by name only; an undeclared source feeds nothing (lying-declaration mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-01, LAW-03, LAW-07, LAW-20</td>
+<td>Tested (extended)</td>
+<td>SB-1104: BambooHR verdicts are live and Unknown on any fault; a sensitive field is read and indexed only when a space allow-lists it, and then restricted (greedy-reader mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-01, LAW-03, LAW-07, LAW-20</td>
+<td>Tested (extended)</td>
+<td>SB-1105: QuickBooks verdicts follow the readers list now and are Unknown on any fault; no account or routing number is ever stored, and finance records are restricted (pass-through mutation caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-06, LAW-20, LAW-22</td>
+<td>Tested (extended)</td>
+<td>SB-1107: every template's suite gates the release (missing-suite mutation caught); twelve template suites check citations, leaks and a barrier; a barrier name-matching bug fixed</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-15, LAW-16, LAW-19</td>
+<td>Tested (extended)</td>
+<td>SB-1201: stewards never approve their own proposals; approval needs the exact hash on an unchanged base and yields that manifest; no approved change leaves its space, changes a template or lowers a label (no-forbid and anything-goes mutations caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-1202: quarterly access reviews list exactly who can use each restricted space; decisions change nothing live and removals all become change requests (manifest ones as an open proposal of exactly the removals); no one decides on their own access; overdue at exactly 14 days; evidence verifies against the audit rows (first-group, late-alert and lost-removal mutations caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-22, LAW-03</td>
+<td>Tested (green)</td>
+<td>SB-1203: <code>TestLAW22_BarriersHold</code> green and out of the ratchet: no ask, draft, tool call or approval crosses a barrier, by holding space or by source owner (ignore-owners, no-target-facts and no-approval-facts mutations caught); a missing owner or barred-groups fact refuses</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-15</td>
+<td>Modelled and tested (extended)</td>
+<td>SB-1204: segregation of duties in <code>Approvals.tla</code> (<code>NoManagerApproval</code>, <code>TwoApprovers</code>; three new mutations caught) and <code>TestLAW15_SegregationOfDuties</code> through the real bus (no-reporting-line and no-duty mutations caught); the test found a tenant permit that bypassed the second group, now refused by a platform forbid</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-21, LAW-12</td>
+<td>Tested (green)</td>
+<td>SB-1205: <code>TestLAW21_MovesRevokeFast</code> green and out of the ratchet, through the real SCIM endpoint and auth middleware on a fake clock: leaving a group refuses its space at the next request, an uncommitted join grants nothing (cached-groups and trusted-claims mutations caught); directory attributes reach policy at each request</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-1206: the reorg preview changes nothing and is exact against an oracle (gains, losses, loses-all, gains-restricted, barrier; three mutations caught)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-13, LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-1207: no record a legal hold covers is deleted by the sweep, an erasure or a space removal, unheld records age out, and holds and releases are audited first (ignore-holds and remove-held-space mutations caught)</td>
 </tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>

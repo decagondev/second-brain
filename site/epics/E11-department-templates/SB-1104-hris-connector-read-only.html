@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,25 @@
 <p>People questions (policies, org chart, who to ask) are some of the most common, and HR data is the most sensitive.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>BambooHR read-only: policies, org chart and directory fields on an allow-list</li>
-<li class="task"><span class="box"></span>Compensation, performance, cases and personal identifiers are never ingested unless named in the allow-list by a steward, and then labelled <code>restricted</code></li>
-<li class="task"><span class="box"></span>Passes the contract kit against a recorded fake</li>
+<li class="task done"><span class="box">✓</span>BambooHR read-only: policies, org chart and directory fields on an allow-list</li>
+<li class="task done"><span class="box">✓</span>Compensation, performance, cases and personal identifiers are never ingested unless named in the allow-list by a steward, and then labelled <code>restricted</code></li>
+<li class="task done"><span class="box">✓</span>Passes the contract kit against a recorded fake (a real BambooHR account stays In review)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Connector</li>
-<li class="task"><span class="box"></span>Field allow-list</li>
-<li class="task"><span class="box"></span>Contract kit</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-01, LAW-07, LAW-20</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Connector</li>
+<li class="task done"><span class="box">✓</span>Field allow-list</li>
+<li class="task done"><span class="box">✓</span>Contract kit</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-01, LAW-07, LAW-20</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S11.3b): sb-connector(3) gained <code>hris: bamboohr</code>, and <code>hris</code> is a kind of the manifest, kill switches, vault references and asks. <code>internal/adapters/connectors/bamboohr</code> reads one company with a key from the vault: employee records as structured documents with nine non-sensitive and eleven sensitive declared fields, and company files shared with all employees as text. It asks BambooHR only for the non-sensitive fields and the sensitive ones a space allow-lists, so other sensitive values are never read; ingest (SB-1106) indexes only allowed fields and labels a record with an allowed sensitive field <code>restricted</code>. Access is live: an active employee by work email may read records and shared files, anyone else is denied, and a failed directory read is <code>Unknown</code>. Changes come from <code>employees/changed</code> and from the shared files compared with the cursor (unsharing is a permission-only change). <code>bamboohrtest</code> records the API and every field asked for; the connector passes the contract kit. Law tests: <code>TestLAW03_BambooHRUnknownIsNeverAllow</code>, <code>TestLAW01_BambooHRAccessIsLive</code> and <code>TestLAW07_BambooHRSensitiveFieldsOnlyWhenAllowed</code> (a connector that reads every sensitive field is caught).</p>
+<p><strong>Left:</strong> a run against a real BambooHR account, and the runtime wiring of <code>Allowed</code> from the spaces' <code>fields</code>.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E11-department-templates/SB-1104-hris-connector-read-only.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

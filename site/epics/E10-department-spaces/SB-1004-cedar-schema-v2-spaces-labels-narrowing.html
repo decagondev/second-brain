@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,25 @@
 <p>Space rules live in the one policy engine, and analysis must prove they never widen access.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Schema gains <code>Space</code> and labels; base policies add space and label forbids</li>
-<li class="task"><span class="box"></span>Policy analysis proves for every shipped and tenant policy that the allowed set is a subset of the source-allowed set</li>
-<li class="task"><span class="box"></span>LAW-19 green</li>
+<li class="task done"><span class="box">✓</span>Schema gains <code>Space</code> and labels; base policies add space and label forbids</li>
+<li class="task done"><span class="box">✓</span>Policy analysis proves for every shipped and tenant policy that the allowed set is a subset of the source-allowed set</li>
+<li class="task done"><span class="box">✓</span>LAW-19 green</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Schema</li>
-<li class="task"><span class="box"></span>Base policies</li>
-<li class="task"><span class="box"></span>Narrowing analysis in <code>make policy</code></li>
-<li class="task"><span class="box"></span>LAW-19 law test green</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-03, LAW-19</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Schema</li>
+<li class="task done"><span class="box">✓</span>Base policies</li>
+<li class="task done"><span class="box">✓</span>Narrowing analysis in <code>make policy</code></li>
+<li class="task done"><span class="box">✓</span>LAW-19 law test green</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-03, LAW-19</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S10.2a): sb-policy(5)'s spaces section is no longer a draft: schema v2, the four rules in <code>policy/platform/spaces.cedar</code>, and CI rule 5. sb-permissions(7) and sb-laws(7) point to them. Schema v2 adds <code>label</code> and <code>spaces</code> to <code>Chunk</code> and <code>space</code>, <code>member_spaces</code> and <code>barred_spaces</code> to the <code>read</code> context, all optional, so a cell without spaces is unchanged. Spaces are facts the kernel sets (<code>spaces.ReadContext</code>, <code>spaces.ChunkAttrs</code>), not entities, so no rule looks one up. The four forbids: a missing fact refuses; an ask in a space reads only what that space holds, for its members; only <code>public</code> and <code>internal</code> reach non-members of the holders (an unknown label is <code>restricted</code>); nothing held across a barrier. The Cedar adapter passes string sets. <code>tools/check/policy.py</code> adds rule 5: only <code>base.cedar</code> may permit <code>read</code> (an any-action permit counts), and over 1,728 space contexts and chunks the whole set allows nothing the base read permit doesn't. <code>TestLAW19_SpacesOnlyNarrow</code> now runs against the real kernel and policies with the source ACL last, and left the ratchet; a mutation that lets a space's allow skip the source ACL is caught. A self-test shows the policies agree with the reference cell on every ask and already hold LAW-20 and LAW-22 at the policy layer; those laws' tests stay on the ask path (SB-1006, SB-1203). <code>TestLAW03_MissingSpaceFactsRefuse</code> drops one fact at a time, and catches the policies without their missing-fact rule.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E10-department-spaces/SB-1004-cedar-schema-v2-spaces-labels-narrowing.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

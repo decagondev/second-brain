@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a class="current" href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a class="current" href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-CONNECTOR(3)</span><span>Second Brain Manual</span><span>SB-CONNECTOR(3)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-connector3">sb-connector(3)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-connector — <code>Fetch</code>, <code>ACL</code>, <code>Changes</code>, <code>Act</code>: the connector contract, API version 1</p>
@@ -39,6 +39,10 @@ type Connector interface {
 <p><code>APIVersion</code> returns the contract version the connector implements. The platform loads a connector only if <code>ports.Negotiate</code> accepts its version: today exactly <code>1</code>. A connector built for a newer or older contract is refused at load time with <code>ENOTSUP</code>, never run in a degraded mode.</p>
 <h3 id="fetch">Fetch</h3>
 <p>Returns the document's text and structure, its <strong>version</strong> (monotonic per document, as reported by the source), and an ACL snapshot used only as a prefilter. The same <code>(ref, version)</code> must always return the same content hash.</p>
+<h3 id="location-and-label-sb-1005">Location and label (SB-1005)</h3>
+<p><code>Fetch</code> also returns where the document lives, its <strong>location</strong>, and the source's own sensitivity <strong>label</strong> if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one. It also returns the document's <strong>owner</strong> at the source, as an email, where the source has one (Drive: the file's owner; a shared drive's files have none), for information barriers (sb-permissions(7), SB-1203). A source without owners returns none.</p>
+<h3 id="fields-sb-1106">Fields (SB-1106)</h3>
+<p>A connector to a <strong>structured</strong> system (an HRIS, an accounting system) returns a document's data as named <strong>fields</strong> rather than as text, and <strong>declares</strong> every field it can return: its name and whether it's <strong>sensitive</strong> (pay, performance, cases, personal identifiers, bank details, tax ids). It never declares a field it returns under another name. Ingest decides which fields become text (sb-ingest(7), Fields); the connector never does. A connector that returns fields but can't declare them returns nothing that is ingested.</p>
 <h3 id="acl">ACL</h3>
 <p>The <strong>authority</strong> on who may see what. Called live, at answer time, for a batch of up to 200 refs. Returns one <code>Verdict</code> per ref, in order:</p>
 <table>
@@ -116,6 +120,10 @@ type Connector interface {
 <td><code>files.get</code> as the service account. Google Docs are exported as <code>text/plain</code>; <code>text/*</code> files are downloaded; other types are indexed by name only. <code>version</code> is Drive's file <code>version</code>; the prefilter is the file's permissions (users' emails, <code>group:EMAIL</code>, <code>domain:DOMAIN</code>, <code>anyone</code>)</td>
 </tr>
 <tr>
+<td>Location and label</td>
+<td>Location is the file's folder path from the top of its drive, then its name: <code>/Finance/Q3/Forecast</code>. Folder names come from <code>files.get</code> on each parent, cached for the sync. The label comes from one Drive label the tenant names as its classification, at <code>vault://tenants/TENANT/connectors/docs-classification</code> as JSON <code>{"label": ID, "field": ID, "choices": {"CHOICE_ID": "restricted", …}}</code>, with no secrets in it; <code>files.get</code> asks for it with <code>includeLabels</code>. A file without it has no label; a choice missing from <code>choices</code> is <code>restricted</code></td>
+</tr>
+<tr>
 <td>ACL</td>
 <td>Asks Drive <strong>as the asker</strong> (domain-wide delegation, <code>sub</code> = the user's email): <code>files.get</code> returns 200 → <code>Allow</code>; 404 or 403 → <code>Deny</code>, but only if the service account itself can still see the file; anything else, or a deleted file → <code>Unknown</code>. At most 8 calls run at once, within the 800 ms deadline</td>
 </tr>
@@ -157,6 +165,10 @@ type Connector interface {
 <td>Never fetched: DMs and group DMs are excluded by default, and the app has no scope to read them</td>
 </tr>
 <tr>
+<td>Location and label</td>
+<td>Location is the channel, <code>#name</code>. A message in a <strong>private</strong> channel is labelled <code>confidential</code>; a public channel's messages carry no label</td>
+</tr>
+<tr>
 <td>ACL</td>
 <td>Live, per document: a <strong>public</strong> channel → <code>Allow</code> for any active, non-guest member of the workspace, and for guests who are in the channel; a <strong>private</strong> channel → <code>Allow</code> only for its members. The user is found by email; Slack answering "no such user" → <code>Deny</code>. Anything else, or a channel or message that's gone → <code>Unknown</code></td>
 </tr>
@@ -171,6 +183,129 @@ type Connector interface {
 </tbody>
 </table>
 <p>Tested against <code>slacktest</code>, a recorded fake of the Web API and the Events API's signed delivery.</p>
+<h3 id="code-github-sb-1103"><code>code: github</code> (SB-1103)</h3>
+<p>Read-only. Name it as <code>connectors: { code: github }</code>. It indexes what engineers write about their systems, not their systems: source code only where a space opts in.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials</td>
+<td>A GitHub token with read-only access to the organisation's repositories, metadata, issues and pull requests, and the organisation's name, at <code>vault://tenants/TENANT/connectors/code</code> as JSON <code>{"token": "…", "org": "…"}</code>. The token is registered with the log redactor before first use</td>
+</tr>
+<tr>
+<td>Documents</td>
+<td>One document per file and per issue or pull request, on each repository's default branch. Files: every <code>README*</code>, every file under <code>docs/</code>, and every <code>*.md</code>; with source opted in, every other text file under 1 MiB too. A file's id is <code>REPO/blob/PATH</code>, its title the path, its text the file, and its version the commit time of the last commit that touched it, in microseconds. An issue is <code>REPO/issues/N</code> and a pull request <code>REPO/pulls/N</code>, titled <code>#N title</code>, with the description as text (never the diff), versioned by <code>updated_at</code> in microseconds</td>
+</tr>
+<tr>
+<td>Source code</td>
+<td>Off by default. A repository's other files are indexed only when a space's <code>code</code> scope names the whole repository, <code>REPO/**</code> (sb-space(5)); a narrower scope, such as <code>REPO/docs/**</code>, opts nothing in</td>
+</tr>
+<tr>
+<td>Location and label</td>
+<td>Location is <code>REPO/PATH</code> for a file, <code>REPO/issues/N</code> or <code>REPO/pulls/N</code> otherwise, so scope patterns such as <code>payments/**</code> hold a repository. GitHub has no sensitivity labels, so none</td>
+</tr>
+<tr>
+<td>ACL</td>
+<td>Live, per repository. The asker is found by email through the organisation's SSO identities (GraphQL <code>externalIdentities</code>); none → <code>Deny</code>. A <strong>public</strong> repository → <code>Allow</code> for any member of the organisation. A <strong>private</strong> or <strong>internal</strong> one → <code>Allow</code> when <code>collaborators/LOGIN/permission</code> is <code>read</code> or higher, through a team or directly; <code>none</code> → <code>Deny</code>. A repository that's gone, or any other answer → <code>Unknown</code>. One permission call per repository per batch, at most 8 at once, within the 800 ms deadline</td>
+</tr>
+<tr>
+<td>Changes</td>
+<td>The cursor is the time of the newest change seen. Issues and pull requests come from <code>issues?since=</code>; files from the commits since the cursor and the files each one touched (a removed file is a delete); <code>MemberEvent</code> and <code>PublicEvent</code> in a repository's events become permission-only changes for all its documents. Only changes strictly after the cursor count, so a restarted sync repeats exactly what it read. An empty cursor lists every document</td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code> (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>Tested against <code>githubtest</code>, a recorded fake of the REST and GraphQL APIs it uses. A run against a real organisation stays In review.</p>
+<h3 id="hris-bamboohr-sb-1104"><code>hris: bamboohr</code> (SB-1104)</h3>
+<p>Read-only and structured. Name it as <code>connectors: { hris: bamboohr }</code>. It is meant for a <code>people</code> space, which is <code>restricted</code> (sb-departments(7)).</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials</td>
+<td>A BambooHR API key of a read-only user and the company's subdomain, at <code>vault://tenants/TENANT/connectors/hris</code> as JSON <code>{"key": "…", "subdomain": "…"}</code>. The key is registered with the log redactor before first use</td>
+</tr>
+<tr>
+<td>Documents</td>
+<td>One structured document per employee, <code>employees/ID</code>, titled with the display name, and one text document per company file shared with all employees (policies, the handbook), <code>files/ID</code>, titled with the file's name. An employee's version is BambooHR's <code>lastChanged</code>, a file's its <code>dateCreated</code>, both in microseconds (a new version of a file is a new file)</td>
+</tr>
+<tr>
+<td>Fields</td>
+<td>Declared and not sensitive: <code>displayName</code>, <code>firstName</code>, <code>lastName</code>, <code>jobTitle</code>, <code>department</code>, <code>division</code>, <code>location</code>, <code>workEmail</code>, <code>supervisor</code>. Declared and sensitive: <code>payRate</code>, <code>payType</code>, <code>ssn</code>, <code>dateOfBirth</code>, <code>address1</code>, <code>homePhone</code>, <code>mobilePhone</code>, <code>maritalStatus</code>, <code>gender</code>, <code>ethnicity</code>, <code>terminationReason</code>. The connector asks BambooHR only for the non-sensitive fields and the sensitive ones a space's <code>fields</code> allow-list names (sb-space(5)), so other sensitive values are never read, let alone ingested (sb-ingest(7), Fields). Anything BambooHR returns that isn't declared is dropped</td>
+</tr>
+<tr>
+<td>Location and label</td>
+<td>Location is <code>employees/DEPARTMENT/ID</code> or <code>files/CATEGORY/NAME</code>. No source label; an employee record with an allow-listed sensitive field is <code>restricted</code> (sb-ingest(7))</td>
+</tr>
+<tr>
+<td>ACL</td>
+<td>Live: the asker is found by work email in the directory. An <strong>active</strong> employee → <code>Allow</code> for employee records and shared files; someone BambooHR doesn't list, or lists as inactive → <code>Deny</code>. A file no longer shared with all employees, or a record or file that's gone → <code>Deny</code>. Anything else → <code>Unknown</code>. Spaces, labels and the allow-list decide who sees what beyond that (sb-spaces(7))</td>
+</tr>
+<tr>
+<td>Changes</td>
+<td>The cursor holds the newest <code>lastChanged</code> seen and the ids of the shared files. <code>employees/changed?since=</code> gives inserted and updated employees (changes) and deleted ones (deletes); a file that appears is a change, and one that's gone or no longer shared is a delete. An empty cursor lists every employee and shared file</td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code> (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>Tested against <code>bamboohrtest</code>, a recorded fake of the API it uses. A run against a real BambooHR account stays In review.</p>
+<h3 id="accounting-quickbooks-online-sb-1105"><code>accounting: quickbooks-online</code> (SB-1105)</h3>
+<p>Read-only and structured. Name it as <code>connectors: { accounting: quickbooks-online }</code>. It is meant for a <code>finance</code> space, which is <code>restricted</code> (sb-departments(7)).</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Credentials</td>
+<td>A QuickBooks Online OAuth access token with the <code>com.intuit.quickbooks.accounting</code> scope, the company's realm id, and the company's <strong>readers</strong>, at <code>vault://tenants/TENANT/connectors/accounting</code> as JSON <code>{"access_token": "…", "realm_id": "…", "readers": ["…"]}</code>. The token is registered with the log redactor. Access tokens last an hour; refreshing them from the refresh token is the cell runtime's job, not the connector's (SB-903), and a token that has expired makes every call fail, so every verdict is <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Documents</td>
+<td>The chart of accounts, one structured document per account (<code>accounts/ID</code>); one text document per budget (<code>budgets/ID</code>), its name, period and one line per account and month; and the profit and loss and the balance sheet for each of the last 12 calendar months (<code>reports/ProfitAndLoss/YYYY-MM</code>, <code>reports/BalanceSheet/YYYY-MM</code>), one line per row. An account's or budget's version is its <code>LastUpdatedTime</code>; a report's is the newest <code>LastUpdatedTime</code> of any account, all in microseconds</td>
+</tr>
+<tr>
+<td>Fields</td>
+<td>An account declares <code>Name</code>, <code>AccountType</code>, <code>AccountSubType</code>, <code>Classification</code>, <code>CurrentBalance</code> and <code>Description</code>, none of them sensitive. <strong>Never read:</strong> account and routing numbers (<code>AcctNum</code>, <code>BankNum</code>), card details, the company's tax ids, and anything from payroll. The connector doesn't ask for them, doesn't declare them, and drops them if QuickBooks sends them, so no allow-list can let them in</td>
+</tr>
+<tr>
+<td>Location and label</td>
+<td>Location is <code>accounts/CLASSIFICATION/NAME</code>, <code>budgets/NAME</code> or <code>reports/REPORT/YYYY-MM</code>. No source label; the finance space's <code>restricted</code> default applies</td>
+</tr>
+<tr>
+<td>ACL</td>
+<td>QuickBooks Online doesn't expose who may see its reports, so the tenant lists them: <code>readers</code> are the work emails of the company's QuickBooks users with report access, kept in step with QuickBooks by the finance stewards and reviewed with the space (W12). A reader → <code>Allow</code>; anyone else → <code>Deny</code>; credentials that can't be read, or no <code>readers</code> key → <code>Unknown</code></td>
+</tr>
+<tr>
+<td>Changes</td>
+<td>The cursor holds the newest <code>LastUpdatedTime</code> seen and a hash of <code>readers</code>. Change data capture (<code>cdc?entities=Account,Budget&amp;changedSince=</code>) gives changed and deleted accounts and budgets; any account change also changes every report document. A change to <code>readers</code> is a permission-only change for every document. An empty cursor lists every account, budget and report</td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code> (read-only)</td>
+</tr>
+</tbody>
+</table>
+<p>Tested against <code>qbotest</code>, a recorded fake of the API it uses. A run against a real QuickBooks Online sandbox company stays In review.</p>
 <h3 id="tickets-linear-sb-211"><code>tickets: linear</code> (SB-211)</h3>
 <p>Read-only in W2. Name it as <code>connectors: { tickets: linear }</code>. Writes for the <code>ticket-update</code> workflow arrive with SB-410, through the tool bus.</p>
 <table>
@@ -192,6 +327,10 @@ type Connector interface {
 <tr>
 <td>Act (<code>ticket-update</code>)</td>
 <td>Target <code>tickets:&lt;KEY-123 or issue id&gt;</code>, payload <code>{"comment": "…"}</code>. Posts one comment whose id is a UUID derived from the idempotency key, so a retry finds the first comment instead of posting again. The receipt is <code>linear:comment/&lt;id&gt;</code>. An answer without an id is read back by that id, and if it isn't there, <code>Act</code> fails. <code>Find</code> (for the reconciler) looks the comment up by the same id</td>
+</tr>
+<tr>
+<td>Location and label</td>
+<td>Location is the issue's team key, <code>ENG</code>. Linear has no labels for sensitivity, so none</td>
 </tr>
 <tr>
 <td>ACL</td>
@@ -233,6 +372,10 @@ type Connector interface {
 <tr>
 <td>Prefilter</td>
 <td>The owner's email and the broad token <code>hubspot:users</code>, so every HubSpot user's search includes CRM records and the live check decides. Because the prefilter doesn't depend on roles or teams, role and team changes need no permission-only changes</td>
+</tr>
+<tr>
+<td>Location and label</td>
+<td>Location is the record type, <code>companies</code> or <code>deals</code>. HubSpot has no sensitivity labels, so none</td>
 </tr>
 <tr>
 <td>ACL</td>
@@ -296,7 +439,7 @@ type Connector interface {
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l3"><a href="#tickets-linear-sb-211">tickets: linear (SB-211)</a></li><li class="l3"><a href="#crm-hubspot-sb-610">crm: hubspot (SB-610)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#location-and-label-sb-1005">Location and label (SB-1005)</a></li><li class="l3"><a href="#fields-sb-1106">Fields (SB-1106)</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l3"><a href="#code-github-sb-1103">code: github (SB-1103)</a></li><li class="l3"><a href="#hris-bamboohr-sb-1104">hris: bamboohr (SB-1104)</a></li><li class="l3"><a href="#accounting-quickbooks-online-sb-1105">accounting: quickbooks-online (SB-1105)</a></li><li class="l3"><a href="#tickets-linear-sb-211">tickets: linear (SB-211)</a></li><li class="l3"><a href="#crm-hubspot-sb-610">crm: hubspot (SB-610)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

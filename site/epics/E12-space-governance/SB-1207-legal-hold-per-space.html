@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,23 @@
 <p>A legal hold must stop deletion in the scope of a matter, and only there.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A Legal steward can place a hold on a space or a scope; retention and space deletion skip held items</li>
-<li class="task"><span class="box"></span>Holds and releases are audited; a held item can't be crypto-shredded</li>
+<li class="task done"><span class="box">✓</span>A Legal steward can place a hold on a space or a scope; retention and space deletion skip held items</li>
+<li class="task done"><span class="box">✓</span>Holds and releases are audited; a held item can't be crypto-shredded</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Hold record</li>
-<li class="task"><span class="box"></span>Retention integration</li>
-<li class="task"><span class="box"></span>Audit rows</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-11, LAW-13</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Hold record</li>
+<li class="task done"><span class="box">✓</span>Retention integration</li>
+<li class="task done"><span class="box">✓</span>Audit rows</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-11, LAW-13</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S12.4a): sb-spaces(7) gained "Legal holds, exactly", sb-tenant(5) the holds paragraph, sb-admin(3) three endpoints, and sb-errors(7) <code>EHOLD</code>. <code>internal/core/holds</code> keeps holds on a space, on custodians, or both, places and releases them with a <code>kind: retention</code> audit row written first (nothing changes if it can't be), and answers retention's question conservatively: a record whose space or user its store doesn't know is held by any hold that could cover it. <code>retention.Store.Expire</code> now takes the active holds and reports what they kept; traces carry their space, feedback takes its trace's, conversations and log files (whose space isn't kept) stay while any hold could cover them. <code>Job.Erase</code> refuses a custodian, or anyone while a whole space is held. <code>spaces.SyncHeld</code> refuses a manifest that would remove a held space before changing anything, so its row stays and its key is never shredded. <code>api.Holds</code> serves Legal stewards (Cedar <code>place_hold</code> and <code>release_hold</code>, the stewards of <code>legal</code>-template spaces). <code>TestLAW13_LegalHoldsStopDeletion</code> checks the sweep, erasure and space removal against an oracle, and LAW-11's audit-first rule for placing and releasing; a sweep that ignores holds and a sync that removes a held space are caught.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E12-space-governance/SB-1207-legal-hold-per-space.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

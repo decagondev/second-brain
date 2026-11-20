@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,26 @@
 <p>Operators and <code>sb tenant verify</code> need to read a running cell.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>/metrics</code> in Prometheus text format, scraped by Managed Service for Prometheus, with Sev-1 rules wired to the webhook adapter</li>
-<li class="task"><span class="box"></span>The verifier endpoint serves the running-build attestation (SB-509) and answers <code>sb tenant verify</code></li>
-<li class="task"><span class="box"></span>Neither endpoint returns content, prompts or secrets (LAW-07)</li>
+<li class="task"><span class="box"></span><code>/metrics</code> in Prometheus text format, scraped by Managed Service for Prometheus, with Sev-1 rules wired to the webhook adapter (the endpoint and <code>alerts.Dispatch</code> are built; the scrape config in a real project is SB-903)</li>
+<li class="task done"><span class="box">✓</span>The verifier endpoint serves the running-build attestation (SB-509) and answers <code>sb tenant verify</code></li>
+<li class="task done"><span class="box">✓</span>Neither endpoint returns content, prompts or secrets (LAW-07)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Metrics endpoint</li>
-<li class="task"><span class="box"></span>Verifier endpoint</li>
-<li class="task"><span class="box"></span>Alert rules</li>
-<li class="task"><span class="box"></span>Close the runtime items on SB-509, SB-601, SB-607</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-06, LAW-17</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Metrics endpoint</li>
+<li class="task done"><span class="box">✓</span>Verifier endpoint</li>
+<li class="task done"><span class="box">✓</span>Alert rules</li>
+<li class="task"><span class="box"></span>Close the runtime items on SB-509, SB-601, SB-607 (when a real cell answers, SB-903 and SB-908)</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-06, LAW-17</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S9.2b): sb-runtime(7) gained "Endpoints, exactly", sb-tenant(1) <code>--cell</code>, and sb-observability(7) the dispatch. <code>internal/api.Verifier</code> serves <code>GET /metrics</code> (the <code>obs</code> registry, so labels obey the telemetry rule), <code>GET /v1/verifier/attestation</code> and <code>POST /v1/verifier/verify</code>. The two verifier endpoints accept only the control plane's identity (<code>EAUTH</code> without one, <code>EPERM</code> for anyone else), and an unknown law is <code>EINVAL</code>. <code>runtime.Attestor</code> signs what Cloud Run actually runs, read at the moment of the call. Its sequence numbers are milliseconds and always increase, so a restarted updater never replays one. <code>verify</code> gained LAW-17 through an optional <code>AccessTarget</code>: a fail if any path is unlisted, <code>unknown</code> if enumeration fails. <code>alerts.Dispatch</code> sends each firing Sev-1 rule through the alert sender with the law and runbook. <code>sb tenant verify FILE --cell URL</code> posts to the verifier with <code>SB_TOKEN</code>, accepts only https (or a loopback test server), and exits 1 unless every law passes. Two new law tests: <code>TestLAW06_AttestationReportsWhatRuns</code>, where a half-applied update is an attestation mismatch and a mutation that attests intent is caught, and <code>TestLAW17_VerifyReportsAccessPaths</code>, where a mutation that counts unknown as a pass is caught.</p>
+<p><strong>Left:</strong> the Managed Prometheus scrape and a real cell answering verify (SB-903, SB-908); closing the runtime items on SB-509, SB-601 and SB-607.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E09-gcp-runtime/SB-905-metrics-and-the-verifier-endpoint.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

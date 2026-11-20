@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,25 @@
 <p>Department leads know their space best; IT shouldn't be the bottleneck, and leads mustn't be able to widen access.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A steward proposes a change to their own space in the console as a manifest diff</li>
-<li class="task"><span class="box"></span>The tenant operator approves the exact diff (hash-bound, LAW-15); the steward can't approve their own</li>
-<li class="task"><span class="box"></span>A diff that would permit past the source or remove a barrier is refused at check time</li>
+<li class="task done"><span class="box">✓</span>A steward proposes a change to their own space in the console as a manifest diff (the API the console calls; its screens come with the console work)</li>
+<li class="task done"><span class="box">✓</span>The tenant operator approves the exact diff (hash-bound, LAW-15); the steward can't approve their own</li>
+<li class="task done"><span class="box">✓</span>A diff that would permit past the source or remove a barrier is refused at check time</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Steward role in Cedar</li>
-<li class="task"><span class="box"></span>Console flow</li>
-<li class="task"><span class="box"></span>Check-time refusals</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-15, LAW-16, LAW-19</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Steward role in Cedar</li>
+<li class="task"><span class="box"></span>Console flow (the API is built; the console's screens are left)</li>
+<li class="task done"><span class="box">✓</span>Check-time refusals</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-15, LAW-16, LAW-19</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S12.1a): sb-spaces(7) gained "Delegated changes, exactly", sb-admin(3) "Proposals" and four endpoints, and the schema and base policy the <code>propose_space</code> and <code>approve_space</code> actions: stewards of a space (its <code>stewards</code> groups, passed as the asker's groups) may propose; operators may approve; a forbid stops anyone approving their own. <code>manifest.StewardChange</code> replaces one space's definition and refuses a change of template, a lower label, no stewards, an unknown field (so a proposal can't carry barriers), or anything outside the space; <code>manifest.WithSpace</code> fills unset fields as the checker does and runs the full check. <code>internal/core/proposals</code> keeps each proposal with its base and proposed manifest hashes. <code>api.Stewards</code> serves the flow: propose (audited, nothing changes), list, approve with the exact hash against an unchanged base (<code>EINVAL</code> for a wrong hash, <code>EDRIFT</code> and a stale proposal for a changed base), and reject with a reason; every decision is a <code>kind: config</code> audit row with the space. The new law test <code>TestLAW15_StewardsNeverApproveTheirOwn</code> drives the real handler and policies with stewards, operators and a steward who is also an operator, and checks LAW-15, LAW-16's exact-manifest approval and LAW-19's within-the-space changes; policies without the self-approval forbid, and a rule that lets any change through, are caught, and the test fails if no proposal was ever approved.</p>
+<p><strong>Left:</strong> the console's screens for proposing and approving.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E12-space-governance/SB-1201-stewards-and-delegated-space-changes.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,24 @@
 <p>Deal teams, investigations and some legal matters must not see, or be seen by, the rest of the company.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>barriers:</code> pairs of groups become Cedar forbids in both directions, for reads, drafts and actions</li>
-<li class="task"><span class="box"></span>A document owned by a barred group is invisible across the barrier, even company-wide and even if shared in the source</li>
-<li class="task"><span class="box"></span>LAW-22 green</li>
+<li class="task done"><span class="box">✓</span><code>barriers:</code> pairs of groups become Cedar forbids in both directions, for reads, drafts and actions</li>
+<li class="task done"><span class="box">✓</span>A document owned by a barred group is invisible across the barrier, even company-wide and even if shared in the source</li>
+<li class="task done"><span class="box">✓</span>LAW-22 green</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Policy generation</li>
-<li class="task"><span class="box"></span>Ownership from the source</li>
-<li class="task"><span class="box"></span>LAW-22 law test green</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-22</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Policy generation</li>
+<li class="task done"><span class="box">✓</span>Ownership from the source</li>
+<li class="task done"><span class="box">✓</span>LAW-22 law test green</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-22</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S12.2a): sb-permissions(7) gained "Barriers beyond reads, exactly" and the owner in step 3, sb-policy(5) the new facts and forbids, sb-space(5) and sb-spaces(7) what a barrier covers, and sb-connector(3) the source owner. Schema: <code>Chunk.owners</code>, <code>barred_groups</code> on reads, target facts on <code>call_tool</code> and <code>propose</code>, and <code>requester_groups</code> on <code>approve</code>. <code>spaces.cedar</code> gained forbids for content owned across a barrier, for tool calls and proposals on an item held or owned across one (or one the cell can't place), and for approvals across one; rule 0 now also needs <code>owners</code> and <code>barred_groups</code>. Documents and chunks carry <code>Owner</code> (Drive: the file's owner; the postgres index has an <code>owner</code> column); retrieval resolves the owner's groups now (<code>Authoriser.Owners</code>, <code>barrier.Directory</code>), and an owner it can't resolve refuses. <code>Authoriser.ItemAllowed</code> puts a draft's item through routing, the space steps and the live ACL; <code>internal/core/barrier</code> gives the tool bus the target and approval facts (<code>Bus.Barriers</code>). <code>TestLAW22_BarriersHold</code> now runs asks, drafts, tool calls and approvals in random companies with owners through the real code and policies, and is green and out of the ratchet; a cell that ignores owners, or gives the bus no target or approval facts, is caught, and the test fails if no draft, action or approval is ever allowed.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E12-space-governance/SB-1203-information-barriers.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

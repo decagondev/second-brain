@@ -101,6 +101,12 @@
 <td>Code</td>
 <td>Fixed</td>
 </tr>
+<tr>
+<td><a href="#bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013</a></td>
+<td>Law tests leaked release stores into /tmp</td>
+<td>Test harness</td>
+<td>Fixed</td>
+</tr>
 </tbody>
 </table>
 <h2 id="bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</h2>
@@ -382,8 +388,31 @@
 <p><strong>Symptom:</strong> A plan that retained <code>platform-kill</code> still lost the factory's <code>sbPlatformKill</code> binding at cutover, and <code>sb factory access</code> afterwards listed no paths at all.</p>
 <p><strong>Root cause:</strong> The controller's <code>Access</code> port returned path names, and the plan kept a path only if its name was a retained grant's name. Real paths are IAM bindings (<code>project:ROLE:MEMBER</code>), so no real path ever matched, and every one was revoked. The controller's unit tests and the LAW-17 law world both named paths after grants, which hid the mismatch. The access check (SB-706) already carried each path's grant, but the controller didn't use it.</p>
 <p><strong>Fix:</strong> <code>handoff.Access</code> returns <code>access.Path</code>s, and a path is kept only if its <code>Grant</code> is retained. The plan records retained grants, kept path ids and revoked path ids separately.</p>
-<p><strong>Caught by now:</strong> <code>TestHandoffGameDay</code> (<code>tests/handoff</code>, in <code>make check</code>), which hands off over the GCP fake's real IAM bindings. Why it wasn't caught before: every earlier test used fakes whose path names were the grants. Rule: test the controller at least once against the same adapters a real day uses.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li><li class="l2"><a href="#bug-0010-the-log-redactor-missed-encoded-secrets">BUG-0010 The log redactor missed encoded secrets</a></li><li class="l2"><a href="#bug-0011-markdown-role-labels-escaped-the-injection-flags">BUG-0011 Markdown role labels escaped the injection flags</a></li><li class="l2"><a href="#bug-0012-cutover-revoked-a-retained-grant">BUG-0012 Cutover revoked a retained grant</a></li></ul></aside>
+<p><strong>Caught by now:</strong> <code>TestHandoffGameDay</code> (<code>tests/handoff</code>, in <code>make check</code>), which hands off over the GCP fake's real IAM bindings. Why it wasn't caught before: every earlier test used fakes whose path names were the grants. Rule: test the controller at least once against the same adapters a real day uses.</p>
+<h2 id="bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013 Law tests leaked release stores into /tmp</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, a law test failed with <code>no space left on device</code> while SB-901's world was being built</td>
+<td>Test harness</td>
+<td>SB-506, SB-901</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>TestLAW06_TenantAccountPullsOnlySignedGatedBuilds</code> failed writing to <code>/tmp</code> with plenty of bytes free. <code>/tmp</code> held about 20,000 <code>sb-law06-*</code> directories.</p>
+<p><strong>Root cause:</strong> <code>newReleaseWorld</code> made a temporary release store with <code>os.MkdirTemp</code> for every run of every LAW-06 world, and nothing removed it. Each <code>make check</code> added several hundred more, until the tmpfs ran out of inodes.</p>
+<p><strong>Fix:</strong> The worlds record each directory they make, and <code>laws/main_test.go</code> removes them all when the test binary ends.</p>
+<p><strong>Caught by now:</strong> the failure itself, and a run of <code>make check</code> now leaves no <code>sb-law06-*</code> behind. Why it wasn't caught before: nothing checked what a test run leaves behind, and the leak only failed once enough runs had piled up. Rule: a test that makes a directory removes it, through <code>t.TempDir()</code> or the shared cleanup.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li><li class="l2"><a href="#bug-0010-the-log-redactor-missed-encoded-secrets">BUG-0010 The log redactor missed encoded secrets</a></li><li class="l2"><a href="#bug-0011-markdown-role-labels-escaped-the-injection-flags">BUG-0011 Markdown role labels escaped the injection flags</a></li><li class="l2"><a href="#bug-0012-cutover-revoked-a-retained-grant">BUG-0012 Cutover revoked a retained grant</a></li><li class="l2"><a href="#bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013 Law tests leaked release stores into /tmp</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

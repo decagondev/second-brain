@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,25 @@
 <p>An operator must be able to stop one department's brain without stopping the company's.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>Every audit row carries its space; <code>sb audit tail --space</code> filters</li>
-<li class="task"><span class="box"></span><code>sb kill space NAME</code> stops asks and actions in that space within seconds; company-wide asks drop its content</li>
-<li class="task"><span class="box"></span>Kill drill covers spaces</li>
+<li class="task done"><span class="box">✓</span>Every audit row carries its space; <code>sb audit tail --space</code> filters</li>
+<li class="task done"><span class="box">✓</span><code>sb kill space NAME</code> stops asks and actions in that space within seconds; company-wide asks drop its content</li>
+<li class="task done"><span class="box">✓</span>Kill drill covers spaces</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Audit field</li>
-<li class="task"><span class="box"></span>Kill scope</li>
-<li class="task"><span class="box"></span>Drill update</li>
-<li class="task"><span class="box"></span>LAW-10 test for a space</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-10, LAW-11</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Audit field</li>
+<li class="task done"><span class="box">✓</span>Kill scope</li>
+<li class="task done"><span class="box">✓</span>Drill update</li>
+<li class="task done"><span class="box">✓</span>LAW-10 test for a space</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-10, LAW-11</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S10.3c): sb-kill-switches(7), sb-kill(1), sb-audit(5), sb-audit(7), sb-audit(1) and sb-admin(3) changed first. <code>space:NAME</code> is a kill scope: <code>kill.Op.Space</code> stops asks (the ask agent), drafts and tool calls (the tool bus, at proposal, approval and execution, from the action's recorded space) in that space, and <code>Checker.SpaceKilled</code> makes retrieval refuse every chunk a killed space holds (<code>space_killed</code>), even through another holder, so company-wide answers drop it; a killed tenant or an unloaded list counts as every space killed. <code>sb kill space NAME</code> and <code>sb unkill space NAME</code> work against the local control plane. Audit rows carry <code>space</code> (<code>spc_NAME</code>) for decisions, tool calls and approvals in a space; it is hashed, absent for company-wide and cell-level rows, so older rows hash exactly as before; <code>approvals.Action</code> records its space. <code>audit.InSpace</code> filters a space's rows and its kill rows; the admin audit API takes <code>space=</code> (<code>sb audit tail</code> itself still needs a running cell, SB-208). <code>kill.DrillScopes</code> adds every space to the release drill. Apply no longer refuses spaces: W10 is built, and the smoke test applies <code>spaces.yaml</code> and then finds no changes. Two law tests: <code>TestLAW10_SpaceKillStopsTheSpaceOnly</code> (real checker and retrieval on a fake clock; retrieval that ignores space kills is caught) and <code>TestLAW11_SpaceIsInTheChain</code> (moving a row between spaces breaks the chain; a hash without the space is caught).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E10-department-spaces/SB-1008-audit-and-kill-switch-per-space.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

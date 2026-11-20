@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,25 @@
 <p>Finance controls need more than 'approver isn't requester'.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A workflow can require two approvers from different groups above a threshold the manifest sets</li>
-<li class="task"><span class="box"></span>No one approves an action they requested, or one requested by someone who reports to them</li>
-<li class="task"><span class="box"></span><code>Approvals.tla</code> extended and re-checked</li>
+<li class="task done"><span class="box">✓</span>A workflow can require two approvers from different groups above a threshold the manifest sets</li>
+<li class="task done"><span class="box">✓</span>No one approves an action they requested, or one requested by someone who reports to them</li>
+<li class="task done"><span class="box">✓</span><code>Approvals.tla</code> extended and re-checked</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Manifest fields</li>
-<li class="task"><span class="box"></span>Approval rules</li>
-<li class="task"><span class="box"></span>Model update</li>
-<li class="task"><span class="box"></span>Proofs</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-15</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Manifest fields</li>
+<li class="task done"><span class="box">✓</span>Approval rules</li>
+<li class="task done"><span class="box">✓</span>Model update</li>
+<li class="task done"><span class="box">✓</span>Proofs</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-15</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S12.2b): sb-approvals(7) gained "Segregation of duties, exactly", sb-tenant(5) the <code>duties</code> field and its rules, and sb-identity(7) the SCIM manager. The manifest's <code>duties: { WORKFLOW: { second: group:NAME, above: N } }</code> is checked (a known workflow, a different group, a whole number) and in the published schema; <code>workflow.Registry</code> puts it on the tool. The tool bus asks for two approvals when the payload's <code>amount</code> is above <code>N</code> or isn't a whole number: the first from the workflow's group (recorded as <code>first_approval</code>, audited, the action stays <code>PendingApproval</code>), the second from the duty's group by someone else on the same hash; an edit voids both. No approver may be the requester or anyone in the requester's reporting line (<code>approvals.ReportingLine</code> from the directory's <code>manager</code>, which SCIM now keeps); an unreadable or overlong line refuses. A new platform forbid refuses an approval by anyone outside the group named for it, because the new law test found that a tenant permit for IT leads let one of them give the finance approval. <code>Approvals.tla</code> gained the second approver and the reporting line, with <code>NoManagerApproval</code> and <code>TwoApprovers</code>; TLC is clean and the three new mutations are caught (19 of 19), and <code>crosscheck.py</code> mirrors it. <code>TestLAW15_SegregationOfDuties</code> drives the real bus and policies; a bus without reporting lines or without the duty is caught, and the test fails unless actions run after one and after two approvals.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E12-space-governance/SB-1204-segregation-of-duties.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

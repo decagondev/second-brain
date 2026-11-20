@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,23 @@
 <p>Leaks between departments are an answer-quality failure as much as a policy one; the evals must try to cause them.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A <code>space-leak</code> suite format: an asker, a space, a question that would need another space's restricted content, and the expected refusal</li>
-<li class="task"><span class="box"></span>Seed cases for People, Finance and Executive, run over the mock cell and failing until SB-1006</li>
+<li class="task done"><span class="box">✓</span>A <code>space-leak</code> suite format: an asker, a space, a question that would need another space's restricted content, and the expected refusal</li>
+<li class="task done"><span class="box">✓</span>Seed cases for People, Finance and Executive, run over the mock cell and failing until SB-1006</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Suite format in <code>sb-eval(5)</code></li>
-<li class="task"><span class="box"></span>Seed cases</li>
-<li class="task"><span class="box"></span>Wire into <code>make evals</code> as expected-red</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-20, LAW-22</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Suite format in <code>sb-eval(5)</code></li>
+<li class="task done"><span class="box">✓</span>Seed cases</li>
+<li class="task done"><span class="box">✓</span>Wire into <code>make evals</code> as expected-red</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-20, LAW-22</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S8.2): sb-eval(5) gained the <code>space</code> case field and "Space-leak suites", and sb-evals(7) lists <code>space-leak</code>. <code>evals/suites/space-leak.yaml</code> seeds People, Finance and Executive leak cases, plus two controls, over <code>evals/fixtures/space-leak/world.yaml</code>. Its world has restricted documents that a sharing mistake lets a non-member open at the source. On today's cell the three leak cases fail because the content really is cited, while the controls pass. <code>evals/expected_red.yaml</code> and <code>tools/check/evals_red.py</code> (in <code>make evals</code>, with a self-test) require exactly those cases to fail, so the suite is red for the right reason until SB-1006.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E00-foundations/SB-807-space-leak-eval-scaffold.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

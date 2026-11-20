@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a class="current" href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a class="current" href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-AGENTS(7)</span><span>Second Brain Manual</span><span>SB-AGENTS(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-agents7">sb-agents(7)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-agents — what the v1 agents do, and the one path every tool call takes</p>
@@ -46,6 +46,26 @@ tool call: killed? → authorise → audit → approved? → execute
 <td>No. A person sends it</td>
 </tr>
 <tr>
+<td><code>incident-summary</code></td>
+<td>Engineering: a timeline of an incident, from tickets, chat and docs, every line cited</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>spec-digest</code></td>
+<td>Product: what a spec decides and what it leaves open</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>close-checklist</code></td>
+<td>Finance: what is done and what is open for a month-end close</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>runbook-answer</code></td>
+<td>IT and security: the steps of a runbook for a question, in order</td>
+<td>No</td>
+</tr>
+<tr>
 <td>workflow, e.g. <code>ticket-update</code></td>
 <td>Proposes one consequential action</td>
 <td>Only after approval, and only with a receipt</td>
@@ -53,6 +73,14 @@ tool call: killed? → authorise → audit → approved? → execute
 </tbody>
 </table>
 <p>Agents are <strong>definitions in the release bundle</strong>: a prompt, a tool list and limits. No company has custom agent code (P3). Prompts and the model version are pinned per release (ADR-0013).</p>
+<h3 id="department-agents-sb-1102">Department agents (SB-1102)</h3>
+<p><code>incident-summary</code>, <code>spec-digest</code>, <code>close-checklist</code> and <code>runbook-answer</code> are read-only agents for one department each. Each is a prompt in the release bundle (<code>internal/core/prompts/set/NAME.md</code>) and runs on the <code>ask</code> agent's path: the same retrieval, space checks and live ACL, the same model gateway and the same composer. They differ from <code>ask</code> in three ways:</p>
+<ol>
+<li><strong>Only in their template's spaces.</strong> Each belongs to one template of the catalogue (sb-departments(7)): <code>incident-summary</code> to <code>engineering</code>, <code>spec-digest</code> to <code>product</code>, <code>close-checklist</code> to <code>finance</code> and <code>runbook-answer</code> to <code>it-security</code>. It runs only in a space made from that template whose <code>agents</code> list it (the template's default when the manifest enables it, sb-space(5)), and the manifest's <code>agents</code> must enable it. Anywhere else, and in any company-wide ask, it is refused with <code>EINVAL</code> before retrieval. A space can't borrow another department's agent.</li>
+<li><strong>Every claim cited.</strong> A claim the model leaves uncited is dropped from the answer, and counted in <code>dropped</code>, rather than labelled. An answer with nothing left is the one uncited "nothing you can open answers this" claim, with its notice (LAW-14).</li>
+<li><strong>No tools.</strong> None of them has a tool, so nothing they read can lead to a tool call (LAW-09).</li>
+</ol>
+<p>They are asked through <code>POST /v1/ask</code> with <code>"agent": "NAME"</code> (sb-ask(3)), are killed like any agent (<code>sb kill agent NAME</code>), and each has an eval suite, <code>evals/suites/agent-NAME.yaml</code>.</p>
 <h3 id="the-tool-bus">The tool bus</h3>
 <p>Every tool call takes the same path, in this order:</p>
 <ol>
@@ -123,7 +151,7 @@ approval: { ticket-update: group:it-leads }
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-approvals.7.html">sb-approvals(7)</a>, <a href="sb-actions.3.html">sb-actions(3)</a>, <a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent runtime</a></p><p class="srcline">Source: <code>manual/sb-agents.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#the-agents">The agents</a></li><li class="l3"><a href="#the-tool-bus">The tool bus</a></li><li class="l3"><a href="#limits">Limits</a></li><li class="l3"><a href="#injection">Injection</a></li><li class="l2"><a href="#model-gateway">MODEL GATEWAY</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#the-agents">The agents</a></li><li class="l3"><a href="#department-agents-sb-1102">Department agents (SB-1102)</a></li><li class="l3"><a href="#the-tool-bus">The tool bus</a></li><li class="l3"><a href="#limits">Limits</a></li><li class="l3"><a href="#injection">Injection</a></li><li class="l2"><a href="#model-gateway">MODEL GATEWAY</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a class="current" href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a class="current" href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-TENANT(1)</span><span>Second Brain Manual</span><span>SB-TENANT(1)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-tenant1">sb-tenant(1)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-tenant — validate a manifest, make a cell match it, and prove the laws hold on real data</p>
@@ -72,6 +72,16 @@ sb tenant verify FILE [--law LAW-nn]... [--sample N]
 <td>name</td>
 <td><code>workflow ticket-update (approval group:it-leads)</code></td>
 </tr>
+<tr>
+<td><code>space</code></td>
+<td>name</td>
+<td><code>space finance (template finance, label restricted, members group:finance, stewards group:finance-leads, agents ask, retention 365, scope docs /Finance/**)</code> (<a href="sb-space.5.html">sb-space(5)</a>); every field after the template's defaults are filled in</td>
+</tr>
+<tr>
+<td><code>barrier</code></td>
+<td>the two groups, sorted</td>
+<td><code>barrier group:deal-team-orion / group:everyone</code></td>
+</tr>
 </tbody>
 </table>
 <p>Lines start with <code>+</code> (add), <code>~</code> (change, showing the old value after <code>was</code>) or <code>-</code> (remove), in the order of the table, then by name. The last line is <code>plan: A to add, C to change, R to remove</code>, or <code>plan: no changes</code>. With <code>--json</code> the plan is <code>{"tenant": …, "changes": [{"op", "kind", "name", "attrs", "was"}], "add": A, "change": C, "remove": R}</code>, with <code>op</code> one of <code>add</code>, <code>change</code>, <code>remove</code>. The same manifest and the same applied state always give the same plan, byte for byte.</p>
@@ -117,7 +127,7 @@ sb tenant verify FILE [--law LAW-nn]... [--sample N]
 <li><strong>LAW-14.</strong> Every claim of every sampled answer must have a citation or be labelled <code>uncited</code>.</li>
 <li><strong>Report.</strong> One line per law: <code>pass</code>, <code>fail</code> or <code>unknown</code>, with counts only. The exit status is 0 only if every law passes. <code>unknown</code> (for example, no users to sample) is a failure.</li>
 </ul>
-<p>Verify runs against a cell through the same <code>verify.Target</code> interface whether the cell is local or deployed. Against a deployed cell it needs the cell runtime's verifier endpoint, and until then <code>sb tenant verify</code> exits <code>ENOTIMPL</code>. The local cell (<code>tools/evalcell --verify</code>) runs it over a fixture world today.</p>
+<p>Verify runs against a cell through the same <code>verify.Target</code> interface whether the cell is local or deployed. Against a deployed cell, <code>sb tenant verify FILE --cell URL</code> posts the request to the cell's <strong>verifier endpoint</strong> (sb-runtime(7), Endpoints), which runs the checks inside the cell and returns only the report. The caller authenticates with the control plane's identity (<code>SB_TOKEN</code>). The local cell (<code>tools/evalcell --verify</code>) runs the same checks over a fixture world.</p>
 <h2 id="options">OPTIONS</h2>
 <table>
 <thead>
@@ -138,6 +148,10 @@ sb tenant verify FILE [--law LAW-nn]... [--sample N]
 <tr>
 <td><code>--sample N</code></td>
 <td>(verify) Users × questions sampled (default 50)</td>
+</tr>
+<tr>
+<td><code>--cell URL</code></td>
+<td>(verify) The deployed cell's base URL, e.g. <code>https://api-gamma-prod-7731.a.run.app</code>; its verifier endpoint answers</td>
 </tr>
 <tr>
 <td><code>--json</code></td>

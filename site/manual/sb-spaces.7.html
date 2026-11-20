@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-spaces(7) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a class="current" href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-SPACES(7)</span><span>Second Brain Manual</span><span>SB-SPACES(7)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-spaces7">sb-spaces(7)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-spaces — department brains as spaces inside one company's cell, which can only narrow access</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-text">cell (one company)  ⊃  spaces  (engineering, people, finance, …)
+ask in space S      →  chunks from S's scope that pass every check below
+ask company-wide    →  chunks from every space the asker is a member of,
+                       minus restricted content from spaces they aren't in
+use a chunk         ⇔  member ∧ label allowed ∧ no barrier ∧ source ACL = Allow (live)
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>This page was the W8 draft that W10 to W12 build against (<a href="../docs/adr/ADR-0020-department-spaces-inside-the-cell.html">ADR-0020</a>, <a href="../docs/08-department-brains.html">08 Department brains</a>); W10 built spaces in the cell (SB-1001 to SB-1008), and <code>sb tenant apply</code> applies them since SB-1008. Until then it refused a manifest that declared any, so a company never believed its People brain was restricted before the whole cell enforced it.</p>
+<h3 id="what-a-space-is">What a space is</h3>
+<p>A <strong>space</strong> is a department brain inside a company's cell: an Engineering brain, a People brain, a Finance brain. It has:</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Scope</strong></td>
+<td>which parts of the company's connectors it covers: folders, channels, projects, repositories, record types</td>
+</tr>
+<tr>
+<td><strong>Members</strong></td>
+<td>the IdP groups whose people may ask in it</td>
+</tr>
+<tr>
+<td><strong>Stewards</strong></td>
+<td>the IdP groups who may propose changes to it (W12)</td>
+</tr>
+<tr>
+<td><strong>Label default</strong></td>
+<td>the label its documents get when the source carries none (below)</td>
+</tr>
+<tr>
+<td><strong>Agents</strong></td>
+<td>which agents run in it, from the manifest's <code>agents</code></td>
+</tr>
+<tr>
+<td><strong>Retention</strong></td>
+<td>its own <code>retention_days</code>, at most the tenant's</td>
+</tr>
+<tr>
+<td><strong>Data key</strong></td>
+<td>its own data key, wrapped by the cell's root key, so a space can be crypto-shredded alone (LAW-18 still holds)</td>
+</tr>
+</tbody>
+</table>
+<p>Every space shares the cell's IdP, release, audit chain and index. <strong>The cell is still the tenant boundary</strong> (ADR-0001), so nothing about LAW-02 changes. A department that needs harder separation than a space gives, such as a legally separate subsidiary, is a separate tenant.</p>
+<p>A document can be in several spaces (a shared spec in Engineering and Product), and a person can be a member of several spaces. A manifest with no <code>spaces:</code> block behaves exactly as a cell does today: one undivided brain, where the source's live ACL is the only rule.</p>
+<h3 id="spaces-only-narrow">Spaces only narrow</h3>
+<p>A space can <strong>hide</strong> what someone could open at the source. It can never <strong>show</strong> what the source denies (LAW-19). The source's live ACL stays last and stays the authority (ADR-0002). The space checks run before it because they are local and cheap, so they save ACL calls without ever replacing one.</p>
+<h3 id="labels">Labels</h3>
+<p>Every document carries one label from a four-step ladder:</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Meaning</th>
+<th>Who may read it, inside its space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public</code></td>
+<td>may leave the company</td>
+<td>any member, and any company-wide asker</td>
+</tr>
+<tr>
+<td><code>internal</code></td>
+<td>anyone in the company</td>
+<td>any member, and any company-wide asker</td>
+</tr>
+<tr>
+<td><code>confidential</code></td>
+<td>the space's people and named readers</td>
+<td>members of a space that holds it</td>
+</tr>
+<tr>
+<td><code>restricted</code></td>
+<td>need-to-know</td>
+<td>members of a space that holds it, and never in a company-wide answer for anyone else (LAW-20)</td>
+</tr>
+</tbody>
+</table>
+<p>A label from the source wins where the source has one (for example a Drive label). Otherwise the document gets the most restrictive default among the spaces that hold it. A document with no label and no space default is <code>internal</code>. An unreadable or unknown label is <code>restricted</code>: unknown never widens.</p>
+<h3 id="information-barriers">Information barriers</h3>
+<p>A <strong>barrier</strong> separates two groups, so that neither side's people can use content held only by the other side, in either direction (LAW-22). Barriers are for ethical walls: a deal team and everyone else, or two competing client teams. A barrier holds even where membership and labels would allow a read. It is checked on the asker's groups against the groups of every space that holds the document, and against the groups of the document's owner at the source, so a deal team's file shared with everyone still stays on the deal team's side (SB-1203). It holds for drafts, actions and approvals as well as answers (sb-permissions(7), Barriers beyond reads).</p>
+<h3 id="company-wide-asks">Company-wide asks</h3>
+<p>Built in SB-1006: retrieval runs the space checks before the live ACL batch (sb-ask(3), How the <code>ask</code> agent runs).</p>
+<p>An ask with no space is <strong>company-wide</strong>. Its candidates come from every space the asker is a member of, plus <code>public</code> and <code>internal</code> content from spaces they aren't in. Content labelled <code>confidential</code> or <code>restricted</code> comes only from the asker's own spaces. Each chunk still passes the barrier check and the source's live ACL.</p>
+<h3 id="the-access-decision-in-order">The access decision, in order</h3>
+<p>Every chunk passes all of these before it reaches a model's context, in this order, and the first that doesn't say yes refuses it. Any <code>Unknown</code> refuses (LAW-03).</p>
+<ol>
+<li><strong>Membership:</strong> for an ask in space S, is the asker a member of S? For a company-wide ask, which spaces hold the chunk, and is the asker a member of any of them?</li>
+<li><strong>Label:</strong> is the chunk's label allowed for this asker, as the table above says?</li>
+<li><strong>Barrier:</strong> is there a barrier between the asker's groups and the groups of any space that holds the document?</li>
+<li><strong>Source ACL:</strong> does the source allow the asker to open the document now, asked live (sb-permissions(7))?</li>
+</ol>
+<p>The exact checks, the Cedar entities and the error codes are in <a href="sb-permissions.7.html#spaces-labels-and-barriers-exactly-sb-802">sb-permissions(7), Spaces, labels and barriers</a> and <a href="sb-policy.5.html#spaces-labels-and-barriers-sb-802-built-in-sb-1004">sb-policy(5), Spaces</a>.</p>
+<h3 id="the-space-registry-and-the-request-context-sb-1002">The space registry and the request context (SB-1002)</h3>
+<p>The cell keeps its spaces in its own database, one row per space, with the id <code>spc_&lt;name&gt;</code> (for example <code>spc_finance</code>) and every field of sb-space(5) after the template's defaults are filled in. Only <code>sb tenant apply</code> writes the registry: it makes the rows match the manifest, so a space the manifest drops is deleted, and nothing else in the cell can create, change or delete a space (LAW-16).</p>
+<p>Every request carries the space it is in, the same way it carries its tenant (sb-tenancy(7), Scope in code). The auth middleware sets it, and nothing else can:</p>
+<ul>
+<li>a request names its space with <code>?space=NAME</code> (sb-api(3), Spaces). No <code>space</code>, or <code>space=company</code>, is a <strong>company-wide</strong> request;</li>
+<li>a space the registry doesn't hold is <code>ESPACE</code>, never a company-wide request instead;</li>
+<li>a space the asker isn't a member of is <code>ESPACE</code> too, with the same message, so the error never tells a non-member whether a space exists;</li>
+<li>a registry that can't answer is <code>EUNAVAIL</code>. Unknown never means company-wide.</li>
+</ul>
+<p>Membership is read from the asker's directory groups on every request, so a move takes effect at the next request (LAW-21). A space's members are matched by group name: <code>group:finance</code> is the directory group <code>finance</code>.</p>
+<h3 id="stewards">Stewards</h3>
+<p>Stewards don't approve their own changes. They propose a space change as a manifest diff, and a tenant operator approves it (LAW-16). Finance spaces add segregation of duties: whoever requests a change can't approve it.</p>
+<p><strong>Delegated changes, exactly (SB-1201).</strong> A steward of a space, a member of one of its <code>stewards</code> groups, proposes a new definition of <strong>that space only</strong>, through <code>POST /v1/spaces/NAME/proposals</code> (sb-admin(3), Proposals). The proposal is checked when it's made, and refused with <code>EMANIFEST</code> if it:</p>
+<ul>
+<li>names another space, or changes anything outside this space (the barriers, the connectors, other spaces);</li>
+<li>changes the space's <code>template</code>;</li>
+<li>lowers the space's <code>label</code> below what it is now, on the ladder <code>public</code> &lt; <code>internal</code> &lt; <code>confidential</code> &lt; <code>restricted</code>;</li>
+<li>leaves the space with no stewards, or fails any rule of <code>sb tenant check</code> (sb-space(5)).</li>
+</ul>
+<p>A proposal records the steward, the hash of the manifest it was based on and the hash of the manifest it would make, and writes a <code>kind: config</code> audit row (<code>state</code> <code>proposed</code>, the space in <code>space</code>). A tenant operator approves it by sending that exact hash back (LAW-15's hash binding, applied to manifests): a different hash, or a manifest that changed since the proposal was made, is refused, and the steward proposes again. Nobody approves their own proposal, even an operator who is also a steward (<code>EPERM</code>). An approval writes a <code>kind: config</code> row (<code>state</code> <code>approved</code>) and returns the manifest to apply; the space changes only when it's applied (LAW-16). Stewards widen nothing alone: every change, adding members included, needs an operator.</p>
+<h3 id="access-reviews-exactly-sb-1202">Access reviews, exactly (SB-1202)</h3>
+<p>Each quarter the stewards of every <code>restricted</code> space re-certify who can use it, for SOX and SOC 2. The <code>review</code> job (sb-runtime(7), Schedules) opens one review per restricted space at 05:00 UTC on the 1st of January, April, July and October, for the quarter just begun (<code>2027-Q1</code>). A space that already has a review for that quarter gets no second one.</p>
+<ul>
+<li><strong>Who is listed.</strong> Every person in every directory group named in the space's <code>members</code>, once, with the groups that give them access (<code>via</code>) and their <strong>last use</strong>: the time of the latest audit row written in the space with them as actor, or <code>never</code>. A group the directory can't read stops the review from opening, and the job fails loudly, because a list with someone missing would certify less than it claims.</li>
+<li><strong>Deciding.</strong> A steward marks each person <code>certify</code> or <code>remove</code>; a removal needs a reason. Nobody decides on their own access: another steward, or an operator, does. A decision is final, and each is a <code>kind: access</code> audit row with the space, whose <code>seq</code> the review keeps.</li>
+<li><strong>Removals ask; they don't act.</strong> A decision changes nothing by itself. When the last person is decided the review is complete, and each removal becomes a change request for the group that gives the access. For a group listed in the manifest's <code>groups:</code> (Identity Platform without SCIM, sb-identity(7)), the requests together become one manifest proposal that takes those people out of those groups, which an operator approves by hash like any steward proposal (LAW-16); for a group from the IdP, an <strong>IdP change request</strong> names the person and the group, for the operator to make in the IdP, after which SCIM removes the access (LAW-21). If taking the people out would leave the manifest failing <code>sb tenant check</code>, those requests become IdP-style requests for the operator to resolve by hand, never dropped. Removing someone from a group removes everything that group gives them, which is why the review shows <code>via</code>.</li>
+<li><strong>Overdue.</strong> A review still open 14 days after it opened is overdue: <code>sb_access_review_overdue{space}</code> is 1 and a Sev-2 <code>review_overdue</code> alert goes to the tenant operator (sb-observability(7)). It stays overdue until it is complete.</li>
+<li><strong>Evidence.</strong> <code>GET /v1/admin/reviews/ID/evidence</code> (sb-admin(3)) returns the review as one JSON document: the space, quarter, stewards, opening, due and completion times, every person with their <code>via</code>, last use, decision, who decided, when, why, and the audit <code>seq</code> of the decision, the change requests with their proposal ids, and <code>sha256</code>, the SHA-256 of the canonical <code>review</code> object. An auditor checks the hash and finds each decision's row in <code>sb audit export</code> by its <code>seq</code>.</li>
+</ul>
+<h3 id="legal-holds-exactly-sb-1207">Legal holds, exactly (SB-1207)</h3>
+<p>A legal hold stops deletion in the scope of a matter, and only there. A <strong>Legal steward</strong> (a steward of any space whose template is <code>legal</code>) places a hold with <code>POST /v1/holds</code> (sb-admin(3)), naming the matter and its scope:</p>
+<ul>
+<li>a <strong>space</strong> (<code>"space": "finance"</code>): everything the cell keeps in that space;</li>
+<li><strong>custodians</strong> (<code>"users": ["usr_…"]</code>): everything the cell keeps about those people, in every space;</li>
+<li>or both: those people's records in that space.</li>
+</ul>
+<p>While a hold is active:</p>
+<ul>
+<li><strong>Retention skips held records.</strong> The nightly sweep (sb-tenant(5), Retention and deletion) deletes everything else older than <code>retention_days</code>, and keeps every record a hold covers, however old. A record whose store doesn't know its space or its user (log files, conversations) is kept if any hold could cover it: unknown never deletes.</li>
+<li><strong>Subject erasure is refused</strong> (<code>EHOLD</code>), and nothing is erased, for a custodian, and for anyone while a hold on a whole space is active (their records there are held): an erasure would destroy what the hold preserves. It can be made again once the hold is released.</li>
+<li><strong>A held space can't be removed.</strong> <code>sb tenant apply</code> of a manifest without a held space fails with <code>EHOLD</code> before anything changes, so the space's row stays and its key is never crypto-shredded. A hold on custodians alone covers every space, so no space can be removed while one is active.</li>
+</ul>
+<p>Placing and releasing a hold each write a <code>kind: retention</code> audit row (subject <code>hold:ID</code>, state <code>placed</code> or <code>released</code>, the matter and scope in the reason) <strong>before</strong> the hold takes or loses effect; if the row can't be written, nothing changes (LAW-11). Releasing needs a Legal steward and a reason. A released hold stops protecting at once, and the next sweep deletes what it had kept.</p>
+<h3 id="reorg-preview-sb-1206">Reorg preview (SB-1206)</h3>
+<p>Reorgs are planned. Before the IdP changes, HR and IT run <code>sb space diff</code> (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.</p>
+<h3 id="moves">Moves</h3>
+<p>When the IdP removes someone from a space's groups, they lose that space within 5 minutes. A new membership grants nothing until the cell has confirmed it from the directory (LAW-21, W12).</p>
+<h2 id="laws">LAWS</h2>
+<p>LAW-19 Spaces only narrow · LAW-20 Restricted stays home · LAW-21 Moves revoke fast · LAW-22 Barriers hold (<a href="sb-laws.7.html">sb-laws(7)</a>). LAW-02 and LAW-03 are unchanged.</p>
+<h2 id="examples">EXAMPLES</h2>
+<p>A People brain that answers everyone's handbook questions but keeps case files home:</p>
+<pre><code class="language-yaml">spaces:
+  people:
+    template: people
+    members: [group:people-team]
+    stewards: [group:hr-leads]
+    label: restricted
+    scope:
+      docs: [&quot;/People/**&quot;]
+</code></pre>
+<p>Anyone may ask "how many days of parental leave do we get?" company-wide and get a cited answer, because the handbook is labelled <code>internal</code> at the source. A case file in <code>/People/Cases/</code> is <code>restricted</code>, so no company-wide answer for anyone outside <code>people-team</code> uses it, even if a Drive sharing mistake made it openable.</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-departments.7.html">sb-departments(7)</a>, <a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-policy.5.html">sb-policy(5)</a>, <a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-tenancy.7.html">sb-tenancy(7)</a></p><p class="srcline">Source: <code>manual/sb-spaces.7.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#what-a-space-is">What a space is</a></li><li class="l3"><a href="#spaces-only-narrow">Spaces only narrow</a></li><li class="l3"><a href="#labels">Labels</a></li><li class="l3"><a href="#information-barriers">Information barriers</a></li><li class="l3"><a href="#company-wide-asks">Company-wide asks</a></li><li class="l3"><a href="#the-access-decision-in-order">The access decision, in order</a></li><li class="l3"><a href="#the-space-registry-and-the-request-context-sb-1002">The space registry and the request context (SB-1002)</a></li><li class="l3"><a href="#stewards">Stewards</a></li><li class="l3"><a href="#access-reviews-exactly-sb-1202">Access reviews, exactly (SB-1202)</a></li><li class="l3"><a href="#legal-holds-exactly-sb-1207">Legal holds, exactly (SB-1207)</a></li><li class="l3"><a href="#reorg-preview-sb-1206">Reorg preview (SB-1206)</a></li><li class="l3"><a href="#moves">Moves</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,23 +60,26 @@
 <p>People need to see which brain they're asking and where each citation came from.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A space switcher listing only the asker's spaces; each citation shows its space and label</li>
-<li class="task"><span class="box"></span>In the chat app a channel maps to a space in the manifest; an unmapped channel asks company-wide</li>
-<li class="task"><span class="box"></span>Accessible (axe passes)</li>
+<li class="task done"><span class="box">✓</span>A space switcher listing only the asker's spaces; each citation shows its space and label</li>
+<li class="task done"><span class="box">✓</span>In the chat app a channel maps to a space in the manifest; an unmapped channel asks company-wide</li>
+<li class="task done"><span class="box">✓</span>Accessible (axe passes; the human WCAG audit of SB-307 covers the switcher too)</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>UI switcher</li>
-<li class="task"><span class="box"></span>Citation badges</li>
-<li class="task"><span class="box"></span>Channel mapping</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests: LAW-14, LAW-20</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>UI switcher</li>
+<li class="task done"><span class="box">✓</span>Citation badges</li>
+<li class="task done"><span class="box">✓</span>Channel mapping</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests: LAW-14, LAW-20</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S10.3b): sb-ask(3) gained <code>GET /v1/spaces</code>, <code>cites[].spaces</code> and <code>cites[].label</code>, the switcher and the place on each chip, and the chat app's channel step; sb-space(5) gained <code>channels</code> and rule 10. Every citation carries the names of the spaces holding its document and its label. <code>api.Spaces</code> lists only the asker's spaces, never another's or another tenant's, and fails closed. A space's <code>channels</code> (<code>#name</code>, each in one space only) are parsed, planned and round-tripped. The Slack app asks a mapped channel in its space for members, gives a non-member no answer (never a company-wide one), and asks unmapped channels and DMs company-wide; a registry that can't answer gives no answer. The web UI shows "Ask in" with "Whole company" and the asker's spaces only, sends <code>?space=</code>, starts a new conversation on a switch, shows no switcher when there are no spaces or the list fails, and names each source's place ("Finance · restricted") in its chip and accessible name. Web tests: 22, including axe on the switcher and the LAW-14 property with places on chips. The new law test <code>TestLAW20_ChatChannelsAskOnlyInTheirSpace</code> drives the real Slack app; a registry read that loses its answer is caught.</p>
+<p><strong>Left:</strong> the human WCAG audit (SB-307's) and a run in a real Slack workspace (SB-308's).</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E10-department-spaces/SB-1007-spaces-in-the-web-ui-and-chat-app.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../../";</script>

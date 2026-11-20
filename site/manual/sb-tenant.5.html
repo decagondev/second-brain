@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a class="current" href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a class="current" href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a></div></aside>
   <main class="content" id="main"><div class="manhead"><span>SB-TENANT(5)</span><span>Second Brain Manual</span><span>SB-TENANT(5)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-tenant5">sb-tenant(5)</h1>
 <h2 id="name">NAME</h2>
 <p>sb-tenant — tenant manifest format</p>
@@ -97,7 +97,7 @@ agents: [ask]
 <td>URI</td>
 <td>yes</td>
 <td></td>
-<td><code>oidc://ISSUER-HOST[/path]</code>, where the host is a DNS name. SCIM is served at <code>/scim/v2</code> on the cell</td>
+<td><code>oidc://ISSUER-HOST[/path]</code>, where the host is a DNS name, or <code>identity-platform://PROJECT/IDP_TENANT</code> for a company signing in through Identity Platform (<a href="sb-identity.7.html">sb-identity(7)</a>). SCIM is served at <code>/scim/v2</code> on the cell</td>
 </tr>
 <tr>
 <td><code>region</code></td>
@@ -111,14 +111,14 @@ agents: [ask]
 <td>map kind→vendor</td>
 <td>yes</td>
 <td></td>
-<td>Kinds: <code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>. At least one. Vendor is <code>[a-z0-9-]</code>, e.g. <code>sharepoint</code>. Read-only unless named in <code>workflows</code></td>
+<td>Kinds: <code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>, <code>code</code> (SB-1103), <code>hris</code> (SB-1104) and <code>accounting</code> (SB-1105). At least one. Vendor is <code>[a-z0-9-]</code>, e.g. <code>sharepoint</code>. Read-only unless named in <code>workflows</code></td>
 </tr>
 <tr>
 <td><code>agents</code></td>
 <td>list</td>
 <td>yes</td>
 <td></td>
-<td><code>ask</code> (required), <code>draft-reply</code>. No duplicates</td>
+<td><code>ask</code> (required), <code>draft-reply</code>, and the department agents <code>incident-summary</code>, <code>spec-digest</code>, <code>close-checklist</code> and <code>runbook-answer</code> (sb-agents(7)). No duplicates</td>
 </tr>
 <tr>
 <td><code>workflows</code></td>
@@ -133,6 +133,13 @@ agents: [ask]
 <td>if <code>workflows</code></td>
 <td></td>
 <td>Principal is <code>group:NAME</code> from the IdP. Every workflow needs one</td>
+</tr>
+<tr>
+<td><code>duties</code></td>
+<td>map workflow→<code>{ second: group:NAME, above: N }</code></td>
+<td>no</td>
+<td>none</td>
+<td>Segregation of duties (<a href="sb-approvals.7.html">sb-approvals(7)</a>): actions with an <code>amount</code> above <code>N</code> (or no amount) need a second approver from <code>second</code>. <code>second</code> differs from the workflow's <code>approval</code> group; <code>N</code> is a whole number, at least 0</td>
 </tr>
 <tr>
 <td><code>retention_days</code></td>
@@ -162,15 +169,36 @@ agents: [ask]
 <td><code>{}</code></td>
 <td>Kinds as in <code>connectors</code>. Source paths or channels never ingested, e.g. <code>chat: ["#hr-*"]</code></td>
 </tr>
+<tr>
+<td><code>groups</code></td>
+<td>map <code>group:NAME</code>→list of emails</td>
+<td>no</td>
+<td>none</td>
+<td>Only with an <code>identity-platform://</code> idp: the steward-managed group list for a company without SCIM (<a href="sb-identity.7.html">sb-identity(7)</a>). At most 200 groups and 2,000 members in all; each email at most once per group</td>
+</tr>
+<tr>
+<td><code>spaces</code></td>
+<td>map name→space</td>
+<td>no</td>
+<td>none</td>
+<td>Department spaces (<a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-spaces.7.html">sb-spaces(7)</a>). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today</td>
+</tr>
+<tr>
+<td><code>barriers</code></td>
+<td>list of group pairs</td>
+<td>no</td>
+<td>none</td>
+<td>Information barriers (<a href="sb-space.5.html">sb-space(5)</a>). Checked, planned and applied like <code>spaces</code></td>
+</tr>
 </tbody>
 </table>
 <h2 id="validation-rules">VALIDATION RULES</h2>
 <ol>
 <li>Every key is known, no key appears twice, and types match. <code>tenant</code> and <code>region</code> must match the existing cell if one exists; <code>check</code> has no network, so <code>sb tenant apply</code> enforces that part (SB-104).</li>
 <li><code>ask</code> is in <code>agents</code>.</li>
-<li>Each item in <code>workflows</code> has an <code>approval</code> entry, and its connector kind is in <code>connectors</code>.</li>
+<li>Each item in <code>workflows</code> has an <code>approval</code> entry, and its connector kind is in <code>connectors</code>. Each key of <code>duties</code> is in <code>workflows</code>, has exactly <code>second</code> and <code>above</code>, and its <code>second</code> group isn't the workflow's <code>approval</code> group.</li>
 <li>No field anywhere is named <code>version</code>, <code>platform</code>, <code>secret</code>, <code>password</code>, <code>token</code> or <code>key</code>, alone or as part of a <code>_</code>-separated name such as <code>api_token</code>.</li>
-<li><code>pilot_group</code> and <code>approval</code> principals are <code>group:</code> references, never individual users. That way access follows the IdP.</li>
+<li><code>pilot_group</code>, <code>approval</code> and <code>duties</code> principals are <code>group:</code> references, never individual users. That way access follows the IdP.</li>
 <li><code>custody</code>, <code>placement</code> and <code>key_custodian</code> are rejected: custody is a factory record that changes only through a dual-approved hand-off (<a href="sb-factory.7.html">sb-factory(7)</a>).</li>
 </ol>
 <h2 id="syntax">SYNTAX</h2>
@@ -287,6 +315,7 @@ agents: [ask]
 <li><strong>Audit</strong> follows its own policy: seven years, WORM (sb-audit(7)).</li>
 <li><strong>The index</strong> is derived from the sources and ages with them. A document deleted at its source leaves the index within one sync (SB-209), and a rebuild gives the same index (LAW-13). The job has no access to it.</li>
 </ul>
+<p><strong>Legal holds (SB-1207).</strong> A hold placed by a Legal steward (sb-spaces(7), Legal holds) keeps every record in its scope, a space, custodians, or both, out of the sweep for as long as it is active, and refuses subject erasure of its custodians and removal of its space. Each sweep's audit row also counts what holds kept (<code>held=N</code>).</p>
 <p><strong>Subject deletion.</strong> <code>POST /v1/admin/subjects/erase</code> (sb-admin(3)) erases everything the cell's derived stores hold about one user, whatever its age: their traces and drafts, conversations, feedback, and every log line that names them. It writes a <code>kind: retention</code> audit row (subject <code>erase:USER</code>, state <code>requested</code>) <strong>before</strong> erasing anything, and a second row (state <code>done</code>, or <code>failed</code> with the store that failed) after. If the first row can't be written, nothing is erased. The audit rows about the user, including their earlier actions and approvals, stay: they are the record, and they hold ids, not content. Content about the person inside the sources (a CRM contact, a document they wrote) is deleted at the source, and the index follows (LAW-13).</p>
 <h2 id="drift">DRIFT</h2>
 <p>Every hour, each cell reports its live configuration as resources in the plan's terms (kind, name, attributes), and the control plane compares it with what was last applied from the manifest (SB-510). Any difference is a <code>manifest_drift</code> alert that names the resource and the field, for example <code>connector tickets: attribute vendor: applied jira, live linear</code>, or <code>agent draft-reply: present live, not applied</code>. Values are configuration, never secrets (secrets aren't in the manifest). Drift isn't fixed automatically: <code>sb tenant apply</code> with the manifest makes the cell match again, and if the live change was intended, the manifest changes first (LAW-16).</p>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>spaces.yaml · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="active" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a class="current" href="../../examples/tenants/spaces.yaml.html">spaces.yaml</a><a href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / examples/tenants</div><h1 id="spacesyaml">spaces.yaml</h1>
+<pre><code class="language-yaml"># Department spaces (sb-space(5)): checked, planned and applied like any other field.
+tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack, tickets: jira }
+agents: [ask, draft-reply]
+retention_days: 730
+spaces:
+  engineering:
+    template: engineering
+    members: [group:eng, group:product]
+    stewards: [group:eng-leads]
+    scope:
+      docs: [&quot;/Engineering/**&quot;, &quot;/Specs/**&quot;]
+      chat: [&quot;#eng-*&quot;]
+      tickets: [ENG, OPS]
+  support:
+    template: support
+    members: [group:support]
+    scope: { tickets: [SUP], docs: [&quot;/Support/**&quot;] }
+  finance:
+    template: finance
+    members: [group:finance]
+    stewards: [group:finance-leads]
+    retention_days: 365
+    channels: [&quot;#finance-ask&quot;]
+    scope:
+      docs: [&quot;/Finance/**&quot;]
+barriers:
+  - [group:deal-team-orion, group:everyone]
+</code></pre>
+<p><a href="../README.html">Back</a></p><p class="srcline">Source: <code>examples/tenants/spaces.yaml</code></p></main>
+  
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>
