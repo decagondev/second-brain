@@ -1,3 +1,2 @@
 LAW-21 SB-1205 TestLAW21_MovesRevokeFast
-LAW-22 SB-1203 TestLAW22_BarriersHold
 LAW-23 SB-1302 TestLAW23_GrantsAreConsentedAndRevocable

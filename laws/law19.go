@@ -20,13 +20,14 @@ type SpaceDef struct {
 	Label   string
 }
 
-// SpaceDoc is one document: its label, the users the source lets open it, and the spaces
-// whose scope covers it.
+// SpaceDoc is one document: its label, the users the source lets open it, the spaces
+// whose scope covers it, and its owner at the source ("" for none; SB-1203).
 type SpaceDoc struct {
 	ID      string
 	Label   string
 	Viewers []string
 	Spaces  []string
+	Owner   string
 }
 
 // SpaceSpec is a whole company.
@@ -49,17 +50,9 @@ type SpaceSystem interface {
 // retrieval (SB-1006). See law20ask.go.
 var NewSpaceSystem = func() SpaceSystem { return newAskSpaces() }
 
-// NewBarrierSystem is the system for LAW-22: barriers as forbids for reads, drafts and
-// actions, with ownership from the source (SB-1203). Reads already honour barriers
-// through NewSpaceSystem; the law waits for the rest.
-var NewBarrierSystem = func() SpaceSystem { return pendingSpaces{} }
-
-type pendingSpaces struct{}
-
-func (pendingSpaces) Load(SpaceSpec) error {
-	return fmt.Errorf("%w: barriers for drafts and actions, and ownership from the source, arrive with SB-1203", ErrPending)
-}
-func (pendingSpaces) Ask(string, string) ([]string, bool, error) { return nil, true, nil }
+// NewBarrierSystem is the system for LAW-22: barriers as forbids for reads, drafts,
+// actions and approvals, with ownership from the source (SB-1203). See law22barriers.go.
+var NewBarrierSystem = func() SpaceSystem { return newBarrierSpaces() }
 
 var spaceLabels = []string{"public", "internal", "confidential", "restricted"}
 
@@ -93,6 +86,9 @@ func genSpaces(r *rand.Rand) SpaceSpec {
 			if r.Intn(3) == 0 {
 				d.Spaces = append(d.Spaces, s)
 			}
+		}
+		if r.Intn(2) == 0 {
+			d.Owner = users[r.Intn(len(users))]
 		}
 		sp.Docs = append(sp.Docs, d)
 	}
@@ -144,6 +140,31 @@ func (f spaceFacts) barrierBetween(user string, d SpaceDoc) bool {
 						return true
 					}
 				}
+			}
+			if d.Owner != "" && f.groupsCross(g, f.sp.Users[d.Owner], b) {
+				return true // owned at the source by someone across the barrier (SB-1203)
+			}
+		}
+	}
+	return false
+}
+
+// groupsCross: g on one side of barrier b and one of others on the other.
+func (f spaceFacts) groupsCross(g string, others []string, b [2]string) bool {
+	for _, o := range others {
+		if (g == b[0] && o == b[1]) || (g == b[1] && o == b[0]) {
+			return true
+		}
+	}
+	return false
+}
+
+// peopleCross: a barrier separates a group of u from a group of v.
+func (f spaceFacts) peopleCross(u, v string) bool {
+	for _, b := range f.sp.Barriers {
+		for _, g := range f.sp.Users[u] {
+			if f.groupsCross(g, f.sp.Users[v], b) {
+				return true
 			}
 		}
 	}
@@ -214,10 +235,14 @@ func law20(r *rand.Rand, sys SpaceSystem) error {
 }
 
 func law22(r *rand.Rand, sys SpaceSystem) error {
-	return spaceLaw(r, sys, func(f spaceFacts, user, space string, d SpaceDoc) error {
+	err := spaceLaw(r, sys, func(f spaceFacts, user, space string, d SpaceDoc) error {
 		if f.barrierBetween(user, d) {
-			return fmt.Errorf("%s (groups %v) asking in %s used %s across a barrier %v", user, f.sp.Users[user], space, d.ID, f.sp.Barriers)
+			return fmt.Errorf("%s (groups %v) asking in %s used %s across a barrier %v (holders %v, owner %q)", user, f.sp.Users[user], space, d.ID, f.sp.Barriers, d.Spaces, d.Owner)
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	return law22Acts(r, sys) // drafts, actions and approvals, for a system that has them
 }

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.2a Information barriers (SB-1203)
+
+**Wave/slice:** W12 / S12.2a · **Status:** Done
+
+**What:** Owner on documents and chunks (Drive's file owner; an `owner` index column), owner groups at decision time in retrieval, `Authoriser.ItemAllowed` for draft items, `internal/core/barrier` and `Bus.Barriers` for tool calls, proposals and approvals, new forbids in `policy/platform/spaces.cedar`, and `laws/law22barriers.go`. The manual changed first: sb-permissions(7), sb-policy(5), sb-space(5), sb-spaces(7), sb-connector(3).
+
+**Why this way:** The barrier stays one set of forbids in the kernel, fed facts from the manifest and the directory, rather than a generated rule per barrier, so `make policy` can still prove it only narrows. Ownership is resolved to groups at decision time, not at ingest, so a move in the directory changes it at the next request, and an owner that can't be read refuses like any `Unknown`.
+
+**Learned:** A shared drive file has no owner, so ownership can only ever add refusals; a missing owner never opens anything that holding spaces would refuse.
+
+**Laws:** LAW-22 green and out of the ratchet (three mutations caught); LAW-03's space-facts test covers the two new facts. LAW-21 and LAW-23 stay red.
+
+**Next:** S12.2b, segregation of duties (SB-1204).
+
 ## 2026-11-20 S12.1b Quarterly access reviews (SB-1202)
 
 **Wave/slice:** W12 / S12.1b · **Status:** In review (console screens)

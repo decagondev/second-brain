@@ -40,7 +40,7 @@ Returns the document's text and structure, its **version** (monotonic per docume
 
 ### Location and label (SB-1005)
 
-`Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one.
+`Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one. It also returns the document's **owner** at the source, as an email, where the source has one (Drive: the file's owner; a shared drive's files have none), for information barriers (sb-permissions(7), SB-1203). A source without owners returns none.
 
 ### Fields (SB-1106)
 

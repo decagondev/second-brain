@@ -135,8 +135,12 @@ func TestLocationAndLabel(t *testing.T) {
 	f.Put("f1", "Forecast", "text/plain", "numbers", "ana@acme.example")
 	f.Move("f1", "fo_q3")
 	d, err := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f1"})
-	if err != nil || d.Location != "/Finance/Q3/Forecast" || d.Label != "" {
-		t.Fatalf("location %q label %q err %v", d.Location, d.Label, err)
+	if err != nil || d.Location != "/Finance/Q3/Forecast" || d.Label != "" || d.Owner != "" {
+		t.Fatalf("location %q label %q owner %q err %v", d.Location, d.Label, d.Owner, err)
+	}
+	f.Own("f1", "Ana@Acme.example") // SB-1203: the owner, for barriers
+	if d, _ := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f1"}); d.Owner != "ana@acme.example" {
+		t.Fatalf("owner %q", d.Owner)
 	}
 	for choice, want := range map[string]string{"ch_r": "restricted", "ch_i": "internal", "ch_new": "restricted"} {
 		f.Classify("f1", "lbl_sens", "fld_level", choice)

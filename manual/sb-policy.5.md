@@ -70,6 +70,10 @@ Schema v2 (`policy/schema.cedarschema`) carries spaces as facts the kernel sets,
 | `read` context | `space` (String, optional) | the space asked in, or `company` |
 | `read` context | `member_spaces` (Set of String, optional) | the spaces the asker is a member of, from the directory now |
 | `read` context | `barred_spaces` (Set of String, optional) | the spaces held across a barrier from the asker, from the manifest's barriers |
+| `Chunk` | `owners` (Set of String, optional) | the groups (`group:NAME`) of the person who owns its document at the source, from the directory now; empty for a document with no owner (SB-1203) |
+| `read`, `call_tool`, `propose`, `approve` context | `barred_groups` (Set of String, optional) | the groups across a barrier from the asker (`group:NAME`) |
+| `call_tool`, `propose` context | `barred_spaces`, `target_spaces`, `target_owners` (Sets of String, optional) | the spaces across a barrier from the requester, and the spaces holding and groups owning the action's target item |
+| `approve` context | `requester_groups` (Set of String, optional) | the requester's groups (`group:NAME`) |
 
 In a cell without spaces the kernel sets none of them, and the space rules don't apply. In a cell with spaces it sets all of them; `spaces.ReadContext` and `spaces.ChunkAttrs` build them. The rules are `policy/platform/spaces.cedar`:
 
@@ -78,7 +82,8 @@ In a cell without spaces the kernel sets none of them, and the space rules don't
 forbid (principal, action == Action::"read", resource is Chunk)
 when {
   context has space &&
-  !(context has member_spaces && context has barred_spaces && resource has label && resource has spaces)
+  !(context has member_spaces && context has barred_spaces && context has barred_groups &&
+    resource has label && resource has spaces && resource has owners)
 };
 
 // An ask in a space reads only what that space holds, and only for its members.
@@ -103,13 +108,46 @@ when {
   context has barred_spaces && resource has spaces &&
   resource.spaces.containsAny(context.barred_spaces)
 };
+
+// Nothing owned at the source by someone across a barrier (SB-1203).
+forbid (principal, action == Action::"read", resource is Chunk)
+when { context has barred_groups && resource has owners && resource.owners.containsAny(context.barred_groups) };
+
+// No tool call or proposal on an item across a barrier; a target that can't be placed refuses.
+forbid (principal, action in [Action::"call_tool", Action::"propose"], resource)
+when {
+  context has barred_groups &&
+  !(context has barred_spaces && context has target_spaces && context has target_owners)
+};
+
+forbid (principal, action in [Action::"call_tool", Action::"propose"], resource)
+when {
+  context has barred_spaces && context has target_spaces &&
+  context.target_spaces.containsAny(context.barred_spaces)
+};
+
+forbid (principal, action in [Action::"call_tool", Action::"propose"], resource)
+when {
+  context has barred_groups && context has target_owners &&
+  context.target_owners.containsAny(context.barred_groups)
+};
+
+// Nobody approves for a requester across a barrier.
+forbid (principal, action == Action::"approve", resource is ProposedAction)
+when { context has barred_groups && !(context has requester_groups) };
+
+forbid (principal, action == Action::"approve", resource is ProposedAction)
+when {
+  context has barred_groups && context has requester_groups &&
+  context.requester_groups.containsAny(context.barred_groups)
+};
 ```
 
 The rules every space policy is held to:
 
 1. **A space policy can only forbid.** No file but `policy/platform/base.cedar` may `permit` `read`, and a `permit` with an unconstrained action counts as one. Space and label rules are `forbid`s, so a space can never make a chunk usable that the base policy and the source don't allow (LAW-19). `tools/check/policy.py` enforces this for every policy, base and tenant.
-2. **Barriers come from the manifest**: the kernel turns the manifest's barriers into `barred_spaces`, never a hand-written rule.
-3. **A missing fact refuses.** In a cell with spaces, a chunk with no `label` or `spaces`, or a context with no `member_spaces` or `barred_spaces`, is refused by the first rule (LAW-03). A label that isn't one of the four is treated as `restricted`.
+2. **Barriers come from the manifest**: the kernel turns the manifest's barriers into `barred_spaces` and `barred_groups`, never a hand-written rule (`internal/core/barrier`).
+3. **A missing fact refuses.** In a cell with spaces, a chunk with no `label`, `spaces` or `owners`, or a context with no `member_spaces`, `barred_spaces` or `barred_groups`, is refused by the first rule (LAW-03). A label that isn't one of the four is treated as `restricted`.
 
 ### Rules CI enforces
 

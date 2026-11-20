@@ -113,18 +113,19 @@ def space_matrix(policies_text):
     for space in ["company", "spc_a", "spc_b"]:
         for member in [[], ["spc_a"], ["spc_b"], ["spc_a", "spc_b"]]:
             for barred in [[], ["spc_b"]]:
+              for owners, bgroups in [([], []), (["group:x"], []), (["group:x"], ["group:x"])]:  # SB-1203
                 for label in ["public", "internal", "confidential", "restricted", "odd", None]:
                     for holders in holders_opts:
-                        attrs = {"tenant": t, "cite": "docs:c@1", "spaces": holders}
+                        attrs = {"tenant": t, "cite": "docs:c@1", "spaces": holders, "owners": owners}
                         if label is not None:
                             attrs["label"] = label
                         ents = [{"uid": {"type": "Tenant", "id": "t"}, "attrs": {}, "parents": []},
                                 {"uid": {"type": "User", "id": "u"}, "attrs": {"tenant": t}, "parents": []},
                                 {"uid": {"type": "Chunk", "id": "c"}, "attrs": attrs, "parents": []}]
-                        ctx = {"space": space, "member_spaces": member, "barred_spaces": barred}
+                        ctx = {"space": space, "member_spaces": member, "barred_spaces": barred, "barred_groups": bgroups}
                         req = {"principal": 'User::"u"', "action": 'Action::"read"', "resource": 'Chunk::"c"', "context": ctx}
                         if cedarpy.is_authorized(req, policies_text, ents).allowed:
-                            allowed.add((space, tuple(member), tuple(barred), label, tuple(holders)))
+                            allowed.add((space, tuple(member), tuple(barred), tuple(owners), tuple(bgroups), label, tuple(holders)))
     return allowed
 
 

@@ -133,7 +133,45 @@ func ReadContext(all []ports.Space, barriers [][2]string, groups []string, space
 	if space == "" {
 		space = Company
 	}
-	return map[string]any{"space": space, "member_spaces": member, "barred_spaces": barred}
+	return map[string]any{"space": space, "member_spaces": member, "barred_spaces": barred,
+		"barred_groups": BarredGroups(barriers, groups)}
+}
+
+// BarredGroups is the groups (group:NAME) across a barrier from someone in groups, in
+// either direction (SB-1203). Groups and barriers may name groups as NAME or group:NAME.
+func BarredGroups(barriers [][2]string, groups []string) []string {
+	name := func(g string) string { return strings.TrimPrefix(g, "group:") }
+	mine := map[string]bool{}
+	for _, g := range groups {
+		mine[name(g)] = true
+	}
+	var out []string
+	for _, b := range barriers {
+		a, c := name(b[0]), name(b[1])
+		if mine[a] {
+			out = append(out, c)
+		}
+		if mine[c] {
+			out = append(out, a)
+		}
+	}
+	return GroupSet(out)
+}
+
+// GroupSet is a set of group names as sorted group:NAME values.
+func GroupSet(names []string) []string {
+	set := map[string]bool{}
+	for _, g := range names {
+		if g != "" {
+			set["group:"+strings.TrimPrefix(g, "group:")] = true
+		}
+	}
+	out := make([]string, 0, len(set))
+	for g := range set {
+		out = append(out, g)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // acrossBarrier: a barrier names groups as group:NAME (the manifest) or NAME; both sides
@@ -151,10 +189,11 @@ func acrossBarrier(s ports.Space, barriers [][2]string, mine map[string]bool) bo
 	return false
 }
 
-// ChunkAttrs are a chunk's policy attributes in a cell with spaces: its label and the ids
-// of the spaces that hold its document. An empty label is left out, so the read refuses.
+// ChunkAttrs are a chunk's policy attributes in a cell with spaces: its label, the ids of
+// the spaces that hold its document, and its owners, empty until the caller sets the
+// owner's groups (barrier.Owners; SB-1203). An empty label is left out, so the read refuses.
 func ChunkAttrs(label string, holders []string) map[string]any {
-	a := map[string]any{"spaces": append([]string{}, holders...)}
+	a := map[string]any{"spaces": append([]string{}, holders...), "owners": []string{}}
 	if label != "" {
 		a["label"] = label
 	}

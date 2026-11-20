@@ -32,7 +32,7 @@ const (
 	// ACLConcurrency bounds parallel per-document checks.
 	ACLConcurrency = 8
 	kind           = "docs"
-	fileFields     = "id,name,mimeType,version,modifiedTime,trashed,parents,permissions(type,emailAddress,domain)"
+	fileFields     = "id,name,mimeType,version,modifiedTime,trashed,parents,permissions(type,emailAddress,domain),owners(emailAddress)"
 )
 
 // Connector talks to one Workspace's Drive.
@@ -148,6 +148,9 @@ type file struct {
 	Permissions  []struct {
 		Type, EmailAddress, Domain string
 	} `json:"permissions"`
+	Owners []struct {
+		EmailAddress string `json:"emailAddress"`
+	} `json:"owners"`
 	Parents   []string `json:"parents"`
 	LabelInfo struct {
 		Labels []struct {
@@ -282,7 +285,15 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 	if err != nil {
 		return ports.Document{}, err
 	}
-	return ports.Document{Ref: ref, Version: v, Title: f.Name, Text: text, ACLPrefilter: prefilter(f), Location: loc, Label: c.label(f)}, nil
+	return ports.Document{Ref: ref, Version: v, Title: f.Name, Text: text, ACLPrefilter: prefilter(f), Location: loc, Label: c.label(f), Owner: owner(f)}, nil
+}
+
+// owner is the file's owner email (SB-1203); a shared drive's file has none.
+func owner(f file) string {
+	if len(f.Owners) == 0 {
+		return ""
+	}
+	return strings.ToLower(f.Owners[0].EmailAddress)
 }
 
 func prefilter(f file) []string {

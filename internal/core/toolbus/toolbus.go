@@ -58,6 +58,28 @@ type Bus struct {
 	IsAuditor func(s tenancy.Scope) bool
 	// Receipts is the idempotency store: receipts by idempotency key (sb-approvals(7)).
 	Receipts Receipts
+	// Barriers gives the policy context of a call's target and of an approval in a cell
+	// with information barriers (barrier.Cell; SB-1203); nil is a cell without them. An
+	// error refuses: a target or requester that can't be placed is never across nothing.
+	Barriers Barriers
+}
+
+// Barriers is barrier.Cell as the bus uses it.
+type Barriers interface {
+	Target(ctx context.Context, s tenancy.Scope, target string) (map[string]any, error)
+	Approval(ctx context.Context, s tenancy.Scope, requester string) (map[string]any, error)
+}
+
+// approveContext is the barrier context of deciding on a's approval.
+func (b *Bus) approveContext(ctx context.Context, s tenancy.Scope, a approvals.Action) (map[string]any, error) {
+	if b.Barriers == nil {
+		return nil, nil
+	}
+	x, err := b.Barriers.Approval(ctx, s, a.Requester)
+	if err != nil {
+		return nil, fmt.Errorf("%w: EBARRIER the requester can't be placed: %v", ErrNoApproval, err)
+	}
+	return x, nil
 }
 
 // Receipts stores every receipt under its idempotency key, so nothing runs twice.
@@ -102,14 +124,22 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 		Space: strings.TrimPrefix(s.Space(), "spc_")}); err != nil {
 		return approvals.Action{}, err
 	}
-	// 2. Authorise.
+	// 2. Authorise, with the target's barrier facts in a cell with barriers.
+	var bctx map[string]any
+	if b.Barriers != nil {
+		x, err := b.Barriers.Target(ctx, s, c.Target)
+		if err != nil {
+			return approvals.Action{}, fmt.Errorf("%w: EBARRIER the target can't be placed: %v", ErrPerm, err)
+		}
+		bctx = x
+	}
 	var decision policy.Result
 	if tool.Consequential {
 		decision = b.Policy.Authorise(ctx, s, "propose", policy.Entity{Type: "Workflow", ID: tool.Workflow, Tenant: b.Tenant,
-			Attrs: map[string]any{"name": tool.Workflow, "approvers": policy.Ref{Type: "Group", ID: tool.Approvers}}}, nil)
+			Attrs: map[string]any{"name": tool.Workflow, "approvers": policy.Ref{Type: "Group", ID: tool.Approvers}}}, bctx)
 	} else {
 		decision = b.Policy.Authorise(ctx, s, "call_tool", policy.Entity{Type: "Tool", ID: tool.Name, Tenant: b.Tenant,
-			Attrs: map[string]any{"name": tool.Name, "connector": tool.Connector, "consequential": false}}, nil)
+			Attrs: map[string]any{"name": tool.Name, "connector": tool.Connector, "consequential": false}}, bctx)
 	}
 	if decision.Decision != policy.Allow {
 		return approvals.Action{}, fmt.Errorf("%w: %s (%s)", ErrPerm, decision.Reason, decision.Decision)
@@ -323,9 +353,13 @@ func (b *Bus) Approve(ctx context.Context, s tenancy.Scope, id, echoedHash, note
 	case s.User() == a.Requester:
 		return a, fmt.Errorf("%w: you can't approve your own action", ErrNoApproval)
 	}
+	actx, err := b.approveContext(ctx, s, a)
+	if err != nil {
+		return a, err
+	}
 	err = b.Policy.Require(ctx, s, "approve", policy.Entity{Type: "ProposedAction", ID: a.ID, Tenant: b.Tenant,
 		Attrs: map[string]any{"workflow": a.Workflow, "requester": policy.Ref{Type: "User", ID: a.Requester},
-			"approvers": policy.Ref{Type: "Group", ID: a.Approvers}}}, nil)
+			"approvers": policy.Ref{Type: "Group", ID: a.Approvers}}}, actx)
 	if err != nil {
 		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
 	}
@@ -360,9 +394,13 @@ func (b *Bus) Reject(ctx context.Context, s tenancy.Scope, id, note string) (app
 	if a.State != approvals.PendingApproval {
 		return a, fmt.Errorf("%w: the action is %s", ErrNoApproval, a.State)
 	}
+	actx, err := b.approveContext(ctx, s, a)
+	if err != nil {
+		return a, err
+	}
 	err = b.Policy.Require(ctx, s, "approve", policy.Entity{Type: "ProposedAction", ID: a.ID, Tenant: b.Tenant,
 		Attrs: map[string]any{"workflow": a.Workflow, "requester": policy.Ref{Type: "User", ID: a.Requester},
-			"approvers": policy.Ref{Type: "Group", ID: a.Approvers}}}, nil)
+			"approvers": policy.Ref{Type: "Group", ID: a.Approvers}}}, actx)
 	if err != nil {
 		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
 	}

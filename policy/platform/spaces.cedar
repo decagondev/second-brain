@@ -7,7 +7,8 @@
 forbid (principal, action == Action::"read", resource is Chunk)
 when {
   context has space &&
-  !(context has member_spaces && context has barred_spaces && resource has label && resource has spaces)
+  !(context has member_spaces && context has barred_spaces && context has barred_groups &&
+    resource has label && resource has spaces && resource has owners)
 };
 
 // 1. Membership: an ask in a space reads only what that space holds, and only for its members.
@@ -32,4 +33,42 @@ forbid (principal, action == Action::"read", resource is Chunk)
 when {
   context has barred_spaces && resource has spaces &&
   resource.spaces.containsAny(context.barred_spaces)
+};
+
+// 3b. Ownership: nothing owned at the source by someone in a group across a barrier from
+// the asker, even company-wide and even if shared in the source (SB-1203).
+forbid (principal, action == Action::"read", resource is Chunk)
+when {
+  context has barred_groups && resource has owners &&
+  resource.owners.containsAny(context.barred_groups)
+};
+
+// 4. Actions: no tool call or proposal on an item held or owned across a barrier from the
+// requester; in a cell with barriers, a target the cell can't place refuses (SB-1203).
+forbid (principal, action in [Action::"call_tool", Action::"propose"], resource)
+when {
+  context has barred_groups &&
+  !(context has barred_spaces && context has target_spaces && context has target_owners)
+};
+
+forbid (principal, action in [Action::"call_tool", Action::"propose"], resource)
+when {
+  context has barred_spaces && context has target_spaces &&
+  context.target_spaces.containsAny(context.barred_spaces)
+};
+
+forbid (principal, action in [Action::"call_tool", Action::"propose"], resource)
+when {
+  context has barred_groups && context has target_owners &&
+  context.target_owners.containsAny(context.barred_groups)
+};
+
+// 5. Approvals: nobody approves an action whose requester is across a barrier from them.
+forbid (principal, action == Action::"approve", resource is ProposedAction)
+when { context has barred_groups && !(context has requester_groups) };
+
+forbid (principal, action == Action::"approve", resource is ProposedAction)
+when {
+  context has barred_groups && context has requester_groups &&
+  context.requester_groups.containsAny(context.barred_groups)
 };

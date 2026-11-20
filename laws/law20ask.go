@@ -47,12 +47,21 @@ func (a *askSpaces) Load(sp SpaceSpec) error {
 		}
 		ref := ports.SourceRef{Kind: "docs", ID: d.ID}
 		c := ports.Chunk{ID: "chk_" + d.ID, Tenant: spaceTenant, Cite: "docs:" + d.ID + "@1", Kind: "docs", SourceID: d.ID,
-			Version: 1, Text: "the brain knows " + d.ID, ACLPrefilter: []string{"anyone"}, Label: d.Label, Spaces: holders}
+			Version: 1, Text: "the brain knows " + d.ID, ACLPrefilter: []string{"anyone"}, Label: d.Label, Spaces: holders, Owner: d.Owner}
 		if err := a.idx.Replace(ctx, spaceTenant, ref, 1, []ports.Chunk{c}); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// ownerGroups is the directory: a document owner's groups.
+func (a *askSpaces) ownerGroups(_ context.Context, owner string) ([]string, error) {
+	gs, ok := a.spec.Users[owner]
+	if !ok {
+		return []string{}, nil
+	}
+	return dirGroups(gs), nil
 }
 
 // viewers is the source: its live ACL is the spec's viewers.
@@ -105,6 +114,7 @@ func (a *askSpaces) Ask(user, space string) ([]string, bool, error) {
 		Policy: policy.Kernel{Engine: a.ev, Recorder: okRecorder{}}}
 	if !a.skipSpaces {
 		auth.Spaces = func(context.Context) ([]ports.Space, [][2]string, error) { return a.all, a.spec.Barriers, nil }
+		auth.Owners = a.ownerGroups
 	}
 	res, err := retrieve.Context(ctx, scope, ports.UserRef{ID: user}, nil, a.idx, auth, ports.Query{Text: "brain", Limit: 100})
 	if err != nil {

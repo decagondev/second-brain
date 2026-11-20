@@ -97,6 +97,18 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 	if err != nil {
 		return DraftResponse{}, fmt.Errorf("%w: fetch: %v", ErrUnavailable, err)
 	}
+	// In a cell with spaces the item itself takes the space, label and barrier steps, with
+	// its owner at the source, before it is used (sb-permissions(7); SB-1203).
+	if a.Auth.Spaces != nil {
+		ok, err := a.Auth.ItemAllowed(ctx, s, who, ports.Chunk{ID: "draft-context", Tenant: a.Tenant, Kind: kind, SourceID: id,
+			Cite: ingest.Cite(ref, doc.Version)}, doc)
+		if err != nil {
+			return DraftResponse{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
+		}
+		if !ok {
+			return DraftResponse{}, ErrNotFound
+		}
+	}
 	clean, flags := ingest.Sanitiser{}.Sanitise(doc.Title + "\n\n" + doc.Text)
 	text := ingest.Normalise(clean)
 	if r := []rune(text); len(r) > ingest.MaxChunk*4 {

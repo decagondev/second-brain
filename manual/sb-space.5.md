@@ -45,7 +45,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 
 ### `barriers`
 
-A list of pairs of groups. Each pair is a barrier between the two groups, in both directions (sb-spaces(7), Information barriers). At most 20 barriers.
+A list of pairs of groups. Each pair is a barrier between the two groups, in both directions (sb-spaces(7), Information barriers). At most 20 barriers. A barrier covers reads (content held by a space across it, or owned at the source by someone across it), drafts, tool calls and proposals, and approvals (sb-permissions(7), Barriers beyond reads). The kernel turns these pairs into the facts the barrier forbids read; there is no barrier rule to write by hand.
 
 | Rule | |
 |---|---|

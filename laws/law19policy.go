@@ -81,6 +81,9 @@ func (p *spacePolicy) Ask(user, space string) ([]string, bool, error) {
 		for k, v := range spaces.ChunkAttrs(d.Label, holders) {
 			res.Attrs[k] = v
 		}
+		if d.Owner != "" {
+			res.Attrs["owners"] = spaces.GroupSet(p.spec.Users[d.Owner])
+		}
 		if p.kernel.Authorise(context.Background(), scope, "read", res, rctx).Decision != policy.Allow {
 			continue
 		}
@@ -102,12 +105,12 @@ func law03SpaceFacts(r *rand.Rand, ev policy.Evaluator) error {
 		return err
 	}
 	// A read every rule allows when every fact is there: the asker's own space, internal.
-	attrs := map[string]any{"cite": "docs:d@1", "label": "internal", "spaces": []string{spaces.ID("finance")}}
-	rctx := map[string]any{"space": spaces.ID("finance"), "member_spaces": []string{spaces.ID("finance")}, "barred_spaces": []string{}}
+	attrs := map[string]any{"cite": "docs:d@1", "label": "internal", "spaces": []string{spaces.ID("finance")}, "owners": []string{}}
+	rctx := map[string]any{"space": spaces.ID("finance"), "member_spaces": []string{spaces.ID("finance")}, "barred_spaces": []string{}, "barred_groups": []string{}}
 	if d := k.Authorise(context.Background(), scope, "read", policy.Entity{Type: "Chunk", ID: "d", Attrs: attrs}, rctx).Decision; d != policy.Allow {
 		return fmt.Errorf("a read with every fact present was %s", d)
 	}
-	drop := []string{"label", "spaces", "member_spaces", "barred_spaces"}[r.Intn(4)]
+	drop := []string{"label", "spaces", "owners", "member_spaces", "barred_spaces", "barred_groups"}[r.Intn(6)]
 	a, c := map[string]any{}, map[string]any{}
 	for k, v := range attrs {
 		a[k] = v

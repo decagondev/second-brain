@@ -199,7 +199,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		chunks = append(chunks, ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
-			Label: label, Spaces: holders, Routing: routing})
+			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner))})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)

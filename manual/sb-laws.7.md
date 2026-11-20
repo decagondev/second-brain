@@ -172,7 +172,7 @@ When the directory removes someone from a space's member groups, they lose that 
 
 No answer, citation, draft or action crosses a declared information barrier, in either direction.
 
-*Owner:* platform lead. *Checks:* Model (`Spaces.als: BarriersHold`) · Property (`TestLAW22_BarriersHold`, red until SB-1203) · Eval (`space-leak`).
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: BarriersHold`) · Property (`TestLAW22_BarriersHold`: asks, drafts, tool calls and approvals, with source owners; SB-1203) · Eval (`space-leak`).
 
 ### LAW-23: Grants are consented and revocable {#law-23}
 

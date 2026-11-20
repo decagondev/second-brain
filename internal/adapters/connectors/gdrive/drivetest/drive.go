@@ -49,6 +49,8 @@ type File struct {
 	Parents                  []string // parent folder ids (SB-1005)
 	// Labels are Drive labels: label id -> field id -> selected choice id (SB-1005).
 	Labels map[string]map[string]string
+	// Owner is the file's owner email; "" for a shared drive's file, which has none (SB-1203).
+	Owner string
 }
 
 // Folder creates a folder, under parent ("" for the top of the drive).
@@ -154,6 +156,15 @@ func (f *Fake) Put(id, name, mime, text string, viewers ...string) {
 	f.log = append(f.log, change{id: id, at: now})
 }
 
+// Own sets a file's owner at the source (SB-1203); "" makes it a shared drive's file.
+func (f *Fake) Own(id, owner string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if x, ok := f.files[id]; ok {
+		x.Owner = owner
+	}
+}
+
 // Share changes who may open a file (a permission-only change).
 func (f *Fake) Share(id string, viewers ...string) {
 	f.mu.Lock()
@@ -255,6 +266,9 @@ func (f *Fake) fileJSON(x *File) map[string]any {
 		"modifiedTime": x.Modified.Format(time.RFC3339Nano), "trashed": x.Trashed, "permissions": perms}
 	if len(x.Parents) > 0 {
 		out["parents"] = x.Parents
+	}
+	if x.Owner != "" {
+		out["owners"] = []map[string]string{{"emailAddress": x.Owner}}
 	}
 	return out
 }

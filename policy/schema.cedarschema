@@ -5,7 +5,8 @@ entity Group { tenant: Tenant };
 entity User in [Group] { tenant: Tenant };
 entity Document { tenant: Tenant, source: String };
 // label and spaces are set in a cell with department spaces (SB-1004, sb-spaces(7)).
-entity Chunk in [Document] { tenant: Tenant, cite: String, label?: String, spaces?: Set<String> };
+// owners: the groups of the document's owner at the source (SB-1203).
+entity Chunk in [Document] { tenant: Tenant, cite: String, label?: String, spaces?: Set<String>, owners?: Set<String> };
 entity Agent { tenant: Tenant, name: String, consequential: Bool, enabled?: Bool };
 entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bool };
 entity Workflow { tenant: Tenant, name: String, approvers: Group };
@@ -18,11 +19,11 @@ entity SpaceProposal { tenant: Tenant, requester: User };
 entity CellCustody { tenant: Tenant, cell: Tenant };
 
 // In a cell with spaces the kernel sets the whole read context (SB-1004); without spaces, none of it.
-action "read"      appliesTo { principal: [User], resource: [Chunk, Document], context: { space?: String, member_spaces?: Set<String>, barred_spaces?: Set<String> } };
+action "read"      appliesTo { principal: [User], resource: [Chunk, Document], context: { space?: String, member_spaces?: Set<String>, barred_spaces?: Set<String>, barred_groups?: Set<String> } };
 action "use_agent" appliesTo { principal: [User], resource: [Agent], context: { target_project?: String } };
-action "call_tool" appliesTo { principal: [User], resource: [Tool] };
-action "propose"   appliesTo { principal: [User], resource: [Workflow] };
-action "approve"   appliesTo { principal: [User], resource: [ProposedAction] };
+action "call_tool" appliesTo { principal: [User], resource: [Tool], context: { barred_spaces?: Set<String>, barred_groups?: Set<String>, target_spaces?: Set<String>, target_owners?: Set<String> } };
+action "propose"   appliesTo { principal: [User], resource: [Workflow], context: { barred_spaces?: Set<String>, barred_groups?: Set<String>, target_spaces?: Set<String>, target_owners?: Set<String> } };
+action "approve"   appliesTo { principal: [User], resource: [ProposedAction], context: { barred_groups?: Set<String>, requester_groups?: Set<String> } };
 action "admin"     appliesTo { principal: [User], resource: [Cell] };
 action "propose_space" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 action "approve_space" appliesTo { principal: [User], resource: [SpaceProposal] };

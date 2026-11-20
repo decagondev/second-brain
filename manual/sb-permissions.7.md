@@ -79,12 +79,22 @@ flowchart LR
 
 1. **Membership (`ESPACE`).** For an ask in space S, the chunk must be in S's scope and the asker a member of S. Otherwise the whole ask is refused with `ESPACE` before retrieval, if the asker isn't a member of S at all. For a company-wide ask, the holders are every space whose scope covers the document. The chunk passes if the asker is a member of any holder, or if its label is `public` or `internal`.
 2. **Label (`ELABEL`).** `public` and `internal` pass for any asker who passed step 1. `confidential` and `restricted` pass only for members of a holding space (LAW-20). A missing or unknown label is `restricted`.
-3. **Barrier (`EBARRIER`).** A chunk is refused if any barrier separates a group of the asker from a member group of any space that holds it (LAW-22). Barriers are checked in both directions.
+3. **Barrier (`EBARRIER`).** A chunk is refused if any barrier separates a group of the asker from a member group of any space that holds it, or from a group of the person who **owns its document at the source** (LAW-22, SB-1203). Ownership is the source's: a document owned by someone in a barred group stays invisible across the barrier even company-wide, even in no space, and even if the owner shared it with the whole company. Barriers are checked in both directions. An owner whose groups can't be read now refuses, like any `Unknown`.
 4. **Source ACL.** Exactly as above (Retrieval and the live check). An `Allow` from steps 1 to 3 never skips it.
 
 Steps 1 to 3 are the forbids in `policy/platform/spaces.cedar`, decided by the same kernel as every other permission, with the facts sb-policy(5) lists (SB-1004). A space policy can only **forbid**. Nothing in steps 1 to 3 can make a chunk usable that step 4 refuses (LAW-19): `make policy` proves it over a matrix of spaces, labels and barriers, and the law test checks it for random companies. Any `Unknown` in any step refuses (LAW-03). A cell with no spaces skips steps 1 to 3, as today.
 
 Like `EPERM`, the new codes are reasons, not messages: a refused chunk is never named to the user. `ESPACE` is returned to the asker only for an ask in a space they aren't a member of, which names the space and nothing in it. `ELABEL` and `EBARRIER` appear in the decision list of the trace and in the operators' refusal counts (sb-admin(3)).
+
+### Barriers beyond reads, exactly (SB-1203)
+
+A barrier holds for everything the brain does, not only for what an answer reads (LAW-22). The same facts, from the manifest's `barriers:` and the directory now, decide each of these in the policy kernel (sb-policy(5)):
+
+- **Drafts.** The ticket or thread a draft replies to passes steps 1 to 4 like a retrieved chunk: it is routed to its spaces and labelled as ingest would, with its source owner, before it is used. Every chunk the draft retrieves takes the read path above. An item across a barrier is refused with the same answer as one that doesn't exist (`EPERM`, sb-actions(3)).
+- **Actions.** A tool call or proposal is refused (`EPERM`, `EBARRIER` in the audit reason) if its target item is held by a space across a barrier from the requester or owned at the source by someone in a barred group. A target the cell can't place now refuses.
+- **Approvals.** Nobody approves an action whose requester is across a barrier from them: the approver would see the other side's payload.
+
+In a cell without barriers none of these facts is set, and nothing changes.
 
 ### What users see
 

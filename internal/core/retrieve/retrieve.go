@@ -13,6 +13,7 @@ import (
 
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/route"
 	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 )
@@ -83,6 +84,9 @@ type Authoriser struct {
 	Spaces func(ctx context.Context) ([]ports.Space, [][2]string, error)
 	// SpaceKilled reports a killed space by name (SB-1008): every chunk it holds is refused.
 	SpaceKilled func(name string) bool
+	// Owners resolves a document owner (an email) to their directory groups now, for
+	// barriers (SB-1203; barrier.Directory). nil, or an error, refuses every owned chunk.
+	Owners func(ctx context.Context, owner string) ([]string, error)
 	// Metrics counts live verdicts per connector (sb_acl_verdicts_total), ids only.
 	Metrics interface {
 		Add(name, help string, labels map[string]string, v float64)
@@ -207,18 +211,11 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 		}
 		if len(all) > 0 {
 			rctx := spaces.ReadContext(all, barriers, s.Groups(), s.Space())
+			owners := ownerCache{}
 			kept := chunks[:0:0]
 			for _, c := range chunks {
-				if a.heldByKilled(c) {
-					decide(c, "space_killed")
-					continue
-				}
-				ent := policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}
-				for k, v := range spaces.ChunkAttrs(c.Label, c.Spaces) {
-					ent.Attrs[k] = v
-				}
-				if a.Policy.Authorise(ctx, s, "read", ent, rctx).Decision != policy.Allow {
-					decide(c, spaceReason(c, rctx))
+				if reason := a.spaceStep(ctx, s, c, rctx, owners); reason != "" {
+					decide(c, reason)
 					continue
 				}
 				kept = append(kept, c)
@@ -260,6 +257,65 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 	return res, nil
 }
 
+type ownerCache map[string]ownerGroups
+
+type ownerGroups struct {
+	groups []string
+	ok     bool
+}
+
+// spaceStep runs steps 1 to 3 of sb-permissions(7) for one chunk through the kernel: "" if
+// it passes, else the reason it was refused.
+func (a Authoriser) spaceStep(ctx context.Context, s tenancy.Scope, c ports.Chunk, rctx map[string]any, cache ownerCache) string {
+	if a.heldByKilled(c) {
+		return "space_killed"
+	}
+	ent := policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}
+	for k, v := range spaces.ChunkAttrs(c.Label, c.Spaces) {
+		ent.Attrs[k] = v
+	}
+	if c.Owner != "" {
+		og, seen := cache[c.Owner]
+		if !seen {
+			if a.Owners != nil {
+				if gs, err := a.Owners(ctx, c.Owner); err == nil {
+					og = ownerGroups{spaces.GroupSet(gs), true}
+				}
+			}
+			cache[c.Owner] = og
+		}
+		if og.ok {
+			ent.Attrs["owners"] = og.groups
+		} else {
+			delete(ent.Attrs, "owners") // unknown owner: the first space rule refuses (LAW-03)
+		}
+	}
+	if a.Policy.Authorise(ctx, s, "read", ent, rctx).Decision != policy.Allow {
+		return spaceReason(c, ent.Attrs, rctx)
+	}
+	return ""
+}
+
+// ItemAllowed decides one item used outside retrieval, such as the ticket or thread a draft
+// replies to (sb-permissions(7), Barriers beyond reads; SB-1203): in a cell with spaces it
+// is routed and labelled as ingest would, then takes steps 1 to 3, and the live ACL always.
+func (a Authoriser) ItemAllowed(ctx context.Context, s tenancy.Scope, user ports.UserRef, item ports.Chunk, doc ports.Document) (bool, error) {
+	if a.Spaces != nil {
+		all, barriers, err := a.Spaces(ctx)
+		if err != nil {
+			return false, fmt.Errorf("retrieve: spaces: %w", err)
+		}
+		if len(all) > 0 {
+			item.Spaces, item.Label = route.Route(all, item.Kind, doc.Location, doc.Label)
+			item.Owner = strings.ToLower(strings.TrimSpace(doc.Owner))
+			if a.spaceStep(ctx, s, item, spaces.ReadContext(all, barriers, s.Groups(), s.Space()), ownerCache{}) != "" {
+				return false, nil
+			}
+		}
+	}
+	return a.Check(ctx, user, []ports.Chunk{item})[docKey(item)] == ports.VerdictAllow, nil
+}
+
 // heldByKilled is a chunk any of whose holding spaces is killed: a kill never leaves part
 // of a space readable, even through another space that holds the same document.
 func (a Authoriser) heldByKilled(c ports.Chunk) bool {
@@ -276,8 +332,9 @@ func (a Authoriser) heldByKilled(c ports.Chunk) bool {
 
 // spaceReason names which space check refused a chunk, for the trace (sb-ask(3)): its
 // decision always comes from the policy kernel; this only explains it.
-func spaceReason(c ports.Chunk, rctx map[string]any) string {
+func spaceReason(c ports.Chunk, attrs, rctx map[string]any) string {
 	barred, _ := rctx["barred_spaces"].([]string)
+	barredGroups, _ := rctx["barred_groups"].([]string)
 	in := func(xs []string, x string) bool {
 		for _, y := range xs {
 			if y == x {
@@ -288,6 +345,15 @@ func spaceReason(c ports.Chunk, rctx map[string]any) string {
 	}
 	for _, h := range c.Spaces {
 		if in(barred, h) {
+			return "barrier_denied"
+		}
+	}
+	owners, known := attrs["owners"].([]string)
+	if !known {
+		return "owner_unknown"
+	}
+	for _, g := range owners {
+		if in(barredGroups, g) {
 			return "barrier_denied"
 		}
 	}

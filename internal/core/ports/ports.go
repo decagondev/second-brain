@@ -42,6 +42,8 @@ type Document struct {
 	// Location is where the document lives at the source, for routing to spaces, and Label
 	// the source's own sensitivity label, "" for none (sb-connector(3); SB-1005).
 	Location, Label string
+	// Owner is the email of the document's owner at the source, "" for none (SB-1203).
+	Owner string
 	// Fields are a structured document's data by field name (SB-1106); ingest builds the
 	// text from the allowed ones. nil for a document that is text.
 	Fields map[string]string
@@ -285,6 +287,9 @@ type Chunk struct {
 	Label   string
 	Spaces  []string
 	Routing string
+	// Owner is the document's owner at the source, an email or "" (SB-1203): barriers
+	// check the owner's groups, from the directory at decision time.
+	Owner string
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.
