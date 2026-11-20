@@ -55,7 +55,7 @@ func Evaluate(tenant string, prev, cur map[string]float64) []Alert {
 	var out []Alert
 	for _, r := range Rules {
 		v, seen := cur[r.Metric]
-		fire := false
+		var fire bool
 		if r.Delta {
 			fire = seen && v > prev[r.Metric]
 		} else {

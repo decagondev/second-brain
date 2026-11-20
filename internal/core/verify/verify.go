@@ -97,6 +97,19 @@ type sample struct {
 	a              Answer
 }
 
+// verifier is one run's state: the target, the sampled answers and the seeded source.
+type verifier struct {
+	ctx     context.Context
+	t       Target
+	o       Options
+	r       *rand.Rand
+	users   []string
+	samples []sample
+	askErr  int
+}
+
+func (v *verifier) unknown(law, why string) Result { return Result{law, "unknown", why} }
+
 // Run verifies a target.
 func Run(ctx context.Context, t Target, o Options) Report {
 	if o.Sample <= 0 {
@@ -106,134 +119,134 @@ func Run(ctx context.Context, t Target, o Options) Report {
 	if len(laws) == 0 {
 		laws = []string{"LAW-01", "LAW-02", "LAW-03", "LAW-14"}
 	}
-	rep := Report{Seed: o.Seed}
-	r := rand.New(rand.NewSource(o.Seed))
+	v := &verifier{ctx: ctx, t: t, o: o, r: rand.New(rand.NewSource(o.Seed))}
 	users, uerr := t.Users(ctx)
 	qs, qerr := t.Questions(ctx)
-	var samples []sample
-	askErr := 0
+	v.users = users
 	if uerr == nil && qerr == nil && len(users) > 0 && len(qs) > 0 {
 		for i := 0; i < o.Sample; i++ {
-			u, q := users[r.Intn(len(users))], qs[r.Intn(len(qs))]
+			u, q := users[v.r.Intn(len(users))], qs[v.r.Intn(len(qs))]
 			a, err := t.Ask(ctx, u, q)
 			if err != nil {
-				askErr++
+				v.askErr++
 				continue
 			}
-			samples = append(samples, sample{u, q, a})
+			v.samples = append(v.samples, sample{u, q, a})
 		}
 	}
-	unknown := func(law, why string) Result { return Result{law, "unknown", why} }
+	checks := map[string]func(string) Result{"LAW-01": v.law01, "LAW-02": v.law02, "LAW-03": v.law03, "LAW-14": v.law14, "LAW-17": v.law17}
+	rep := Report{Seed: o.Seed}
 	for _, law := range laws {
-		switch law {
-		case "LAW-01":
-			rep.Results = append(rep.Results, func() Result {
-				if len(samples) == 0 || askErr > 0 {
-					return unknown(law, fmt.Sprintf("%d answers, %d failed to answer", len(samples), askErr))
-				}
-				cites, bad := 0, 0
-				for _, s := range samples {
-					for _, c := range s.a.Cites {
-						cites++
-						ok, err := t.Allowed(ctx, s.user, c.Doc)
-						if err != nil || !ok || !s.a.LiveChecked[c.Doc] {
-							bad++
-						}
-					}
-				}
-				if bad > 0 {
-					return Result{law, "fail", fmt.Sprintf("%d of %d citations not openable now or not checked live", bad, cites)}
-				}
-				return Result{law, "pass", fmt.Sprintf("%d/%d sampled answers, %d citations, source asked for all", len(samples), o.Sample, cites)}
-			}())
-		case "LAW-02":
-			rep.Results = append(rep.Results, func() Result {
-				ids, err := t.ForeignIDs(ctx)
-				if err != nil || len(users) == 0 {
-					return unknown(law, "no foreign ids or no users")
-				}
-				queries, hits := 0, 0
-				for _, id := range ids {
-					for _, q := range []string{id, "show me " + id} {
-						queries++
-						a, err := t.Ask(ctx, users[r.Intn(len(users))], q)
-						if err != nil {
-							continue // a refusal is fine
-						}
-						for _, c := range a.Cites {
-							if c.Doc == id {
-								hits++
-							}
-						}
-					}
-				}
-				if hits > 0 {
-					return Result{law, "fail", fmt.Sprintf("%d adversarial queries, %d cross-tenant results", queries, hits)}
-				}
-				return Result{law, "pass", fmt.Sprintf("%d adversarial queries, 0 cross-tenant results", queries)}
-			}())
-		case "LAW-03":
-			rep.Results = append(rep.Results, func() Result {
-				cs := t.Connectors()
-				if len(cs) == 0 || len(samples) == 0 {
-					return unknown(law, "no connectors or no answers")
-				}
-				conn := cs[r.Intn(len(cs))]
-				restore, err := t.Timeout(conn)
-				if err != nil {
-					return unknown(law, "can't inject a timeout")
-				}
-				defer restore()
-				used := 0
-				for i := 0; i < len(samples) && i < 10; i++ {
-					a, err := t.Ask(ctx, samples[i].user, samples[i].question)
-					if err != nil {
-						continue
-					}
-					for _, c := range a.Cites {
-						if c.Connector == conn {
-							used++
-						}
-					}
-				}
-				if used > 0 {
-					return Result{law, "fail", fmt.Sprintf("%s timeout injected, %d %s chunks used", conn, used, conn)}
-				}
-				return Result{law, "pass", fmt.Sprintf("%s timeout injected, 0 %s chunks used", conn, conn)}
-			}())
-		case "LAW-14":
-			rep.Results = append(rep.Results, func() Result {
-				if len(samples) == 0 {
-					return unknown(law, "no answers")
-				}
-				cited, unc, unl := 0, 0, 0
-				for _, s := range samples {
-					cited, unc, unl = cited+s.a.Cited, unc+s.a.Uncited, unl+s.a.Unlabelled
-				}
-				d := fmt.Sprintf("%d claims: %d cited, %d labelled uncited, %d unlabelled", cited+unc+unl, cited, unc, unl)
-				if unl > 0 {
-					return Result{law, "fail", d}
-				}
-				return Result{law, "pass", d}
-			}())
-		case "LAW-17":
-			rep.Results = append(rep.Results, func() Result {
-				at, ok := t.(AccessTarget)
-				if !ok {
-					return unknown(law, "this cell can't enumerate access paths")
-				}
-				unlisted, paths, err := at.UnlistedAccess(ctx)
-				if err != nil {
-					return unknown(law, "access paths couldn't be enumerated: "+err.Error())
-				}
-				if unlisted > 0 {
-					return Result{law, "fail", fmt.Sprintf("%d of %d factory access paths aren't in the hand-off record", unlisted, paths)}
-				}
-				return Result{law, "pass", fmt.Sprintf("%d factory access paths, all retained grants", paths)}
-			}())
-		default:
-			rep.Results = append(rep.Results, unknown(law, "no such check"))
+		if check, ok := checks[law]; ok {
+			rep.Results = append(rep.Results, check(law))
+		} else {
+			rep.Results = append(rep.Results, v.unknown(law, "no such check"))
 		}
 	}
 	return rep
+}
+
+func (v *verifier) law01(law string) Result {
+	if len(v.samples) == 0 || v.askErr > 0 {
+		return v.unknown(law, fmt.Sprintf("%d answers, %d failed to answer", len(v.samples), v.askErr))
+	}
+	cites, bad := 0, 0
+	for _, s := range v.samples {
+		for _, c := range s.a.Cites {
+			cites++
+			ok, err := v.t.Allowed(v.ctx, s.user, c.Doc)
+			if err != nil || !ok || !s.a.LiveChecked[c.Doc] {
+				bad++
+			}
+		}
+	}
+	if bad > 0 {
+		return Result{law, "fail", fmt.Sprintf("%d of %d citations not openable now or not checked live", bad, cites)}
+	}
+	return Result{law, "pass", fmt.Sprintf("%d/%d sampled answers, %d citations, source asked for all", len(v.samples), v.o.Sample, cites)}
+}
+
+func (v *verifier) law02(law string) Result {
+	ids, err := v.t.ForeignIDs(v.ctx)
+	if err != nil || len(v.users) == 0 {
+		return v.unknown(law, "no foreign ids or no users")
+	}
+	queries, hits := 0, 0
+	for _, id := range ids {
+		for _, q := range []string{id, "show me " + id} {
+			queries++
+			a, err := v.t.Ask(v.ctx, v.users[v.r.Intn(len(v.users))], q)
+			if err != nil {
+				continue // a refusal is fine
+			}
+			for _, c := range a.Cites {
+				if c.Doc == id {
+					hits++
+				}
+			}
+		}
+	}
+	if hits > 0 {
+		return Result{law, "fail", fmt.Sprintf("%d adversarial queries, %d cross-tenant results", queries, hits)}
+	}
+	return Result{law, "pass", fmt.Sprintf("%d adversarial queries, 0 cross-tenant results", queries)}
+}
+
+func (v *verifier) law03(law string) Result {
+	cs := v.t.Connectors()
+	if len(cs) == 0 || len(v.samples) == 0 {
+		return v.unknown(law, "no connectors or no answers")
+	}
+	conn := cs[v.r.Intn(len(cs))]
+	restore, err := v.t.Timeout(conn)
+	if err != nil {
+		return v.unknown(law, "can't inject a timeout")
+	}
+	defer restore()
+	used := 0
+	for i := 0; i < len(v.samples) && i < 10; i++ {
+		a, err := v.t.Ask(v.ctx, v.samples[i].user, v.samples[i].question)
+		if err != nil {
+			continue
+		}
+		for _, c := range a.Cites {
+			if c.Connector == conn {
+				used++
+			}
+		}
+	}
+	if used > 0 {
+		return Result{law, "fail", fmt.Sprintf("%s timeout injected, %d %s chunks used", conn, used, conn)}
+	}
+	return Result{law, "pass", fmt.Sprintf("%s timeout injected, 0 %s chunks used", conn, conn)}
+}
+
+func (v *verifier) law14(law string) Result {
+	if len(v.samples) == 0 {
+		return v.unknown(law, "no answers")
+	}
+	cited, unc, unl := 0, 0, 0
+	for _, s := range v.samples {
+		cited, unc, unl = cited+s.a.Cited, unc+s.a.Uncited, unl+s.a.Unlabelled
+	}
+	d := fmt.Sprintf("%d claims: %d cited, %d labelled uncited, %d unlabelled", cited+unc+unl, cited, unc, unl)
+	if unl > 0 {
+		return Result{law, "fail", d}
+	}
+	return Result{law, "pass", d}
+}
+
+func (v *verifier) law17(law string) Result {
+	at, ok := v.t.(AccessTarget)
+	if !ok {
+		return v.unknown(law, "this cell can't enumerate access paths")
+	}
+	unlisted, paths, err := at.UnlistedAccess(v.ctx)
+	if err != nil {
+		return v.unknown(law, "access paths couldn't be enumerated: "+err.Error())
+	}
+	if unlisted > 0 {
+		return Result{law, "fail", fmt.Sprintf("%d of %d factory access paths aren't in the hand-off record", unlisted, paths)}
+	}
+	return Result{law, "pass", fmt.Sprintf("%d factory access paths, all retained grants", paths)}
 }

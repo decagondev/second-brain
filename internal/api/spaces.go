@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sort"
 
+	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
@@ -54,4 +55,29 @@ func fail(w http.ResponseWriter, e *errs.Error) {
 	w.WriteHeader(errs.HTTP(e.Code))
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{
 		"code": string(e.Code), "message": e.Msg, "remedy": errs.Remedy(e.Code)}})
+}
+
+// writeJSON writes v as the response body.
+func writeJSON(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(v)
+}
+
+// isOperator reports whether s holds the operator role in tenant's cell (sb-admin(3)).
+func isOperator(r *http.Request, pol policy.Kernel, s tenancy.Scope, tenant string) bool {
+	return pol.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: tenant, Tenant: tenant}, nil).Decision == policy.Allow
+}
+
+// requireOperator answers EAUTH or EPERM unless the caller is an operator.
+func requireOperator(w http.ResponseWriter, r *http.Request, pol policy.Kernel, tenant string) (tenancy.Scope, bool) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		fail(w, errs.New(errs.EAUTH, "Sign in again."))
+		return s, false
+	}
+	if !isOperator(r, pol, s, tenant) {
+		fail(w, errs.New(errs.EPERM, "You need the operator role for this."))
+		return s, false
+	}
+	return s, true
 }

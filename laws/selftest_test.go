@@ -587,7 +587,7 @@ func TestSelf_LAW14MutationIsCaught(t *testing.T) {
 			} `json:"claims"`
 		}
 		if json.Unmarshal([]byte(raw), &parsed) != nil {
-			return []ComposedClaim{{Text: raw, Uncited: true}}, nil
+			return []ComposedClaim{{Text: raw, Uncited: true}}, nil //nolint:nilerr // unparsable output is one uncited claim
 		}
 		var out []ComposedClaim
 		for _, c := range parsed.Claims {

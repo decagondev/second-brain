@@ -265,8 +265,8 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 			reply(w, 404, errBody(404, "NOT_FOUND"))
 			return
 		}
-		if strings.Contains(path, "/databases/") {
-			inst := f.res[path[:strings.Index(path, "/databases/")]]
+		if i := strings.Index(path, "/databases/"); i >= 0 {
+			inst := f.res[path[:i]]
 			if dec, _ := inst["diskEncryptionConfiguration"].(map[string]any); dec != nil {
 				if key, _ := dec["kmsKeyName"].(string); f.destroyed[key] {
 					reply(w, 400, errBody(400, "FAILED_PRECONDITION: the instance's CMEK key is destroyed; its data can't be read"))
@@ -432,7 +432,7 @@ func (f *Fake) runtime(w http.ResponseWriter, r *http.Request) {
 		reply(w, 403, errBody(403, "PERMISSION_DENIED"))
 		return
 	}
-	name := ""
+	var name string
 	if len(parts) == 6 {
 		name = parts[5]
 	} else {

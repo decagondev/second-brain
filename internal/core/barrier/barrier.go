@@ -15,14 +15,6 @@ import (
 	"example.com/second-brain/internal/core/tenancy"
 )
 
-// Groups is a set of group names as group:NAME, sorted.
-func Groups(names []string) []string { return spaces.GroupSet(names) }
-
-// Barred is the groups (group:NAME) across a barrier from someone in groups.
-func Barred(barriers [][2]string, groups []string) []string {
-	return spaces.BarredGroups(barriers, groups)
-}
-
 // OwnerGroups resolves a source owner (an email) to their directory groups, as NAME.
 type OwnerGroups func(ctx context.Context, owner string) ([]string, error)
 
@@ -72,7 +64,7 @@ func Owners(ctx context.Context, og OwnerGroups, owner string) (owners []string,
 	if err != nil {
 		return nil, false
 	}
-	return Groups(gs), true
+	return spaces.GroupSet(gs), true
 }
 
 // Cell is what a cell with barriers knows to place actions.
@@ -122,7 +114,7 @@ func (c Cell) Target(ctx context.Context, s tenancy.Scope, target string) (map[s
 		return nil, fmt.Errorf("%w: the owner of %q", ErrUnplaced, target)
 	}
 	rc := spaces.ReadContext(all, bs, s.Groups(), spaces.Company)
-	return map[string]any{"barred_spaces": rc["barred_spaces"], "barred_groups": Barred(bs, s.Groups()),
+	return map[string]any{"barred_spaces": rc["barred_spaces"], "barred_groups": spaces.BarredGroups(bs, s.Groups()),
 		"target_spaces": holders, "target_owners": owners}, nil
 }
 
@@ -140,5 +132,5 @@ func (c Cell) Approval(ctx context.Context, s tenancy.Scope, requester string) (
 	if err != nil {
 		return nil, fmt.Errorf("%w: requester %s: %v", ErrUnplaced, requester, err)
 	}
-	return map[string]any{"barred_groups": Barred(bs, s.Groups()), "requester_groups": Groups(gs)}, nil
+	return map[string]any{"barred_groups": spaces.BarredGroups(bs, s.Groups()), "requester_groups": spaces.GroupSet(gs)}, nil
 }

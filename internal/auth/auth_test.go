@@ -75,18 +75,19 @@ func TestLoginWithTestIdP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	body := readAll(t, resp)
 	if resp.StatusCode != 200 || body != "hello usr_1@acme-logistics" {
 		t.Fatalf("after sign-in: %d %q", resp.StatusCode, body)
 	}
 	// 61 seconds later the session is re-validated; 12 hours later it is over.
 	clock = clock.Add(61 * time.Second)
-	if resp, _ := br.Get(acme.server.URL + "/"); resp.StatusCode != 200 {
-		t.Fatalf("after re-validation: %d", resp.StatusCode)
+	if code := status(br, acme.server.URL+"/"); code != 200 {
+		t.Fatalf("after re-validation: %d", code)
 	}
 	clock = clock.Add(12 * time.Hour)
-	if resp, _ := br.Get(acme.server.URL + "/"); resp.StatusCode != 401 {
-		t.Fatalf("after 12h: %d, want 401", resp.StatusCode)
+	if code := status(br, acme.server.URL+"/"); code != 401 {
+		t.Fatalf("after 12h: %d, want 401", code)
 	}
 }
 
@@ -100,6 +101,7 @@ func TestUnknownUserRefused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 401 || !strings.Contains(readAll(t, resp), `"EAUTH"`) {
 		t.Fatalf("got %d", resp.StatusCode)
 	}
@@ -112,8 +114,8 @@ func TestTwoIdPs(t *testing.T) {
 	acme := newCell(t, "acme-logistics", &clock)
 	beta := newCell(t, "beta-freight", &clock)
 	br := browser(t, acme.server, acme.idp.Server)
-	if resp, err := br.Get(acme.server.URL + "/login"); err != nil || resp.StatusCode != 200 {
-		t.Fatalf("acme sign-in: %v", err)
+	if code := status(br, acme.server.URL+"/login"); code != 200 {
+		t.Fatalf("acme sign-in: %d", code)
 	}
 	var sid string
 	for _, c := range br.Jar.Cookies(mustURL(acme.server.URL)) {
@@ -132,4 +134,14 @@ func TestTwoIdPs(t *testing.T) {
 		t.Fatal("a token from acme's IdP verified at beta's cell")
 	}
 	_ = ports.Session{}
+}
+
+// status is the status of a GET, with its body closed; 0 for a failed request.
+func status(c *http.Client, url string) int {
+	resp, err := c.Get(url)
+	if err != nil {
+		return 0
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return resp.StatusCode
 }

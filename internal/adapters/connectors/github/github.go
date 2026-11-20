@@ -372,11 +372,11 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 	}
 	k, err := c.creds(ctx)
 	if err != nil {
-		return out, nil
+		return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 	}
 	ids, err := c.identities(ctx, k, u.Email)
 	if err != nil {
-		return out, nil // can't find the asker: Unknown
+		return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 	}
 	// Only an identity whose SSO name is the asker's email counts, and it must be exactly
 	// one: another member's identity never answers for the asker (SB-1401).
@@ -480,15 +480,15 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 		return nil, cur, err
 	}
 	latest := from
-	seen := func(ts string) (time.Time, bool) {
+	seen := func(ts string) bool {
 		t, err := time.Parse(time.RFC3339, ts)
 		if err != nil {
-			return t, false
+			return false
 		}
 		if t.After(latest) {
 			latest = t
 		}
-		return t, cur == "" || t.After(from)
+		return cur == "" || t.After(from)
 	}
 	var set ports.ChangeSet
 	add := func(ch ports.Change) { set = append(set, ch) }
@@ -505,7 +505,7 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 			return nil, cur, err
 		}
 		for _, is := range issues {
-			if _, after := seen(is.UpdatedAt); after {
+			if seen(is.UpdatedAt) {
 				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: is.kind(), n: is.Number}.id()}})
 			}
 		}
@@ -531,7 +531,7 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 		} else {
 			for i := len(commits) - 1; i >= 0; i-- { // oldest first
 				cm := commits[i]
-				if _, after := seen(cm.Commit.Committer.Date); !after {
+				if !seen(cm.Commit.Committer.Date) {
 					continue
 				}
 				var detail struct {
@@ -564,7 +564,7 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 			if e.Type != "MemberEvent" && e.Type != "PublicEvent" {
 				continue
 			}
-			if _, after := seen(e.CreatedAt); after && cur != "" {
+			if seen(e.CreatedAt) && cur != "" {
 				permChanged = true
 			}
 		}

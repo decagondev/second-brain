@@ -66,7 +66,8 @@ func (w *githubWorld) ACL(access []bool, fault string) ([]string, error) {
 	}
 	switch fault {
 	case "script":
-		w.f.Remove(refs[0].ID[:strings.Index(refs[0].ID, "/")])
+		repo, _, _ := strings.Cut(refs[0].ID, "/")
+		w.f.Remove(repo)
 	case "":
 	default:
 		for range repos { // one permission call per repository

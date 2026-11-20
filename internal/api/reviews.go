@@ -40,11 +40,6 @@ func (h Reviews) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/reviews/{id}/evidence", h.evidence)
 }
 
-func (h Reviews) ok(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
-}
-
 // steward authorises the caller as a steward of the named space.
 func (h Reviews) steward(w http.ResponseWriter, r *http.Request, operatorToo bool) (tenancy.Scope, manifest.Tenant, bool) {
 	s, err := tenancy.FromContext(r.Context())
@@ -65,8 +60,7 @@ func (h Reviews) steward(w http.ResponseWriter, r *http.Request, operatorToo boo
 	}
 	dec := h.Policy.Authorise(r.Context(), s, "review_space", policy.Entity{Type: "SpaceConfig", ID: name, Tenant: h.Tenant,
 		Attrs: map[string]any{"stewards": sp.Stewards}}, map[string]any{"groups": groupsOf(s)})
-	if dec.Decision != policy.Allow && (!operatorToo ||
-		h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow) {
+	if dec.Decision != policy.Allow && (!operatorToo || !isOperator(r, h.Policy, s, h.Tenant)) {
 		fail(w, errs.New(errs.EPERM, "Only the space's stewards can review its access."))
 		return s, cur, false
 	}
@@ -88,7 +82,7 @@ func (h Reviews) listSpace(w http.ResponseWriter, r *http.Request) {
 			out = append(out, rv)
 		}
 	}
-	h.ok(w, map[string]any{"items": out})
+	writeJSON(w, map[string]any{"items": out})
 }
 
 func (h Reviews) decide(w http.ResponseWriter, r *http.Request) {
@@ -154,7 +148,7 @@ func (h Reviews) decide(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		fail(w, errs.New(errs.EUNAVAIL, "The decision couldn't be stored."))
 	default:
-		h.ok(w, next)
+		writeJSON(w, next)
 	}
 }
 
@@ -197,16 +191,8 @@ func (h Reviews) complete(r *http.Request, s tenancy.Scope, cur manifest.Tenant,
 }
 
 func (h Reviews) operator(w http.ResponseWriter, r *http.Request) bool {
-	s, err := tenancy.FromContext(r.Context())
-	if err != nil {
-		fail(w, errs.New(errs.EAUTH, "Sign in again."))
-		return false
-	}
-	if h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow {
-		fail(w, errs.New(errs.EPERM, "You need the operator role for this."))
-		return false
-	}
-	return true
+	_, ok := requireOperator(w, r, h.Policy, h.Tenant)
+	return ok
 }
 
 func (h Reviews) listAll(w http.ResponseWriter, r *http.Request) {
@@ -227,7 +213,7 @@ func (h Reviews) listAll(w http.ResponseWriter, r *http.Request) {
 	for _, rv := range all {
 		out = append(out, row{rv, reviews.Overdue(rv, now)})
 	}
-	h.ok(w, map[string]any{"items": out})
+	writeJSON(w, map[string]any{"items": out})
 }
 
 func (h Reviews) evidence(w http.ResponseWriter, r *http.Request) {

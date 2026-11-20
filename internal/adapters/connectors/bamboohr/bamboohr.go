@@ -258,11 +258,11 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 	}
 	k, err := c.creds(ctx)
 	if err != nil {
-		return out, nil
+		return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 	}
 	dir, err := c.directory(ctx, k)
 	if err != nil {
-		return out, nil
+		return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 	}
 	active, present := false, map[string]bool{}
 	for _, e := range dir {
@@ -289,7 +289,7 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 		}
 		if fs == nil {
 			if fs, err = c.files(ctx, k); err != nil {
-				return out, nil // the rest stay Unknown
+				return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 			}
 		}
 		out[i] = map[bool]ports.Verdict{true: ports.VerdictAllow, false: ports.VerdictDeny}[fs[key].Shared]

@@ -417,32 +417,25 @@ func (p Project) owns(keyID string) error {
 
 // Wrap encrypts a data key with the cell's KMS key; the key's name is the AAD.
 func (p Project) Wrap(ctx context.Context, keyID string, dataKey []byte) ([]byte, error) {
-	if err := p.owns(keyID); err != nil {
-		return nil, err
-	}
-	var out struct {
-		Ciphertext string `json:"ciphertext"`
-	}
-	body := map[string]any{"plaintext": base64.StdEncoding.EncodeToString(dataKey), "additionalAuthenticatedData": base64.StdEncoding.EncodeToString([]byte(keyID))}
-	if err := p.do(ctx, http.MethodPost, p.Endpoints.withDefaults().KMS+"/v1/"+keyID+":encrypt", body, &out); err != nil {
-		return nil, err
-	}
-	return base64.StdEncoding.DecodeString(out.Ciphertext)
+	return p.kms(ctx, keyID, "encrypt", "plaintext", "ciphertext", dataKey)
 }
 
 // Unwrap decrypts a wrapped data key; a key wrapped under another cell's key fails.
 func (p Project) Unwrap(ctx context.Context, keyID string, wrapped []byte) ([]byte, error) {
+	return p.kms(ctx, keyID, "decrypt", "ciphertext", "plaintext", wrapped)
+}
+
+// kms runs one KMS encrypt or decrypt on the cell's own key, with the key's name as AAD.
+func (p Project) kms(ctx context.Context, keyID, verb, in, out string, data []byte) ([]byte, error) {
 	if err := p.owns(keyID); err != nil {
 		return nil, err
 	}
-	var out struct {
-		Plaintext string `json:"plaintext"`
-	}
-	body := map[string]any{"ciphertext": base64.StdEncoding.EncodeToString(wrapped), "additionalAuthenticatedData": base64.StdEncoding.EncodeToString([]byte(keyID))}
-	if err := p.do(ctx, http.MethodPost, p.Endpoints.withDefaults().KMS+"/v1/"+keyID+":decrypt", body, &out); err != nil {
+	var res map[string]string
+	body := map[string]any{in: base64.StdEncoding.EncodeToString(data), "additionalAuthenticatedData": base64.StdEncoding.EncodeToString([]byte(keyID))}
+	if err := p.do(ctx, http.MethodPost, p.Endpoints.withDefaults().KMS+"/v1/"+keyID+":"+verb, body, &res); err != nil {
 		return nil, err
 	}
-	return base64.StdEncoding.DecodeString(out.Plaintext)
+	return base64.StdEncoding.DecodeString(res[out])
 }
 
 // VerifierPermissions are what the read-only verifier identity needs to enumerate access

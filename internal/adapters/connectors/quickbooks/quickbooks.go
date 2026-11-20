@@ -307,7 +307,7 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 	out := make([]ports.Verdict, len(refs))
 	k, err := c.creds(ctx)
 	if err != nil || k.Readers == nil || u.Email == "" {
-		return out, nil
+		return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 	}
 	reader := false
 	for _, r := range *k.Readers {
@@ -328,7 +328,7 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 			if !loadedA {
 				as, err := c.accounts(ctx, k)
 				if err != nil {
-					return out, nil // the rest stay Unknown
+					return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 				}
 				for _, a := range as {
 					exists["accounts/"+a.ID] = true
@@ -339,7 +339,7 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 			if !loadedB {
 				bs, err := c.budgets(ctx, k)
 				if err != nil {
-					return out, nil
+					return out, nil //nolint:nilerr // an ACL that can't ask answers Unknown, never an error (LAW-03)
 				}
 				for _, b := range bs {
 					exists["budgets/"+b.ID] = true

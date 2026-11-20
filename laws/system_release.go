@@ -173,12 +173,12 @@ func (w *releaseWorld) Admit(id, tamper string) (bool, error) {
 	if w.lax {
 		m, err := w.manifest(id)
 		if err != nil {
-			return false, nil
+			return false, nil //nolint:nilerr // an unreadable release is not admitted
 		}
 		d, _ := m.Digest()
 		raw, err := w.store.Get(context.Background(), id, "bundle.sig")
 		if err != nil {
-			return false, nil
+			return false, nil //nolint:nilerr // an unreadable release is not admitted
 		}
 		var s release.Signature
 		_ = json.Unmarshal(raw, &s)

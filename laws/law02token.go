@@ -58,7 +58,10 @@ var NewTokenCheck = func() TokenCheck {
 
 func law02Tokens(r *rand.Rand, check TokenCheck) error {
 	tenants := []string{"acme-logistics", "beta-freight"}
-	pick := func(extra ...string) string { all := append(tenants, extra...); return all[r.Intn(len(all))] }
+	pick := func(extra ...string) string {
+		all := append(append([]string{}, tenants...), extra...)
+		return all[r.Intn(len(all))]
+	}
 	for i := 0; i < 12; i++ {
 		s := TokenSpec{IssuerOf: pick("evil"), SignedBy: pick("evil"), Tenant: pick(""), Audience: pick(), PresentAt: pick()}
 		if r.Intn(2) == 0 { // keep half the tokens well-formed for some cell

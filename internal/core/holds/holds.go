@@ -44,6 +44,14 @@ func (h Hold) Covers(spaceID, user string) bool {
 	return inSpace && ofUser
 }
 
+// spaceID is the hold's space as an audit row names it, "" for a hold on every space.
+func (h Hold) spaceID() string {
+	if h.Space == "" {
+		return ""
+	}
+	return "spc_" + h.Space
+}
+
 // Set is the active holds.
 type Set []Hold
 
@@ -180,12 +188,8 @@ func (s Service) Place(ctx context.Context, by, matter, space string, users []st
 	}
 	h := Hold{ID: s.NewID("hold_"), Matter: matter, Space: space, Users: append([]string{}, users...), Reason: reason,
 		PlacedBy: by, PlacedAt: s.Now().UTC()}
-	sp := ""
-	if space != "" {
-		sp = "spc_" + space
-	}
 	if _, err := s.Audit.Write(ctx, audit.Event{Actor: by, Kind: "retention", Subject: "hold:" + h.ID, State: "placed",
-		Reason: "matter " + matter + " " + scopeText(h) + ": " + reason, Space: sp}); err != nil {
+		Reason: "matter " + matter + " " + scopeText(h) + ": " + reason, Space: h.spaceID()}); err != nil {
 		return Hold{}, fmt.Errorf("%w: %v", ErrAudit, err)
 	}
 	if err := s.Store.Put(ctx, h); err != nil {
@@ -206,12 +210,8 @@ func (s Service) Release(ctx context.Context, by, id, reason string) (Hold, erro
 	if !found || h.Released {
 		return Hold{}, ErrState
 	}
-	sp := ""
-	if h.Space != "" {
-		sp = "spc_" + h.Space
-	}
 	if _, err := s.Audit.Write(ctx, audit.Event{Actor: by, Kind: "retention", Subject: "hold:" + h.ID, State: "released",
-		Reason: "matter " + h.Matter + " " + scopeText(h) + ": " + reason, Space: sp}); err != nil {
+		Reason: "matter " + h.Matter + " " + scopeText(h) + ": " + reason, Space: h.spaceID()}); err != nil {
 		return Hold{}, fmt.Errorf("%w: %v", ErrAudit, err)
 	}
 	h.Released, h.ReleasedBy, h.ReleasedAt, h.ReleaseReason = true, by, s.Now().UTC(), reason

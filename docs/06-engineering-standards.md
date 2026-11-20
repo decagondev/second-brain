@@ -59,7 +59,7 @@ manual/  docs/  living/  epics/  examples/  tools/
 
 ## Go style
 
-- `gofmt`, `golangci-lint` v2 (config in `.golangci.yml`) with: `errcheck`, `govet`, `staticcheck`, `depguard`, `exhaustive` (so every `Decision` switch handles `Unknown`), `forbidigo` (bans `fmt.Print*` and `log.*` outside `cmd/`).
+- `gofmt`, `golangci-lint` v2 (config in `.golangci.yml`) with: `errcheck`, `govet`, `staticcheck`, `depguard`, `exhaustive` (so every `Decision` switch handles `Unknown`), `forbidigo` (bans `fmt.Print*` and `log.*` outside `cmd/`), and since SB-1403 `errorlint` (errors compared and asserted with `errors.Is`/`As`), `nilerr` (an error turned into `nil` says why, as `//nolint:nilerr // …`, which an ACL returning `Unknown` does), `unparam`, `wastedassign`, `gocritic`, `bodyclose`, `misspell`, `unconvert`, `nakedret`, `dupl` (120 tokens) and `gocyclo` (40). Tests, law tests and fakes are exempt from `dupl`, `gocyclo` and `unparam`: they are tables and scenarios by design.
 - Every exported function that does I/O takes `ctx context.Context` first and `tenancy.Scope` second.
 - Zero values must be safe. If the zero value would mean "allow", "ran" or "approved", change the type.
 - Prefer small functions with names that read as sentences: `policy.Require(res)`, `audit.WriteAhead(ctx, s, row)`.

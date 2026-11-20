@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.3 Stricter lint and tidier files (SB-1403)
+
+**Wave/slice:** W13 / S13.3 · **Status:** Done
+
+**What:** `errorlint`, `nilerr`, `unparam`, `wastedassign`, `gocritic`, `bodyclose`, `misspell`, `unconvert`, `nakedret`, `dupl` and `gocyclo`, with every finding fixed or annotated; the tool bus split into `toolbus.go`, `decide.go` and `view.go`; `verify.Run` split per law; shared API helpers; barrier wrappers removed.
+
+**Why this way:** Linters that can be satisfied mechanically are worth turning on only if every finding gets a real answer; the deliberate exceptions (`nilerr` on ACLs that answer `Unknown`) now say why in the code, so the next reader doesn't "fix" them into errors.
+
+**Learned:** `errorlint`'s `%v`-versus-`%w` check would have meant 87 edits that change what callers can unwrap, so it is off: wrapping is a decision, not a style. Its comparison and assertion checks found three real misses.
+
+**Laws:** none changed; every law test unchanged and green.
+
+**Next:** S13.4, the manual and the code agree (SB-1404).
+
 ## 2026-11-20 S13.2 Fuzzing and the race detector (SB-1402)
 
 **Wave/slice:** W13 / S13.2 · **Status:** Done

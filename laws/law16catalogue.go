@@ -45,7 +45,7 @@ func law16Catalogue(r *rand.Rand, build BundleWith) error {
 	}
 	k := r.Intn(len(c.Templates))
 	t := &c.Templates[k]
-	what := ""
+	var what string
 	switch r.Intn(4) {
 	case 0:
 		t.Label = map[string]string{"internal": "confidential", "confidential": "restricted", "restricted": "internal"}[t.Label]
@@ -65,7 +65,7 @@ func law16Catalogue(r *rand.Rand, build BundleWith) error {
 		return err
 	}
 	if _, err := manifest.ParseCatalogue(edited); err != nil {
-		return nil // a refused catalogue never ships; nothing to compare
+		return nil //nolint:nilerr // a refused catalogue never ships; nothing to compare
 	}
 	next, err := build(edited)
 	if err != nil {

@@ -30,11 +30,6 @@ func (h Holds) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/holds", h.list)
 }
 
-func (h Holds) ok(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
-}
-
 // LegalStewards are the stewards of every space whose template is legal.
 func LegalStewards(t manifest.Tenant) []string {
 	set := map[string]bool{}
@@ -99,7 +94,7 @@ func (h Holds) place(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		fail(w, errs.New(errs.EUNAVAIL, "The hold couldn't be placed: %v", err))
 	default:
-		h.ok(w, hold)
+		writeJSON(w, hold)
 	}
 }
 
@@ -121,7 +116,7 @@ func (h Holds) release(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		fail(w, errs.New(errs.EUNAVAIL, "The hold couldn't be released: %v", err))
 	default:
-		h.ok(w, hold)
+		writeJSON(w, hold)
 	}
 }
 
@@ -138,7 +133,7 @@ func (h Holds) list(w http.ResponseWriter, r *http.Request) {
 	}
 	legal := h.Policy.Authorise(r.Context(), s, "place_hold", policy.Entity{Type: "LegalHold", ID: h.Tenant, Tenant: h.Tenant,
 		Attrs: map[string]any{"stewards": LegalStewards(cur)}}, map[string]any{"groups": groupsOf(s)}).Decision == policy.Allow
-	op := h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision == policy.Allow
+	op := isOperator(r, h.Policy, s, h.Tenant)
 	if !legal && !op {
 		fail(w, errs.New(errs.EPERM, "Only Legal stewards and operators can read holds."))
 		return
@@ -148,5 +143,5 @@ func (h Holds) list(w http.ResponseWriter, r *http.Request) {
 		fail(w, errs.New(errs.EUNAVAIL, "Holds can't be read."))
 		return
 	}
-	h.ok(w, map[string]any{"items": all})
+	writeJSON(w, map[string]any{"items": all})
 }

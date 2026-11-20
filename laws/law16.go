@@ -314,7 +314,7 @@ func law16Drift(r *rand.Rand, detect DriftDetector) error {
 		}
 		switch r.Intn(5) {
 		case 0:
-			c.Attrs["a"] = c.Attrs["a"] + "!"
+			c.Attrs["a"] += "!"
 			want[c.Kind+"/"+c.Name+"/a"] = true
 		case 1:
 			delete(c.Attrs, "b")

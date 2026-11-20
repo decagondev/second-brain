@@ -11,6 +11,18 @@ linters:
     - depguard      # SB-008: the dependency rule
     - exhaustive    # every switch on an enum (e.g. policy.Decision) handles every value
     - forbidigo     # no fmt.Print*/log.* outside cmd/
+    # SB-1403: clean and concise.
+    - errorlint     # errors compared and asserted with errors.Is/As
+    - nilerr        # an error turned into nil is said out loud (//nolint:nilerr with why)
+    - unparam       # no parameter or result that never varies
+    - wastedassign  # no value assigned and then overwritten unread
+    - gocritic      # the default checks: off-by-ones, append mistakes and the like
+    - bodyclose     # every HTTP response body closed
+    - misspell
+    - unconvert
+    - nakedret
+    - dupl          # no copied blocks of code
+    - gocyclo       # no function too tangled to review
   settings:
     depguard:
       rules:
@@ -28,6 +40,12 @@ linters:
       forbid:
         - pattern: ^fmt\.Print.*$
         - pattern: ^log\.
+    errorlint:
+      errorf: false # %v is used on purpose where an error must not be unwrapped by callers
+    dupl:
+      threshold: 120
+    gocyclo:
+      min-complexity: 40
     errcheck:
       exclude-functions:
         - fmt.Fprint
@@ -39,5 +57,8 @@ linters:
         linters: [forbidigo]
       - path: ^cmd/
         linters: [forbidigo]
+      # Tests, law tests and fakes are long tables and scenarios by design.
+      - path: (_test\.go|^laws/|test/[a-z]+\.go$|gcptest|lineartest|hubspottest)
+        linters: [dupl, gocyclo, unparam]
 formatters:
   enable: [gofmt]

@@ -39,11 +39,6 @@ func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))
 }
 
-func (h Stewards) ok(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(v)
-}
-
 func groupsOf(s tenancy.Scope) []string {
 	var out []string
 	for _, g := range s.Groups() {
@@ -110,20 +105,11 @@ func (h Stewards) propose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pl, _ := plan.Make(next, plan.Desired(cur), true)
-	h.ok(w, map[string]any{"id": p.ID, "space": name, "base": p.Base, "hash": p.Hash, "diff": p.Diff, "plan": pl.Text()})
+	writeJSON(w, map[string]any{"id": p.ID, "space": name, "base": p.Base, "hash": p.Hash, "diff": p.Diff, "plan": pl.Text()})
 }
 
 func (h Stewards) operator(w http.ResponseWriter, r *http.Request) (tenancy.Scope, bool) {
-	s, err := tenancy.FromContext(r.Context())
-	if err != nil {
-		fail(w, errs.New(errs.EAUTH, "Sign in again."))
-		return s, false
-	}
-	if h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow {
-		fail(w, errs.New(errs.EPERM, "You need the operator role for this."))
-		return s, false
-	}
-	return s, true
+	return requireOperator(w, r, h.Policy, h.Tenant)
 }
 
 func (h Stewards) list(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +127,7 @@ func (h Stewards) list(w http.ResponseWriter, r *http.Request) {
 			open = append(open, p)
 		}
 	}
-	h.ok(w, map[string]any{"items": open})
+	writeJSON(w, map[string]any{"items": open})
 }
 
 func (h Stewards) decide(approve bool) http.HandlerFunc {
@@ -222,6 +208,6 @@ func (h Stewards) decide(approve bool) http.HandlerFunc {
 		if approve {
 			out["manifest"] = p.Manifest
 		}
-		h.ok(w, out)
+		writeJSON(w, out)
 	}
 }

@@ -577,7 +577,8 @@ func (e *env) evalRun(args []string) int {
 	c.Dir, c.Stdout, c.Stderr = root, e.out, e.err
 	c.Env = append(os.Environ(), "PYTHONPATH="+root)
 	if err := c.Run(); err != nil {
-		if x, ok := err.(*exec.ExitError); ok {
+		var x *exec.ExitError
+		if errors.As(err, &x) {
 			return x.ExitCode()
 		}
 		return e.fail("sb eval run", errs.New(errs.EUNAVAIL, "python3 not available: %v", err))
@@ -612,7 +613,8 @@ func (e *env) json(v any) int {
 func (e *env) fail(prefix string, err error) int {
 	c := errs.CodeOf(err)
 	msg := err.Error()
-	if x, ok := err.(*errs.Error); ok {
+	var x *errs.Error
+	if errors.As(err, &x) {
 		msg = x.Msg
 	}
 	if e.g.JSON {

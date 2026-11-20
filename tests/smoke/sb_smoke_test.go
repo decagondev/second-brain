@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,7 +31,8 @@ func TestMain(m *testing.M) {
 
 func runSB(args ...string) (int, string) {
 	out, err := exec.Command(sb, args...).CombinedOutput()
-	if x, ok := err.(*exec.ExitError); ok {
+	var x *exec.ExitError
+	if errors.As(err, &x) {
 		return x.ExitCode(), string(out)
 	}
 	return 0, string(out)
