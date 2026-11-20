@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
+	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/route"
 )
@@ -44,5 +45,21 @@ func TestSelf_RoutingMutationsAreCaught(t *testing.T) {
 	}
 	if !violates(runs, func(r *rand.Rand) error { return law13Spaces(r, stale()) }) {
 		t.Error("routing: a router that keeps an old configuration was not caught")
+	}
+}
+
+func TestLAW20_ChatChannelsAskOnlyInTheirSpace(t *testing.T) {
+	Check(t, "LAW-20", runs, func(r *rand.Rand) error {
+		return law20Chat(r, func(st *spacemem.Store) ports.SpaceStore { return st })
+	})
+}
+
+// LAW-20's chat test catches a registry read that loses its answer, which would turn a
+// space's channel into a company-wide one.
+func TestSelf_LAW20ChatMutationIsCaught(t *testing.T) {
+	if !violates(runs, func(r *rand.Rand) error {
+		return law20Chat(r, func(st *spacemem.Store) ports.SpaceStore { return forgetful{st} })
+	}) {
+		t.Error("LAW-20 (chat): a registry that answers nothing was not caught")
 	}
 }

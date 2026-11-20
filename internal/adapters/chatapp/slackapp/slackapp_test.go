@@ -40,12 +40,14 @@ func (u users) UsersByEmail(_ context.Context, t, email string) ([]ports.User, e
 }
 
 type agent struct {
-	asked []string // scope user ids
-	err   error
+	asked  []string // scope user ids
+	spaces []string // scope spaces
+	err    error
 }
 
 func (a *agent) Ask(_ context.Context, s tenancy.Scope, r ask.Request) (ask.Response, error) {
 	a.asked = append(a.asked, s.User())
+	a.spaces = append(a.spaces, s.Space())
 	if a.err != nil {
 		return ask.Response{}, a.err
 	}

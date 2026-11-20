@@ -47,7 +47,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
             "title": "Refund policy",
             "span": [1840, 2615],
             "url": "https://…/refund-policy?version=17",
-            "flags": []
+            "flags": [],
+            "spaces": ["support"],
+            "label": "internal"
           }
         ]
       },
@@ -107,11 +109,17 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | `flags` | A chip with `injection_suspect` says "Flagged" next to the cite |
 | `notice` | `no_access`: "Some sources you don't have access to may answer this. Ask their owner." `no_sources`: "Nothing indexed answers this yet." `most_uncited`: "Most of this answer isn't backed by your sources." |
 | `refused` | "N sources were not shown because you can't open them", never their names |
+| Space switcher | In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from `GET /v1/spaces`, and nothing else. The chosen space goes on the ask as `?space=`. Changing it starts a new conversation. A cell without spaces shows no switcher |
+| Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |
 | Errors | The error's `message` and `remedy`, with the trace id to quote to support |
 
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
 
-`cites[].url` is set when the source's connector can link to a version; it is omitted otherwise.
+`cites[].url` is set when the source's connector can link to a version; it is omitted otherwise. In a cell with spaces, `cites[].spaces` names the spaces that hold the cited document and `cites[].label` its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).
+
+### Spaces
+
+`GET /v1/spaces` lists the spaces the asker is a member of, now, as `{"spaces": [{"name": "finance", "label": "restricted"}]}`, sorted by name. Spaces the asker isn't in are never listed, and a cell without spaces returns an empty list. A registry that can't answer is `EUNAVAIL`.
 
 ### The chat app (Slack)
 
@@ -120,7 +128,8 @@ Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `a
 1. **Verify.** The cell checks Slack's request signature with the signing secret from `vault://tenants/TENANT/connectors/chat` and refuses any request older than 5 minutes. The `team_id` must be the tenant's workspace. Anything else gets HTTP 401 and no reply.
 2. **Map the person.** The bot looks up the Slack user's email (`users.info`) and finds the **one active** directory user with that email (SCIM-provisioned, sb-identity(7)). No match, more than one match, or an inactive user gets an ephemeral reply saying the account can't be matched, and **no answer**. The bot never falls back to a shared or service identity.
 3. **Answer privately.** Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's `response_url` (only `https://hooks.slack.com/`), also **ephemeral**, so only the asker sees it. Claims show as text with their citations as links (`<url|cite>`). Uncited claims start with *Uncited:*. The reply ends with the notice, the refused count and the trace id.
-4. **Share.** A *Share in channel* button posts the question and the **citation links only, never the claim text**, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.
+4. **Spaces.** In a cell with spaces, the channel the command was typed in picks the space: a space's `channels` in the manifest (sb-space(5)) list the channels that ask in it. A mapped channel asks in that space, and someone who isn't a member gets an ephemeral reply saying so and **no answer**, never a company-wide one. An unmapped channel, or a direct message, asks company-wide.
+5. **Share.** A *Share in channel* button posts the question and the **citation links only, never the claim text**, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.
 
 Errors are ephemeral replies with the error's `message` and trace id. Slack scopes added for the bot: `commands` only. The bot uses no Slack write scopes, because replies go through `response_url`.
 

@@ -7,13 +7,21 @@ const notices: Record<Exclude<Notice, null>, string> = {
   most_uncited: "Most of this answer isn't backed by your sources.",
 };
 
+// "Finance · restricted": the spaces that hold a source and its label, in words.
+export function placeOf(cite: Cite): string {
+  const spaces = (cite.spaces ?? []).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(", ");
+  return [spaces, cite.label ?? ""].filter((x) => x !== "").join(" · ");
+}
+
 export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   const flagged = cite.flags.includes("injection_suspect");
-  const label = `Source ${cite.cite}${cite.title ? `, ${cite.title}` : ""}${flagged ? ", flagged" : ""}${cite.url ? ", opens in a new tab" : ", shows the answer's trace"}`;
+  const place = placeOf(cite);
+  const label = `Source ${cite.cite}${cite.title ? `, ${cite.title}` : ""}${place ? `, ${place}` : ""}${flagged ? ", flagged" : ""}${cite.url ? ", opens in a new tab" : ", shows the answer's trace"}`;
   const href = cite.url ?? `/v1/traces/${encodeURIComponent(trace)}`;
   return (
     <a className="chip" href={href} target={cite.url ? "_blank" : undefined} rel={cite.url ? "noopener noreferrer" : undefined} aria-label={label}>
       <span>{cite.title ?? cite.cite}</span>
+      {place && <span className="place">{place}</span>}
       {flagged && <span className="flag">Flagged</span>}
     </a>
   );

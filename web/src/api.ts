@@ -6,6 +6,28 @@ export interface Cite {
   span: [number, number];
   url?: string;
   flags: string[];
+  // In a cell with spaces (SB-1007): the spaces that hold the source, and its label.
+  spaces?: string[];
+  label?: string;
+}
+
+export interface Space {
+  name: string;
+  label: string;
+}
+
+// The asker's spaces (GET /v1/spaces). Any failure shows no switcher, so the UI asks
+// company-wide; it never guesses a space.
+export async function listSpaces(f: Fetch = fetch): Promise<Space[]> {
+  try {
+    const res = await f("/v1/spaces", { credentials: "same-origin" });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { spaces?: unknown };
+    if (!Array.isArray(data.spaces)) return [];
+    return data.spaces.filter((s): s is Space => typeof s?.name === "string" && typeof s?.label === "string");
+  } catch {
+    return [];
+  }
 }
 
 export interface Claim {
@@ -40,12 +62,13 @@ export class AskError extends Error {
 
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
-export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch): Promise<AskResponse> {
+export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch, space?: string): Promise<AskResponse> {
   const body: Record<string, string> = { question };
   if (conversation) body.conversation = conversation;
+  const url = space ? `/v1/ask?space=${encodeURIComponent(space)}` : "/v1/ask";
   let res: Response;
   try {
-    res = await f("/v1/ask", {
+    res = await f(url, {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },

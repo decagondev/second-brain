@@ -39,6 +39,7 @@ h2.question { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
 .chips { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; }
 .chip { display: inline-flex; gap: 0.25rem; padding: 0.1rem 0.5rem; border-radius: 1rem; background: var(--chip-bg); color: var(--accent); font-size: 0.85rem; text-decoration: underline; min-height: 24px; align-items: center; }
 .flag { color: var(--flag); font-weight: 700; }
+.place { font-size: 0.8rem; opacity: 0.9; }
 .notice, .refused, .trace { color: var(--muted); font-size: 0.9rem; }
 .error { border: 2px solid var(--flag); padding: 0.5rem 0.75rem; }
 form.ask { display: grid; gap: 0.5rem; margin-top: 1.5rem; }

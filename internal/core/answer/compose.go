@@ -19,6 +19,10 @@ type Cite struct {
 	Span  [2]int   `json:"span"`
 	URL   string   `json:"url,omitempty"` // opens the source at this version, when the connector can link
 	Flags []string `json:"flags"`
+	// In a cell with spaces (SB-1007): the spaces that hold the cited document, by name,
+	// and its label.
+	Spaces []string `json:"spaces,omitempty"`
+	Label  string   `json:"label,omitempty"`
 }
 
 // Claim is one sentence or short passage of an answer.
@@ -93,7 +97,12 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 			if flags == nil {
 				flags = []string{}
 			}
-			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: titles[ch.Cite], Span: [2]int{ch.Start, ch.End}, Flags: flags})
+			var held []string
+			for _, id := range ch.Spaces {
+				held = append(held, strings.TrimPrefix(id, "spc_"))
+			}
+			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: titles[ch.Cite], Span: [2]int{ch.Start, ch.End}, Flags: flags,
+				Spaces: held, Label: ch.Label})
 		}
 		c.Uncited = len(c.Cites) == 0
 		res.Claims = append(res.Claims, c)

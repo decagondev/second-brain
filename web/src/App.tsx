@@ -1,7 +1,7 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { ask, AskError } from "./api";
-import type { ApiError, AskResponse, Fetch } from "./api";
+import { ask, AskError, listSpaces } from "./api";
+import type { ApiError, AskResponse, Fetch, Space } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
 import { DraftPanel } from "./Draft";
@@ -17,7 +17,18 @@ export function App({ fetcher }: { fetcher?: Fetch }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [space, setSpace] = useState(""); // "" is the whole company
   const inputId = useId();
+  const spaceId = useId();
+
+  useEffect(() => {
+    let live = true;
+    listSpaces(fetcher).then((s) => live && setSpaces(s));
+    return () => {
+      live = false;
+    };
+  }, [fetcher]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -25,7 +36,7 @@ export function App({ fetcher }: { fetcher?: Fetch }) {
     if (!q || busy) return;
     setBusy(true);
     try {
-      const a = await ask(q, conversation, fetcher);
+      const a = await ask(q, conversation, fetcher, space || undefined);
       setConversation(a.conversation);
       setTurns((t) => [...t, { question: q, answer: a }]);
       setQuestion("");
@@ -57,6 +68,27 @@ export function App({ fetcher }: { fetcher?: Fetch }) {
         ))}
       </section>
       <form onSubmit={submit} className="ask">
+        {spaces.length > 0 && (
+          <>
+            <label htmlFor={spaceId}>Ask in</label>
+            <select
+              id={spaceId}
+              value={space}
+              onChange={(e) => {
+                setSpace(e.target.value);
+                setConversation(undefined); // a new space starts a new conversation
+                setTurns([]);
+              }}
+            >
+              <option value="">Whole company</option>
+              {spaces.map((s) => (
+                <option key={s.name} value={s.name}>
+                  {s.name.charAt(0).toUpperCase() + s.name.slice(1)} ({s.label})
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         <label htmlFor={inputId}>Ask a question</label>
         <textarea id={inputId} value={question} maxLength={4000} rows={3} onChange={(e) => setQuestion(e.target.value)} />
         <button type="submit" disabled={busy || question.trim() === ""}>

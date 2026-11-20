@@ -22,6 +22,7 @@ import (
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -49,6 +50,9 @@ type App struct {
 	Groups func(ctx context.Context, tenant, user string) ([]string, error)
 	Issuer tenancy.Issuer // the cell's one issuer (SB-108)
 	Agent  Asker
+	// Spaces is the cell's space registry (SB-1007): a space's channels ask in it. nil is
+	// a cell without spaces, where every channel asks company-wide.
+	Spaces ports.SpaceStore
 	// Post sends a message to a response_url; nil means a real HTTPS POST.
 	Post func(ctx context.Context, responseURL string, msg Message) error
 	// Go runs the answer after the acknowledgement; nil means a goroutine.
@@ -87,10 +91,14 @@ type Element struct {
 
 // Replies the app sends (no content, no names).
 const (
-	MsgLooking   = "Looking that up…"
-	MsgNoMatch   = "I can't match your Slack account to your company sign-in, so I can't answer. Ask your admin to check your email in the directory."
-	MsgUsage     = "Ask a question: /ask What is our refund approval limit?"
-	MsgShareFail = "Only the person who asked can share this answer."
+	MsgLooking = "Looking that up…"
+	MsgNoMatch = "I can't match your Slack account to your company sign-in, so I can't answer. Ask your admin to check your email in the directory."
+	MsgUsage   = "Ask a question: /ask What is our refund approval limit?"
+	// MsgNotMember answers a /ask in a space's channel from someone outside the space.
+	MsgNotMember = "This channel asks the brain of a space you aren't a member of, so I can't answer here. Ask its stewards for membership, or ask somewhere else for a company-wide answer."
+	// MsgSpacesDown answers when the space registry can't say which space a channel is in.
+	MsgSpacesDown = "Answers are unavailable right now. Try again in a minute."
+	MsgShareFail  = "Only the person who asked can share this answer."
 )
 
 // ErrNoMatch is a chat user who isn't exactly one active directory user.
@@ -158,21 +166,58 @@ func (a *App) command(w http.ResponseWriter, r *http.Request) {
 	a.run(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), AnswerTimeout)
 		defer cancel()
-		_ = a.post(ctx, responseURL, a.answer(ctx, user, question))
+		_ = a.post(ctx, responseURL, a.answer(ctx, user, form.Get("channel_name"), question))
 	})
 }
 
-// answer maps the person, asks, and renders an ephemeral reply.
-func (a *App) answer(ctx context.Context, slackUser, question string) Message {
+// answer maps the person and the channel's space, asks, and renders an ephemeral reply.
+func (a *App) answer(ctx context.Context, slackUser, channel, question string) Message {
 	s, err := a.scope(ctx, slackUser)
 	if err != nil {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: MsgNoMatch}
+	}
+	s, msg := a.inSpace(ctx, s, channel)
+	if msg != "" {
+		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: msg}
 	}
 	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question})
 	if err != nil {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: errText(err)}
 	}
 	return Render(question, resp)
+}
+
+// inSpace puts the ask in the space whose channels list this channel (sb-ask(3), The chat
+// app). An unmapped channel, or a direct message, stays company-wide; a mapped channel for
+// someone outside its space is refused, never asked company-wide instead.
+func (a *App) inSpace(ctx context.Context, s tenancy.Scope, channel string) (tenancy.Scope, string) {
+	if a.Spaces == nil || channel == "" || channel == "directmessage" || channel == "privategroup" {
+		return s, ""
+	}
+	all, err := a.Spaces.Spaces(ctx, a.Tenant)
+	if err != nil {
+		return tenancy.Scope{}, MsgSpacesDown
+	}
+	for _, sp := range all {
+		for _, ch := range sp.Channels {
+			if ch != "#"+channel {
+				continue
+			}
+			id, err := spaces.Resolve(ctx, a.Spaces, a.Tenant, s.Groups(), sp.Name)
+			if errors.Is(err, spaces.ErrUnavailable) {
+				return tenancy.Scope{}, MsgSpacesDown
+			}
+			if err != nil {
+				return tenancy.Scope{}, MsgNotMember
+			}
+			in, err := a.Issuer.IssueIn(a.Tenant, s.User(), s.Groups(), id)
+			if err != nil {
+				return tenancy.Scope{}, MsgNoMatch
+			}
+			return in, ""
+		}
+	}
+	return s, ""
 }
 
 // scope maps a Slack user to exactly one active directory user and issues their scope.

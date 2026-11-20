@@ -25,6 +25,7 @@ spaces:
     members: [group:finance]
     stewards: [group:finance-leads]
     retention_days: 365
+    channels: ["#finance-ask"]
     scope:
       docs: ["/Finance/**"]
 barriers:

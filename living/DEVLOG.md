@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.3b Spaces in the web UI and the chat app (SB-1007)
+
+**Wave/slice:** W10 / S10.3b · **Author:** platform lead + Claude · **Status:** In review (WCAG audit, real Slack)
+
+**What:** `internal/api/spaces.go`, spaces and label on `answer.Cite`, `channels` on a space, the Slack app's channel step, the web UI's switcher and badges, and `laws/law20chat.go`. The manual changed first: sb-ask(3) and sb-space(5).
+
+**Why this way:** The switcher lists only what `GET /v1/spaces` returns, and that list is the asker's memberships, so the UI can't offer a space that would be refused, nor reveal one the asker isn't in. In Slack a channel is the only signal of intent, so a mapped channel for a non-member gets no answer: a company-wide answer there would look like the space's answer and teach people to trust it.
+
+**Learned:** The app now calls the API when it starts, and the older UI tests counted every call as an ask; their fakes answer the spaces call with none.
+
+**Laws:** LAW-20 extended at the chat app (one law test, one mutation caught); LAW-14's UI property covers chips with places. LAW-21 to LAW-23 stay red.
+
+**Next:** S10.3c, audit and kill switch per space (SB-1008).
+
 ## 2026-11-20 S10.3a Ask in a space or company-wide (SB-1006)
 
 **Wave/slice:** W10 / S10.3a · **Author:** platform lead + Claude · **Status:** Done

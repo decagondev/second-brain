@@ -65,6 +65,7 @@ func JSONSchema() []byte {
 					"label":          map[string]any{"enum": Labels},
 					"agents":         map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"enum": Agents}},
 					"retention_days": map[string]any{"type": "integer", "minimum": MinSpaceRetention, "maximum": MaxRetentionDays},
+					"channels":       map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": channelName.String()}},
 					"scope": map[string]any{
 						"type": "object", "minProperties": 1, "propertyNames": map[string]any{"enum": ConnectorKinds},
 						"additionalProperties": map[string]any{"type": "array", "minItems": 1, "items": map[string]any{"type": "string", "minLength": 1}},

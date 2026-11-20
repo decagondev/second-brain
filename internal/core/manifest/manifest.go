@@ -158,6 +158,7 @@ type checker struct {
 	// For the cross-field rules: valid workflow items, approval keys, exclude keys.
 	wfNodes, apKeys, exKeys []*node
 	spaceNodes              map[string]spaceNodes
+	channelOwner            map[string]string // chat channel -> the space it asks in
 	barrierNodes            []*node
 }
 

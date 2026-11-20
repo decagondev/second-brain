@@ -18,6 +18,7 @@ type Space struct {
 	Scope         map[string][]string `json:"scope"`
 	Agents        []string            `json:"agents"`
 	RetentionDays int                 `json:"retention_days"`
+	Channels      []string            `json:"channels"`
 }
 
 // Template is a department template's defaults (sb-departments(7), The catalogue).
@@ -57,7 +58,9 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels"}
+
+var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
 	members, scope, agents, retention *node
@@ -94,7 +97,7 @@ func (c *checker) space(name string, n *node, p string) {
 	if !c.mapOf(n, p, "{ members: [group:finance], scope: { docs: [\"/Finance/**\"] } }") {
 		return
 	}
-	s := Space{Template: "custom", Stewards: []string{}}
+	s := Space{Template: "custom", Stewards: []string{}, Channels: []string{}}
 	sn := spaceNodes{set: map[string]bool{}}
 	for i, k := range n.keys {
 		if c.skip[k] {
@@ -135,6 +138,29 @@ func (c *checker) space(name string, n *node, p string) {
 		case "retention_days":
 			sn.retention = v
 			s.RetentionDays = c.intIn(v, f, MinSpaceRetention, 0)
+		case "channels":
+			vs, ns, ok := c.list(v, f, `["#finance-ask"]`)
+			if ok {
+				for j, ch := range vs {
+					fj := fmt.Sprintf("%s[%d]", f, j)
+					switch {
+					case !channelName.MatchString(ch):
+						c.add(ns[j], fj, "%q must be a channel, #name", ch)
+					case contains(s.Channels, ch):
+						c.add(ns[j], fj, "%q is listed twice", ch)
+					default:
+						if other, taken := c.channelOwner[ch]; taken {
+							c.add(ns[j], fj, "%q already asks in space %q; a channel belongs to one space", ch, other)
+							continue
+						}
+						if c.channelOwner == nil {
+							c.channelOwner = map[string]string{}
+						}
+						c.channelOwner[ch] = name
+						s.Channels = append(s.Channels, ch)
+					}
+				}
+			}
 		default:
 			c.add(k, f, "unknown field in a space; use %s", orList(spaceFields))
 		}
@@ -328,8 +354,12 @@ func SpaceAttrs(s Space) map[string]string {
 	for _, k := range sorted(s.Scope) {
 		scope = append(scope, k+" "+strings.Join(s.Scope[k], ","))
 	}
-	return map[string]string{
+	a := map[string]string{
 		"template": s.Template, "label": s.Label, "members": strings.Join(s.Members, ","), "stewards": strings.Join(s.Stewards, ","),
 		"agents": strings.Join(s.Agents, ","), "retention_days": strconv.Itoa(s.RetentionDays), "scope": strings.Join(scope, "; "),
 	}
+	if len(s.Channels) > 0 {
+		a["channels"] = strings.Join(s.Channels, ",")
+	}
+	return a
 }

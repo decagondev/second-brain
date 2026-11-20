@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Spaces in the web UI and the chat app (S10.3b: SB-1007): `GET /v1/spaces`, spaces and label on every citation, the "Ask in" switcher and place badges, a space's `channels` in the manifest, and the Slack app asking in a channel's space.
 - Ask in a space or company-wide (S10.3a: SB-1006): space, label and barrier checks before the live ACL batch, `?space=` on asks, three trace reasons, spaces in the local eval cell, and `space-leak` in the release gate. LAW-20 is green.
 - Ingest routes and labels every document (S10.2b: SB-1005): `internal/core/route`, location and label from every connector (Drive folder path and classification label, Slack private channels), routing on chunks in both indexes, and re-routing on the next sync after a scope change.
 - Cedar schema v2 for spaces (S10.2a: SB-1004): `label` and `spaces` on chunks, the space read context, `policy/platform/spaces.cedar` (forbids only), and the narrowing analysis in `make policy`. LAW-19 is green.

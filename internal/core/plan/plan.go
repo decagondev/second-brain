@@ -223,7 +223,11 @@ func detail(kind string, a map[string]string) string {
 		if a["stewards"] != "" {
 			parts = append(parts, "stewards "+a["stewards"])
 		}
-		return strings.Join(append(parts, "agents "+a["agents"], "retention "+a["retention_days"], "scope "+a["scope"]), ", ")
+		parts = append(parts, "agents "+a["agents"], "retention "+a["retention_days"], "scope "+a["scope"])
+		if a["channels"] != "" {
+			parts = append(parts, "channels "+a["channels"])
+		}
+		return strings.Join(parts, ", ")
 	}
 	return ""
 }

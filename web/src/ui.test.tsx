@@ -63,7 +63,10 @@ describe("LAW-14 rendering property", () => {
     for (let run = 0; run < 200; run++) {
       const claims: Claim[] = [];
       for (let i = 0; i < 1 + rnd(5); i++) {
-        const cites = Array.from({ length: rnd(3) }, (_, j) => ({ cite: `docs:d${j}@${1 + rnd(9)}`, span: [0, 1] as [number, number], flags: [] }));
+        const cites = Array.from({ length: rnd(3) }, (_, j) => ({
+          cite: `docs:d${j}@${1 + rnd(9)}`, span: [0, 1] as [number, number], flags: [],
+          ...(rnd(2) ? { spaces: ["finance", "people"].slice(0, 1 + rnd(2)), label: ["internal", "restricted"][rnd(2)] } : {}), // SB-1007
+        }));
         const c: Claim = { text: `claim ${i}`, cites };
         const mode = rnd(3);
         if (mode === 1) c.uncited = true; // possibly with cites: must still show as uncited
@@ -93,7 +96,8 @@ describe("accessibility (axe, WCAG 2.2 A and AA rules that jsdom can check)", ()
 
   it("has no violations in the app with an answer and an error", async () => {
     let n = 0;
-    const fetcher: Fetch = async () => {
+    const fetcher: Fetch = async (url) => {
+      if (url === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       n++;
       if (n === 1) return new Response(JSON.stringify(response([cited, uncited])), { status: 200 });
       return new Response(JSON.stringify({ error: { code: "EKILLED", message: "Answers are switched off for now.", trace: "tr_9", remedy: "Wait for the operator." } }), { status: 503 });
@@ -115,7 +119,8 @@ describe("accessibility (axe, WCAG 2.2 A and AA rules that jsdom can check)", ()
 describe("conversation", () => {
   it("sends the conversation id on later turns", async () => {
     const bodies: string[] = [];
-    const fetcher: Fetch = async (_u, init) => {
+    const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       bodies.push(String(init?.body));
       return new Response(JSON.stringify(response([cited])), { status: 200 });
     };
@@ -165,3 +170,55 @@ describe("feedback", () => {
   });
 });
 
+
+// SB-1007: the switcher lists only the asker's spaces, the chosen space goes on the ask,
+// and every chip says where its source lives and how sensitive it is.
+describe("spaces", () => {
+  const finance: Claim = {
+    text: "Q3 is ahead of plan.",
+    cites: [{ cite: "docs:q3@2", title: "Q3 close", span: [0, 9], flags: [], spaces: ["finance"], label: "restricted" }],
+  };
+
+  it("shows each citation's spaces and label in words, in its accessible name", () => {
+    render(<AnswerView answer={response([finance])} />);
+    const chip = screen.getByRole("link", { name: /docs:q3@2, Q3 close, Finance · restricted/ });
+    expect(chip.textContent).toContain("Finance · restricted");
+  });
+
+  it("asks in the chosen space and starts a new conversation when it changes", async () => {
+    const urls: string[] = [];
+    const fetcher: Fetch = async (u) => {
+      urls.push(u);
+      if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [{ name: "finance", label: "restricted" }] }), { status: 200 });
+      return new Response(JSON.stringify(response([finance])), { status: 200 });
+    };
+    const { container } = render(<App fetcher={fetcher} />);
+    await act(async () => {});
+    const select = screen.getByLabelText("Ask in") as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent)).toEqual(["Whole company", "Finance (restricted)"]);
+    fireEvent.change(select, { target: { value: "finance" } });
+    fireEvent.change(screen.getByLabelText("Ask a question"), { target: { value: "how is Q3?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    });
+    expect(urls).toContain("/v1/ask?space=finance");
+    expect(await violations(container)).toEqual([]);
+    fireEvent.change(select, { target: { value: "" } });
+    expect(screen.queryByRole("button", { name: "New conversation" })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Ask a question"), { target: { value: "and overall?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    });
+    expect(urls[urls.length - 1]).toBe("/v1/ask");
+  });
+
+  it("shows no switcher when the cell has no spaces or can't list them", async () => {
+    for (const reply of [{ spaces: [] }, { error: { code: "EUNAVAIL" } }]) {
+      const fetcher: Fetch = async () => new Response(JSON.stringify(reply), { status: "error" in reply ? 503 : 200 });
+      render(<App fetcher={fetcher} />);
+      await act(async () => {});
+      expect(screen.queryByLabelText("Ask in")).toBeNull();
+      cleanup();
+    }
+  });
+});
