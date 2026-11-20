@@ -10,6 +10,7 @@ import (
 
 	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	"example.com/second-brain/internal/core/manifest"
+	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/spaces"
 )
 
@@ -78,5 +79,21 @@ func TestResolve(t *testing.T) {
 	st.Fail = errors.New("down")
 	if _, err := spaces.Resolve(ctx, st, "acme-logistics", []string{"finance"}, "finance"); !errors.Is(err, spaces.ErrUnavailable) {
 		t.Fatalf("broken registry: %v", err)
+	}
+}
+
+// SB-1107: barriers match groups by name, whether written group:NAME (the manifest) or
+// NAME (an eval world), on either side.
+func TestBarrierNames(t *testing.T) {
+	sp := []ports.Space{{ID: "spc_exec", Members: []string{"grp_exec"}}, {ID: "spc_fin", Members: []string{"group:finance"}}}
+	for _, b := range [][2]string{{"grp_exec", "grp_out"}, {"group:grp_exec", "group:grp_out"}, {"group:grp_out", "grp_exec"}} {
+		ctx := spaces.ReadContext(sp, [][2]string{b}, []string{"grp_out"}, "company")
+		if got := ctx["barred_spaces"].([]string); len(got) != 1 || got[0] != "spc_exec" {
+			t.Errorf("barrier %v: barred %v", b, got)
+		}
+	}
+	ctx := spaces.ReadContext(sp, [][2]string{{"group:finance", "group:sales"}}, []string{"sales"}, "company")
+	if got := ctx["barred_spaces"].([]string); len(got) != 1 || got[0] != "spc_fin" {
+		t.Errorf("manifest barrier: barred %v", got)
 	}
 }

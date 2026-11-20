@@ -1,0 +1,25 @@
+# Template suite for it-security (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-it-security
+world: fixtures/templates
+cases:
+  - id: it-security-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_it_security
+    space: it-security
+    ask: "What is the password rotation rule?"
+    expect: { cites_any: ["docs:it-security-guide@1"] }
+  - id: it-security-home-001        # a member gets the space's own sensitive plan
+    as: usr_it_security
+    space: it-security
+    ask: "What is the it security plan codename?"
+    expect: { cites_any: ["docs:it-security-plan@1"] }
+  - id: it-security-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the it security plan codename?"
+    expect: { cites_none: ["docs:it-security-plan@1"] }
+  - id: it-security-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the password rotation rule?"
+    expect: { cites_any: ["docs:it-security-guide@1"] }

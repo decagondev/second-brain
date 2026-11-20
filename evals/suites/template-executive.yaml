@@ -1,0 +1,25 @@
+# Template suite for executive (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-executive
+world: fixtures/templates
+cases:
+  - id: executive-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_executive
+    space: executive
+    ask: "What is the board calendar rule?"
+    expect: { cites_any: ["docs:executive-guide@1"] }
+  - id: executive-home-001        # a member gets the space's own sensitive plan
+    as: usr_executive
+    space: executive
+    ask: "What is the executive plan codename?"
+    expect: { cites_any: ["docs:executive-plan@1"] }
+  - id: executive-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the executive plan codename?"
+    expect: { cites_none: ["docs:executive-plan@1"] }
+  - id: executive-barrier-001   # the barrier keeps even internal executive content from the outsider (LAW-22)
+    as: usr_out
+    space: company
+    ask: "What is the board calendar rule?"
+    expect: { cites_none: ["docs:executive-guide@1"] }

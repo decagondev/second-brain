@@ -1,0 +1,25 @@
+# Template suite for operations (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-operations
+world: fixtures/templates
+cases:
+  - id: operations-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_operations
+    space: operations
+    ask: "What is the warehouse hours rule?"
+    expect: { cites_any: ["docs:operations-guide@1"] }
+  - id: operations-home-001        # a member gets the space's own sensitive plan
+    as: usr_operations
+    space: operations
+    ask: "What is the operations plan codename?"
+    expect: { cites_any: ["docs:operations-plan@1"] }
+  - id: operations-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the operations plan codename?"
+    expect: { cites_none: ["docs:operations-plan@1"] }
+  - id: operations-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the warehouse hours rule?"
+    expect: { cites_any: ["docs:operations-guide@1"] }

@@ -1,0 +1,25 @@
+# Template suite for finance (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-finance
+world: fixtures/templates
+cases:
+  - id: finance-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_finance
+    space: finance
+    ask: "What is the expense limit rule?"
+    expect: { cites_any: ["docs:finance-guide@1"] }
+  - id: finance-home-001        # a member gets the space's own sensitive plan
+    as: usr_finance
+    space: finance
+    ask: "What is the finance plan codename?"
+    expect: { cites_any: ["docs:finance-plan@1"] }
+  - id: finance-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the finance plan codename?"
+    expect: { cites_none: ["docs:finance-plan@1"] }
+  - id: finance-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the expense limit rule?"
+    expect: { cites_any: ["docs:finance-guide@1"] }

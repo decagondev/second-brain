@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.4 Per-template eval suites in the gate (SB-1107)
+
+**Wave/slice:** W11 / S11.4 · **Author:** platform lead + Claude · **Status:** In review (tenant suites in a deployed cell)
+
+**What:** twelve `evals/suites/template-*.yaml`, `evals/fixtures/templates/world.yaml`, the gate entries and `make evals`, the barrier fix in `spaces.ReadContext`, and `laws/law06templates.go`. The manual changed first: sb-evals(7).
+
+**Why this way:** A template is a promise about one department, so each gets its own suite and its own line in the gate; a shared world keeps the twelve comparable and cheap. The law test reads the catalogue, so adding a template without a suite fails the build rather than waiting for a reviewer to notice.
+
+**Learned:** The executive barrier case failed on its first run, and the bug was real: barriers compared `group:NAME` strings with bare group names, so they held only when every side was written the same way. An eval world written the natural way found it.
+
+**Laws:** LAW-06 extended (one law test, one mutation caught); LAW-20 and LAW-22 covered by the suites. W11 is built; LAW-21 to LAW-23 stay red for W12 and W13.
+
+**Next:** W12, space governance (E12).
+
 ## 2026-11-20 S11.3c The QuickBooks Online connector (SB-1105)
 
 **Wave/slice:** W11 / S11.3c · **Author:** platform lead + Claude · **Status:** In review (a real sandbox company)

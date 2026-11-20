@@ -1,0 +1,25 @@
+# Template suite for people (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-people
+world: fixtures/templates
+cases:
+  - id: people-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_people
+    space: people
+    ask: "What is the parental leave rule?"
+    expect: { cites_any: ["docs:people-guide@1"] }
+  - id: people-home-001        # a member gets the space's own sensitive plan
+    as: usr_people
+    space: people
+    ask: "What is the people plan codename?"
+    expect: { cites_any: ["docs:people-plan@1"] }
+  - id: people-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the people plan codename?"
+    expect: { cites_none: ["docs:people-plan@1"] }
+  - id: people-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the parental leave rule?"
+    expect: { cites_any: ["docs:people-guide@1"] }

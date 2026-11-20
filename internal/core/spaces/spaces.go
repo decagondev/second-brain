@@ -117,9 +117,9 @@ func Member(s ports.Space, groups []string) bool {
 // the spaces the asker is a member of, and the spaces held across a barrier from the
 // asker. groups are the asker's directory group names; barriers are group:NAME pairs.
 func ReadContext(all []ports.Space, barriers [][2]string, groups []string, space string) map[string]any {
-	mine := map[string]bool{}
+	mine := map[string]bool{} // the asker's directory group names
 	for _, g := range groups {
-		mine["group:"+g] = true
+		mine[g] = true
 	}
 	member, barred := []string{}, []string{}
 	for _, s := range all {
@@ -136,10 +136,14 @@ func ReadContext(all []ports.Space, barriers [][2]string, groups []string, space
 	return map[string]any{"space": space, "member_spaces": member, "barred_spaces": barred}
 }
 
+// acrossBarrier: a barrier names groups as group:NAME (the manifest) or NAME; both sides
+// are compared by name, as Member compares a space's members with directory groups.
 func acrossBarrier(s ports.Space, barriers [][2]string, mine map[string]bool) bool {
+	name := func(g string) string { return strings.TrimPrefix(g, "group:") }
 	for _, b := range barriers {
+		a, c := name(b[0]), name(b[1])
 		for _, m := range s.Members {
-			if (mine[b[0]] && m == b[1]) || (mine[b[1]] && m == b[0]) {
+			if (mine[a] && name(m) == c) || (mine[c] && name(m) == a) {
 				return true
 			}
 		}

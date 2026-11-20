@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Per-template eval suites in the gate (S11.4: SB-1107): twelve `template-*` suites over a shared world, in the release gate.
 - The QuickBooks Online connector (S11.3c: SB-1105), read-only against a recorded fake, and the `accounting` kind; account and routing numbers, tax ids and payroll are never read.
 - The BambooHR connector (S11.3b: SB-1104), read-only against a recorded fake, and the `hris` kind; sensitive fields are read only when a space allow-lists them.
 - Field-level allow-lists for structured sources (S11.3a: SB-1106): declared fields, a space's `fields` allow-list, and ingest that drops every other field before chunking.
@@ -109,6 +110,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- Barriers matched groups only when both sides were written `group:NAME`; they now compare names (SB-1107).
 - Law tests no longer leave their release stores in `/tmp` (BUG-0013).
 - Cutover no longer revokes a retained grant's binding: the hand-off controller keeps paths by the grant they serve (BUG-0012).
 - The log redactor scrubs URL-escaped, base64 and hex forms of secrets, and credential-named attributes (BUG-0010). Markdown role labels are flagged as injection (BUG-0011).

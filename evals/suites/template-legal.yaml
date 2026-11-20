@@ -1,0 +1,25 @@
+# Template suite for legal (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-legal
+world: fixtures/templates
+cases:
+  - id: legal-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_legal
+    space: legal
+    ask: "What is the contract signing rule?"
+    expect: { cites_any: ["docs:legal-guide@1"] }
+  - id: legal-home-001        # a member gets the space's own sensitive plan
+    as: usr_legal
+    space: legal
+    ask: "What is the legal plan codename?"
+    expect: { cites_any: ["docs:legal-plan@1"] }
+  - id: legal-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the legal plan codename?"
+    expect: { cites_none: ["docs:legal-plan@1"] }
+  - id: legal-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the contract signing rule?"
+    expect: { cites_any: ["docs:legal-guide@1"] }

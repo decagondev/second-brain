@@ -1,0 +1,25 @@
+# Template suite for support (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-support
+world: fixtures/templates
+cases:
+  - id: support-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_support
+    space: support
+    ask: "What is the refund window rule?"
+    expect: { cites_any: ["docs:support-guide@1"] }
+  - id: support-home-001        # a member gets the space's own sensitive plan
+    as: usr_support
+    space: support
+    ask: "What is the support plan codename?"
+    expect: { cites_any: ["docs:support-plan@1"] }
+  - id: support-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the support plan codename?"
+    expect: { cites_none: ["docs:support-plan@1"] }
+  - id: support-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the refund window rule?"
+    expect: { cites_any: ["docs:support-guide@1"] }

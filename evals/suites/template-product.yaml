@@ -1,0 +1,25 @@
+# Template suite for product (SB-1107; sb-evals(7), Template suites): citations in the space,
+# and nothing sensitive leaving it. It gates every release that ships the catalogue.
+suite: template-product
+world: fixtures/templates
+cases:
+  - id: product-cite-001        # a member asking in the space gets the space's guide, cited
+    as: usr_product
+    space: product
+    ask: "What is the roadmap review rule?"
+    expect: { cites_any: ["docs:product-guide@1"] }
+  - id: product-home-001        # a member gets the space's own sensitive plan
+    as: usr_product
+    space: product
+    ask: "What is the product plan codename?"
+    expect: { cites_any: ["docs:product-plan@1"] }
+  - id: product-leak-001        # an outsider asking company-wide never gets it (LAW-20)
+    as: usr_out
+    space: company
+    ask: "What is the product plan codename?"
+    expect: { cites_none: ["docs:product-plan@1"] }
+  - id: product-internal-001    # internal content still answers the company
+    as: usr_out
+    space: company
+    ask: "What is the roadmap review rule?"
+    expect: { cites_any: ["docs:product-guide@1"] }
