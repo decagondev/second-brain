@@ -40,6 +40,17 @@ func JSONSchema() []byte {
 			"propertyNames":        map[string]any{"enum": keys(Workflows)},
 			"additionalProperties": map[string]any{"type": "string", "pattern": groupRe},
 		},
+		"duties": map[string]any{
+			"type": "object", "description": "Segregation of duties per workflow: a second approver group above a threshold (sb-approvals(7)).",
+			"propertyNames": map[string]any{"enum": keys(Workflows)},
+			"additionalProperties": map[string]any{
+				"type": "object", "additionalProperties": false, "required": []string{"second", "above"},
+				"properties": map[string]any{
+					"second": map[string]any{"type": "string", "pattern": groupRe},
+					"above":  map[string]any{"type": "integer", "minimum": 0},
+				},
+			},
+		},
 		"retention_days": map[string]any{
 			"type": "integer", "description": "Retention for traces, citations and drafts (not audit).",
 			"minimum": MinRetentionDays, "maximum": MaxRetentionDays, "default": DefaultRetentionDays,

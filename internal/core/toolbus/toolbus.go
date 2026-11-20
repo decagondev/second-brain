@@ -29,6 +29,26 @@ type Tool struct {
 	Approvers     string `json:"approvers,omitempty"` // the workflow's approver group
 	// Validate checks a payload's shape before it is hashed; nil accepts any payload.
 	Validate func(payload []byte) error `json:"-"`
+	// Duty is the workflow's segregation of duties from the manifest, or nil (SB-1204).
+	Duty *Duty `json:"duty,omitempty"`
+}
+
+// Duty: an action whose amount is above Above, or that has no amount, needs a second
+// approval from the group Second (sb-approvals(7), Segregation of duties).
+type Duty struct {
+	Second string `json:"second"`
+	Above  int64  `json:"above"`
+}
+
+// Needs is how many approvals a payload needs under d.
+func (d *Duty) Needs(payload json.RawMessage) int {
+	if d == nil {
+		return 1
+	}
+	if amount, ok := approvals.Amount(payload); ok && amount <= d.Above {
+		return 1
+	}
+	return 2
 }
 
 // Checker is the kill checker as the bus uses it.
@@ -58,6 +78,9 @@ type Bus struct {
 	IsAuditor func(s tenancy.Scope) bool
 	// Receipts is the idempotency store: receipts by idempotency key (sb-approvals(7)).
 	Receipts Receipts
+	// Managers returns a user's manager from the directory, "" for none (SB-1204). Nil is a
+	// cell whose directory has no reporting lines; an error refuses the approval.
+	Managers func(ctx context.Context, user string) (string, error)
 	// Barriers gives the policy context of a call's target and of an approval in a cell
 	// with information barriers (barrier.Cell; SB-1203); nil is a cell without them. An
 	// error refuses: a target or requester that can't be placed is never across nothing.
@@ -159,6 +182,11 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 	if sp := s.Space(); sp != "company" {
 		a.Space = sp
 	}
+	if tool.Consequential {
+		if a.Needs = tool.Duty.Needs(canon); a.Needs == 2 {
+			a.SecondApprovers = tool.Duty.Second
+		}
+	}
 	if !tool.Consequential {
 		// 3. Audit row, then 5. execute (no approval needed).
 		a.State = approvals.Executing
@@ -227,7 +255,7 @@ func (b *Bus) Get(ctx context.Context, s tenancy.Scope, id string) (View, error)
 	}
 	member := false
 	for _, g := range s.Groups() {
-		member = member || g == a.Approvers
+		member = member || g == a.Approvers || (a.Needs == 2 && g == a.SecondApprovers)
 	}
 	if a.Requester != s.User() && !member && (b.IsAuditor == nil || !b.IsAuditor(s)) {
 		return View{}, fmt.Errorf("%w: no such action", ErrPerm)
@@ -306,6 +334,7 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 		}
 		x.State, x.Payload, x.PayloadSHA256 = approvals.Drafted, canon, hash
 		x.Approval, x.ApprovedBy, x.ApprovedHash = "", "", ""
+		x.FirstApproval, x.FirstApprovedBy, x.FirstHash = "", "", "" // an edit voids every approval
 		return nil
 	})
 	if err != nil {
@@ -352,6 +381,26 @@ func (b *Bus) Approve(ctx context.Context, s tenancy.Scope, id, echoedHash, note
 		return a, fmt.Errorf("%w: the hash shown doesn't match the payload", ErrNoApproval)
 	case s.User() == a.Requester:
 		return a, fmt.Errorf("%w: you can't approve your own action", ErrNoApproval)
+	case a.FirstApprovedBy != "" && s.User() == a.FirstApprovedBy:
+		return a, fmt.Errorf("%w: a second approval must come from someone else", ErrNoApproval)
+	case a.FirstApprovedBy != "" && echoedHash != a.FirstHash:
+		return a, fmt.Errorf("%w: the hash shown isn't the one first approved", ErrNoApproval)
+	}
+	if b.Managers != nil {
+		line, err := approvals.ReportingLine(ctx, b.Managers, a.Requester)
+		if err != nil {
+			return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
+		}
+		for _, m := range line {
+			if m == s.User() {
+				return a, fmt.Errorf("%w: the requester reports to you", ErrNoApproval)
+			}
+		}
+	}
+	first := a.Needs == 2 && a.FirstApprovedBy == ""
+	group := a.Approvers
+	if a.Needs == 2 && !first {
+		group = a.SecondApprovers // the duty's group approves second
 	}
 	actx, err := b.approveContext(ctx, s, a)
 	if err != nil {
@@ -359,7 +408,7 @@ func (b *Bus) Approve(ctx context.Context, s tenancy.Scope, id, echoedHash, note
 	}
 	err = b.Policy.Require(ctx, s, "approve", policy.Entity{Type: "ProposedAction", ID: a.ID, Tenant: b.Tenant,
 		Attrs: map[string]any{"workflow": a.Workflow, "requester": policy.Ref{Type: "User", ID: a.Requester},
-			"approvers": policy.Ref{Type: "Group", ID: a.Approvers}}}, actx)
+			"approvers": policy.Ref{Type: "Group", ID: group}}}, actx)
 	if err != nil {
 		return a, fmt.Errorf("%w: %v", ErrNoApproval, err)
 	}
@@ -368,13 +417,31 @@ func (b *Bus) Approve(ctx context.Context, s tenancy.Scope, id, echoedHash, note
 		return a, err
 	}
 	apr := b.NewID("apr_")
+	if first {
+		// The first of two approvals: recorded and audited; the action waits for the second.
+		if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "approval", Subject: a.ID, State: "first_approval",
+			Approval: apr, PayloadSHA256: a.PayloadSHA256, Reason: "first approval: " + a.Workflow}); err != nil {
+			return a, ErrUnaudited
+		}
+		a, err = b.Actions.Move(ctx, b.Tenant, id, approvals.PendingApproval, func(x *approvals.Action) error {
+			if x.PayloadSHA256 != echoedHash || x.FirstApprovedBy != "" {
+				return fmt.Errorf("%w: the action changed", ErrNoApproval)
+			}
+			x.FirstApproval, x.FirstApprovedBy, x.FirstHash = apr, s.User(), echoedHash
+			return nil
+		})
+		if err == nil {
+			b.notify(ctx, a, "first_approval")
+		}
+		return a, err
+	}
 	if _, err := b.Audit.Write(ctx, audit.Event{Actor: s.User(), Space: s.Space(), Kind: "approval", Subject: a.ID, State: string(approvals.Approved),
 		Approval: apr, PayloadSHA256: a.PayloadSHA256, Reason: "approve: " + a.Workflow}); err != nil {
 		return a, ErrUnaudited
 	}
 	a, err = b.Actions.Move(ctx, b.Tenant, id, approvals.PendingApproval, func(x *approvals.Action) error {
-		if x.PayloadSHA256 != echoedHash {
-			return fmt.Errorf("%w: the payload changed", ErrNoApproval)
+		if x.PayloadSHA256 != echoedHash || (x.Needs == 2 && (x.FirstApprovedBy == "" || x.FirstApprovedBy == s.User())) {
+			return fmt.Errorf("%w: the payload or its approvals changed", ErrNoApproval)
 		}
 		x.State, x.Approval, x.ApprovedBy, x.ApprovedHash, x.Note = approvals.Approved, apr, s.User(), echoedHash, note
 		return nil

@@ -63,7 +63,11 @@ func Registry(t manifest.Tenant) (map[string]toolbus.Tool, error) {
 		if !ok || group == "" {
 			return nil, fmt.Errorf("workflow: %q has no approval group", w)
 		}
-		out[tpl.Tool] = toolbus.Tool{Name: tpl.Tool, Connector: tpl.Connector, Consequential: true, Workflow: w, Approvers: group, Validate: tpl.Validate}
+		tool := toolbus.Tool{Name: tpl.Tool, Connector: tpl.Connector, Consequential: true, Workflow: w, Approvers: group, Validate: tpl.Validate}
+		if d, ok := t.Duties[w]; ok {
+			tool.Duty = &toolbus.Duty{Second: strings.TrimPrefix(d.Second, "group:"), Above: int64(d.Above)}
+		}
+		out[tpl.Tool] = tool
 	}
 	return out, nil
 }

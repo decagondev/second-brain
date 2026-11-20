@@ -160,3 +160,22 @@ func TestGroupsReachPolicyAtOnce(t *testing.T) {
 		t.Fatalf("delete group: %d", code)
 	}
 }
+
+// SB-1204: the enterprise extension's manager is kept, read back, and patched.
+func TestManager(t *testing.T) {
+	f := setup()
+	boss := f.user(t, "boss")
+	code, v := f.do(t, "POST", "/scim/v2/Users", `{"userName":"ana","urn:ietf:params:scim:schemas:extension:enterprise:2.0:User":{"manager":{"value":"`+boss+`"}}}`)
+	if code != 201 {
+		t.Fatalf("create: %d %v", code, v)
+	}
+	id := v["id"].(string)
+	u, _, _ := f.dir.User(context.Background(), "acme-logistics", id)
+	if u.Manager != boss {
+		t.Fatalf("manager %q, want %q", u.Manager, boss)
+	}
+	code, _ = f.do(t, "PATCH", "/scim/v2/Users/"+id, `{"Operations":[{"op":"replace","path":"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager","value":{"value":"usr_other"}}]}`)
+	if u, _, _ := f.dir.User(context.Background(), "acme-logistics", id); code != 200 || u.Manager != "usr_other" {
+		t.Fatalf("patch: %d manager %q", code, u.Manager)
+	}
+}

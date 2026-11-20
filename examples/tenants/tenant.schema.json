@@ -83,6 +83,33 @@
       },
       "type": "object"
     },
+    "duties": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "above": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "second": {
+            "pattern": "^group:[A-Za-z0-9._-]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "second",
+          "above"
+        ],
+        "type": "object"
+      },
+      "description": "Segregation of duties per workflow: a second approver group above a threshold (sb-approvals(7)).",
+      "propertyNames": {
+        "enum": [
+          "ticket-update"
+        ]
+      },
+      "type": "object"
+    },
     "exclude": {
       "additionalProperties": {
         "items": {

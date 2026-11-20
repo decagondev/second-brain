@@ -10,7 +10,11 @@ TLA = os.path.join(R, "tools", "vendor", "tla2tools.jar")
 ALLOY = os.path.join(R, "tools", "vendor", "alloy.jar")
 
 M = [  # (model, old, new, expected)
- ("Approvals", "  /\\ u # requester\n", "", "NoSelfApproval"),
+ ("Approvals", "  /\\ approver = NoUser\n  /\\ u # requester\n", "  /\\ approver = NoUser\n", "NoSelfApproval"),
+ # SB-1204: segregation of duties.
+ ("Approvals", "  /\\ u # approver\n", "", "TwoApprovers"),
+ ("Approvals", "  /\\ ~Manages(u, requester)\n  /\\ u \\in FirstGroup\n", "  /\\ u \\in FirstGroup\n", "NoManagerApproval"),
+ ("Approvals", "  /\\ state' = IF twoNeeded THEN \"PendingApproval\" ELSE \"Approved\"\n", "  /\\ state' = \"Approved\"\n", "TwoApprovers"),
  ("Approvals", "  /\\ ~killed\n  /\\ payload = approvedHash\n", "  /\\ ~killed\n", "AuditBeforeExec|ExecutedMatchesApproved"),
  ("Approvals", "  /\\ ~killed\n  /\\ payload = approvedHash\n", "  /\\ payload = approvedHash\n", "KillWins"),
  ("Approvals", "  /\\ state' = \"Executing\"\n  /\\ Log(\"Executing\", payload)\n", "  /\\ state' = \"Executing\"\n  /\\ audit' = audit\n", "AuditBeforeExec"),
@@ -59,7 +63,7 @@ for c in ["NoCrossTenant", "CitedImpliesLiveAllow", "UnknownNeverUsed", "Missing
     res[c] = "UNSAT" if re.search(r"check\s+%s\s+\d+\s+UNSAT" % c, out) else ("SAT" if "SAT" in out else "OTHER")
 hit = res["UnknownNeverUsed"] == "SAT" and res["MissingNeverUsed"] == "SAT"
 ok += hit
-print(f"13 Permissions context = candidates - Deny: {res} {'CAUGHT' if hit else 'MISSED'}")
+print(f"{len(M) + 1} Permissions context = candidates - Deny: {res} {'CAUGHT' if hit else 'MISSED'}")
 
 # Spaces.als mutations (SB-805): each must make exactly its law's check SAT.
 SPACES = [
@@ -70,7 +74,7 @@ SPACES = [
   "RestrictedStaysHome", "restricted in company-wide asks"),
 ]
 sp_src = open(os.path.join(R, "proofs", "alloy", "Spaces.als")).read()
-for j, (old, new, exp, what) in enumerate(SPACES, 14):
+for j, (old, new, exp, what) in enumerate(SPACES, len(M) + 2):
     assert sp_src.count(old) == 1, (exp, "pattern not unique/found")
     d = tempfile.mkdtemp(); p = os.path.join(d, "Spaces.als")
     open(p, "w", newline="\n").write(sp_src.replace(old, new))

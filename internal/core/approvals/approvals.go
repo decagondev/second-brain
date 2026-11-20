@@ -4,6 +4,7 @@
 package approvals
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -73,6 +74,61 @@ type Action struct {
 	PolicyReason  string          `json:"policy_reason,omitempty"`
 	Unconfirmed   bool            `json:"unconfirmed,omitempty"` // Act failed or timed out: the target may have it
 	FinishedAt    time.Time       `json:"finished_at,omitempty"`
+	// Segregation of duties (SB-1204): how many approvals it needs (0 and 1 mean one), and
+	// the first approval of an action that needs two.
+	Needs           int    `json:"needs,omitempty"`
+	SecondApprovers string `json:"second_approvers,omitempty"` // the duty's group, for the second approval
+	FirstApproval   string `json:"first_approval,omitempty"`
+	FirstApprovedBy string `json:"first_approved_by,omitempty"`
+	FirstHash       string `json:"first_hash,omitempty"`
+}
+
+// MaxReportingLine is the longest reporting line the cell follows; longer refuses.
+const MaxReportingLine = 20
+
+// ErrReportingLine is a reporting line the directory can't give now.
+var ErrReportingLine = errors.New("approvals: the reporting line can't be read")
+
+// ReportingLine is everyone above user: their manager, their manager's manager, and so on,
+// from manager (the directory). A loop ends the line; an error or a line longer than
+// MaxReportingLine is an error, so the approval is refused (sb-approvals(7), SB-1204).
+func ReportingLine(ctx context.Context, manager func(ctx context.Context, user string) (string, error), user string) ([]string, error) {
+	var line []string
+	seen := map[string]bool{user: true}
+	for cur := user; ; {
+		m, err := manager(ctx, cur)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrReportingLine, err)
+		}
+		if m == "" || seen[m] {
+			return line, nil
+		}
+		if len(line) == MaxReportingLine {
+			return nil, fmt.Errorf("%w: longer than %d", ErrReportingLine, MaxReportingLine)
+		}
+		line, seen[m], cur = append(line, m), true, m
+	}
+}
+
+// Amount is the payload's top-level "amount", a whole number; ok is false when it has none
+// or it isn't one, and then a duty asks for both approvals.
+func Amount(payload json.RawMessage) (amount int64, ok bool) {
+	var p map[string]json.RawMessage
+	if json.Unmarshal(payload, &p) != nil {
+		return 0, false
+	}
+	raw := bytes.TrimSpace(p["amount"])
+	if len(raw) == 0 || (raw[0] != '-' && (raw[0] < '0' || raw[0] > '9')) {
+		return 0, false // none, a string, or anything else that isn't a number
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.UseNumber()
+	var n json.Number
+	if d.Decode(&n) != nil {
+		return 0, false
+	}
+	v, err := n.Int64()
+	return v, err == nil
 }
 
 // Store keeps actions. Move changes an action's state only if it is still in from (a

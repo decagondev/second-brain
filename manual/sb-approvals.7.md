@@ -40,7 +40,7 @@ These names are identical in code, in the API and in [`proofs/tla/Approvals.tla`
 
 1. **Audit first.** Entering `PendingApproval` and entering `Executing` each write an audit row before anything else happens (LAW-04).
 2. **One payload.** The approval stores the SHA-256 of the canonical payload. Approving requires echoing that hash. Executing requires the current payload to hash to it. Any edit returns to `Drafted` (LAW-15).
-3. **Not your own.** The approver must not be the requester (LAW-15).
+3. **Not your own, nor your report's.** The approver must not be the requester, nor anyone above the requester in the directory's reporting line (LAW-15). A workflow with a duty above its threshold needs two approvers from different groups (Segregation of duties, below).
 4. **Kill wins.** The kill switch is checked when approved and again just before `Act` (LAW-10).
 5. **Receipt or it didn't happen.** Only a target receipt makes `Ran` (LAW-05).
 6. **At most once.** The approval id is the idempotency key for `Act`.
@@ -63,7 +63,23 @@ The first gated workflow (SB-410). Enabling it takes `workflows: [ticket-update]
 
 ### Approving, exactly
 
-`approve` succeeds only if all of these hold, checked in this order, and each failure is `ENOAPPROVAL` with a reason: the action is `PendingApproval`, it hasn't expired (`expires_at`, 24 hours after proposal by default), the echoed hash equals the current payload's hash, the approver isn't the requester, and policy allows `approve` (which checks the approver group). The approval gets an id (`apr_…`) recorded with the hash and the approver, and then the executor runs. `reject` needs the same state and policy, takes a note, and ends the action. A note may be empty, but the click is always explicit.
+`approve` succeeds only if all of these hold, checked in this order, and each failure is `ENOAPPROVAL` with a reason: the action is `PendingApproval`, it hasn't expired (`expires_at`, 24 hours after proposal by default), the echoed hash equals the current payload's hash, the approver isn't the requester or above them in the reporting line, isn't the action's first approver, and policy allows `approve` (which checks the approver group: the workflow's for the first approval, the duty's `second` group for the second). The approval gets an id (`apr_…`) recorded with the hash and the approver, and then the executor runs. `reject` needs the same state and policy, takes a note, and ends the action. A note may be empty, but the click is always explicit.
+
+### Segregation of duties, exactly (SB-1204)
+
+"Approver isn't requester" isn't enough for finance controls. A workflow can carry a **duty** in the manifest (sb-tenant(5), `duties`):
+
+```yaml
+duties: { ticket-update: { second: group:finance-leads, above: 100000 } }
+```
+
+- **Two approvers above the threshold.** An action whose payload's `amount` (a whole number in minor units, such as cents) is above `above` needs two approvals: the first from the workflow's `approval` group and the second from the duty's `second` group, by two different people. An action whose payload has no `amount`, or one that isn't a whole number, needs both: an unknown amount never needs fewer approvals. `above: 0` means every action needs both.
+- **Not the requester's manager.** Neither approver may be the requester or anyone in the requester's reporting line: their manager, their manager's manager, and so on, from the directory's `manager` attribute (SCIM enterprise extension, sb-identity(7)), read when the approval is made. A reporting line the directory can't read, or one longer than 20, refuses the approval (`ENOAPPROVAL`).
+- **The group decides, whatever else permits.** A platform rule refuses an approval by anyone outside the group named for it (the workflow's group first, the duty's `second` group second), even where a tenant's own policy permits approving more widely. A law test found exactly that gap: a tenant permit for IT leads let one of them give the finance approval.
+- **One hash, both approvals.** Each approver echoes the same payload hash. The first approval is recorded (`kind: approval`, `state: first_approval`) and the action stays `PendingApproval`; the second makes it `Approved` and the executor runs. Any edit returns the action to `Drafted` and voids both. Expiry counts from the proposal, not from the first approval.
+- **In the model.** `proofs/tla/Approvals.tla` checks `NoSelfApproval`, `NoManagerApproval` and `TwoApprovers` for every interleaving, beside the earlier invariants.
+
+The response of `approve` says which approval it was: `"approvals": 1` and `"needs": 2` after a first approval, `"approvals": 2` when it runs.
 
 ### Timeouts with unknown effect
 

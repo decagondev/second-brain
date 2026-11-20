@@ -23,6 +23,7 @@ type Tenant struct {
 	Agents         []string            `json:"agents"`
 	Workflows      []string            `json:"workflows"`
 	Approval       map[string]string   `json:"approval"`
+	Duties         map[string]Duty     `json:"duties"`
 	RetentionDays  int                 `json:"retention_days"`
 	BudgetUSDMonth int                 `json:"budget_usd_month"`
 	PilotGroup     string              `json:"pilot_group"`
@@ -30,6 +31,13 @@ type Tenant struct {
 	Groups         map[string][]string `json:"groups"`
 	Spaces         map[string]Space    `json:"spaces"`
 	Barriers       [][2]string         `json:"barriers"`
+}
+
+// Duty is a workflow's segregation of duties (sb-approvals(7); SB-1204): above Above (in
+// the payload's amount, or with no amount), a second approver from Second.
+type Duty struct {
+	Second string `json:"second"`
+	Above  int    `json:"above"`
 }
 
 // Diag is one error, positioned at a key or a value (1-based line and column).
@@ -109,6 +117,7 @@ var fields = []field{
 	{"agents", true, (*checker).agents},
 	{"workflows", false, (*checker).workflows},
 	{"approval", false, (*checker).approval},
+	{"duties", false, (*checker).duties},
 	{"retention_days", false, func(c *checker, n *node) {
 		c.t.RetentionDays = c.intIn(n, "retention_days", MinRetentionDays, MaxRetentionDays)
 	}},
@@ -157,6 +166,7 @@ type checker struct {
 	seen  map[string]*node
 	// For the cross-field rules: valid workflow items, approval keys, exclude keys.
 	wfNodes, apKeys, exKeys []*node
+	dutyKeys                []*node
 	spaceNodes              map[string]spaceNodes
 	channelOwner            map[string]string // chat channel -> the space it asks in
 	barrierNodes            []*node
@@ -409,6 +419,44 @@ func (c *checker) approval(n *node) {
 	}
 }
 
+func (c *checker) duties(n *node) {
+	if !c.mapOf(n, "duties", "{ ticket-update: { second: group:finance-leads, above: 0 } }") {
+		return
+	}
+	c.t.Duties = map[string]Duty{}
+	for i, k := range n.keys {
+		if c.skip[k] {
+			continue
+		}
+		p := "duties." + k.value
+		v := n.vals[i]
+		if !c.mapOf(v, p, "{ second: group:NAME, above: 0 }") {
+			continue
+		}
+		var d Duty
+		have := map[string]bool{}
+		for j, f := range v.keys {
+			switch f.value {
+			case "second":
+				d.Second = c.group(v.vals[j], p+".second")
+			case "above":
+				d.Above = c.intIn(v.vals[j], p+".above", 0, 0)
+			default:
+				c.add(f, p+"."+f.value, "unknown field %q; a duty has second and above", f.value)
+				continue
+			}
+			have[f.value] = true
+		}
+		for _, f := range []string{"second", "above"} {
+			if !have[f] {
+				c.add(k, p, "a duty needs %s", f)
+			}
+		}
+		c.t.Duties[k.value] = d
+		c.dutyKeys = append(c.dutyKeys, k)
+	}
+}
+
 func (c *checker) exclude(n *node) {
 	if !c.mapOf(n, "exclude", `{ chat: ["#hr-*"] }`) {
 		return
@@ -507,6 +555,16 @@ func (c *checker) crossChecks() {
 		}
 		if !contains(listValues(c.seen["workflows"]), k.value) {
 			c.add(k, "approval."+k.value, "no workflow %q in workflows", k.value)
+		}
+	}
+	for _, k := range c.dutyKeys {
+		if wf := c.seen["workflows"]; wf != nil && wf.kind != seqNode {
+			break
+		}
+		if !contains(listValues(c.seen["workflows"]), k.value) {
+			c.add(k, "duties."+k.value, "no workflow %q in workflows", k.value)
+		} else if d := c.t.Duties[k.value]; d.Second != "" && d.Second == c.t.Approval[k.value] {
+			c.add(k, "duties."+k.value+".second", "the second approver group must differ from approval.%s (%s)", k.value, d.Second)
 		}
 	}
 	if g := c.seen["groups"]; g != nil {

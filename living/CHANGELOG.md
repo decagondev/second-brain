@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Segregation of duties (S12.2b: SB-1204): `duties:` in the manifest asks for two approvers from different groups above a threshold, nobody approves for someone in their reporting line (SCIM `manager`), and only the named group may give each approval.
 - Information barriers for everything (S12.2a: SB-1203): ownership from the source, and barrier forbids for drafts, tool calls, proposals and approvals as well as reads. LAW-22 is green.
 - Quarterly access reviews (S12.1b: SB-1202): a `review` job per restricted space, certify or remove by stewards, removals as manifest proposals or IdP requests, an overdue alert at 14 days, and an audit-ready evidence export.
 - Stewards and delegated space changes (S12.1a: SB-1201): `propose_space` and `approve_space` in Cedar, steward proposals checked against their own space, and hash-bound approval by an operator who isn't the proposer.

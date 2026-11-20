@@ -57,6 +57,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `agents` | list | yes | | `ask` (required), `draft-reply`, and the department agents `incident-summary`, `spec-digest`, `close-checklist` and `runbook-answer` (sb-agents(7)). No duplicates |
 | `workflows` | list | no | `[]` | At most **one** in v1. Known workflows: `ticket-update` (needs connector kind `tickets`). Enabled only after the tenant's workflow evals pass |
 | `approval` | map workflow→principal | if `workflows` | | Principal is `group:NAME` from the IdP. Every workflow needs one |
+| `duties` | map workflow→`{ second: group:NAME, above: N }` | no | none | Segregation of duties ([sb-approvals(7)](sb-approvals.7.md)): actions with an `amount` above `N` (or no amount) need a second approver from `second`. `second` differs from the workflow's `approval` group; `N` is a whole number, at least 0 |
 | `retention_days` | int | no | `365` | 30–3650. Applies to traces (with their citations and decision lists), drafts, conversations, feedback and logs, never to audit or the index. See Retention and deletion |
 | `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
@@ -69,9 +70,9 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 
 1. Every key is known, no key appears twice, and types match. `tenant` and `region` must match the existing cell if one exists; `check` has no network, so `sb tenant apply` enforces that part (SB-104).
 2. `ask` is in `agents`.
-3. Each item in `workflows` has an `approval` entry, and its connector kind is in `connectors`.
+3. Each item in `workflows` has an `approval` entry, and its connector kind is in `connectors`. Each key of `duties` is in `workflows`, has exactly `second` and `above`, and its `second` group isn't the workflow's `approval` group.
 4. No field anywhere is named `version`, `platform`, `secret`, `password`, `token` or `key`, alone or as part of a `_`-separated name such as `api_token`.
-5. `pilot_group` and `approval` principals are `group:` references, never individual users. That way access follows the IdP.
+5. `pilot_group`, `approval` and `duties` principals are `group:` references, never individual users. That way access follows the IdP.
 6. `custody`, `placement` and `key_custodian` are rejected: custody is a factory record that changes only through a dual-approved hand-off ([sb-factory(7)](sb-factory.7.md)).
 
 ## SYNTAX

@@ -245,6 +245,8 @@ type User struct {
 	ID, Tenant, UserName, ExternalID string
 	Emails                           []string
 	Active                           bool
+	// Manager is the user id of their manager, from SCIM's enterprise extension, or "" (SB-1204).
+	Manager string
 }
 
 // Group is a directory group; Members are user ids.

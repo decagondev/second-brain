@@ -43,10 +43,10 @@ Each cell serves SCIM 2.0 at `/scim/v2` for its own tenant only. The IdP authent
 
 | Request | Effect |
 |---|---|
-| `POST /Users` | Create a user (`userName`, optional `externalId`, `active`, `emails`). A duplicate `userName` is `409` |
+| `POST /Users` | Create a user (`userName`, optional `externalId`, `active`, `emails`, and the enterprise extension's `manager.value`, the manager's user id, for segregation of duties, sb-approvals(7)). A duplicate `userName` is `409` |
 | `GET /Users/ID` | Read a user |
 | `PUT /Users/ID` | Replace a user |
-| `PATCH /Users/ID` | `replace` of `active` (and other simple attributes) |
+| `PATCH /Users/ID` | `replace` of `active` (and other simple attributes, and `manager` by its full enterprise path) |
 | `DELETE /Users/ID` | Same as deactivate; the user is kept for the audit trail |
 | `POST /Groups`, `PUT /Groups/ID`, `PATCH /Groups/ID`, `DELETE /Groups/ID` | Groups and their members (`add`/`remove` of `members`) |
 

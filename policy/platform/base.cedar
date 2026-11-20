@@ -44,6 +44,11 @@ when { resource.requester == principal };
 forbid (principal, action == Action::"approve", resource is ProposedAction)
 when { resource.requester == principal };
 
+// Whatever a tenant's own policies permit, only the group named for this approval (the
+// workflow's, or a duty's for the second) approves it (SB-1204, sb-approvals(7)).
+forbid (principal, action == Action::"approve", resource is ProposedAction)
+unless { principal in resource.approvers };
+
 // Never approve across tenants (LAW-02).
 forbid (principal, action == Action::"approve", resource is ProposedAction)
 unless { principal.tenant == resource.tenant };

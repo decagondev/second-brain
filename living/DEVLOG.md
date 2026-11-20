@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.2b Segregation of duties (SB-1204)
+
+**Wave/slice:** W12 / S12.2b · **Status:** Done
+
+**What:** `duties` in the manifest and its schema, `Tool.Duty` and two-stage approval in the tool bus, `approvals.ReportingLine` and `Amount`, the SCIM `manager`, a platform forbid on approvals outside the named group, `Approvals.tla` and `crosscheck.py` with the second approver and the reporting line, and `laws/law15duties.go`. The manual changed first: sb-approvals(7), sb-tenant(5), sb-identity(7).
+
+**Why this way:** The first approval is a recorded step on the same action, not a second action, so one hash, one expiry and one edit-voids-everything rule cover both. An amount the cell can't read asks for both approvals, never one, and a reporting line it can't read refuses.
+
+**Learned:** The law test caught a real gap on its first run: Cedar permits add up, so the example tenant's "IT leads approve ticket updates" permit let an IT lead give the finance approval too. A platform forbid now ties every approval to the group named for it.
+
+**Laws:** LAW-15 modelled and tested further (five mutations caught across model and law test). LAW-21 and LAW-23 stay red.
+
+**Next:** S12.3, SCIM attributes and five-minute moves (SB-1205).
+
 ## 2026-11-20 S12.2a Information barriers (SB-1203)
 
 **Wave/slice:** W12 / S12.2a · **Status:** Done

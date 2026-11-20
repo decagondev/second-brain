@@ -16,40 +16,48 @@ def bfs(init, nxt, invs, act_props=()):
             if t not in seen: seen.add(t); q.append(t)
     return "ok", len(seen)
 
-# ---------------- Approvals
-U, P, MAXE = ("u1", "u2"), ("p1", "p2"), 1
+# ---------------- Approvals (with segregation of duties, SB-1204)
+U, P, MAXE = ("u1", "u2", "u3"), ("p1", "p2"), 1
+G1, G2, BOSS, REPORT = ("u1", "u2"), ("u2", "u3"), "u2", "u1"
+def manages(u, r): return u == BOSS and r == REPORT
 def approvals(mut=None):
-    # state: (st, req, pay, appr_hash, approver, killed, audit(tuple), receipt, edits)
-    init = [("Drafted", r, p, None, None, False, (), False, 0) for r in U for p in P]
+    # state: (st, req, pay, appr_hash, approver, killed, audit(tuple), receipt, edits, approver2, two)
+    init = [("Drafted", r, p, None, None, False, (), False, 0, None, two) for r in U for p in P for two in (False, True)]
     def nxt(s):
-        st, req, pay, ah, ap, k, au, rc, e = s
+        st, req, pay, ah, ap, k, au, rc, e, ap2, two = s
         out = []
-        if st == "Drafted": out.append(("PendingApproval", req, pay, ah, ap, k, au + (("PendingApproval", pay),), rc, e))
+        if st == "Drafted": out.append(("PendingApproval", req, pay, ah, ap, k, au + (("PendingApproval", pay),), rc, e, ap2, two))
         if st in ("Drafted", "PendingApproval", "Approved") and e < MAXE:
             for p in P:
-                if p != pay: out.append(("Drafted", req, p, None, None, k, au + (("Drafted", None),), rc, e + 1))
+                if p != pay: out.append(("Drafted", req, p, None, None, k, au + (("Drafted", None),), rc, e + 1, None, two))
         if st == "Approved":
             for p in P:
-                if p != pay: out.append((st, req, p, ah, ap, k, au, rc, e))          # Tamper
+                if p != pay: out.append((st, req, p, ah, ap, k, au, rc, e, ap2, two))          # Tamper
         if st == "PendingApproval":
             for u in U:
-                if mut == "selfapprove" or u != req:
-                    out.append(("Approved", req, pay, pay, u, k, au + (("Approved", pay),), rc, e))
-            out.append(("Rejected", req, pay, ah, ap, k, au + (("Rejected", pay),), rc, e))
-        if st in ("PendingApproval", "Approved"): out.append(("Expired", req, pay, ah, ap, k, au + (("Expired", None),), rc, e))
+                if ap is None and u in G1 and (mut == "selfapprove" or u != req) and (mut == "manager" or not manages(u, req)):
+                    nst = "PendingApproval" if two and mut != "onetwo" else "Approved"
+                    out.append((nst, req, pay, pay, u, k, au + ((nst if nst == "Approved" else "FirstApproval", pay),), rc, e, ap2, two))
+                if two and ap is not None and ap2 is None and ah == pay and u in G2 and u != req and \
+                        (mut == "sameapprover" or u != ap) and not manages(u, req):
+                    out.append(("Approved", req, pay, ah, ap, k, au + (("Approved", pay),), rc, e, u, two))
+            out.append(("Rejected", req, pay, ah, ap, k, au + (("Rejected", pay),), rc, e, ap2, two))
+        if st in ("PendingApproval", "Approved"): out.append(("Expired", req, pay, ah, ap, k, au + (("Expired", None),), rc, e, ap2, two))
         if st == "Approved" and (mut == "nokill" or not k) and (mut == "nohash" or pay == ah):
-            out.append(("Executing", req, pay, ah, ap, k, au if mut == "nolog" else au + (("Executing", pay),), rc, e))
+            out.append(("Executing", req, pay, ah, ap, k, au if mut == "nolog" else au + (("Executing", pay),), rc, e, ap2, two))
         if st == "Executing":
-            out.append(("Ran", req, pay, ah, ap, k, au + (("Ran", pay),), mut != "noreceipt", e))
-            out.append(("DidNotRun", req, pay, ah, ap, k, au + (("DidNotRun", pay),), rc, e))
-        if not k: out.append((st, req, pay, ah, ap, True, au + (("Kill", None),), rc, e))
+            out.append(("Ran", req, pay, ah, ap, k, au + (("Ran", pay),), mut != "noreceipt", e, ap2, two))
+            out.append(("DidNotRun", req, pay, ah, ap, k, au + (("DidNotRun", pay),), rc, e, ap2, two))
+        if not k: out.append((st, req, pay, ah, ap, True, au + (("Kill", None),), rc, e, ap2, two))
         return out
     X = ("Executing", "Ran", "DidNotRun")
     invs = [
         ("AuditBeforeExec", lambda s: s[0] not in X or ("Executing", s[3]) in s[6]),
         ("ApprovalBeforeExec", lambda s: s[0] not in X or (s[3] is not None and s[4] is not None)),
         ("ExecutedMatchesApproved", lambda s: s[0] not in X or s[2] == s[3]),
-        ("NoSelfApproval", lambda s: s[4] != s[1]),
+        ("NoSelfApproval", lambda s: s[4] != s[1] and s[9] != s[1]),
+        ("NoManagerApproval", lambda s: not manages(s[4], s[1]) and not manages(s[9], s[1])),
+        ("TwoApprovers", lambda s: not (s[10] and (s[0] == "Approved" or s[0] in X)) or (s[4] in G1 and s[9] in G2 and s[4] != s[9])),
         ("RanImpliesReceipt", lambda s: s[0] != "Ran" or s[7]),
         ("AtMostOnce", lambda s: sum(1 for r in s[6] if r[0] == "Executing") <= 1),
     ]
@@ -134,7 +142,7 @@ def handoff(mut=None):
     return bfs(init, nxt, invs)
 
 print("Approvals            ", approvals())
-for m in ("selfapprove", "nohash", "nokill", "nolog", "noreceipt"):
+for m in ("selfapprove", "nohash", "nokill", "nolog", "noreceipt", "manager", "sameapprover", "onetwo"):
     print(f"Approvals mutant {m:11}", approvals(m))
 print("Rollout              ", rollout())
 for m in ("noguard", "nogate", "deployrevoked", "nodrain"):

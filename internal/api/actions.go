@@ -52,6 +52,8 @@ type actionBody struct {
 	PolicyReason  string          `json:"policy_reason,omitempty"`
 	Approval      string          `json:"approval,omitempty"`
 	ApprovedBy    string          `json:"approved_by,omitempty"`
+	Approvals     int             `json:"approvals,omitempty"` // with a duty (SB-1204): how many so far
+	Needs         int             `json:"needs,omitempty"`     // with a duty: 2
 	Receipt       string          `json:"receipt,omitempty"`
 	Reason        string          `json:"reason,omitempty"`
 }
@@ -60,6 +62,15 @@ func body(a approvals.Action) actionBody {
 	b := actionBody{ID: a.ID, State: string(a.State), Workflow: a.Workflow, Target: a.Target, Payload: a.Payload,
 		PayloadSHA256: a.PayloadSHA256, Requester: a.Requester, Approvers: "group:" + a.Approvers, PolicyReason: a.PolicyReason,
 		Approval: a.Approval, ApprovedBy: a.ApprovedBy, Receipt: a.Receipt, Reason: a.Reason}
+	if a.Needs == 2 {
+		b.Needs = 2
+		if a.FirstApprovedBy != "" {
+			b.Approvals = 1
+		}
+		if a.ApprovedBy != "" {
+			b.Approvals = 2
+		}
+	}
 	if !a.ExpiresAt.IsZero() {
 		b.ExpiresAt = a.ExpiresAt.UTC().Format("2006-01-02T15:04:05Z")
 	}

@@ -68,8 +68,19 @@ type userDoc struct {
 	Emails     []struct {
 		Value string `json:"value"`
 	} `json:"emails,omitempty"`
-	Meta map[string]string `json:"meta,omitempty"`
+	Meta       map[string]string `json:"meta,omitempty"`
+	Enterprise *enterprise       `json:"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User,omitempty"`
 }
+
+// enterprise is the SCIM enterprise extension's part the cell keeps: the manager (SB-1204).
+type enterprise struct {
+	Manager *struct {
+		Value string `json:"value"`
+	} `json:"manager,omitempty"`
+}
+
+// managerPath is the PATCH path of the manager attribute.
+const managerPath = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager"
 
 func toDoc(u ports.User) userDoc {
 	a := u.Active
@@ -80,6 +91,11 @@ func toDoc(u ports.User) userDoc {
 			Value string `json:"value"`
 		}{m})
 	}
+	if u.Manager != "" {
+		d.Enterprise = &enterprise{Manager: &struct {
+			Value string `json:"value"`
+		}{u.Manager}}
+	}
 	return d
 }
 
@@ -89,6 +105,10 @@ func fromDoc(d userDoc, u ports.User) ports.User {
 	u.Emails = nil
 	for _, m := range d.Emails {
 		u.Emails = append(u.Emails, m.Value)
+	}
+	u.Manager = ""
+	if d.Enterprise != nil && d.Enterprise.Manager != nil {
+		u.Manager = d.Enterprise.Manager.Value
 	}
 	return u
 }
@@ -245,6 +265,15 @@ func (e *Endpoint) patchUser(w http.ResponseWriter, r *http.Request) {
 				_ = json.Unmarshal(v, &u.UserName)
 			case "externalId":
 				_ = json.Unmarshal(v, &u.ExternalID)
+			case managerPath:
+				var m struct {
+					Value string `json:"value"`
+				}
+				if json.Unmarshal(v, &m) != nil {
+					fail(w, http.StatusBadRequest, "manager must be {\"value\": \"<user id>\"}")
+					return
+				}
+				u.Manager = m.Value
 			default:
 				fail(w, http.StatusBadRequest, "unsupported path "+path)
 				return

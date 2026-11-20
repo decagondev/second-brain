@@ -28,6 +28,12 @@ func Format(t Tenant) []byte {
 	if len(t.Approval) > 0 {
 		line("approval", flowMap(t.Approval))
 	}
+	if len(t.Duties) > 0 {
+		b.WriteString("duties:\n")
+		for _, k := range sorted(t.Duties) {
+			fmt.Fprintf(&b, "  %s: { second: %s, above: %d }\n", k, t.Duties[k].Second, t.Duties[k].Above)
+		}
+	}
 	line("retention_days", strconv.Itoa(t.RetentionDays))
 	line("budget_usd_month", strconv.Itoa(t.BudgetUSDMonth))
 	if t.PilotGroup != "" {
@@ -118,7 +124,7 @@ func flowList(xs []string, quote bool) string {
 	return "[" + strings.Join(parts, ", ") + "]"
 }
 
-func sorted(m map[string][]string) []string {
+func sorted[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
