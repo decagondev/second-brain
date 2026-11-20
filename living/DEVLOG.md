@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S9.2a Schedules, the watchdog and the WORM bucket (SB-904)
+
+**Wave/slice:** W9 / S9.2a · **Author:** platform lead + Claude · **Status:** In review (the jobs runner in a running cell, SB-903)
+
+**What:** `internal/core/schedule`, `gcp.Scheduler` and `gcp.Bucket` (`schedules.go`), Cloud Scheduler and Cloud Storage in `gcptest`, and `laws/law11worm.go`. The manual changed first: sb-runtime(7), sb-ingest(7) and sb-observability(7).
+
+**Why this way:** Several laws depend on something happening on time: anchors hourly, the access check monthly, sync every minute. A job that silently stops is a law that silently stops being checked. So the watchdog treats "no record" and "can't read the record" as missed, and a missed law job is a Sev-1. The WORM bucket is locked at bootstrap by the project owner, because a lock can't be undone. The cell gets no delete permission at all, so even full cell credentials can't remove evidence.
+
+**Learned:** sb-ingest(7) already said sync runs every 60 seconds. The first draft of the schedule said 5 minutes, and the manual check caught it, so sync is every minute: Cloud Scheduler's finest, with the jitter in the job.
+
+**Laws:** LAW-11, LAW-13 and LAW-17 extended (four law tests, two mutations caught). LAW-19 to LAW-23 are still red, as planned.
+
+**Next:** S9.2b, metrics and the verifier endpoint (SB-905).
+
 ## 2026-11-20 S9.1b Private Cloud SQL with CMEK and a perimeter (SB-902)
 
 **Wave/slice:** W9 / S9.1b · **Author:** platform lead + Claude · **Status:** In review (a real project and organisation, SB-903)

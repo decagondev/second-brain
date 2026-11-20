@@ -25,6 +25,7 @@ import (
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/runtime"
+	"example.com/second-brain/internal/core/schedule"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/obs"
 )
@@ -1063,5 +1064,31 @@ func TestSelf_LAW02PerimeterMutationIsCaught(t *testing.T) {
 	}
 	if !violates(40, func(r *rand.Rand) error { return law02Perimeter(r, true) }) {
 		t.Error("LAW-02 (perimeter): a perimeter that lets the other cell in was not caught")
+	}
+}
+
+// The missed-run checks catch a watchdog that treats an unreadable record as fine, and one
+// that alerts law-carrying jobs below Sev-1.
+func TestSelf_WatchMutationsAreCaught(t *testing.T) {
+	lenient := func(ctx context.Context, runs schedule.Runs, now time.Time) []schedule.Alert {
+		var out []schedule.Alert
+		for _, a := range schedule.Watch(ctx, runs, now, nil) {
+			if _, _, err := runs.LastFinish(ctx, a.Job); err == nil {
+				out = append(out, a)
+			}
+		}
+		return out
+	}
+	quiet := func(ctx context.Context, runs schedule.Runs, now time.Time) []schedule.Alert {
+		out := schedule.Watch(ctx, runs, now, nil)
+		for i := range out {
+			out[i].Severity = "sev2"
+		}
+		return out
+	}
+	for name, w := range map[string]WatchFunc{"unknown is fine": lenient, "all Sev-2": quiet} {
+		if !violates(runs, func(r *rand.Rand) error { return lawWatched("LAW-11")(r, w) }) {
+			t.Errorf("watchdog bug %q was not caught", name)
+		}
 	}
 }

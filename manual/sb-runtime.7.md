@@ -53,6 +53,23 @@ Cloud SQL for PostgreSQL 17 with `pgvector` has **private IP only**. Services re
 
 A **VPC Service Controls perimeter** surrounds the cell's project. It covers Cloud SQL, Cloud Storage, Secret Manager, Cloud KMS and Pub/Sub, so data can't be copied out by API to a project outside it, even with valid credentials. The only identities allowed through are the cell's own service accounts, plus the factory's `updater` grant for the release store, which is read-only and outside the perimeter. The tenant's organisation admin creates it with `deploy/gcp/bootstrap-perimeter.sh`. Because the perimeter is a second fence, an IAM grant made by mistake from one cell to another still can't reach the other cell's data.
 
+### Schedules, exactly (SB-904)
+
+Every timed job runs from **Cloud Scheduler**, which publishes to the cell's Pub/Sub topic, and the `jobs` Cloud Run job does the work. The schedule is defined once in code (`internal/core/schedule`) and created by the gcp adapter. Times are UTC.
+
+| Job | When | Does | Law |
+|---|---|---|---|
+| `sync` | every minute (Cloud Scheduler's finest; the jitter is in the job) | incremental sync of every connector (sb-ingest(7), Sync) | LAW-13 |
+| `anchor` | hourly, at minute 5 | sign the latest audit hash and write it to the WORM bucket | LAW-11 |
+| `retention` | daily at 03:00 | the retention sweep (sb-tenant(5)) | |
+| `backup` | daily at 02:00 | the 3-2-1 backup (sb-audit(7)) | LAW-11 |
+| `report` | Mondays at 07:00 | the weekly leadership report (sb-observability(7)) | |
+| `access` | the 1st of each month at 04:00 | the LAW-17 access-path check, for a tenant-custody cell (sb-factory(7)) | LAW-17 |
+
+Each run records its finish time. A **watchdog**, run by `jobs` every 5 minutes, compares each job's last finish with its schedule. A job that hasn't finished within twice its interval (for `report` and `access`, within a day of its time) is **overdue**: it sets `sb_job_overdue{job}` to 1 and sends a `job_missed` alert. The alert is Sev-1 for `anchor`, `backup` and `access`, because those carry a law, and Sev-2 otherwise. A missed run is never a silent skip. If a job's last finish can't be read, it counts as overdue.
+
+**The WORM bucket.** Anchors and the off-site backup copy go to a Cloud Storage bucket with a **locked** retention policy of seven years (ADR-0012). An object can't be overwritten, every write is conditional on there being no object of that name, and it can't be deleted until its retention ends, by anyone. The gcp adapter refuses a bucket whose policy is unlocked or shorter. The bucket is made, and its policy locked, at bootstrap by the project owner, because locking a retention policy can't be undone. The cell itself only gets `storage.buckets.get` and object create, get and list (`gcp.BucketPermissions`), and never delete.
+
 ## LAWS
 
 [LAW-02](sb-laws.7.md#law-02): every resource and role is in the cell's own project. [LAW-06](sb-laws.7.md#law-06): only admitted, attested images run. [LAW-18](sb-laws.7.md#law-18): the database key is in the cell's key ring.

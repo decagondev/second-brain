@@ -312,3 +312,19 @@ func TestLAW02_RuntimeStaysInItsProject(t *testing.T) {
 func TestLAW02_PerimetersHoldEvenWithAnIAMMistake(t *testing.T) {
 	Check(t, "LAW-02", 40, func(r *rand.Rand) error { return law02Perimeter(r, r.Intn(2) == 0) })
 }
+
+func TestLAW11_AnchorsAreWriteOnce(t *testing.T) {
+	Check(t, "LAW-11", 40, law11WORM)
+}
+
+func TestLAW11_MissedAnchorOrBackupAlerts(t *testing.T) {
+	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return lawWatched("LAW-11")(r, NewWatch()) })
+}
+
+func TestLAW13_MissedSyncAlerts(t *testing.T) {
+	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return lawWatched("LAW-13")(r, NewWatch()) })
+}
+
+func TestLAW17_MissedAccessCheckAlerts(t *testing.T) {
+	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return lawWatched("LAW-17")(r, NewWatch()) })
+}

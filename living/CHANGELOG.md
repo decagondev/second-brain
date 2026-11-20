@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Schedules in the cell (S9.2a: SB-904): `internal/core/schedule` (six jobs and the missed-run watchdog), `gcp.Scheduler` and the WORM `gcp.Bucket`, Cloud Scheduler and Cloud Storage retention in the GCP fake, and law tests for write-once anchors and missed runs.
 - Private Cloud SQL with CMEK and a perimeter (S9.1b: SB-902): private-IP, `pgvector`, CMEK instances from the gcp adapter; the perimeter bootstrap script; CMEK, crypto-shredding and VPC Service Controls in the GCP fake; and a LAW-02 law test over two perimeters.
 - Cloud Run per cell (S9.1a: SB-901): `sb-runtime(7)`, `internal/core/runtime` (the in-cell updater), `gcp.CloudRun` with Binary Authorization in the GCP fake, and LAW-06 and LAW-02 law tests over the runtime.
 - Space laws and models (S8.2: SB-804 to SB-807): LAW-19 to LAW-23 in sb-laws(7) and as red law tests with reference systems and mutations; `proofs/alloy/Spaces.als` with three mutations and a crosscheck mirror; the inside-the-company threats in the threat model; and the `space-leak` eval suite, red on purpose until SB-1006.

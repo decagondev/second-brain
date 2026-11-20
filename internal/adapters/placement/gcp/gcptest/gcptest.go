@@ -10,11 +10,16 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Fake is any number of GCP projects behind one server.
@@ -30,6 +35,10 @@ type Fake struct {
 	policies map[string]map[string][]string
 	// attested: project -> image references the project's attestor has signed (Binary Authorization)
 	attested map[string]map[string]bool
+	// Scheduler jobs by name; buckets by name (with their project and retention); objects by bucket/name
+	Schedules map[string]map[string]any
+	buckets   map[string]*bucket
+	objects   map[string][]byte
 	// destroyed CMEK keys; perimeters: project -> principals allowed through; principals: token -> member
 	destroyed  map[string]bool
 	perimeters map[string]map[string]bool
@@ -43,7 +52,7 @@ type Fake struct {
 
 // New starts the fake.
 func New() *Fake {
-	f := &Fake{destroyed: map[string]bool{}, perimeters: map[string]map[string]bool{}, principals: map[string]string{}, attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
+	f := &Fake{Schedules: map[string]map[string]any{}, buckets: map[string]*bucket{}, objects: map[string][]byte{}, destroyed: map[string]bool{}, perimeters: map[string]map[string]bool{}, principals: map[string]string{}, attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
 	f.Server = httptest.NewTLSServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -172,6 +181,14 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 		code := f.faults[0]
 		f.faults = f.faults[1:]
 		reply(w, code, errBody(code, "UNAVAILABLE"))
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/storage/v1/b/") || strings.HasPrefix(r.URL.Path, "/upload/storage/v1/b/") {
+		f.storage(w, r)
+		return
+	}
+	if strings.Contains(r.URL.Path, "/jobs") && strings.HasPrefix(r.URL.Path, "/v1/projects/") && !strings.Contains(r.URL.Path, "/instances") {
+		f.scheduler(w, r)
 		return
 	}
 	if strings.HasPrefix(r.URL.Path, "/v2/projects/") || strings.HasSuffix(r.URL.Path, "/occurrences") {
@@ -520,5 +537,146 @@ func (f *Fake) Perimeter(project string, members ...string) {
 	f.perimeters[project] = map[string]bool{}
 	for _, m := range members {
 		f.perimeters[project][m] = true
+	}
+}
+
+type bucket struct {
+	project   string
+	retention time.Duration
+	locked    bool
+	created   map[string]time.Time
+}
+
+// Bucket makes a bucket in project with a retention policy, locked or not (bootstrap does this).
+func (f *Fake) Bucket(project, name string, retention time.Duration, locked bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.buckets[name] = &bucket{project: project, retention: retention, locked: locked, created: map[string]time.Time{}}
+}
+
+// DeleteObject tries to delete an object as an admin would; a locked policy refuses it.
+func (f *Fake) DeleteObject(name, object string, now time.Time) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	b := f.buckets[name]
+	if b == nil {
+		return errors.New("no bucket")
+	}
+	if at, ok := b.created[object]; ok && now.Sub(at) < b.retention {
+		return errors.New("403 object is under a retention policy")
+	}
+	delete(f.objects, name+"/"+object)
+	delete(b.created, object)
+	return nil
+}
+
+func (f *Fake) scheduler(w http.ResponseWriter, r *http.Request) {
+	p := strings.TrimPrefix(r.URL.Path, "/v1/")
+	parts := strings.Split(p, "/")
+	project := parts[1]
+	f.Calls[project]++
+	tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	verb := map[string]string{http.MethodGet: "get", http.MethodPost: "create", http.MethodPatch: "update"}[r.Method]
+	if verb == "" || !f.grants[tok][project]["cloudscheduler.jobs."+verb] {
+		reply(w, 403, errBody(403, "PERMISSION_DENIED"))
+		return
+	}
+	var body map[string]any
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	switch r.Method {
+	case http.MethodGet:
+		v, ok := f.Schedules[p]
+		if !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+		reply(w, 200, v)
+	case http.MethodPost:
+		name, _ := body["name"].(string)
+		if _, dup := f.Schedules[name]; dup {
+			reply(w, 409, errBody(409, "ALREADY_EXISTS"))
+			return
+		}
+		f.Schedules[name] = body
+		reply(w, 200, body)
+	default:
+		if _, ok := f.Schedules[p]; !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+		f.Schedules[p] = body
+		reply(w, 200, body)
+	}
+}
+
+func (f *Fake) storage(w http.ResponseWriter, r *http.Request) {
+	upload := strings.HasPrefix(r.URL.Path, "/upload/")
+	rest := strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, "/upload"), "/storage/v1/b/")
+	name, obj, _ := strings.Cut(rest, "/o")
+	obj = strings.TrimPrefix(obj, "/")
+	b := f.buckets[name]
+	if b == nil {
+		reply(w, 404, errBody(404, "NOT_FOUND"))
+		return
+	}
+	f.Calls[b.project]++
+	tok := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	need := "storage.buckets.get"
+	switch {
+	case upload:
+		need = "storage.objects.create"
+	case obj != "":
+		need = "storage.objects.get"
+	case strings.HasSuffix(r.URL.Path, "/o"):
+		need = "storage.objects.list"
+	}
+	if !f.grants[tok][b.project][need] {
+		reply(w, 403, errBody(403, "PERMISSION_DENIED"))
+		return
+	}
+	if allowed, fenced := f.perimeters[b.project]; fenced && !allowed[f.principals[tok]] {
+		reply(w, 403, errBody(403, "PERMISSION_DENIED: VPC_SERVICE_CONTROLS"))
+		return
+	}
+	switch need {
+	case "storage.buckets.get":
+		reply(w, 200, map[string]any{"name": name, "retentionPolicy": map[string]any{
+			"retentionPeriod": strconv.FormatInt(int64(b.retention/time.Second), 10), "isLocked": b.locked}})
+	case "storage.objects.create":
+		o := r.URL.Query().Get("name")
+		if r.URL.Query().Get("ifGenerationMatch") != "0" {
+			reply(w, 400, errBody(400, "INVALID_ARGUMENT: writes to this bucket must not overwrite"))
+			return
+		}
+		if _, exists := f.objects[name+"/"+o]; exists {
+			reply(w, 412, errBody(412, "FAILED_PRECONDITION"))
+			return
+		}
+		data, _ := io.ReadAll(r.Body)
+		f.objects[name+"/"+o] = data
+		b.created[o] = time.Now()
+		reply(w, 200, map[string]any{"name": o})
+	case "storage.objects.get":
+		o, _ := url.PathUnescape(obj)
+		data, ok := f.objects[name+"/"+o]
+		if !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+		_, _ = w.Write(data)
+	default:
+		prefix := r.URL.Query().Get("prefix")
+		var items []any
+		var keys []string
+		for k := range f.objects {
+			if o := strings.TrimPrefix(k, name+"/"); o != k && strings.HasPrefix(o, prefix) {
+				keys = append(keys, o)
+			}
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			items = append(items, map[string]any{"name": k})
+		}
+		reply(w, 200, map[string]any{"items": items})
 	}
 }

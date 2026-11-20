@@ -30,6 +30,8 @@ Changes, including deletes and permission changes, are indexed with a p95 of 15 
 
 Each connector of a cell is synced by a scheduler every 60 seconds, with up to 10 seconds of jitter. One sync reads the connector's changes from its stored cursor, ingests them, and only then stores the new cursor. If anything fails, the old cursor stays, so the next run repeats the work. Ingest is idempotent, so repeating it is harmless. A cell restart resumes from the stored cursors and never from the beginning.
 
+On GCP that scheduler is Cloud Scheduler, every minute, and a missed run alerts (sb-runtime(7), Schedules).
+
 Freshness is measured per connector as the age of the last successful sync, exported as `sb_ingest_last_success_age_seconds{tenant, connector}`. It stays well under the 15-minute target while syncs succeed, and an alert fires when it passes 15 minutes. Failures are counted in `sb_ingest_sync_failures_total{tenant, connector}`.
 
 ### Content is data
