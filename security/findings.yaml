@@ -19,3 +19,18 @@ findings:
     found: 2026-11-19
     bug: BUG-0011
     source: internal
+  - id: PT-0003
+    title: A space's scope could reach into a restricted space's scope, making its other members holders of restricted documents
+    severity: medium
+    status: fixed
+    laws: [LAW-20, LAW-19]
+    found: 2026-11-20
+    bug: BUG-0013
+    source: internal
+  - id: PT-0004
+    title: A file labelled internal at the source and shared with the wrong person is answerable company-wide, because the source's label wins
+    severity: medium
+    status: accepted
+    laws: [LAW-20]
+    found: 2026-11-20
+    source: internal

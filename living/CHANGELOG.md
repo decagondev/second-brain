@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Cross-space red team (S12.4b: SB-1208): the plan, the `space-redteam` gating eval, the game day runbook, and a new `sb tenant check` rule refusing a scope that reaches into a restricted space (PT-0003).
 - Legal holds (S12.4a: SB-1207): Legal stewards hold a space, custodians or both; retention keeps held records, erasure and space removal are refused with `EHOLD`, and holds and releases are audited first.
 - Reorg preview (S12.3b: SB-1206): `sb space diff FILE --idp-snapshot SNAPSHOT` lists per person the spaces a reorg would add and remove, and flags anyone losing every space, gaining a restricted one, or straddling a barrier. Offline; changes nothing.
 - Directory attributes and five-minute moves (S12.3a: SB-1205): SCIM `title`, `department`, `division`, `costCenter` and `manager` reach policy at every request, and moves between groups change spaces at the next request. LAW-21 is green.

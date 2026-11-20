@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.4b Cross-space red team (SB-1208)
+
+**Wave/slice:** W12 / S12.4b · **Status:** In review (the game day is human)
+
+**What:** `docs/red-team-spaces.md`, `docs/runbooks/space-red-team-game-day.md`, the `space-redteam` suite and world (with a document `owner` in the eval cell), sb-space(5) rule 13 and `reachChecks`, findings PT-0003 and PT-0004, BUG-0013, and `laws/law20reach.go`. The manual changed first: sb-laws(7), sb-eval(5), sb-space(5).
+
+**Why this way:** Attacks that can be automated are a gating eval, so they are tried on every release and not only on the day; the game day is for what a person thinks of that the corpus doesn't.
+
+**Learned:** The attack that worked was configuration, not code: two spaces' scopes overlapping. Every space check looked at one space at a time, and the law generators gave each space its own folder, so nothing ever generated the overlap. The new rule compares spaces with each other.
+
+**Laws:** LAW-19 to LAW-22 extended (one law test, one mutation; one gating suite). Only LAW-23 stays red.
+
+**Next:** W13, only if Q-01 is yes.
+
 ## 2026-11-20 S12.4a Legal hold per space (SB-1207)
 
 **Wave/slice:** W12 / S12.4a · **Status:** Done

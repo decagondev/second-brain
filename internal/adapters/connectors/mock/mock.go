@@ -31,6 +31,7 @@ const ACLDeadline = 800 * time.Millisecond
 type doc struct {
 	title, text     string
 	location, label string
+	owner           string // the owner's email at the source (SB-1203)
 	fields          map[string]string
 	version         int
 	viewers         map[string]bool // user emails
@@ -89,6 +90,15 @@ func (s *Source) PutAt(id, title, text, location, label string, viewers ...strin
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.docs[id].location, s.docs[id].label = location, label
+}
+
+// Own sets a document's owner at the source (SB-1203).
+func (s *Source) Own(id, email string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if d, ok := s.docs[id]; ok {
+		d.owner = email
+	}
 }
 
 // Declare makes the source a structured one that declares these fields (SB-1106).
@@ -233,7 +243,7 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 			fields[k] = v
 		}
 	}
-	return ports.Document{Ref: ref, Version: d.version, Title: d.title, Text: d.text, ACLPrefilter: pre, Location: d.location, Label: d.label, Fields: fields}, nil
+	return ports.Document{Ref: ref, Version: d.version, Title: d.title, Text: d.text, ACLPrefilter: pre, Location: d.location, Label: d.label, Owner: d.owner, Fields: fields}, nil
 }
 
 // ACL answers live. Every fault makes every verdict Unknown; so does a late answer.

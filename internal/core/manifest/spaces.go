@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"example.com/second-brain/internal/core/route"
 	"fmt"
 	"regexp"
 	"sort"
@@ -407,6 +408,7 @@ func (c *checker) spaceChecks() {
 		}
 		c.t.Spaces[name] = s
 	}
+	c.reachChecks(names)
 	for i, pair := range c.t.Barriers {
 		for _, name := range names {
 			if m := c.t.Spaces[name].Members; contains(m, pair[0]) && contains(m, pair[1]) {
@@ -448,4 +450,40 @@ func SpaceAttrs(s Space) map[string]string {
 		a["fields"] = strings.Join(fs, "; ")
 	}
 	return a
+}
+
+// reachChecks refuses a scope that reaches into a restricted space's scope for people who
+// aren't that space's members (sb-space(5) rule 13; found by the red team, PT-0003): a
+// space holding a restricted space's documents makes its own members holders of them.
+// "Reaches" is pattern containment either way: one pattern matches the other as text.
+func (c *checker) reachChecks(names []string) {
+	for _, a := range names {
+		sa := c.t.Spaces[a]
+		for _, b := range names {
+			sb := c.t.Spaces[b]
+			if a == b || sb.Label != "restricted" || subset(sa.Members, sb.Members) {
+				continue
+			}
+			for kind, pats := range sa.Scope {
+				for _, pa := range pats {
+					for _, pb := range sb.Scope[kind] {
+						if route.Match(pa, pb) || route.Match(pb, pa) {
+							c.add(c.spaceNode(a), "spaces."+a+".scope."+kind,
+								"%q reaches restricted space %s's %q, so %s's members who aren't %s's would read it; narrow the pattern or make the members match",
+								pa, b, pb, a, b)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func subset(a, b []string) bool {
+	for _, x := range a {
+		if !contains(b, x) {
+			return false
+		}
+	}
+	return true
 }

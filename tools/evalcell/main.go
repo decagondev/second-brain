@@ -51,6 +51,8 @@ type world struct {
 		// Path and Label are the document's location and source label (SB-1005).
 		Path  string `json:"path"`
 		Label string `json:"label"`
+		// Owner is the document's owner at the source, an email (SB-1203).
+		Owner string `json:"owner"`
 	} `json:"documents"`
 	// Spaces and Barriers make the local cell a cell with spaces (sb-eval(5); SB-1006).
 	Spaces map[string]struct {
@@ -158,6 +160,9 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 	texts := map[string]string{} // doc id -> the normalised text that spans index into
 	for _, d := range w.Documents {
 		src.PutAt(d.ID, d.Title, d.Text, d.Path, d.Label, d.Viewers...)
+		if d.Owner != "" {
+			src.Own(d.ID, d.Owner)
+		}
 		if len(d.Viewers) == 0 {
 			src.SetViewers(d.ID)
 		}
@@ -190,6 +195,14 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 	auth := retrieve.Authoriser{Connectors: map[string]ports.Connector{"docs": conn}, Policy: policy.Kernel{Engine: engine, Recorder: nopRecorder{}}}
 	if len(all) > 0 {
 		auth.Spaces = func(context.Context) ([]ports.Space, [][2]string, error) { return all, w.Barriers, nil }
+		auth.Owners = func(_ context.Context, owner string) ([]string, error) { // the directory, by email
+			for _, u := range w.Users {
+				if strings.EqualFold(u.Email, owner) {
+					return u.Groups, nil
+				}
+			}
+			return []string{}, nil
+		}
 	}
 	n := 0
 	agent := ask.Agent{Tenant: w.Tenant, Release: "rel_eval", Index: idx.Bind(w.Tenant), Embedder: hashing.Embedder{},

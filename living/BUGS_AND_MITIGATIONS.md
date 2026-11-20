@@ -212,3 +212,18 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** The worlds record each directory they make, and `laws/main_test.go` removes them all when the test binary ends.
 
 **Caught by now:** the failure itself, and a run of `make check` now leaves no `sb-law06-*` behind. Why it wasn't caught before: nothing checked what a test run leaves behind, and the leak only failed once enough runs had piled up. Rule: a test that makes a directory removes it, through `t.TempDir()` or the shared cleanup.
+
+## BUG-0013 A space's scope could reach into a restricted space
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the cross-space red team (PT-0003) | Security (medium) | SB-1208 | Fixed |
+
+**Symptom:** A manifest with a `custom` space scoped `docs: ["/**"]` beside a restricted People space scoped `["/People/**"]` checked and applied. Ingest routed every People document to both spaces, so the custom space's members were holders of People's restricted files, and the label check let them read them wherever the source did.
+
+**Root cause:** `sb tenant check` checked each space on its own. Nothing related one space's scope to another's, and holding a document is what membership checks.
+
+**Fix:** sb-space(5) rule 13: a scope pattern that reaches into a restricted space's pattern (either matches the other as text) is refused unless the space's members are all the restricted space's members.
+
+**Caught by now:** `TestScopeReach` in `internal/core/manifest`, written first and red. Why it wasn't caught before: the space laws' generators draw each space's scope from its own folder, so no generated manifest ever overlapped.
+

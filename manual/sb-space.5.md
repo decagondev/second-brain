@@ -69,6 +69,7 @@ All of these are errors, reported with line and column like every manifest error
 10. A channel that isn't `#name` (lower case letters, digits, `-` and `_`), or a channel listed in two spaces.
 11. A department agent (sb-agents(7)) in a space whose template doesn't list it, such as `close-checklist` in an `engineering` space.
 12. A `fields` kind that isn't in the space's `scope`, or a field name that isn't `[a-z][a-z0-9_]*`.
+13. A scope pattern that reaches into a **restricted** space's scope (one matches the other, such as `/**` or `/People/Cases/**` against `/People/**`) when this space has members the restricted space doesn't. Holding a restricted space's documents would make those members holders of them (SB-1208; the red team's PT-0003).
 
 A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always `ask`), and the retention (the template's, or else the tenant's, never more than the tenant's).
 

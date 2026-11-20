@@ -154,13 +154,13 @@ At every moment, at least one custodian can unwrap a cell's root key. A hand-off
 
 No answer, citation, draft or action uses a chunk that the source's live ACL would deny, whatever any space policy says. A space can hide what someone could open, never show what they can't (ADR-0020, [sb-spaces(7)](sb-spaces.7.md)).
 
-*Owner:* platform lead. *Checks:* Model (`Spaces.als: SpacesOnlyNarrow`) · Property over random companies with spaces, labels, barriers and ACLs (`TestLAW19_SpacesOnlyNarrow` at the policy layer since SB-1004; `TestLAW19_TheSpaceContextNeverWidens`) · Static (`make policy`: only the base policy permits read, and the whole set allows nothing it doesn't) · Eval (`space-leak`).
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: SpacesOnlyNarrow`) · Property over random companies with spaces, labels, barriers and ACLs (`TestLAW19_SpacesOnlyNarrow` at the policy layer since SB-1004; `TestLAW19_TheSpaceContextNeverWidens`) · Static (`make policy`: only the base policy permits read, and the whole set allows nothing it doesn't) · Eval (`space-leak`, `space-redteam`).
 
 ### LAW-20: Restricted stays home {#law-20}
 
 Content labelled `restricted` reaches only members of a space that holds it, including in company-wide asks.
 
-*Owner:* platform lead. *Checks:* Model (`Spaces.als: RestrictedStaysHome`) · Property (`TestLAW20_RestrictedStaysHome` on the ask path since SB-1006; `TestLAW20_IngestNeverLabelsBelowRestricted`) · Eval (`space-leak`, People, Finance and Executive cases).
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: RestrictedStaysHome`) · Property (`TestLAW20_RestrictedStaysHome` on the ask path since SB-1006; `TestLAW20_IngestNeverLabelsBelowRestricted`) · Eval (`space-leak`, People, Finance and Executive cases; `space-redteam`).
 
 ### LAW-21: Moves revoke fast {#law-21}
 
@@ -172,7 +172,7 @@ When the directory removes someone from a space's member groups, they lose that 
 
 No answer, citation, draft or action crosses a declared information barrier, in either direction.
 
-*Owner:* platform lead. *Checks:* Model (`Spaces.als: BarriersHold`) · Property (`TestLAW22_BarriersHold`: asks, drafts, tool calls and approvals, with source owners; SB-1203) · Eval (`space-leak`).
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: BarriersHold`) · Property (`TestLAW22_BarriersHold`: asks, drafts, tool calls and approvals, with source owners; SB-1203) · Eval (`space-leak`, `space-redteam`).
 
 ### LAW-23: Grants are consented and revocable {#law-23}
 

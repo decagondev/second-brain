@@ -43,7 +43,7 @@ regress:               ## one test per bug, forever (SB-016)
 evals:                 ## eval harness: mock smoke, citation suite on the local cell, tenant suites (SB-015, SB-309)
 	$(PY) -m evals run evals/suites/smoke.yaml --model mock
 	@rm -rf build/evals
-	$(PY) -m evals run evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/agent-incident-summary.yaml evals/suites/agent-spec-digest.yaml evals/suites/agent-close-checklist.yaml evals/suites/agent-runbook-answer.yaml evals/suites/template-*.yaml --model extractive --results build/evals --release rel_local
+	$(PY) -m evals run evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/space-redteam.yaml evals/suites/agent-incident-summary.yaml evals/suites/agent-spec-digest.yaml evals/suites/agent-close-checklist.yaml evals/suites/agent-runbook-answer.yaml evals/suites/template-*.yaml --model extractive --results build/evals --release rel_local
 	$(PY) -m evals gate build/evals/rel_local
 	@for t in tenants/*/; do $(PY) -m evals run --tenant-dir $$t --model extractive || exit 1; done
 	@! $(PY) -m evals run evals/suites/citation.yaml --model misattributing >/dev/null 2>&1 || { echo "evals: a misattributing model passed the citation suite"; exit 1; }
