@@ -19,7 +19,7 @@ func JSONSchema() []byte {
 	props := map[string]any{
 		"tenant":      str("Tenant name: a DNS label. Immutable.", map[string]any{"pattern": dnsLabelRe}),
 		"channel":     str("Release channel; versions are never pinned (ADR-0004).", map[string]any{"enum": Channels}),
-		"idp":         str("OIDC issuer: oidc://ISSUER-HOST[/path].", map[string]any{"pattern": idpRe}),
+		"idp":         str("Identity provider: oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT.", map[string]any{"pattern": idpRe}),
 		"region":      str("Region pin. Immutable.", map[string]any{"enum": Regions}),
 		"pilot_group": str("If set, only this IdP group may sign in.", map[string]any{"pattern": groupRe}),
 		"connectors": map[string]any{
@@ -47,6 +47,11 @@ func JSONSchema() []byte {
 		"budget_usd_month": map[string]any{
 			"type": "integer", "description": "Monthly model spend cap in USD.",
 			"minimum": MinBudgetUSDMonth, "default": DefaultBudgetUSD,
+		},
+		"groups": map[string]any{
+			"type": "object", "description": "Only with an identity-platform idp: group to member emails (SB-907).",
+			"maxProperties": MaxGroups, "propertyNames": map[string]any{"pattern": groupRe},
+			"additionalProperties": map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": emailRe}},
 		},
 		"exclude": map[string]any{
 			"type": "object", "description": "Source paths or channels never ingested, by connector kind.",

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S9.3b Identity Platform sign-in (SB-907)
+
+**Wave/slice:** W9 / S9.3b · **Author:** platform lead + Claude · **Status:** In review (a real project, SB-903)
+
+**What:** the `identity-platform://` idp and `groups:` in `internal/core/manifest`, `Provider.IdentityPlatform` in the `oidc` adapter, `internal/core/groupsync`, `laws/law02idp.go` and `laws/law12groups.go`. The manual changed first: sb-identity(7) and sb-tenant(5).
+
+**Why this way:** Every company's token from one Identity Platform project has the same issuer, signing keys and audience, so the per-company Identity Platform tenant is the only thing that tells them apart; the verifier checks it on every token. The directory is keyed by verified email because Identity Platform's user ids are its own and mean nothing to the cell. For a company without SCIM the manifest is the directory, and an apply that removes someone revokes their sessions; the 60-second re-validation keeps the 5-minute bound even when that revocation is lost.
+
+**Learned:** The simplest wrong configuration is a cell that trusts the project, and every other check still passes for it. The mutation test is exactly that cell.
+
+**Laws:** LAW-02 and LAW-12 extended (two law tests, two mutations caught). LAW-19 to LAW-23 are still red, as planned.
+
+**Next:** W10, spaces in a cell (SB-1001 onward). SB-903 and SB-908 wait on a real GCP project.
+
 ## 2026-11-20 S9.3a Firebase Hosting for the web UI (SB-906)
 
 **Wave/slice:** W9 / S9.3a · **Author:** platform lead + Claude · **Status:** In review (a real site, SB-903)

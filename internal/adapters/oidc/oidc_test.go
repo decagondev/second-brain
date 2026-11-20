@@ -35,6 +35,16 @@ func TestIssuerFromIdP(t *testing.T) {
 	if _, err := IssuerFromIdP("https://login.acme.example"); err == nil {
 		t.Fatal("want an error")
 	}
+	if got, err := IssuerFromIdP("identity-platform://sb-idp-delta/delta-tools-x7k2"); err != nil || got != "https://securetoken.google.com/sb-idp-delta" {
+		t.Fatalf("%q %v", got, err)
+	}
+	var p Provider
+	if err := p.IdentityPlatform("identity-platform://sb-idp-delta/delta-tools-x7k2"); err != nil || p.ClientID != "sb-idp-delta" || p.IdPTenant != "delta-tools-x7k2" {
+		t.Fatalf("%+v %v", p.ClientID, err)
+	}
+	if err := p.IdentityPlatform("oidc://login.acme.example"); err == nil {
+		t.Fatal("want an error")
+	}
 }
 
 // Every rule in sb-identity(7), one failing token each.

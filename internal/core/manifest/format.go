@@ -41,6 +41,12 @@ func Format(t Tenant) []byte {
 		}
 		line("exclude", "{ "+strings.Join(parts, ", ")+" }")
 	}
+	if len(t.Groups) > 0 {
+		b.WriteString("groups:\n")
+		for _, k := range sorted(t.Groups) {
+			fmt.Fprintf(&b, "  %s: %s\n", strconv.Quote(k), flowList(t.Groups[k], false))
+		}
+	}
 	return []byte(b.String())
 }
 

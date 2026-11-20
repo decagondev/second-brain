@@ -21,14 +21,20 @@ import (
 	"sync"
 	"time"
 
+	"example.com/second-brain/internal/core/groupsync"
+	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/ports"
 )
 
 // Leeway is the clock skew allowed on exp and iat (sb-identity(7)).
 const Leeway = 60 * time.Second
 
-// IssuerFromIdP turns a manifest idp (oidc://HOST[/path]) into the issuer URL.
+// IssuerFromIdP turns a manifest idp (oidc://HOST[/path]) into the issuer URL. An
+// identity-platform://PROJECT/IDP_TENANT idp gives Identity Platform's issuer for PROJECT.
 func IssuerFromIdP(idp string) (string, error) {
+	if project, _, ok := manifest.IdentityPlatform(idp); ok {
+		return SecureTokenIssuer + project, nil
+	}
 	rest, ok := strings.CutPrefix(idp, "oidc://")
 	if !ok || rest == "" {
 		return "", fmt.Errorf("oidc: %q is not oidc://HOST[/path]", idp)
@@ -36,11 +42,30 @@ func IssuerFromIdP(idp string) (string, error) {
 	return "https://" + rest, nil
 }
 
+// SecureTokenIssuer is the prefix of Identity Platform's issuer; the project id follows.
+const SecureTokenIssuer = "https://securetoken.google.com/"
+
+// IdentityPlatform configures p for an identity-platform://PROJECT/IDP_TENANT idp
+// (sb-identity(7), Identity Platform, exactly; SB-907): the audience is the project, the
+// token's firebase.tenant must be the company's own Identity Platform tenant, and the
+// directory user is found by the token's verified email.
+func (p *Provider) IdentityPlatform(idp string) error {
+	project, idpTenant, ok := manifest.IdentityPlatform(idp)
+	if !ok {
+		return fmt.Errorf("oidc: %q is not identity-platform://PROJECT/IDP_TENANT", idp)
+	}
+	p.ClientID, p.IdPTenant = project, idpTenant
+	return nil
+}
+
 // Provider is one tenant's IdP as one cell sees it.
 type Provider struct {
 	Issuer, ClientID, Tenant string
-	HTTP                     *http.Client
-	Now                      func() time.Time
+	// IdPTenant is set only for Identity Platform: the company's own Identity Platform
+	// tenant, which every token's firebase.tenant must equal.
+	IdPTenant string
+	HTTP      *http.Client
+	Now       func() time.Time
 
 	AuthEndpoint, TokenEndpoint, JWKSURI string
 
@@ -137,6 +162,11 @@ type claims struct {
 	Nonce  string          `json:"nonce"`
 	Tenant string          `json:"tenant"`
 	Email  string          `json:"email"`
+	// Identity Platform only.
+	EmailVerified bool `json:"email_verified"`
+	Firebase      struct {
+		Tenant string `json:"tenant"`
+	} `json:"firebase"`
 }
 
 func (c claims) audience(want string) bool {
@@ -196,10 +226,22 @@ func (p *Provider) Verify(ctx context.Context, raw, nonce string) (ports.Identit
 		return ports.Identity{}, errors.New("oidc: token issued in the future")
 	case nonce == "" || c.Nonce != nonce:
 		return ports.Identity{}, errors.New("oidc: nonce mismatch")
-	case c.Tenant == "" || c.Tenant != p.Tenant:
-		return ports.Identity{}, errors.New("oidc: token belongs to another tenant") // LAW-02
 	case c.Sub == "":
 		return ports.Identity{}, errors.New("oidc: no subject")
+	}
+	if p.IdPTenant != "" {
+		// Identity Platform: every company's token has this issuer and audience, so the
+		// Identity Platform tenant is what tells them apart (LAW-02).
+		if c.Firebase.Tenant == "" || c.Firebase.Tenant != p.IdPTenant {
+			return ports.Identity{}, errors.New("oidc: token belongs to another tenant") // LAW-02
+		}
+		if c.Email == "" || !c.EmailVerified {
+			return ports.Identity{}, errors.New("oidc: no verified email")
+		}
+		return ports.Identity{Tenant: p.Tenant, Subject: groupsync.UserID(c.Email), Email: c.Email, Issuer: c.Iss, IssuedAt: time.Unix(c.Iat, 0)}, nil
+	}
+	if c.Tenant == "" || c.Tenant != p.Tenant {
+		return ports.Identity{}, errors.New("oidc: token belongs to another tenant") // LAW-02
 	}
 	return ports.Identity{Tenant: c.Tenant, Subject: c.Sub, Email: c.Email, Issuer: c.Iss, IssuedAt: time.Unix(c.Iat, 0)}, nil
 }

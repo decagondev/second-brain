@@ -51,7 +51,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 |---|---|---|---|---|
 | `tenant` | string | yes | | DNS label, 3–40 chars, `[a-z0-9-]`. **Immutable** |
 | `channel` | `stable` \| `testing` | yes | | `version:` and `platform:` fields are rejected (ADR-0004) |
-| `idp` | URI | yes | | `oidc://ISSUER-HOST[/path]`, where the host is a DNS name. SCIM is served at `/scim/v2` on the cell |
+| `idp` | URI | yes | | `oidc://ISSUER-HOST[/path]`, where the host is a DNS name, or `identity-platform://PROJECT/IDP_TENANT` for a company signing in through Identity Platform ([sb-identity(7)](sb-identity.7.md)). SCIM is served at `/scim/v2` on the cell |
 | `region` | string | yes | | `eu` or `us`, the supported regions ([sb-tenancy(7)](sb-tenancy.7.md)). **Immutable** |
 | `connectors` | map kind→vendor | yes | | Kinds: `docs`, `chat`, `tickets`, `crm`. At least one. Vendor is `[a-z0-9-]`, e.g. `sharepoint`. Read-only unless named in `workflows` |
 | `agents` | list | yes | | `ask` (required), `draft-reply`. No duplicates |
@@ -61,6 +61,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
+| `groups` | map `group:NAME`→list of emails | no | none | Only with an `identity-platform://` idp: the steward-managed group list for a company without SCIM ([sb-identity(7)](sb-identity.7.md)). At most 200 groups and 2,000 members in all; each email at most once per group |
 | `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). **Refused until SB-1001**, with `not built yet (SB-1001)`. Without it, the cell is one undivided brain, as today |
 | `barriers` | list of group pairs | no | none | Information barriers ([sb-space(5)](sb-space.5.md)). Refused until SB-1001, like `spaces` |
 

@@ -27,6 +27,7 @@ type Tenant struct {
 	BudgetUSDMonth int                 `json:"budget_usd_month"`
 	PilotGroup     string              `json:"pilot_group"`
 	Exclude        map[string][]string `json:"exclude"`
+	Groups         map[string][]string `json:"groups"`
 }
 
 // Diag is one error, positioned at a key or a value (1-based line and column).
@@ -67,9 +68,12 @@ const (
 	MinBudgetUSDMonth    = 1
 	DefaultBudgetUSD     = 1000
 	MaxWorkflows         = 1
+	MaxGroups            = 200
+	MaxGroupMembers      = 2000
 
 	dnsLabelRe = `^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$`
-	idpRe      = `^oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\s?#]*)?$`
+	idpRe      = `^(oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\s?#]*)?|identity-platform://[a-z][a-z0-9-]{4,28}[a-z0-9]/[A-Za-z0-9-]{1,63})$`
+	emailRe    = `^[^@\s]+@[^@\s]+\.[^@\s]+$`
 	vendorRe   = `^[a-z0-9-]+$`
 	groupRe    = `^group:[A-Za-z0-9._-]+$`
 )
@@ -79,6 +83,7 @@ var (
 	idpURI   = regexp.MustCompile(idpRe)
 	vendor   = regexp.MustCompile(vendorRe)
 	group    = regexp.MustCompile(groupRe)
+	email    = regexp.MustCompile(emailRe)
 	integer  = regexp.MustCompile(`^-?[0-9]+$`)
 )
 
@@ -94,7 +99,9 @@ var fields = []field{
 		c.t.Tenant = c.match(n, "tenant", dnsLabel, "must be a DNS label ([a-z0-9-], 3-40 chars)")
 	}},
 	{"channel", true, func(c *checker, n *node) { c.t.Channel = c.oneOf(n, "channel", Channels) }},
-	{"idp", true, func(c *checker, n *node) { c.t.IdP = c.match(n, "idp", idpURI, "must be oidc://ISSUER-HOST[/path]") }},
+	{"idp", true, func(c *checker, n *node) {
+		c.t.IdP = c.match(n, "idp", idpURI, "must be oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT")
+	}},
 	{"region", true, func(c *checker, n *node) { c.t.Region = c.oneOf(n, "region", Regions) }},
 	{"connectors", true, (*checker).connectors},
 	{"agents", true, (*checker).agents},
@@ -108,6 +115,7 @@ var fields = []field{
 	}},
 	{"pilot_group", false, func(c *checker, n *node) { c.t.PilotGroup = c.group(n, "pilot_group") }},
 	{"exclude", false, (*checker).exclude},
+	{"groups", false, (*checker).groups},
 }
 
 // Planned are top-level fields that are specified but not built yet, with their tickets.
@@ -415,6 +423,62 @@ func (c *checker) exclude(n *node) {
 	}
 }
 
+// groups is the steward-managed group list for an identity-platform idp (SB-907).
+func (c *checker) groups(n *node) {
+	if !c.mapOf(n, "groups", `{ "group:finance": [ana@acme.example] }`) {
+		return
+	}
+	c.t.Groups = map[string][]string{}
+	if len(n.keys) > MaxGroups {
+		c.add(n, "groups", "at most %d groups", MaxGroups)
+	}
+	members := 0
+	for i, k := range n.keys {
+		if c.skip[k] {
+			continue
+		}
+		p := "groups." + k.value
+		if !group.MatchString(k.value) {
+			c.add(k, p, "%q must be a group (group:NAME)", k.value)
+			continue
+		}
+		vs, ns, ok := c.list(n.vals[i], p, "[ana@acme.example]")
+		if !ok {
+			continue
+		}
+		at := map[string]bool{}
+		var ok2 []string
+		for j, v := range vs {
+			f := fmt.Sprintf("%s[%d]", p, j)
+			e := strings.ToLower(v)
+			switch {
+			case !email.MatchString(v):
+				c.add(ns[j], f, "%q must be an email", v)
+			case at[e]:
+				c.add(ns[j], f, "%q is listed twice", v)
+			default:
+				ok2 = append(ok2, e)
+			}
+			at[e] = true
+		}
+		members += len(vs)
+		c.t.Groups[k.value] = ok2
+	}
+	if members > MaxGroupMembers {
+		c.add(n, "groups", "at most %d members in all, not %d", MaxGroupMembers, members)
+	}
+}
+
+// IdentityPlatform splits an identity-platform://PROJECT/IDP_TENANT idp; ok is false for any other.
+func IdentityPlatform(idp string) (project, idpTenant string, ok bool) {
+	rest, found := strings.CutPrefix(idp, "identity-platform://")
+	if !found {
+		return "", "", false
+	}
+	project, idpTenant, ok = strings.Cut(rest, "/")
+	return project, idpTenant, ok && project != "" && idpTenant != ""
+}
+
 // crossChecks are the rules that relate fields (sb-tenant(5) rule 3, and exclude kinds).
 // A rule about connectors applies only when connectors is a map; otherwise that field
 // already has its own error.
@@ -435,6 +499,11 @@ func (c *checker) crossChecks() {
 		}
 		if !contains(listValues(c.seen["workflows"]), k.value) {
 			c.add(k, "approval."+k.value, "no workflow %q in workflows", k.value)
+		}
+	}
+	if g := c.seen["groups"]; g != nil {
+		if _, _, ip := IdentityPlatform(c.t.IdP); !ip && c.t.IdP != "" {
+			c.add(g, "groups", "only with an identity-platform:// idp; an OIDC IdP's groups come from SCIM (sb-identity(7))")
 		}
 	}
 	for _, k := range c.exKeys {

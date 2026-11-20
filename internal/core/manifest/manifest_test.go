@@ -3,6 +3,7 @@ package manifest
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -113,7 +114,7 @@ func TestEveryErrorMessage(t *testing.T) {
 		{"dns", strings.Replace(valid, "acme-logistics", "-acme", 1), `m.yaml:1:9: tenant: "-acme" must be a DNS label ([a-z0-9-], 3-40 chars)`},
 		{"channel", strings.Replace(valid, "stable", "beta", 1), `m.yaml:2:10: channel: "beta" must be one of stable, testing`},
 		{"region", strings.Replace(valid, "region: eu", "region: mars", 1), `m.yaml:4:9: region: "mars" must be one of eu, us`},
-		{"idp", strings.Replace(valid, "oidc://login.acme.example", "https://login.acme.example", 1), `m.yaml:3:6: idp: "https://login.acme.example" must be oidc://ISSUER-HOST[/path]`},
+		{"idp", strings.Replace(valid, "oidc://login.acme.example", "https://login.acme.example", 1), `m.yaml:3:6: idp: "https://login.acme.example" must be oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT`},
 		{"connectors type", strings.Replace(valid, "{ docs: sharepoint, tickets: jira }", "sharepoint", 1), "m.yaml:5:13: connectors: must be a map, e.g. { docs: sharepoint }"},
 		{"connectors empty", strings.Replace(valid, "{ docs: sharepoint, tickets: jira }", "{}", 1), "m.yaml:5:13: connectors: needs at least one connector, e.g. { docs: sharepoint }"},
 		{"connector kind", strings.Replace(valid, "tickets: jira", "wiki: x", 1), "m.yaml:5:33: connectors.wiki: unknown connector kind; use docs, chat, tickets or crm"},
@@ -237,5 +238,56 @@ func TestPlannedFieldsAreRefused(t *testing.T) {
 		if len(ds) != 1 || !strings.Contains(ds[0].Msg, "not built yet (SB-1001)") || ds[0].Line != 7 {
 			t.Errorf("%q: %v", extra, ds)
 		}
+	}
+}
+
+const ipValid = `tenant: delta-tools
+channel: stable
+idp: identity-platform://sb-idp-delta/delta-tools-x7k2
+region: eu
+connectors: { docs: sharepoint }
+agents: [ask]
+groups:
+  "group:finance": [ana@delta-tools.example, Bo@delta-tools.example]
+  "group:support": [cy@delta-tools.example]
+`
+
+func TestIdentityPlatformAndGroups(t *testing.T) {
+	got, ds := Check([]byte(ipValid))
+	if len(ds) > 0 {
+		t.Fatalf("rejected:\n%s", format("m.yaml", ds))
+	}
+	if got.Groups["group:finance"][1] != "bo@delta-tools.example" || len(got.Groups) != 2 {
+		t.Fatalf("groups = %v", got.Groups)
+	}
+	if back, ds := Check(Format(got)); len(ds) > 0 || !reflect.DeepEqual(back, got) {
+		t.Fatalf("round trip: %v\n%s", ds, Format(got))
+	}
+	p, it, ok := IdentityPlatform(got.IdP)
+	if !ok || p != "sb-idp-delta" || it != "delta-tools-x7k2" {
+		t.Fatalf("IdentityPlatform = %q %q %v", p, it, ok)
+	}
+	if _, _, ok := IdentityPlatform("oidc://login.acme.example"); ok {
+		t.Fatal("an oidc idp is not identity-platform")
+	}
+	for _, tc := range []struct{ name, src, want string }{
+		{"groups with oidc", strings.Replace(ipValid, "identity-platform://sb-idp-delta/delta-tools-x7k2", "oidc://login.delta.example", 1), "only with an identity-platform:// idp"},
+		{"not a group", strings.Replace(ipValid, `"group:support"`, "support", 1), `"support" must be a group`},
+		{"not an email", strings.Replace(ipValid, "cy@delta-tools.example", "cy", 1), `"cy" must be an email`},
+		{"twice", strings.Replace(ipValid, "Bo@", "ana@", 1), "is listed twice"},
+		{"no tenant part", strings.Replace(ipValid, "/delta-tools-x7k2", "", 1), "identity-platform://PROJECT/IDP_TENANT"},
+	} {
+		_, ds := Check([]byte(tc.src))
+		if !strings.Contains(format("m.yaml", ds), tc.want) {
+			t.Errorf("%s: want %q, got:\n%s", tc.name, tc.want, format("m.yaml", ds))
+		}
+	}
+	var b strings.Builder
+	b.WriteString(strings.SplitN(ipValid, "groups:", 2)[0] + "groups:\n")
+	for i := 0; i < MaxGroups+1; i++ {
+		fmt.Fprintf(&b, "  \"group:g%d\": [a@d.example]\n", i)
+	}
+	if _, ds := Check([]byte(b.String())); !strings.Contains(format("m.yaml", ds), "at most 200 groups") {
+		t.Errorf("201 groups accepted: %s", format("m.yaml", ds))
 	}
 }

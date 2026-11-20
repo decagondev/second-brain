@@ -81,9 +81,25 @@
       },
       "type": "object"
     },
+    "groups": {
+      "additionalProperties": {
+        "items": {
+          "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+          "type": "string"
+        },
+        "type": "array",
+        "uniqueItems": true
+      },
+      "description": "Only with an identity-platform idp: group to member emails (SB-907).",
+      "maxProperties": 200,
+      "propertyNames": {
+        "pattern": "^group:[A-Za-z0-9._-]+$"
+      },
+      "type": "object"
+    },
     "idp": {
-      "description": "OIDC issuer: oidc://ISSUER-HOST[/path].",
-      "pattern": "^oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?$",
+      "description": "Identity provider: oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT.",
+      "pattern": "^(oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?|identity-platform://[a-z][a-z0-9-]{4,28}[a-z0-9]/[A-Za-z0-9-]{1,63})$",
       "type": "string"
     },
     "pilot_group": {

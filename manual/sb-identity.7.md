@@ -52,6 +52,19 @@ Each cell serves SCIM 2.0 at `/scim/v2` for its own tenant only. The IdP authent
 
 Setting `active` to false (by `PUT`, `PATCH` or `DELETE`) revokes every session of that user in the cell **before** the response is sent. If revocation fails, the request fails with `503` and the IdP retries. The 60-second re-validation then catches anything a lost revocation missed, so no request from a deactivated user succeeds more than 5 minutes after the deactivate (LAW-12).
 
+### Identity Platform, exactly (SB-907)
+
+A company without its own OIDC IdP signs in through **Identity Platform**, Firebase Authentication's enterprise tier. Each company gets **its own Identity Platform tenant**, which federates the company's SAML or OIDC provider (for example, a Google Workspace or Microsoft 365 account). The manifest names it as `idp: identity-platform://PROJECT/IDP_TENANT`, where `PROJECT` is the GCP project that holds Identity Platform and `IDP_TENANT` is the company's Identity Platform tenant id.
+
+The cell verifies these tokens through the same `oidc` port as any other IdP, with these rules:
+
+- the issuer is `https://securetoken.google.com/PROJECT`, found by discovery, and the audience is `PROJECT`;
+- the token's `firebase.tenant` claim must equal `IDP_TENANT` exactly. A token from **another** company's Identity Platform tenant has a valid signature, the same issuer and the same audience, so this claim is what tells them apart. A missing or different value is `ETENANT` (LAW-02);
+- the token must carry an `email` with `email_verified: true`, and the directory user is found by that email (Identity Platform's own user id is never trusted across tenants);
+- every other rule (algorithm, expiry, nonce, subject) is as above.
+
+**Groups still come from SCIM.** Identity Platform signs people in; it doesn't say who is in which group. A company that can't run SCIM may instead list its groups in the manifest with `groups:` (sb-tenant(5)), which its stewards change by manifest diff like any other field. `groups:` is accepted **only** with an `identity-platform://` idp. Someone who signs in but isn't in any listed group, or in the directory, has no groups and can use nothing, so the sign-in is never open. Removing someone from `groups:` and applying the manifest revokes them within 5 minutes, the same bound as a SCIM deactivate (LAW-12).
+
 ### Sessions
 
 Sessions last at most 12 hours from sign-in and are never extended: after 12 hours the user signs in again. Each session is re-validated against the directory every 60 seconds. A user the directory doesn't know, or a directory that can't answer, ends the session with `EAUTH`. A SCIM deactivate triggers immediate revocation as well, so the 5-minute bound (LAW-12) has plenty of margin. Sessions live in the cell's own session store; no session is valid in any other cell.
