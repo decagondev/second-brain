@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Quick fixes (S13.6): no change lost in the cursor's own second (GitHub, BambooHR, QuickBooks), opted-in repository source backfilled, QuickBooks open-month reports refreshed hourly, conversations tagged with their space for legal holds, and coverage in its own `make coverage` step and CI job.
 - Coverage floor (S13.5: SB-1405): every core package at or above 75% over every suite, checked in `make check`. **W13 Hardening built.**
 - The manual and the code agree (S13.4: SB-1404): a check in `make lint` that endpoints, commands and flags match the manual both ways; six drifts fixed; CLAUDE.md's state section summarised.
 - Clean and concise (S13.3: SB-1403): eleven stricter linters, their findings fixed; the tool bus, the verifier and the API helpers tidied with no behaviour change.

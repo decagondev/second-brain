@@ -300,6 +300,9 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 type cursor struct {
 	T      string   `json:"t"`
 	Shared []string `json:"shared"`
+	// At are the employee changes already reported at exactly T, so one made in the
+	// cursor's own second is reported once and never lost (SB-1401's follow-up).
+	At []string `json:"at,omitempty"`
 }
 
 // Changes reports changed employees and files after the cursor; "" lists everything.
@@ -331,6 +334,11 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 		return nil, cur, err
 	}
 	latest := since
+	reported := map[string]bool{}
+	for _, k := range prev.At {
+		reported[k] = true
+	}
+	at := append([]string(nil), prev.At...)
 	var set ports.ChangeSet
 	ids := make([]string, 0, len(ch.Employees))
 	for id := range ch.Employees {
@@ -340,11 +348,15 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 	for _, id := range ids {
 		e := ch.Employees[id]
 		t, err := time.Parse(time.RFC3339, e.LastChanged)
-		if err != nil || (cur != "" && !t.After(since)) {
+		key := id + "@" + e.LastChanged
+		if err != nil || (cur != "" && (t.Before(since) || (t.Equal(since) && reported[key]))) {
 			continue
 		}
-		if t.After(latest) {
-			latest = t
+		switch {
+		case t.After(latest):
+			latest, at = t, []string{key}
+		case t.Equal(latest):
+			at = append(at, key)
 		}
 		if cur == "" && e.Action == "Deleted" {
 			continue
@@ -387,6 +399,7 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 			set = append(set, ports.Change{Ref: ports.SourceRef{Kind: "hris", ID: "files/" + id}, Deleted: true})
 		}
 	}
-	b, _ := json.Marshal(cursor{T: latest.UTC().Format(time.RFC3339), Shared: shared})
+	sort.Strings(at)
+	b, _ := json.Marshal(cursor{T: latest.UTC().Format(time.RFC3339), Shared: shared, At: at})
 	return set, ports.Cursor(b), nil
 }

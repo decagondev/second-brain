@@ -457,6 +457,12 @@ func (c *Connector) repoVerdict(ctx context.Context, k creds, repo, login string
 
 type cursor struct {
 	T string `json:"t"`
+	// At are the changes already reported at exactly T, so a change in the cursor's own
+	// second is reported once and never lost (SB-1401's follow-up, as the Linear connector).
+	At []string `json:"at,omitempty"`
+	// Source are the repositories whose source was opted in at the last sync: one opted in
+	// since gets its existing files listed (SB-1401's follow-up).
+	Source []string `json:"source,omitempty"`
 }
 
 // Changes reports what changed strictly after the cursor's time; "" lists everything.
@@ -466,8 +472,8 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 		return nil, cur, err
 	}
 	var from time.Time
+	var cr cursor
 	if cur != "" {
-		var cr cursor
 		if err := json.Unmarshal([]byte(cur), &cr); err != nil {
 			return nil, cur, fmt.Errorf("github: bad cursor")
 		}
@@ -475,115 +481,47 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 			return nil, cur, fmt.Errorf("github: bad cursor")
 		}
 	}
+	reported := map[string]bool{}
+	for _, k := range cr.At {
+		reported[k] = true
+	}
 	repos, err := pages[repoInfo](ctx, c, k, "/orgs/"+url.PathEscape(k.Org)+"/repos", url.Values{})
 	if err != nil {
 		return nil, cur, err
 	}
 	latest := from
-	seen := func(ts string) bool {
+	at := append([]string(nil), cr.At...) // what is reported at latest
+	seen := func(ts, key string) bool {
 		t, err := time.Parse(time.RFC3339, ts)
 		if err != nil {
 			return false
 		}
-		if t.After(latest) {
-			latest = t
+		fresh := cur == "" || t.After(from) || (t.Equal(from) && !reported[key])
+		switch {
+		case t.After(latest):
+			latest, at = t, []string{key}
+		case t.Equal(latest) && fresh:
+			at = append(at, key)
 		}
-		return cur == "" || t.After(from)
+		return fresh
 	}
 	var set ports.ChangeSet
 	add := func(ch ports.Change) { set = append(set, ch) }
 	for _, rp := range repos {
-		repoPath := "/repos/" + url.PathEscape(k.Org) + "/" + url.PathEscape(rp.Name)
-		// Sorted by update, oldest first, every page: an update on page 2 is never lost
-		// behind a cursor that moved past it (SB-1401).
-		q := url.Values{"state": {"all"}, "sort": {"updated"}, "direction": {"asc"}}
-		if cur != "" {
-			q.Set("since", from.Format(time.RFC3339))
-		}
-		issues, err := pages[issue](ctx, c, k, repoPath+"/issues", q)
-		if err != nil {
+		if err := c.repoChanges(ctx, k, rp, cur, from, cr, seen, add); err != nil {
 			return nil, cur, err
-		}
-		for _, is := range issues {
-			if seen(is.UpdatedAt) {
-				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: is.kind(), n: is.Number}.id()}})
-			}
-		}
-		cq := url.Values{}
-		if cur != "" {
-			cq.Set("since", from.Format(time.RFC3339))
-		}
-		commits, err := pages[commitInfo](ctx, c, k, repoPath+"/commits", cq)
-		if err != nil {
-			return nil, cur, err
-		}
-		if cur == "" {
-			for _, cm := range commits {
-				seen(cm.Commit.Committer.Date)
-			}
-			files, err := c.docs(ctx, k, rp.Name)
-			if err != nil {
-				return nil, cur, err
-			}
-			for _, p := range files {
-				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: "blob", path: p}.id()}})
-			}
-		} else {
-			for i := len(commits) - 1; i >= 0; i-- { // oldest first
-				cm := commits[i]
-				if !seen(cm.Commit.Committer.Date) {
-					continue
-				}
-				var detail struct {
-					Files []struct {
-						Filename string `json:"filename"`
-						Status   string `json:"status"`
-					} `json:"files"`
-				}
-				if err := c.get(ctx, k, repoPath+"/commits/"+url.PathEscape(cm.SHA), nil, &detail); err != nil {
-					return nil, cur, err
-				}
-				for _, f := range detail.Files {
-					if !isDoc(f.Filename, 0, c.source(rp.Name)) {
-						continue
-					}
-					add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: "blob", path: f.Filename}.id()},
-						Deleted: f.Status == "removed"})
-				}
-			}
-		}
-		var events []struct {
-			Type      string `json:"type"`
-			CreatedAt string `json:"created_at"`
-		}
-		if err := c.get(ctx, k, repoPath+"/events", url.Values{"per_page": {"100"}}, &events); err != nil {
-			return nil, cur, err
-		}
-		permChanged := false
-		for _, e := range events {
-			if e.Type != "MemberEvent" && e.Type != "PublicEvent" {
-				continue
-			}
-			if seen(e.CreatedAt) && cur != "" {
-				permChanged = true
-			}
-		}
-		if permChanged {
-			all, err := c.allDocs(ctx, k, rp.Name)
-			if err != nil {
-				return nil, cur, err
-			}
-			for _, id := range all {
-				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: id}, ACLOnly: true})
-			}
 		}
 	}
-	next := cur
-	if latest.After(from) || cur == "" {
-		b, _ := json.Marshal(cursor{T: latest.UTC().Format(time.RFC3339)})
-		next = ports.Cursor(b)
+	var src []string
+	for _, rp := range repos {
+		if c.source(rp.Name) {
+			src = append(src, rp.Name)
+		}
 	}
-	return set, next, nil
+	sort.Strings(src)
+	sort.Strings(at)
+	b, _ := json.Marshal(cursor{T: latest.UTC().Format(time.RFC3339), At: at, Source: src})
+	return set, ports.Cursor(b), nil
 }
 
 // docs lists a repository's indexed files on its default branch.
@@ -661,4 +599,115 @@ func pages[T any](ctx context.Context, c *Connector, k creds, p string, q url.Va
 		}
 	}
 	return nil, fmt.Errorf("github: %s has more than %d pages", p, pagesMax)
+}
+
+func contains(xs []string, x string) bool {
+	for _, y := range xs {
+		if y == x {
+			return true
+		}
+	}
+	return false
+}
+
+// repoChanges adds one repository's changes since from: issues and pull requests, commits
+// (or, on a first sync, its indexed files), a newly opted-in repository's source, and an
+// ACL-only change for everything when its members or visibility changed.
+func (c *Connector) repoChanges(ctx context.Context, k creds, rp repoInfo, cur ports.Cursor, from time.Time, cr cursor,
+	seen func(ts, key string) bool, add func(ports.Change)) error {
+	repoPath := "/repos/" + url.PathEscape(k.Org) + "/" + url.PathEscape(rp.Name)
+	// Sorted by update, oldest first, every page: an update on page 2 is never lost
+	// behind a cursor that moved past it (SB-1401).
+	q := url.Values{"state": {"all"}, "sort": {"updated"}, "direction": {"asc"}}
+	if cur != "" {
+		q.Set("since", from.Format(time.RFC3339))
+	}
+	issues, err := pages[issue](ctx, c, k, repoPath+"/issues", q)
+	if err != nil {
+		return err
+	}
+	for _, is := range issues {
+		if seen(is.UpdatedAt, "issue:"+rp.Name+"/"+strconv.Itoa(is.Number)) {
+			add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: is.kind(), n: is.Number}.id()}})
+		}
+	}
+	cq := url.Values{}
+	if cur != "" {
+		cq.Set("since", from.Format(time.RFC3339))
+	}
+	commits, err := pages[commitInfo](ctx, c, k, repoPath+"/commits", cq)
+	if err != nil {
+		return err
+	}
+	if cur == "" {
+		for _, cm := range commits {
+			seen(cm.Commit.Committer.Date, "commit:"+cm.SHA)
+		}
+		files, err := c.docs(ctx, k, rp.Name)
+		if err != nil {
+			return err
+		}
+		for _, p := range files {
+			add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: "blob", path: p}.id()}})
+		}
+	} else {
+		if c.source(rp.Name) && !contains(cr.Source, rp.Name) {
+			// Opted in since the last sync: its existing source files, not only new ones.
+			files, err := c.docs(ctx, k, rp.Name)
+			if err != nil {
+				return err
+			}
+			for _, p := range files {
+				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: "blob", path: p}.id()}})
+			}
+		}
+		for i := len(commits) - 1; i >= 0; i-- { // oldest first
+			cm := commits[i]
+			if !seen(cm.Commit.Committer.Date, "commit:"+cm.SHA) {
+				continue
+			}
+			var detail struct {
+				Files []struct {
+					Filename string `json:"filename"`
+					Status   string `json:"status"`
+				} `json:"files"`
+			}
+			if err := c.get(ctx, k, repoPath+"/commits/"+url.PathEscape(cm.SHA), nil, &detail); err != nil {
+				return err
+			}
+			for _, f := range detail.Files {
+				if !isDoc(f.Filename, 0, c.source(rp.Name)) {
+					continue
+				}
+				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: "blob", path: f.Filename}.id()},
+					Deleted: f.Status == "removed"})
+			}
+		}
+	}
+	var events []struct {
+		Type      string `json:"type"`
+		CreatedAt string `json:"created_at"`
+	}
+	if err := c.get(ctx, k, repoPath+"/events", url.Values{"per_page": {"100"}}, &events); err != nil {
+		return err
+	}
+	permChanged := false
+	for _, e := range events {
+		if e.Type != "MemberEvent" && e.Type != "PublicEvent" {
+			continue
+		}
+		if seen(e.CreatedAt, "event:"+e.Type+"@"+e.CreatedAt) && cur != "" {
+			permChanged = true
+		}
+	}
+	if permChanged {
+		all, err := c.allDocs(ctx, k, rp.Name)
+		if err != nil {
+			return err
+		}
+		for _, id := range all {
+			add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: id}, ACLOnly: true})
+		}
+	}
+	return nil
 }

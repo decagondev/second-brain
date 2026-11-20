@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/retention"
 )
 
 func TestOwnership(t *testing.T) {
@@ -73,5 +74,28 @@ func TestRetention(t *testing.T) {
 	}
 	if _, found, _ := s.Questions(ctx, "acme-logistics", "usr_b", "cv_2"); !found {
 		t.Fatal("another user's conversation was erased")
+	}
+}
+
+// A conversation asked in one space is kept by a hold on that space only.
+func TestConversationSpaceForHolds(t *testing.T) {
+	ctx := context.Background()
+	s := New()
+	old := time.Now().Add(-400 * 24 * time.Hour)
+	s.Now = func() time.Time { return old }
+	_ = s.AppendQuestion(ctx, "acme-logistics", "usr_a", "cv_fin", "q")
+	_ = s.TagSpace(ctx, "acme-logistics", "cv_fin", "spc_finance")
+	_ = s.AppendQuestion(ctx, "acme-logistics", "usr_a", "cv_eng", "q")
+	_ = s.TagSpace(ctx, "acme-logistics", "cv_eng", "spc_eng")
+	held := func(space, _ string) bool { return space == "" || space == "spc_finance" }
+	var conv retention.Store
+	for _, r := range s.Retention() {
+		if r.Name() == "conversations" {
+			conv = r
+		}
+	}
+	n, k, err := conv.Expire(ctx, "acme-logistics", time.Now(), held)
+	if err != nil || n != 1 || k != 1 {
+		t.Fatalf("deleted %d, kept %d (%v); want the eng conversation deleted and the finance one kept", n, k, err)
 	}
 }

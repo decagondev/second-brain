@@ -27,6 +27,7 @@ type conv struct {
 	tenant, user string
 	questions    []string
 	at           time.Time // the last question
+	space        string    // the space it is asked in; "mixed" if more than one
 }
 
 // New returns an empty store.
@@ -65,6 +66,24 @@ func (s *Store) Questions(_ context.Context, tenant, user, id string) ([]string,
 		return nil, false, nil
 	}
 	return append([]string(nil), c.questions...), true, nil
+}
+
+// TagSpace implements ask.SpaceTagger.
+func (s *Store) TagSpace(_ context.Context, tenant, id, space string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.convs[id]
+	if !ok || c.tenant != tenant {
+		return errors.New("traces: no such conversation")
+	}
+	switch {
+	case c.space == "":
+		c.space = space
+	case c.space != space:
+		c.space = "mixed" // asked in two spaces: a hold on either keeps it
+	}
+	s.convs[id] = c
+	return nil
 }
 
 // AppendQuestion implements ask.Store.
@@ -124,7 +143,8 @@ type view struct {
 func (v view) Name() string { return v.name }
 
 // Expire implements retention.Store: a trace carries its space; feedback takes its trace's;
-// a conversation's space isn't kept, so any hold on its user, or on a space, keeps it.
+// a conversation carries the space it was asked in, and one asked in several, or not yet
+// tagged, is kept by any hold that could cover it.
 func (v view) Expire(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
 	n, k := v.drop(func(t, _, _ string, at time.Time) bool { return t == tenant && at.Before(before) }, held)
 	return n, k, nil
@@ -161,7 +181,7 @@ func (v view) drop(match func(tenant, user, space string, at time.Time) bool, he
 		}
 	case "conversations":
 		for k, c := range s.convs {
-			if try(c.tenant, c.user, "", c.at) {
+			if try(c.tenant, c.user, spaceOf(c.space), c.at) {
 				delete(s.convs, k)
 			}
 		}
@@ -182,7 +202,7 @@ func (v view) drop(match func(tenant, user, space string, at time.Time) bool, he
 // spaceOf is a record's space for holds: "" for one asked company-wide, which any hold on
 // a space might still cover through its sources, so it is treated as unknown.
 func spaceOf(s string) string {
-	if s == "company" {
+	if s == "company" || s == "mixed" {
 		return ""
 	}
 	return s

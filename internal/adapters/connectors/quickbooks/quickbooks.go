@@ -293,6 +293,14 @@ func (c *Connector) report(ctx context.Context, k creds, ref ports.SourceRef, na
 			ver = m
 		}
 	}
+	// The open month changes with every transaction, which doesn't touch any account's
+	// LastUpdatedTime, so its reports take the hour as their version too: read again at
+	// most hourly, never kept stale for the month (SB-1401's follow-up).
+	if month == c.months()[0] {
+		if hour := int(c.now().UTC().Truncate(time.Hour).UnixMicro()); hour > ver {
+			ver = hour
+		}
+	}
 	title := map[string]string{"ProfitAndLoss": "Profit and loss", "BalanceSheet": "Balance sheet"}[name] + ", " + month
 	return ports.Document{Ref: ref, Version: ver, Title: title, Text: strings.Join(lines, "\n"), ACLPrefilter: []string{Readers},
 		Location: "reports/" + name + "/" + month}, nil
@@ -359,6 +367,11 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 type cursor struct {
 	T       string `json:"t"`
 	Readers string `json:"readers"`
+	// At are the changes already reported at exactly T, so one made in the cursor's own
+	// second is reported once and never lost (SB-1401's follow-up).
+	At []string `json:"at,omitempty"`
+	// Hour is the hour of the last sync: a new hour lists the open month's reports again.
+	Hour string `json:"hour,omitempty"`
 }
 
 func readersHash(k creds) string {
@@ -404,40 +417,55 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 		return nil, cur, err
 	}
 	latest := since
+	reported := map[string]bool{}
+	for _, k := range prev.At {
+		reported[k] = true
+	}
+	at := append([]string(nil), prev.At...)
 	var set ports.ChangeSet
 	accountChanged := false
-	after := func(ts string) bool {
+	after := func(ts, key string) bool {
 		t, err := time.Parse(time.RFC3339, ts)
 		if err != nil {
 			return false
 		}
-		if t.After(latest) {
-			latest = t
+		key += "@" + ts
+		fresh := cur == "" || t.After(since) || (t.Equal(since) && !reported[key])
+		switch {
+		case t.After(latest):
+			latest, at = t, []string{key}
+		case t.Equal(latest) && fresh:
+			at = append(at, key)
 		}
-		return cur == "" || t.After(since)
+		return fresh
 	}
 	for _, r := range v.CDCResponse {
 		for _, q := range r.QueryResponse {
 			for _, a := range q.Account {
-				if !after(a.MetaData.LastUpdatedTime) || (cur == "" && a.Status == "Deleted") {
+				if !after(a.MetaData.LastUpdatedTime, "account:"+a.ID) || (cur == "" && a.Status == "Deleted") {
 					continue
 				}
 				accountChanged = true
 				set = append(set, ports.Change{Ref: ports.SourceRef{Kind: "accounting", ID: "accounts/" + a.ID}, Deleted: a.Status == "Deleted"})
 			}
 			for _, b := range q.Budget {
-				if !after(b.MetaData.LastUpdatedTime) || (cur == "" && b.Status == "Deleted") {
+				if !after(b.MetaData.LastUpdatedTime, "budget:"+b.ID) || (cur == "" && b.Status == "Deleted") {
 					continue
 				}
 				set = append(set, ports.Change{Ref: ports.SourceRef{Kind: "accounting", ID: "budgets/" + b.ID}, Deleted: b.Status == "Deleted"})
 			}
 		}
 	}
+	hour := c.now().UTC().Truncate(time.Hour).Format(time.RFC3339)
 	if accountChanged || cur == "" {
 		for _, name := range Reports {
 			for _, m := range c.months() {
 				set = append(set, ports.Change{Ref: ports.SourceRef{Kind: "accounting", ID: "reports/" + name + "/" + m}})
 			}
+		}
+	} else if hour != prev.Hour {
+		for _, name := range Reports { // the open month, once an hour
+			set = append(set, ports.Change{Ref: ports.SourceRef{Kind: "accounting", ID: "reports/" + name + "/" + c.months()[0]}})
 		}
 	}
 	h := readersHash(k)
@@ -456,7 +484,8 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 			}
 		}
 	}
-	b, _ := json.Marshal(cursor{T: latest.UTC().Format(time.RFC3339), Readers: h})
+	sort.Strings(at)
+	b, _ := json.Marshal(cursor{T: latest.UTC().Format(time.RFC3339), Readers: h, At: at, Hour: hour})
 	return set, ports.Cursor(b), nil
 }
 

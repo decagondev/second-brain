@@ -33,6 +33,8 @@ type File struct {
 
 // Fake is one company.
 type Fake struct {
+	// Frozen stops the clock, so changes land in the same second as the last sync (SB-1401).
+	Frozen    bool
 	Server    *httptest.Server
 	Subdomain string
 	Key       string
@@ -67,7 +69,12 @@ func (f *Fake) Base() string { return f.Server.URL }
 // CredsJSON is what the vault holds for the connector.
 func (f *Fake) CredsJSON() string { return `{"key":"` + f.Key + `","subdomain":"` + f.Subdomain + `"}` }
 
-func (f *Fake) tick() time.Time { f.clock = f.clock.Add(time.Second); return f.clock }
+func (f *Fake) tick() time.Time {
+	if !f.Frozen {
+		f.clock = f.clock.Add(time.Second)
+	}
+	return f.clock
+}
 
 // PutEmployee creates or edits an employee.
 func (f *Fake) PutEmployee(id string, fields map[string]string, active bool) {

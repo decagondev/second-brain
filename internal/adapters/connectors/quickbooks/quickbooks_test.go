@@ -96,3 +96,63 @@ func TestNumbersNeverRead(t *testing.T) {
 		t.Fatal("payroll was fetched")
 	}
 }
+
+// The open month's reports are read again once an hour, with a newer version, because
+// transactions don't touch any account.
+func TestOpenMonthReportsRefresh(t *testing.T) {
+	f, c, _ := setup(t)
+	ctx := context.Background()
+	f.PutAccount(qbotest.Account{ID: "a2", Name: "Sales", Type: "Income", Classification: "Revenue", Balance: 98000})
+	now := time.Date(2026, 11, 20, 9, 0, 0, 0, time.UTC)
+	c.Now = func() time.Time { return now }
+	_, cur, err := c.Changes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ref := ports.SourceRef{Kind: "accounting", ID: "reports/ProfitAndLoss/2026-11"}
+	before, err := c.Fetch(ctx, ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set, _, _ := c.Changes(ctx, cur); len(set) != 0 {
+		t.Fatalf("within the hour: %+v", set)
+	}
+	now = now.Add(time.Hour)
+	set, _, err := c.Changes(ctx, cur)
+	listed := false
+	for _, ch := range set {
+		listed = listed || ch.Ref == ref
+	}
+	after, _ := c.Fetch(ctx, ref)
+	if err != nil || !listed || after.Version <= before.Version {
+		t.Fatalf("an hour later: listed %v, version %d -> %d (%v)", listed, before.Version, after.Version, err)
+	}
+}
+
+// An account change in the same second as the last sync is still reported, once.
+func TestSameSecondChangeIsNotLost(t *testing.T) {
+	f, c, _ := setup(t)
+	ctx := context.Background()
+	_, cur, err := c.Changes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Frozen = true
+	f.PutAccount(qbotest.Account{ID: "a9", Name: "Petty cash", Type: "Bank", Classification: "Asset"})
+	set, cur, err := c.Changes(ctx, cur)
+	n := 0
+	for _, ch := range set {
+		if ch.Ref.ID == "accounts/a9" {
+			n++
+		}
+	}
+	if err != nil || n != 1 {
+		t.Fatalf("same-second change: %+v %v", set, err)
+	}
+	set, _, _ = c.Changes(ctx, cur)
+	for _, ch := range set {
+		if ch.Ref.ID == "accounts/a9" {
+			t.Fatal("reported twice")
+		}
+	}
+}

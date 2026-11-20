@@ -108,7 +108,8 @@ findings:
   - id: PT-0014
     title: Change cursors with whole seconds can miss a change in the cursor's own second (GitHub, BambooHR, QuickBooks); opting a repository's source in doesn't backfill existing files; a QuickBooks report may keep an old version
     severity: medium
-    status: accepted
+    status: fixed
     laws: [LAW-13]
     found: 2026-11-20
+    bug: BUG-0022
     source: internal

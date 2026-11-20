@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.6 Quick fixes after hardening
+
+**Wave/slice:** W13 / S13.6 · **Status:** Done
+
+**What:** Same-second change cursors for GitHub, BambooHR and QuickBooks; GitHub source opt-in backfill; hourly open-month QuickBooks reports; conversations tagged with their space; `make coverage` as its own step and CI job. PT-0014 fixed (BUG-0022).
+
+**Why this way:** The Linear connector already solved the same-second problem by remembering what it reported at the cursor's exact time; copying that one pattern beats three new ideas. Coverage moved out of `make check` because it doubled the gate's time without changing its verdict on a change.
+
+**Learned:** Freezing a fake's clock is enough to reproduce a race with wall time; three fakes gained that one switch.
+
+**Laws:** LAW-13 holds in the cases it missed.
+
+**Next:** plan W14, the cell runtime.
+
 ## 2026-11-20 S13.5 Coverage gaps (SB-1405)
 
 **Wave/slice:** W13 / S13.5 · **Status:** Done. **W13 built.**

@@ -8,7 +8,8 @@ Runs `go test -json ./laws/...` and checks every test against laws/expected_red.
 - a listed law that PASSES is an error too: remove it from the list and update the ledger;
 - every other test (other laws, self-tests) must PASS.
 """
-import json, re, subprocess, sys
+import json
+import os, re, subprocess, sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -28,9 +29,11 @@ def expected_red(t, law):
             return e
     return None
 
-(ROOT / "build" / "cover").mkdir(parents=True, exist_ok=True)
-p = subprocess.run(["go", "test", "-json", "-count=1", "-coverpkg=./internal/core/...", "-coverprofile=build/cover/laws.out", "./laws/..."],
-                   cwd=ROOT, capture_output=True, text=True)
+cover = []
+if os.environ.get("COVERAGE"):  # make coverage (SB-1405)
+    (ROOT / "build" / "cover").mkdir(parents=True, exist_ok=True)
+    cover = ["-coverpkg=./internal/core/...", "-coverprofile=build/cover/laws.out"]
+p = subprocess.run(["go", "test", "-json", "-count=1", *cover, "./laws/..."], cwd=ROOT, capture_output=True, text=True)
 result, output = {}, defaultdict(str)
 for line in p.stdout.splitlines():
     try:

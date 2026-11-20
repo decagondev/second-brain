@@ -339,3 +339,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `FuzzCheck`, with both failing inputs kept in `internal/core/manifest/testdata/fuzz`. Why it wasn't caught before: every manifest test was written by hand. Since BUG-0015, a value that reads back differently is a security question, not only a tidiness one.
 
+## BUG-0022 Changes in the cursor's own second, opted-in source, open-month reports and conversation spaces
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0014) and SB-1207's devlog | Medium | SB-1401 | Fixed |
+
+**Symptom:** GitHub, BambooHR and QuickBooks stored whole-second cursors and took only changes strictly after them, so a change in the cursor's own second, after the last sync, was never seen. Opting a repository's source in listed only files changed afterwards. QuickBooks' open-month reports kept the version of the last account change, so new transactions never re-ingested them. A conversation didn't know its space, so a hold on one space kept every conversation.
+
+**Root cause:** The cursors kept a time and nothing about what was already reported at it; the GitHub cursor didn't remember which repositories were opted in; the report version came only from accounts; conversations were stored without the request's space.
+
+**Fix:** Each cursor keeps the changes already reported at its exact time, as the Linear connector does; the GitHub cursor keeps the opted-in repositories and lists a newly opted-in one's files; the open month's reports take the hour as a version floor and are listed once an hour; conversations are tagged with the space they're asked in (`ask.SpaceTagger`), and one asked in two spaces is kept by a hold on either.
+
+**Caught by now:** `TestSameSecondChangeIsNotLost` (GitHub, BambooHR, QuickBooks; the fakes' clocks can be frozen), `TestSourceOptInBackfills`, `TestOpenMonthReportsRefresh` and `TestConversationSpaceForHolds`.
+

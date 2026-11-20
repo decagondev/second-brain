@@ -57,6 +57,8 @@ type event struct {
 
 // Fake is one organisation.
 type Fake struct {
+	// Frozen stops the clock, so changes land in the same second as the last sync (SB-1401).
+	Frozen bool
 	// LooseIdentities makes the identity query ignore its email filter (SB-1401).
 	LooseIdentities bool
 	Server          *httptest.Server
@@ -103,7 +105,12 @@ func (f *Fake) Base() string { return f.Server.URL }
 // CredsJSON is what the vault holds for the connector.
 func (f *Fake) CredsJSON() string { return `{"token":"` + f.Token + `","org":"` + f.Org + `"}` }
 
-func (f *Fake) tick() time.Time { f.clock = f.clock.Add(time.Second); return f.clock }
+func (f *Fake) tick() time.Time {
+	if !f.Frozen {
+		f.clock = f.clock.Add(time.Second)
+	}
+	return f.clock
+}
 
 // AddMember adds an organisation member with an SSO email.
 func (f *Fake) AddMember(login, email string) {

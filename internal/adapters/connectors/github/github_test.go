@@ -196,3 +196,48 @@ func TestIssuesPastTheFirstPage(t *testing.T) {
 		t.Fatalf("%d issues listed, want 230", n)
 	}
 }
+
+// A change in the same second as the last sync is still reported, once.
+func TestSameSecondChangeIsNotLost(t *testing.T) {
+	f, c := setup(t)
+	ctx := context.Background()
+	f.AddRepo("payments", "private")
+	f.PutIssue("payments", 1, "One", "body", false)
+	_, cur, err := c.Changes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Frozen = true // the next change lands in the cursor's own second
+	f.PutIssue("payments", 2, "Two", "body", false)
+	set, cur, err := c.Changes(ctx, cur)
+	if err != nil || len(set) != 1 || set[0].Ref.ID != "payments/issues/2" {
+		t.Fatalf("same-second change: %+v %v", set, err)
+	}
+	if set, _, _ := c.Changes(ctx, cur); len(set) != 0 {
+		t.Fatalf("reported twice: %+v", set)
+	}
+}
+
+// Opting a repository's source in lists its existing source files at the next sync.
+func TestSourceOptInBackfills(t *testing.T) {
+	f, c := setup(t)
+	ctx := context.Background()
+	f.AddRepo("payments", "private")
+	f.Commit("payments", map[string]*string{"README.md": s("# Payments"), "src/queue.go": s("package queue")})
+	_, cur, err := c.Changes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.SourceRepos = func() []string { return []string{"payments"} }
+	set, cur, err := c.Changes(ctx, cur)
+	found := false
+	for _, ch := range set {
+		found = found || ch.Ref.ID == "payments/blob/src/queue.go"
+	}
+	if err != nil || !found {
+		t.Fatalf("opt-in didn't list existing source: %+v %v", set, err)
+	}
+	if set, _, _ := c.Changes(ctx, cur); len(set) != 0 {
+		t.Fatalf("listed again: %+v", set)
+	}
+}

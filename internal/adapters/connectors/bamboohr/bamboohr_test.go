@@ -103,3 +103,31 @@ func TestEmployeeChanges(t *testing.T) {
 		t.Fatalf("a deleted record must be denied: %v", vs)
 	}
 }
+
+// An employee change in the same second as the last sync is still reported, once.
+func TestSameSecondChangeIsNotLost(t *testing.T) {
+	f, c := setup(t)
+	ctx := context.Background()
+	_, cur, err := c.Changes(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Frozen = true
+	f.PutEmployee("9", map[string]string{"displayName": "Cy", "workEmail": "cy@acme.example", "department": "Ops"}, true)
+	set, cur, err := c.Changes(ctx, cur)
+	n := 0
+	for _, ch := range set {
+		if ch.Ref.ID == "employees/9" {
+			n++
+		}
+	}
+	if err != nil || n != 1 {
+		t.Fatalf("same-second change: %+v %v", set, err)
+	}
+	set, _, _ = c.Changes(ctx, cur)
+	for _, ch := range set {
+		if ch.Ref.ID == "employees/9" {
+			t.Fatal("reported twice")
+		}
+	}
+}

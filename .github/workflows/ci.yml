@@ -27,6 +27,16 @@ jobs:
       - run: make check
       - uses: actions/upload-artifact@v4   # SB-002: the docs site for every PR
         with: { name: site, path: site }
+  coverage:               # SB-1405: every core package above its floor, over every Go suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.24" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyyaml markdown cedarpy
+      - run: make coverage
   postgres:               # SB-105: registry adapter against a real Postgres
     runs-on: ubuntu-latest
     services:

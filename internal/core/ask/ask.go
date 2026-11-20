@@ -74,6 +74,12 @@ type Trace struct {
 	Decisions        []retrieve.Decision
 }
 
+// SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
+// on one space keeps only that space's conversations (SB-1207, SB-1401's follow-up).
+type SpaceTagger interface {
+	TagSpace(ctx context.Context, tenant, conversation, space string) error
+}
+
 // Store keeps traces and conversations for one cell.
 type Store interface {
 	PutTrace(ctx context.Context, t Trace) error
@@ -256,6 +262,11 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 
 	if err := a.Store.AppendQuestion(ctx, a.Tenant, s.User(), conv, q); err != nil {
 		return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
+	}
+	if st, ok := a.Store.(SpaceTagger); ok {
+		if err := st.TagSpace(ctx, a.Tenant, conv, s.Space()); err != nil {
+			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
+		}
 	}
 	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions}
 	if err := a.Store.PutTrace(ctx, t); err != nil {

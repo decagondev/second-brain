@@ -33,6 +33,8 @@ type Budget struct {
 
 // Fake is one company.
 type Fake struct {
+	// Frozen stops the clock, so changes land in the same second as the last sync (SB-1401).
+	Frozen bool
 	Server *httptest.Server
 	Realm  string
 	Token  string
@@ -68,7 +70,12 @@ func (f *Fake) CredsJSON(readers ...string) string {
 	return string(b)
 }
 
-func (f *Fake) tick() time.Time { f.clock = f.clock.Add(time.Second); return f.clock }
+func (f *Fake) tick() time.Time {
+	if !f.Frozen {
+		f.clock = f.clock.Add(time.Second)
+	}
+	return f.clock
+}
 
 // PutAccount creates or edits an account.
 func (f *Fake) PutAccount(a Account) {
