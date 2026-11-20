@@ -1,0 +1,35 @@
+# World for the department agent suites (SB-1102): one space per department template that
+# ships an agent, each listing it, and one space of another template that doesn't.
+tenant: acme-logistics
+agents: [ask, incident-summary, spec-digest, close-checklist, runbook-answer]
+users:
+  - { id: usr_eng, email: eng@acme-logistics.example, groups: [grp_eng] }
+  - { id: usr_pm, email: pm@acme-logistics.example, groups: [grp_product] }
+  - { id: usr_fin, email: fin@acme-logistics.example, groups: [grp_finance] }
+  - { id: usr_ops, email: ops@acme-logistics.example, groups: [grp_it] }
+spaces:
+  engineering: { template: engineering, agents: [ask, incident-summary], members: [grp_eng], label: internal, scope: { docs: ["/Engineering/**"] } }
+  product: { template: product, agents: [ask, spec-digest], members: [grp_product, grp_eng], label: internal, scope: { docs: ["/Product/**"] } }
+  finance: { template: finance, agents: [ask, close-checklist], members: [grp_finance], label: restricted, scope: { docs: ["/Finance/**"] } }
+  it-security: { template: it-security, agents: [ask, runbook-answer], members: [grp_it, grp_eng], label: confidential, scope: { docs: ["/IT/**"] } }
+documents:
+  - id: inc-0917
+    title: Incident 0917 timeline
+    text: "At 09:12 the payments queue stopped draining. At 09:40 the on-call engineer restarted the consumer and the queue recovered."
+    path: /Engineering/Incidents/inc-0917
+    viewers: [eng@acme-logistics.example]
+  - id: spec-routing
+    title: Routing spec
+    text: "The routing spec decides that every parcel is routed by postcode. It leaves open who owns the rural surcharge."
+    path: /Product/Specs/routing
+    viewers: [pm@acme-logistics.example, eng@acme-logistics.example]
+  - id: close-nov
+    title: November close checklist
+    text: "Bank reconciliation for November is done. Accruals for freight costs are still open."
+    path: /Finance/Close/november
+    viewers: [fin@acme-logistics.example]
+  - id: runbook-vpn
+    title: VPN outage runbook
+    text: "First check the VPN gateway health page. Then fail over to the second gateway."
+    path: /IT/Runbooks/vpn
+    viewers: [ops@acme-logistics.example, eng@acme-logistics.example]

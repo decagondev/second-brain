@@ -11,7 +11,11 @@
       "items": {
         "enum": [
           "ask",
-          "draft-reply"
+          "draft-reply",
+          "incident-summary",
+          "spec-digest",
+          "close-checklist",
+          "runbook-answer"
         ]
       },
       "type": "array",
@@ -145,7 +149,11 @@
             "items": {
               "enum": [
                 "ask",
-                "draft-reply"
+                "draft-reply",
+                "incident-summary",
+                "spec-digest",
+                "close-checklist",
+                "runbook-answer"
               ]
             },
             "type": "array",

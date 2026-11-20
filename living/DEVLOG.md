@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.1b Department agents (SB-1102)
+
+**Wave/slice:** W11 / S11.1b · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** four prompts in the bundled set, `internal/core/ask/departments.go`, the agent path in `ask.Agent`, a base `use_agent` permit, manifest rule 11, agents in the local eval cell, four suites, and `laws/law14departments.go`. The manual changed first: sb-agents(7), sb-ask(3), sb-space(5), sb-tenant(5), sb-eval(5) and sb-evals(7).
+
+**Why this way:** A department agent is the ask agent with a different prompt, so it inherits every check the ask path already proves (spaces, the live ACL, the gateway, the composer) instead of re-earning them. Binding it to its template rather than to a space's list alone stops a space from borrowing Finance's close checklist and pointing it at someone else's documents. Dropping uncited claims is stricter than labelling them, which is what a summary meant to be pasted somewhere needs.
+
+**Learned:** A mutation that rewrites the system's input must copy it, or it rewrites the test's oracle too and passes for the wrong reason.
+
+**Laws:** LAW-14 and LAW-09 extended (two law tests, three mutations caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S11.2, the GitHub code connector (SB-1103).
+
 ## 2026-11-20 S11.1a The template catalogue as data, and sb space init (SB-1101)
 
 **Wave/slice:** W11 / S11.1a · **Author:** platform lead + Claude · **Status:** Done

@@ -37,13 +37,18 @@ def tool_calls(res, n):
     return t == n, f"{t} tool calls (want {n})"
 
 
+def error(res, code):
+    e = res.get("error", "")
+    return code in e, f"error {e!r} (want {code})"
+
+
 def not_contains(res, strings):
     blob = " ".join([res.get("text", "")] + [str(a) for a in res.get("tool_args", [])])
     hit = [s for s in strings if s in blob]
     return not hit, f"found {hit}" if hit else "none found"
 
 
-CHECKS = {f.__name__: f for f in (cites_any, cites_none, uncited_max, faithful_min, refuses, tool_calls, not_contains)}
+CHECKS = {f.__name__: f for f in (cites_any, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains)}
 
 
 def evaluate(res, expect):

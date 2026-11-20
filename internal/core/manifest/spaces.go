@@ -348,8 +348,11 @@ func (c *checker) spaceChecks() {
 		if sn.agents != nil {
 			if c.seen["agents"] != nil && c.seen["agents"].kind == seqNode {
 				for i, a := range s.Agents {
-					if !contains(c.t.Agents, a) {
+					switch {
+					case !contains(c.t.Agents, a):
 						c.add(sn.agents.items[i], fmt.Sprintf("%s.agents[%d]", p, i), "%q is not in the manifest's agents", a)
+					case a != "ask" && a != "draft-reply" && !contains(tpl.Agents, a):
+						c.add(sn.agents.items[i], fmt.Sprintf("%s.agents[%d]", p, i), "%q is another department's agent; it runs only in spaces of its own template (sb-agents(7))", a)
 					}
 				}
 			}

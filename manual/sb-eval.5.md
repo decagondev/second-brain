@@ -37,6 +37,7 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `ask` / `agent` + `input` | What to run |
 | `inject` | Faults, e.g. `{ connector: chat, acl: timeout }` |
 | `space` | The space the ask is in, or `company` for a company-wide ask (default). The local cell resolves it as the auth middleware does, so a space the asker isn't a member of is an `ESPACE` error; a world without spaces ignores it |
+| `agent` | The agent to ask: `ask` (default) or a department agent (sb-agents(7)). The world's top-level `agents` list says which agents its manifest enables, and each space may name its `template` and `agents` |
 | `expect` | One or more checks (below) |
 
 ### Expectations
@@ -50,6 +51,7 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `refuses: true` | `notice` is `no_access` or `no_sources` |
 | `tool_calls: N` | Exactly N tool calls were attempted |
 | `not_contains: [str…]` | None of the strings (e.g. canaries) appear anywhere in output or tool arguments |
+| `error: CODE` | The ask is refused with this error code (for example `EINVAL` for a department agent asked outside its space); without it, any error fails the case |
 
 ### Faithfulness (`faithful_min` and the `citation` score)
 

@@ -120,7 +120,7 @@ func TestEveryErrorMessage(t *testing.T) {
 		{"connector kind", strings.Replace(valid, "tickets: jira", "wiki: x", 1), "m.yaml:5:33: connectors.wiki: unknown connector kind; use docs, chat, tickets or crm"},
 		{"vendor", strings.Replace(valid, "jira", "Jira", 1), `m.yaml:5:42: connectors.tickets: "Jira" must be a vendor name ([a-z0-9-])`},
 		{"agents type", strings.Replace(valid, "[ask]", "ask", 1), "m.yaml:6:9: agents: must be a list, e.g. [ask]"},
-		{"agent", strings.Replace(valid, "[ask]", "[ask, chat]", 1), `m.yaml:6:15: agents[1]: "chat" is not an agent; use ask or draft-reply`},
+		{"agent", strings.Replace(valid, "[ask]", "[ask, chat]", 1), `m.yaml:6:15: agents[1]: "chat" is not an agent; use ask, draft-reply, incident-summary, spec-digest, close-checklist or runbook-answer`},
 		{"agent twice", strings.Replace(valid, "[ask]", "[ask, ask]", 1), `m.yaml:6:15: agents[1]: "ask" is listed twice`},
 		{"ask", strings.Replace(valid, "[ask]", "[draft-reply]", 1), `m.yaml:6:9: agents: "ask" is required`},
 		{"workflows type", valid + "workflows: ticket-update\napproval: { ticket-update: group:a }\n", "m.yaml:7:12: workflows: must be a list, e.g. [ticket-update]"},

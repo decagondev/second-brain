@@ -58,7 +58,7 @@ var (
 	Channels       = []string{"stable", "testing"}
 	Regions        = []string{"eu", "us"}
 	ConnectorKinds = []string{"docs", "chat", "tickets", "crm"}
-	Agents         = []string{"ask", "draft-reply"}
+	Agents         = []string{"ask", "draft-reply", "incident-summary", "spec-digest", "close-checklist", "runbook-answer"}
 	// Workflows maps each known workflow to the connector kind it writes to.
 	Workflows = map[string]string{"ticket-update": "tickets"}
 )

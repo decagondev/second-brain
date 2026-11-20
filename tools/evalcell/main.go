@@ -54,10 +54,14 @@ type world struct {
 	} `json:"documents"`
 	// Spaces and Barriers make the local cell a cell with spaces (sb-eval(5); SB-1006).
 	Spaces map[string]struct {
-		Members []string            `json:"members"`
-		Label   string              `json:"label"`
-		Scope   map[string][]string `json:"scope"`
+		Members  []string            `json:"members"`
+		Label    string              `json:"label"`
+		Scope    map[string][]string `json:"scope"`
+		Template string              `json:"template"` // SB-1102
+		Agents   []string            `json:"agents"`
 	} `json:"spaces"`
+	// Agents are the agents the world's manifest enables (SB-1102); ask is always on.
+	Agents   []string    `json:"agents"`
 	Barriers [][2]string `json:"barriers"`
 }
 
@@ -65,7 +69,8 @@ type world struct {
 func (w world) spaceList() []ports.Space {
 	var out []ports.Space
 	for name, sp := range w.Spaces {
-		out = append(out, ports.Space{ID: spaces.ID(name), Tenant: w.Tenant, Name: name, Members: sp.Members, Label: sp.Label, Scope: sp.Scope})
+		out = append(out, ports.Space{ID: spaces.ID(name), Tenant: w.Tenant, Name: name, Members: sp.Members, Label: sp.Label, Scope: sp.Scope,
+			Template: sp.Template, Agents: sp.Agents})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
@@ -80,6 +85,7 @@ type input struct {
 		As     string `json:"as"`
 		Ask    string `json:"ask"`
 		Space  string `json:"space"` // "" or "company" is company-wide
+		Agent  string `json:"agent"` // "" is ask
 		Inject struct {
 			ACL string `json:"acl"` // "timeout", "500" or "404" for the docs connector, this case only
 		} `json:"inject"`
@@ -198,7 +204,23 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 			return nil, nil
 		},
 		NewID: func(p string) string { n++; return fmt.Sprintf("%s%d", p, n) },
-		Now:   time.Now}
+		Now:   time.Now,
+		Enabled: func(name string) bool {
+			for _, x := range w.Agents {
+				if x == name {
+					return true
+				}
+			}
+			return false
+		},
+		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
+			st := registry(w)
+			if st == nil {
+				return ports.Space{}, false, nil
+			}
+			return st.Space(ctx, w.Tenant, id)
+		},
+		AgentKilled: func(string) bool { return false }}
 
 	return &cell{w: w, src: src, conn: conn, agent: agent, users: users, texts: texts}, nil
 }
@@ -231,7 +253,7 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 		if c.Inject.ACL != "" {
 			src.QueueFaults(mock.Fault(c.Inject.ACL))
 		}
-		resp, err := agent.Ask(ctx, s, ask.Request{Question: c.Ask})
+		resp, err := agent.Ask(ctx, s, ask.Request{Question: c.Ask, Agent: c.Agent})
 		src.InjectFault(mock.FaultNone)
 		if err != nil {
 			out[c.Key] = result{Error: err.Error()}

@@ -34,6 +34,7 @@ Laws and models prove what the **code** does. But some behaviour depends on the 
 | `regression` | 0 failures; every eval-found bug becomes a case, forever |
 | `tenant/<name>` | the tenant's own thresholds; blocks that tenant's workflow only |
 | `space-leak` | 0 failures (sb-eval(5), Space-leak suites; in the gate since SB-1006) |
+| `agent-incident-summary`, `agent-spec-digest`, `agent-close-checklist`, `agent-runbook-answer` | 0 failures: each department agent answers in its own space with every claim cited, and is refused elsewhere (SB-1102) |
 
 ### Faithfulness
 

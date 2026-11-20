@@ -102,6 +102,8 @@ func TestSpaceRules(t *testing.T) {
 		{"restricted without stewards", sp(base + "    label: restricted\n"), "a restricted space needs stewards"},
 		{"restricted template without stewards", sp(base + "    template: legal\n"), "a restricted space needs stewards"},
 		{"agent not enabled", sp(base + "    agents: [draft-reply]\n"), `"draft-reply" is not in the manifest's agents`},
+		{"another department's agent", strings.Replace(sp(base+"    template: engineering\n    agents: [close-checklist]\n"), "agents: [ask]", "agents: [ask, close-checklist]", 1),
+			`"close-checklist" is another department's agent`},
 		{"barrier of one", valid + "barriers:\n  - [group:a]\n", "a barrier is exactly two groups"},
 		{"barrier with itself", valid + "barriers:\n  - [group:a, group:a]\n", "walled off from itself"},
 		{"barrier twice", valid + "barriers:\n  - [group:a, group:b]\n  - [group:b, group:a]\n", "the same barrier as barriers[0]"},

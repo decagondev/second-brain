@@ -16,6 +16,14 @@ when { principal.tenant == resource.tenant };
 permit (principal, action == Action::"use_agent", resource == Agent::"draft-reply")
 when { principal.tenant == resource.tenant && resource has enabled && resource.enabled };
 
+// Department agents (SB-1102), where the manifest enables them: read-only, and the cell
+// runs each only in a space of its own template (sb-agents(7), Department agents).
+permit (principal, action == Action::"use_agent", resource is Agent)
+when {
+  principal.tenant == resource.tenant && resource has enabled && resource.enabled && !resource.consequential &&
+  (resource.name == "incident-summary" || resource.name == "spec-digest" || resource.name == "close-checklist" || resource.name == "runbook-answer")
+};
+
 // Nobody approves their own action (LAW-15).
 forbid (principal, action == Action::"approve", resource is ProposedAction)
 when { resource.requester == principal };

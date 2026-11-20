@@ -28,6 +28,7 @@ POST /v1/ask
 | `question` | string, ≤ 4,000 chars | yes | The user's question |
 | `conversation` | string `cv_…` | no | Continue a conversation; earlier turns are re-authorised too |
 | `sources` | list of kinds | no | Restrict to e.g. `["docs"]` |
+| `agent` | string | no | `ask` (default), or a department agent in its own template's space: `incident-summary`, `spec-digest`, `close-checklist`, `runbook-answer` (sb-agents(7), Department agents) |
 
 In a cell with spaces, the space to ask in is the query parameter `?space=NAME` (sb-api(3), Spaces), never a body field: `POST /v1/ask?space=finance`. Without it the ask is company-wide.
 
@@ -58,7 +59,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   },
   "refused": 2,
   "notice": null,
-  "conversation": "cv_01JD3QB9…"
+  "conversation": "cv_01JD3QB9…",
+  "agent": "ask",
+  "dropped": 0
 }
 ```
 
@@ -115,7 +118,7 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
 
-`cites[].url` is set when the source's connector can link to a version; it is omitted otherwise. In a cell with spaces, `cites[].spaces` names the spaces that hold the cited document and `cites[].label` its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).
+`cites[].url` is set when the source's connector can link to a version; it is omitted otherwise. `agent` names the agent that answered, and `dropped` counts the uncited claims a department agent left out, always 0 for `ask` (sb-agents(7), Department agents). In a cell with spaces, `cites[].spaces` names the spaces that hold the cited document and `cites[].label` its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).
 
 ### Spaces
 
@@ -139,6 +142,7 @@ Errors are ephemeral replies with the error's `message` and trace id. Slack scop
 |---|---|
 | `EINVAL` | Missing or over-long `question`, an unknown `sources` kind, or a `conversation` that isn't the user's |
 | `ESPACE` | `?space=` names a space the cell doesn't hold or the asker isn't a member of (never asked company-wide instead) |
+| `EINVAL` (agent) | A department `agent` asked company-wide, in a space of another template, or not enabled by the manifest or the space |
 | `EAUTH` | Not signed in, or session revoked |
 | `ETENANT` | Token is for another tenant |
 | `EKILLED` | `ask` agent or the tenant is killed |

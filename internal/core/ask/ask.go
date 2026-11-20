@@ -43,6 +43,7 @@ type Request struct {
 	Question     string   `json:"question"`
 	Conversation string   `json:"conversation,omitempty"`
 	Sources      []string `json:"sources,omitempty"`
+	Agent        string   `json:"agent,omitempty"` // "" or ask, or a department agent (SB-1102)
 }
 
 // Answer is the claims of a response.
@@ -58,6 +59,10 @@ type Response struct {
 	Refused      int     `json:"refused"`
 	Notice       *string `json:"notice"`
 	Conversation string  `json:"conversation"`
+	// Agent is the agent that answered, and Dropped the uncited claims a department agent
+	// left out (sb-agents(7), Department agents); 0 for ask.
+	Agent   string `json:"agent"`
+	Dropped int    `json:"dropped"`
 }
 
 // Trace is a stored answer with its decision list (GET /v1/traces/{id}).
@@ -115,6 +120,11 @@ type Agent struct {
 	}
 	// IsAuditor says whether a scope may read every trace of this tenant; nil means nobody.
 	IsAuditor func(s tenancy.Scope) bool
+	// Department agents (SB-1102): which agents the manifest enables, the space a scope
+	// is in, and the agent kill switches. With any of them nil, no department agent runs.
+	Enabled     func(agent string) bool
+	SpaceOf     func(ctx context.Context, id string) (ports.Space, bool, error)
+	AgentKilled func(agent string) bool
 }
 
 // Ask answers one question for the scope's user.
@@ -155,6 +165,14 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 	}
 	if spaceKilled(a.SpaceKilled, s) {
 		return Response{}, ErrKilled
+	}
+	var dept *Department
+	if req.Agent != "" && req.Agent != "ask" {
+		d, err := a.department(ctx, s, req.Agent)
+		if err != nil {
+			return Response{}, err
+		}
+		dept = &d
 	}
 	conv := req.Conversation
 	var earlier []string
@@ -199,7 +217,10 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 	}
 
 	trace := a.NewID("tr_")
-	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv}
+	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask"}
+	if dept != nil {
+		resp.Agent = dept.Name
+	}
 	if len(res.Context) == 0 {
 		n := NoticeNoSources
 		if res.Refused > 0 {
@@ -208,9 +229,16 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		resp.Notice = &n
 		resp.Answer.Claims = []answer.Claim{{Text: NothingToCite, Cites: []answer.Cite{}, Uncited: true}}
 	} else {
-		claims, err := a.compose(withUser(ctx, s.User()), trace, q, earlier, res.Context)
+		prompt, lead := "answer", "Question: "
+		if dept != nil {
+			prompt, lead = dept.Prompt, dept.Lead
+		}
+		claims, err := a.composeWith(withUser(ctx, s.User()), prompt, lead, trace, q, earlier, res.Context)
 		if err != nil {
 			return Response{}, err
+		}
+		if dept != nil {
+			claims, resp.Dropped = citedOnly(claims)
 		}
 		resp.Answer.Claims = claims
 		uncited := 0
@@ -233,10 +261,6 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
 	}
 	return resp, nil
-}
-
-func (a Agent) compose(ctx context.Context, trace, q string, earlier []string, chunks []ports.Chunk) ([]answer.Claim, error) {
-	return a.composeWith(ctx, "answer", "Question: ", trace, q, earlier, chunks)
 }
 
 func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, earlier []string, chunks []ports.Chunk) ([]answer.Claim, error) {
