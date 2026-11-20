@@ -83,13 +83,16 @@ func SyncHeld(ctx context.Context, st ports.SpaceStore, keys *Keys, t manifest.T
 	}
 	for _, h := range have {
 		if _, keep := t.Spaces[h.Name]; !keep {
-			if err := st.DeleteSpace(ctx, t.Tenant, h.ID); err != nil {
-				return fmt.Errorf("spaces: %s: %w", h.Name, err)
-			}
+			// Shred first, then drop the row: if the shred fails, the row is still there and
+			// the next apply shreds again; the other way round, a failed shred left the key
+			// openable with nothing to retry it (SB-1401). Shred is idempotent.
 			if keys != nil {
 				if err := keywrap.Shred(ctx, t.Tenant, keys.Wraps, keywrap.PurposeSpace(h.ID)); err != nil {
 					return fmt.Errorf("spaces: shred %s: %w", h.Name, err)
 				}
+			}
+			if err := st.DeleteSpace(ctx, t.Tenant, h.ID); err != nil {
+				return fmt.Errorf("spaces: %s: %w", h.Name, err)
 			}
 		}
 	}

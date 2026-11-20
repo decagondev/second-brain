@@ -305,6 +305,7 @@ func (f *Fake) create(w http.ResponseWriter, r *http.Request, path string, body 
 		name = path + "/" + q.Get("secretId")
 	case strings.HasSuffix(path, "/keyRings"):
 		name = path + "/" + q.Get("keyRingId")
+		out = map[string]any{} // Cloud KMS key rings have no labels (SB-1401)
 	case strings.HasSuffix(path, "/cryptoKeys"):
 		name = path + "/" + q.Get("cryptoKeyId")
 		k := make([]byte, 32)

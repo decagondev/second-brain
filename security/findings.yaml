@@ -89,3 +89,26 @@ findings:
     laws: [LAW-13]
     found: 2026-11-20
     source: internal
+  - id: PT-0012
+    title: Ingest gaps - one unfetchable document wedged a connector's sync, a removed field allow-list left values indexed, and a sensitive field allowed by one space was readable through every space holding the record
+    severity: high
+    status: fixed
+    laws: [LAW-13, LAW-20]
+    found: 2026-11-20
+    bug: BUG-0019
+    source: internal
+  - id: PT-0013
+    title: Connector and runtime gaps - GitHub could judge the asker by another member's identity and read only one page, QuickBooks queries stopped at 100 rows, Drive cached folder paths forever, KMS key rings never passed their check, a Cloud Run update reset settings, and a failed shred was never retried
+    severity: medium
+    status: fixed
+    laws: [LAW-03, LAW-13, LAW-18]
+    found: 2026-11-20
+    bug: BUG-0020
+    source: internal
+  - id: PT-0014
+    title: Change cursors with whole seconds can miss a change in the cursor's own second (GitHub, BambooHR, QuickBooks); opting a repository's source in doesn't backfill existing files; a QuickBooks report may keep an old version
+    severity: medium
+    status: accepted
+    laws: [LAW-13]
+    found: 2026-11-20
+    source: internal

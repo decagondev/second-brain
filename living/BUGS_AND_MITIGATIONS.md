@@ -297,3 +297,31 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestProposalDecisionsAreAtomicAndStaleIsAudited` (under `-race`), `TestSpaceRetentionIsEnforced`, `TestRemovalNotInTheListIsAnIdPRequest` and `TestManagerForms`. Why it wasn't caught before: no test decided twice at once, and the governance tests used one shape of each input.
 
+## BUG-0019 Ingest could wedge a sync or put fields where they don't belong
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0012) | Security (high) | SB-1401 | Fixed |
+
+**Symptom:** After a scope change, a document deleted at the source made every later sync fail on its fetch, and the cursor never moved. Removing `ssn` from a space's allow-list left `ssn: 123-45-6789` indexed. An employee held by People (which allows `payRate`) and Finance (which doesn't) let Finance members read `payRate`.
+
+**Root cause:** `Reroute` returned on the first fetch error; the routing fingerprint didn't include field allow-lists; a sensitive field was let in if any holder allowed it, but the chunk kept every holder.
+
+**Fix:** `Reroute` takes an unfetchable document out of the index and goes on; the fingerprint includes field allow-lists; holders narrow to the spaces that allow every sensitive field a chunk carries.
+
+**Caught by now:** `TestRerouteNeverWedgesTheSync`, `TestSensitiveFieldsNarrowTheHolders` and `TestFieldAllowListChangesRoute` in `tests/spaces`. Why it wasn't caught before: no test changed a scope after a source deletion, changed an allow-list, or had two spaces holding one structured record.
+
+## BUG-0020 Connector and runtime edge cases
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0013) | Medium | SB-1401 | Fixed |
+
+**Symptom:** GitHub took any identity the SSO query returned as the asker's, and read only the first 100 repositories, issues and commits; QuickBooks account and budget queries stopped at 100 rows; Drive cached folder names and parents for the connector's lifetime; a real Cloud KMS key ring never passed its label check; a Cloud Run update sent a partial resource; a failed shred after the space row was gone was never retried.
+
+**Root cause:** Each was an assumption that held in the fake but not in the real service.
+
+**Fix:** The GitHub identity must match the asker's email, exactly once, and listings page; QuickBooks queries page by 1,000; the Drive folder cache lives for one sync; key rings are checked by name (they have no labels, now in the fake too); Cloud Run updates read, change and write back the whole resource; `spaces.Sync` shreds before it drops the row.
+
+**Caught by now:** `TestACLNeverUsesAnotherMembersIdentity` and `TestIssuesPastTheFirstPage` (the GitHub fake now pages and can ignore its identity filter); the GCP fake's key rings carry no labels. Why it wasn't caught before: the fakes were kinder than the services.
+

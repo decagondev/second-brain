@@ -167,24 +167,46 @@ func (c *Connector) months() []string {
 	return out
 }
 
+// queryPage is the page size of a QuickBooks query; the API's default of 100 rows would
+// silently drop the rest (SB-1401).
+const queryPage = 1000
+
 func (c *Connector) accounts(ctx context.Context, k creds) ([]account, error) {
-	var v struct {
-		QueryResponse struct {
-			Account []account `json:"Account"`
-		} `json:"QueryResponse"`
+	var all []account
+	for start := 1; ; start += queryPage {
+		var v struct {
+			QueryResponse struct {
+				Account []account `json:"Account"`
+			} `json:"QueryResponse"`
+		}
+		q := fmt.Sprintf("select * from Account startposition %d maxresults %d", start, queryPage)
+		if err := c.get(ctx, k, "/query", url.Values{"query": {q}}, &v); err != nil {
+			return nil, err
+		}
+		all = append(all, v.QueryResponse.Account...)
+		if len(v.QueryResponse.Account) < queryPage {
+			return all, nil
+		}
 	}
-	err := c.get(ctx, k, "/query", url.Values{"query": {"select * from Account"}}, &v)
-	return v.QueryResponse.Account, err
 }
 
 func (c *Connector) budgets(ctx context.Context, k creds) ([]budget, error) {
-	var v struct {
-		QueryResponse struct {
-			Budget []budget `json:"Budget"`
-		} `json:"QueryResponse"`
+	var all []budget
+	for start := 1; ; start += queryPage {
+		var v struct {
+			QueryResponse struct {
+				Budget []budget `json:"Budget"`
+			} `json:"QueryResponse"`
+		}
+		q := fmt.Sprintf("select * from Budget startposition %d maxresults %d", start, queryPage)
+		if err := c.get(ctx, k, "/query", url.Values{"query": {q}}, &v); err != nil {
+			return nil, err
+		}
+		all = append(all, v.QueryResponse.Budget...)
+		if len(v.QueryResponse.Budget) < queryPage {
+			return all, nil
+		}
 	}
-	err := c.get(ctx, k, "/query", url.Values{"query": {"select * from Budget"}}, &v)
-	return v.QueryResponse.Budget, err
 }
 
 // Fetch reads one account, budget or monthly report.

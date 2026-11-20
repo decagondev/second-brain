@@ -378,11 +378,20 @@ func (c *Connector) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 	if err != nil {
 		return out, nil // can't find the asker: Unknown
 	}
-	login := ""
-	for l := range ids {
-		login = l
+	// Only an identity whose SSO name is the asker's email counts, and it must be exactly
+	// one: another member's identity never answers for the asker (SB-1401).
+	login, matches := "", 0
+	for l, nameID := range ids {
+		if strings.EqualFold(strings.TrimSpace(nameID), strings.TrimSpace(u.Email)) {
+			login, matches = l, matches+1
+		}
 	}
-	if login == "" {
+	switch {
+	case matches > 1:
+		return out, nil // ambiguous: Unknown
+	case matches == 0 && len(ids) > 0:
+		return out, nil // the filter returned someone else: Unknown, never their access
+	case login == "":
 		for i := range out {
 			out[i] = ports.VerdictDeny // no SSO identity in the organisation
 		}
@@ -466,8 +475,8 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 			return nil, cur, fmt.Errorf("github: bad cursor")
 		}
 	}
-	var repos []repoInfo
-	if err := c.get(ctx, k, "/orgs/"+url.PathEscape(k.Org)+"/repos", url.Values{"per_page": {"100"}}, &repos); err != nil {
+	repos, err := pages[repoInfo](ctx, c, k, "/orgs/"+url.PathEscape(k.Org)+"/repos", url.Values{})
+	if err != nil {
 		return nil, cur, err
 	}
 	latest := from
@@ -485,12 +494,14 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 	add := func(ch ports.Change) { set = append(set, ch) }
 	for _, rp := range repos {
 		repoPath := "/repos/" + url.PathEscape(k.Org) + "/" + url.PathEscape(rp.Name)
-		q := url.Values{"state": {"all"}, "per_page": {"100"}}
+		// Sorted by update, oldest first, every page: an update on page 2 is never lost
+		// behind a cursor that moved past it (SB-1401).
+		q := url.Values{"state": {"all"}, "sort": {"updated"}, "direction": {"asc"}}
 		if cur != "" {
 			q.Set("since", from.Format(time.RFC3339))
 		}
-		var issues []issue
-		if err := c.get(ctx, k, repoPath+"/issues", q, &issues); err != nil {
+		issues, err := pages[issue](ctx, c, k, repoPath+"/issues", q)
+		if err != nil {
 			return nil, cur, err
 		}
 		for _, is := range issues {
@@ -498,19 +509,12 @@ func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.Change
 				add(ports.Change{Ref: ports.SourceRef{Kind: "code", ID: ref{repo: rp.Name, kind: is.kind(), n: is.Number}.id()}})
 			}
 		}
-		var commits []struct {
-			SHA    string `json:"sha"`
-			Commit struct {
-				Committer struct {
-					Date string `json:"date"`
-				} `json:"committer"`
-			} `json:"commit"`
-		}
-		cq := url.Values{"per_page": {"100"}}
+		cq := url.Values{}
 		if cur != "" {
 			cq.Set("since", from.Format(time.RFC3339))
 		}
-		if err := c.get(ctx, k, repoPath+"/commits", cq, &commits); err != nil {
+		commits, err := pages[commitInfo](ctx, c, k, repoPath+"/commits", cq)
+		if err != nil {
 			return nil, cur, err
 		}
 		if cur == "" {
@@ -622,4 +626,39 @@ func (c *Connector) allDocs(ctx context.Context, k creds, repo string) ([]string
 		out = append(out, ref{repo: repo, kind: is.kind(), n: is.Number}.id())
 	}
 	return out, nil
+}
+
+type commitInfo struct {
+	SHA    string `json:"sha"`
+	Commit struct {
+		Committer struct {
+			Date string `json:"date"`
+		} `json:"committer"`
+	} `json:"commit"`
+}
+
+// pagesMax bounds a listing, so a server that ignores page numbers can't loop us forever.
+const pagesMax = 100
+
+// pages reads every page of a GitHub listing, 100 at a time (SB-1401: one page lost the
+// rest).
+func pages[T any](ctx context.Context, c *Connector, k creds, p string, q url.Values) ([]T, error) {
+	var all []T
+	for page := 1; page <= pagesMax; page++ {
+		pq := url.Values{}
+		for key, v := range q {
+			pq[key] = v
+		}
+		pq.Set("per_page", "100")
+		pq.Set("page", strconv.Itoa(page))
+		var batch []T
+		if err := c.get(ctx, k, p, pq, &batch); err != nil {
+			return nil, err
+		}
+		all = append(all, batch...)
+		if len(batch) < 100 {
+			return all, nil
+		}
+	}
+	return nil, fmt.Errorf("github: %s has more than %d pages", p, pagesMax)
 }

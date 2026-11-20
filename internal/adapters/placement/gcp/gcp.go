@@ -151,6 +151,14 @@ type labelled struct {
 
 // check refuses an existing resource that belongs to another cell, kind or location.
 func check(what string, got labelled, r ports.CellResource, loc string) error {
+	if r.Kind == "key-ring" {
+		// A Cloud KMS key ring has no labels: it is the cell's by its name, sb-TENANT, in
+		// the cell's own project and location (SB-1401).
+		if !strings.HasSuffix(got.Name, "/locations/"+loc+"/keyRings/sb-"+r.Tenant) {
+			return fmt.Errorf("gcp: %s %q isn't sb-%s in %s", what, got.Name, r.Tenant, loc)
+		}
+		return nil
+	}
 	l := got.Labels
 	if len(l) == 0 {
 		l = got.Settings.UserLabels
@@ -353,7 +361,7 @@ func (p Project) ensureKey(ctx context.Context, r ports.CellResource) (string, e
 	ring := "projects/" + p.ID + "/locations/" + loc + "/keyRings/sb-" + r.Tenant
 	if _, err := p.ensure(ctx, "key ring", e.KMS+"/v1/"+ring, ringRes, loc, func() error {
 		return p.do(ctx, http.MethodPost, e.KMS+"/v1/projects/"+p.ID+"/locations/"+loc+"/keyRings?keyRingId=sb-"+r.Tenant,
-			map[string]any{"labels": labels(ringRes, loc)}, nil)
+			map[string]any{}, nil)
 	}); err != nil {
 		return "", err
 	}

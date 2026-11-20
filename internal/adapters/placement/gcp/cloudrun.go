@@ -127,5 +127,35 @@ func (c CloudRun) Deploy(ctx context.Context, svc runtime.Service, image, releas
 		body["name"] = svc.Name
 		return c.Project.do(ctx, http.MethodPost, c.path(svc)+"?"+map[bool]string{true: "jobId", false: "serviceId"}[svc.Job]+"="+svc.Name, body, nil)
 	}
-	return c.Project.do(ctx, http.MethodPatch, c.path(svc)+"/"+svc.Name, body, nil)
+	// An update reads the whole resource and changes only the release label, the image and
+	// the service account, so the service's other settings (env, egress, the Cloud SQL
+	// connection, ingress) are never reset by a deploy (SB-1401).
+	var whole map[string]any
+	if err := c.Project.do(ctx, http.MethodGet, c.path(svc)+"/"+svc.Name, nil, &whole); err != nil {
+		return err
+	}
+	labels, _ := whole["labels"].(map[string]any)
+	if labels == nil {
+		labels = map[string]any{}
+	}
+	labels["sb-release"] = releaseID
+	whole["labels"] = labels
+	tpl, _ := whole["template"].(map[string]any)
+	if tpl == nil {
+		tpl = map[string]any{}
+	}
+	containers, _ := tpl["containers"].([]any)
+	if len(containers) == 0 {
+		containers = []any{map[string]any{}}
+	}
+	first, _ := containers[0].(map[string]any)
+	if first == nil {
+		first = map[string]any{}
+	}
+	first["image"] = image
+	containers[0] = first
+	tpl["containers"] = containers
+	tpl["serviceAccount"] = ServiceAccount(c.Project.ID, svc.Name)
+	whole["template"] = tpl
+	return c.Project.do(ctx, http.MethodPatch, c.path(svc)+"/"+svc.Name, whole, nil)
 }

@@ -366,6 +366,12 @@ func (c *Connector) verdict(ctx context.Context, email, id string) ports.Verdict
 // Changes reads Drive's change feed. An empty cursor lists every file (for first sync
 // and rebuild) and returns the page token taken before the listing.
 func (c *Connector) Changes(ctx context.Context, cur ports.Cursor) (ports.ChangeSet, ports.Cursor, error) {
+	// Folder names and parents are cached for one sync only: a folder moved or renamed
+	// since emits no change for its files, so a cache kept longer routes them by the old
+	// path (SB-1401).
+	c.mu.Lock()
+	c.folders = nil
+	c.mu.Unlock()
 	if cur == "" {
 		return c.everything(ctx)
 	}

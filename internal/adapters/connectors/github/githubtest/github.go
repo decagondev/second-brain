@@ -57,9 +57,11 @@ type event struct {
 
 // Fake is one organisation.
 type Fake struct {
-	Server *httptest.Server
-	Org    string
-	Token  string
+	// LooseIdentities makes the identity query ignore its email filter (SB-1401).
+	LooseIdentities bool
+	Server          *httptest.Server
+	Org             string
+	Token           string
 
 	mu      sync.Mutex
 	clock   time.Time
@@ -209,7 +211,7 @@ func (f *Fake) repo(w http.ResponseWriter, r *http.Request) (*Repo, bool) {
 	return x, true
 }
 
-func (f *Fake) listRepos(w http.ResponseWriter, _ *http.Request) {
+func (f *Fake) listRepos(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out []map[string]any
@@ -224,7 +226,26 @@ func (f *Fake) listRepos(w http.ResponseWriter, _ *http.Request) {
 			out = append(out, map[string]any{"name": x.Name, "visibility": x.Visibility, "private": x.Visibility != "public", "default_branch": "main"})
 		}
 	}
-	write(w, out)
+	write(w, paged(r, out))
+}
+
+// paged serves one page of a listing as GitHub does, by page and per_page (SB-1401); a
+// request without page gets the whole listing.
+func paged(r *http.Request, out []map[string]any) []map[string]any {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	per, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+	if page < 1 || per < 1 {
+		return out
+	}
+	start := (page - 1) * per
+	if start >= len(out) {
+		return []map[string]any{}
+	}
+	end := start + per
+	if end > len(out) {
+		end = len(out)
+	}
+	return out[start:end]
 }
 
 func (f *Fake) getRepo(w http.ResponseWriter, r *http.Request) {
@@ -330,7 +351,7 @@ func (f *Fake) listCommits(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	write(w, out)
+	write(w, paged(r, out))
 }
 
 func (f *Fake) getCommit(w http.ResponseWriter, r *http.Request) {
@@ -375,11 +396,14 @@ func (f *Fake) listIssues(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	sort.Slice(list, func(i, j int) bool { return list[i].Number < list[j].Number })
+	if r.URL.Query().Get("sort") == "updated" {
+		sort.SliceStable(list, func(i, j int) bool { return list[i].Updated.Before(list[j].Updated) })
+	}
 	out := []map[string]any{}
 	for _, is := range list {
 		out = append(out, f.issueJSON(is))
 	}
-	write(w, out)
+	write(w, paged(r, out))
 }
 
 func (f *Fake) getIssue(w http.ResponseWriter, r *http.Request) {
@@ -462,6 +486,9 @@ func (f *Fake) graphql(w http.ResponseWriter, r *http.Request) {
 	}
 	email, _ := req.Variables["email"].(string)
 	f.mu.Lock()
+	if f.LooseIdentities {
+		email = "" // a filter the server ignored: every identity comes back
+	}
 	nodes := []any{}
 	if email != "" {
 		if login := f.emails[strings.ToLower(email)]; login != "" {

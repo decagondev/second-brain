@@ -120,6 +120,9 @@ type Pipeline struct {
 	FieldsDropped func(kind string, names []string)
 	// Secrets is the secret scanner; nil is SecretIn, the only one a cell ships.
 	Secrets func(text string) string
+	// RerouteDropped counts a document Reroute took out of the index because it couldn't
+	// be fetched (sb_ingest_reroute_dropped_total{connector}); nil counts nothing.
+	RerouteDropped func(kind string)
 	// Kind is the connector kind this pipeline ingests; Reroute touches only its documents.
 	// Empty means the index holds this connector's documents only.
 	Kind string
@@ -162,7 +165,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		holders, label = rt(spaces, ref.Kind, doc.Location, doc.Label)
 	}
 	if doc.Fields != nil {
-		text, sensitive, ok := p.fieldText(ref.Kind, doc, spaces, holders)
+		text, sensitive, narrowed, ok := p.fieldText(ref.Kind, doc, spaces, holders)
 		if !ok {
 			// A structured source that can't declare its fields is never ingested (SB-1106).
 			return p.Index.Delete(ctx, p.Tenant, ref)
@@ -170,6 +173,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		doc.Text = text
 		if sensitive {
 			label = "restricted" // an allow-listed sensitive field (LAW-20)
+			holders = narrowed   // only the spaces that allow it (SB-1401)
 		}
 	}
 	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
@@ -289,7 +293,16 @@ func (p Pipeline) Reroute(ctx context.Context) error {
 	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
 	for _, ref := range refs {
 		if err := p.Ingest(ctx, ref, true); err != nil {
-			return err
+			// A document that can't be fetched now (deleted, moved, out of reach) is taken
+			// out of the index rather than left routed by an old configuration, and the
+			// sync goes on: one bad document never wedges a connector (SB-1401). It comes
+			// back when it next changes at the source, or on a rebuild.
+			if derr := p.Index.Delete(ctx, p.Tenant, ref); derr != nil {
+				return derr
+			}
+			if p.RerouteDropped != nil {
+				p.RerouteDropped(ref.Kind)
+			}
 		}
 	}
 	return nil

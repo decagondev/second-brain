@@ -160,3 +160,39 @@ func TestPermissions(t *testing.T) {
 		}
 	}
 }
+
+// SB-1401: if the identity filter is ignored, another member's identity never answers
+// for the asker: the verdict is Unknown, not their access.
+func TestACLNeverUsesAnotherMembersIdentity(t *testing.T) {
+	f, c := setup(t)
+	f.AddRepo("payments", "private")
+	f.Grant("payments", "ann", "write")
+	f.Grant("payments", "bob", "none")
+	f.LooseIdentities = true
+	vs, err := c.ACL(context.Background(), ports.UserRef{ID: "usr_bob", Email: "bob@acme.example"}, []ports.SourceRef{{Kind: "code", ID: "payments/issues/1"}})
+	if err != nil || len(vs) != 1 || vs[0] == ports.VerdictAllow {
+		t.Fatalf("bob's verdict with every identity returned: %v %v", vs, err)
+	}
+}
+
+// SB-1401: issues past the first page are listed too.
+func TestIssuesPastTheFirstPage(t *testing.T) {
+	f, c := setup(t)
+	f.AddRepo("payments", "private")
+	for i := 1; i <= 230; i++ {
+		f.PutIssue("payments", i, "Issue", "body", false)
+	}
+	set, _, err := c.Changes(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, ch := range set {
+		if strings.Contains(ch.Ref.ID, "/issues/") {
+			n++
+		}
+	}
+	if n != 230 {
+		t.Fatalf("%d issues listed, want 230", n)
+	}
+}

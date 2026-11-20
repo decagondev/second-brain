@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.1d Ingest, connector and runtime findings (SB-1401)
+
+**Wave/slice:** W13 / S13.1d · **Status:** Done (SB-1401)
+
+**What:** `Reroute` drops what it can't fetch and goes on; field allow-lists in the routing fingerprint; holders narrowed for sensitive fields; GitHub identity matching and paging (and a paging GitHub fake); QuickBooks query paging; a per-sync Drive folder cache; KMS key rings checked by name; whole-resource Cloud Run updates; shred before drop. PT-0012, PT-0013 (BUG-0019, BUG-0020); PT-0014 accepted.
+
+**Why this way:** Where the right answer is unknown (a document that can't be fetched, an identity that isn't the asker's), the fix takes the side the laws take: out of the index, Unknown.
+
+**Learned:** Half of these lived in the fakes, not the code: a fake that ignores paging, filters perfectly, and labels key rings lets the code be wrong in exactly those ways. The fakes now behave more like the services.
+
+**Laws:** LAW-03, LAW-13 and LAW-20 hold where they didn't. SB-1401 is done.
+
+**Next:** S13.2, fuzzing and the race detector (SB-1402).
+
 ## 2026-11-20 S13.1c Governance findings (SB-1401)
 
 **Wave/slice:** W13 / S13.1c · **Status:** In progress (one more fix slice)
