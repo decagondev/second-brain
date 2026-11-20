@@ -1,6 +1,8 @@
 package alerts
 
 import (
+	"context"
+	"example.com/second-brain/internal/core/canary"
 	"os"
 	"regexp"
 	"strings"
@@ -66,5 +68,18 @@ func TestRulesUseKnownMetrics(t *testing.T) {
 		if !found {
 			t.Errorf("%s alerts on %s, which isn't catalogued", r.Law, name)
 		}
+	}
+}
+
+type sent struct{ got []canary.Alert }
+
+func (s *sent) Alert(_ context.Context, a canary.Alert) error { s.got = append(s.got, a); return nil }
+
+// SB-905: firing rules go to the alert sender as Sev-1, with law and runbook, never content.
+func TestDispatch(t *testing.T) {
+	s := &sent{}
+	fired, err := Dispatch(context.Background(), "acme-logistics", map[string]float64{}, map[string]float64{"sb_unlisted_access_paths": 2, "sb_unrelated": 9}, s)
+	if err != nil || len(fired) != 1 || len(s.got) != 1 || s.got[0].Severity != "sev1" || s.got[0].Ref != "LAW-17" || s.got[0].Where != "docs/runbooks/LAW-17.md" {
+		t.Fatalf("%+v %+v %v", fired, s.got, err)
 	}
 }

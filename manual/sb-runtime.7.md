@@ -70,6 +70,20 @@ Each run records its finish time. A **watchdog**, run by `jobs` every 5 minutes,
 
 **The WORM bucket.** Anchors and the off-site backup copy go to a Cloud Storage bucket with a **locked** retention policy of seven years (ADR-0012). An object can't be overwritten, every write is conditional on there being no object of that name, and it can't be deleted until its retention ends, by anyone. The gcp adapter refuses a bucket whose policy is unlocked or shorter. The bucket is made, and its policy locked, at bootstrap by the project owner, because locking a retention policy can't be undone. The cell itself only gets `storage.buckets.get` and object create, get and list (`gcp.BucketPermissions`), and never delete.
 
+### Endpoints, exactly (SB-905)
+
+The `api` service serves two endpoints beside the product API. Neither ever returns content, prompts, answers or secrets (LAW-07):
+
+| Endpoint | Caller | Returns |
+|---|---|---|
+| `GET /metrics` | Managed Service for Prometheus, through the cell's own scrape identity | the Prometheus text format of `obs.Metrics` (sb-observability(7)): ids, codes and numbers only. Labels obey the telemetry rule, so text can't reach a label |
+| `GET /v1/verifier/attestation` | the control plane | the running-build attestation, signed by the cell (sb-release(7), Attestation): tenant, release, image digests, sequence number |
+| `POST /v1/verifier/verify` | the control plane, for `sb tenant verify --cell` | the verify report: one line per law with `pass`, `fail` or `unknown` and counts (sb-tenant(1)). The body is `{ "laws": ["LAW-01"], "sample": 50, "seed": 7 }` |
+
+Both verifier endpoints require the control plane's identity. Anyone else gets `EAUTH` or `EPERM`, and an unknown law is `EINVAL`. The attestation reports what the cell's services **actually run**, read from Cloud Run at the moment of the call, never what the updater meant to deploy.
+
+**Alerts.** The `jobs` runner evaluates the Sev-1 law rules (sb-observability(7), Law alerts) over each scrape, and sends every firing alert through the alert webhook adapter, with the law, the tenant and the runbook, never content.
+
 ## LAWS
 
 [LAW-02](sb-laws.7.md#law-02): every resource and role is in the cell's own project. [LAW-06](sb-laws.7.md#law-06): only admitted, attested images run. [LAW-18](sb-laws.7.md#law-18): the database key is in the cell's key ring.

@@ -56,7 +56,7 @@ Every law with a production check has one alert rule, in `internal/core/alerts`,
 | LAW-17 | `sb_unlisted_access_paths` (`sb factory access`, after cutover and monthly) | it is above 0 |
 | LAW-18 | `sb_unwrappable_keys` | it is above 0 |
 
-All are **Sev-1**, sent through the alert webhook with the law, the tenant and the runbook path, never content.
+All are **Sev-1**, sent through the alert webhook with the law, the tenant and the runbook path, never content. On GCP the `jobs` runner evaluates them over each scrape of `/metrics` and dispatches them (sb-runtime(7), Endpoints).
 
 ### Telemetry labels
 

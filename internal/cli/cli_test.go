@@ -3,6 +3,9 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -50,7 +53,7 @@ func TestUsageErrors(t *testing.T) {
 }
 
 func TestJSONErrors(t *testing.T) {
-	c, out, _ := run("--json", "tenant", "verify", "a.yaml")
+	c, out, _ := run("--json", "factory", "handoff", "plan", "a")
 	var v struct {
 		Error struct{ Code, Message, Remedy string }
 	}
@@ -77,5 +80,28 @@ func TestVerifyExportFailsClosed(t *testing.T) {
 	code, out, errOut := run("factory", "verify-export", t.TempDir())
 	if code != 1 || !strings.Contains(out+errOut, "ELAW") {
 		t.Fatalf("empty dir: exit %d %q %q", code, out, errOut)
+	}
+}
+
+// SB-905: sb tenant verify --cell posts to the cell's verifier and exits on its report.
+func TestTenantVerifyCell(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("Authorization")
+		b, _ := io.ReadAll(r.Body)
+		if r.URL.Path != "/v1/verifier/verify" || !strings.Contains(string(b), `"laws":["LAW-01"]`) {
+			w.WriteHeader(400)
+			return
+		}
+		_, _ = w.Write([]byte(`{"Seed":1,"Results":[{"Law":"LAW-01","Status":"pass","Detail":"12 citations, all openable now"}]}`))
+	}))
+	defer srv.Close()
+	t.Setenv("SB_TOKEN", "cp-token")
+	code, out, _ := run("tenant", "verify", "../../examples/tenants/pilot.yaml", "--cell", srv.URL, "--law", "LAW-01")
+	if code != 0 || !strings.Contains(out, "LAW-01  pass") || got != "Bearer cp-token" {
+		t.Fatalf("exit %d %q, auth %q", code, out, got)
+	}
+	if code, _, _ := run("tenant", "verify", "../../examples/tenants/pilot.yaml", "--cell", "http://evil.example", "--law", "LAW-01"); code != 2 {
+		t.Fatalf("a plain-http cell URL: exit %d", code)
 	}
 }

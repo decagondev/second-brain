@@ -47,7 +47,9 @@ func TestExitStatusContract(t *testing.T) {
 		{[]string{"--help"}, 0, "usage: sb"},
 		{[]string{}, 2, "usage: sb"},
 		{[]string{"nosuch"}, 2, "[EUSAGE]"},
-		{[]string{"tenant", "verify", "x.yaml"}, 2, "[ENOTIMPL]"},
+		{[]string{"tenant", "verify", "x.yaml"}, 2, "[EUSAGE]"}, // built in SB-905; x.yaml doesn't exist
+		{[]string{"tenant", "verify", "../../examples/tenants/pilot.yaml"}, 2, "--cell URL is required"},
+		{[]string{"factory", "handoff", "plan", "x"}, 2, "[ENOTIMPL]"},
 		{[]string{"tenant", "check", "nosuch.yaml"}, 2, "[EUSAGE]"},
 		{[]string{"tenant", "check", "../../examples/tenants/pilot.yaml"}, 0, "pilot.yaml: ok"},
 		{[]string{"tenant", "check", "../../examples/tenants/invalid.yaml"}, 1, "[EMANIFEST]"},

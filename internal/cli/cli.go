@@ -4,14 +4,17 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +31,7 @@ import (
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/verify"
 	"example.com/second-brain/internal/errs"
 	"example.com/second-brain/internal/version"
 )
@@ -45,8 +49,7 @@ type env struct {
 
 // planned maps "command sub" to the ticket that builds it.
 var planned = map[string]string{
-	"tenant verify": "SB-601, which needs a deployed cell's verifier endpoint (W7); the local cell runs it: tools/evalcell --verify",
-	"audit tail":    "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
+	"audit tail": "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
 	"eval diff":       "SB-501",
 	"factory handoff": "SB-705", "factory detach": "SB-708",
 }
@@ -107,6 +110,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.tenantCheck(rest[2:])
 	case "tenant apply":
 		return e.tenantApply(rest[2:])
+	case "tenant verify":
+		return e.tenantVerify(rest[2:])
 	case "factory status":
 		return e.factoryStatus(rest[2:])
 	case "factory access":
@@ -213,6 +218,109 @@ func (e *env) tenantCheck(args []string) int {
 		return e.json(map[string]any{"file": args[0], "errors": []manifest.Diag{}})
 	}
 	fmt.Fprintf(e.out, "%s: ok\n", args[0])
+	return 0
+}
+
+// tenantVerify implements `sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N]`
+// against a deployed cell's verifier endpoint (sb-tenant(1); SB-905).
+func (e *env) tenantVerify(args []string) int {
+	const name = "sb tenant verify"
+	var file, cellURL string
+	req := map[string]any{"laws": []string{}, "sample": 50, "seed": 1}
+	laws := []string{}
+	args = e.localArgs(args)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		next := func() (string, bool) {
+			if i+1 >= len(args) {
+				return "", false
+			}
+			i++
+			return args[i], true
+		}
+		switch {
+		case a == "--cell":
+			v, ok := next()
+			if !ok {
+				return e.fail(name, errs.New(errs.EUSAGE, "--cell needs a URL"))
+			}
+			cellURL = v
+		case a == "--law":
+			v, ok := next()
+			if !ok {
+				return e.fail(name, errs.New(errs.EUSAGE, "--law needs a law, e.g. LAW-01"))
+			}
+			laws = append(laws, v)
+		case a == "--sample":
+			v, ok := next()
+			n, err := strconv.Atoi(v)
+			if !ok || err != nil || n < 1 || n > 1000 {
+				return e.fail(name, errs.New(errs.EUSAGE, "--sample needs a number from 1 to 1000"))
+			}
+			req["sample"] = n
+		case file == "" && !strings.HasPrefix(a, "-"):
+			file = a
+		default:
+			return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N]"))
+		}
+	}
+	if file == "" {
+		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N]"))
+	}
+	m, code, ok := e.readManifest(name, file)
+	if !ok {
+		return code
+	}
+	if cellURL == "" {
+		return e.fail(name, errs.New(errs.EUSAGE, "--cell URL is required (the deployed cell); the local cell runs it with tools/evalcell --verify"))
+	}
+	if !strings.HasPrefix(cellURL, "https://") && !strings.HasPrefix(cellURL, "http://127.0.0.1") && !strings.HasPrefix(cellURL, "http://localhost") {
+		return e.fail(name, errs.New(errs.EUSAGE, "--cell must be an https URL"))
+	}
+	req["laws"] = laws
+	token := os.Getenv("SB_TOKEN")
+	if token == "" {
+		return e.fail(name, errs.New(errs.EAUTH, "set SB_TOKEN to the control plane's identity token"))
+	}
+	body, _ := json.Marshal(req)
+	hreq, err := http.NewRequest(http.MethodPost, strings.TrimRight(cellURL, "/")+"/v1/verifier/verify", bytes.NewReader(body))
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "bad --cell URL: %v", err))
+	}
+	hreq.Header.Set("Authorization", "Bearer "+token)
+	hreq.Header.Set("Content-Type", "application/json")
+	resp, err := (&http.Client{Timeout: 10 * time.Minute}).Do(hreq)
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUNAVAIL, "the cell's verifier didn't answer: %v", err))
+	}
+	defer func() { _ = resp.Body.Close() }()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if resp.StatusCode != http.StatusOK {
+		var eb struct {
+			Error struct{ Code, Message string }
+		}
+		_ = json.Unmarshal(raw, &eb)
+		c := errs.Code(eb.Error.Code)
+		if c == "" {
+			c = errs.EUNAVAIL
+		}
+		return e.fail(name, errs.New(c, "the cell refused: %s", eb.Error.Message))
+	}
+	var rep verify.Report
+	if err := json.Unmarshal(raw, &rep); err != nil {
+		return e.fail(name, errs.New(errs.EUNAVAIL, "the verifier's report is unreadable"))
+	}
+	_ = m
+	if e.g.JSON {
+		if c := e.json(rep); c != 0 || rep.Passed() {
+			return c
+		}
+		return 1
+	}
+	fmt.Fprint(e.out, rep.String())
+	if !rep.Passed() {
+		return 1
+	}
 	return 0
 }
 

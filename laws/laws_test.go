@@ -1,6 +1,7 @@
 package laws
 
 import (
+	"example.com/second-brain/internal/core/verify"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -327,4 +328,16 @@ func TestLAW13_MissedSyncAlerts(t *testing.T) {
 
 func TestLAW17_MissedAccessCheckAlerts(t *testing.T) {
 	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return lawWatched("LAW-17")(r, NewWatch()) })
+}
+
+func TestLAW06_AttestationReportsWhatRuns(t *testing.T) {
+	Check(t, "LAW-06", 40, func(r *rand.Rand) error {
+		w, done := NewRuntimeWorld()
+		defer done()
+		return law06Attestation(r, w.(*runtimeWorld))
+	})
+}
+
+func TestLAW17_VerifyReportsAccessPaths(t *testing.T) {
+	Check(t, "LAW-17", runs, func(r *rand.Rand) error { return law17Verify(r, verify.Run) })
 }

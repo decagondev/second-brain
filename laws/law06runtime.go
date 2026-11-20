@@ -1,7 +1,9 @@
 package laws
 
 import (
+	"bytes"
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -10,6 +12,8 @@ import (
 
 	"example.com/second-brain/internal/adapters/placement/gcp"
 	"example.com/second-brain/internal/adapters/placement/gcp/gcptest"
+	"example.com/second-brain/internal/core/attest"
+	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/runtime"
 )
 
@@ -36,7 +40,7 @@ var NewRuntimeWorld = func() (RuntimeWorld, func()) {
 	f.Grant("tok-updater-a", rtProjectA, gcp.UpdaterPermissions...)
 	f.Grant("tok-updater-b", rtProjectB, gcp.UpdaterPermissions...)
 	rw := newReleaseWorld(false)
-	w := &runtimeWorld{f: f, rw: rw, admitted: map[string]bool{}}
+	w := &runtimeWorld{f: f, rw: rw, admitted: map[string]bool{}, attestKey: ed25519.NewKeyFromSeed(bytes.Repeat([]byte{3}, 32))}
 	w.cr = w.cloudRun(rtProjectA, "tok-updater-a")
 	return w, f.Server.Close
 }
@@ -48,10 +52,16 @@ const (
 )
 
 type runtimeWorld struct {
-	f        *gcptest.Fake
-	rw       *releaseWorld
-	cr       gcp.CloudRun
-	admitted map[string]bool
+	f         *gcptest.Fake
+	rw        *releaseWorld
+	cr        gcp.CloudRun
+	admitted  map[string]bool
+	attestKey ed25519.PrivateKey
+	at        *runtime.Attestor
+	// lyingAttestor is a mutation: it reports the bundle's digests, not what runs.
+	lyingAttestor interface {
+		Attest(ctx context.Context) (attest.Signed, error)
+	}
 }
 
 func (w *runtimeWorld) cloudRun(project, token string) gcp.CloudRun {
@@ -193,6 +203,98 @@ func law02Runtime(r *rand.Rand, w RuntimeWorld) error {
 		if err := w.CrossDeploy(); err == nil {
 			return errors.New("one cell's updater deployed into another cell's project")
 		}
+	}
+	return nil
+}
+
+// LAW-06 attested (SB-905): the attestation a cell signs reports what its services actually
+// run, so a half-applied update (one service on another release's image) is a Sev-1
+// attestation_mismatch at the controller, never hidden behind the release the cell meant.
+
+// AttestWorld is a runtime world that can attest.
+type AttestWorld interface {
+	RuntimeWorld
+	Partial(id string) error // move only api to release id's image
+	// Attest signs the attestation now and returns the controller's findings for it, and
+	// whether its digests are exactly what runs.
+	Attest(deployed string) (findings int, truthful bool, err error)
+}
+
+func (w *runtimeWorld) Partial(id string) error {
+	m, err := w.rw.manifest(id)
+	if err != nil {
+		return err
+	}
+	u := w.updater(id)
+	img := u.Image(runtime.Services[0], m.Code["image/api"])
+	if err := w.cr.Attest(context.Background(), img); err != nil {
+		return err
+	}
+	return w.cr.Deploy(context.Background(), runtime.Services[0], img, id)
+}
+
+func (w *runtimeWorld) attestor() interface {
+	Attest(ctx context.Context) (attest.Signed, error)
+} {
+	if w.lyingAttestor != nil {
+		return w.lyingAttestor
+	}
+	if w.at == nil {
+		w.at = &runtime.Attestor{Tenant: "gamma-parts", Deploy: w.cr, Key: w.attestKey, Now: time.Now}
+	}
+	return w.at
+}
+
+func (w *runtimeWorld) Attest(deployed string) (int, bool, error) {
+	s, err := w.attestor().Attest(context.Background())
+	if err != nil {
+		return 0, false, err
+	}
+	running := w.Running()
+	truthful := len(running) == len(runtime.Services)
+	for _, svc := range runtime.Services {
+		img := running[svc.Name]
+		truthful = truthful && strings.HasSuffix(img, "@sha256:"+s.Digests[svc.Image])
+	}
+	c := &attest.Checker{Keys: map[string]ed25519.PublicKey{"gamma-parts": w.attestKey.Public().(ed25519.PublicKey)},
+		Deployed: func(string) string { return deployed },
+		Bundles: func(id string) (release.Manifest, bool) {
+			m, err := w.rw.manifest(id)
+			return m, err == nil
+		}}
+	return len(c.Accept(s, time.Now())), truthful, nil
+}
+
+func law06Attestation(r *rand.Rand, w AttestWorld) error {
+	a, err := w.Release(true, true)
+	if err != nil {
+		return err
+	}
+	if err := w.Update(a); err != nil {
+		return err
+	}
+	partial := r.Intn(2) == 0
+	if partial {
+		b, err := w.Release(true, true)
+		if err != nil {
+			return err
+		}
+		if err := w.Partial(b); err != nil {
+			return err
+		}
+	}
+	findings, truthful, err := w.Attest(a)
+	if err != nil {
+		return err
+	}
+	if !truthful {
+		return errors.New("the attestation doesn't report the images that actually run")
+	}
+	if partial && findings == 0 {
+		return errors.New("a half-applied update was attested without a finding")
+	}
+	if !partial && findings != 0 {
+		return fmt.Errorf("a clean deploy gave %d attestation findings", findings)
 	}
 	return nil
 }

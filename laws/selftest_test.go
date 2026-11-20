@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"example.com/second-brain/internal/adapters/placement/gcp"
 	"example.com/second-brain/internal/core/export"
+	"example.com/second-brain/internal/core/verify"
 	"fmt"
 	"math/rand"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"example.com/second-brain/internal/adapters/policy/cedar"
 	"example.com/second-brain/internal/adapters/registry/localfs"
 	"example.com/second-brain/internal/core/access"
+	"example.com/second-brain/internal/core/attest"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/policy"
@@ -1090,5 +1092,52 @@ func TestSelf_WatchMutationsAreCaught(t *testing.T) {
 		if !violates(runs, func(r *rand.Rand) error { return lawWatched("LAW-11")(r, w) }) {
 			t.Errorf("watchdog bug %q was not caught", name)
 		}
+	}
+}
+
+// LAW-06's attestation check catches an attestor that reports the release it meant to run.
+func TestSelf_LAW06AttestationMutationIsCaught(t *testing.T) {
+	if !violates(40, func(r *rand.Rand) error {
+		w, done := NewRuntimeWorld()
+		defer done()
+		rw := w.(*runtimeWorld)
+		rw.lyingAttestor = lying{rw}
+		return law06Attestation(r, rw)
+	}) {
+		t.Error("LAW-06 (attestation): an attestor that reports intent, not what runs, was not caught")
+	}
+}
+
+type lying struct{ w *runtimeWorld }
+
+func (l lying) Attest(ctx context.Context) (attest.Signed, error) {
+	api, rel, err := l.w.cr.Running(ctx, runtime.Services[0])
+	if err != nil || api == "" {
+		return attest.Signed{}, fmt.Errorf("nothing runs")
+	}
+	m, err := l.w.rw.manifest(rel)
+	if err != nil {
+		return attest.Signed{}, err
+	}
+	r := attest.Report{Tenant: "gamma-parts", Release: rel, Digests: map[string]string{}, Seq: time.Now().UnixNano(), At: time.Now()}
+	for _, s := range runtime.Services {
+		r.Digests[s.Image] = m.Code[s.Image]
+	}
+	return attest.Sign(l.w.attestKey, r)
+}
+
+// LAW-17's verify check catches a verify that passes when the enumeration failed.
+func TestSelf_LAW17VerifyMutationIsCaught(t *testing.T) {
+	lenient := func(ctx context.Context, tg verify.Target, o verify.Options) verify.Report {
+		rep := verify.Run(ctx, tg, o)
+		for i := range rep.Results {
+			if rep.Results[i].Status == "unknown" {
+				rep.Results[i].Status = "pass"
+			}
+		}
+		return rep
+	}
+	if !violates(runs, func(r *rand.Rand) error { return law17Verify(r, lenient) }) {
+		t.Error("LAW-17 (verify): unknown counted as a pass was not caught")
 	}
 }

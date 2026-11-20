@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S9.2b Metrics and the verifier endpoint (SB-905)
+
+**Wave/slice:** W9 / S9.2b · **Author:** platform lead + Claude · **Status:** In review (a real cell, SB-903 and SB-908)
+
+**What:** `internal/api/verifier.go`, `runtime.Attestor`, LAW-17 in `internal/core/verify`, `alerts.Dispatch`, `sb tenant verify --cell`, and two law tests. The manual changed first: sb-runtime(7), sb-tenant(1), sb-observability(7) and sb(1)'s examples.
+
+**Why this way:** An attestation is only evidence if it reports what runs, so the attestor reads Cloud Run at the moment it is asked, never the updater's intent. A half-applied update then shows up as the mismatch it is. The verifier runs inside the cell and returns only the report, so `sb tenant verify` against a deployed cell sees no more than the local one does: counts, never content.
+
+**Learned:** A per-process counter for the attestation's sequence number would replay after every restart, and the controller would raise a Sev-1 replay for nothing. Milliseconds since the epoch, kept increasing, survive restarts.
+
+**Laws:** LAW-06 and LAW-17 extended (two law tests, two mutations caught). LAW-19 to LAW-23 are still red, as planned.
+
+**Next:** S9.3: Firebase Hosting (SB-906) and the Identity Platform adapter (SB-907).
+
 ## 2026-11-20 S9.2a Schedules, the watchdog and the WORM bucket (SB-904)
 
 **Wave/slice:** W9 / S9.2a · **Author:** platform lead + Claude · **Status:** In review (the jobs runner in a running cell, SB-903)

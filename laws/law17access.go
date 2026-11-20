@@ -12,6 +12,7 @@ import (
 	"example.com/second-brain/internal/adapters/placement/gcp/gcptest"
 	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/keywrap"
+	"example.com/second-brain/internal/core/verify"
 )
 
 // LAW-17 in the access-path check (SB-706): for random IAM bindings on a tenant project, its
@@ -123,6 +124,72 @@ func law17Access(r *rand.Rand, w AccessWorld) error {
 	w.FailNext()
 	if got, err := w.Check(retain); err == nil || !errors.Is(err, access.ErrUnavailable) {
 		return fmt.Errorf("a failed policy read passed the check (unlisted %v, err %v)", got, err)
+	}
+	return nil
+}
+
+// LAW-17 through sb tenant verify (SB-905): verify's LAW-17 line passes only when the access
+// check finds no unlisted path, and an enumeration that fails is unknown, never a pass.
+
+type verifyAccess struct {
+	stubTarget
+	w      *accessWorld
+	retain []string
+}
+
+func (v verifyAccess) UnlistedAccess(ctx context.Context) (int, int, error) {
+	res, err := access.Check(ctx, "gamma-parts", v.w.sources, v.retain)
+	return len(res.Unlisted), len(res.Paths), err
+}
+
+type stubTarget struct{}
+
+func (stubTarget) Users(context.Context) ([]string, error)     { return nil, nil }
+func (stubTarget) Questions(context.Context) ([]string, error) { return nil, nil }
+func (stubTarget) Ask(context.Context, string, string) (verify.Answer, error) {
+	return verify.Answer{}, nil
+}
+func (stubTarget) Allowed(context.Context, string, string) (bool, error) { return false, nil }
+func (stubTarget) ForeignIDs(context.Context) ([]string, error)          { return nil, nil }
+func (stubTarget) Timeout(string) (func(), error)                        { return func() {}, nil }
+func (stubTarget) Connectors() []string                                  { return nil }
+
+func law17Verify(r *rand.Rand, run func(context.Context, verify.Target, verify.Options) verify.Report) error {
+	aw, done := NewAccessWorld()
+	defer done()
+	w := aw.(*accessWorld)
+	retain := []string{"publish-releases"}
+	unlisted := false
+	if r.Intn(2) == 0 {
+		w.Bind("project", "roles/owner", accFactory[1])
+		unlisted = true
+	}
+	if r.Intn(2) == 0 {
+		w.Bind("project", "projects/"+accProject+"/roles/sbPlatformKill", accFactory[0])
+		if r.Intn(2) == 0 {
+			retain = append(retain, "platform-kill")
+		} else {
+			unlisted = true
+		}
+	}
+	fail := r.Intn(4) == 0
+	if fail {
+		w.FailNext()
+	}
+	rep := run(context.Background(), verifyAccess{w: w, retain: retain}, verify.Options{Laws: []string{"LAW-17"}, Sample: 1})
+	if len(rep.Results) != 1 {
+		return fmt.Errorf("verify gave %d lines for LAW-17", len(rep.Results))
+	}
+	got := rep.Results[0].Status
+	want := "pass"
+	switch {
+	case fail:
+		want = "unknown"
+	case unlisted:
+		want = "fail"
+	}
+	if got != want {
+		return fmt.Errorf("verify LAW-17 said %s, want %s (unlisted %v, read failed %v): %s", got, want, unlisted, fail, rep.Results[0].Detail)
 	}
 	return nil
 }

@@ -76,8 +76,8 @@ The full registry is [sb-errors(7)](sb-errors.7.md).
 ## EXAMPLES
 
 ```sh
-sb tenant check acme.yaml && sb tenant apply acme.yaml && sb tenant verify acme.yaml
-sb --json tenant verify acme.yaml | jq '.laws[] | select(.result != "pass")'
+sb tenant check acme.yaml && sb tenant apply acme.yaml && sb tenant verify acme.yaml --cell https://api-acme.example
+sb --json tenant verify acme.yaml --cell https://api-acme.example | jq '.Results[] | select(.Status != "pass")'
 sb kill agent draft-reply --tenant acme-logistics --reason "INC-42 drafts quoting wrong policy"
 ```
 

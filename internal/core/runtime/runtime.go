@@ -6,10 +6,15 @@ package runtime
 
 import (
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
+	"sync"
+	"time"
 
+	"example.com/second-brain/internal/core/attest"
 	"example.com/second-brain/internal/core/release"
 )
 
@@ -105,4 +110,45 @@ func (u Updater) Run(ctx context.Context) (Result, error) {
 		res.Deployed = append(res.Deployed, s.Name)
 	}
 	return res, nil
+}
+
+// Attestor reports what the cell's services actually run, read from the runtime at the moment
+// of the call, signed with the cell's attestation key (sb-runtime(7), Endpoints; SB-905).
+type Attestor struct {
+	Tenant string
+	Deploy Deployer
+	Key    ed25519.PrivateKey
+	Now    func() time.Time
+
+	mu  sync.Mutex
+	seq int64
+}
+
+// Attest builds and signs the attestation. The release is the one api runs; a service
+// running another release's image shows up as a digest the bundle doesn't list.
+func (a *Attestor) Attest(ctx context.Context) (attest.Signed, error) {
+	r := attest.Report{Tenant: a.Tenant, Digests: map[string]string{}, At: a.Now().UTC()}
+	for _, s := range Services {
+		img, rel, err := a.Deploy.Running(ctx, s)
+		if err != nil {
+			return attest.Signed{}, err
+		}
+		if img == "" {
+			return attest.Signed{}, fmt.Errorf("runtime: %s isn't running", s.Name)
+		}
+		at := strings.LastIndex(img, "@sha256:")
+		if at < 0 {
+			return attest.Signed{}, fmt.Errorf("runtime: %s runs an image not pinned by digest", s.Name)
+		}
+		r.Digests[s.Image] = img[at+len("@sha256:"):]
+		if s.Name == "api" {
+			r.Release = rel
+		}
+	}
+	a.mu.Lock()
+	// Milliseconds since the epoch, kept increasing: a restarted updater never replays a seq.
+	a.seq = max(a.seq+1, r.At.UnixMilli())
+	r.Seq = a.seq
+	a.mu.Unlock()
+	return attest.Sign(a.Key, r)
 }

@@ -41,6 +41,11 @@ type Target interface {
 	Connectors() []string
 }
 
+// AccessTarget is a cell that can run the LAW-17 access-path check (sb-factory(7)).
+type AccessTarget interface {
+	UnlistedAccess(ctx context.Context) (unlisted, paths int, err error)
+}
+
 // Result is one law's line.
 type Result struct {
 	Law    string
@@ -210,6 +215,21 @@ func Run(ctx context.Context, t Target, o Options) Report {
 					return Result{law, "fail", d}
 				}
 				return Result{law, "pass", d}
+			}())
+		case "LAW-17":
+			rep.Results = append(rep.Results, func() Result {
+				at, ok := t.(AccessTarget)
+				if !ok {
+					return unknown(law, "this cell can't enumerate access paths")
+				}
+				unlisted, paths, err := at.UnlistedAccess(ctx)
+				if err != nil {
+					return unknown(law, "access paths couldn't be enumerated: "+err.Error())
+				}
+				if unlisted > 0 {
+					return Result{law, "fail", fmt.Sprintf("%d of %d factory access paths aren't in the hand-off record", unlisted, paths)}
+				}
+				return Result{law, "pass", fmt.Sprintf("%d factory access paths, all retained grants", paths)}
 			}())
 		default:
 			rep.Results = append(rep.Results, unknown(law, "no such check"))

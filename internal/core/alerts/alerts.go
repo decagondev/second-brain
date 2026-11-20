@@ -3,8 +3,11 @@
 package alerts
 
 import (
+	"context"
 	"sort"
 	"strings"
+
+	"example.com/second-brain/internal/core/canary"
 )
 
 // Rule is one law's alert.
@@ -74,4 +77,24 @@ func ForLaw(law string) (Rule, bool) {
 		}
 	}
 	return Rule{}, false
+}
+
+// Sender delivers one alert (the webhook adapter in production).
+type Sender interface {
+	Alert(ctx context.Context, a canary.Alert) error
+}
+
+// Dispatch evaluates the rules over two snapshots and sends every firing alert: Sev-1, with
+// the law and the runbook, never content (sb-runtime(7), Endpoints; SB-905). It returns the
+// alerts it sent, and the first send error; a failed send is never dropped silently.
+func Dispatch(ctx context.Context, tenant string, prev, cur map[string]float64, s Sender) ([]Alert, error) {
+	fired := Evaluate(tenant, prev, cur)
+	var first error
+	for _, a := range fired {
+		err := s.Alert(ctx, canary.Alert{Severity: a.Severity, Kind: "law_violation", Tenant: a.Tenant, Where: a.Runbook, Ref: a.Law})
+		if err != nil && first == nil {
+			first = err
+		}
+	}
+	return fired, first
 }
