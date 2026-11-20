@@ -8,7 +8,7 @@ import (
 
 // Check(Format(t)) == t for every valid example (SB-602).
 func TestFormatRoundTrip(t *testing.T) {
-	for _, f := range []string{"../../../examples/tenants/pilot.yaml", "../../../examples/tenants/full.yaml"} {
+	for _, f := range []string{"../../../examples/tenants/pilot.yaml", "../../../examples/tenants/full.yaml", "../../../examples/tenants/spaces.yaml"} {
 		src, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)

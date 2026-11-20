@@ -30,6 +30,21 @@
       },
       "type": "object"
     },
+    "barriers": {
+      "description": "Information barriers: pairs of groups that never meet (sb-space(5)).",
+      "items": {
+        "items": {
+          "pattern": "^group:[A-Za-z0-9._-]+$",
+          "type": "string"
+        },
+        "maxItems": 2,
+        "minItems": 2,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "maxItems": 20,
+      "type": "array"
+    },
     "budget_usd_month": {
       "default": 1000,
       "description": "Monthly model spend cap in USD.",
@@ -121,6 +136,104 @@
       "maximum": 3650,
       "minimum": 30,
       "type": "integer"
+    },
+    "spaces": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "agents": {
+            "items": {
+              "enum": [
+                "ask",
+                "draft-reply"
+              ]
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "label": {
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ]
+          },
+          "members": {
+            "items": {
+              "pattern": "^group:[A-Za-z0-9._-]+$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "retention_days": {
+            "maximum": 3650,
+            "minimum": 30,
+            "type": "integer"
+          },
+          "scope": {
+            "additionalProperties": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "minProperties": 1,
+            "propertyNames": {
+              "enum": [
+                "docs",
+                "chat",
+                "tickets",
+                "crm"
+              ]
+            },
+            "type": "object"
+          },
+          "stewards": {
+            "items": {
+              "pattern": "^group:[A-Za-z0-9._-]+$",
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "template": {
+            "enum": [
+              "custom",
+              "design",
+              "engineering",
+              "executive",
+              "finance",
+              "it-security",
+              "legal",
+              "marketing",
+              "operations",
+              "people",
+              "product",
+              "sales",
+              "support"
+            ]
+          }
+        },
+        "required": [
+          "members",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "description": "Department spaces (sb-space(5)); they only narrow access.",
+      "maxProperties": 50,
+      "propertyNames": {
+        "not": {
+          "const": "company"
+        },
+        "pattern": "^[a-z][a-z0-9-]{1,30}$"
+      },
+      "type": "object"
     },
     "tenant": {
       "description": "Tenant name: a DNS label. Immutable.",

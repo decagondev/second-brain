@@ -42,6 +42,8 @@ Apply prints each change as it is enacted, in the plan format, and ends with `ap
 | `exclude` | kind | `exclude chat (#hr-*, #legal-*)` |
 | `agent` | name | `agent ask` |
 | `workflow` | name | `workflow ticket-update (approval group:it-leads)` |
+| `space` | name | `space finance (template finance, label restricted, members group:finance, stewards group:finance-leads, agents ask, retention 365, scope docs /Finance/**)` ([sb-space(5)](sb-space.5.md)); every field after the template's defaults are filled in |
+| `barrier` | the two groups, sorted | `barrier group:deal-team-orion / group:everyone` |
 
 Lines start with `+` (add), `~` (change, showing the old value after `was`) or `-` (remove), in the order of the table, then by name. The last line is `plan: A to add, C to change, R to remove`, or `plan: no changes`. With `--json` the plan is `{"tenant": …, "changes": [{"op", "kind", "name", "attrs", "was"}], "add": A, "change": C, "remove": R}`, with `op` one of `add`, `change`, `remove`. The same manifest and the same applied state always give the same plan, byte for byte.
 

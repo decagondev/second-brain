@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.1a Spaces in the manifest (SB-1001)
+
+**Wave/slice:** W10 / S10.1a · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** `internal/core/manifest/spaces.go` (the parser, rules, template defaults and plan attributes), spaces and barriers in `Format`, the JSON Schema and `plan`, the apply refusal, `examples/tenants/spaces.yaml`, and `TestLAW16_SpacesAreExactlyAsDeclared`. The manual changed first: sb-space(5), sb-tenant(5), sb-tenant(1), sb-spaces(7) and sb-onboarding(7).
+
+**Why this way:** Checking and planning spaces now lets a company write and review its spaces while the enforcement is built, but applying them before SB-1006 would recreate the risk SB-801 refused: a People space that looks restricted and isn't. So the line moved from `check` to `apply`, which still refuses, before any write, with the ticket named. Template defaults are filled in by the checker, so the plan shows every field a space will have and nothing is left for the cell to guess.
+
+**Learned:** A barrier between two groups that share a space is easy to write and impossible to honour; the checker reports it against the barrier, naming the space.
+
+**Laws:** LAW-16 extended (one law test replaced and widened, its mutation still caught). LAW-19 to LAW-23 are still red, as planned.
+
+**Next:** S10.1b, the space registry and request context (SB-1002) and per-space keys (SB-1003).
+
 ## 2026-11-20 S9.3b Identity Platform sign-in (SB-907)
 
 **Wave/slice:** W9 / S9.3b · **Author:** platform lead + Claude · **Status:** In review (a real project, SB-903)

@@ -270,8 +270,8 @@ func TestLAW11_ExportPackageVerifiesOffline(t *testing.T) {
 	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11Export(r, NewExportWorld(t.TempDir())) })
 }
 
-func TestLAW16_UnbuiltFieldsAreRefused(t *testing.T) {
-	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Planned(r, manifest.Check) })
+func TestLAW16_SpacesAreExactlyAsDeclared(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16Spaces(r, manifest.Check) })
 }
 
 func TestLAW19_SpacesOnlyNarrow(t *testing.T) {

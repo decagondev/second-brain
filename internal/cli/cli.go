@@ -379,6 +379,8 @@ func (e *env) tenantApply(args []string) int {
 		return e.fail(name, errs.New(errs.EMANIFEST, "%s: %v", file, err))
 	case errors.As(err, &ee):
 		return e.fail(name, errs.New(errs.EEVAL, "%v", err))
+	case errors.Is(err, apply.ErrSpacesNotEnforced):
+		return e.fail(name, errs.New(errs.ENOTIMPL, "%s: %v", file, err))
 	case err != nil:
 		return e.fail(name, errs.New(errs.EUNAVAIL, "%v; run apply again to resume", err))
 	case e.g.JSON:

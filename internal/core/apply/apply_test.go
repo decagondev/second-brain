@@ -244,3 +244,18 @@ func TestWorkflowWaitsForEvals(t *testing.T) {
 		t.Fatalf("passing record: %v", err)
 	}
 }
+
+// SB-1001: a manifest with spaces is checked and planned, but apply refuses it, before any
+// write, until the cell enforces spaces (SB-1006).
+func TestSpacesAreNotAppliedYet(t *testing.T) {
+	w := newWorld()
+	for _, extra := range []string{
+		"spaces:\n  eng:\n    members: [group:eng]\n    scope: { docs: [\"/Eng/**\"] }\n",
+		"barriers:\n  - [group:a, group:b]\n",
+	} {
+		_, err := Run(context.Background(), w.deps(), tenant(t, pilot+extra), nil)
+		if !errors.Is(err, ErrSpacesNotEnforced) || w.writes != 0 {
+			t.Fatalf("err %v, writes %d", err, w.writes)
+		}
+	}
+}

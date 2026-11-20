@@ -28,6 +28,8 @@ type Tenant struct {
 	PilotGroup     string              `json:"pilot_group"`
 	Exclude        map[string][]string `json:"exclude"`
 	Groups         map[string][]string `json:"groups"`
+	Spaces         map[string]Space    `json:"spaces"`
+	Barriers       [][2]string         `json:"barriers"`
 }
 
 // Diag is one error, positioned at a key or a value (1-based line and column).
@@ -116,11 +118,14 @@ var fields = []field{
 	{"pilot_group", false, func(c *checker, n *node) { c.t.PilotGroup = c.group(n, "pilot_group") }},
 	{"exclude", false, (*checker).exclude},
 	{"groups", false, (*checker).groups},
+	{"spaces", false, (*checker).spaces},
+	{"barriers", false, (*checker).barriers},
 }
 
 // Planned are top-level fields that are specified but not built yet, with their tickets.
-// Refusing them by name keeps a company from believing a space protects what it doesn't.
-var Planned = map[string]string{"spaces": "SB-1001", "barriers": "SB-1001"}
+// Refusing them by name keeps a company from believing a field protects what it doesn't.
+// None today: spaces and barriers were here until SB-1001.
+var Planned = map[string]string{}
 
 const (
 	msgVersion = "field not allowed; pick a channel (stable|testing) instead (ADR-0004)"
@@ -152,6 +157,8 @@ type checker struct {
 	seen  map[string]*node
 	// For the cross-field rules: valid workflow items, approval keys, exclude keys.
 	wfNodes, apKeys, exKeys []*node
+	spaceNodes              map[string]spaceNodes
+	barrierNodes            []*node
 }
 
 func (c *checker) add(n *node, field, format string, args ...any) {
@@ -506,6 +513,7 @@ func (c *checker) crossChecks() {
 			c.add(g, "groups", "only with an identity-platform:// idp; an OIDC IdP's groups come from SCIM (sb-identity(7))")
 		}
 	}
+	c.spaceChecks()
 	for _, k := range c.exKeys {
 		if c.connectorKindAbsent(k.value) {
 			c.add(k, "exclude."+k.value, "no connector kind %q in connectors", k.value)
@@ -557,7 +565,7 @@ func contains(xs []string, v string) bool {
 	return false
 }
 
-func keys(m map[string]string) []string {
+func keys[V any](m map[string]V) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {
 		out = append(out, k)

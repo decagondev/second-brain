@@ -346,22 +346,83 @@ func law16Drift(r *rand.Rand, detect DriftDetector) error {
 	return nil
 }
 
-// LAW-16 for fields that are specified but not built (SB-801): a valid manifest that also
-// declares spaces or barriers is refused, naming the ticket, and never applied without them.
-// A company must never believe a space protects what nothing enforces yet.
-func law16Planned(r *rand.Rand, check ManifestChecker) error {
-	entries := renderTenant(r, genTenant(r))
-	extra := []string{
-		"spaces:\n  people:\n    template: people\n    members: [group:people-team]\n    label: restricted\n    scope: { docs: [\"/People/**\"] }\n",
-		"barriers:\n  - [group:deal-team-orion, group:everyone]\n",
-	}[r.Intn(2)]
+// LAW-16 for spaces (SB-1001, which replaced SB-801's refusal): every space and barrier the
+// manifest declares is in the checked tenant and in the plan, exactly as written, and no
+// other exists. A parser that drops or invents a space would let a company believe its
+// People brain was restricted when nothing said so.
+func law16Spaces(r *rand.Rand, check ManifestChecker) error {
+	t := genTenant(r)
+	entries := renderTenant(r, t)
+	if t.Connectors["docs"] == "" {
+		return nil // spaces here scope docs; another run covers it
+	}
+	type decl struct {
+		name, template string
+		members        []string
+		stewards       []string
+		docs           string
+	}
+	templates := []string{"engineering", "people", "finance", "support", "custom", "legal"}
+	var decls []decl
+	var b strings.Builder
+	b.WriteString("spaces:\n")
+	for i, n := 0, 1+r.Intn(3); i < n; i++ {
+		d := decl{name: fmt.Sprintf("space-%d", i), template: templates[r.Intn(len(templates))],
+			members: []string{fmt.Sprintf("group:m%d", i)}, docs: fmt.Sprintf("/Dept%d/**", i)}
+		if r.Intn(2) == 0 {
+			d.members = append(d.members, "group:shared")
+		}
+		if manifest.Templates[d.template].Label == "restricted" || r.Intn(2) == 0 {
+			d.stewards = []string{fmt.Sprintf("group:s%d", i)}
+		}
+		decls = append(decls, d)
+		fmt.Fprintf(&b, "  %s:\n    template: %s\n    members: [%s]\n", d.name, d.template, strings.Join(d.members, ", "))
+		if len(d.stewards) > 0 {
+			fmt.Fprintf(&b, "    stewards: [%s]\n", strings.Join(d.stewards, ", "))
+		}
+		fmt.Fprintf(&b, "    scope:\n      docs: [%q]\n", d.docs)
+	}
+	barrier := r.Intn(2) == 0
+	if barrier {
+		b.WriteString("barriers:\n  - [group:deal-team-orion, group:everyone]\n")
+	}
 	at := r.Intn(len(entries) + 1)
-	src := strings.Join(append(append(append([]string{}, entries[:at]...), extra), entries[at:]...), "")
-	_, ds := check([]byte(src))
-	for _, d := range ds {
-		if strings.Contains(d.Msg, "not built yet (SB-1001)") {
-			return nil
+	src := strings.Join(entries[:at], "") + b.String() + strings.Join(entries[at:], "")
+	got, ds := check([]byte(src))
+	if len(ds) > 0 {
+		return fmt.Errorf("valid spaces rejected: %s\n%s", ds[0].Format("gen.yaml"), src)
+	}
+	if len(got.Spaces) != len(decls) {
+		return fmt.Errorf("manifest declares %d spaces but %d would be applied\n%s", len(decls), len(got.Spaces), src)
+	}
+	for _, d := range decls {
+		s, ok := got.Spaces[d.name]
+		switch {
+		case !ok:
+			return fmt.Errorf("space %s was dropped\n%s", d.name, src)
+		case !reflect.DeepEqual(s.Members, d.members) || len(s.Stewards) != len(d.stewards) || s.Template != d.template:
+			return fmt.Errorf("space %s is %+v, not as declared\n%s", d.name, s, src)
+		case !reflect.DeepEqual(s.Scope, map[string][]string{"docs": {d.docs}}):
+			return fmt.Errorf("space %s scope is %v, not docs %s", d.name, s.Scope, d.docs)
 		}
 	}
-	return fmt.Errorf("a manifest declaring %s was not refused with SB-1001 (errors: %v)\n%s", strings.SplitN(extra, ":", 2)[0], ds, src)
+	if barrier != (len(got.Barriers) == 1) {
+		return fmt.Errorf("barriers %v, declared %v\n%s", got.Barriers, barrier, src)
+	}
+	planned := 0
+	for _, res := range plan.Desired(got) {
+		switch res.Kind {
+		case plan.KindSpace:
+			if _, ok := got.Spaces[res.Name]; !ok {
+				return fmt.Errorf("the plan has space %s, which the manifest doesn't declare", res.Name)
+			}
+			planned++
+		case plan.KindBarrier:
+			planned++
+		}
+	}
+	if want := len(decls) + len(got.Barriers); planned != want {
+		return fmt.Errorf("the plan has %d spaces and barriers, the manifest %d", planned, want)
+	}
+	return nil
 }

@@ -62,8 +62,8 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
 | `groups` | map `group:NAME`→list of emails | no | none | Only with an `identity-platform://` idp: the steward-managed group list for a company without SCIM ([sb-identity(7)](sb-identity.7.md)). At most 200 groups and 2,000 members in all; each email at most once per group |
-| `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). **Refused until SB-1001**, with `not built yet (SB-1001)`. Without it, the cell is one undivided brain, as today |
-| `barriers` | list of group pairs | no | none | Information barriers ([sb-space(5)](sb-space.5.md)). Refused until SB-1001, like `spaces` |
+| `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). Checked and planned from SB-1001; `apply` refuses it with `ENOTIMPL` until SB-1006 enforces it. Without it, the cell is one undivided brain, as today |
+| `barriers` | list of group pairs | no | none | Information barriers ([sb-space(5)](sb-space.5.md)). Checked and planned from SB-1001; not applied until SB-1006, like `spaces` |
 
 ## VALIDATION RULES
 

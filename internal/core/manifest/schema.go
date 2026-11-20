@@ -53,6 +53,29 @@ func JSONSchema() []byte {
 			"maxProperties": MaxGroups, "propertyNames": map[string]any{"pattern": groupRe},
 			"additionalProperties": map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": emailRe}},
 		},
+		"spaces": map[string]any{
+			"type": "object", "description": "Department spaces (sb-space(5)); they only narrow access.",
+			"maxProperties": MaxSpaces, "propertyNames": map[string]any{"pattern": spaceNameRe, "not": map[string]any{"const": "company"}},
+			"additionalProperties": map[string]any{
+				"type": "object", "additionalProperties": false, "required": []string{"members", "scope"},
+				"properties": map[string]any{
+					"template":       map[string]any{"enum": keys(Templates)},
+					"members":        map[string]any{"type": "array", "minItems": 1, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": groupRe}},
+					"stewards":       map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": groupRe}},
+					"label":          map[string]any{"enum": Labels},
+					"agents":         map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"enum": Agents}},
+					"retention_days": map[string]any{"type": "integer", "minimum": MinSpaceRetention, "maximum": MaxRetentionDays},
+					"scope": map[string]any{
+						"type": "object", "minProperties": 1, "propertyNames": map[string]any{"enum": ConnectorKinds},
+						"additionalProperties": map[string]any{"type": "array", "minItems": 1, "items": map[string]any{"type": "string", "minLength": 1}},
+					},
+				},
+			},
+		},
+		"barriers": map[string]any{
+			"type": "array", "description": "Information barriers: pairs of groups that never meet (sb-space(5)).", "maxItems": MaxBarriers,
+			"items": map[string]any{"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": groupRe}},
+		},
 		"exclude": map[string]any{
 			"type": "object", "description": "Source paths or channels never ingested, by connector kind.",
 			"propertyNames": map[string]any{"enum": ConnectorKinds}, "default": map[string]any{},

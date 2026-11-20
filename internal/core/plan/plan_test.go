@@ -141,3 +141,26 @@ func TestApplyReachesDesired(t *testing.T) {
 		t.Fatalf("apply(plan) = %v\nwant %v", got, Desired(b))
 	}
 }
+
+// SB-1001: each space and barrier is its own plan line, in sb-tenant(1)'s shape.
+func TestSpacesInThePlan(t *testing.T) {
+	src := first + "spaces:\n  finance:\n    template: finance\n    members: [group:finance]\n    stewards: [group:finance-leads]\n    scope: { docs: [\"/Finance/**\"] }\nbarriers:\n  - [group:everyone, group:deal-team-orion]\n"
+	m := tenant(t, src)
+	p, err := Make(m, Desired(tenant(t, first)), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "+ space finance (template finance, label restricted, members group:finance, stewards group:finance-leads, agents ask, retention 365, scope docs /Finance/**)\n" +
+		"+ barrier group:deal-team-orion / group:everyone\nplan: 2 to add, 0 to change, 0 to remove\n"
+	if p.Text() != want {
+		t.Fatalf("got:\n%s\nwant:\n%s", p.Text(), want)
+	}
+	m2 := tenant(t, first+"spaces:\n  finance:\n    template: finance\n    members: [group:finance, group:execs]\n    stewards: [group:finance-leads]\n    scope: { docs: [\"/Finance/**\"] }\n")
+	p, err = Make(m2, Desired(m), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.Changes) != 2 || p.Changes[0].Op != OpChange || p.Changes[1].Op != OpRemove || p.Changes[1].Kind != KindBarrier {
+		t.Fatalf("plan:\n%s", p.Text())
+	}
+}

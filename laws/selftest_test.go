@@ -1000,7 +1000,7 @@ func TestSelf_LAW11ExportMutationIsCaught(t *testing.T) {
 }
 
 // LAW-16's planned-field check catches a parser that quietly drops a spaces block.
-func TestSelf_LAW16PlannedMutationIsCaught(t *testing.T) {
+func TestSelf_LAW16SpacesMutationIsCaught(t *testing.T) {
 	drops := func(src []byte) (manifest.Tenant, []manifest.Diag) {
 		var keep []string
 		skipping := false
@@ -1017,8 +1017,8 @@ func TestSelf_LAW16PlannedMutationIsCaught(t *testing.T) {
 		}
 		return manifest.Check([]byte(strings.Join(keep, "")))
 	}
-	if !violates(runs, func(r *rand.Rand) error { return law16Planned(r, drops) }) {
-		t.Error("LAW-16 (planned fields): a parser that drops spaces was not caught")
+	if !violates(runs, func(r *rand.Rand) error { return law16Spaces(r, drops) }) {
+		t.Error("LAW-16 (spaces): a parser that drops spaces was not caught")
 	}
 }
 

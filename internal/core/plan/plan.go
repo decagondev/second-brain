@@ -20,9 +20,11 @@ const (
 	KindExclude   = "exclude"
 	KindAgent     = "agent"
 	KindWorkflow  = "workflow"
+	KindSpace     = "space"
+	KindBarrier   = "barrier"
 )
 
-var kindOrder = map[string]int{KindCell: 0, KindSetting: 1, KindConnector: 2, KindExclude: 3, KindAgent: 4, KindWorkflow: 5}
+var kindOrder = map[string]int{KindCell: 0, KindSetting: 1, KindConnector: 2, KindExclude: 3, KindAgent: 4, KindWorkflow: 5, KindSpace: 6, KindBarrier: 7}
 
 // Ops.
 const (
@@ -86,6 +88,12 @@ func Desired(t manifest.Tenant) []ports.Resource {
 	}
 	for _, a := range t.Agents {
 		rs = append(rs, ports.Resource{Kind: KindAgent, Name: a})
+	}
+	for name, sp := range t.Spaces {
+		rs = append(rs, ports.Resource{Kind: KindSpace, Name: name, Attrs: manifest.SpaceAttrs(sp)})
+	}
+	for _, b := range t.Barriers {
+		rs = append(rs, ports.Resource{Kind: KindBarrier, Name: b[0] + " / " + b[1]})
 	}
 	sortResources(rs)
 	return rs
@@ -210,6 +218,12 @@ func detail(kind string, a map[string]string) string {
 		return a["patterns"]
 	case KindWorkflow:
 		return "approval " + a["approval"]
+	case KindSpace:
+		parts := []string{"template " + a["template"], "label " + a["label"], "members " + a["members"]}
+		if a["stewards"] != "" {
+			parts = append(parts, "stewards "+a["stewards"])
+		}
+		return strings.Join(append(parts, "agents "+a["agents"], "retention "+a["retention_days"], "scope "+a["scope"]), ", ")
 	}
 	return ""
 }
@@ -220,7 +234,7 @@ func (c Change) Line() string {
 	head := sign + " " + c.Kind + " " + c.Name
 	now := detail(c.Kind, c.Attrs)
 	switch {
-	case c.Kind == KindAgent:
+	case c.Kind == KindAgent || c.Kind == KindBarrier:
 		return head
 	case c.Kind == KindSetting && c.Op == OpChange:
 		return head + " = " + now + " (was " + detail(c.Kind, c.Was) + ")"

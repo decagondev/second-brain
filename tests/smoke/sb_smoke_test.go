@@ -167,6 +167,14 @@ func TestTenantApply(t *testing.T) {
 	if code, out := runSB("--endpoint", ep, "tenant", "apply", "../../examples/tenants/full.yaml", "--plan"); code != 0 || out != "plan: no changes\n" {
 		t.Fatalf("after apply, plan: exit %d %q", code, out)
 	}
+	// Spaces are checked and planned, but apply refuses them until SB-1006 (sb-space(5)).
+	if code, out := runSB("--endpoint", ep, "tenant", "apply", "../../examples/tenants/spaces.yaml", "--plan"); code != 0 ||
+		!strings.Contains(out, "+ space finance (template finance, label restricted") || !strings.Contains(out, "+ barrier group:deal-team-orion / group:everyone") {
+		t.Fatalf("spaces plan: exit %d\n%s", code, out)
+	}
+	if code, out := apply("spaces.yaml"); code != 2 || !strings.Contains(out, "[ENOTIMPL]") || !strings.Contains(out, "SB-1006") {
+		t.Fatalf("spaces apply: exit %d\n%s", code, out)
+	}
 	want := "custody        factory\nplacement      factory-account\nkey_custodian  factory\nkey_wraps      audit-signing: factory\nchannel        stable\nhandoff        none\n"
 	if code, out := runSB("--endpoint", ep, "factory", "status", "acme-logistics"); code != 0 || out != want {
 		t.Fatalf("factory status: exit %d %q", code, out)

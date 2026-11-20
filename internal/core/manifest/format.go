@@ -47,8 +47,41 @@ func Format(t Tenant) []byte {
 			fmt.Fprintf(&b, "  %s: %s\n", strconv.Quote(k), flowList(t.Groups[k], false))
 		}
 	}
+	if len(t.Spaces) > 0 {
+		b.WriteString("spaces:" + nl)
+		names := make([]string, 0, len(t.Spaces))
+		for n := range t.Spaces {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for _, n := range names {
+			sp := t.Spaces[n]
+			fmt.Fprintf(&b, "  %s:%s", n, nl)
+			fmt.Fprintf(&b, "    template: %s%s", sp.Template, nl)
+			fmt.Fprintf(&b, "    members: %s%s", flowList(sp.Members, false), nl)
+			if len(sp.Stewards) > 0 {
+				fmt.Fprintf(&b, "    stewards: %s%s", flowList(sp.Stewards, false), nl)
+			}
+			fmt.Fprintf(&b, "    label: %s%s", sp.Label, nl)
+			fmt.Fprintf(&b, "    agents: %s%s", flowList(sp.Agents, false), nl)
+			fmt.Fprintf(&b, "    retention_days: %d%s", sp.RetentionDays, nl)
+			parts := make([]string, 0, len(sp.Scope))
+			for _, k := range sorted(sp.Scope) {
+				parts = append(parts, k+": "+flowList(sp.Scope[k], true))
+			}
+			fmt.Fprintf(&b, "    scope: { %s }%s", strings.Join(parts, ", "), nl)
+		}
+	}
+	if len(t.Barriers) > 0 {
+		b.WriteString("barriers:" + nl)
+		for _, p := range t.Barriers {
+			fmt.Fprintf(&b, "  - [%s, %s]%s", p[0], p[1], nl)
+		}
+	}
 	return []byte(b.String())
 }
+
+const nl = "\n"
 
 func flowMap(m map[string]string) string {
 	keys := make([]string, 0, len(m))

@@ -1,0 +1,31 @@
+# Department spaces (sb-space(5)). `sb tenant check` and `apply --plan` accept this;
+# `apply` refuses it until the cell enforces spaces (SB-1006).
+tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint, chat: slack, tickets: jira }
+agents: [ask, draft-reply]
+retention_days: 730
+spaces:
+  engineering:
+    template: engineering
+    members: [group:eng, group:product]
+    stewards: [group:eng-leads]
+    scope:
+      docs: ["/Engineering/**", "/Specs/**"]
+      chat: ["#eng-*"]
+      tickets: [ENG, OPS]
+  support:
+    template: support
+    members: [group:support]
+    scope: { tickets: [SUP], docs: ["/Support/**"] }
+  finance:
+    template: finance
+    members: [group:finance]
+    stewards: [group:finance-leads]
+    retention_days: 365
+    scope:
+      docs: ["/Finance/**"]
+barriers:
+  - [group:deal-team-orion, group:everyone]
