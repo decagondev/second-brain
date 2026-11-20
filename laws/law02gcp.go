@@ -21,7 +21,7 @@ var NewGCPCellStamper = func() (CellStamper, func()) {
 		f.Grant("tok-"+account, account, gcp.DeployPermissions...)
 		p := gcp.Project{ID: account, HTTP: f.Server.Client(), Poll: time.Millisecond,
 			Token:     func(context.Context) (string, error) { return "tok-" + account, nil },
-			Endpoints: gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL()}}
+			Endpoints: gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL(), CRM: f.URL()}}
 		rs, err := cell.Stamp(context.Background(), p, p, t)
 		if err != nil {
 			return nil, err

@@ -49,9 +49,9 @@ Binary Authorization is a **second guard**. The project's policy admits only ima
 
 ### Data, exactly (SB-902)
 
-Cloud SQL for PostgreSQL 17 with `pgvector` has **private IP only**. Services reach it through Direct VPC egress on the cell's own network, and never through a public address or the Cloud SQL proxy's public path. It is encrypted with a **customer-managed key (CMEK)**, a key in the cell's own key ring (`sb-TENANT/cell-TENANT-sql`), which the root key's custodian controls. Destroying that key version makes the database unreadable, which is how a cell is crypto-shredded at off-boarding.
+Cloud SQL for PostgreSQL 17 with `pgvector` has **private IP only**. Services reach it through Direct VPC egress on the cell's own network, and never through a public address or the Cloud SQL proxy's public path. It is encrypted with a **customer-managed key (CMEK)**, a key in the cell's own key ring (`sb-TENANT/cell-TENANT-sql`), which the root key's custodian controls. Only this project's Cloud SQL service agent may use that key. An existing instance that isn't private-IP on the cell's network, or isn't on that key, is refused, never reused. The `pgvector` flag is set when the instance is created. Destroying that key version makes the database unreadable, which is how a cell is crypto-shredded at off-boarding.
 
-A **VPC Service Controls perimeter** surrounds the cell's project. It covers Cloud SQL, Cloud Storage, Secret Manager, Cloud KMS and Pub/Sub, so data can't be copied out by API to a project outside it, even with valid credentials. The only identities allowed through are the cell's own service accounts, plus the factory's `updater` grant for the release store, which is read-only and outside the perimeter.
+A **VPC Service Controls perimeter** surrounds the cell's project. It covers Cloud SQL, Cloud Storage, Secret Manager, Cloud KMS and Pub/Sub, so data can't be copied out by API to a project outside it, even with valid credentials. The only identities allowed through are the cell's own service accounts, plus the factory's `updater` grant for the release store, which is read-only and outside the perimeter. The tenant's organisation admin creates it with `deploy/gcp/bootstrap-perimeter.sh`. Because the perimeter is a second fence, an IAM grant made by mistake from one cell to another still can't reach the other cell's data.
 
 ## LAWS
 

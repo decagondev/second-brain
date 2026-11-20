@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S9.1b Private Cloud SQL with CMEK and a perimeter (SB-902)
+
+**Wave/slice:** W9 / S9.1b · **Author:** platform lead + Claude · **Status:** In review (a real project and organisation, SB-903)
+
+**What:** private-IP CMEK instances in `internal/adapters/placement/gcp` (with `ensureKey`, `sqlKey` and the project number), two new deploy permissions, `deploy/gcp/bootstrap-perimeter.sh`, CMEK and VPC Service Controls in `gcptest`, and `laws/law02perimeter.go`. The manual changed first: sb-runtime(7) and sb-tenancy(7).
+
+**Why this way:** CMEK puts the database's key in the same custody as the cell's root key, so off-boarding is one key destruction and hand-off moves one key ring. The perimeter is a second fence, so it is tested exactly where the first one has failed: with an IAM grant from one cell to another made by mistake. The adapter refuses an existing public or foreign-keyed instance, like every other identity check, rather than adopting it.
+
+**Learned:** The key ring was labelled with the kind of whichever key made it first, so a second key in the ring would have failed the identity check. The ring now has its own kind, `key-ring`. A destroyed KMS key keeps its resource and loses its material, and the fake now models that, so policy calls still work while encryption fails.
+
+**Laws:** LAW-02 and LAW-18 extended (one mutation caught). All law tests green except LAW-19 to LAW-23, red as planned.
+
+**Next:** S9.2, schedules (SB-904) and metrics and the verifier endpoint (SB-905).
+
 ## 2026-11-20 S9.1a Cloud Run services and the in-cell updater (SB-901)
 
 **Wave/slice:** W9 / S9.1a · **Author:** platform lead + Claude · **Status:** In review (a real project, SB-903)

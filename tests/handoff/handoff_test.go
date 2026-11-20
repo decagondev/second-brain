@@ -222,7 +222,7 @@ func TestHandoffGameDay(t *testing.T) {
 	f.Bind("projects/"+project, "roles/owner", breakGlass)
 	f.Bind("projects/"+project, "projects/"+project+"/roles/sbPlatformKill", factorySA)
 	f.Bind("projects/"+project, "roles/owner", "group:gamma-it@gamma.example") // the tenant's own
-	ep := gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL()}
+	ep := gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL(), CRM: f.URL()}
 	deploy := gcp.Project{ID: project, HTTP: f.Server.Client(), Poll: time.Millisecond, Endpoints: ep,
 		Token: func(context.Context) (string, error) { return "tok-deploy", nil }}
 	verifier := deploy

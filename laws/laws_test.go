@@ -308,3 +308,7 @@ func TestLAW02_RuntimeStaysInItsProject(t *testing.T) {
 		return law02Runtime(r, w)
 	})
 }
+
+func TestLAW02_PerimetersHoldEvenWithAnIAMMistake(t *testing.T) {
+	Check(t, "LAW-02", 40, func(r *rand.Rand) error { return law02Perimeter(r, r.Intn(2) == 0) })
+}

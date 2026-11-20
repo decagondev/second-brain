@@ -27,6 +27,7 @@ permissions=(
   cloudkms.cryptoKeyVersions.useToEncrypt
   cloudkms.cryptoKeys.create
   cloudkms.cryptoKeys.get
+  cloudkms.cryptoKeys.setIamPolicy
   cloudkms.keyRings.create
   cloudkms.keyRings.get
   cloudsql.databases.create
@@ -35,6 +36,7 @@ permissions=(
   cloudsql.instances.get
   pubsub.topics.create
   pubsub.topics.get
+  resourcemanager.projects.get
   secretmanager.secrets.create
   secretmanager.secrets.get
 )

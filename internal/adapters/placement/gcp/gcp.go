@@ -23,7 +23,7 @@ import (
 
 // Endpoints are the API base URLs; the zero value means Google's.
 type Endpoints struct {
-	SQL, KMS, Secrets, PubSub string
+	SQL, KMS, Secrets, PubSub, CRM string
 }
 
 func (e Endpoints) withDefaults() Endpoints {
@@ -34,7 +34,8 @@ func (e Endpoints) withDefaults() Endpoints {
 		return v
 	}
 	return Endpoints{SQL: def(e.SQL, "https://sqladmin.googleapis.com"), KMS: def(e.KMS, "https://cloudkms.googleapis.com"),
-		Secrets: def(e.Secrets, "https://secretmanager.googleapis.com"), PubSub: def(e.PubSub, "https://pubsub.googleapis.com")}
+		Secrets: def(e.Secrets, "https://secretmanager.googleapis.com"), PubSub: def(e.PubSub, "https://pubsub.googleapis.com"),
+		CRM: def(e.CRM, "https://cloudresourcemanager.googleapis.com")}
 }
 
 // Locations maps the manifest's regions to GCP locations.
@@ -47,6 +48,7 @@ var DeployPermissions = []string{
 	"cloudkms.cryptoKeyVersions.useToEncrypt",
 	"cloudkms.cryptoKeys.create",
 	"cloudkms.cryptoKeys.get",
+	"cloudkms.cryptoKeys.setIamPolicy",
 	"cloudkms.keyRings.create",
 	"cloudkms.keyRings.get",
 	"cloudsql.databases.create",
@@ -55,6 +57,7 @@ var DeployPermissions = []string{
 	"cloudsql.instances.get",
 	"pubsub.topics.create",
 	"pubsub.topics.get",
+	"resourcemanager.projects.get",
 	"secretmanager.secrets.create",
 	"secretmanager.secrets.get",
 }
@@ -135,8 +138,15 @@ type labelled struct {
 	Labels   map[string]string `json:"labels"`
 	Region   string            `json:"region"` // Cloud SQL instances; the others carry it in labels
 	Settings struct {
-		UserLabels map[string]string `json:"userLabels"` // Cloud SQL keeps its labels here
+		UserLabels      map[string]string `json:"userLabels"` // Cloud SQL keeps its labels here
+		IPConfiguration struct {
+			IPv4Enabled    bool   `json:"ipv4Enabled"`
+			PrivateNetwork string `json:"privateNetwork"`
+		} `json:"ipConfiguration"`
 	} `json:"settings"`
+	DiskEncryption struct {
+		KMSKeyName string `json:"kmsKeyName"`
+	} `json:"diskEncryptionConfiguration"`
 }
 
 // check refuses an existing resource that belongs to another cell, kind or location.
@@ -270,9 +280,17 @@ func (p Project) database(ctx context.Context, e Endpoints, r ports.CellResource
 	dbName := "sb_" + strings.ReplaceAll(r.Tenant, "-", "_")
 	base := e.SQL + "/v1/projects/" + p.ID + "/instances"
 	ir := ports.CellResource{Kind: "database", Name: dbName, Tenant: r.Tenant, Region: r.Region} // the instance is labelled as the database
+	key, err := p.sqlKey(ctx, r)
+	if err != nil {
+		return "", err
+	}
+	network := "projects/" + p.ID + "/global/networks/sb-cell"
 	got, err := p.ensure(ctx, "instance "+inst, base+"/"+inst, ir, loc, func() error {
 		body := map[string]any{"name": inst, "region": loc, "databaseVersion": "POSTGRES_17",
-			"settings": map[string]any{"tier": "db-custom-2-7680", "userLabels": labels(ir, loc)}}
+			"diskEncryptionConfiguration": map[string]any{"kmsKeyName": key},
+			"settings": map[string]any{"tier": "db-custom-2-7680", "userLabels": labels(ir, loc),
+				"ipConfiguration": map[string]any{"ipv4Enabled": false, "privateNetwork": network},
+				"databaseFlags":   []any{map[string]any{"name": "cloudsql.enable_pgvector", "value": "on"}}}}
 		var op struct {
 			Name string `json:"name"`
 		}
@@ -286,6 +304,9 @@ func (p Project) database(ctx context.Context, e Endpoints, r ports.CellResource
 	}
 	if got.Region != loc {
 		return "", fmt.Errorf("gcp: instance %s is in %s, not %s", inst, got.Region, loc)
+	}
+	if got.Settings.IPConfiguration.IPv4Enabled || got.Settings.IPConfiguration.PrivateNetwork != network || got.DiskEncryption.KMSKeyName != key {
+		return "", fmt.Errorf("gcp: instance %s isn't private-IP on %s with the cell's CMEK key (SB-902)", inst, network)
 	}
 	dbURL := base + "/" + inst + "/databases/" + dbName
 	var db struct {
@@ -315,6 +336,11 @@ func (p Project) EnsureRootKey(ctx context.Context, r ports.CellResource) (strin
 	if r.Kind != "root-key" {
 		return "", fmt.Errorf("gcp: %s is not a root key", r.Kind)
 	}
+	return p.ensureKey(ctx, r)
+}
+
+// ensureKey finds or creates a key in the cell's key ring, labelled with r's kind.
+func (p Project) ensureKey(ctx context.Context, r ports.CellResource) (string, error) {
 	loc, err := p.prepare(r)
 	if err != nil {
 		return "", err
@@ -323,10 +349,11 @@ func (p Project) EnsureRootKey(ctx context.Context, r ports.CellResource) (strin
 		return "", fmt.Errorf("gcp: unsafe key name %q", r.Name)
 	}
 	e := p.Endpoints.withDefaults()
+	ringRes := ports.CellResource{Kind: "key-ring", Name: "sb-" + r.Tenant, Tenant: r.Tenant, Region: r.Region}
 	ring := "projects/" + p.ID + "/locations/" + loc + "/keyRings/sb-" + r.Tenant
-	if _, err := p.ensure(ctx, "key ring", e.KMS+"/v1/"+ring, r, loc, func() error {
+	if _, err := p.ensure(ctx, "key ring", e.KMS+"/v1/"+ring, ringRes, loc, func() error {
 		return p.do(ctx, http.MethodPost, e.KMS+"/v1/projects/"+p.ID+"/locations/"+loc+"/keyRings?keyRingId=sb-"+r.Tenant,
-			map[string]any{"labels": labels(r, loc)}, nil)
+			map[string]any{"labels": labels(ringRes, loc)}, nil)
 	}); err != nil {
 		return "", err
 	}
@@ -339,6 +366,38 @@ func (p Project) EnsureRootKey(ctx context.Context, r ports.CellResource) (strin
 		return "", err
 	}
 	return got.Name, nil
+}
+
+// number is the project's number, which names its Google-managed service agents.
+func (p Project) number(ctx context.Context) (string, error) {
+	var pr struct {
+		ProjectNumber string `json:"projectNumber"`
+	}
+	if err := p.do(ctx, http.MethodGet, p.Endpoints.withDefaults().CRM+"/v1/projects/"+p.ID, nil, &pr); err != nil {
+		return "", err
+	}
+	if pr.ProjectNumber == "" {
+		return "", fmt.Errorf("gcp: project %s has no number", p.ID)
+	}
+	return pr.ProjectNumber, nil
+}
+
+// sqlKey makes the database's CMEK key and lets only this project's Cloud SQL agent use it.
+func (p Project) sqlKey(ctx context.Context, r ports.CellResource) (string, error) {
+	key, err := p.ensureKey(ctx, ports.CellResource{Kind: "database-key", Name: "cell-" + r.Tenant + "-sql", Tenant: r.Tenant, Region: r.Region})
+	if err != nil {
+		return "", err
+	}
+	num, err := p.number(ctx)
+	if err != nil {
+		return "", err
+	}
+	agent := "serviceAccount:service-" + num + "@gcp-sa-cloud-sql.iam.gserviceaccount.com"
+	body := map[string]any{"policy": map[string]any{"bindings": []any{map[string]any{"role": "roles/cloudkms.cryptoKeyEncrypterDecrypter", "members": []string{agent}}}}}
+	if err := p.do(ctx, http.MethodPost, p.Endpoints.withDefaults().KMS+"/v1/"+key+":setIamPolicy", body, nil); err != nil {
+		return "", err
+	}
+	return key, nil
 }
 
 func (p Project) owns(keyID string) error {

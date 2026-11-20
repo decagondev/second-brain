@@ -19,7 +19,7 @@ import (
 func project(f *gcptest.Fake, id, token string) Project {
 	return Project{ID: id, HTTP: f.Server.Client(), Poll: time.Millisecond,
 		Token:     func(context.Context) (string, error) { return token, nil },
-		Endpoints: Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL()}}
+		Endpoints: Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL(), CRM: f.URL()}}
 }
 
 func TestContract(t *testing.T) {
@@ -156,6 +156,55 @@ func TestBootstrapScriptMatchesTheCode(t *testing.T) {
 	got := strings.Fields(block[1])
 	if strings.Join(got, ",") != strings.Join(DeployPermissions, ",") {
 		t.Fatalf("script grants %v\ncode uses %v", got, DeployPermissions)
+	}
+	if bash, err := exec.LookPath("bash"); err == nil {
+		if out, err := exec.Command(bash, "-n", path).CombinedOutput(); err != nil {
+			t.Fatalf("bash -n: %v %s", err, out)
+		}
+	}
+}
+
+// SB-902: the database is private-IP only and encrypted with the cell's own key, which only
+// this project's Cloud SQL agent may use; destroying the key makes the data unreadable.
+func TestDatabaseIsPrivateWithCMEK(t *testing.T) {
+	ctx := context.Background()
+	f := gcptest.New()
+	t.Cleanup(f.Server.Close)
+	f.Grant("tok", "gamma-prod-7731", DeployPermissions...)
+	p := project(f, "gamma-prod-7731", "tok")
+	db := ports.CellResource{Kind: "database", Name: "sb_gamma_parts", Tenant: "gamma-parts", Region: "eu"}
+	if _, err := p.Ensure(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Ensure(ctx, db); err != nil {
+		t.Fatalf("re-stamping a private CMEK database: %v", err)
+	}
+	f.DestroyKey("projects/gamma-prod-7731/locations/europe-west1/keyRings/sb-gamma-parts/cryptoKeys/cell-gamma-parts-sql")
+	if _, err := p.Ensure(ctx, db); err == nil || !strings.Contains(err.Error(), "400") {
+		t.Fatalf("the database was still readable after its key was destroyed: %v", err)
+	}
+}
+
+// A public instance made by someone else isn't reused.
+func TestPublicInstanceRefused(t *testing.T) {
+	ctx := context.Background()
+	f := gcptest.New()
+	t.Cleanup(f.Server.Close)
+	f.Grant("tok", "gamma-prod-7731", DeployPermissions...)
+	f.Put("projects/gamma-prod-7731/instances/sb-gamma-parts", map[string]any{"region": "europe-west1",
+		"settings": map[string]any{"userLabels": map[string]any{"sb-tenant": "gamma-parts", "sb-kind": "database", "sb-location": "europe-west1"},
+			"ipConfiguration": map[string]any{"ipv4Enabled": true}}})
+	p := project(f, "gamma-prod-7731", "tok")
+	_, err := p.Ensure(ctx, ports.CellResource{Kind: "database", Name: "sb_gamma_parts", Tenant: "gamma-parts", Region: "eu"})
+	if err == nil || !strings.Contains(err.Error(), "SB-902") {
+		t.Fatalf("a public instance was reused: %v", err)
+	}
+}
+
+func TestPerimeterScriptIsValidBash(t *testing.T) {
+	const path = "../../../../deploy/gcp/bootstrap-perimeter.sh"
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal(err)
 	}
 	if bash, err := exec.LookPath("bash"); err == nil {
 		if out, err := exec.Command(bash, "-n", path).CombinedOutput(); err != nil {

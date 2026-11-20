@@ -98,3 +98,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-19 | LAW-19 to LAW-23 | — → Stated → Tested (red) | SB-804: in sb-laws(7) with owners; five red tests in the ratchet; references pass and six mutations are caught |
 | 2026-11-20 | LAW-19, LAW-20, LAW-22 | Modelled | SB-805: `Spaces.als` 4 checks UNSAT at scope 5, 2 runs SAT; 3 mutations caught; crosscheck mirror (6,912 cases) |
 | 2026-11-20 | LAW-02, LAW-06 | Tested (extended) | SB-901: services run only images from admitted releases, Binary Authorization refuses a sideload, an updater skipping admission is caught; every account is the cell's own and no updater crosses projects |
+| 2026-11-20 | LAW-02, LAW-18 | Tested (extended) | SB-902: two cell perimeters hold even with a cross-cell IAM mistake (mutation caught); the database's CMEK key is the cell's own, and destroying it makes the data unreadable |

@@ -34,7 +34,7 @@ var NewAccessWorld = func() (AccessWorld, func()) {
 	f.Grant("tok-verifier", accProject, gcp.VerifierPermissions...)
 	p := gcp.Project{ID: accProject, HTTP: f.Server.Client(), Poll: time.Millisecond,
 		Token:     func(context.Context) (string, error) { return "tok-verifier", nil },
-		Endpoints: gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL()}}
+		Endpoints: gcp.Endpoints{SQL: f.URL(), KMS: f.URL(), Secrets: f.URL(), PubSub: f.URL(), CRM: f.URL()}}
 	src := gcp.IAM{Project: p, Factory: accFactory, Location: "europe-west1"}
 	src.Endpoints.CRM, src.Endpoints.IAM = f.URL(), f.URL()
 	w := &accessWorld{f: f, sources: []access.Source{src, access.Wraps{Store: &keywrap.MemoryStore{}}}}

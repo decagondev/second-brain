@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"example.com/second-brain/internal/adapters/placement/gcp"
 	"example.com/second-brain/internal/core/export"
 	"fmt"
 	"math/rand"
@@ -1046,4 +1047,21 @@ func (s skipAdmit) Update(target string) error {
 		}
 	}
 	return nil
+}
+
+// LAW-02's perimeter check catches cells with no perimeter and a cross-cell IAM mistake.
+func TestSelf_LAW02PerimeterMutationIsCaught(t *testing.T) {
+	saved := NewPerimeterWorld
+	defer func() { NewPerimeterWorld = saved }()
+	NewPerimeterWorld = func(bool) (PerimeterWorld, func(), error) {
+		w, done, err := saved(true)
+		if err == nil {
+			pw := w.(*perimeterWorld)
+			pw.f.Perimeter(rtProjectB, "serviceAccount:"+gcp.ServiceAccount(rtProjectB, "api"), "serviceAccount:"+gcp.ServiceAccount(rtProjectA, "api"))
+		}
+		return w, done, err
+	}
+	if !violates(40, func(r *rand.Rand) error { return law02Perimeter(r, true) }) {
+		t.Error("LAW-02 (perimeter): a perimeter that lets the other cell in was not caught")
+	}
 }

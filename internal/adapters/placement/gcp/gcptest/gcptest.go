@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -29,6 +30,10 @@ type Fake struct {
 	policies map[string]map[string][]string
 	// attested: project -> image references the project's attestor has signed (Binary Authorization)
 	attested map[string]map[string]bool
+	// destroyed CMEK keys; perimeters: project -> principals allowed through; principals: token -> member
+	destroyed  map[string]bool
+	perimeters map[string]map[string]bool
+	principals map[string]string
 	// Run is Cloud Run's state: "projects/P/locations/L/services/NAME" -> resource.
 	Run map[string]map[string]any
 	n   int
@@ -38,7 +43,7 @@ type Fake struct {
 
 // New starts the fake.
 func New() *Fake {
-	f := &Fake{attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
+	f := &Fake{destroyed: map[string]bool{}, perimeters: map[string]map[string]bool{}, principals: map[string]string{}, attested: map[string]map[string]bool{}, Run: map[string]map[string]any{}, policies: map[string]map[string][]string{}, grants: map[string]map[string]map[string]bool{}, res: map[string]map[string]any{}, keys: map[string][]byte{}, Calls: map[string]int{}}
 	f.Server = httptest.NewTLSServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -98,6 +103,13 @@ func errBody(code int, status string) map[string]any {
 // route names the permission a request needs and the resource path it acts on.
 func route(method, path string) (perm, project, res string, create bool) {
 	p := strings.TrimPrefix(path, "/v1/")
+	if strings.HasSuffix(p, ":setIamPolicy") && strings.Contains(p, "/cryptoKeys/") {
+		res := strings.TrimSuffix(p, ":setIamPolicy")
+		return "cloudkms.cryptoKeys.setIamPolicy", strings.Split(res, "/")[1], "setiam:" + res, false
+	}
+	if method == http.MethodGet && strings.Count(p, "/") == 1 && strings.HasPrefix(p, "projects/") {
+		return "resourcemanager.projects.get", strings.Split(p, "/")[1], "project:" + p, false
+	}
 	if strings.HasSuffix(p, ":getIamPolicy") {
 		res := strings.TrimSuffix(p, ":getIamPolicy")
 		proj := strings.Split(res, "/")
@@ -177,11 +189,38 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 		reply(w, 403, errBody(403, "PERMISSION_DENIED"))
 		return
 	}
+	if allowed, fenced := f.perimeters[project]; fenced && restricted(perm) && !allowed[f.principals[tok]] {
+		reply(w, 403, errBody(403, "PERMISSION_DENIED: Request is prohibited by organization's policy (VPC_SERVICE_CONTROLS)"))
+		return
+	}
 	var body map[string]any
 	if r.Body != nil {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 	}
 	switch {
+	case strings.HasPrefix(path, "project:"):
+		reply(w, 200, map[string]any{"projectId": project, "projectNumber": projectNumber(project)})
+		return
+	case strings.HasPrefix(path, "setiam:"):
+		key := strings.TrimPrefix(path, "setiam:")
+		if _, ok := f.keys[key]; !ok {
+			reply(w, 404, errBody(404, "NOT_FOUND"))
+			return
+		}
+		pol, _ := body["policy"].(map[string]any)
+		bs, _ := pol["bindings"].([]any)
+		f.policies[key] = map[string][]string{}
+		for _, b := range bs {
+			bm, _ := b.(map[string]any)
+			role, _ := bm["role"].(string)
+			ms, _ := bm["members"].([]any)
+			for _, m := range ms {
+				ss, _ := m.(string)
+				f.policies[key][role] = append(f.policies[key][role], ss)
+			}
+		}
+		reply(w, 200, map[string]any{"bindings": bs})
+		return
 	case strings.HasSuffix(perm, "useToEncrypt"), strings.HasSuffix(perm, "useToDecrypt"):
 		f.crypt(w, path, perm, body)
 	case strings.Contains(path, "/operations/"):
@@ -201,6 +240,15 @@ func (f *Fake) serve(w http.ResponseWriter, r *http.Request) {
 			reply(w, 404, errBody(404, "NOT_FOUND"))
 			return
 		}
+		if strings.Contains(path, "/databases/") {
+			inst := f.res[path[:strings.Index(path, "/databases/")]]
+			if dec, _ := inst["diskEncryptionConfiguration"].(map[string]any); dec != nil {
+				if key, _ := dec["kmsKeyName"].(string); f.destroyed[key] {
+					reply(w, 400, errBody(400, "FAILED_PRECONDITION: the instance's CMEK key is destroyed; its data can't be read"))
+					return
+				}
+			}
+		}
 		reply(w, 200, v)
 	}
 }
@@ -214,7 +262,17 @@ func (f *Fake) create(w http.ResponseWriter, r *http.Request, path string, body 
 	case strings.HasSuffix(path, "/instances"):
 		n, _ := body["name"].(string)
 		name = path + "/" + n
-		out = map[string]any{"settings": body["settings"], "region": body["region"], "databaseVersion": body["databaseVersion"]}
+		out = map[string]any{"settings": body["settings"], "region": body["region"], "databaseVersion": body["databaseVersion"],
+			"diskEncryptionConfiguration": body["diskEncryptionConfiguration"]}
+		if dec, ok := body["diskEncryptionConfiguration"].(map[string]any); ok {
+			key, _ := dec["kmsKeyName"].(string)
+			project := strings.Split(path, "/")[1]
+			agent := "serviceAccount:service-" + projectNumber(project) + "@gcp-sa-cloud-sql.iam.gserviceaccount.com"
+			if _, exists := f.keys[key]; !exists || !strings.HasPrefix(key, "projects/"+project+"/") || !contains(f.policies[key]["roles/cloudkms.cryptoKeyEncrypterDecrypter"], agent) {
+				reply(w, 400, errBody(400, "INVALID_ARGUMENT: the Cloud SQL service agent can't use the CMEK key"))
+				return
+			}
+		}
 	case strings.HasSuffix(path, "/databases"):
 		n, _ := body["name"].(string)
 		name = path + "/" + n
@@ -246,6 +304,10 @@ func (f *Fake) create(w http.ResponseWriter, r *http.Request, path string, body 
 
 func (f *Fake) crypt(w http.ResponseWriter, key, perm string, body map[string]any) {
 	k, ok := f.keys[key]
+	if f.destroyed[key] {
+		reply(w, 400, errBody(400, "FAILED_PRECONDITION: the key version is destroyed"))
+		return
+	}
 	if !ok {
 		reply(w, 404, errBody(404, "NOT_FOUND"))
 		return
@@ -408,4 +470,55 @@ func (f *Fake) Running(project, location, kind, name string) string {
 	c, _ := cs[0].(map[string]any)
 	img, _ := c["image"].(string)
 	return img
+}
+
+func projectNumber(project string) string {
+	n := 100000000000
+	for _, c := range project {
+		n = (n*31 + int(c)) % 900000000000
+	}
+	return strconv.Itoa(n + 100000000000)
+}
+
+func contains(xs []string, v string) bool {
+	for _, x := range xs {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+// restricted are the services a VPC Service Controls perimeter covers (sb-runtime(7)).
+func restricted(perm string) bool {
+	for _, p := range []string{"cloudsql.", "cloudkms.", "secretmanager.", "pubsub.", "storage."} {
+		if strings.HasPrefix(perm, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// DestroyKey destroys a KMS key's material (crypto-shredding).
+func (f *Fake) DestroyKey(key string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.destroyed[key] = true // the key resource stays; its material is gone
+}
+
+// Principal says which member a token authenticates as.
+func (f *Fake) Principal(token, member string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.principals[token] = member
+}
+
+// Perimeter puts project inside a VPC Service Controls perimeter that lets only members through.
+func (f *Fake) Perimeter(project string, members ...string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.perimeters[project] = map[string]bool{}
+	for _, m := range members {
+		f.perimeters[project][m] = true
+	}
 }

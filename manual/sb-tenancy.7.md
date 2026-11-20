@@ -50,7 +50,7 @@ The `gcp` adapter (`internal/adapters/placement/gcp`) implements `Placement` and
 
 | Template resource | GCP resource |
 |---|---|
-| `database` | a Cloud SQL for PostgreSQL instance `sb-TENANT`, and the database `sb_TENANT` in it |
+| `database` | a Cloud SQL for PostgreSQL 17 instance `sb-TENANT` (private IP, CMEK `cell-TENANT-sql`, sb-runtime(7)), and the database `sb_TENANT` in it |
 | `index-schema` | the schema `idx` in that database, made by the cell's migrations. The adapter ensures the database exists and returns the schema's id |
 | `vault-namespace` | the Secret Manager prefix `sb-TENANT-`, marked by a secret `sb-TENANT-namespace`, with replication only in the cell's region |
 | `root-key` | the Cloud KMS key `cell-TENANT-root` (symmetric, encrypt and decrypt) in the key ring `sb-TENANT`. `Wrap` and `Unwrap` are KMS `encrypt` and `decrypt`, with the key's name as additional authenticated data, so the key's material never leaves KMS |
