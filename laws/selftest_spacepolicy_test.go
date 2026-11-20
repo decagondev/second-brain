@@ -82,3 +82,35 @@ func TestSelf_LAW03SpaceFactsMutationIsCaught(t *testing.T) {
 		t.Error("LAW-03 (space facts): policies without the missing-fact rule were not caught")
 	}
 }
+
+// LAW-20 on the ask path catches retrieval without its space step: the live ACL alone
+// lets a viewer read restricted content of a space they aren't in.
+func TestSelf_LAW20AskMutationIsCaught(t *testing.T) {
+	mk := func() SpaceSystem { a := newAskSpaces(); a.skipSpaces = true; return a }
+	if !violates(runs, func(r *rand.Rand) error { return law20(r, mk()) }) {
+		t.Error("LAW-20 (ask): retrieval without the space step was not caught")
+	}
+}
+
+// The ask path agrees with the reference cell on every ask.
+func TestSelf_AskSpacesMatchTheReference(t *testing.T) {
+	for seed := int64(0); seed < 30; seed++ {
+		sp := genSpaces(rand.New(rand.NewSource(seed)))
+		ref, sys := &refSpaces{}, NewSpaceSystem()
+		_ = ref.Load(sp)
+		if err := sys.Load(sp); err != nil {
+			t.Fatal(err)
+		}
+		for _, a := range asks(sp) {
+			want, wr, _ := ref.Ask(a[0], a[1])
+			got, gr, err := sys.Ask(a[0], a[1])
+			if err != nil || wr != gr || !sameSet(want, got) {
+				t.Fatalf("seed %d, %s in %s: ask %v (refused %v, %v), reference %v (refused %v)", seed, a[0], a[1], got, gr, err, want, wr)
+			}
+		}
+	}
+}
+
+func TestLAW19_AsksOnlyNarrow(t *testing.T) {
+	Check(t, "LAW-19", runs, func(r *rand.Rand) error { return law19(r, NewSpaceSystem()) })
+}

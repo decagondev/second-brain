@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.3a Ask in a space or company-wide (SB-1006)
+
+**Wave/slice:** W10 / S10.3a · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** the space step in `retrieve.Context`, spaces in `tools/evalcell` and `evals/targets.py`, `laws/law20ask.go`, `space-leak` in the gate. The manual changed first: sb-ask(3), sb-citations(7), sb-spaces(7), sb-eval(5), sb-evals(7) and sb-laws(7).
+
+**Why this way:** The space checks run before the ACL batch because they are local and cheap, and a chunk they refuse never needs a source call; the batch still decides every chunk they allow, so the source stays the authority (LAW-19). The trace reason is worked out after the kernel's decision, so explaining a refusal can never change it.
+
+**Learned:** The eval world needed a document's path and label in its first version: placing it afterwards made a second version, and the controls looked for the first.
+
+**Laws:** LAW-20 green (out of the ratchet, one mutation caught); LAW-19 and LAW-01 extended on the ask path. LAW-21 to LAW-23 stay red.
+
+**Next:** S10.3b, spaces in the web UI and the chat app (SB-1007).
+
 ## 2026-11-20 S10.2b Ingest routes and labels every document (SB-1005)
 
 **Wave/slice:** W10 / S10.2b · **Author:** platform lead + Claude · **Status:** In review (a real Drive with labels)

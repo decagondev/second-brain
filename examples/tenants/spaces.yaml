@@ -1,5 +1,5 @@
 # Department spaces (sb-space(5)). `sb tenant check` and `apply --plan` accept this;
-# `apply` refuses it until the cell enforces spaces (SB-1006).
+# `apply` refuses it until the whole cell enforces spaces (SB-1008).
 tenant: acme-logistics
 channel: stable
 idp: oidc://login.acme.example

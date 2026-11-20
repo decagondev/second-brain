@@ -1,7 +1,7 @@
 # Space-leak suite (SB-807; sb-eval(5), Space-leak suites). Each case asks, company-wide, a
 # question that only another space's restricted content could answer, as someone outside
 # that space whom the source wrongly lets open it. The expected result is a refusal.
-# Red until SB-1006 (spaces in the ask path); make evals requires it to fail until then.
+# Green since SB-1006 (spaces in the ask path), and part of the release gate.
 suite: space-leak
 world: fixtures/space-leak
 cases:

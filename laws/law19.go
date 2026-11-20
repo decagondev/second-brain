@@ -45,13 +45,19 @@ type SpaceSystem interface {
 	Ask(user, space string) (used []string, refused bool, err error)
 }
 
-// NewSpaceSystem builds the system under test: spaces in a cell (SB-1004, SB-1006, SB-1203).
-var NewSpaceSystem = func() SpaceSystem { return pendingSpaces{} }
+// NewSpaceSystem builds the system under test: asks in a cell with spaces, through
+// retrieval (SB-1006). See law20ask.go.
+var NewSpaceSystem = func() SpaceSystem { return newAskSpaces() }
+
+// NewBarrierSystem is the system for LAW-22: barriers as forbids for reads, drafts and
+// actions, with ownership from the source (SB-1203). Reads already honour barriers
+// through NewSpaceSystem; the law waits for the rest.
+var NewBarrierSystem = func() SpaceSystem { return pendingSpaces{} }
 
 type pendingSpaces struct{}
 
 func (pendingSpaces) Load(SpaceSpec) error {
-	return fmt.Errorf("%w: spaces in a cell arrive with SB-1004, SB-1006 and SB-1203", ErrPending)
+	return fmt.Errorf("%w: barriers for drafts and actions, and ownership from the source, arrive with SB-1203", ErrPending)
 }
 func (pendingSpaces) Ask(string, string) ([]string, bool, error) { return nil, true, nil }
 

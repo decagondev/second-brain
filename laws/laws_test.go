@@ -287,7 +287,7 @@ func TestLAW21_MovesRevokeFast(t *testing.T) {
 }
 
 func TestLAW22_BarriersHold(t *testing.T) {
-	Check(t, "LAW-22", runs, func(r *rand.Rand) error { return law22(r, NewSpaceSystem()) })
+	Check(t, "LAW-22", runs, func(r *rand.Rand) error { return law22(r, NewBarrierSystem()) })
 }
 
 func TestLAW23_GrantsAreConsentedAndRevocable(t *testing.T) {

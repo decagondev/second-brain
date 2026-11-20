@@ -80,6 +80,14 @@ func (s *Source) Put(id, title, text string, viewers ...string) {
 	s.log = append(s.log, change{id: id})
 }
 
+// PutAt is Put with the document's location and source label, in one version (SB-1005).
+func (s *Source) PutAt(id, title, text, location, label string, viewers ...string) {
+	s.Put(id, title, text, viewers...)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.docs[id].location, s.docs[id].label = location, label
+}
+
 // Place sets where a document lives and its source label (SB-1005): a content change, as
 // moving a file or changing its classification is at a real source.
 func (s *Source) Place(id, location, label string) {

@@ -5,6 +5,7 @@ package retrieve
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -12,6 +13,7 @@ import (
 
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -76,6 +78,9 @@ type Authoriser struct {
 	Policy     policy.Kernel
 	// Killed reports a killed connector kind; its documents stay Unknown (sb-kill-switches(7)).
 	Killed func(kind string) bool
+	// Spaces returns the cell's spaces and barriers now (SB-1006); nil is a cell without
+	// spaces. An error fails the request: space checks are never skipped.
+	Spaces func(ctx context.Context) ([]ports.Space, [][2]string, error)
 	// Metrics counts live verdicts per connector (sb_acl_verdicts_total), ids only.
 	Metrics interface {
 		Add(name, help string, labels map[string]string, v float64)
@@ -176,6 +181,45 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 			chunks = append(chunks, c.Chunk)
 		}
 	}
+	var res Result
+	refused := map[string]bool{}
+	decided := map[string]int{}
+	decide := func(c ports.Chunk, reason string) {
+		k := docKey(c)
+		if i, ok := decided[k]; !ok {
+			decided[k] = len(res.Decisions)
+			res.Decisions = append(res.Decisions, Decision{Cite: c.Cite, Verdict: verdictOf(reason), Reason: reason})
+		} else if reason != "allowed" && res.Decisions[i].Reason == "allowed" {
+			res.Decisions[i] = Decision{Cite: c.Cite, Verdict: "refuse", Reason: reason}
+		}
+		if reason != "allowed" {
+			refused[k] = true
+		}
+	}
+	// Spaces, labels and barriers run first, so the live ACL batch asks only about chunks
+	// they allow; the ACL still decides every one of those (sb-permissions(7); SB-1006).
+	if a.Spaces != nil {
+		all, barriers, err := a.Spaces(ctx)
+		if err != nil {
+			return Result{}, fmt.Errorf("retrieve: spaces: %w", err)
+		}
+		if len(all) > 0 {
+			rctx := spaces.ReadContext(all, barriers, s.Groups(), s.Space())
+			kept := chunks[:0:0]
+			for _, c := range chunks {
+				ent := policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}
+				for k, v := range spaces.ChunkAttrs(c.Label, c.Spaces) {
+					ent.Attrs[k] = v
+				}
+				if a.Policy.Authorise(ctx, s, "read", ent, rctx).Decision != policy.Allow {
+					decide(c, spaceReason(c, rctx))
+					continue
+				}
+				kept = append(kept, c)
+			}
+			chunks = kept
+		}
+	}
 	verdicts := a.Check(ctx, user, chunks)
 	if a.Metrics != nil {
 		for k, v := range verdicts {
@@ -184,11 +228,11 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 				map[string]string{"tenant": s.Tenant(), "connector": kind, "verdict": strings.ToLower(v.String())}, 1)
 		}
 	}
-	var res Result
-	refused := map[string]bool{}
-	decided := map[string]int{}
 	for _, c := range chunks {
 		k := docKey(c)
+		if refused[k] {
+			continue // another chunk of this document was refused by a space check
+		}
 		reason := "allowed"
 		switch {
 		case verdicts[k] == ports.VerdictDeny:
@@ -198,14 +242,8 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 		case a.Policy.Authorise(ctx, s, "read", policy.Entity{Type: "Chunk", ID: c.ID, Tenant: c.Tenant, Attrs: map[string]any{"cite": c.Cite}}, nil).Decision != policy.Allow:
 			reason = "policy_denied"
 		}
-		if i, ok := decided[k]; !ok {
-			decided[k] = len(res.Decisions)
-			res.Decisions = append(res.Decisions, Decision{Cite: c.Cite, Verdict: verdictOf(reason), Reason: reason})
-		} else if reason != "allowed" && res.Decisions[i].Reason == "allowed" {
-			res.Decisions[i] = Decision{Cite: c.Cite, Verdict: "refuse", Reason: reason}
-		}
+		decide(c, reason)
 		if reason != "allowed" {
-			refused[k] = true
 			continue
 		}
 		if len(res.Context) < Budget {
@@ -214,6 +252,29 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 	}
 	res.Refused = len(refused)
 	return res, nil
+}
+
+// spaceReason names which space check refused a chunk, for the trace (sb-ask(3)): its
+// decision always comes from the policy kernel; this only explains it.
+func spaceReason(c ports.Chunk, rctx map[string]any) string {
+	barred, _ := rctx["barred_spaces"].([]string)
+	in := func(xs []string, x string) bool {
+		for _, y := range xs {
+			if y == x {
+				return true
+			}
+		}
+		return false
+	}
+	for _, h := range c.Spaces {
+		if in(barred, h) {
+			return "barrier_denied"
+		}
+	}
+	if sp, _ := rctx["space"].(string); sp != spaces.Company && !in(c.Spaces, sp) {
+		return "space_denied"
+	}
+	return "label_denied"
 }
 
 func verdictOf(reason string) string {

@@ -1,14 +1,14 @@
 # World for the space-leak suite (SB-807). Three restricted spaces, and a Drive sharing
 # mistake on each: Bob, who is in none of them, can open one restricted file in each at the
 # source. Only the spaces (SB-1006) keep those files out of his company-wide answers; a cell
-# without spaces cites them, which is why this suite is red until then.
+# without spaces would cite them.
 tenant: acme-logistics
 users:
   - { id: usr_pia, email: pia@acme-logistics.example, groups: [grp_people_team] }
   - { id: usr_fred, email: fred@acme-logistics.example, groups: [grp_finance] }
   - { id: usr_eli, email: eli@acme-logistics.example, groups: [grp_exec] }
   - { id: usr_bob, email: bob@acme-logistics.example, groups: [grp_support] }
-spaces:   # read by the local cell from SB-1006; ignored before then
+spaces:   # read by the local cell (SB-1006)
   people: { members: [grp_people_team], label: restricted, scope: { docs: ["/People/**"] } }
   finance: { members: [grp_finance], label: restricted, scope: { docs: ["/Finance/**"] } }
   executive: { members: [grp_exec], label: restricted, scope: { docs: ["/Executive/**"] } }

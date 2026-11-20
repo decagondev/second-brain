@@ -246,7 +246,7 @@ func TestWorkflowWaitsForEvals(t *testing.T) {
 }
 
 // SB-1001: a manifest with spaces is checked and planned, but apply refuses it, before any
-// write, until the cell enforces spaces (SB-1006).
+// write, until the whole cell enforces spaces (SB-1008).
 func TestSpacesAreNotAppliedYet(t *testing.T) {
 	w := newWorld()
 	for _, extra := range []string{

@@ -38,6 +38,7 @@ A claim with no valid citation is labelled `uncited` **by code** (LAW-14). It ma
 - A chunk id the model made up.
 - A chunk that wasn't in the allowed context.
 - A document that was refused (deny or unknown).
+- A chunk a space, label or barrier check refused (SB-1006): it never reaches the context, so it can't be cited.
 
 These are stripped and logged as `citation_spoof`.
 

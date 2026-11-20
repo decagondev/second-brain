@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -21,12 +22,14 @@ import (
 	"example.com/second-brain/internal/adapters/embed/hashing"
 	memindex "example.com/second-brain/internal/adapters/index/memory"
 	"example.com/second-brain/internal/adapters/policy/cedar"
+	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	tracemem "example.com/second-brain/internal/adapters/traces/memory"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retrieve"
+	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -45,7 +48,27 @@ type world struct {
 		// ViewersNow changes who may open the document after ingest, without a sync: the
 		// prefilter is stale and only the live check knows (permission suite).
 		ViewersNow *[]string `json:"viewers_now"`
+		// Path and Label are the document's location and source label (SB-1005).
+		Path  string `json:"path"`
+		Label string `json:"label"`
 	} `json:"documents"`
+	// Spaces and Barriers make the local cell a cell with spaces (sb-eval(5); SB-1006).
+	Spaces map[string]struct {
+		Members []string            `json:"members"`
+		Label   string              `json:"label"`
+		Scope   map[string][]string `json:"scope"`
+	} `json:"spaces"`
+	Barriers [][2]string `json:"barriers"`
+}
+
+// spaceList is the world's spaces as the registry holds them.
+func (w world) spaceList() []ports.Space {
+	var out []ports.Space
+	for name, sp := range w.Spaces {
+		out = append(out, ports.Space{ID: spaces.ID(name), Tenant: w.Tenant, Name: name, Members: sp.Members, Label: sp.Label, Scope: sp.Scope})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out
 }
 
 type input struct {
@@ -56,6 +79,7 @@ type input struct {
 		Key    string `json:"key"`
 		As     string `json:"as"`
 		Ask    string `json:"ask"`
+		Space  string `json:"space"` // "" or "company" is company-wide
 		Inject struct {
 			ACL string `json:"acl"` // "timeout", "500" or "404" for the docs connector, this case only
 		} `json:"inject"`
@@ -127,7 +151,7 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 	src := mock.NewSource("docs")
 	texts := map[string]string{} // doc id -> the normalised text that spans index into
 	for _, d := range w.Documents {
-		src.Put(d.ID, d.Title, d.Text, d.Viewers...)
+		src.PutAt(d.ID, d.Title, d.Text, d.Path, d.Label, d.Viewers...)
 		if len(d.Viewers) == 0 {
 			src.SetViewers(d.ID)
 		}
@@ -137,6 +161,10 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 	conn := mock.New(src, false)
 	idx := memindex.New()
 	p := ingest.Pipeline{Tenant: w.Tenant, Release: "rel_eval", Connector: conn, Embedder: hashing.Embedder{}, Index: idx}
+	all := w.spaceList()
+	if len(all) > 0 {
+		p.Spaces = func(context.Context) ([]ports.Space, error) { return all, nil }
+	}
 	if _, err := p.Sync(ctx, ""); err != nil {
 		return nil, fmt.Errorf("ingest: %w", err)
 	}
@@ -153,9 +181,13 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 	for i, u := range w.Users {
 		users[u.ID] = i
 	}
+	auth := retrieve.Authoriser{Connectors: map[string]ports.Connector{"docs": conn}, Policy: policy.Kernel{Engine: engine, Recorder: nopRecorder{}}}
+	if len(all) > 0 {
+		auth.Spaces = func(context.Context) ([]ports.Space, [][2]string, error) { return all, w.Barriers, nil }
+	}
 	n := 0
 	agent := ask.Agent{Tenant: w.Tenant, Release: "rel_eval", Index: idx.Bind(w.Tenant), Embedder: hashing.Embedder{},
-		Auth:   retrieve.Authoriser{Connectors: map[string]ports.Connector{"docs": conn}, Policy: policy.Kernel{Engine: engine, Recorder: nopRecorder{}}},
+		Auth:   auth,
 		Model:  model,
 		Store:  tracemem.New(),
 		Killed: func(context.Context) bool { return false },
@@ -185,7 +217,14 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 			out[c.Key] = result{Error: "unknown user " + c.As}
 			continue
 		}
-		s, err := issuer.Issue(w.Tenant, c.As, w.Users[i].Groups)
+		// The space, resolved as the auth middleware does (sb-spaces(7)): a space the asker
+		// isn't a member of is refused, never asked company-wide.
+		space, err := spaces.Resolve(ctx, registry(w), w.Tenant, w.Users[i].Groups, c.Space)
+		if err != nil {
+			out[c.Key] = result{Error: "ESPACE: " + err.Error()}
+			continue
+		}
+		s, err := issuer.IssueIn(w.Tenant, c.As, w.Users[i].Groups, space)
 		if err != nil {
 			return nil, err
 		}
@@ -224,6 +263,19 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 		out[c.Key] = r
 	}
 	return out, nil
+}
+
+// registry is the world's space registry, or nil for a world without spaces.
+func registry(w world) ports.SpaceStore {
+	all := w.spaceList()
+	if len(all) == 0 {
+		return nil
+	}
+	st := spacemem.New()
+	for _, sp := range all {
+		_ = st.PutSpace(context.Background(), sp)
+	}
+	return st
 }
 
 func docID(cite string) string {

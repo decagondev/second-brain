@@ -109,7 +109,7 @@ func (e *UnavailableError) Unwrap() error { return e.Err }
 
 // ErrSpacesNotEnforced refuses a manifest with spaces or barriers until the cell enforces
 // them (sb-space(5)): a company must never believe a space protects what nothing enforces.
-var ErrSpacesNotEnforced = errors.New("spaces are checked and planned, but not enforced until SB-1006; apply refuses a manifest that declares spaces or barriers")
+var ErrSpacesNotEnforced = errors.New("spaces are checked and planned, but not enforced by the whole cell until SB-1008; apply refuses a manifest that declares spaces or barriers")
 
 // Run enacts t's plan and returns it. done is called after each change is recorded.
 // With nothing to do it writes nothing at all. A region change returns *plan.ImmutableError.

@@ -36,7 +36,7 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `as` | Fixture user to run as |
 | `ask` / `agent` + `input` | What to run |
 | `inject` | Faults, e.g. `{ connector: chat, acl: timeout }` |
-| `space` | The space the ask is in, or `company` for a company-wide ask (default). Read from SB-1006; ignored by a cell without spaces |
+| `space` | The space the ask is in, or `company` for a company-wide ask (default). The local cell resolves it as the auth middleware does, so a space the asker isn't a member of is an `ESPACE` error; a world without spaces ignores it |
 | `expect` | One or more checks (below) |
 
 ### Expectations
@@ -83,7 +83,7 @@ The `extractive` model is a deterministic stand-in: for each data block it is gi
 
 A **space-leak** case tries to make content cross from one space to someone outside it. It names an asker, the space they ask in (usually `company`), a question that only another space's `restricted` content could answer, and the expected refusal, as `cites_none` on that content. The world gives each such document a `label` and a `path` inside a space's scope, under a top-level `spaces:` map shaped like sb-space(5). It also lets the asker open the document at the source, which is the sharing mistake spaces exist to contain. Control cases check that `internal` content still answers everyone, and that members still get their own space's content.
 
-`evals/suites/space-leak.yaml` seeds People, Finance and Executive cases. Until SB-1006 it is **red on purpose**. `evals/expected_red.yaml` lists the cases that must fail, and `tools/check/evals_red.py` (in `make evals`) requires exactly those to fail and every other case to pass. When SB-1006 lands, the suite passes, the check fails until its entry is removed, and the suite joins the gate with `failures_max: 0`.
+`evals/suites/space-leak.yaml` seeds People, Finance and Executive cases. It was red on purpose until SB-1006 and is in the release gate with `failures_max: 0` since then. `evals/expected_red.yaml` is where a suite that must still fail is listed, with the cases that must fail; `tools/check/evals_red.py` (in `make evals`) requires exactly those to fail and every other case to pass. It is empty today.
 
 ### Tenant golden questions
 

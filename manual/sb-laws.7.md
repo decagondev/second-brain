@@ -160,7 +160,7 @@ No answer, citation, draft or action uses a chunk that the source's live ACL wou
 
 Content labelled `restricted` reaches only members of a space that holds it, including in company-wide asks.
 
-*Owner:* platform lead. *Checks:* Model (`Spaces.als: RestrictedStaysHome`) · Property (`TestLAW20_RestrictedStaysHome`, red until SB-1006) · Eval (`space-leak`, People, Finance and Executive cases).
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: RestrictedStaysHome`) · Property (`TestLAW20_RestrictedStaysHome` on the ask path since SB-1006; `TestLAW20_IngestNeverLabelsBelowRestricted`) · Eval (`space-leak`, People, Finance and Executive cases).
 
 ### LAW-21: Moves revoke fast {#law-21}
 

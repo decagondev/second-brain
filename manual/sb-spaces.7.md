@@ -22,7 +22,7 @@ use a chunk         ⇔  member ∧ label allowed ∧ no barrier ∧ source ACL 
 
 ## DESCRIPTION
 
-This page is the W8 draft that W10 to W12 build against ([ADR-0020](../docs/adr/ADR-0020-department-spaces-inside-the-cell.md), [08 Department brains](../docs/08-department-brains.md)). `sb tenant check` checks a manifest's spaces from SB-1001, but until SB-1006 enforces them, `sb tenant apply` **refuses** a manifest that declares any, with an error naming that ticket. The cell never runs with spaces silently ignored, because a company would believe its People brain was restricted when it wasn't.
+This page is the W8 draft that W10 to W12 build against ([ADR-0020](../docs/adr/ADR-0020-department-spaces-inside-the-cell.md), [08 Department brains](../docs/08-department-brains.md)). `sb tenant check` checks a manifest's spaces from SB-1001, asks enforce them from SB-1006, and until the whole cell does (SB-1008), `sb tenant apply` **refuses** a manifest that declares any, with an error naming that ticket. The cell never runs with spaces silently ignored, because a company would believe its People brain was restricted when it wasn't.
 
 ### What a space is
 
@@ -64,6 +64,9 @@ A label from the source wins where the source has one (for example a Drive label
 A **barrier** separates two groups, so that neither side's people can use content held only by the other side, in either direction (LAW-22). Barriers are for ethical walls: a deal team and everyone else, or two competing client teams. A barrier holds even where membership and labels would allow a read. It is checked on the asker's groups against the groups of every space that holds the document.
 
 ### Company-wide asks
+
+Built in SB-1006: retrieval runs the space checks before the live ACL batch (sb-ask(3), How the `ask` agent runs).
+
 
 An ask with no space is **company-wide**. Its candidates come from every space the asker is a member of, plus `public` and `internal` content from spaces they aren't in. Content labelled `confidential` or `restricted` comes only from the asker's own spaces. Each chunk still passes the barrier check and the source's live ACL.
 
