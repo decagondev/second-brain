@@ -227,3 +227,31 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestScopeReach` in `internal/core/manifest`, written first and red. Why it wasn't caught before: the space laws' generators draw each space's scope from its own folder, so no generated manifest ever overlapped.
 
+## BUG-0014 A long secret was split across chunks and indexed
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0005) | Security (critical) | SB-1401 | Fixed |
+
+**Symptom:** A 2048-bit RSA private key in a README or Drive document (about 1.7 KB with no blank lines) was cut into chunks at its only spaces, inside the `BEGIN ... PRIVATE KEY` header, so no chunk matched the private-key pattern and the key body was embedded and indexed. A GCP service-account file did the same. Separately, `aws_secret_access_key = …`, JWTs, bearer tokens, URL credentials, quoted passwords with spaces, GitLab tokens and model-provider keys matched no pattern.
+
+**Root cause:** The scanner ran on each chunk alone and matched only the PEM header; the assignment pattern needed the keyword right before the `=` and an unquoted value.
+
+**Fix:** The whole document is scanned first and every chunk touching a secret span is dropped; the private-key pattern covers the block from header to footer; new patterns cover the missed forms.
+
+**Caught by now:** `TestLongPrivateKeyIsDroppedEverywhere` and `TestSecretInMoreForms` in `internal/core/ingest`. Why it wasn't caught before: every secret in the tests fit inside one chunk, and the patterns were tested only on the forms they were written for.
+
+## BUG-0015 A steward's proposal could read back differently, and the diff could hide it
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0006, PT-0007) | Security (critical) | SB-1401 | Fixed |
+
+**Symptom:** A steward of a restricted space proposed `{"label": "public #"}`. The rank check counted the unknown label as above `restricted`, `Format` wrote `label: public #`, the checker read `public`, and the space came back public. The diff the operator saw compared lines as a set, so a member change or a label line could vanish when another space had the same text.
+
+**Root cause:** `StewardChange` judged the value before it was written, not what was checked after; `Diff` dropped every line's context.
+
+**Fix:** Unknown labels are refused, and the checked space must read back exactly as proposed (label, members, stewards, agents, channels, scope); the diff writes nested lines with their full path and compares them as a multiset.
+
+**Caught by now:** `TestStewardChangeRefusesValuesThatReadBackDifferently` and `TestDiffNamesTheSpace` in `internal/core/manifest`. Why it wasn't caught before: the steward law test generated only well-formed values, and no test had two spaces sharing a line.
+

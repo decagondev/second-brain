@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // StewardChange replaces one space's definition with a steward's proposal and checks the
@@ -26,6 +27,8 @@ func StewardChange(t Tenant, space string, proposed json.RawMessage) (Tenant, []
 		sp.Template = old.Template
 	}
 	switch {
+	case sp.Label != "" && rankLabel(sp.Label) == len(Labels):
+		return Tenant{}, nil, fmt.Errorf("manifest: %q is not a label; use one of %s", sp.Label, strings.Join(Labels, ", "))
 	case sp.Template != old.Template:
 		return Tenant{}, nil, fmt.Errorf("manifest: a steward can't change the space's template (%s)", old.Template)
 	case sp.Label != "" && rankLabel(sp.Label) < rankLabel(old.Label):
@@ -39,6 +42,15 @@ func StewardChange(t Tenant, space string, proposed json.RawMessage) (Tenant, []
 	checked, ds := WithSpace(t, space, sp)
 	if len(ds) > 0 {
 		return Tenant{}, ds, nil
+	}
+	// What was checked is what was written: a value that reads back differently (a YAML
+	// comment or quote inside it) is refused, and the label is judged as written (SB-1401).
+	got := checked.Spaces[space]
+	if rankLabel(got.Label) < rankLabel(old.Label) || got.Label != sp.Label ||
+		!sameStrings(got.Members, sp.Members) || !sameStrings(got.Stewards, sp.Stewards) ||
+		(sp.Agents != nil && !sameStrings(got.Agents, sp.Agents)) || (sp.Channels != nil && !sameStrings(got.Channels, sp.Channels)) ||
+		!reflect.DeepEqual(nonNilScope(got.Scope), nonNilScope(sp.Scope)) {
+		return Tenant{}, nil, fmt.Errorf("manifest: the proposal doesn't read back as written; remove comments and quotes from its values")
 	}
 	// Belt and braces: everything but this space is exactly as it was.
 	a, b := checked, t
@@ -97,4 +109,24 @@ func rankLabel(l string) int {
 		}
 	}
 	return len(Labels) // unknown counts as above restricted, so nothing can be lowered past it
+}
+
+func sameStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func nonNilScope(m map[string][]string) map[string][]string {
+	out := map[string][]string{}
+	for k, v := range m {
+		out[k] = append([]string{}, v...)
+	}
+	return out
 }

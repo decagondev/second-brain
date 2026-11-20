@@ -13,7 +13,7 @@ summary: "W8 to W12 went in fast; a review by someone who didn't write it finds 
 | Manual | as the change needs (manual first, P2) |
 | Laws | LAW-19, LAW-20, LAW-22 |
 | Depends on | [SB-1208](../E12-space-governance/SB-1208-cross-space-red-team-and-game-day.md) |
-| Status | Open |
+| Status | In progress |
 
 ## Why
 
@@ -32,6 +32,10 @@ W8 to W12 went in fast; a review by someone who didn't write it finds what the a
 - [ ] Fix what it finds
 - [ ] Regression tests
 - [ ] Devlog entry, ledger and changelog updated
+
+## Progress
+
+2026-11-20: three independent reviews (the authorisation path; governance and data lifecycle; connectors, ingest and the GCP runtime) reported 2 critical and about 30 high and medium findings. S13.1a fixed both critical ones and the misleading diff: PT-0005 (secrets split across chunks, missed forms; BUG-0014) and PT-0006/PT-0007 (steward values that read back differently, the diff hiding a change; BUG-0015), each with a regression test. The rest follow in S13.1b to S13.1d.
 
 ## Definition of done
 

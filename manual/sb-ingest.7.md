@@ -66,7 +66,7 @@ Every other field is **dropped**: its value is never chunked, embedded, indexed 
 
 ### Secrets never stored (SB-1103)
 
-Every chunk of every connector passes a secret scanner before it's embedded or written. A chunk that holds what looks like a credential (a private key block, a cloud access key, a GitHub, Slack or Stripe token, or an assignment such as `password = "…"` with a long value) is **dropped**: it is never embedded, indexed or logged, and `sb_ingest_secrets_dropped_total{tenant, connector}` counts it. The rest of the document is indexed as usual. Only the chunk's id and the pattern's name reach the trace of the sync, never the match (LAW-07).
+Every chunk of every connector passes a secret scanner before it's embedded or written, and so does the whole document first, so a secret a chunk boundary splits (a private key longer than a chunk) is found in every chunk it touches (SB-1401). A chunk that holds or touches what looks like a credential is **dropped**: a private key block from header to footer, a cloud access key, a GitHub, GitLab, Slack, Stripe or model-provider key, a JWT or bearer token, credentials in a URL (`postgres://user:pass@host`), or an assignment to a name that says it is a secret, such as `password = "…"`, `aws_secret_access_key=…` or `token: …`, with a long value, quoted or not. A dropped chunk is it is never embedded, indexed or logged, and `sb_ingest_secrets_dropped_total{tenant, connector}` counts it. The rest of the document is indexed as usual. Only the chunk's id and the pattern's name reach the trace of the sync, never the match (LAW-07).
 
 ### Provenance
 

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Hardening (S13.1a: SB-1401): the review's two critical findings fixed. Secrets are found across chunk boundaries and in more forms; steward proposals must read back as written; manifest diffs name each line's space.
 - Cross-space red team (S12.4b: SB-1208): the plan, the `space-redteam` gating eval, the game day runbook, and a new `sb tenant check` rule refusing a scope that reaches into a restricted space (PT-0003).
 - Legal holds (S12.4a: SB-1207): Legal stewards hold a space, custodians or both; retention keeps held records, erasure and space removal are refused with `EHOLD`, and holds and releases are audited first.
 - Reorg preview (S12.3b: SB-1206): `sb space diff FILE --idp-snapshot SNAPSHOT` lists per person the spaces a reorg would add and remove, and flags anyone losing every space, gaining a restricted one, or straddling a barrier. Offline; changes nothing.

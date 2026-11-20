@@ -107,27 +107,61 @@ func apply(doc map[string]any, op Op) error {
 	return fmt.Errorf("manifest: bad path %s", op.Path)
 }
 
-// Diff is a line diff of two formatted manifests: "- old" and "+ new" lines.
+// Diff is a line diff of two formatted manifests: "- old" and "+ new" lines. A nested
+// line is written with its full path (spaces.finance.label: restricted), and lines are
+// compared as a multiset, so a change in one space can't hide behind the same text in
+// another (SB-1401).
 func Diff(a, b Tenant) []string {
-	al := strings.Split(strings.TrimRight(string(Format(a)), "\n"), "\n")
-	bl := strings.Split(strings.TrimRight(string(Format(b)), "\n"), "\n")
-	in := func(xs []string, x string) bool {
-		for _, y := range xs {
-			if y == x {
-				return true
-			}
+	al, bl := pathLines(Format(a)), pathLines(Format(b))
+	count := func(xs []string) map[string]int {
+		m := map[string]int{}
+		for _, x := range xs {
+			m[x]++
 		}
-		return false
+		return m
 	}
+	ac, bc := count(al), count(bl)
 	var out []string
+	seen := map[string]int{}
 	for _, l := range al {
-		if !in(bl, l) {
+		if seen["-"+l]++; seen["-"+l] > bc[l] {
 			out = append(out, "- "+l)
 		}
 	}
 	for _, l := range bl {
-		if !in(al, l) {
+		if seen["+"+l]++; seen["+"+l] > ac[l] {
 			out = append(out, "+ "+l)
+		}
+	}
+	return out
+}
+
+// pathLines turns a formatted manifest into one line per value, each nested line prefixed
+// with the keys above it.
+func pathLines(src []byte) []string {
+	type level struct {
+		indent int
+		key    string
+	}
+	var stack []level
+	var out []string
+	for _, raw := range strings.Split(strings.TrimRight(string(src), "\n"), "\n") {
+		line := strings.TrimLeft(raw, " ")
+		indent := len(raw) - len(line)
+		for len(stack) > 0 && stack[len(stack)-1].indent >= indent {
+			stack = stack[:len(stack)-1]
+		}
+		path := make([]string, len(stack))
+		for i, l := range stack {
+			path[i] = l.key
+		}
+		text := line
+		if len(path) > 0 {
+			text = strings.Join(path, ".") + "." + line
+		}
+		out = append(out, text)
+		if strings.HasSuffix(line, ":") {
+			stack = append(stack, level{indent, strings.Trim(strings.TrimSuffix(line, ":"), `"`)})
 		}
 	}
 	return out

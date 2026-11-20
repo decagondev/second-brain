@@ -103,7 +103,8 @@ Stewards don't approve their own changes. They propose a space change as a manif
 - names another space, or changes anything outside this space (the barriers, the connectors, other spaces);
 - changes the space's `template`;
 - lowers the space's `label` below what it is now, on the ladder `public` < `internal` < `confidential` < `restricted`;
-- leaves the space with no stewards, or fails any rule of `sb tenant check` (sb-space(5)).
+- leaves the space with no stewards, or fails any rule of `sb tenant check` (sb-space(5));
+- names a label that isn't one of the four, or has any value that reads back differently once written as a manifest (a YAML comment or quote inside it), so what the operator approves is what was proposed (SB-1401).
 
 A proposal records the steward, the hash of the manifest it was based on and the hash of the manifest it would make, and writes a `kind: config` audit row (`state` `proposed`, the space in `space`). A tenant operator approves it by sending that exact hash back (LAW-15's hash binding, applied to manifests): a different hash, or a manifest that changed since the proposal was made, is refused, and the steward proposes again. Nobody approves their own proposal, even an operator who is also a steward (`EPERM`). An approval writes a `kind: config` row (`state` `approved`) and returns the manifest to apply; the space changes only when it's applied (LAW-16). Stewards widen nothing alone: every change, adding members included, needs an operator.
 

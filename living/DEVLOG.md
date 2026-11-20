@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.1a The review's critical findings (SB-1401)
+
+**Wave/slice:** W13 / S13.1a · **Status:** In progress (more fixes follow)
+
+**What:** Three independent reviews of W8 to W12. This slice fixes the two critical findings and the diff that could hide a change: whole-document secret spans in `internal/core/ingest` with more patterns, `StewardChange` that refuses values which read back differently, and a path-aware, multiset `manifest.Diff`. Findings PT-0005 to PT-0007; BUG-0014 and BUG-0015.
+
+**Why this way:** Scanning the whole document before chunking makes the chunk size irrelevant to what counts as a secret. Comparing what was checked with what was proposed catches every way a value can change on the way through YAML, not only the comment trick that was found.
+
+**Learned:** Both critical bugs lived between two correct pieces: a scanner and a chunker that were each right alone, a rank check and a formatter that were each right alone. The review found them by following a value across the boundary.
+
+**Laws:** LAW-07 and LAW-16 hold again where they didn't; regression tests for each.
+
+**Next:** S13.1b, the authorisation and approval findings.
+
 ## 2026-11-20 S12.4b Cross-space red team (SB-1208)
 
 **Wave/slice:** W12 / S12.4b · **Status:** In review (the game day is human)

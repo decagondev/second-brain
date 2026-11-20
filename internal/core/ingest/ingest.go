@@ -181,13 +181,19 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 	sort.Strings(acl)
 	chunks := make([]ports.Chunk, 0, len(spans))
 	texts := make([]string, 0, len(spans))
+	scan := p.Secrets
+	whole := []SecretSpan(nil)
+	if scan == nil {
+		scan = SecretIn
+		whole = SecretSpans(text) // secrets a chunk boundary would split (SB-1401)
+	}
 	for _, sp := range spans {
 		t := string(rs[sp.Start:sp.End])
-		scan := p.Secrets
-		if scan == nil {
-			scan = SecretIn
+		pat := overlaps(whole, sp.Start, sp.End)
+		if pat == "" {
+			pat = scan(t)
 		}
-		if pat := scan(t); pat != "" {
+		if pat != "" {
 			// A secret is never embedded, indexed or logged; only the pattern is counted (LAW-07).
 			if p.SecretDropped != nil {
 				p.SecretDropped(ref.Kind, pat)

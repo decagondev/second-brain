@@ -34,3 +34,27 @@ findings:
     laws: [LAW-20]
     found: 2026-11-20
     source: internal
+  - id: PT-0005
+    title: A secret longer than a chunk (a PEM private key) was split by chunking and indexed; common secret forms (AWS secret keys, JWTs, URL credentials, quoted passwords) were missed
+    severity: critical
+    status: fixed
+    laws: [LAW-07]
+    found: 2026-11-20
+    bug: BUG-0014
+    source: internal
+  - id: PT-0006
+    title: A steward could lower a space's label, or change other values, by hiding a YAML comment in a proposed value
+    severity: critical
+    status: fixed
+    laws: [LAW-16, LAW-20]
+    found: 2026-11-20
+    bug: BUG-0015
+    source: internal
+  - id: PT-0007
+    title: The manifest diff an operator approves compared lines as a set without their space, so a change could hide behind the same text in another space
+    severity: high
+    status: fixed
+    laws: [LAW-16]
+    found: 2026-11-20
+    bug: BUG-0015
+    source: internal
