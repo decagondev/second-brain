@@ -75,7 +75,8 @@
           "docs",
           "chat",
           "tickets",
-          "crm"
+          "crm",
+          "code"
         ]
       },
       "type": "object"
@@ -95,7 +96,8 @@
           "docs",
           "chat",
           "tickets",
-          "crm"
+          "crm",
+          "code"
         ]
       },
       "type": "object"
@@ -204,7 +206,8 @@
                 "docs",
                 "chat",
                 "tickets",
-                "crm"
+                "crm",
+                "code"
               ]
             },
             "type": "object"

@@ -77,7 +77,7 @@ func genTenant(r *rand.Rand) manifest.Tenant {
 		BudgetUSDMonth: manifest.DefaultBudgetUSD,
 	}
 	vendors := map[string][]string{"docs": {"sharepoint", "confluence"}, "chat": {"slack", "teams"},
-		"tickets": {"jira", "zendesk"}, "crm": {"salesforce", "hubspot"}}
+		"tickets": {"jira", "zendesk"}, "crm": {"salesforce", "hubspot"}, "code": {"github"}}
 	for _, k := range manifest.ConnectorKinds {
 		if r.Intn(2) == 0 || len(t.Connectors) == 0 && k == "crm" {
 			t.Connectors[k] = pick(vendors[k])

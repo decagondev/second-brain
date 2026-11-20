@@ -114,6 +114,22 @@ Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"]
 
 Tested against `slacktest`, a recorded fake of the Web API and the Events API's signed delivery.
 
+### `code: github` (SB-1103)
+
+Read-only. Name it as `connectors: { code: github }`. It indexes what engineers write about their systems, not their systems: source code only where a space opts in.
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A GitHub token with read-only access to the organisation's repositories, metadata, issues and pull requests, and the organisation's name, at `vault://tenants/TENANT/connectors/code` as JSON `{"token": "…", "org": "…"}`. The token is registered with the log redactor before first use |
+| Documents | One document per file and per issue or pull request, on each repository's default branch. Files: every `README*`, every file under `docs/`, and every `*.md`; with source opted in, every other text file under 1 MiB too. A file's id is `REPO/blob/PATH`, its title the path, its text the file, and its version the commit time of the last commit that touched it, in microseconds. An issue is `REPO/issues/N` and a pull request `REPO/pulls/N`, titled `#N title`, with the description as text (never the diff), versioned by `updated_at` in microseconds |
+| Source code | Off by default. A repository's other files are indexed only when a space's `code` scope names the whole repository, `REPO/**` (sb-space(5)); a narrower scope, such as `REPO/docs/**`, opts nothing in |
+| Location and label | Location is `REPO/PATH` for a file, `REPO/issues/N` or `REPO/pulls/N` otherwise, so scope patterns such as `payments/**` hold a repository. GitHub has no sensitivity labels, so none |
+| ACL | Live, per repository. The asker is found by email through the organisation's SSO identities (GraphQL `externalIdentities`); none → `Deny`. A **public** repository → `Allow` for any member of the organisation. A **private** or **internal** one → `Allow` when `collaborators/LOGIN/permission` is `read` or higher, through a team or directly; `none` → `Deny`. A repository that's gone, or any other answer → `Unknown`. One permission call per repository per batch, at most 8 at once, within the 800 ms deadline |
+| Changes | The cursor is the time of the newest change seen. Issues and pull requests come from `issues?since=`; files from the commits since the cursor and the files each one touched (a removed file is a delete); `MemberEvent` and `PublicEvent` in a repository's events become permission-only changes for all its documents. Only changes strictly after the cursor count, so a restarted sync repeats exactly what it read. An empty cursor lists every document |
+| Act | `ENOTSUP` (read-only) |
+
+Tested against `githubtest`, a recorded fake of the REST and GraphQL APIs it uses. A run against a real organisation stays In review.
+
 ### `tickets: linear` (SB-211)
 
 Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `ticket-update` workflow arrive with SB-410, through the tool bus.

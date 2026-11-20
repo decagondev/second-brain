@@ -75,7 +75,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 
 ### How the `ask` agent runs, exactly
 
-1. **Validate.** `question` must be 1 to 4,000 characters after trimming, and `sources` may name only `docs`, `chat`, `tickets` or `crm`. Unknown fields are ignored (sb-api(3), Versioning). Anything else is `EINVAL`.
+1. **Validate.** `question` must be 1 to 4,000 characters after trimming, and `sources` may name only `docs`, `chat`, `tickets`, `crm` or `code`. Unknown fields are ignored (sb-api(3), Versioning). Anything else is `EINVAL`.
 2. **Retrieve and check live** as in sb-permissions(7). With `sources`, candidates of other kinds are dropped before the live check. In a cell with spaces, every candidate first passes the space, label and barrier checks (sb-permissions(7), Spaces, labels and barriers) with the asker's read context; only the chunks they allow go into the live ACL batch, and the ACL still decides each of those. An ask in a space uses only what that space holds. A company-wide ask uses the union of the asker's spaces, plus `public` and `internal` content from spaces they aren't in; `confidential` and `restricted` content comes only from spaces they're a member of (SB-1006).
 3. **No allowed context:** the model is **not** called. The answer is one uncited claim saying nothing the user can open answers this, with `notice` `no_access` if any candidate was refused, or `no_sources` if there were none.
 4. **Compose:** the bundled `answer` prompt, the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as `citation_spoof` with the trace id and the label, never the claim text.

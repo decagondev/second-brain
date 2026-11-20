@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.2 The GitHub code connector (SB-1103)
+
+**Wave/slice:** W11 / S11.2 · **Author:** platform lead + Claude · **Status:** In review (a real organisation)
+
+**What:** `internal/adapters/connectors/github` and `githubtest`, the `code` kind, `ingest.SecretIn` and the drop in `ingest.Pipeline`, and `laws/lawgithub.go`. The manual changed first: sb-connector(3), sb-ingest(7), sb-tenant(5) and sb-ask(3).
+
+**Why this way:** Engineers write their knowledge in READMEs, docs and issues; source code is a much larger and much riskier corpus, so it is opted in per repository by a space's scope rather than on by default. Access is per repository because that is GitHub's own unit of permission, and asking once per repository keeps a 200-document batch to a handful of calls. The secret scanner sits in ingest, not in this connector, because a key pasted into a Slack message or a Drive doc is just as much a secret.
+
+**Learned:** Fault injection has to match the shape of the calls: with refs in two repositories the connector makes two permission calls, and a single injected fault only covers one of them.
+
+**Laws:** LAW-01, LAW-03 and LAW-07 extended (three law tests, two mutations caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S11.3, BambooHR, QuickBooks Online and field-level allow-lists (SB-1104 to SB-1106).
+
 ## 2026-11-20 S11.1b Department agents (SB-1102)
 
 **Wave/slice:** W11 / S11.1b · **Author:** platform lead + Claude · **Status:** Done

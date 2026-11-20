@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The GitHub code connector (S11.2: SB-1103), read-only against a recorded fake, the `code` connector kind, and the secret scanner that drops any chunk holding a credential before it is stored.
 - Department agents (S11.1b: SB-1102): `incident-summary`, `spec-digest`, `close-checklist` and `runbook-answer`, read-only, bound to their templates' spaces, every claim cited, each with an eval suite in the gate.
 - The template catalogue as data (S11.1a: SB-1101): `internal/core/manifest/catalogue.json` pinned in the release bundle, `sb space init` and `sb space templates`.
 - Audit and kill switch per space (S10.3c: SB-1008): the `space:NAME` kill scope (`sb kill space`), `space` on audit rows and actions, the admin audit `space=` filter, spaces in the kill drill, and `sb tenant apply` accepting spaces. W10 is built.

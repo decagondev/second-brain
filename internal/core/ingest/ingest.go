@@ -112,6 +112,11 @@ type Pipeline struct {
 	Spaces func(ctx context.Context) ([]ports.Space, error)
 	// Route is the routing rule; nil is route.Route, the only one a cell ships.
 	Route func(spaces []ports.Space, kind, location, sourceLabel string) ([]string, string)
+	// SecretDropped counts a chunk dropped for holding a secret (sb_ingest_secrets_dropped_total,
+	// by connector kind and pattern name); nil counts nothing, and the chunk is dropped anyway.
+	SecretDropped func(kind, pattern string)
+	// Secrets is the secret scanner; nil is SecretIn, the only one a cell ships.
+	Secrets func(text string) string
 	// Kind is the connector kind this pipeline ingests; Reroute touches only its documents.
 	// Empty means the index holds this connector's documents only.
 	Kind string
@@ -160,16 +165,27 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 	cite := Cite(ref, doc.Version)
 	acl := append([]string(nil), doc.ACLPrefilter...)
 	sort.Strings(acl)
-	chunks := make([]ports.Chunk, len(spans))
-	texts := make([]string, len(spans))
-	for i, sp := range spans {
+	chunks := make([]ports.Chunk, 0, len(spans))
+	texts := make([]string, 0, len(spans))
+	for _, sp := range spans {
 		t := string(rs[sp.Start:sp.End])
+		scan := p.Secrets
+		if scan == nil {
+			scan = SecretIn
+		}
+		if pat := scan(t); pat != "" {
+			// A secret is never embedded, indexed or logged; only the pattern is counted (LAW-07).
+			if p.SecretDropped != nil {
+				p.SecretDropped(ref.Kind, pat)
+			}
+			continue
+		}
 		h := sha256.Sum256([]byte(t))
-		texts[i] = t
-		chunks[i] = ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
+		texts = append(texts, t)
+		chunks = append(chunks, ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
-			Label: label, Spaces: holders, Routing: routing}
+			Label: label, Spaces: holders, Routing: routing})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)

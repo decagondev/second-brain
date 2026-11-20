@@ -54,6 +54,10 @@ The rules, in order (`internal/core/ingest`, `Sanitise`):
 
 Flags are per chunk and appear on its citation. A flagged chunk is still indexed and can be cited; it just can't steer the agent. The corpus in `evals/corpus/injection.json` (visible, hidden and benign look-alike cases) runs in `make check`. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).
 
+### Secrets never stored (SB-1103)
+
+Every chunk of every connector passes a secret scanner before it's embedded or written. A chunk that holds what looks like a credential (a private key block, a cloud access key, a GitHub, Slack or Stripe token, or an assignment such as `password = "…"` with a long value) is **dropped**: it is never embedded, indexed or logged, and `sb_ingest_secrets_dropped_total{tenant, connector}` counts it. The rest of the document is indexed as usual. Only the chunk's id and the pattern's name reach the trace of the sync, never the match (LAW-07).
+
 ### Provenance
 
 Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flags and the release that ingested it.

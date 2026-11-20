@@ -43,7 +43,7 @@ var (
 	ErrNoAudit = errors.New("kill: no audit log; refusing to change a switch untraced")
 )
 
-var scopeRe = regexp.MustCompile(`^(agent:[a-z][a-z0-9-]{0,40}|connector:(docs|chat|tickets|crm)|space:[a-z][a-z0-9-]{1,30}|tenant)$`)
+var scopeRe = regexp.MustCompile(`^(agent:[a-z][a-z0-9-]{0,40}|connector:(docs|chat|tickets|crm|code)|space:[a-z][a-z0-9-]{1,30}|tenant)$`)
 
 // ValidScope reports whether s is a scope sb-kill(1) accepts.
 func ValidScope(s string) bool { return scopeRe.MatchString(s) }

@@ -53,7 +53,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `channel` | `stable` \| `testing` | yes | | `version:` and `platform:` fields are rejected (ADR-0004) |
 | `idp` | URI | yes | | `oidc://ISSUER-HOST[/path]`, where the host is a DNS name, or `identity-platform://PROJECT/IDP_TENANT` for a company signing in through Identity Platform ([sb-identity(7)](sb-identity.7.md)). SCIM is served at `/scim/v2` on the cell |
 | `region` | string | yes | | `eu` or `us`, the supported regions ([sb-tenancy(7)](sb-tenancy.7.md)). **Immutable** |
-| `connectors` | map kind→vendor | yes | | Kinds: `docs`, `chat`, `tickets`, `crm`. At least one. Vendor is `[a-z0-9-]`, e.g. `sharepoint`. Read-only unless named in `workflows` |
+| `connectors` | map kind→vendor | yes | | Kinds: `docs`, `chat`, `tickets`, `crm`, and `code` (SB-1103). At least one. Vendor is `[a-z0-9-]`, e.g. `sharepoint`. Read-only unless named in `workflows` |
 | `agents` | list | yes | | `ask` (required), `draft-reply`, and the department agents `incident-summary`, `spec-digest`, `close-checklist` and `runbook-answer` (sb-agents(7)). No duplicates |
 | `workflows` | list | no | `[]` | At most **one** in v1. Known workflows: `ticket-update` (needs connector kind `tickets`). Enabled only after the tenant's workflow evals pass |
 | `approval` | map workflow→principal | if `workflows` | | Principal is `group:NAME` from the IdP. Every workflow needs one |
