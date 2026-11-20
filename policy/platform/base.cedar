@@ -33,6 +33,10 @@ when { principal.tenant == resource.tenant && context has groups && resource.ste
 permit (principal, action == Action::"review_space", resource is SpaceConfig)
 when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
 
+// Legal stewards place and release legal holds (SB-1207).
+permit (principal, action in [Action::"place_hold", Action::"release_hold"], resource is LegalHold)
+when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
+
 // Operators approve stewards' proposals, never their own (LAW-15).
 permit (principal in Group::"sb-operators", action == Action::"approve_space", resource is SpaceProposal)
 when { principal.tenant == resource.tenant };

@@ -36,6 +36,7 @@ There is one list of errors. `internal/errs/codes.go` is generated from the tabl
 | `ENOTIMPL` | 501 | 2 | Command or endpoint is specified in this manual but not built in this release | See the ticket named in the message |
 | `EMANIFEST` | 422 | 1 | Manifest invalid | Fix the lines reported |
 | `EDRIFT` | 409 | 1 | Live config differs from the applied manifest | Re-apply the manifest; investigate the change |
+| `EHOLD` | 409 | 1 | A legal hold covers what would be deleted | Ask a Legal steward; deletion waits for the hold's release |
 | `ELAW` | — | 1 | A law check failed or returned unknown in `verify` | See the per-law output; do not go live |
 | `ECHAIN` | — | 1 | Audit chain or anchor verification failed | Sev-1: preserve evidence, page security |
 | `EEVAL` | — | 1 | Eval threshold missed | Fix the regression; thresholds aren't overridable |

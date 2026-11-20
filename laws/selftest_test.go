@@ -735,8 +735,8 @@ func TestSelf_LAW13RetentionMutationsAreCaught(t *testing.T) {
 type indexAger struct{ w *ingestWorld }
 
 func (indexAger) Name() string { return "index" }
-func (a indexAger) Expire(context.Context, string, time.Time) (int, error) {
-	return 1, a.w.Drop()
+func (a indexAger) Expire(context.Context, string, time.Time, retention.Held) (int, int, error) {
+	return 1, 0, a.w.Drop()
 }
 func (indexAger) Erase(context.Context, string, string) (int, error) { return 0, nil }
 
@@ -744,16 +744,16 @@ func (indexAger) Erase(context.Context, string, string) (int, error) { return 0,
 type offByOne struct{ w *retentionWorld }
 
 func (offByOne) Name() string { return "traces-strict" }
-func (o offByOne) Expire(ctx context.Context, tenant string, before time.Time) (int, error) {
+func (o offByOne) Expire(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
 	n := 0
 	for _, s := range o.w.traces.Retention() {
-		k, err := s.Expire(ctx, tenant, before.Add(time.Nanosecond))
+		k, _, err := s.Expire(ctx, tenant, before.Add(time.Nanosecond), held)
 		if err != nil {
-			return n, err
+			return n, 0, err
 		}
 		n += k
 	}
-	return n, nil
+	return n, 0, nil
 }
 func (offByOne) Erase(context.Context, string, string) (int, error) { return 0, nil }
 

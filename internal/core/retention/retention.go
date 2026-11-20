@@ -24,11 +24,20 @@ const (
 // Store is one store of derived data.
 type Store interface {
 	Name() string
-	// Expire deletes the tenant's records older than before and returns how many.
-	Expire(ctx context.Context, tenant string, before time.Time) (int, error)
+	// Expire deletes the tenant's records older than before, except those held reports as
+	// held (by the record's space id and user, "" for one the store doesn't know), and
+	// returns how many it deleted and how many it kept for a hold (SB-1207).
+	Expire(ctx context.Context, tenant string, before time.Time, held Held) (deleted, kept int, err error)
 	// Erase deletes everything the store holds about one user and returns how many.
 	Erase(ctx context.Context, tenant, user string) (int, error)
 }
+
+// Held reports whether a record in space (an id, or "") about user (or "") is under a legal
+// hold (holds.Set.Held). Nil holds nothing.
+type Held func(space, user string) bool
+
+// Is is h(space, user), false for a nil h.
+func (h Held) Is(space, user string) bool { return h != nil && h(space, user) }
 
 // Auditor writes audit rows (audit.Log).
 type Auditor interface {
@@ -41,6 +50,7 @@ var (
 	ErrInvalid = errors.New("retention: EINVAL")
 	ErrAudit   = errors.New("retention: the audit row can't be written")
 	ErrStore   = errors.New("retention: a store failed")
+	ErrHeld    = errors.New("retention: EHOLD a legal hold covers this")
 )
 
 // Job is one cell's retention.
@@ -50,6 +60,8 @@ type Job struct {
 	Stores []Store
 	Audit  Auditor
 	Now    func() time.Time
+	// Held is the cell's active legal holds (SB-1207); nil is none.
+	Held Held
 }
 
 // Report is what a run did: records deleted per store, and the stores that failed.
@@ -58,6 +70,7 @@ type Report struct {
 	Counts map[string]int `json:"erased"`
 	Failed []string       `json:"failed,omitempty"`
 	Audit  []string       `json:"audit"`
+	Held   int            `json:"held,omitempty"` // records a legal hold kept (SB-1207)
 }
 
 func summary(r Report) string {
@@ -89,20 +102,23 @@ func (j Job) Sweep(ctx context.Context) (Report, error) {
 	}
 	cut := j.Cutoff()
 	rep := Report{Cutoff: cut.Format(time.RFC3339), Counts: map[string]int{}}
+	held := 0
 	for _, s := range j.Stores {
-		n, err := s.Expire(ctx, j.Tenant, cut)
+		n, k, err := s.Expire(ctx, j.Tenant, cut, j.Held)
 		if err != nil {
 			rep.Failed = append(rep.Failed, s.Name())
 			continue
 		}
 		rep.Counts[s.Name()] = n
+		held += k
 	}
+	rep.Held = held
 	state := "done"
 	if len(rep.Failed) > 0 {
 		state = "failed"
 	}
 	row, err := j.Audit.Write(ctx, audit.Event{Actor: "sb-retention", Kind: "retention", Subject: "sweep", State: state,
-		Reason: "cutoff=" + rep.Cutoff + " " + summary(rep)})
+		Reason: "cutoff=" + rep.Cutoff + " " + summary(rep) + fmt.Sprintf(" held=%d", held)})
 	if err != nil {
 		return rep, fmt.Errorf("%w: %v", ErrAudit, err)
 	}
@@ -121,6 +137,9 @@ var UserID = regexp.MustCompile(`^usr_[a-z0-9_]{1,64}$`)
 func (j Job) Erase(ctx context.Context, actor, user, reason string) (Report, error) {
 	if !UserID.MatchString(user) || strings.TrimSpace(reason) == "" {
 		return Report{}, fmt.Errorf("%w: a usr_ id and a reason are required", ErrInvalid)
+	}
+	if j.Held.Is("", user) {
+		return Report{}, fmt.Errorf("%w: %s is a custodian, or in a held space; nothing was erased", ErrHeld, user)
 	}
 	subject := "erase:" + user
 	first, err := j.Audit.Write(ctx, audit.Event{Actor: actor, Kind: "retention", Subject: subject, State: "requested", Reason: reason})

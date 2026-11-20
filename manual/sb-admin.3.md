@@ -31,6 +31,9 @@ GET  /v1/spaces/NAME/reviews                   (stewards)
 POST /v1/spaces/NAME/reviews/ID/decide         (stewards)
 GET  /v1/admin/reviews
 GET  /v1/admin/reviews/ID/evidence
+POST /v1/holds                                (Legal stewards)
+POST /v1/holds/ID/release                     (Legal stewards)
+GET  /v1/holds                                (Legal stewards, operators)
 ```
 
 ## DESCRIPTION
@@ -79,9 +82,13 @@ Roles are Cedar policies, not code: the base policy permits `admin` on the tenan
 
 **`GET /v1/admin/reviews`** lists every review with `overdue` for the operator. **`GET /v1/admin/reviews/ID/evidence`** returns `{ "review": {…}, "sha256": "…" }`, the audit-ready evidence.
 
+### Legal holds (SB-1207)
+
+**`POST /v1/holds`** takes `{ "matter": "…", "space": "NAME", "users": ["usr_…"], "reason": "…" }` with a space, users, or both, and needs a Legal steward (Cedar `place_hold`; sb-spaces(7), Legal holds). It returns the hold, `{ "id": "hold_…", "matter", "space", "users", "placed_by", "placed_at" }`. **`POST /v1/holds/ID/release`** takes `{ "reason": "…" }`. **`GET /v1/holds`** lists every hold, active and released. A subject erasure or a space removal that a hold covers is `EHOLD`.
+
 ## ERRORS
 
-`EPERM` without the role, or for approving your own proposal · `EMANIFEST` for an invalid patch or a steward proposal the rules refuse · `EDRIFT` if the live config has drifted and a diff can't be based on it.
+`EPERM` without the role, or for approving your own proposal · `EMANIFEST` for an invalid patch or a steward proposal the rules refuse · `EDRIFT` if the live config has drifted and a diff can't be based on it · `EHOLD` for an erasure or a space removal a legal hold covers.
 
 ## LAWS
 

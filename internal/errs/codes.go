@@ -16,6 +16,7 @@ const (
 	ENOTIMPL    Code = "ENOTIMPL"
 	EMANIFEST   Code = "EMANIFEST"
 	EDRIFT      Code = "EDRIFT"
+	EHOLD       Code = "EHOLD"
 	ELAW        Code = "ELAW"
 	ECHAIN      Code = "ECHAIN"
 	EEVAL       Code = "EEVAL"
@@ -40,6 +41,7 @@ var registry = map[Code]entry{
 	ENOTIMPL:    {http: 501, exit: 2, meaning: "Command or endpoint is specified in this manual but not built in this release", remedy: "See the ticket named in the message"},
 	EMANIFEST:   {http: 422, exit: 1, meaning: "Manifest invalid", remedy: "Fix the lines reported"},
 	EDRIFT:      {http: 409, exit: 1, meaning: "Live config differs from the applied manifest", remedy: "Re-apply the manifest; investigate the change"},
+	EHOLD:       {http: 409, exit: 1, meaning: "A legal hold covers what would be deleted", remedy: "Ask a Legal steward; deletion waits for the hold's release"},
 	ELAW:        {http: 0, exit: 1, meaning: "A law check failed or returned unknown in verify", remedy: "See the per-law output; do not go live"},
 	ECHAIN:      {http: 0, exit: 1, meaning: "Audit chain or anchor verification failed", remedy: "Sev-1: preserve evidence, page security"},
 	EEVAL:       {http: 0, exit: 1, meaning: "Eval threshold missed", remedy: "Fix the regression; thresholds aren't overridable"},

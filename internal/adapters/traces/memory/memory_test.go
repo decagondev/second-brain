@@ -52,7 +52,7 @@ func TestRetention(t *testing.T) {
 	_ = s.PutFeedback(ctx, ask.Feedback{Tenant: "acme-logistics", User: "usr_a", Trace: "tr_2", At: recent})
 	got := map[string]int{}
 	for _, r := range s.Retention() {
-		n, err := r.Expire(ctx, "acme-logistics", recent.Add(-time.Hour))
+		n, _, err := r.Expire(ctx, "acme-logistics", recent.Add(-time.Hour), nil)
 		if err != nil {
 			t.Fatal(err)
 		}

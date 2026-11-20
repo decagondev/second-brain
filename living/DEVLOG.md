@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.4a Legal hold per space (SB-1207)
+
+**Wave/slice:** W12 / S12.4a · **Status:** Done
+
+**What:** `internal/core/holds`, holds in `retention.Store.Expire` and `Job.Erase`, a space on traces, `spaces.SyncHeld`, `api.Holds` with Cedar `place_hold` and `release_hold`, `EHOLD`, and `laws/law13holds.go`. The manual changed first: sb-spaces(7), sb-tenant(5), sb-admin(3), sb-errors(7).
+
+**Why this way:** A hold is a filter every deleter asks, not a flag on records, so it takes effect the moment it is placed and stops the moment it is released, and a store that can't tell whether a record is in scope keeps it. Space removal checks holds before it touches anything, so a held space can never be half-removed with its key shredded.
+
+**Learned:** Conversations and log files don't know their space, so a hold on one space keeps every conversation while it is active. That keeps more than the matter needs, which is the safe direction; tagging conversations with their space would narrow it.
+
+**Laws:** LAW-13 and LAW-11 extended (two mutations caught). Only LAW-23 stays red.
+
+**Next:** S12.4b, the cross-space red team and game day (SB-1208).
+
 ## 2026-11-20 S12.3b Reorg preview (SB-1206)
 
 **Wave/slice:** W12 / S12.3b · **Status:** Done

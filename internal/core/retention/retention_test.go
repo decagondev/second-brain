@@ -23,8 +23,9 @@ type fake struct {
 }
 
 func (f *fake) Name() string { return f.name }
-func (f *fake) Expire(_ context.Context, _ string, before time.Time) (int, error) {
-	return f.drop(func(r rec) bool { return r.at.Before(before) })
+func (f *fake) Expire(_ context.Context, _ string, before time.Time, held Held) (int, int, error) {
+	n, err := f.drop(func(r rec) bool { return r.at.Before(before) && !held.Is("", r.user) })
+	return n, 0, err
 }
 func (f *fake) Erase(_ context.Context, _ string, user string) (int, error) {
 	if f.log != nil {

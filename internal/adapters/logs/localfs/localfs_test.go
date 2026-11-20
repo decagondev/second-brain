@@ -32,7 +32,7 @@ func TestExpireAndErase(t *testing.T) {
 	}
 
 	// The cutoff inside 2027-03-02 keeps that day's file; 2027-03-01 is wholly before it.
-	n, err = f.Expire(ctx, "acme-logistics", time.Date(2027, 3, 2, 6, 0, 0, 0, time.UTC))
+	n, _, err = f.Expire(ctx, "acme-logistics", time.Date(2027, 3, 2, 6, 0, 0, 0, time.UTC), nil)
 	if err != nil || n != 1 {
 		t.Fatalf("expire: %d %v", n, err)
 	}
@@ -46,7 +46,7 @@ func TestExpireAndErase(t *testing.T) {
 
 func TestEmptyDir(t *testing.T) {
 	f := &Files{Dir: filepath.Join(t.TempDir(), "none"), Now: time.Now}
-	if n, err := f.Expire(context.Background(), "t", time.Now()); n != 0 || err != nil {
+	if n, _, err := f.Expire(context.Background(), "t", time.Now(), nil); n != 0 || err != nil {
 		t.Fatal(n, err)
 	}
 	if n, err := f.Erase(context.Background(), "t", "usr_a"); n != 0 || err != nil {

@@ -16,6 +16,8 @@ entity Cell { tenant: Tenant };
 // Space governance (SB-1201): a space's stewards (group:NAME), and a steward's proposal.
 entity SpaceConfig { tenant: Tenant, stewards: Set<String> };
 entity SpaceProposal { tenant: Tenant, requester: User };
+// Legal holds (SB-1207): stewards are the stewards of the legal-template spaces.
+entity LegalHold { tenant: Tenant, stewards: Set<String> };
 // A cell's custody record, held by the factory: tenant is the factory's own tenant (SB-702).
 entity CellCustody { tenant: Tenant, cell: Tenant };
 
@@ -29,6 +31,8 @@ action "admin"     appliesTo { principal: [User], resource: [Cell] };
 action "propose_space" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 action "approve_space" appliesTo { principal: [User], resource: [SpaceProposal] };
 action "review_space"  appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
+action "place_hold"   appliesTo { principal: [User], resource: [LegalHold], context: { groups?: Set<String> } };
+action "release_hold" appliesTo { principal: [User], resource: [LegalHold], context: { groups?: Set<String> } };
 
 // Custody and hand-off (SB-702, sb-factory(1)).
 action "view_custody"    appliesTo { principal: [User], resource: [CellCustody, Cell] };

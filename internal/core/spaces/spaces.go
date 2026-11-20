@@ -42,9 +42,26 @@ type Keys struct {
 // exists, and a dropped space's key is shredded after its row is gone (sb-tenancy(7)).
 // Any error stops it; the caller retries the whole of it.
 func Sync(ctx context.Context, st ports.SpaceStore, keys *Keys, t manifest.Tenant) error {
+	return SyncHeld(ctx, st, keys, t, nil)
+}
+
+// ErrHeld is a manifest that would remove a space a legal hold covers (EHOLD; SB-1207).
+var ErrHeld = errors.New("spaces: EHOLD a legal hold covers the space")
+
+// SyncHeld is Sync for a cell with legal holds: if any space it would remove is held
+// (holds.Set.HeldSpace), it changes nothing and returns ErrHeld, so a held space's row
+// stays and its key is never shredded.
+func SyncHeld(ctx context.Context, st ports.SpaceStore, keys *Keys, t manifest.Tenant, held func(spaceID string) bool) error {
 	have, err := st.Spaces(ctx, t.Tenant)
 	if err != nil {
 		return fmt.Errorf("spaces: %w", err)
+	}
+	if held != nil {
+		for _, h := range have {
+			if _, keep := t.Spaces[h.Name]; !keep && held(h.ID) {
+				return fmt.Errorf("%w: %s; release the hold first", ErrHeld, h.Name)
+			}
+		}
 	}
 	names := make([]string, 0, len(t.Spaces))
 	for n := range t.Spaces {

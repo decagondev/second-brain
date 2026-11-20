@@ -68,6 +68,7 @@ type Response struct {
 // Trace is a stored answer with its decision list (GET /v1/traces/{id}).
 type Trace struct {
 	ID, Tenant, User string
+	Space            string // the space it was asked in, spc_NAME or company (SB-1207)
 	At               time.Time
 	Response         Response
 	Decisions        []retrieve.Decision
@@ -256,7 +257,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 	if err := a.Store.AppendQuestion(ctx, a.Tenant, s.User(), conv, q); err != nil {
 		return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), At: a.Now(), Response: resp, Decisions: res.Decisions}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
 		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
 	}

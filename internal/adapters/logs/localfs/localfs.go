@@ -74,14 +74,16 @@ func lines(b []byte) int { return bytes.Count(b, []byte("\n")) }
 
 // Expire deletes the files whose whole day is before the cutoff; it returns the lines deleted.
 // A cell has one tenant, so tenant names which cell's logs these are and nothing more.
-func (f *Files) Expire(_ context.Context, _ string, before time.Time) (int, error) {
+// A log file's lines may be about anyone in any space, so while any legal hold is active
+// every file is kept (SB-1207): unknown never deletes.
+func (f *Files) Expire(_ context.Context, _ string, before time.Time, held retention.Held) (int, int, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	days, err := f.days()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	n := 0
+	n, kept := 0, 0
 	for _, d := range days {
 		t, _ := time.Parse(layout, d)
 		if t.Add(24 * time.Hour).After(before) {
@@ -90,14 +92,18 @@ func (f *Files) Expire(_ context.Context, _ string, before time.Time) (int, erro
 		p := filepath.Join(f.Dir, d+".log")
 		b, err := os.ReadFile(p)
 		if err != nil {
-			return n, err
+			return n, kept, err
+		}
+		if held.Is("", "") {
+			kept += lines(b)
+			continue
 		}
 		if err := os.Remove(p); err != nil {
-			return n, err
+			return n, kept, err
 		}
 		n += lines(b)
 	}
-	return n, nil
+	return n, kept, nil
 }
 
 // Erase rewrites every file without the lines that name the user in any field.

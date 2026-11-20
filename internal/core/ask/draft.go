@@ -151,7 +151,7 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 		resp.Notice = &n
 	}
 	decisions := append([]retrieve.Decision{{Cite: item.Cite, Verdict: "allow", Reason: "allowed"}}, res.Decisions...)
-	if err := a.Store.PutTrace(ctx, Trace{ID: trace, Tenant: a.Tenant, User: s.User(), At: a.Now(), Response: resp.Response, Decisions: decisions}); err != nil {
+	if err := a.Store.PutTrace(ctx, Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp.Response, Decisions: decisions}); err != nil {
 		return DraftResponse{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 	}
 	return resp, nil

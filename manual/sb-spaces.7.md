@@ -117,6 +117,22 @@ Each quarter the stewards of every `restricted` space re-certify who can use it,
 - **Overdue.** A review still open 14 days after it opened is overdue: `sb_access_review_overdue{space}` is 1 and a Sev-2 `review_overdue` alert goes to the tenant operator (sb-observability(7)). It stays overdue until it is complete.
 - **Evidence.** `GET /v1/admin/reviews/ID/evidence` (sb-admin(3)) returns the review as one JSON document: the space, quarter, stewards, opening, due and completion times, every person with their `via`, last use, decision, who decided, when, why, and the audit `seq` of the decision, the change requests with their proposal ids, and `sha256`, the SHA-256 of the canonical `review` object. An auditor checks the hash and finds each decision's row in `sb audit export` by its `seq`.
 
+### Legal holds, exactly (SB-1207)
+
+A legal hold stops deletion in the scope of a matter, and only there. A **Legal steward** (a steward of any space whose template is `legal`) places a hold with `POST /v1/holds` (sb-admin(3)), naming the matter and its scope:
+
+- a **space** (`"space": "finance"`): everything the cell keeps in that space;
+- **custodians** (`"users": ["usr_…"]`): everything the cell keeps about those people, in every space;
+- or both: those people's records in that space.
+
+While a hold is active:
+
+- **Retention skips held records.** The nightly sweep (sb-tenant(5), Retention and deletion) deletes everything else older than `retention_days`, and keeps every record a hold covers, however old. A record whose store doesn't know its space or its user (log files, conversations) is kept if any hold could cover it: unknown never deletes.
+- **Subject erasure is refused** (`EHOLD`), and nothing is erased, for a custodian, and for anyone while a hold on a whole space is active (their records there are held): an erasure would destroy what the hold preserves. It can be made again once the hold is released.
+- **A held space can't be removed.** `sb tenant apply` of a manifest without a held space fails with `EHOLD` before anything changes, so the space's row stays and its key is never crypto-shredded. A hold on custodians alone covers every space, so no space can be removed while one is active.
+
+Placing and releasing a hold each write a `kind: retention` audit row (subject `hold:ID`, state `placed` or `released`, the matter and scope in the reason) **before** the hold takes or loses effect; if the row can't be written, nothing changes (LAW-11). Releasing needs a Legal steward and a reason. A released hold stops protecting at once, and the next sweep deletes what it had kept.
+
 ### Reorg preview (SB-1206)
 
 Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.

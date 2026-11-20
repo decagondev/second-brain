@@ -132,6 +132,8 @@ A record exactly `retention_days` old is kept, and one older is deleted. The job
 - **Audit** follows its own policy: seven years, WORM (sb-audit(7)).
 - **The index** is derived from the sources and ages with them. A document deleted at its source leaves the index within one sync (SB-209), and a rebuild gives the same index (LAW-13). The job has no access to it.
 
+**Legal holds (SB-1207).** A hold placed by a Legal steward (sb-spaces(7), Legal holds) keeps every record in its scope, a space, custodians, or both, out of the sweep for as long as it is active, and refuses subject erasure of its custodians and removal of its space. Each sweep's audit row also counts what holds kept (`held=N`).
+
 **Subject deletion.** `POST /v1/admin/subjects/erase` (sb-admin(3)) erases everything the cell's derived stores hold about one user, whatever its age: their traces and drafts, conversations, feedback, and every log line that names them. It writes a `kind: retention` audit row (subject `erase:USER`, state `requested`) **before** erasing anything, and a second row (state `done`, or `failed` with the store that failed) after. If the first row can't be written, nothing is erased. The audit rows about the user, including their earlier actions and approvals, stay: they are the record, and they hold ids, not content. Content about the person inside the sources (a CRM contact, a document they wrote) is deleted at the source, and the index follows (LAW-13).
 
 ## DRIFT

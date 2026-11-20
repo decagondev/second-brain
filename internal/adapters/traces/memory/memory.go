@@ -122,43 +122,67 @@ type view struct {
 
 func (v view) Name() string { return v.name }
 
-// Expire implements retention.Store.
-func (v view) Expire(_ context.Context, tenant string, before time.Time) (int, error) {
-	return v.drop(func(t, _ string, at time.Time) bool { return t == tenant && at.Before(before) }), nil
+// Expire implements retention.Store: a trace carries its space; feedback takes its trace's;
+// a conversation's space isn't kept, so any hold on its user, or on a space, keeps it.
+func (v view) Expire(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	n, k := v.drop(func(t, _, _ string, at time.Time) bool { return t == tenant && at.Before(before) }, held)
+	return n, k, nil
 }
 
 // Erase implements retention.Store.
 func (v view) Erase(_ context.Context, tenant, user string) (int, error) {
-	return v.drop(func(t, u string, _ time.Time) bool { return t == tenant && u == user }), nil
+	n, _ := v.drop(func(t, u, _ string, _ time.Time) bool { return t == tenant && u == user }, nil)
+	return n, nil
 }
 
-func (v view) drop(match func(tenant, user string, at time.Time) bool) int {
+func (v view) drop(match func(tenant, user, space string, at time.Time) bool, held retention.Held) (int, int) {
 	s := v.s
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	n := 0
+	n, kept := 0, 0
+	try := func(tenant, user, space string, at time.Time) bool {
+		if !match(tenant, user, space, at) {
+			return false
+		}
+		if held.Is(space, user) {
+			kept++
+			return false
+		}
+		n++
+		return true
+	}
 	switch v.name {
 	case "traces":
 		for k, t := range s.traces {
-			if match(t.Tenant, t.User, t.At) {
+			if try(t.Tenant, t.User, spaceOf(t.Space), t.At) {
 				delete(s.traces, k)
-				n++
 			}
 		}
 	case "conversations":
 		for k, c := range s.convs {
-			if match(c.tenant, c.user, c.at) {
+			if try(c.tenant, c.user, "", c.at) {
 				delete(s.convs, k)
-				n++
 			}
 		}
 	case "feedback":
 		for k, f := range s.feedback {
-			if match(f.Tenant, f.User, f.At) {
+			space := ""
+			if t, ok := s.traces[f.Trace]; ok && t.Tenant == f.Tenant {
+				space = spaceOf(t.Space)
+			}
+			if try(f.Tenant, f.User, space, f.At) {
 				delete(s.feedback, k)
-				n++
 			}
 		}
 	}
-	return n
+	return n, kept
+}
+
+// spaceOf is a record's space for holds: "" for one asked company-wide, which any hold on
+// a space might still cover through its sources, so it is treated as unknown.
+func spaceOf(s string) string {
+	if s == "company" {
+		return ""
+	}
+	return s
 }
