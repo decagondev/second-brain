@@ -77,7 +77,8 @@
           "tickets",
           "crm",
           "code",
-          "hris"
+          "hris",
+          "accounting"
         ]
       },
       "type": "object"
@@ -99,7 +100,8 @@
           "tickets",
           "crm",
           "code",
-          "hris"
+          "hris",
+          "accounting"
         ]
       },
       "type": "object"
@@ -220,7 +222,8 @@
                 "tickets",
                 "crm",
                 "code",
-                "hris"
+                "hris",
+                "accounting"
               ]
             },
             "type": "object"

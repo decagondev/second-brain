@@ -150,6 +150,22 @@ Read-only and structured. Name it as `connectors: { hris: bamboohr }`. It is mea
 
 Tested against `bamboohrtest`, a recorded fake of the API it uses. A run against a real BambooHR account stays In review.
 
+### `accounting: quickbooks-online` (SB-1105)
+
+Read-only and structured. Name it as `connectors: { accounting: quickbooks-online }`. It is meant for a `finance` space, which is `restricted` (sb-departments(7)).
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A QuickBooks Online OAuth access token with the `com.intuit.quickbooks.accounting` scope, the company's realm id, and the company's **readers**, at `vault://tenants/TENANT/connectors/accounting` as JSON `{"access_token": "…", "realm_id": "…", "readers": ["…"]}`. The token is registered with the log redactor. Access tokens last an hour; refreshing them from the refresh token is the cell runtime's job, not the connector's (SB-903), and a token that has expired makes every call fail, so every verdict is `Unknown` |
+| Documents | The chart of accounts, one structured document per account (`accounts/ID`); one text document per budget (`budgets/ID`), its name, period and one line per account and month; and the profit and loss and the balance sheet for each of the last 12 calendar months (`reports/ProfitAndLoss/YYYY-MM`, `reports/BalanceSheet/YYYY-MM`), one line per row. An account's or budget's version is its `LastUpdatedTime`; a report's is the newest `LastUpdatedTime` of any account, all in microseconds |
+| Fields | An account declares `Name`, `AccountType`, `AccountSubType`, `Classification`, `CurrentBalance` and `Description`, none of them sensitive. **Never read:** account and routing numbers (`AcctNum`, `BankNum`), card details, the company's tax ids, and anything from payroll. The connector doesn't ask for them, doesn't declare them, and drops them if QuickBooks sends them, so no allow-list can let them in |
+| Location and label | Location is `accounts/CLASSIFICATION/NAME`, `budgets/NAME` or `reports/REPORT/YYYY-MM`. No source label; the finance space's `restricted` default applies |
+| ACL | QuickBooks Online doesn't expose who may see its reports, so the tenant lists them: `readers` are the work emails of the company's QuickBooks users with report access, kept in step with QuickBooks by the finance stewards and reviewed with the space (W12). A reader → `Allow`; anyone else → `Deny`; credentials that can't be read, or no `readers` key → `Unknown` |
+| Changes | The cursor holds the newest `LastUpdatedTime` seen and a hash of `readers`. Change data capture (`cdc?entities=Account,Budget&changedSince=`) gives changed and deleted accounts and budgets; any account change also changes every report document. A change to `readers` is a permission-only change for every document. An empty cursor lists every account, budget and report |
+| Act | `ENOTSUP` (read-only) |
+
+Tested against `qbotest`, a recorded fake of the API it uses. A run against a real QuickBooks Online sandbox company stays In review.
+
 ### `tickets: linear` (SB-211)
 
 Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `ticket-update` workflow arrive with SB-410, through the tool bus.

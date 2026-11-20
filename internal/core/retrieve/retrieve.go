@@ -31,7 +31,7 @@ const (
 )
 
 // BroadTokens match prefilter entries meaning "anyone in the workspace" or "anyone".
-var BroadTokens = []string{"anyone", "slack:members", "linear:members", "hubspot:users", "github:members", "bamboohr:employees"}
+var BroadTokens = []string{"anyone", "slack:members", "linear:members", "hubspot:users", "github:members", "bamboohr:employees", "quickbooks:readers"}
 
 // Tokens are the asker's prefilter tokens (sb-permissions(7)).
 func Tokens(s tenancy.Scope, emails []string) []string {

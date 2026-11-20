@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.3c The QuickBooks Online connector (SB-1105)
+
+**Wave/slice:** W11 / S11.3c · **Author:** platform lead + Claude · **Status:** In review (a real sandbox company)
+
+**What:** `internal/adapters/connectors/quickbooks` and `qbotest`, the `accounting` kind, and `laws/lawquickbooks.go`. The manual changed first: sb-connector(3), sb-tenant(5) and sb-ask(3).
+
+**Why this way:** Finance questions are about totals, budgets and the shape of the ledger, never about account numbers, so the connector reads only what answers them and leaves the rest undecoded; nothing that wasn't decoded can be logged or indexed. QuickBooks keeps report access inside its own app, so the readers are a list the finance stewards keep in the vault: refusing everyone when the list is missing is the only safe default.
+
+**Learned:** A report has no version of its own; the newest change to any account is the version that makes a rebuild give the same text.
+
+**Laws:** LAW-01, LAW-03, LAW-07 and LAW-20 extended (three law tests, one mutation caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S11.4, per-template eval suites in the gate (SB-1107).
+
 ## 2026-11-20 S11.3b The BambooHR connector (SB-1104)
 
 **Wave/slice:** W11 / S11.3b · **Author:** platform lead + Claude · **Status:** In review (a real account)
