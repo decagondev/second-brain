@@ -171,40 +171,51 @@ func (h Stewards) decide(approve bool) http.HandlerFunc {
 			fail(w, errs.New(errs.EINVAL, "The body must be JSON."))
 			return
 		}
-		state := proposals.Rejected
-		if approve {
-			if req.Hash != p.Hash {
-				fail(w, errs.New(errs.EINVAL, "That hash isn't the proposal's; review the proposal again."))
-				return
-			}
-			cur, _, err := h.Manifests.Applied(r.Context())
-			if err != nil {
-				fail(w, errs.New(errs.EUNAVAIL, "The applied manifest can't be read."))
-				return
-			}
-			if proposals.Hash(cur) != p.Base {
-				p.State, p.DecidedBy = proposals.Stale, s.User()
-				_ = h.Proposals.Put(r.Context(), p)
-				fail(w, errs.New(errs.EDRIFT, "The manifest changed since this proposal was made; the steward must propose again."))
-				return
-			}
-			state = proposals.Approved
-		} else if req.Reason == "" {
+		if !approve && req.Reason == "" {
 			fail(w, errs.New(errs.EINVAL, "A rejection needs a reason."))
 			return
 		}
-		reason := "approve steward proposal " + p.ID
-		if !approve {
-			reason = "reject steward proposal " + p.ID + ": " + req.Reason
-		}
-		if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "config", Subject: p.ID, State: state,
-			PayloadSHA256: release.SHA256([]byte(p.Manifest)), Reason: reason, Space: "spc_" + p.Space}); err != nil {
-			fail(w, errs.New(errs.EUNAVAIL, "The decision couldn't be audited, so it wasn't made."))
+		if approve && req.Hash != p.Hash {
+			fail(w, errs.New(errs.EINVAL, "That hash isn't the proposal's; review the proposal again."))
 			return
 		}
-		p.State, p.DecidedBy = state, s.User()
-		if err := h.Proposals.Put(r.Context(), p); err != nil {
+		cur, _, err := h.Manifests.Applied(r.Context())
+		if err != nil {
+			fail(w, errs.New(errs.EUNAVAIL, "The applied manifest can't be read."))
+			return
+		}
+		// One decision per proposal, audited before it is stored, under the store's lock
+		// (SB-1401): a second decision finds it no longer open.
+		var fault *errs.Error
+		p, err = h.Proposals.Update(r.Context(), p.ID, func(x *proposals.Proposal) error {
+			if x.State != proposals.Open {
+				fault = errs.New(errs.EINVAL, "No open proposal %q.", x.ID)
+				return fault
+			}
+			state, reason := proposals.Rejected, "reject steward proposal "+x.ID+": "+req.Reason
+			if approve {
+				state, reason = proposals.Approved, "approve steward proposal "+x.ID
+				if proposals.Hash(cur) != x.Base {
+					state, reason = proposals.Stale, "steward proposal "+x.ID+" is stale: the manifest changed since it was made"
+				}
+			}
+			if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "config", Subject: x.ID, State: state,
+				PayloadSHA256: release.SHA256([]byte(x.Manifest)), Reason: reason, Space: "spc_" + x.Space}); err != nil {
+				fault = errs.New(errs.EUNAVAIL, "The decision couldn't be audited, so it wasn't made.")
+				return fault
+			}
+			x.State, x.DecidedBy = state, s.User()
+			return nil
+		})
+		switch {
+		case fault != nil:
+			fail(w, fault)
+			return
+		case err != nil:
 			fail(w, errs.New(errs.EUNAVAIL, "The decision couldn't be stored."))
+			return
+		case p.State == proposals.Stale:
+			fail(w, errs.New(errs.EDRIFT, "The manifest changed since this proposal was made; the steward must propose again."))
 			return
 		}
 		out := map[string]any{"id": p.ID, "approved": approve}

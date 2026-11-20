@@ -112,7 +112,8 @@ func (s *Store) FeedbackBetween(_ context.Context, tenant string, from, to time.
 // Retention returns the store's three retention stores: traces (answers and drafts),
 // conversations and feedback (sb-tenant(5), Retention and deletion).
 func (s *Store) Retention() []retention.Store {
-	return []retention.Store{view{s, "traces"}, view{s, "conversations"}, view{s, "feedback"}}
+	// Feedback first: it takes its space from its trace, which must still be there (SB-1401).
+	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}}
 }
 
 type view struct {

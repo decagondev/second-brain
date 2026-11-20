@@ -135,6 +135,8 @@ The register is `security/findings.yaml`. Fixed findings and what changed in thi
 | PT-0007 | High | The operator's diff names each nested line's space and compares lines as a multiset (BUG-0015) | LAW-16 |
 | PT-0008 | High | Approval evasion: edits re-decide the duty and keep the expiry, amounts count by size, reject shares approve's checks, a duty needs reporting lines (BUG-0016) | LAW-15 |
 | PT-0009 | High | Barrier evasion: owners by email, barriers need spaces, no reading actions across a barrier, chat attributes, one re-route for old chunks (BUG-0017) | LAW-22 |
+| PT-0010 | Medium | Governance: atomic, audited decisions; operators can complete reviews; per-space retention; removals never dropped (BUG-0018) | LAW-11, LAW-13, LAW-16 |
+| PT-0011 | Medium (accepted) | Holds and reporting lines depend on the cell runtime's wiring (not built yet) | LAW-13 |
 | PT-0004 | Medium (accepted) | A sensitive file labelled `internal` at the source and shared wrongly answers company-wide: the source's label is the authority. Mitigated by access reviews and the game day's label audit | LAW-20 |
 
 The external test itself hasn't run yet. This section and the register take its findings.

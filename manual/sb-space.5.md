@@ -39,7 +39,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 | `label` | label | no | from the template | The default label for documents in this space whose source carries none: `public`, `internal`, `confidential` or `restricted` |
 | `scope` | map kind → list of patterns | yes | | Kinds are the manifest's connector kinds (`docs`, `chat`, `tickets`, `crm`, and from W11 `code`, `hris`, `accounting`). Every kind used must be in `connectors`. Patterns are as in `exclude` (sb-tenant(5)): `/Folder/**` for docs, `#name-*` for chat, a project or repository name for the others |
 | `agents` | list | no | from the template | A subset of the manifest's `agents`. An agent not listed in `agents` is an error |
-| `retention_days` | int | no | the tenant's | 30 to the tenant's `retention_days`. A space can keep less, never more |
+| `retention_days` | int | no | the tenant's | 30 to the tenant's `retention_days`. A space can keep less, never more: the nightly sweep ages the space's records by its own days (SB-1401). A record whose store doesn't know its space (a conversation, a log file) ages by the tenant's |
 | `fields` | map kind → list of field names | no | `{}` | For a structured source (sb-connector(3), Fields): the sensitive fields this space lets ingest index, for example `{ hris: [salary_band] }`. A document with one of them is `restricted`. Non-sensitive declared fields need no listing. Every kind used must be in the space's `scope` |
 | `channels` | list of `#name` | no | `[]` | The chat-app channels whose `/ask` asks in this space (sb-ask(3), The chat app). A channel belongs to at most one space |
 

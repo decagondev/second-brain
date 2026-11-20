@@ -47,6 +47,9 @@ type Store interface {
 	Put(ctx context.Context, p Proposal) error
 	Get(ctx context.Context, id string) (p Proposal, found bool, err error)
 	List(ctx context.Context) ([]Proposal, error)
+	// Update applies f to the stored proposal atomically, and stores the result only if f
+	// returns nil: two decisions can't both act on one open proposal (SB-1401).
+	Update(ctx context.Context, id string, f func(p *Proposal) error) (Proposal, error)
 }
 
 // ErrNotFound is a proposal id the store doesn't hold.
@@ -88,4 +91,20 @@ func (s *MemoryStore) List(_ context.Context) ([]Proposal, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
+}
+
+// Update implements Store.
+func (s *MemoryStore) Update(_ context.Context, id string, f func(p *Proposal) error) (Proposal, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.m[id]
+	if !ok {
+		return Proposal{}, ErrNotFound
+	}
+	p.Diff = append([]string(nil), p.Diff...)
+	if err := f(&p); err != nil {
+		return Proposal{}, err
+	}
+	s.m[id] = p
+	return p, nil
 }

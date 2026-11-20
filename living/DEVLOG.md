@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.1c Governance findings (SB-1401)
+
+**Wave/slice:** W13 / S13.1c · **Status:** In progress (one more fix slice)
+
+**What:** `Update` on the proposal and review stores, used for every decision; stale proposals audited; operators may decide reviews; `retention.Job.SpaceDays`; IdP requests for removals a manifest group doesn't list; `EHOLD` for held erasure; feedback swept before traces; both SCIM manager shapes and `remove`. PT-0010 (BUG-0018), PT-0011 accepted.
+
+**Why this way:** A decision is audited and stored as one step under the store's lock, so the audit trail and the stored state can't disagree, whichever of two concurrent requests wins.
+
+**Learned:** The race test was the only way to see the lost decision: every single-threaded test passed.
+
+**Laws:** LAW-11, LAW-13 and LAW-16 hold where they didn't; a regression test for each.
+
+**Next:** S13.1d, the ingest and connector findings.
+
 ## 2026-11-20 S13.1b Authorisation and approval findings (SB-1401)
 
 **Wave/slice:** W13 / S13.1b · **Status:** In progress (two more fix slices)

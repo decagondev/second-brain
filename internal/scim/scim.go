@@ -255,6 +255,10 @@ func (e *Endpoint) patchUser(w http.ResponseWriter, r *http.Request) {
 	}
 	u := before
 	for _, op := range body.Operations {
+		if strings.EqualFold(op.Op, "remove") && op.Path == managerPath {
+			u.Manager = "" // a cleared manager is cleared, never kept stale (SB-1401)
+			continue
+		}
 		if !strings.EqualFold(op.Op, "replace") && !strings.EqualFold(op.Op, "add") {
 			fail(w, http.StatusBadRequest, "only replace and add are supported on users")
 			return
@@ -280,14 +284,20 @@ func (e *Endpoint) patchUser(w http.ResponseWriter, r *http.Request) {
 			case "externalId":
 				_ = json.Unmarshal(v, &u.ExternalID)
 			case managerPath:
+				// {"value": "<id>"} or, from some IdPs, the id as a plain string (SB-1401).
 				var m struct {
 					Value string `json:"value"`
 				}
-				if json.Unmarshal(v, &m) != nil {
-					fail(w, http.StatusBadRequest, "manager must be {\"value\": \"<user id>\"}")
+				var plain string
+				switch {
+				case json.Unmarshal(v, &m) == nil:
+					u.Manager = m.Value
+				case json.Unmarshal(v, &plain) == nil:
+					u.Manager = plain
+				default:
+					fail(w, http.StatusBadRequest, "manager must be {\"value\": \"<user id>\"} or the id")
 					return
 				}
-				u.Manager = m.Value
 			case "title":
 				_ = json.Unmarshal(v, &u.Title)
 			case enterprisePath + "department":

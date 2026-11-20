@@ -197,3 +197,19 @@ func TestEnterpriseAttributes(t *testing.T) {
 		t.Fatalf("patch: %d %+v", code, u)
 	}
 }
+
+// SB-1401: a manager sent as a plain string, alongside active:false, is applied; a
+// remove clears it.
+func TestManagerForms(t *testing.T) {
+	f := setup()
+	id := f.user(t, "eve")
+	code, v := f.do(t, "PATCH", "/scim/v2/Users/"+id, `{"Operations":[{"op":"replace","path":"active","value":false},{"op":"replace","path":"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager","value":"usr_boss"}]}`)
+	u, _, _ := f.dir.User(context.Background(), "acme-logistics", id)
+	if code != 200 || u.Manager != "usr_boss" || u.Active {
+		t.Fatalf("patch: %d %v %+v", code, v, u)
+	}
+	code, _ = f.do(t, "PATCH", "/scim/v2/Users/"+id, `{"Operations":[{"op":"remove","path":"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager"}]}`)
+	if u, _, _ := f.dir.User(context.Background(), "acme-logistics", id); code != 200 || u.Manager != "" {
+		t.Fatalf("remove: %d %q", code, u.Manager)
+	}
+}

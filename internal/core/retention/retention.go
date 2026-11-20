@@ -62,6 +62,9 @@ type Job struct {
 	Now    func() time.Time
 	// Held is the cell's active legal holds (SB-1207); nil is none.
 	Held Held
+	// SpaceDays are spaces whose retention_days is below Days, by space id (spc_NAME):
+	// their records age out sooner (sb-space(5); SB-1401). A space can keep less, never more.
+	SpaceDays map[string]int
 }
 
 // Report is what a run did: records deleted per store, and the stores that failed.
@@ -111,6 +114,23 @@ func (j Job) Sweep(ctx context.Context) (Report, error) {
 		}
 		rep.Counts[s.Name()] = n
 		held += k
+	}
+	// A space that keeps less: a second pass with its own cutoff, over its records only.
+	for _, id := range sortedKeys(j.SpaceDays) {
+		days := j.SpaceDays[id]
+		if days < MinDays || days >= j.Days {
+			continue
+		}
+		spaceCut := j.Now().UTC().Add(-time.Duration(days) * 24 * time.Hour)
+		only := func(space, user string) bool { return space != id || j.Held.Is(space, user) }
+		for _, s := range j.Stores {
+			n, _, err := s.Expire(ctx, j.Tenant, spaceCut, only)
+			if err != nil {
+				rep.Failed = append(rep.Failed, s.Name()+"@"+id)
+				continue
+			}
+			rep.Counts[s.Name()] += n
+		}
 	}
 	rep.Held = held
 	state := "done"
@@ -168,4 +188,13 @@ func (j Job) Erase(ctx context.Context, actor, user, reason string) (Report, err
 		return rep, fmt.Errorf("%w: %s", ErrStore, strings.Join(rep.Failed, ", "))
 	}
 	return rep, nil
+}
+
+func sortedKeys(m map[string]int) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }

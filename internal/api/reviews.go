@@ -46,7 +46,7 @@ func (h Reviews) ok(w http.ResponseWriter, v any) {
 }
 
 // steward authorises the caller as a steward of the named space.
-func (h Reviews) steward(w http.ResponseWriter, r *http.Request) (tenancy.Scope, manifest.Tenant, bool) {
+func (h Reviews) steward(w http.ResponseWriter, r *http.Request, operatorToo bool) (tenancy.Scope, manifest.Tenant, bool) {
 	s, err := tenancy.FromContext(r.Context())
 	if err != nil {
 		fail(w, errs.New(errs.EAUTH, "Sign in again."))
@@ -65,7 +65,8 @@ func (h Reviews) steward(w http.ResponseWriter, r *http.Request) (tenancy.Scope,
 	}
 	dec := h.Policy.Authorise(r.Context(), s, "review_space", policy.Entity{Type: "SpaceConfig", ID: name, Tenant: h.Tenant,
 		Attrs: map[string]any{"stewards": sp.Stewards}}, map[string]any{"groups": groupsOf(s)})
-	if dec.Decision != policy.Allow {
+	if dec.Decision != policy.Allow && (!operatorToo ||
+		h.Policy.Authorise(r.Context(), s, "admin", policy.Entity{Type: "Cell", ID: h.Tenant, Tenant: h.Tenant}, nil).Decision != policy.Allow) {
 		fail(w, errs.New(errs.EPERM, "Only the space's stewards can review its access."))
 		return s, cur, false
 	}
@@ -73,7 +74,7 @@ func (h Reviews) steward(w http.ResponseWriter, r *http.Request) (tenancy.Scope,
 }
 
 func (h Reviews) listSpace(w http.ResponseWriter, r *http.Request) {
-	if _, _, ok := h.steward(w, r); !ok {
+	if _, _, ok := h.steward(w, r, false); !ok {
 		return
 	}
 	all, err := h.Reviews.List(r.Context())
@@ -91,17 +92,10 @@ func (h Reviews) listSpace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Reviews) decide(w http.ResponseWriter, r *http.Request) {
-	s, cur, ok := h.steward(w, r)
+	// Stewards decide; so may an operator, so a review whose only steward is also its only
+	// undecided member can still complete (SB-1401).
+	s, cur, ok := h.steward(w, r, true)
 	if !ok {
-		return
-	}
-	rv, found, err := h.Reviews.Get(r.Context(), r.PathValue("id"))
-	switch {
-	case err != nil:
-		fail(w, errs.New(errs.EUNAVAIL, "Reviews can't be read."))
-		return
-	case !found || rv.Space != r.PathValue("name"):
-		fail(w, errs.New(errs.EINVAL, "No review %q in this space.", r.PathValue("id")))
 		return
 	}
 	var req struct{ User, Decision, Reason string }
@@ -111,71 +105,95 @@ func (h Reviews) decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := h.Now()
-	next, err := reviews.Decide(rv, req.User, req.Decision, req.Reason, s.User(), now)
+	var fault *errs.Error
+	// The decision, its audit row and any completion are one step under the store's lock,
+	// so two decisions at once can't overwrite each other (SB-1401).
+	next, err := h.Reviews.Update(r.Context(), r.PathValue("id"), func(rv *reviews.Review) error {
+		if rv.Space != r.PathValue("name") {
+			fault = errs.New(errs.EINVAL, "No review %q in this space.", r.PathValue("id"))
+			return fault
+		}
+		next, err := reviews.Decide(*rv, req.User, req.Decision, req.Reason, s.User(), now)
+		switch {
+		case errors.Is(err, reviews.ErrSelf):
+			fault = errs.New(errs.EPERM, "Nobody decides on their own access; ask another steward or an operator.")
+			return fault
+		case err != nil:
+			fault = errs.New(errs.EINVAL, "%v", err)
+			return fault
+		}
+		reason := "access review " + rv.ID + ": " + req.Decision + " " + req.User
+		if req.Reason != "" {
+			reason += ": " + req.Reason
+		}
+		row, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "access", Subject: rv.ID + ":" + req.User,
+			State: req.Decision, Reason: reason, Space: "spc_" + rv.Space})
+		if err != nil {
+			fault = errs.New(errs.EUNAVAIL, "The decision couldn't be audited, so it wasn't made.")
+			return fault
+		}
+		for i := range next.Items {
+			if next.Items[i].User == req.User {
+				next.Items[i].AuditSeq = row.Seq
+			}
+		}
+		if next.State == reviews.Complete {
+			if f := h.complete(r, s, cur, &next, now); f != nil {
+				fault = f
+				return fault
+			}
+		}
+		*rv = next
+		return nil
+	})
 	switch {
-	case errors.Is(err, reviews.ErrSelf):
-		fail(w, errs.New(errs.EPERM, "Nobody decides on their own access; ask another steward or an operator."))
-		return
+	case fault != nil:
+		fail(w, fault)
+	case errors.Is(err, reviews.ErrNotFound):
+		fail(w, errs.New(errs.EINVAL, "No review %q in this space.", r.PathValue("id")))
 	case err != nil:
-		fail(w, errs.New(errs.EINVAL, "%v", err))
-		return
+		fail(w, errs.New(errs.EUNAVAIL, "The decision couldn't be stored."))
+	default:
+		h.ok(w, next)
 	}
-	reason := "access review " + rv.ID + ": " + req.Decision + " " + req.User
-	if req.Reason != "" {
-		reason += ": " + req.Reason
+}
+
+// complete turns a complete review's removals into change requests: one proposal for the
+// manifest groups, IdP requests for the rest; a removal is never dropped.
+func (h Reviews) complete(r *http.Request, s tenancy.Scope, cur manifest.Tenant, next *reviews.Review, now time.Time) *errs.Error {
+	requests := h.Requests
+	if requests == nil {
+		requests = reviews.Requests
 	}
-	row, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "access", Subject: rv.ID + ":" + req.User,
-		State: req.Decision, Reason: reason, Space: "spc_" + rv.Space})
-	if err != nil {
-		fail(w, errs.New(errs.EUNAVAIL, "The decision couldn't be audited, so it wasn't made."))
-		return
-	}
-	for i := range next.Items {
-		if next.Items[i].User == req.User {
-			next.Items[i].AuditSeq = row.Seq
-		}
-	}
-	if next.State == reviews.Complete {
-		requests := h.Requests
-		if requests == nil {
-			requests = reviews.Requests
-		}
-		nt, changed, reqs := requests(cur, next)
-		if changed {
-			if t, ds := manifest.Check(manifest.Format(nt)); len(ds) == 0 {
-				p := proposals.Proposal{ID: h.NewID("prop_"), Space: rv.Space, Requester: s.User(), Base: proposals.Hash(cur),
-					Hash: proposals.Hash(t), Manifest: string(manifest.Format(t)), Diff: manifest.Diff(cur, t), State: proposals.Open, At: now.UTC()}
-				if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "config", Subject: p.ID, State: "proposed",
-					PayloadSHA256: release.SHA256([]byte(p.Manifest)), Reason: "access review " + rv.ID + " removals", Space: "spc_" + rv.Space}); err != nil {
-					fail(w, errs.New(errs.EUNAVAIL, "The removals couldn't be audited."))
-					return
+	nt, changed, reqs := requests(cur, *next)
+	if changed {
+		if t, ds := manifest.Check(manifest.Format(nt)); len(ds) == 0 {
+			p := proposals.Proposal{ID: h.NewID("prop_"), Space: next.Space, Requester: s.User(), Base: proposals.Hash(cur),
+				Hash: proposals.Hash(t), Manifest: string(manifest.Format(t)), Diff: manifest.Diff(cur, t), State: proposals.Open, At: now.UTC()}
+			if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "config", Subject: p.ID, State: "proposed",
+				PayloadSHA256: release.SHA256([]byte(p.Manifest)), Reason: "access review " + next.ID + " removals", Space: "spc_" + next.Space}); err != nil {
+				return errs.New(errs.EUNAVAIL, "The removals couldn't be audited.")
+			}
+			if err := h.Proposals.Put(r.Context(), p); err != nil {
+				return errs.New(errs.EUNAVAIL, "The removals couldn't be stored.")
+			}
+			for i := range reqs {
+				if reqs[i].Kind == "manifest" {
+					reqs[i].Proposal = p.ID
 				}
-				if err := h.Proposals.Put(r.Context(), p); err != nil {
-					fail(w, errs.New(errs.EUNAVAIL, "The removals couldn't be stored."))
-					return
-				}
-				for i := range reqs {
-					if reqs[i].Kind == "manifest" {
-						reqs[i].Proposal = p.ID
-					}
-				}
-			} else {
-				// A removal that would leave the manifest invalid goes to the operator as an
-				// IdP-style request to resolve by hand, never silently dropped.
-				for i := range reqs {
-					if reqs[i].Kind == "manifest" {
-						reqs[i].Kind = "idp"
-					}
+			}
+		} else {
+			// A removal that would leave the manifest invalid goes to the operator as an
+			// IdP-style request to resolve by hand, never silently dropped.
+			for i := range reqs {
+				if reqs[i].Kind == "manifest" {
+					reqs[i].Kind = "idp"
 				}
 			}
 		}
-		next.Requests = reqs
 	}
-	if err := h.Reviews.Put(r.Context(), next); err != nil {
-		fail(w, errs.New(errs.EUNAVAIL, "The decision couldn't be stored."))
-		return
-	}
-	h.ok(w, next)
+	next.Requests = reqs
+	return nil
 }
 
 func (h Reviews) operator(w http.ResponseWriter, r *http.Request) bool {

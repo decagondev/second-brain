@@ -283,3 +283,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestOwnerByEmail`, `TestBarriersNeedSpaces`, `TestGetHidesTheActionAcrossABarrier` and `TestChatScopeCarriesAttributes`. Why it wasn't caught before: the law tests used user ids as owner emails, never declared barriers without spaces, and only drove approvals, not reads of actions.
 
+## BUG-0018 Governance decisions could be lost, dropped or unaudited
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 fresh-eyes review (PT-0010) | Medium | SB-1401 | Fixed |
+
+**Symptom:** Two operators deciding one proposal at the same time both succeeded; a stale proposal was closed with no audit row; two stewards deciding a review at once lost one decision; a review whose only steward was its last undecided member could never complete; a space's shorter `retention_days` was ignored; a removal from a manifest group that didn't list the person was dropped; a held erasure answered `EUNAVAIL`; a SCIM manager sent as a plain string failed the whole PATCH, `active: false` included.
+
+**Root cause:** Read-check-write handlers with blind `Put`s; the stale path skipped the audit; only stewards could decide; the sweep used only the tenant's days; `Requests` produced a manifest request with no change; the erase handler didn't know `ErrHeld`; the manager parser took one shape.
+
+**Fix:** `proposals.Store.Update` and `reviews.Store.Update` make each decision one atomic step, audited first; stale proposals are audited; operators may decide reviews; spaces with fewer days get their own sweep pass; such removals are IdP requests; `EHOLD`; both manager shapes and `remove`.
+
+**Caught by now:** `TestProposalDecisionsAreAtomicAndStaleIsAudited` (under `-race`), `TestSpaceRetentionIsEnforced`, `TestRemovalNotInTheListIsAnIdPRequest` and `TestManagerForms`. Why it wasn't caught before: no test decided twice at once, and the governance tests used one shape of each input.
+

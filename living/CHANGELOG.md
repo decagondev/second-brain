@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Hardening (S13.1c: SB-1401): governance decisions are atomic and audited, operators can complete access reviews, per-space retention is enforced, and review removals are never dropped.
 - Hardening (S13.1b: SB-1401): approval and barrier evasions fixed (edits, negative amounts, rejection, viewing across a barrier, owners by email, barriers without spaces, chat attributes).
 - Hardening (S13.1a: SB-1401): the review's two critical findings fixed. Secrets are found across chunk boundaries and in more forms; steward proposals must read back as written; manifest diffs name each line's space.
 - Cross-space red team (S12.4b: SB-1208): the plan, the `space-redteam` gating eval, the game day runbook, and a new `sb tenant check` rule refusing a scope that reaches into a restricted space (PT-0003).

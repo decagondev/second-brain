@@ -229,9 +229,13 @@ func Requests(t manifest.Tenant, r Review) (next manifest.Tenant, changed bool, 
 					kept = append(kept, e)
 				}
 			}
-			if len(kept) != len(emails) {
-				next.Groups[g], changed = kept, true
+			if len(kept) == len(emails) {
+				// Listed in the manifest, but not by this person's email: the IdP holds the
+				// membership, so it is an IdP request, never dropped (SB-1401).
+				reqs = append(reqs, Request{Kind: "idp", User: it.User, Group: g})
+				continue
 			}
+			next.Groups[g], changed = kept, true
 			reqs = append(reqs, Request{Kind: "manifest", User: it.User, Group: g})
 		}
 	}
@@ -338,6 +342,9 @@ type Store interface {
 	Put(ctx context.Context, r Review) error
 	Get(ctx context.Context, id string) (r Review, found bool, err error)
 	List(ctx context.Context) ([]Review, error)
+	// Update applies f to the stored review atomically, and stores the result only if f
+	// returns nil: two decisions at once can't overwrite each other (SB-1401).
+	Update(ctx context.Context, id string, f func(r *Review) error) (Review, error)
 }
 
 // MemoryStore is an in-process Store (development and tests).
@@ -414,4 +421,23 @@ func Run(ctx context.Context, t manifest.Tenant, now time.Time, roster Roster, l
 		}
 	}
 	return opened, nil
+}
+
+// ErrNotFound is a review id the store doesn't hold.
+var ErrNotFound = errors.New("reviews: no such review")
+
+// Update implements Store.
+func (s *MemoryStore) Update(_ context.Context, id string, f func(r *Review) error) (Review, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, ok := s.m[id]
+	if !ok {
+		return Review{}, ErrNotFound
+	}
+	c := Clone(r)
+	if err := f(&c); err != nil {
+		return Review{}, err
+	}
+	s.m[id] = Clone(c)
+	return c, nil
 }

@@ -242,6 +242,8 @@ func (h Admin) erase(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
 	switch {
 	case errors.Is(err, retention.ErrInvalid):
 		h.fail(w, errs.New(errs.EINVAL, "A usr_ id and a reason are required."))
+	case errors.Is(err, retention.ErrHeld):
+		h.fail(w, errs.New(errs.EHOLD, "A legal hold covers this person; nothing was erased. Ask a Legal steward."))
 	case err != nil:
 		h.fail(w, errs.New(errs.EUNAVAIL, "The erasure didn't finish; the audit log says how far it got."))
 	default:
