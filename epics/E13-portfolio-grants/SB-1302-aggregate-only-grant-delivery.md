@@ -13,7 +13,7 @@ summary: "The parent needs numbers and statements, not documents."
 | Manual | `sb-spaces(7)` (new) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02), LAW-23 (new, W8) |
 | Depends on | [SB-1301](SB-1301-space-grant-model-and-consent.md) |
-| Status | Open |
+| Status | Parked (Q-01 stays no, 2026-11-20) |
 
 ## Why
 

@@ -13,7 +13,7 @@ summary: "ADR-0014 allows parent access only as a separate tenant with consent; 
 | Manual | `sb-spaces(7)` (new), [`sb-factory(7)`](../../manual/sb-factory.7.md) |
 | Laws | [LAW-02](../../manual/sb-laws.7.md#law-02), LAW-23 (new, W8) |
 | Depends on | [SB-1201](../E12-space-governance/SB-1201-stewards-and-delegated-space-changes.md) |
-| Status | Open |
+| Status | Parked (Q-01 stays no, 2026-11-20) |
 
 ## Why
 

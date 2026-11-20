@@ -7,7 +7,7 @@ summary: Questions only the parent organisation can answer, who decides, and the
 
 | ID | Question | Decides | Needed by | Default if unanswered |
 |---|---|---|---|---|
-| Q-01 | Does the parent organisation ever read portfolio-company data? | Parent-org leadership + legal | Before W6 | No. No cross-company features; ADR-0014 stays Proposed |
+| Q-01 | Does the parent organisation ever read portfolio-company data? | Parent-org leadership + legal | Before W6 | No, confirmed by the user on 2026-11-20. No cross-company features; ADR-0014 stays Proposed; E13 portfolio grants are parked |
 | Q-02 | Does any company ship software or connected devices into the EU (Cyber Resilience Act)? | Parent-org legal | W5 | Assume yes for the vulnerability-handling process; SB-505 covers it |
 | Q-03 | Which IdPs and source systems do the first companies use, and how many companies in year one? | Parent-org IT + company IT | W1 (IdPs), W2 (sources) | One OIDC IdP; docs: Google Drive, chat: Slack, tickets: Linear (all chosen by the user, 2026-11-19) |
 | Q-04 | Data-residency, retention and compliance baselines (SOC 2, ISO 27001, HIPAA, GDPR, others)? Model-provider data terms? | Parent-org security + legal | W1 (regions), W3 (provider) | EU and US regions (confirmed for now by the user, 2026-11-19; `eu`, `us` in sb-tenancy(7)); zero-retention model endpoint; SOC 2 controls as baseline. Cloud: cloud-neutral, adapters per cloud (ADR-0018). Embeddings: a deterministic local embedder behind the `Embedder` port until the provider is chosen (SB-206) |

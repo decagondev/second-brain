@@ -7,7 +7,7 @@ summary: "If the parent reads company data at all, it gets consented, aggregate-
 
 > If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser.
 
-**Waves:** W13 · **Tickets:** 4 · **Stories:** 2
+**Waves:** parked (was W13; Q-01 stays no, 2026-11-20) · **Tickets:** 4 · **Stories:** 2
 
 ## User stories
 

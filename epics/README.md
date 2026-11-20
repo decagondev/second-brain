@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-14 epics, 63 user stories and 138 tickets across 14 waves. W8 to W13 add department brains ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+15 epics, 64 user stories and 143 tickets across 14 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -16,7 +16,9 @@ summary: Epics, waves, slices and tickets.
 | W0 Manual and Laws | 10 | 6 | 0 | Left: human reviews (SB-004, SB-005, SB-014) and, for SB-011 to SB-013, two reviewers (models and mutations green locally and in CI, 2026-11-19) |
 | W1 First Cell | 8 | 5 | 0 | Done: SB-101 to SB-103, SB-105 to SB-108, SB-114. In review: SB-104 (needs a cloud adapter), SB-109 to SB-112 (second reviewer for policy and audit) |
 | W2 to W7 | 12 | 55 | 0 | W2 built (4 done, 7 in review); W3 S3.1 to S3.6: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain), SB-307 (WCAG audit, connector links), SB-308 (real Slack workspace), SB-309 (tenant verify, staging model) SB-310 (weekly schedule) and SB-311 (the pilot itself, human) in review; W4 S4.1 to S4.3: SB-409 done; SB-401 to SB-408 and SB-410 to SB-412 in review (W4 built); W5 built: SB-501 to SB-510 in review; W6 S6.1 and S6.2: SB-603 done; SB-601, SB-602, SB-604 to SB-609 in review; S6.3b: SB-610 (HubSpot, real sandbox) in review; S6.3c: SB-611 (nightly schedule in a running cell) in review; S6.4a: SB-613 (the game day itself, human) in review; S6.4b: SB-612 (the external pen test, human) in review; **W6 built**; W7 S7.1a: SB-701 (security and tenant review, human) in review; S7.1b: SB-702 done; S7.1c: SB-703 (real GCP project) in review; S7.2a: SB-704 done; S7.2b: SB-705 (CLI and a cloud Target) in review; LAW-17 and LAW-18 hand-off tests green; S7.2c: SB-706 (verify on a deployed cell, monthly schedule) in review; S7.2d: SB-707 (a cell in a real tenant account) in review; S7.3a: SB-708 (detach on a running cell) in review; S7.3b: SB-709 (usage meter in a running cell) in review; S7.3c: SB-710 (the game day with a friendly tenant, human) in review; **W7 built** |
-| W8 to W13 | 19 | 17 | 6 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. W13 starts only if Q-01 is answered yes |
+| W8 to W12 | 19 | 17 | 2 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. **W12 built.** Open: SB-903, SB-908 (a real GCP project) |
+| W13 Hardening | 0 | 0 | 5 | Planned 2026-11-20 with the user (E14): review, fuzz, tidy, manual and code agree, coverage |
+| Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
 
@@ -62,7 +64,8 @@ flowchart LR
   E10["E10 Department Spaces"]
   E11["E11 Department Templates and Connectors"]
   E12["E12 Space Governance"]
-  E13["E13 Portfolio Department Grants"]
+  E13["E13 Portfolio Department Grants (parked)"]
+  E14["E14 Hardening"]
   E01 --> E09
   E08 --> E09
   E02 --> E10
@@ -74,6 +77,7 @@ flowchart LR
   E10 --> E12
   E10 --> E13
   E12 --> E13
+  E12 --> E14
 ```
 
 ## Epics
@@ -93,7 +97,8 @@ flowchart LR
 | [E10 Department Spaces](E10-department-spaces/README.md) | A company's brain holds all its knowledge, split into department spaces that can only narrow what each source allows. | W10 | 8 |
 | [E11 Department Templates and Connectors](E11-department-templates/README.md) | Every common department starts from a template with its sources, labels, agents and evals, including code, HR and accounting systems. | W11 | 7 |
 | [E12 Space Governance](E12-space-governance/README.md) | Department leads run their own spaces; barriers, segregation of duties, access reviews and reorgs work the way a real organisation needs. | W12 | 8 |
-| [E13 Portfolio Department Grants](E13-portfolio-grants/README.md) | If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser. | W13 | 4 |
+| [E13 Portfolio Department Grants](E13-portfolio-grants/README.md) | If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser. **Parked: Q-01 stays no (2026-11-20).** | parked | 4 |
+| [E14 Hardening](E14-hardening/README.md) | Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps. | W13 | 5 |
 
 ## All tickets by wave
 
@@ -296,7 +301,7 @@ flowchart LR
 | [SB-1207](E12-space-governance/SB-1207-legal-hold-per-space.md) | S12.4 | E12 | Legal hold per space | Done |
 | [SB-1208](E12-space-governance/SB-1208-cross-space-red-team-and-game-day.md) | S12.4 | E12 | Cross-space red team and game day | In review |
 
-### W13 Portfolio Department Grants
+### Parked: Portfolio Department Grants (Q-01 stays no)
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
@@ -304,3 +309,13 @@ flowchart LR
 | [SB-1302](E13-portfolio-grants/SB-1302-aggregate-only-grant-delivery.md) | S13.1 | E13 | Aggregate-only grant delivery | Open |
 | [SB-1303](E13-portfolio-grants/SB-1303-grant-revocation-and-expiry.md) | S13.1 | E13 | Grant revocation and expiry | Open |
 | [SB-1304](E13-portfolio-grants/SB-1304-finance-roll-up-pilot.md) | S13.2 | E13 | Finance roll-up pilot with friendly tenants | Open |
+
+### W13 Hardening
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1401](E14-hardening/SB-1401-fresh-eyes-review.md) | S13.1 | E14 | Fresh-eyes review of W8 to W12 | Open |
+| [SB-1402](E14-hardening/SB-1402-fuzzing-and-races.md) | S13.2 | E14 | Fuzz the parsers and run every test under the race detector | Open |
+| [SB-1403](E14-hardening/SB-1403-clean-and-concise.md) | S13.3 | E14 | Clean and concise: stricter lint and tidier big files | Open |
+| [SB-1404](E14-hardening/SB-1404-manual-matches-code.md) | S13.4 | E14 | The manual and the code agree | Open |
+| [SB-1405](E14-hardening/SB-1405-coverage-gaps.md) | S13.5 | E14 | Close the coverage gaps in the core | Open |

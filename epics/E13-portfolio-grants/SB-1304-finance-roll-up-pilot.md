@@ -13,7 +13,7 @@ summary: "Prove the grant path on the one roll-up the parent wants most."
 | Manual | [`sb-onboarding(7)`](../../manual/sb-onboarding.7.md) |
 | Laws | LAW-23 (new, W8) |
 | Depends on | [SB-1303](SB-1303-grant-revocation-and-expiry.md) |
-| Status | Open |
+| Status | Parked (Q-01 stays no, 2026-11-20) |
 
 ## Why
 

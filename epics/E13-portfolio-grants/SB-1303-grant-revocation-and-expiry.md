@@ -13,7 +13,7 @@ summary: "A company must be able to take consent back, at once."
 | Manual | `sb-spaces(7)` (new), [`sb-kill-switches(7)`](../../manual/sb-kill-switches.7.md) |
 | Laws | [LAW-10](../../manual/sb-laws.7.md#law-10), LAW-23 (new, W8) |
 | Depends on | [SB-1302](SB-1302-aggregate-only-grant-delivery.md) |
-| Status | Open |
+| Status | Parked (Q-01 stays no, 2026-11-20) |
 
 ## Why
 
