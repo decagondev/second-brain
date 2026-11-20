@@ -134,6 +134,22 @@ Read-only. Name it as `connectors: { code: github }`. It indexes what engineers 
 
 Tested against `githubtest`, a recorded fake of the REST and GraphQL APIs it uses. A run against a real organisation stays In review.
 
+### `hris: bamboohr` (SB-1104)
+
+Read-only and structured. Name it as `connectors: { hris: bamboohr }`. It is meant for a `people` space, which is `restricted` (sb-departments(7)).
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A BambooHR API key of a read-only user and the company's subdomain, at `vault://tenants/TENANT/connectors/hris` as JSON `{"key": "…", "subdomain": "…"}`. The key is registered with the log redactor before first use |
+| Documents | One structured document per employee, `employees/ID`, titled with the display name, and one text document per company file shared with all employees (policies, the handbook), `files/ID`, titled with the file's name. An employee's version is BambooHR's `lastChanged`, a file's its `dateCreated`, both in microseconds (a new version of a file is a new file) |
+| Fields | Declared and not sensitive: `displayName`, `firstName`, `lastName`, `jobTitle`, `department`, `division`, `location`, `workEmail`, `supervisor`. Declared and sensitive: `payRate`, `payType`, `ssn`, `dateOfBirth`, `address1`, `homePhone`, `mobilePhone`, `maritalStatus`, `gender`, `ethnicity`, `terminationReason`. The connector asks BambooHR only for the non-sensitive fields and the sensitive ones a space's `fields` allow-list names (sb-space(5)), so other sensitive values are never read, let alone ingested (sb-ingest(7), Fields). Anything BambooHR returns that isn't declared is dropped |
+| Location and label | Location is `employees/DEPARTMENT/ID` or `files/CATEGORY/NAME`. No source label; an employee record with an allow-listed sensitive field is `restricted` (sb-ingest(7)) |
+| ACL | Live: the asker is found by work email in the directory. An **active** employee → `Allow` for employee records and shared files; someone BambooHR doesn't list, or lists as inactive → `Deny`. A file no longer shared with all employees, or a record or file that's gone → `Deny`. Anything else → `Unknown`. Spaces, labels and the allow-list decide who sees what beyond that (sb-spaces(7)) |
+| Changes | The cursor holds the newest `lastChanged` seen and the ids of the shared files. `employees/changed?since=` gives inserted and updated employees (changes) and deleted ones (deletes); a file that appears is a change, and one that's gone or no longer shared is a delete. An empty cursor lists every employee and shared file |
+| Act | `ENOTSUP` (read-only) |
+
+Tested against `bamboohrtest`, a recorded fake of the API it uses. A run against a real BambooHR account stays In review.
+
 ### `tickets: linear` (SB-211)
 
 Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `ticket-update` workflow arrive with SB-410, through the tool bus.

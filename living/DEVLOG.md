@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.3b The BambooHR connector (SB-1104)
+
+**Wave/slice:** W11 / S11.3b · **Author:** platform lead + Claude · **Status:** In review (a real account)
+
+**What:** `internal/adapters/connectors/bamboohr` and `bamboohrtest`, the `hris` kind, and `laws/lawbamboohr.go`. The manual changed first: sb-connector(3), sb-tenant(5) and sb-ask(3).
+
+**Why this way:** Ingest already drops sensitive fields, but a value that is never read can never leak through a log, a crash dump or a cache, so the connector asks BambooHR for the sensitive fields a space allow-lists and nothing more. Employee records are open to every active employee at the source because the directory is; who sees pay or personal details is decided by the restricted label and the People space, which the policy kernel enforces.
+
+**Learned:** The shared connector law expects a ref the source can't place to be Unknown, and an id BambooHR can't parse is exactly that; a record that's gone is a plain deny.
+
+**Laws:** LAW-03, LAW-07 and LAW-20 extended (two law tests, one mutation caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S11.3c, the QuickBooks Online connector (SB-1105).
+
 ## 2026-11-20 S11.3a Field-level allow-lists for structured sources (SB-1106)
 
 **Wave/slice:** W11 / S11.3a · **Author:** platform lead + Claude · **Status:** Done

@@ -76,7 +76,8 @@
           "chat",
           "tickets",
           "crm",
-          "code"
+          "code",
+          "hris"
         ]
       },
       "type": "object"
@@ -97,7 +98,8 @@
           "chat",
           "tickets",
           "crm",
-          "code"
+          "code",
+          "hris"
         ]
       },
       "type": "object"
@@ -217,7 +219,8 @@
                 "chat",
                 "tickets",
                 "crm",
-                "code"
+                "code",
+                "hris"
               ]
             },
             "type": "object"

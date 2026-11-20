@@ -57,7 +57,7 @@ func (d Diag) Format(file string) string {
 var (
 	Channels       = []string{"stable", "testing"}
 	Regions        = []string{"eu", "us"}
-	ConnectorKinds = []string{"docs", "chat", "tickets", "crm", "code"}
+	ConnectorKinds = []string{"docs", "chat", "tickets", "crm", "code", "hris"}
 	Agents         = []string{"ask", "draft-reply", "incident-summary", "spec-digest", "close-checklist", "runbook-answer"}
 	// Workflows maps each known workflow to the connector kind it writes to.
 	Workflows = map[string]string{"ticket-update": "tickets"}

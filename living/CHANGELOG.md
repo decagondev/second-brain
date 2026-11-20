@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The BambooHR connector (S11.3b: SB-1104), read-only against a recorded fake, and the `hris` kind; sensitive fields are read only when a space allow-lists them.
 - Field-level allow-lists for structured sources (S11.3a: SB-1106): declared fields, a space's `fields` allow-list, and ingest that drops every other field before chunking.
 - The GitHub code connector (S11.2: SB-1103), read-only against a recorded fake, the `code` connector kind, and the secret scanner that drops any chunk holding a credential before it is stored.
 - Department agents (S11.1b: SB-1102): `incident-summary`, `spec-digest`, `close-checklist` and `runbook-answer`, read-only, bound to their templates' spaces, every claim cited, each with an eval suite in the gate.

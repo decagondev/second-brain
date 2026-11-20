@@ -26,7 +26,7 @@ const MaxQuestion = 4000
 const TraceTTL = 30 * 24 * time.Hour
 
 // Kinds are the source kinds a request may restrict to.
-var Kinds = map[string]bool{"docs": true, "chat": true, "tickets": true, "crm": true, "code": true}
+var Kinds = map[string]bool{"docs": true, "chat": true, "tickets": true, "crm": true, "code": true, "hris": true}
 
 // Notices.
 const (
