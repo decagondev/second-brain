@@ -24,7 +24,7 @@ func TestSyncMatchesTheManifest(t *testing.T) {
 		t.Fatal(ds)
 	}
 	st := spacemem.New()
-	if err := spaces.Sync(ctx, st, m); err != nil {
+	if err := spaces.Sync(ctx, st, nil, m); err != nil {
 		t.Fatal(err)
 	}
 	got, _ := st.Spaces(ctx, "acme-logistics")
@@ -32,14 +32,14 @@ func TestSyncMatchesTheManifest(t *testing.T) {
 		t.Fatalf("registry: %+v", got)
 	}
 	delete(m.Spaces, "support")
-	if err := spaces.Sync(ctx, st, m); err != nil {
+	if err := spaces.Sync(ctx, st, nil, m); err != nil {
 		t.Fatal(err)
 	}
 	if _, found, _ := st.Space(ctx, "acme-logistics", "spc_support"); found {
 		t.Fatal("a space the manifest dropped is still in the registry")
 	}
 	st.Fail = errors.New("down")
-	if err := spaces.Sync(ctx, st, m); err == nil {
+	if err := spaces.Sync(ctx, st, nil, m); err == nil {
 		t.Fatal("a failing registry must fail the sync")
 	}
 }
@@ -49,7 +49,7 @@ func TestResolve(t *testing.T) {
 	st := spacemem.New()
 	m, _ := manifest.Check([]byte("tenant: acme-logistics\nchannel: stable\nidp: oidc://login.acme.example\nregion: eu\nconnectors: { docs: sharepoint }\nagents: [ask]\n" +
 		"spaces:\n  finance:\n    members: [group:finance]\n    stewards: [group:finance-leads]\n    label: restricted\n    scope: { docs: [\"/Finance/**\"] }\n"))
-	if err := spaces.Sync(ctx, st, m); err != nil {
+	if err := spaces.Sync(ctx, st, nil, m); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {

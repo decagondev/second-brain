@@ -94,6 +94,15 @@ Inside a cell, every operation carries a `tenancy.Scope` that only the auth midd
 - Every port method that reads or writes tenant data takes a `Scope` first and uses only `Scope.Tenant()` to choose rows. A query for another tenant's ids returns nothing, exactly as if they didn't exist.
 - The middleware puts the scope in the request context. Handlers read it with `tenancy.FromContext`; a request without one is `EAUTH`.
 
+### Per-space data keys (SB-1003)
+
+Each space (sb-spaces(7)) has its own 256-bit data key, the wrap purpose `space/spc_NAME` in the cell's wrap inventory (sb-factory(7), Key wraps). Like every data key it is stored only wrapped by the cell's root key, so a space adds no key a custodian doesn't hold. `sb tenant apply` makes a space's key when it first creates the space, before any content can be written to it.
+
+- **Sealing.** Content held for a space, its chunks and its traces, is sealed with AES-256-GCM under the space's key. The additional authenticated data is `TENANT/spc_NAME`, so a sealed record copied into another space or another cell doesn't open. Every record carries a fresh random nonce.
+- **Crypto-shredding.** When the manifest drops a space, apply deletes the space's row and then every wrap of its key, for every custodian. From that moment nothing the space sealed can be opened, in the database or in any backup, and opening it is an error, never an empty result. Every other space's key, the audit signing key and the root key are untouched.
+- **Only space keys shred.** Shredding refuses any purpose that isn't `space/…`; the audit signing key and the root key are never removed this way (LAW-18).
+- **Hand-off.** Re-wrap covers every purpose, so space keys move to the tenant's custodian with the rest, and destroying the factory's wraps still needs the tenant's to unwrap every key now (LAW-18).
+
 ### Off-boarding
 
 Off-boarding is a maintainer procedure, not a manifest field, and needs two approvals. It exports the audit log to the tenant, deletes the cell, and finally destroys the KMS key, which crypto-shreds anything left in backups.

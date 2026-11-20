@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.1c Per-space data keys (SB-1003)
+
+**Wave/slice:** W10 / S10.1c · **Author:** platform lead + Claude · **Status:** In review (the stores seal from SB-1005)
+
+**What:** `keywrap.PurposeSpace`, `Shred` and `DataKey`; `internal/core/seal`; keys in `spaces.Sync`; `laws/law18spaces.go`. The manual changed first: sb-tenancy(7) and sb-factory(7).
+
+**Why this way:** A space key is one more purpose in the wrap inventory, so every rule SB-704 proved for hand-off covers it with no new code. Shredding is the only way a purpose leaves the inventory, and it is refused for anything but a space, so LAW-18's "never remove the last working wrap" stays true for the keys that keep the cell alive. The tenant and space go into the cipher's additional data so a sealed record can't be moved to a space that would open it.
+
+**Learned:** "Not found" and "doesn't unwrap" have to stay different errors: one means the space was shredded on purpose, the other is a Sev-1.
+
+**Laws:** LAW-18 extended (one law test, two mutations caught). LAW-19 to LAW-23's planned tests stay red.
+
+**Next:** S10.2a, Cedar schema v2 for spaces and labels (SB-1004).
+
 ## 2026-11-20 S10.1b The space registry and the request context (SB-1002)
 
 **Wave/slice:** W10 / S10.1b · **Author:** platform lead + Claude · **Status:** Done

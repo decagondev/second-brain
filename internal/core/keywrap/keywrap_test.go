@@ -106,3 +106,36 @@ func TestRewrapVerifies(t *testing.T) {
 type lossy struct{ xorKeys }
 
 func (lossy) Unwrap(_ context.Context, _ string, w []byte) ([]byte, error) { return w[:1], nil }
+
+// SB-1003: only a space's key shreds, and it shreds for every custodian.
+func TestShredOnlySpaces(t *testing.T) {
+	st := &MemoryStore{}
+	f, tn := custodians()
+	for _, p := range []string{PurposeAuditSigning, PurposeSpace("spc_finance"), PurposeSpace("spc_eng")} {
+		if err := Seed(ctx, "gamma-parts", st, f, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := Rewrap(ctx, "gamma-parts", st, f, tn); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{PurposeAuditSigning, "space/", "backup"} {
+		if err := Shred(ctx, "gamma-parts", st, p); !errors.Is(err, ErrNotSpace) {
+			t.Fatalf("shred %q: %v", p, err)
+		}
+	}
+	if err := Shred(ctx, "gamma-parts", st, PurposeSpace("spc_finance")); err != nil {
+		t.Fatal(err)
+	}
+	if _, found, err := DataKey(ctx, "gamma-parts", st, PurposeSpace("spc_finance"), f, tn); found || err != nil {
+		t.Fatalf("shredded key: found %v err %v", found, err)
+	}
+	for _, p := range []string{PurposeAuditSigning, PurposeSpace("spc_eng")} {
+		if k, found, err := DataKey(ctx, "gamma-parts", st, p, tn); !found || err != nil || len(k) != 32 {
+			t.Fatalf("%s after a shred: %v %v", p, found, err)
+		}
+	}
+	if _, found, err := DataKey(ctx, "gamma-parts", st, PurposeAuditSigning, Custodian{Name: "tenant", Keys: xorKeys{fail: true}, KeyID: "tenant-key-1"}); !found || err == nil {
+		t.Fatalf("a key that doesn't unwrap must be an error, not missing: %v %v", found, err)
+	}
+}

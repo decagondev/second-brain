@@ -85,12 +85,12 @@ Each step's infrastructure work (provision, move, verify, cutover) goes through 
 
 ### Key wraps, exactly (SB-704)
 
-A cell's data is encrypted under **data keys**, one per purpose. Today the only purpose is `audit-signing`, the seed of the cell's audit signing key (sb-audit(5)), made when the cell is first stamped. Each data key is stored only **wrapped** by a custodian's root key in that custodian's KMS. The **wrap inventory** records, for each purpose, one wrap per custodian: the custodian (`factory` or `tenant`), its KMS key id, and the wrapped bytes. A hand-off never re-encrypts data. It changes who can unwrap the data keys:
+A cell's data is encrypted under **data keys**, one per purpose. The purposes are `audit-signing`, the seed of the cell's audit signing key (sb-audit(5)), made when the cell is first stamped, and one `space/spc_NAME` per department space (sb-tenancy(7), Per-space data keys; SB-1003). Each data key is stored only **wrapped** by a custodian's root key in that custodian's KMS. The **wrap inventory** records, for each purpose, one wrap per custodian: the custodian (`factory` or `tenant`), its KMS key id, and the wrapped bytes. A hand-off never re-encrypts data. It changes who can unwrap the data keys:
 
 1. **Re-wrap** (phase `KeyDual`): for each purpose, unwrap with the factory's key, wrap under the tenant's key, then unwrap the new wrap and compare. A purpose whose new wrap doesn't give back the same key fails the step. Re-wrap is idempotent: a tenant wrap that already unwraps correctly is kept.
 2. **Destroy the factory wrap** (phase `TenantOwned`): refused with `ELAW` unless, for **every** purpose, the tenant's wrap unwraps **now** to the same data key as the factory's, and the cell being served is the tenant's. The check runs at the moment of destroying, not from a record of an earlier check.
 
-Abort removes the tenant's wraps and keeps the factory's. Nothing ever removes the last working wrap of a purpose (LAW-18).
+Abort removes the tenant's wraps and keeps the factory's. Nothing ever removes the last working wrap of a purpose (LAW-18), except crypto-shredding a space the manifest dropped, which removes that space's purpose as a whole and is refused for any other purpose.
 
 `sb factory status TENANT` prints the inventory as checked now, for example `key_wraps audit-signing: factory, tenant`, listing for each purpose the custodians whose wrap unwraps it at that moment. A wrap that fails to unwrap is shown as `factory (broken)`, and that is a Sev-1 (`sb_unwrappable_keys`, LAW-18).
 

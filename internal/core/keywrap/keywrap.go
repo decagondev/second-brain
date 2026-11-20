@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"example.com/second-brain/internal/core/ports"
@@ -18,6 +19,66 @@ import (
 
 // Purposes of a cell's data keys.
 const PurposeAuditSigning = "audit-signing"
+
+// PurposeSpace is the purpose of a space's data key (SB-1003), e.g. space/spc_finance.
+func PurposeSpace(spaceID string) string { return spacePrefix + spaceID }
+
+const spacePrefix = "space/"
+
+// ErrNotSpace refuses to shred a purpose that isn't a space's.
+var ErrNotSpace = errors.New("keywrap: ELAW only a space's data key can be shredded (LAW-18)")
+
+// Shred removes every custodian's wrap of a space's data key, so nothing sealed under it
+// can be opened again (sb-tenancy(7), Per-space data keys). It refuses any other purpose.
+func Shred(ctx context.Context, tenant string, st Store, purpose string) error {
+	if !strings.HasPrefix(purpose, spacePrefix) || len(purpose) == len(spacePrefix) {
+		return fmt.Errorf("%w: %q", ErrNotSpace, purpose)
+	}
+	ws, err := st.List(ctx, tenant)
+	if err != nil {
+		return err
+	}
+	for _, w := range ws {
+		if w.Purpose == purpose {
+			if err := st.Delete(ctx, tenant, purpose, w.Custodian); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// DataKey unwraps a purpose's data key with the first custodian whose wrap unwraps now.
+// found is false when no custodian holds a wrap of it at all (never made, or shredded).
+func DataKey(ctx context.Context, tenant string, st Store, purpose string, cs ...Custodian) (key []byte, found bool, err error) {
+	ws, err := st.List(ctx, tenant)
+	if err != nil {
+		return nil, false, err
+	}
+	var last error
+	for _, w := range ws {
+		if w.Purpose != purpose {
+			continue
+		}
+		found = true
+		for _, c := range cs {
+			if c.Name == w.Custodian {
+				k, err := unwrap(ctx, c, w)
+				if err == nil {
+					return k, true, nil
+				}
+				last = err
+			}
+		}
+	}
+	if found {
+		if last == nil {
+			last = errors.New("no custodian at hand holds a wrap")
+		}
+		return nil, true, fmt.Errorf("keywrap: %s doesn't unwrap: %w", purpose, last)
+	}
+	return nil, false, nil
+}
 
 // Wrap is one custodian's wrap of one data key.
 type Wrap struct {

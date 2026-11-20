@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"example.com/second-brain/internal/core/keywrap"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/ports"
 )
@@ -29,9 +30,18 @@ var ErrSpace = errors.New("spaces: no such space for you; ask its stewards for m
 // ErrUnavailable is a registry that can't answer. Unknown never means company-wide.
 var ErrUnavailable = errors.New("spaces: the space registry is unavailable")
 
+// Keys is where Sync keeps space data keys (SB-1003): the cell's wrap inventory and the
+// custodian whose root key wraps a new space's key.
+type Keys struct {
+	Wraps     keywrap.Store
+	Custodian keywrap.Custodian
+}
+
 // Sync makes the registry hold exactly the manifest's spaces: puts every declared space
-// and deletes every other. Any error stops it; the caller retries the whole of it.
-func Sync(ctx context.Context, st ports.SpaceStore, t manifest.Tenant) error {
+// and deletes every other. With keys, a new space gets its data key before its row
+// exists, and a dropped space's key is shredded after its row is gone (sb-tenancy(7)).
+// Any error stops it; the caller retries the whole of it.
+func Sync(ctx context.Context, st ports.SpaceStore, keys *Keys, t manifest.Tenant) error {
 	have, err := st.Spaces(ctx, t.Tenant)
 	if err != nil {
 		return fmt.Errorf("spaces: %w", err)
@@ -43,6 +53,11 @@ func Sync(ctx context.Context, st ports.SpaceStore, t manifest.Tenant) error {
 	sort.Strings(names)
 	for _, n := range names {
 		s := t.Spaces[n]
+		if keys != nil {
+			if err := keywrap.Seed(ctx, t.Tenant, keys.Wraps, keys.Custodian, keywrap.PurposeSpace(ID(n))); err != nil {
+				return fmt.Errorf("spaces: key for %s: %w", n, err)
+			}
+		}
 		if err := st.PutSpace(ctx, ports.Space{ID: ID(n), Tenant: t.Tenant, Name: n, Template: s.Template, Label: s.Label,
 			Members: s.Members, Stewards: s.Stewards, Agents: s.Agents, Scope: s.Scope, RetentionDays: s.RetentionDays}); err != nil {
 			return fmt.Errorf("spaces: %s: %w", n, err)
@@ -52,6 +67,11 @@ func Sync(ctx context.Context, st ports.SpaceStore, t manifest.Tenant) error {
 		if _, keep := t.Spaces[h.Name]; !keep {
 			if err := st.DeleteSpace(ctx, t.Tenant, h.ID); err != nil {
 				return fmt.Errorf("spaces: %s: %w", h.Name, err)
+			}
+			if keys != nil {
+				if err := keywrap.Shred(ctx, t.Tenant, keys.Wraps, keywrap.PurposeSpace(h.ID)); err != nil {
+					return fmt.Errorf("spaces: shred %s: %w", h.Name, err)
+				}
 			}
 		}
 	}
