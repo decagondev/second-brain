@@ -124,3 +124,37 @@ func TestTokensAreRedactedAndCached(t *testing.T) {
 		t.Fatal("token not cached or not registered with the redactor")
 	}
 }
+
+// SB-1005: the location is the folder path, and the classification label is mapped.
+func TestLocationAndLabel(t *testing.T) {
+	f, c, _ := setup(t)
+	c.Classification = &Classification{Label: "lbl_sens", Field: "fld_level", Choices: map[string]string{"ch_r": "restricted", "ch_i": "internal"}}
+	ctx := context.Background()
+	f.Folder("fo_fin", "Finance", "")
+	f.Folder("fo_q3", "Q3", "fo_fin")
+	f.Put("f1", "Forecast", "text/plain", "numbers", "ana@acme.example")
+	f.Move("f1", "fo_q3")
+	d, err := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f1"})
+	if err != nil || d.Location != "/Finance/Q3/Forecast" || d.Label != "" {
+		t.Fatalf("location %q label %q err %v", d.Location, d.Label, err)
+	}
+	for choice, want := range map[string]string{"ch_r": "restricted", "ch_i": "internal", "ch_new": "restricted"} {
+		f.Classify("f1", "lbl_sens", "fld_level", choice)
+		if d, err := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f1"}); err != nil || d.Label != want {
+			t.Fatalf("choice %s: label %q err %v", choice, d.Label, err)
+		}
+	}
+	f.Classify("f1", "lbl_other", "fld_level", "ch_i") // a label the tenant didn't name
+	f.Classify("f1", "lbl_sens", "fld_level", "")
+	if d, _ := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f1"}); d.Label != "" {
+		t.Fatalf("another label set a classification: %q", d.Label)
+	}
+	f.Put("f2", "Top", "text/plain", "x")
+	if d, _ := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f2"}); d.Location != "/Top" {
+		t.Fatalf("a file at the top: %q", d.Location)
+	}
+	f.Move("f2", "fo_missing")
+	if _, err := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: "f2"}); err == nil {
+		t.Fatal("a folder that can't be read must fail the fetch, never route by a guess")
+	}
+}

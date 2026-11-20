@@ -32,7 +32,7 @@ const (
 	// ACLConcurrency bounds parallel per-document checks.
 	ACLConcurrency = 8
 	kind           = "docs"
-	fileFields     = "id,name,mimeType,version,modifiedTime,trashed,permissions(type,emailAddress,domain)"
+	fileFields     = "id,name,mimeType,version,modifiedTime,trashed,parents,permissions(type,emailAddress,domain)"
 )
 
 // Connector talks to one Workspace's Drive.
@@ -40,6 +40,23 @@ type Connector struct {
 	Base   string
 	HTTP   *http.Client
 	Tokens Tokens
+	// Classification is the tenant's Drive label for sensitivity (SB-1005); nil is none.
+	Classification *Classification
+
+	mu      sync.Mutex
+	folders map[string]folder // id -> name and parent, cached
+}
+
+// Classification names one Drive label field whose choices are sensitivity labels
+// (sb-connector(3)): from vault://tenants/TENANT/connectors/docs-classification.
+type Classification struct {
+	Label   string            `json:"label"`
+	Field   string            `json:"field"`
+	Choices map[string]string `json:"choices"` // choice id -> public|internal|confidential|restricted
+}
+
+type folder struct {
+	name, parent string
 }
 
 var _ ports.Connector = (*Connector)(nil)
@@ -131,14 +148,109 @@ type file struct {
 	Permissions  []struct {
 		Type, EmailAddress, Domain string
 	} `json:"permissions"`
+	Parents   []string `json:"parents"`
+	LabelInfo struct {
+		Labels []struct {
+			ID     string `json:"id"`
+			Fields map[string]struct {
+				Selection []string `json:"selection"`
+			} `json:"fields"`
+		} `json:"labels"`
+	} `json:"labelInfo"`
+}
+
+// location is the file's folder path from the top of its drive, then its name. A
+// folder that can't be read stops the fetch: a document is never routed by a guess.
+func (c *Connector) location(ctx context.Context, f file) (string, error) {
+	parts := []string{f.Name}
+	seen := map[string]bool{}
+	parent := ""
+	if len(f.Parents) > 0 {
+		parent = f.Parents[0]
+	}
+	for parent != "" {
+		if seen[parent] || len(seen) > 64 {
+			return "", fmt.Errorf("gdrive: the folders above %s loop or are too deep", f.ID)
+		}
+		seen[parent] = true
+		fo, err := c.folder(ctx, parent)
+		if err != nil {
+			return "", err
+		}
+		if fo.parent == "" && parent == "root" {
+			break // the root of My Drive has no name in a path
+		}
+		parts = append([]string{fo.name}, parts...)
+		parent = fo.parent
+	}
+	return "/" + strings.Join(parts, "/"), nil
+}
+
+func (c *Connector) folder(ctx context.Context, id string) (folder, error) {
+	c.mu.Lock()
+	fo, ok := c.folders[id]
+	c.mu.Unlock()
+	if ok {
+		return fo, nil
+	}
+	var f file
+	q := url.Values{"fields": {"id,name,parents"}, "supportsAllDrives": {"true"}}
+	if err := retry(ctx, func() error { _, err := c.get(ctx, "", "/files/"+url.PathEscape(id), q, &f); return err }); err != nil {
+		return folder{}, err
+	}
+	fo = folder{name: f.Name}
+	if len(f.Parents) > 0 {
+		fo.parent = f.Parents[0]
+	}
+	c.mu.Lock()
+	if c.folders == nil {
+		c.folders = map[string]folder{}
+	}
+	c.folders[id] = fo
+	c.mu.Unlock()
+	return fo, nil
+}
+
+// label maps the file's classification choice to a label; a choice the map doesn't
+// name is restricted, and no label is "".
+func (c *Connector) label(f file) string {
+	if c.Classification == nil {
+		return ""
+	}
+	for _, l := range f.LabelInfo.Labels {
+		if l.ID != c.Classification.Label {
+			continue
+		}
+		fd, ok := l.Fields[c.Classification.Field]
+		if !ok || len(fd.Selection) == 0 {
+			return ""
+		}
+		if v, ok := c.Classification.Choices[fd.Selection[0]]; ok {
+			return v
+		}
+		return "restricted"
+	}
+	return ""
 }
 
 func fileQuery() url.Values { return url.Values{"fields": {fileFields}, "supportsAllDrives": {"true"}} }
 
+func (c *Connector) fetchQuery() url.Values {
+	q := fileQuery()
+	if c.Classification != nil {
+		q.Set("includeLabels", c.Classification.Label)
+		q.Set("fields", fileFields+",labelInfo")
+	}
+	return q
+}
+
 // Fetch reads one file as the service account.
 func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Document, error) {
 	var f file
-	if err := retry(ctx, func() error { _, err := c.get(ctx, "", "/files/"+url.PathEscape(ref.ID), fileQuery(), &f); return err }); err != nil {
+	if err := retry(ctx, func() error {
+		_, err := c.get(ctx, "", "/files/"+url.PathEscape(ref.ID), c.fetchQuery(), &f)
+		return err
+	}); err != nil {
 		return ports.Document{}, err
 	}
 	if f.Trashed {
@@ -166,7 +278,11 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 	if err != nil {
 		return ports.Document{}, err
 	}
-	return ports.Document{Ref: ref, Version: v, Title: f.Name, Text: text, ACLPrefilter: prefilter(f)}, nil
+	loc, err := c.location(ctx, f)
+	if err != nil {
+		return ports.Document{}, err
+	}
+	return ports.Document{Ref: ref, Version: v, Title: f.Name, Text: text, ACLPrefilter: prefilter(f), Location: loc, Label: c.label(f)}, nil
 }
 
 func prefilter(f file) []string {

@@ -29,10 +29,11 @@ const (
 const ACLDeadline = 800 * time.Millisecond
 
 type doc struct {
-	title, text string
-	version     int
-	viewers     map[string]bool // user emails
-	deleted     bool
+	title, text     string
+	location, label string
+	version         int
+	viewers         map[string]bool // user emails
+	deleted         bool
 }
 
 type change struct {
@@ -77,6 +78,18 @@ func (s *Source) Put(id, title, text string, viewers ...string) {
 		}
 	}
 	s.log = append(s.log, change{id: id})
+}
+
+// Place sets where a document lives and its source label (SB-1005): a content change, as
+// moving a file or changing its classification is at a real source.
+func (s *Source) Place(id, location, label string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if d, ok := s.docs[id]; ok {
+		d.location, d.label = location, label
+		d.version++
+		s.log = append(s.log, change{id: id})
+	}
 }
 
 // SetViewers changes who may open a document: a permission-only change.
@@ -175,7 +188,7 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 	for v := range d.viewers {
 		pre = append(pre, v)
 	}
-	return ports.Document{Ref: ref, Version: d.version, Title: d.title, Text: d.text, ACLPrefilter: pre}, nil
+	return ports.Document{Ref: ref, Version: d.version, Title: d.title, Text: d.text, ACLPrefilter: pre, Location: d.location, Label: d.label}, nil
 }
 
 // ACL answers live. Every fault makes every verdict Unknown; so does a late answer.

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.2b Ingest routes and labels every document (SB-1005)
+
+**Wave/slice:** W10 / S10.2b · **Author:** platform lead + Claude · **Status:** In review (a real Drive with labels)
+
+**What:** `internal/core/route`, routing in `ingest.Pipeline` (with `Reroute`), location and label in `ports.Document` and every connector, label, holders and routing on `ports.Chunk` in both indexes, and `laws/law13spaces.go`. The manual changed first: sb-ingest(7) and sb-connector(3).
+
+**Why this way:** Routing is a pure function of a document's location and label and the manifest, so the index stays derived (LAW-13) and a rebuild needs nothing but the sources and the manifest. A fingerprint of the space configuration on every chunk turns "a scope changed" into a comparison the next sync can make, rather than a job someone has to remember to run. The connector reports where a document lives and never decides its space; only the manifest does.
+
+**Learned:** A Drive folder that can't be read has to fail the fetch. Routing a file without its full path would put it in no space, which for a company-wide ask is the wider answer.
+
+**Laws:** LAW-13 and LAW-20 extended (two law tests, two mutations caught). LAW-20's planned ask-path test, and LAW-21 to LAW-23, stay red.
+
+**Next:** S10.3a, ask in a space or company-wide (SB-1006).
+
 ## 2026-11-20 S10.2a Cedar schema v2: spaces and labels, narrowing only (SB-1004)
 
 **Wave/slice:** W10 / S10.2a · **Author:** platform lead + Claude · **Status:** Done

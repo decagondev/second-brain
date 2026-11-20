@@ -242,7 +242,11 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 	if err != nil {
 		return ports.Document{}, err
 	}
-	return ports.Document{Ref: ref, Version: v, Title: "#" + ch.Name, Text: m.Text, ACLPrefilter: pre}, nil
+	label := ""
+	if ch.IsPrivate {
+		label = "confidential" // a private channel's messages (sb-connector(3))
+	}
+	return ports.Document{Ref: ref, Version: v, Title: "#" + ch.Name, Text: m.Text, ACLPrefilter: pre, Location: "#" + ch.Name, Label: label}, nil
 }
 
 func (c *Connector) prefilter(ctx context.Context, ch channel) ([]string, error) {

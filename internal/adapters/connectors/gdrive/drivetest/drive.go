@@ -36,6 +36,7 @@ type Fake struct {
 	faults  []string          // next user (impersonated) file calls: "500", "timeout", "404"
 	saMiss  int               // next service-account file calls that answer 404 (follows a "404" fault)
 	limited int               // next N calls of any kind answer 429
+	folders map[string]*File  // folders, served by files.get only (SB-1005)
 }
 
 // File is a fake Drive file.
@@ -45,6 +46,55 @@ type File struct {
 	Modified                 time.Time
 	Trashed                  bool
 	Viewers                  []string // user emails who may open it
+	Parents                  []string // parent folder ids (SB-1005)
+	// Labels are Drive labels: label id -> field id -> selected choice id (SB-1005).
+	Labels map[string]map[string]string
+}
+
+// Folder creates a folder, under parent ("" for the top of the drive).
+func (f *Fake) Folder(id, name, parent string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.folders == nil {
+		f.folders = map[string]*File{}
+	}
+	x := &File{ID: id, Name: name, MimeType: "application/vnd.google-apps.folder", Version: 1}
+	if parent != "" {
+		x.Parents = []string{parent}
+	}
+	f.folders[id] = x
+}
+
+// Move puts a file in a folder: a change, as in Drive.
+func (f *Fake) Move(id, parent string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if x, ok := f.files[id]; ok {
+		x.Parents, x.Modified = []string{parent}, f.tick()
+		x.Version++
+		f.log = append(f.log, change{id: id, at: x.Modified})
+	}
+}
+
+// Classify sets a Drive label field's choice on a file ("" removes the label): a change.
+func (f *Fake) Classify(id, label, field, choice string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	x, ok := f.files[id]
+	if !ok {
+		return
+	}
+	if x.Labels == nil {
+		x.Labels = map[string]map[string]string{}
+	}
+	if choice == "" {
+		delete(x.Labels, label)
+	} else {
+		x.Labels[label] = map[string]string{field: choice}
+	}
+	x.Modified = f.tick()
+	x.Version++
+	f.log = append(f.log, change{id: id, at: x.Modified})
 }
 
 type change struct {
@@ -201,8 +251,30 @@ func (f *Fake) fileJSON(x *File) map[string]any {
 	for _, v := range x.Viewers {
 		perms = append(perms, map[string]string{"type": "user", "emailAddress": v})
 	}
-	return map[string]any{"id": x.ID, "name": x.Name, "mimeType": x.MimeType, "version": strconv.Itoa(x.Version),
+	out := map[string]any{"id": x.ID, "name": x.Name, "mimeType": x.MimeType, "version": strconv.Itoa(x.Version),
 		"modifiedTime": x.Modified.Format(time.RFC3339Nano), "trashed": x.Trashed, "permissions": perms}
+	if len(x.Parents) > 0 {
+		out["parents"] = x.Parents
+	}
+	return out
+}
+
+// withLabels adds labelInfo for the labels a files.get asked for with includeLabels.
+func withLabels(m map[string]any, x *File, include string) map[string]any {
+	var ls []map[string]any
+	for _, id := range strings.Split(include, ",") {
+		if fs, ok := x.Labels[id]; ok && id != "" {
+			fields := map[string]any{}
+			for fid, choice := range fs {
+				fields[fid] = map[string]any{"id": fid, "selection": []string{choice}}
+			}
+			ls = append(ls, map[string]any{"id": id, "fields": fields})
+		}
+	}
+	if ls != nil {
+		m["labelInfo"] = map[string]any{"labels": ls}
+	}
+	return m
 }
 
 func (f *Fake) visible(x *File, subject string) bool {
@@ -224,6 +296,9 @@ func (f *Fake) get(w http.ResponseWriter, r *http.Request, subject string) {
 		fault, f.faults = f.faults[0], f.faults[1:]
 	}
 	x, ok := f.files[r.PathValue("id")]
+	if !ok {
+		x, ok = f.folders[r.PathValue("id")]
+	}
 	f.mu.Unlock()
 	switch fault {
 	case "500":
@@ -260,7 +335,7 @@ func (f *Fake) get(w http.ResponseWriter, r *http.Request, subject string) {
 		_, _ = w.Write([]byte(x.Text))
 		return
 	}
-	_ = json.NewEncoder(w).Encode(f.fileJSON(x))
+	_ = json.NewEncoder(w).Encode(withLabels(f.fileJSON(x), x, r.URL.Query().Get("includeLabels")))
 }
 
 func (f *Fake) export(w http.ResponseWriter, r *http.Request, subject string) {

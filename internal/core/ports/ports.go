@@ -39,6 +39,9 @@ type Document struct {
 	Version      int
 	Title, Text  string
 	ACLPrefilter []string
+	// Location is where the document lives at the source, for routing to spaces, and Label
+	// the source's own sensitivity label, "" for none (sb-connector(3); SB-1005).
+	Location, Label string
 }
 
 // Verdict is a source's live answer. The zero value is VerdictUnknown, so a
@@ -262,6 +265,11 @@ type Chunk struct {
 	Flags, ACLPrefilter              []string
 	Release                          string
 	Vector                           []float32
+	// In a cell with spaces (SB-1005): the label, the ids of the spaces that hold the
+	// document, and the fingerprint of the space configuration that routed it.
+	Label   string
+	Spaces  []string
+	Routing string
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.

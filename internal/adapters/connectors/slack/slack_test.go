@@ -168,3 +168,20 @@ func TestDeleteIsADelete(t *testing.T) {
 		t.Fatalf("%v %v", set, err)
 	}
 }
+
+// SB-1005: the location is the channel; a private channel's messages are confidential.
+func TestLocationAndLabel(t *testing.T) {
+	f, c := setup(t)
+	f.AddChannel("C1", "eng-platform", false, true)
+	f.AddChannel("C2", "leads", true, true, "U1")
+	pub, _ := f.Post("C1", "U1", "", "hi")
+	priv, _ := f.Post("C2", "U1", "", "plans")
+	d, err := c.Fetch(context.Background(), ports.SourceRef{Kind: "chat", ID: docID("C1", pub, pub)})
+	if err != nil || d.Location != "#eng-platform" || d.Label != "" {
+		t.Fatalf("public: %q %q %v", d.Location, d.Label, err)
+	}
+	d, err = c.Fetch(context.Background(), ports.SourceRef{Kind: "chat", ID: docID("C2", priv, priv)})
+	if err != nil || d.Location != "#leads" || d.Label != "confidential" {
+		t.Fatalf("private: %q %q %v", d.Location, d.Label, err)
+	}
+}

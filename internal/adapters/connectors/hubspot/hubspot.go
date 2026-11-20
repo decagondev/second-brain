@@ -205,7 +205,7 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 			pre = append(pre, strings.ToLower(email))
 		}
 	}
-	return ports.Document{Ref: ref, Version: v, Title: title, Text: strings.Join(lines, "\n"), ACLPrefilter: pre}, nil
+	return ports.Document{Ref: ref, Version: v, Title: title, Text: strings.Join(lines, "\n"), ACLPrefilter: pre, Location: typ}, nil
 }
 
 func (c *Connector) ownerEmail(ctx context.Context, k Creds, owner string) (string, error) {

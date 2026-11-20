@@ -38,6 +38,10 @@ A connector is an adapter between one kind of company system and the platform. I
 
 Returns the document's text and structure, its **version** (monotonic per document, as reported by the source), and an ACL snapshot used only as a prefilter. The same `(ref, version)` must always return the same content hash.
 
+### Location and label (SB-1005)
+
+`Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one.
+
 ### ACL
 
 The **authority** on who may see what. Called live, at answer time, for a batch of up to 200 refs. Returns one `Verdict` per ref, in order:
@@ -86,6 +90,7 @@ Read-only. Name it in a manifest as `connectors: { docs: google-drive }`.
 |---|---|
 | Credentials | A Google service account key (JSON) at `vault://tenants/TENANT/connectors/docs`, with domain-wide delegation for the scope `https://www.googleapis.com/auth/drive.readonly` and nothing else |
 | Fetch | `files.get` as the service account. Google Docs are exported as `text/plain`; `text/*` files are downloaded; other types are indexed by name only. `version` is Drive's file `version`; the prefilter is the file's permissions (users' emails, `group:EMAIL`, `domain:DOMAIN`, `anyone`) |
+| Location and label | Location is the file's folder path from the top of its drive, then its name: `/Finance/Q3/Forecast`. Folder names come from `files.get` on each parent, cached for the sync. The label comes from one Drive label the tenant names as its classification, at `vault://tenants/TENANT/connectors/docs-classification` as JSON `{"label": ID, "field": ID, "choices": {"CHOICE_ID": "restricted", …}}`, with no secrets in it; `files.get` asks for it with `includeLabels`. A file without it has no label; a choice missing from `choices` is `restricted` |
 | ACL | Asks Drive **as the asker** (domain-wide delegation, `sub` = the user's email): `files.get` returns 200 → `Allow`; 404 or 403 → `Deny`, but only if the service account itself can still see the file; anything else, or a deleted file → `Unknown`. At most 8 calls run at once, within the 800 ms deadline |
 | Rate limits | `429` and `403 rateLimitExceeded` are retried with backoff while the deadline allows; then `Unknown` |
 | Changes | Drive's `changes.list` page token is the cursor. A removed or trashed file is a delete. A change whose `time` differs from the file's `modifiedTime` by more than a second is reported as permission-only |
@@ -102,6 +107,7 @@ Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"]
 | Credentials | A Slack app's bot token and signing secret at `vault://tenants/TENANT/connectors/chat` (JSON `{"bot_token", "signing_secret"}`). Scopes: `channels:history`, `groups:history`, `channels:read`, `groups:read`, `users:read`, `users:read.email`. No write scopes, and no `im:` or `mpim:` scopes. The chat app (`/ask`, sb-ask(3)) adds only `commands` |
 | Documents | One document per message: id `CHANNEL/TS`, title `#channel`, text the message. Thread replies are their own documents. Version is the edit time, or else the post time, in microseconds, so edits always raise it |
 | Direct messages | Never fetched: DMs and group DMs are excluded by default, and the app has no scope to read them |
+| Location and label | Location is the channel, `#name`. A message in a **private** channel is labelled `confidential`; a public channel's messages carry no label |
 | ACL | Live, per document: a **public** channel → `Allow` for any active, non-guest member of the workspace, and for guests who are in the channel; a **private** channel → `Allow` only for its members. The user is found by email; Slack answering "no such user" → `Deny`. Anything else, or a channel or message that's gone → `Unknown` |
 | Changes | Slack has no change feed, so the cell receives the Events API (`message`, `message_changed`, `message_deleted`, `member_joined_channel`, `member_left_channel`, `channel_archive`) at `/connectors/slack/events`, verifies Slack's request signature (v0, at most 5 minutes old), and appends each event to the connector's inbox. The cursor is a position in that inbox. Joins and leaves become permission-only changes for that channel's messages. An empty cursor (first sync, rebuild, and the nightly reconcile) lists every message in every channel the app is in |
 | Act | `ENOTSUP` (read-only) |
@@ -117,6 +123,7 @@ Read-only in W2. Name it as `connectors: { tickets: linear }`. Writes for the `t
 | Credentials | A Linear API key with read access at `vault://tenants/TENANT/connectors/tickets`. With the `ticket-update` workflow enabled, the key also needs `comments:create` |
 | Documents | One document per issue: id is Linear's issue id, title `KEY-123 title`, text the description and comments. Version is `updatedAt` in microseconds |
 | Act (`ticket-update`) | Target `tickets:<KEY-123 or issue id>`, payload `{"comment": "…"}`. Posts one comment whose id is a UUID derived from the idempotency key, so a retry finds the first comment instead of posting again. The receipt is `linear:comment/<id>`. An answer without an id is read back by that id, and if it isn't there, `Act` fails. `Find` (for the reconciler) looks the comment up by the same id |
+| Location and label | Location is the issue's team key, `ENG`. Linear has no labels for sensitivity, so none |
 | ACL | Live: the user is found by email (none, or inactive → `Deny`). A **private** team's issues → `Allow` only for team members; a public team's issues → `Allow` for full members, and for guests only if they're in the team. An archived, trashed or missing issue → `Unknown` |
 | Changes | Polled from the GraphQL API, so no public endpoint is needed. The cursor holds the last `updatedAt` seen for issues and for team changes. Updated issues are content changes; archived or trashed issues are deletes; a team made private or public, or a membership added or removed, is a permission-only change for every issue in that team. An empty cursor lists every issue |
 | Rate limits | HTTP 429 or a `RATELIMITED` error is retried with backoff while the deadline allows; then `Unknown` |
@@ -133,6 +140,7 @@ Read-only. Name it as `connectors: { crm: hubspot }`. Contacts are personal data
 | Credentials | A HubSpot private app's access token with `crm.objects.companies.read`, `crm.objects.deals.read`, `crm.objects.owners.read` and `settings.users.read`, and the tenant's role map, at `vault://tenants/TENANT/connectors/crm` as JSON `{"token": "…", "roles": {"ROLE_ID": "all" \| "team" \| "owned"}}`. The role map says what each HubSpot role may view for companies and deals, as set in HubSpot's permission sets, because HubSpot's API doesn't expose permission sets |
 | Documents | One document per company (`companies/ID`, title the company name) and per deal (`deals/ID`, title the deal name). Text is the record's fixed properties: name, domain, industry, stage, amount, close date and description, one per line. Version is `hs_lastmodifieddate` in microseconds |
 | Prefilter | The owner's email and the broad token `hubspot:users`, so every HubSpot user's search includes CRM records and the live check decides. Because the prefilter doesn't depend on roles or teams, role and team changes need no permission-only changes |
+| Location and label | Location is the record type, `companies` or `deals`. HubSpot has no sensitivity labels, so none |
 | ACL | Live, per record (LAW-01). The user is found by email in the users and owners APIs: none, or a deactivated owner → `Deny`. A super admin, or a role mapped to `all` → `Allow`; `team` → `Allow` if the user owns the record or is in the record's team (`hubspot_team_id`); `owned` → `Allow` only if the user owns it; otherwise `Deny`. A role missing from the role map, or an archived or missing record → `Unknown` |
 | Changes | Polled with the CRM search API, so no public endpoint is needed: records with `hs_lastmodifieddate` at or after the cursor, oldest first. Archived records (listed with `archived=true`, by `archivedAt`) are deletes. A record whose `hubspot_owner_assigneddate` is within a second of its `hs_lastmodifieddate`, and whose `createdate` isn't, was just reassigned, and is reported as a permission-only change. An empty cursor lists every record |
 | Rate limits | HTTP 429 is retried with backoff while the deadline allows; then `Unknown` |

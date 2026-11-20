@@ -204,7 +204,7 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 			pre = append(pre, strings.ToLower(m.Email))
 		}
 	}
-	return ports.Document{Ref: ref, Version: v, Title: is.Identifier + " " + is.Title, Text: b.String(), ACLPrefilter: pre}, nil
+	return ports.Document{Ref: ref, Version: v, Title: is.Identifier + " " + is.Title, Text: b.String(), ACLPrefilter: pre, Location: is.Team.Key}, nil
 }
 
 // ACL answers per issue from team privacy and membership, live.

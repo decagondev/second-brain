@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/route"
 )
 
 // MaxChunk is the largest chunk, in characters.
@@ -106,6 +107,25 @@ type Pipeline struct {
 	Embedder        ports.Embedder
 	Index           ports.Index
 	Sanitiser       Sanitiser // strip and flag rules (SB-207)
+	// Spaces returns the cell's spaces now (SB-1005); nil is a cell without spaces. An
+	// error stops ingest: a document is never written without its routing.
+	Spaces func(ctx context.Context) ([]ports.Space, error)
+	// Route is the routing rule; nil is route.Route, the only one a cell ships.
+	Route func(spaces []ports.Space, kind, location, sourceLabel string) ([]string, string)
+	// Kind is the connector kind this pipeline ingests; Reroute touches only its documents.
+	// Empty means the index holds this connector's documents only.
+	Kind string
+}
+
+func (p Pipeline) spaces(ctx context.Context) ([]ports.Space, error) {
+	if p.Spaces == nil {
+		return nil, nil
+	}
+	sp, err := p.Spaces(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("ingest: spaces: %w", err)
+	}
+	return sp, nil
 }
 
 // Ingest fetches ref and replaces its chunks, unless that version (or newer) is indexed.
@@ -119,6 +139,19 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		return err
 	} else if found && (have > doc.Version || (have == doc.Version && !force)) {
 		return nil
+	}
+	spaces, err := p.spaces(ctx)
+	if err != nil {
+		return err
+	}
+	var holders []string
+	label, routing := "", route.Fingerprint(spaces)
+	if len(spaces) > 0 {
+		rt := p.Route
+		if rt == nil {
+			rt = route.Route
+		}
+		holders, label = rt(spaces, ref.Kind, doc.Location, doc.Label)
 	}
 	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
 	text := Normalise(clean)
@@ -135,7 +168,8 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		texts[i] = t
 		chunks[i] = ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
-			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t))}
+			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
+			Label: label, Spaces: holders, Routing: routing}
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)
@@ -155,6 +189,9 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 // Sync handles every change after cursor (the last change per document wins) and
 // returns the next cursor. A failure returns the old cursor, so a retry loses nothing.
 func (p Pipeline) Sync(ctx context.Context, cursor ports.Cursor) (ports.Cursor, error) {
+	if err := p.Reroute(ctx); err != nil {
+		return cursor, err
+	}
 	set, next, err := p.Connector.Changes(ctx, cursor)
 	if err != nil {
 		return cursor, err
@@ -186,6 +223,40 @@ func (p Pipeline) Sync(ctx context.Context, cursor ports.Cursor) (ports.Cursor, 
 		}
 	}
 	return next, nil
+}
+
+// Reroute re-ingests every document whose chunks were routed under another space
+// configuration than the cell's now, so a changed scope or label takes effect on the next
+// sync (sb-ingest(7), Spaces and labels). A document of another connector is left alone.
+func (p Pipeline) Reroute(ctx context.Context) error {
+	if p.Spaces == nil {
+		return nil // a cell without spaces routes nothing
+	}
+	spaces, err := p.spaces(ctx)
+	if err != nil {
+		return err
+	}
+	now := route.Fingerprint(spaces)
+	all, err := p.Index.All(ctx, p.Tenant)
+	if err != nil {
+		return err
+	}
+	stale := map[ports.SourceRef]bool{}
+	var refs []ports.SourceRef
+	for _, c := range all {
+		ref := ports.SourceRef{Kind: c.Kind, ID: c.SourceID}
+		if c.Routing != now && !stale[ref] && (p.Kind == "" || p.Kind == c.Kind) {
+			stale[ref] = true
+			refs = append(refs, ref)
+		}
+	}
+	sort.Slice(refs, func(i, j int) bool { return refs[i].ID < refs[j].ID })
+	for _, ref := range refs {
+		if err := p.Ingest(ctx, ref, true); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Rebuild drops the tenant's index and replays every source document from the start.

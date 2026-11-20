@@ -66,6 +66,16 @@ Each chunk's id is derived from tenant, `cite` and span, so ingesting the same `
 
 Embeddings come through the `Embedder` port. Until the model provider is chosen (Q-04), cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. Chunks are written through the `Index` port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.
 
+### Spaces and labels (SB-1005)
+
+In a cell with spaces (sb-spaces(7)), ingest **routes** every document version before it writes a chunk, so nothing is ever indexed without knowing which spaces hold it and how sensitive it is:
+
+1. **Location.** The connector reports where the document lives (sb-connector(3)): a Drive file's folder path and name (`/Finance/Q3/Forecast`), a Slack message's channel (`#eng-platform`), a Linear issue's team key (`ENG`), a HubSpot record's type (`deals`).
+2. **Spaces.** A space holds the document if one of its `scope` patterns for the document's connector kind matches the location. In a pattern, `**` matches anything, `*` matches anything but `/`, and every other character matches itself, so `/Finance/**` holds everything under `/Finance/`, and `#eng-*` holds `#eng-platform`. A document can be held by several spaces, or by none.
+3. **Label.** The source's label wins where the source has one (a Drive classification label; a private Slack channel is `confidential`). Otherwise the label is the **strictest** default among the spaces that hold it, on the ladder `public` < `internal` < `confidential` < `restricted`, so a document in a restricted space and an internal one is `restricted`. A document no space holds, with no source label, is `internal`. A source label the cell doesn't know is `restricted`: unknown never widens.
+
+Every chunk of the version carries its label, its holders (`spc_NAME` ids) and the **routing fingerprint**: a hash of every space's id, label and scope. When a manifest apply changes a scope or a label, the fingerprint changes, and the next sync re-routes every document whose chunks carry the old one, before it handles new changes. Routing depends only on the document's location and label and the manifest, so a rebuild routes every document exactly as before (LAW-13). A cell without spaces routes nothing: chunks carry no label and no holders, as today.
+
 ### Rebuild
 
 The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13). Each cell's ingest worker runs the drill weekly (`ingest.Drill`): it snapshots the `(cite, chunk, ACL)` set, drops the index, replays every source from the start of its change feed, and compares. The result and the rebuild time are recorded per tenant. Any difference is a LAW-13 violation and a Sev-1, reported with chunk ids and cites, never content.
