@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S10.2a Cedar schema v2: spaces and labels, narrowing only (SB-1004)
+
+**Wave/slice:** W10 / S10.2a · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** schema v2 in `policy/schema.cedarschema`, `policy/platform/spaces.cedar`, string sets in the Cedar adapter, `spaces.ReadContext` and `ChunkAttrs`, rule 5 in `tools/check/policy.py`, and `laws/law19policy.go`. The manual changed first: sb-policy(5), sb-permissions(7) and sb-laws(7).
+
+**Why this way:** Spaces enter Cedar as facts on the request rather than as entities with relations, so the policy can't reach a space the kernel didn't hand it, and a missing fact is visible to the policy as a missing attribute that refuses. Every space rule is a forbid, which Cedar can't turn into an allow, and the static check makes that a property of the files rather than of review.
+
+**Learned:** A permit with an unconstrained action reads like it is about something else and still covers `read`; the narrowing check now treats it as a read permit.
+
+**Laws:** LAW-19 green (out of the ratchet, one mutation caught); LAW-03 extended (one law test, one mutation caught). LAW-20 to LAW-23 stay red, as planned.
+
+**Next:** S10.2b, ingest routes and labels every document (SB-1005).
+
 ## 2026-11-20 S10.1c Per-space data keys (SB-1003)
 
 **Wave/slice:** W10 / S10.1c · **Author:** platform lead + Claude · **Status:** In review (the stores seal from SB-1005)

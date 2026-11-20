@@ -275,7 +275,7 @@ func TestLAW16_SpacesAreExactlyAsDeclared(t *testing.T) {
 }
 
 func TestLAW19_SpacesOnlyNarrow(t *testing.T) {
-	Check(t, "LAW-19", runs, func(r *rand.Rand) error { return law19(r, NewSpaceSystem()) })
+	Check(t, "LAW-19", runs, func(r *rand.Rand) error { return law19(r, NewSpacePolicySystem()) })
 }
 
 func TestLAW20_RestrictedStaysHome(t *testing.T) {

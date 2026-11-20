@@ -82,7 +82,7 @@ flowchart LR
 3. **Barrier (`EBARRIER`).** A chunk is refused if any barrier separates a group of the asker from a member group of any space that holds it (LAW-22). Barriers are checked in both directions.
 4. **Source ACL.** Exactly as above (Retrieval and the live check). An `Allow` from steps 1 to 3 never skips it.
 
-A space policy can only **forbid**. Nothing in steps 1 to 3 can make a chunk usable that step 4 refuses (LAW-19), and a test checks that for every space and every chunk. Any `Unknown` in any step refuses (LAW-03). A cell with no spaces skips steps 1 to 3, as today.
+Steps 1 to 3 are the forbids in `policy/platform/spaces.cedar`, decided by the same kernel as every other permission, with the facts sb-policy(5) lists (SB-1004). A space policy can only **forbid**. Nothing in steps 1 to 3 can make a chunk usable that step 4 refuses (LAW-19): `make policy` proves it over a matrix of spaces, labels and barriers, and the law test checks it for random companies. Any `Unknown` in any step refuses (LAW-03). A cell with no spaces skips steps 1 to 3, as today.
 
 Like `EPERM`, the new codes are reasons, not messages: a refused chunk is never named to the user. `ESPACE` is returned to the asker only for an ask in a space they aren't a member of, which names the space and nothing in it. `ELABEL` and `EBARRIER` appear in the decision list of the trace and in the operators' refusal counts (sb-admin(3)).
 

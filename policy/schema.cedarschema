@@ -4,7 +4,8 @@ entity Tenant;
 entity Group { tenant: Tenant };
 entity User in [Group] { tenant: Tenant };
 entity Document { tenant: Tenant, source: String };
-entity Chunk in [Document] { tenant: Tenant, cite: String };
+// label and spaces are set in a cell with department spaces (SB-1004, sb-spaces(7)).
+entity Chunk in [Document] { tenant: Tenant, cite: String, label?: String, spaces?: Set<String> };
 entity Agent { tenant: Tenant, name: String, consequential: Bool, enabled?: Bool };
 entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bool };
 entity Workflow { tenant: Tenant, name: String, approvers: Group };
@@ -13,7 +14,8 @@ entity Cell { tenant: Tenant };
 // A cell's custody record, held by the factory: tenant is the factory's own tenant (SB-702).
 entity CellCustody { tenant: Tenant, cell: Tenant };
 
-action "read"      appliesTo { principal: [User], resource: [Chunk, Document] };
+// In a cell with spaces the kernel sets the whole read context (SB-1004); without spaces, none of it.
+action "read"      appliesTo { principal: [User], resource: [Chunk, Document], context: { space?: String, member_spaces?: Set<String>, barred_spaces?: Set<String> } };
 action "use_agent" appliesTo { principal: [User], resource: [Agent], context: { target_project?: String } };
 action "call_tool" appliesTo { principal: [User], resource: [Tool] };
 action "propose"   appliesTo { principal: [User], resource: [Workflow] };

@@ -55,6 +55,12 @@ func value(v any) (cedargo.Value, error) {
 		return cedargo.Long(int64(x)), nil
 	case policy.Ref:
 		return uid(x.Type, x.ID), nil
+	case []string:
+		vs := make([]cedargo.Value, len(x))
+		for i, s := range x {
+			vs[i] = cedargo.String(s)
+		}
+		return cedargo.NewSet(vs...), nil
 	}
 	return nil, fmt.Errorf("cedar: unsupported attribute type %T", v)
 }

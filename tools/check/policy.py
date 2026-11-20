@@ -8,7 +8,10 @@
    policy/schema.cedarschema (cedarpy). A missing validator fails; it never skips.
 2. Every `permit` carries `principal.tenant == resource.tenant` in its `when` (LAW-02).
 3. Tenant policies (examples/policies/) may `permit` only use_agent, propose and approve.
-4. --diff evaluates a fixed matrix of principals, actions and resources against the old
+4. Narrowing (SB-1004): no file but policy/platform/base.cedar may permit `read`, and over a
+   matrix of space contexts, labels and holders, nothing the whole policy set allows is
+   outside what base.cedar's read permits allow (LAW-19).
+5. --diff evaluates a fixed matrix of principals, actions and resources against the old
    and new policy sets and prints each permission gained (+) or lost (-).
 A self-test runs first, so a rule can't silently stop matching (see BUG-0005).
 """
@@ -81,6 +84,59 @@ def check(files, schema):
     return probs
 
 
+BASE = "policy/platform/base.cedar"
+READ_PERMIT = re.compile(r'^permit\s*\([^)]*action\s*(==\s*Action::"read"|in\s*\[[^\]]*Action::"read")', re.S)
+# A permit whose action is unconstrained (`action,` or `action)`) also covers read.
+ANY_ACTION = re.compile(r'^permit\s*\([^)]*\baction\s*[,)]', re.S)
+
+
+def read_permits_outside_base(files):
+    probs = []
+    for name, text in files.items():
+        if name == BASE:
+            continue
+        for st in statements(text):
+            if READ_PERMIT.search(st) or ANY_ACTION.search(st):
+                probs.append(f"{name}: only {BASE} may permit read; space and tenant rules may only forbid (LAW-19): {' '.join(st.split())[:90]}")
+    return probs
+
+
+def base_read_permits(files):
+    return "\n".join(st for st in statements(files.get(BASE, "")) if READ_PERMIT.search(st))
+
+
+def space_matrix(policies_text):
+    """Every (context, chunk) pair a policy set allows to read, over spaces in a cell."""
+    t = {"__entity": {"type": "Tenant", "id": "t"}}
+    allowed = set()
+    holders_opts = [[], ["spc_a"], ["spc_b"], ["spc_a", "spc_b"]]
+    for space in ["company", "spc_a", "spc_b"]:
+        for member in [[], ["spc_a"], ["spc_b"], ["spc_a", "spc_b"]]:
+            for barred in [[], ["spc_b"]]:
+                for label in ["public", "internal", "confidential", "restricted", "odd", None]:
+                    for holders in holders_opts:
+                        attrs = {"tenant": t, "cite": "docs:c@1", "spaces": holders}
+                        if label is not None:
+                            attrs["label"] = label
+                        ents = [{"uid": {"type": "Tenant", "id": "t"}, "attrs": {}, "parents": []},
+                                {"uid": {"type": "User", "id": "u"}, "attrs": {"tenant": t}, "parents": []},
+                                {"uid": {"type": "Chunk", "id": "c"}, "attrs": attrs, "parents": []}]
+                        ctx = {"space": space, "member_spaces": member, "barred_spaces": barred}
+                        req = {"principal": 'User::"u"', "action": 'Action::"read"', "resource": 'Chunk::"c"', "context": ctx}
+                        if cedarpy.is_authorized(req, policies_text, ents).allowed:
+                            allowed.add((space, tuple(member), tuple(barred), label, tuple(holders)))
+    return allowed
+
+
+def narrowing_problems(files):
+    probs = read_permits_outside_base(files)
+    whole = space_matrix("\n".join(files.values()))
+    base = space_matrix(base_read_permits(files))
+    for x in sorted(whole - base, key=str)[:5]:
+        probs.append(f"the policy set allows a read the base read permit doesn't (LAW-19): {x}")
+    return probs
+
+
 # The permission matrix for --diff: who, doing what, to which resource.
 GROUPS = ["grp_it_leads", "grp_contractors", "grp_finance"]
 RESOURCES = {
@@ -131,6 +187,13 @@ def self_test(schema):
     assert scope_problems("x", good, False) == [], "policy.py self-test: scope rule matches good policy"
     assert scope_problems("x", good, True), "policy.py self-test: tenant read permit not refused"
     assert diff({"a": ""}, {"a": good}), "policy.py self-test: diff sees no change"
+    widen = 'permit (principal, action == Action::"read", resource is Chunk) when { principal.tenant == resource.tenant && context has space };\n'
+    assert read_permits_outside_base({BASE: good, "policy/platform/spaces.cedar": widen}), "policy.py self-test: a read permit outside base not refused"
+    assert not read_permits_outside_base({BASE: good}), "policy.py self-test: base's read permit refused"
+    narrow = 'forbid (principal, action == Action::"read", resource is Chunk) when { context has space && context.space != "company" };\n'
+    assert narrowing_problems({BASE: good, "x.cedar": narrow}) == [], "policy.py self-test: a forbid counted as widening"
+    widen_any = 'permit (principal, action, resource is Chunk) when { principal.tenant == resource.tenant };\n'
+    assert read_permits_outside_base({BASE: good, "x.cedar": widen_any}), "policy.py self-test: an any-action permit not refused"
 
 
 if __name__ == "__main__":
@@ -138,6 +201,7 @@ if __name__ == "__main__":
     self_test(schema)
     files = policy_files(ROOT)
     probs = check(files, schema)
+    probs += narrowing_problems(files)
     for p in probs:
         print("policy: " + p)
     print(f"policy: {len(files)} files checked, {len(probs)} problems")

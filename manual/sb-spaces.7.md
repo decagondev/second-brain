@@ -76,7 +76,7 @@ Every chunk passes all of these before it reaches a model's context, in this ord
 3. **Barrier:** is there a barrier between the asker's groups and the groups of any space that holds the document?
 4. **Source ACL:** does the source allow the asker to open the document now, asked live (sb-permissions(7))?
 
-The exact checks, the Cedar entities and the error codes are in [sb-permissions(7), Spaces, labels and barriers](sb-permissions.7.md#spaces-labels-and-barriers-exactly-sb-802) and [sb-policy(5), Spaces](sb-policy.5.md#spaces-labels-and-barriers-sb-802).
+The exact checks, the Cedar entities and the error codes are in [sb-permissions(7), Spaces, labels and barriers](sb-permissions.7.md#spaces-labels-and-barriers-exactly-sb-802) and [sb-policy(5), Spaces](sb-policy.5.md#spaces-labels-and-barriers-sb-802-built-in-sb-1004).
 
 ### The space registry and the request context (SB-1002)
 

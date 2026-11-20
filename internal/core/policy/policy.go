@@ -39,7 +39,7 @@ const Deadline = 50 * time.Millisecond
 // Ref names another entity in an attribute, e.g. a ProposedAction's requester.
 type Ref struct{ Type, ID string }
 
-// Entity is a resource being authorised. Attrs values are string, bool, int64 or Ref.
+// Entity is a resource being authorised. Attrs values are string, bool, int64, Ref or []string (a set).
 type Entity struct {
 	Type, ID, Tenant string
 	Attrs            map[string]any

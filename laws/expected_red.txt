@@ -1,4 +1,3 @@
-LAW-19 SB-1004 TestLAW19_SpacesOnlyNarrow
 LAW-20 SB-1006 TestLAW20_RestrictedStaysHome
 LAW-21 SB-1205 TestLAW21_MovesRevokeFast
 LAW-22 SB-1203 TestLAW22_BarriersHold

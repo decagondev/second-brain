@@ -110,3 +110,48 @@ func Member(s ports.Space, groups []string) bool {
 	}
 	return false
 }
+
+// ReadContext is the policy context of a read in a cell with spaces (sb-permissions(7),
+// Spaces, labels and barriers, exactly; SB-1004): the space asked in (an id or Company),
+// the spaces the asker is a member of, and the spaces held across a barrier from the
+// asker. groups are the asker's directory group names; barriers are group:NAME pairs.
+func ReadContext(all []ports.Space, barriers [][2]string, groups []string, space string) map[string]any {
+	mine := map[string]bool{}
+	for _, g := range groups {
+		mine["group:"+g] = true
+	}
+	member, barred := []string{}, []string{}
+	for _, s := range all {
+		if Member(s, groups) {
+			member = append(member, s.ID)
+		}
+		if acrossBarrier(s, barriers, mine) {
+			barred = append(barred, s.ID)
+		}
+	}
+	if space == "" {
+		space = Company
+	}
+	return map[string]any{"space": space, "member_spaces": member, "barred_spaces": barred}
+}
+
+func acrossBarrier(s ports.Space, barriers [][2]string, mine map[string]bool) bool {
+	for _, b := range barriers {
+		for _, m := range s.Members {
+			if (mine[b[0]] && m == b[1]) || (mine[b[1]] && m == b[0]) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// ChunkAttrs are a chunk's policy attributes in a cell with spaces: its label and the ids
+// of the spaces that hold its document. An empty label is left out, so the read refuses.
+func ChunkAttrs(label string, holders []string) map[string]any {
+	a := map[string]any{"spaces": append([]string{}, holders...)}
+	if label != "" {
+		a["label"] = label
+	}
+	return a
+}

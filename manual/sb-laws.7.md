@@ -154,7 +154,7 @@ At every moment, at least one custodian can unwrap a cell's root key. A hand-off
 
 No answer, citation, draft or action uses a chunk that the source's live ACL would deny, whatever any space policy says. A space can hide what someone could open, never show what they can't (ADR-0020, [sb-spaces(7)](sb-spaces.7.md)).
 
-*Owner:* platform lead. *Checks:* Model (`Spaces.als: SpacesOnlyNarrow`) · Property over random companies with spaces, labels, barriers and ACLs (`TestLAW19_SpacesOnlyNarrow`, red until SB-1004) · Eval (`space-leak`).
+*Owner:* platform lead. *Checks:* Model (`Spaces.als: SpacesOnlyNarrow`) · Property over random companies with spaces, labels, barriers and ACLs (`TestLAW19_SpacesOnlyNarrow` at the policy layer since SB-1004; `TestLAW19_TheSpaceContextNeverWidens`) · Static (`make policy`: only the base policy permits read, and the whole set allows nothing it doesn't) · Eval (`space-leak`).
 
 ### LAW-20: Restricted stays home {#law-20}
 

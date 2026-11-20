@@ -59,34 +59,57 @@ The factory and the tenant owner are roles, never superusers. Both are Cedar pol
 - **Custody records always name their tenant.** The kernel normally fills an empty resource `tenant` from the caller's scope. For `CellCustody` it doesn't: an empty `tenant` is `Unknown`, which refuses. Otherwise a tenant with its own group called `sb-factory-operators` could act on a custody record it built itself.
 - **Factory actions are control-plane calls.** They go through the policy kernel, so every decision is recorded before it is returned (LAW-04), and each step of a hand-off is also a `kind: custody` audit row (sb-factory(1)).
 
-### Spaces, labels and barriers (SB-802)
+### Spaces, labels and barriers (SB-802, built in SB-1004)
 
-The schema for spaces (schema v2, built in SB-1004) adds three entities. This is the draft that ticket builds:
+Schema v2 (`policy/schema.cedarschema`) carries spaces as facts the kernel sets, not as new entities, so a rule can never look a space up for itself:
 
-| Entity | Attributes |
-|---|---|
-| `Space` | `tenant`, `name`, `label_default`, `members` (set of `Group`), `stewards` (set of `Group`) |
-| `Label` | one of `public`, `internal`, `confidential`, `restricted`, as an ordered value |
-| `Barrier` | `tenant`, `a` (`Group`), `b` (`Group`) |
+| Where | Attribute | What it is |
+|---|---|---|
+| `Chunk` | `label` (String, optional) | the chunk's label: `public`, `internal`, `confidential` or `restricted` (sb-spaces(7)) |
+| `Chunk` | `spaces` (Set of String, optional) | the ids (`spc_NAME`) of the spaces that hold its document |
+| `read` context | `space` (String, optional) | the space asked in, or `company` |
+| `read` context | `member_spaces` (Set of String, optional) | the spaces the asker is a member of, from the directory now |
+| `read` context | `barred_spaces` (Set of String, optional) | the spaces held across a barrier from the asker, from the manifest's barriers |
 
-`Chunk` gains `label` and `spaces` (the set of `Space` that hold its document), and the `read` request gains `context.space` (the space asked in, or `company`).
+In a cell without spaces the kernel sets none of them, and the space rules don't apply. In a cell with spaces it sets all of them; `spaces.ReadContext` and `spaces.ChunkAttrs` build them. The rules are `policy/platform/spaces.cedar`:
 
-```text
-// Draft (SB-1004), in Cedar: a space can only forbid. A text block, because the regression
-// test validates every cedar block against today's schema, and v2 isn't it yet. These sit beside the base read permit,
-// which stays the only permit on read; the source's live ACL is still checked after.
+```cedar
+// A cell with spaces gives every fact, or the read is refused.
 forbid (principal, action == Action::"read", resource is Chunk)
-when { context.space != "company" && !(resource.spaces.contains(context.space_entity)) };
+when {
+  context has space &&
+  !(context has member_spaces && context has barred_spaces && resource has label && resource has spaces)
+};
 
+// An ask in a space reads only what that space holds, and only for its members.
 forbid (principal, action == Action::"read", resource is Chunk)
-when { (resource.label == "confidential" || resource.label == "restricted") && !(principal.member_of_holder) };
+when {
+  context has space && context has member_spaces && resource has spaces &&
+  context.space != "company" &&
+  !(resource.spaces.contains(context.space) && context.member_spaces.contains(context.space))
+};
+
+// Only public and internal reach people outside the spaces that hold a chunk.
+forbid (principal, action == Action::"read", resource is Chunk)
+when {
+  context has space && context has member_spaces && resource has label && resource has spaces &&
+  !(resource.label == "public" || resource.label == "internal") &&
+  !resource.spaces.containsAny(context.member_spaces)
+};
+
+// Nothing held by a space across a barrier from the asker.
+forbid (principal, action == Action::"read", resource is Chunk)
+when {
+  context has barred_spaces && resource has spaces &&
+  resource.spaces.containsAny(context.barred_spaces)
+};
 ```
 
 The rules every space policy is held to:
 
-1. **A space policy can only forbid.** No policy file may `permit` `read` except the base permit. Space and label rules are `forbid`s, so a space can never make a chunk usable that the base policy and the source don't allow (LAW-19). `tools/check/policy.py` will enforce this for every space policy, base and tenant (SB-1004).
-2. **Barriers are forbids generated from the manifest**, one per barrier and direction, never written by hand.
-3. **A missing attribute is `Unknown`, which refuses.** A chunk with no `label` is evaluated as `restricted`, and a chunk with no `spaces` is held by no space.
+1. **A space policy can only forbid.** No file but `policy/platform/base.cedar` may `permit` `read`, and a `permit` with an unconstrained action counts as one. Space and label rules are `forbid`s, so a space can never make a chunk usable that the base policy and the source don't allow (LAW-19). `tools/check/policy.py` enforces this for every policy, base and tenant.
+2. **Barriers come from the manifest**: the kernel turns the manifest's barriers into `barred_spaces`, never a hand-written rule.
+3. **A missing fact refuses.** In a cell with spaces, a chunk with no `label` or `spaces`, or a context with no `member_spaces` or `barred_spaces`, is refused by the first rule (LAW-03). A label that isn't one of the four is treated as `restricted`.
 
 ### Rules CI enforces
 
@@ -94,8 +117,9 @@ The rules every space policy is held to:
 2. Every `permit` has a `principal.tenant == resource.tenant` condition, or is in `policy/platform/` and carries one in its `when` (SB-112).
 3. Tenant policies can only **narrow** platform policy: they may add `forbid`s, and `permit`s only for `use_agent`, `propose` and `approve` within the tenant.
 4. A PR that changes policy shows the permission diff: which principals gained or lost which actions.
+5. **Narrowing (SB-1004).** Only `base.cedar` may permit `read`, and over a matrix of space contexts, memberships, barriers, labels (including an unknown one and none) and holders, the whole policy set allows no read that `base.cedar`'s read permits alone don't (LAW-19).
 
-`make policy` (part of `make check`) runs rules 1 to 3 with `tools/check/policy.py`. On a pull request, CI also runs `tools/check/policy.py --diff BASE`, which evaluates a fixed matrix of members, groups, actions and resources against the old and new policies and prints each permission gained (`+`) or lost (`-`).
+`make policy` (part of `make check`) runs rules 1 to 3 and 5 with `tools/check/policy.py`. On a pull request, CI also runs `tools/check/policy.py --diff BASE`, which evaluates a fixed matrix of members, groups, actions and resources against the old and new policies and prints each permission gained (`+`) or lost (`-`).
 
 ## EXAMPLES
 
