@@ -64,6 +64,7 @@ type userDoc struct {
 	ID         string   `json:"id,omitempty"`
 	ExternalID string   `json:"externalId,omitempty"`
 	UserName   string   `json:"userName"`
+	Title      string   `json:"title,omitempty"`
 	Active     *bool    `json:"active,omitempty"`
 	Emails     []struct {
 		Value string `json:"value"`
@@ -74,13 +75,19 @@ type userDoc struct {
 
 // enterprise is the SCIM enterprise extension's part the cell keeps: the manager (SB-1204).
 type enterprise struct {
-	Manager *struct {
+	Department string `json:"department,omitempty"`
+	Division   string `json:"division,omitempty"`
+	CostCenter string `json:"costCenter,omitempty"`
+	Manager    *struct {
 		Value string `json:"value"`
 	} `json:"manager,omitempty"`
 }
 
+// enterprisePath prefixes the PATCH paths of the enterprise attributes (SB-1204, SB-1205).
+const enterprisePath = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:"
+
 // managerPath is the PATCH path of the manager attribute.
-const managerPath = "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager"
+const managerPath = enterprisePath + "manager"
 
 func toDoc(u ports.User) userDoc {
 	a := u.Active
@@ -91,10 +98,14 @@ func toDoc(u ports.User) userDoc {
 			Value string `json:"value"`
 		}{m})
 	}
-	if u.Manager != "" {
-		d.Enterprise = &enterprise{Manager: &struct {
-			Value string `json:"value"`
-		}{u.Manager}}
+	d.Title = u.Title
+	if u.Manager != "" || u.Department != "" || u.Division != "" || u.CostCenter != "" {
+		d.Enterprise = &enterprise{Department: u.Department, Division: u.Division, CostCenter: u.CostCenter}
+		if u.Manager != "" {
+			d.Enterprise.Manager = &struct {
+				Value string `json:"value"`
+			}{u.Manager}
+		}
 	}
 	return d
 }
@@ -106,9 +117,12 @@ func fromDoc(d userDoc, u ports.User) ports.User {
 	for _, m := range d.Emails {
 		u.Emails = append(u.Emails, m.Value)
 	}
-	u.Manager = ""
-	if d.Enterprise != nil && d.Enterprise.Manager != nil {
-		u.Manager = d.Enterprise.Manager.Value
+	u.Title, u.Manager, u.Department, u.Division, u.CostCenter = d.Title, "", "", "", ""
+	if e := d.Enterprise; e != nil {
+		u.Department, u.Division, u.CostCenter = e.Department, e.Division, e.CostCenter
+		if e.Manager != nil {
+			u.Manager = e.Manager.Value
+		}
 	}
 	return u
 }
@@ -274,6 +288,14 @@ func (e *Endpoint) patchUser(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				u.Manager = m.Value
+			case "title":
+				_ = json.Unmarshal(v, &u.Title)
+			case enterprisePath + "department":
+				_ = json.Unmarshal(v, &u.Department)
+			case enterprisePath + "division":
+				_ = json.Unmarshal(v, &u.Division)
+			case enterprisePath + "costCenter":
+				_ = json.Unmarshal(v, &u.CostCenter)
 			default:
 				fail(w, http.StatusBadRequest, "unsupported path "+path)
 				return

@@ -63,6 +63,12 @@ The cell verifies these tokens through the same `oidc` port as any other IdP, wi
 - the token must carry an `email` with `email_verified: true`, and the directory user is found by that email (Identity Platform's own user id is never trusted across tenants);
 - every other rule (algorithm, expiry, nonce, subject) is as above.
 
+### Attributes and moves, exactly (SB-1205)
+
+The cell keeps five more facts about each user from SCIM: the core `title`, and the enterprise extension's (`urn:ietf:params:scim:schemas:extension:enterprise:2.0:User`) `department`, `division`, `costCenter` and `manager.value`. `POST` and `PUT` take them in the usual SCIM shape; `PATCH` takes `title` by name and the others by their full enterprise path, such as `urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department`. They are read from the directory on every request, with the user's groups, and passed to policy as the principal's attributes (sb-policy(5)), so a rule can say "finance's cost centres only". A directory that can't give them refuses the request with `EUNAVAIL`; it never runs with yesterday's attributes.
+
+**Moves.** When someone changes team, the IdP moves them between groups with SCIM `PATCH /Groups/ID` (`remove` from one, `add` to another). The cell reads groups from the directory on every request, and never caches them across requests, so leaving a space's group refuses that space at the next request, well within LAW-21's 5 minutes. Joining grants a space only once the membership is in the cell's directory: a group in a sign-in token, or an `add` the directory didn't commit (the IdP gets `503` and retries), grants nothing. The law test checks both on a fake clock, through SCIM and the request path (LAW-21).
+
 **Groups still come from SCIM.** Identity Platform signs people in; it doesn't say who is in which group. A company that can't run SCIM may instead list its groups in the manifest with `groups:` (sb-tenant(5)), which its stewards change by manifest diff like any other field. `groups:` is accepted **only** with an `identity-platform://` idp. Someone who signs in but isn't in any listed group, or in the directory, has no groups and can use nothing, so the sign-in is never open. Removing someone from `groups:` and applying the manifest revokes them within 5 minutes, the same bound as a SCIM deactivate (LAW-12).
 
 ### Sessions

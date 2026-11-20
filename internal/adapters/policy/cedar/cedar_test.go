@@ -145,3 +145,27 @@ func TestFactoryRoles(t *testing.T) {
 		}
 	}
 }
+
+// SB-1205: the principal's directory attributes reach policy; a missing one never matches.
+func TestPrincipalAttributes(t *testing.T) {
+	e, err := Load(map[string][]byte{"t.cedar": []byte(`permit (principal, action == Action::"admin", resource)
+when { principal has cost_center && principal.cost_center == "CC-100" && principal has department && principal.department == "Finance" };`)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	k := kernel(e)
+	s := scope(t, "acme-logistics", "usr_a")
+	res := policy.Entity{Type: "Cell", ID: "acme-logistics", Tenant: "acme-logistics"}
+	for _, c := range []struct {
+		attrs map[string]string
+		want  policy.Decision
+	}{
+		{map[string]string{"cost_center": "CC-100", "department": "Finance"}, policy.Allow},
+		{map[string]string{"cost_center": "CC-200", "department": "Finance"}, policy.Deny},
+		{map[string]string{"department": "Finance"}, policy.Deny},
+	} {
+		if got := k.Authorise(context.Background(), s.WithAttrs(c.attrs), "admin", res, nil).Decision; got != c.want {
+			t.Errorf("%v: %v, want %v", c.attrs, got, c.want)
+		}
+	}
+}

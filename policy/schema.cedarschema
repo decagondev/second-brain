@@ -2,7 +2,8 @@
 // Every entity carries its tenant, so every rule can be tenant-scoped (LAW-02).
 entity Tenant;
 entity Group { tenant: Tenant };
-entity User in [Group] { tenant: Tenant };
+// Directory attributes, read at each request (SB-1205; sb-identity(7)).
+entity User in [Group] { tenant: Tenant, department?: String, division?: String, cost_center?: String, title?: String, manager?: String };
 entity Document { tenant: Tenant, source: String };
 // label and spaces are set in a cell with department spaces (SB-1004, sb-spaces(7)).
 // owners: the groups of the document's owner at the source (SB-1203).

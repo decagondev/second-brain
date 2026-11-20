@@ -92,8 +92,14 @@ func (e Engine) Evaluate(_ context.Context, r policy.Request) (policy.Result, er
 		ents[gu] = cedargo.Entity{UID: gu, Attributes: cedargo.NewRecord(cedargo.RecordMap{"tenant": tenant})}
 	}
 	principal := uid("User", r.Principal.User)
+	prec := cedargo.RecordMap{"tenant": tenant}
+	for _, k := range []string{"department", "division", "cost_center", "title", "manager"} {
+		if v := r.Principal.Attrs[k]; v != "" {
+			prec[cedargo.String(k)] = cedargo.String(v)
+		}
+	}
 	ents[principal] = cedargo.Entity{UID: principal, Parents: cedargo.NewEntityUIDSet(parents...),
-		Attributes: cedargo.NewRecord(cedargo.RecordMap{"tenant": tenant})}
+		Attributes: cedargo.NewRecord(prec)}
 
 	attrs := map[string]any{}
 	for k, v := range r.Resource.Attrs {

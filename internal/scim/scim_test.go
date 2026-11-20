@@ -179,3 +179,21 @@ func TestManager(t *testing.T) {
 		t.Fatalf("patch: %d manager %q", code, u.Manager)
 	}
 }
+
+// SB-1205: title and the enterprise organisation attributes are kept and patched.
+func TestEnterpriseAttributes(t *testing.T) {
+	f := setup()
+	code, v := f.do(t, "POST", "/scim/v2/Users", `{"userName":"bo","title":"Controller","urn:ietf:params:scim:schemas:extension:enterprise:2.0:User":{"department":"Finance","division":"EMEA","costCenter":"CC-100"}}`)
+	if code != 201 {
+		t.Fatalf("create: %d %v", code, v)
+	}
+	id := v["id"].(string)
+	u, _, _ := f.dir.User(context.Background(), "acme-logistics", id)
+	if want := (map[string]string{"title": "Controller", "department": "Finance", "division": "EMEA", "cost_center": "CC-100"}); !reflect.DeepEqual(u.Attributes(), want) {
+		t.Fatalf("attributes %v", u.Attributes())
+	}
+	code, _ = f.do(t, "PATCH", "/scim/v2/Users/"+id, `{"Operations":[{"op":"replace","path":"urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department","value":"Sales"},{"op":"replace","path":"title","value":"Lead"}]}`)
+	if u, _, _ := f.dir.User(context.Background(), "acme-logistics", id); code != 200 || u.Department != "Sales" || u.Title != "Lead" {
+		t.Fatalf("patch: %d %+v", code, u)
+	}
+}

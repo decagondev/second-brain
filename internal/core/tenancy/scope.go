@@ -13,7 +13,26 @@ import (
 type Scope struct {
 	tenant, user string
 	groups       []string
-	space        string // "" is company-wide (SB-1002)
+	space        string            // "" is company-wide (SB-1002)
+	attrs        map[string]string // the user's directory attributes now (SB-1205)
+}
+
+// Attrs are the user's directory attributes at this request (sb-policy(5)), a copy.
+func (s Scope) Attrs() map[string]string {
+	out := make(map[string]string, len(s.attrs))
+	for k, v := range s.attrs {
+		out[k] = v
+	}
+	return out
+}
+
+// WithAttrs returns s with the user's directory attributes (SB-1205).
+func (s Scope) WithAttrs(a map[string]string) Scope {
+	s.attrs = make(map[string]string, len(a))
+	for k, v := range a {
+		s.attrs[k] = v
+	}
+	return s
 }
 
 // Space is the space the request is in: a space id (spc_NAME), or "company" for a

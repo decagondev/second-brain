@@ -247,6 +247,21 @@ type User struct {
 	Active                           bool
 	// Manager is the user id of their manager, from SCIM's enterprise extension, or "" (SB-1204).
 	Manager string
+	// From SCIM (SB-1205): the core title and the enterprise extension's organisation facts.
+	Title, Department, Division, CostCenter string
+}
+
+// Attributes are a user's directory attributes as policy sees them (sb-policy(5)); empty
+// ones are left out.
+func (u User) Attributes() map[string]string {
+	out := map[string]string{}
+	for k, v := range map[string]string{"department": u.Department, "division": u.Division, "cost_center": u.CostCenter,
+		"title": u.Title, "manager": u.Manager} {
+		if v != "" {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 // Group is a directory group; Members are user ids.

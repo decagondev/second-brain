@@ -27,19 +27,9 @@ type MoveSystem interface {
 // MoveWindow is LAW-21's bound.
 const MoveWindow = 5 * time.Minute
 
-// NewMoveSystem builds the system under test: SCIM moves (SB-1205).
-var NewMoveSystem = func() MoveSystem { return pendingMoves{} }
-
-type pendingMoves struct{}
-
-func (pendingMoves) Space(string, string) error {
-	return fmt.Errorf("%w: five-minute moves arrive with SB-1205", ErrPending)
-}
-func (pendingMoves) Join(string, string) error            { return nil }
-func (pendingMoves) Leave(string, string) error           { return nil }
-func (pendingMoves) JoinUnconfirmed(string, string) error { return nil }
-func (pendingMoves) Advance(time.Duration)                {}
-func (pendingMoves) Allowed(string, string) (bool, error) { return false, nil }
+// NewMoveSystem builds the system under test: SCIM moves through the request path
+// (SB-1205). See law21moves.go.
+var NewMoveSystem = func() MoveSystem { return newSCIMMoves() }
 
 func law21(r *rand.Rand, sys MoveSystem) error {
 	if err := sys.Space("people", "group:people-team"); err != nil {

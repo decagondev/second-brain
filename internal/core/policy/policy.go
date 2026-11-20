@@ -49,6 +49,7 @@ type Entity struct {
 type Principal struct {
 	User, Tenant string
 	Groups       []string
+	Attrs        map[string]string // directory attributes now (SB-1205); empty ones absent
 }
 
 // Request is one question for the engine.
@@ -136,7 +137,7 @@ func decide(ctx context.Context, ev Evaluator, s tenancy.Scope, action string, r
 	if res.Tenant == "" {
 		res.Tenant = s.Tenant()
 	}
-	req := Request{Principal: Principal{User: s.User(), Tenant: s.Tenant(), Groups: s.Groups()}, Action: action, Resource: res, Context: rctx}
+	req := Request{Principal: Principal{User: s.User(), Tenant: s.Tenant(), Groups: s.Groups(), Attrs: s.Attrs()}, Action: action, Resource: res, Context: rctx}
 	ctx, cancel := context.WithTimeout(ctx, Deadline)
 	defer cancel()
 	done := make(chan Result, 1)

@@ -166,7 +166,7 @@ Content labelled `restricted` reaches only members of a space that holds it, inc
 
 When the directory removes someone from a space's member groups, they lose that space within 5 minutes. A new membership grants nothing until the cell has confirmed it from the directory.
 
-*Owner:* identity lead. *Checks:* Property on a fake clock (`TestLAW21_MovesRevokeFast`, red until SB-1205) · Watch (move-to-revoke latency, W12).
+*Owner:* identity lead. *Checks:* Property on a fake clock (`TestLAW21_MovesRevokeFast`: SCIM moves through the request path, SB-1205) · Watch (move-to-revoke latency, W12).
 
 ### LAW-22: Barriers hold {#law-22}
 

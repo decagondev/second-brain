@@ -38,6 +38,9 @@ type Cell struct {
 	// Issuer is the cell's one tenancy.Issuer (SB-108); GroupsOf reads the directory.
 	Issuer   tenancy.Issuer
 	GroupsOf func(ctx context.Context, tenant, user string) ([]string, error)
+	// Attributes reads the user's directory attributes at each request (SB-1205); nil is a
+	// cell that passes none. An error refuses the request.
+	Attributes func(ctx context.Context, tenant, user string) (map[string]string, error)
 	// Spaces is the cell's space registry (SB-1002); nil is a cell with no spaces, where
 	// any ?space= other than company is ESPACE.
 	Spaces ports.SpaceStore
@@ -184,8 +187,30 @@ func (c *Cell) Middleware(next http.Handler) http.Handler {
 			refuse(w, errs.New(errs.EAUTH, "sign in again"))
 			return
 		}
+		if c.Attributes != nil {
+			attrs, err := c.Attributes(r.Context(), s.Tenant, s.User)
+			if err != nil {
+				refuse(w, errs.New(errs.EUNAVAIL, "directory unavailable"))
+				return
+			}
+			scope = scope.WithAttrs(attrs)
+		}
 		next.ServeHTTP(w, r.WithContext(tenancy.WithScope(r.Context(), scope)))
 	})
+}
+
+// DirectoryAttributes reads a user's attributes from the directory (SB-1205).
+func DirectoryAttributes(dir ports.DirectoryStore) func(ctx context.Context, tenant, user string) (map[string]string, error) {
+	return func(ctx context.Context, tenant, user string) (map[string]string, error) {
+		u, found, err := dir.User(ctx, tenant, user)
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			return map[string]string{}, nil
+		}
+		return u.Attributes(), nil
+	}
 }
 
 // TenantOf is an edge.TokenVerifier for this cell: the tenant of a live session.

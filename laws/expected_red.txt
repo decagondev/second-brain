@@ -1,2 +1,1 @@
-LAW-21 SB-1205 TestLAW21_MovesRevokeFast
 LAW-23 SB-1302 TestLAW23_GrantsAreConsentedAndRevocable

@@ -86,6 +86,10 @@ Steps 1 to 3 are the forbids in `policy/platform/spaces.cedar`, decided by the s
 
 Like `EPERM`, the new codes are reasons, not messages: a refused chunk is never named to the user. `ESPACE` is returned to the asker only for an ask in a space they aren't a member of, which names the space and nothing in it. `ELABEL` and `EBARRIER` appear in the decision list of the trace and in the operators' refusal counts (sb-admin(3)).
 
+### Who the asker is, now (SB-1205)
+
+Every decision is made with the asker as the directory says they are at that request: their groups (so a move between teams changes a space at the next request, LAW-21) and their attributes `department`, `division`, `cost_center`, `title` and `manager` (sb-identity(7), Attributes and moves). Nothing about the asker is taken from the sign-in token or cached between requests.
+
 ### Barriers beyond reads, exactly (SB-1203)
 
 A barrier holds for everything the brain does, not only for what an answer reads (LAW-22). The same facts, from the manifest's `barriers:` and the directory now, decide each of these in the policy kernel (sb-policy(5)):

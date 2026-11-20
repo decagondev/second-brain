@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.3a Directory attributes and five-minute moves (SB-1205)
+
+**Wave/slice:** W12 / S12.3a · **Status:** Done
+
+**What:** SCIM `title` and enterprise `department`, `division`, `costCenter` (with `manager` from SB-1204), `ports.User.Attributes`, `auth.Cell.Attributes` and `auth.DirectoryAttributes`, `Scope.WithAttrs`, principal attributes in the kernel, the Cedar adapter and the schema, and `laws/law21moves.go`. The manual changed first: sb-identity(7), sb-permissions(7), sb-policy(5).
+
+**Why this way:** The asker is read from the directory at every request, groups and attributes alike, so a move needs nothing to expire and nothing to invalidate: the five-minute bound holds with room to spare, and the law test checks the request path rather than a cache.
+
+**Learned:** The first trusted-claims mutation went uncaught because the test's IdP view was keyed by user name while the cell sees directory ids; keyed by id, it is caught. A mutation that isn't caught is a question about the test before it is a verdict on the code.
+
+**Laws:** LAW-21 green and out of the ratchet (two mutations caught). Only LAW-23 stays red.
+
+**Next:** S12.3b, the reorg preview (SB-1206).
+
 ## 2026-11-20 S12.2b Segregation of duties (SB-1204)
 
 **Wave/slice:** W12 / S12.2b · **Status:** Done

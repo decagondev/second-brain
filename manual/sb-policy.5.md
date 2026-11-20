@@ -28,7 +28,7 @@ Cedar is default-deny, and `forbid` always beats `permit`.
 
 | Entity | Attributes |
 |---|---|
-| `User` | `tenant`; member of its `Group`s |
+| `User` | `tenant`; member of its `Group`s; and, when the directory has them, `department`, `division`, `cost_center`, `title` and `manager` (a user id), read at each request (SB-1205). Each is optional: a rule that uses one tests `has` first, and a missing one never matches |
 | `Group` | `tenant` |
 | `Document` | `tenant`, `source` (connector kind) |
 | `Chunk` | `tenant`, `cite`; in its `Document` |
