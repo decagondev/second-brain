@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Stewards and delegated space changes (S12.1a: SB-1201): `propose_space` and `approve_space` in Cedar, steward proposals checked against their own space, and hash-bound approval by an operator who isn't the proposer.
 - Per-template eval suites in the gate (S11.4: SB-1107): twelve `template-*` suites over a shared world, in the release gate.
 - The QuickBooks Online connector (S11.3c: SB-1105), read-only against a recorded fake, and the `accounting` kind; account and routing numbers, tax ids and payroll are never read.
 - The BambooHR connector (S11.3b: SB-1104), read-only against a recorded fake, and the `hris` kind; sensitive fields are read only when a space allow-lists them.

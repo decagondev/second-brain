@@ -96,7 +96,16 @@ Membership is read from the asker's directory groups on every request, so a move
 
 ### Stewards
 
-Stewards don't approve their own changes. They propose a space change as a manifest diff, and a tenant operator approves it (LAW-16, W12). Finance spaces add segregation of duties: whoever requests a change can't approve it.
+Stewards don't approve their own changes. They propose a space change as a manifest diff, and a tenant operator approves it (LAW-16). Finance spaces add segregation of duties: whoever requests a change can't approve it.
+
+**Delegated changes, exactly (SB-1201).** A steward of a space, a member of one of its `stewards` groups, proposes a new definition of **that space only**, through `POST /v1/spaces/NAME/proposals` (sb-admin(3), Proposals). The proposal is checked when it's made, and refused with `EMANIFEST` if it:
+
+- names another space, or changes anything outside this space (the barriers, the connectors, other spaces);
+- changes the space's `template`;
+- lowers the space's `label` below what it is now, on the ladder `public` < `internal` < `confidential` < `restricted`;
+- leaves the space with no stewards, or fails any rule of `sb tenant check` (sb-space(5)).
+
+A proposal records the steward, the hash of the manifest it was based on and the hash of the manifest it would make, and writes a `kind: config` audit row (`state` `proposed`, the space in `space`). A tenant operator approves it by sending that exact hash back (LAW-15's hash binding, applied to manifests): a different hash, or a manifest that changed since the proposal was made, is refused, and the steward proposes again. Nobody approves their own proposal, even an operator who is also a steward (`EPERM`). An approval writes a `kind: config` row (`state` `approved`) and returns the manifest to apply; the space changes only when it's applied (LAW-16). Stewards widen nothing alone: every change, adding members included, needs an operator.
 
 ### Moves
 

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.1a Stewards and delegated space changes (SB-1201)
+
+**Wave/slice:** W12 / S12.1a · **Author:** platform lead + Claude · **Status:** In review (console screens)
+
+**What:** `propose_space` and `approve_space` in the schema and base policy, `manifest.StewardChange` and `WithSpace`, `internal/core/proposals`, `internal/api/stewards.go`, and `laws/law15stewards.go`. The manual changed first: sb-spaces(7), sb-admin(3).
+
+**Why this way:** A steward edits one thing, their space's definition, so the proposal is that definition and nothing else; anything outside it can't even be expressed. Approval binds the exact manifest by hash and the manifest it was made from, so what an operator reviewed is what applies, and a change that lands in between makes the proposal stale rather than silently merged.
+
+**Learned:** The first version of the law test passed while checking nothing: every proposal failed the manifest check because unset fields were written as zeros. The test now fails if no proposal is ever approved, and `WithSpace` fills defaults as the checker does.
+
+**Laws:** LAW-15, LAW-16 and LAW-19 extended (one law test, two mutations caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S12.1b, quarterly access reviews (SB-1202).
+
 ## 2026-11-20 S11.4 Per-template eval suites in the gate (SB-1107)
 
 **Wave/slice:** W11 / S11.4 · **Author:** platform lead + Claude · **Status:** In review (tenant suites in a deployed cell)

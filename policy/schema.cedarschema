@@ -11,6 +11,9 @@ entity Tool { tenant: Tenant, name: String, connector: String, consequential: Bo
 entity Workflow { tenant: Tenant, name: String, approvers: Group };
 entity ProposedAction { tenant: Tenant, workflow: String, requester: User, approvers: Group };
 entity Cell { tenant: Tenant };
+// Space governance (SB-1201): a space's stewards (group:NAME), and a steward's proposal.
+entity SpaceConfig { tenant: Tenant, stewards: Set<String> };
+entity SpaceProposal { tenant: Tenant, requester: User };
 // A cell's custody record, held by the factory: tenant is the factory's own tenant (SB-702).
 entity CellCustody { tenant: Tenant, cell: Tenant };
 
@@ -21,6 +24,8 @@ action "call_tool" appliesTo { principal: [User], resource: [Tool] };
 action "propose"   appliesTo { principal: [User], resource: [Workflow] };
 action "approve"   appliesTo { principal: [User], resource: [ProposedAction] };
 action "admin"     appliesTo { principal: [User], resource: [Cell] };
+action "propose_space" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
+action "approve_space" appliesTo { principal: [User], resource: [SpaceProposal] };
 
 // Custody and hand-off (SB-702, sb-factory(1)).
 action "view_custody"    appliesTo { principal: [User], resource: [CellCustody, Cell] };

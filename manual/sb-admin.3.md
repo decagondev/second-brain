@@ -22,6 +22,10 @@ GET  /v1/admin/audit?since=…&kind=…&space=…
 GET  /v1/admin/usage?week=2027-W10
 GET  /v1/admin/refusals?since=…
 POST /v1/admin/subjects/erase
+POST /v1/spaces/NAME/proposals                 (stewards)
+GET  /v1/admin/proposals
+POST /v1/admin/proposals/ID/approve
+POST /v1/admin/proposals/ID/reject
 GET  /v1/admin/costs?month=2027-03[&format=csv]
 ```
 
@@ -59,9 +63,15 @@ Roles are Cedar policies, not code: the base policy permits `admin` on the tenan
 
 `POST /v1/admin/manifest/diff` accepts JSON Patch operations (`add`, `remove`, `replace`) on these paths only: `/agents`, `/workflows`, `/connectors/<kind>`, `/approval/<workflow>`, `/exclude/<kind>`, `/retention_days`, `/budget_usd_month`, `/pilot_group`, `/channel`. `tenant`, `region` and `idp` can't be patched here. The patched manifest is checked exactly as `sb tenant check` checks a file. The response is `{ "manifest": "<the whole new manifest as YAML>", "diff": ["- agents: [ask]", "+ agents: [ask, draft-reply]"], "plan": "<the sb tenant apply --plan output>" }`. It **changes nothing**: every proposal writes a `kind: config` audit row with the operator and the patch's hash, and the change takes effect only when the new manifest is applied. Kill switches offer **make permanent**, which is this same endpoint with a patch that removes the agent or connector.
 
+### Proposals (SB-1201)
+
+**`POST /v1/spaces/NAME/proposals`** is for the space's stewards (Cedar `propose_space`; sb-spaces(7), Delegated changes). The body is the space's whole new definition, `{ "space": { "members": [...], "scope": {...}, ... } }`, in the fields of sb-space(5). The response is `{ "id": "prop_…", "space": "NAME", "base": "<sha256 of the applied manifest>", "hash": "<sha256 of the proposed manifest>", "diff": [...], "plan": "…" }`, and nothing changes yet.
+
+**`GET /v1/admin/proposals`** lists the open proposals. **`POST /v1/admin/proposals/ID/approve`** takes `{ "hash": "…" }` and needs the `operator` role (Cedar `approve_space`, forbidden for the proposal's own steward). It returns `{ "id", "manifest": "<the YAML to apply>", "approved": true }`. A hash that isn't the proposal's is `EINVAL`; an applied manifest that changed since the proposal is `EDRIFT`, and the proposal is closed. **`…/reject`** takes `{ "reason": "…" }`. Every proposal, approval and rejection is a `kind: config` audit row with the space.
+
 ## ERRORS
 
-`EPERM` without the role · `EMANIFEST` for an invalid patch · `EDRIFT` if the live config has drifted and a diff can't be based on it.
+`EPERM` without the role, or for approving your own proposal · `EMANIFEST` for an invalid patch or a steward proposal the rules refuse · `EDRIFT` if the live config has drifted and a diff can't be based on it.
 
 ## LAWS
 

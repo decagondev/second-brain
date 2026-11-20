@@ -24,6 +24,18 @@ when {
   (resource.name == "incident-summary" || resource.name == "spec-digest" || resource.name == "close-checklist" || resource.name == "runbook-answer")
 };
 
+// Stewards (SB-1201): a member of one of a space's stewards groups may propose a change to
+// that space; the kernel puts the asker's groups, as group:NAME, in context.groups.
+permit (principal, action == Action::"propose_space", resource is SpaceConfig)
+when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
+
+// Operators approve stewards' proposals, never their own (LAW-15).
+permit (principal in Group::"sb-operators", action == Action::"approve_space", resource is SpaceProposal)
+when { principal.tenant == resource.tenant };
+
+forbid (principal, action == Action::"approve_space", resource is SpaceProposal)
+when { resource.requester == principal };
+
 // Nobody approves their own action (LAW-15).
 forbid (principal, action == Action::"approve", resource is ProposedAction)
 when { resource.requester == principal };
