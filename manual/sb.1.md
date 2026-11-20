@@ -18,6 +18,7 @@ sb [--json] [--tenant NAME] [--endpoint URL] COMMAND [ARGS]
 sb tenant  check|apply|verify FILE
 sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
 sb space   templates
+sb space   diff FILE --idp-snapshot SNAPSHOT [--json]
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export

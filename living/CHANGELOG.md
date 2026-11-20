@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Reorg preview (S12.3b: SB-1206): `sb space diff FILE --idp-snapshot SNAPSHOT` lists per person the spaces a reorg would add and remove, and flags anyone losing every space, gaining a restricted one, or straddling a barrier. Offline; changes nothing.
 - Directory attributes and five-minute moves (S12.3a: SB-1205): SCIM `title`, `department`, `division`, `costCenter` and `manager` reach policy at every request, and moves between groups change spaces at the next request. LAW-21 is green.
 - Segregation of duties (S12.2b: SB-1204): `duties:` in the manifest asks for two approvers from different groups above a threshold, nobody approves for someone in their reporting line (SCIM `manager`), and only the named group may give each approval.
 - Information barriers for everything (S12.2a: SB-1203): ownership from the source, and barrier forbids for drafts, tool calls, proposals and approvals as well as reads. LAW-22 is green.

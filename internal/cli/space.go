@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"example.com/second-brain/internal/core/manifest"
+	"example.com/second-brain/internal/core/reorg"
 	"example.com/second-brain/internal/errs"
 )
 
@@ -180,4 +181,58 @@ func spaceEntry(name, tpl string, members, stewards []string, scope map[string][
 		fmt.Fprintf(&b, "      %s: [%q]\n", k, scope[k][0])
 	}
 	return b.String()
+}
+
+// spaceDiff previews a reorg's effect on spaces (sb-space(1) diff; SB-1206). It reads the
+// manifest and the snapshot and writes nothing.
+func (e *env) spaceDiff(args []string) int {
+	const name = "sb space diff"
+	usage := errs.New(errs.EUSAGE, "usage: sb space diff FILE --idp-snapshot SNAPSHOT")
+	args = e.localArgs(args)
+	var file, snapFile string
+	for i := 0; i < len(args); i++ {
+		switch a := args[i]; {
+		case a == "--idp-snapshot" && i+1 < len(args):
+			snapFile = args[i+1]
+			i++
+		case !strings.HasPrefix(a, "--") && file == "":
+			file = a
+		default:
+			return e.fail(name, usage)
+		}
+	}
+	if file == "" || snapFile == "" {
+		return e.fail(name, usage)
+	}
+	t, code, ok := e.readManifest(name, file)
+	if !ok {
+		return code
+	}
+	b, err := os.ReadFile(snapFile)
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "cannot read %s", snapFile))
+	}
+	snap, err := reorg.Parse(b)
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "%s: %v", snapFile, err))
+	}
+	r := reorg.Diff(t, snap)
+	if e.g.JSON {
+		return e.json(r)
+	}
+	list := func(xs []string) string {
+		if len(xs) == 0 {
+			return "-"
+		}
+		return strings.Join(xs, ",")
+	}
+	for _, c := range r.People {
+		line := fmt.Sprintf("%s  gains %s  loses %s", c.User, list(c.Gains), list(c.Loses))
+		if len(c.Flags) > 0 {
+			line += "  [" + strings.Join(c.Flags, ",") + "]"
+		}
+		fmt.Fprintln(e.out, line)
+	}
+	fmt.Fprintf(e.out, "%d unchanged\n", r.Unchanged)
+	return 0
 }

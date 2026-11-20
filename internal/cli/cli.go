@@ -125,6 +125,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceInit(rest[2:])
 	case "space templates":
 		return e.spaceTemplates(rest[2:])
+	case "space diff":
+		return e.spaceDiff(rest[2:])
 	}
 	if t, ok := planned[name]; ok {
 		return e.fail("sb "+name, errs.New(errs.ENOTIMPL, "not built yet (%s)", t))

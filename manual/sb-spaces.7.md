@@ -117,6 +117,10 @@ Each quarter the stewards of every `restricted` space re-certify who can use it,
 - **Overdue.** A review still open 14 days after it opened is overdue: `sb_access_review_overdue{space}` is 1 and a Sev-2 `review_overdue` alert goes to the tenant operator (sb-observability(7)). It stays overdue until it is complete.
 - **Evidence.** `GET /v1/admin/reviews/ID/evidence` (sb-admin(3)) returns the review as one JSON document: the space, quarter, stewards, opening, due and completion times, every person with their `via`, last use, decision, who decided, when, why, and the audit `seq` of the decision, the change requests with their proposal ids, and `sha256`, the SHA-256 of the canonical `review` object. An auditor checks the hash and finds each decision's row in `sb audit export` by its `seq`.
 
+### Reorg preview (SB-1206)
+
+Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.
+
 ### Moves
 
 When the IdP removes someone from a space's groups, they lose that space within 5 minutes. A new membership grants nothing until the cell has confirmed it from the directory (LAW-21, W12).

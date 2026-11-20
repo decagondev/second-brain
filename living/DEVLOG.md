@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.3b Reorg preview (SB-1206)
+
+**Wave/slice:** W12 / S12.3b · **Status:** Done
+
+**What:** `internal/core/reorg` (snapshot parse and diff), `sb space diff`, and `laws/law16reorg.go`. The manual changed first: sb-space(1), sb-spaces(7), sb(1).
+
+**Why this way:** The snapshot is the reorg as HR plans it, each moved person's groups before and after, rather than two full directory dumps: it is what HR already has, it is small enough to review, and the preview needs no cell and no credentials.
+
+**Learned:** The useful flag beyond the ticket's two is `barrier`: a reorg that puts someone on both sides of a wall is a mistake to catch before the IdP changes, not after.
+
+**Laws:** LAW-16 extended (three mutations caught). Only LAW-23 stays red.
+
+**Next:** S12.4, legal hold per space (SB-1207).
+
 ## 2026-11-20 S12.3a Directory attributes and five-minute moves (SB-1205)
 
 **Wave/slice:** W12 / S12.3a · **Status:** Done

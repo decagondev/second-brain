@@ -69,3 +69,59 @@ func TestSpaceInit(t *testing.T) {
 		t.Fatalf("templates: %d\n%s", code, out)
 	}
 }
+
+// SB-1206: sb space diff previews gains, losses and flags, offline, and writes nothing.
+func TestSpaceDiff(t *testing.T) {
+	dir := t.TempDir()
+	m := filepath.Join(dir, "acme.yaml")
+	src := []byte(`tenant: acme-logistics
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: sharepoint }
+agents: [ask]
+spaces:
+  people:
+    template: people
+    members: [group:people-team]
+    stewards: [group:people-leads]
+    scope: { docs: ["/People/**"] }
+  engineering:
+    template: engineering
+    members: [group:eng]
+    scope: { docs: ["/Engineering/**"] }
+barriers:
+  - [group:deal-team, group:eng]
+`)
+	snap := filepath.Join(dir, "reorg.json")
+	sj := []byte(`{"version": 1, "people": [
+  {"user": "ana@acme.example", "before": ["group:finance"], "after": ["group:people-team"]},
+  {"user": "bo@acme.example", "before": ["group:eng"], "after": []},
+  {"user": "cy@acme.example", "before": ["group:eng"], "after": ["group:eng", "group:deal-team"]},
+  {"user": "di@acme.example", "before": ["group:eng"], "after": ["group:eng"]}
+]}`)
+	for f, b := range map[string][]byte{m: src, snap: sj} {
+		if err := os.WriteFile(f, b, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	code, out, _ := run("space", "diff", m, "--idp-snapshot", snap)
+	want := "ana@acme.example  gains people  loses -  [gains-restricted]\n" +
+		"bo@acme.example  gains -  loses engineering  [loses-all]\n" +
+		"cy@acme.example  gains -  loses -  [barrier]\n" +
+		"1 unchanged\n"
+	if code != 0 || out != want {
+		t.Fatalf("diff: %d\n%s\nwant\n%s", code, out, want)
+	}
+	for f, b := range map[string][]byte{m: src, snap: sj} {
+		if got, _ := os.ReadFile(f); string(got) != string(b) {
+			t.Fatalf("%s changed", f)
+		}
+	}
+	if err := os.WriteFile(snap, []byte(`{"version": 2, "people": []}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, _ := run("space", "diff", m, "--idp-snapshot", snap); code != 2 {
+		t.Fatalf("a bad snapshot exits %d, want 2", code)
+	}
+}
