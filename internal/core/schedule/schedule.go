@@ -25,10 +25,11 @@ var Jobs = []Job{
 	{Name: "backup", Cron: "0 2 * * *", Interval: 24 * time.Hour, Law: "LAW-11"},
 	{Name: "report", Cron: "0 7 * * 1", Interval: 7 * 24 * time.Hour},
 	{Name: "access", Cron: "0 4 1 * *", Interval: 31 * 24 * time.Hour, Law: "LAW-17"},
+	{Name: "review", Cron: "0 5 1 1,4,7,10 *", Interval: 92 * 24 * time.Hour, Law: "LAW-16"},
 }
 
 // Grace is how late a job may be before it is overdue: twice its interval, but at most a
-// day for the weekly and monthly jobs.
+// day for the weekly, monthly and quarterly jobs.
 func (j Job) Grace() time.Duration {
 	g := 2 * j.Interval
 	if j.Interval >= 7*24*time.Hour {

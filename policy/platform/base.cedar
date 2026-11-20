@@ -29,6 +29,10 @@ when {
 permit (principal, action == Action::"propose_space", resource is SpaceConfig)
 when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
 
+// Stewards run their space's quarterly access review (SB-1202).
+permit (principal, action == Action::"review_space", resource is SpaceConfig)
+when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
+
 // Operators approve stewards' proposals, never their own (LAW-15).
 permit (principal in Group::"sb-operators", action == Action::"approve_space", resource is SpaceProposal)
 when { principal.tenant == resource.tenant };

@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S12.1b Quarterly access reviews (SB-1202)
+
+**Wave/slice:** W12 / S12.1b · **Status:** In review (console screens)
+
+**What:** `internal/core/reviews` (open, decide, requests, overdue, watch, evidence, the job), `internal/api/reviews.go`, the `review` schedule, `review_space` in Cedar, and `laws/law16reviews.go`. The manual changed first: sb-spaces(7), sb-admin(3), sb-runtime(7), sb-observability(7).
+
+**Why this way:** A review is evidence, so a decision changes nothing by itself: removals become the same hash-approved manifest proposals stewards already use, or IdP requests, and the live change keeps one path (LAW-16). The member list is built from the directory groups, not from who happened to ask, and a group that can't be read stops the review rather than certifying a shorter list.
+
+**Learned:** Last use comes cheaply from the audit trail, because every row written in a space already carries the space.
+
+**Laws:** LAW-16 extended (one law test, three mutations caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S12.2, information barriers (SB-1203).
+
 ## 2026-11-20 S12.1a Stewards and delegated space changes (SB-1201)
 
 **Wave/slice:** W12 / S12.1a · **Author:** platform lead + Claude · **Status:** In review (console screens)

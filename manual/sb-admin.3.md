@@ -27,6 +27,10 @@ GET  /v1/admin/proposals
 POST /v1/admin/proposals/ID/approve
 POST /v1/admin/proposals/ID/reject
 GET  /v1/admin/costs?month=2027-03[&format=csv]
+GET  /v1/spaces/NAME/reviews                   (stewards)
+POST /v1/spaces/NAME/reviews/ID/decide         (stewards)
+GET  /v1/admin/reviews
+GET  /v1/admin/reviews/ID/evidence
 ```
 
 ## DESCRIPTION
@@ -68,6 +72,12 @@ Roles are Cedar policies, not code: the base policy permits `admin` on the tenan
 **`POST /v1/spaces/NAME/proposals`** is for the space's stewards (Cedar `propose_space`; sb-spaces(7), Delegated changes). The body is the space's whole new definition, `{ "space": { "members": [...], "scope": {...}, ... } }`, in the fields of sb-space(5). The response is `{ "id": "prop_…", "space": "NAME", "base": "<sha256 of the applied manifest>", "hash": "<sha256 of the proposed manifest>", "diff": [...], "plan": "…" }`, and nothing changes yet.
 
 **`GET /v1/admin/proposals`** lists the open proposals. **`POST /v1/admin/proposals/ID/approve`** takes `{ "hash": "…" }` and needs the `operator` role (Cedar `approve_space`, forbidden for the proposal's own steward). It returns `{ "id", "manifest": "<the YAML to apply>", "approved": true }`. A hash that isn't the proposal's is `EINVAL`; an applied manifest that changed since the proposal is `EDRIFT`, and the proposal is closed. **`…/reject`** takes `{ "reason": "…" }`. Every proposal, approval and rejection is a `kind: config` audit row with the space.
+
+### Access reviews (SB-1202)
+
+**`GET /v1/spaces/NAME/reviews`** lists the space's reviews for its stewards (Cedar `review_space`; sb-spaces(7), Access reviews). **`POST /v1/spaces/NAME/reviews/ID/decide`** takes `{ "user": "usr_…", "decision": "certify" | "remove", "reason": "…" }`; a removal needs a reason, and deciding on your own access is `EPERM`. The response is the review; when the decision completes it, the response's `requests` hold the change requests, and a manifest one carries its proposal id for `…/proposals/ID/approve`.
+
+**`GET /v1/admin/reviews`** lists every review with `overdue` for the operator. **`GET /v1/admin/reviews/ID/evidence`** returns `{ "review": {…}, "sha256": "…" }`, the audit-ready evidence.
 
 ## ERRORS
 

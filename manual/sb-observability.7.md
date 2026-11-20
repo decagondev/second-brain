@@ -34,7 +34,8 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 | Freshness | p95 > 15 min | Sev-2 |
 | Unknown ratio | > 1% for 30 min on a connector | Sev-3 |
 | Budget pace | > 120% | Sev-3 |
-| A scheduled job missed its run | `sb_job_overdue{job}` is 1 | Sev-1 for `anchor`, `backup`, `access`; Sev-2 otherwise (sb-runtime(7), Schedules) |
+| An access review is overdue | `sb_access_review_overdue{space}` is 1: a review open 14 days (sb-spaces(7), Access reviews) | Sev-2, to the tenant operator |
+| A scheduled job missed its run | `sb_job_overdue{job}` is 1 | Sev-1 for `anchor`, `backup`, `access`, `review`; Sev-2 otherwise (sb-runtime(7), Schedules) |
 
 Every alert links to a runbook.
 

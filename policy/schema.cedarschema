@@ -26,6 +26,7 @@ action "approve"   appliesTo { principal: [User], resource: [ProposedAction] };
 action "admin"     appliesTo { principal: [User], resource: [Cell] };
 action "propose_space" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 action "approve_space" appliesTo { principal: [User], resource: [SpaceProposal] };
+action "review_space"  appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 
 // Custody and hand-off (SB-702, sb-factory(1)).
 action "view_custody"    appliesTo { principal: [User], resource: [CellCustody, Cell] };

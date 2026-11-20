@@ -64,9 +64,10 @@ Every timed job runs from **Cloud Scheduler**, which publishes to the cell's Pub
 | `retention` | daily at 03:00 | the retention sweep (sb-tenant(5)) | |
 | `backup` | daily at 02:00 | the 3-2-1 backup (sb-audit(7)) | LAW-11 |
 | `report` | Mondays at 07:00 | the weekly leadership report (sb-observability(7)) | |
+| `review` | the 1st of January, April, July and October at 05:00 | open the quarter's access review for each restricted space (sb-spaces(7), Access reviews) | LAW-16 |
 | `access` | the 1st of each month at 04:00 | the LAW-17 access-path check, for a tenant-custody cell (sb-factory(7)) | LAW-17 |
 
-Each run records its finish time. A **watchdog**, run by `jobs` every 5 minutes, compares each job's last finish with its schedule. A job that hasn't finished within twice its interval (for `report` and `access`, within a day of its time) is **overdue**: it sets `sb_job_overdue{job}` to 1 and sends a `job_missed` alert. The alert is Sev-1 for `anchor`, `backup` and `access`, because those carry a law, and Sev-2 otherwise. A missed run is never a silent skip. If a job's last finish can't be read, it counts as overdue.
+Each run records its finish time. A **watchdog**, run by `jobs` every 5 minutes, compares each job's last finish with its schedule. A job that hasn't finished within twice its interval (for `report`, `access` and `review`, within a day of its time) is **overdue**: it sets `sb_job_overdue{job}` to 1 and sends a `job_missed` alert. The alert is Sev-1 for `anchor`, `backup`, `access` and `review`, because those carry a law, and Sev-2 otherwise. A missed run is never a silent skip. If a job's last finish can't be read, it counts as overdue.
 
 **The WORM bucket.** Anchors and the off-site backup copy go to a Cloud Storage bucket with a **locked** retention policy of seven years (ADR-0012). An object can't be overwritten, every write is conditional on there being no object of that name, and it can't be deleted until its retention ends, by anyone. The gcp adapter refuses a bucket whose policy is unlocked or shorter. The bucket is made, and its policy locked, at bootstrap by the project owner, because locking a retention policy can't be undone. The cell itself only gets `storage.buckets.get` and object create, get and list (`gcp.BucketPermissions`), and never delete.
 
