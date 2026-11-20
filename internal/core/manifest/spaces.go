@@ -22,6 +22,7 @@ type Space struct {
 	Agents        []string            `json:"agents"`
 	RetentionDays int                 `json:"retention_days"`
 	Channels      []string            `json:"channels"`
+	Fields        map[string][]string `json:"fields"`
 }
 
 // Template is a department template's defaults (sb-departments(7), The catalogue).
@@ -103,13 +104,15 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields"}
+
+var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention *node
-	set                               map[string]bool
+	members, scope, agents, retention, fields *node
+	set                                       map[string]bool
 }
 
 func (c *checker) spaces(n *node) {
@@ -142,7 +145,7 @@ func (c *checker) space(name string, n *node, p string) {
 	if !c.mapOf(n, p, "{ members: [group:finance], scope: { docs: [\"/Finance/**\"] } }") {
 		return
 	}
-	s := Space{Template: "custom", Stewards: []string{}, Channels: []string{}}
+	s := Space{Template: "custom", Stewards: []string{}, Channels: []string{}, Fields: map[string][]string{}}
 	sn := spaceNodes{set: map[string]bool{}}
 	for i, k := range n.keys {
 		if c.skip[k] {
@@ -183,6 +186,27 @@ func (c *checker) space(name string, n *node, p string) {
 		case "retention_days":
 			sn.retention = v
 			s.RetentionDays = c.intIn(v, f, MinSpaceRetention, 0)
+		case "fields":
+			sn.fields = v
+			if c.mapOf(v, f, "{ hris: [salary_band] }") {
+				for j, kk := range v.keys {
+					if c.skip[kk] {
+						continue
+					}
+					fk := f + "." + kk.value
+					vs, ns, ok := c.list(v.vals[j], fk, "[salary_band]")
+					if !ok {
+						continue
+					}
+					for m, name := range vs {
+						if !fieldName.MatchString(name) {
+							c.add(ns[m], fmt.Sprintf("%s[%d]", fk, m), "%q isn't a field name ([a-z][a-z0-9_]*)", name)
+							continue
+						}
+						s.Fields[kk.value] = append(s.Fields[kk.value], name)
+					}
+				}
+			}
 		case "channels":
 			vs, ns, ok := c.list(v, f, `["#finance-ask"]`)
 			if ok {
@@ -345,6 +369,13 @@ func (c *checker) spaceChecks() {
 				}
 			}
 		}
+		if sn.fields != nil && sn.fields.kind == mapNode {
+			for _, k := range sn.fields.keys {
+				if _, inScope := s.Scope[k.value]; !inScope {
+					c.add(k, p+".fields."+k.value, "kind %q isn't in this space's scope", k.value)
+				}
+			}
+		}
 		if sn.agents != nil {
 			if c.seen["agents"] != nil && c.seen["agents"].kind == seqNode {
 				for i, a := range s.Agents {
@@ -408,6 +439,13 @@ func SpaceAttrs(s Space) map[string]string {
 	}
 	if len(s.Channels) > 0 {
 		a["channels"] = strings.Join(s.Channels, ",")
+	}
+	if len(s.Fields) > 0 {
+		var fs []string
+		for _, k := range sorted(s.Fields) {
+			fs = append(fs, k+" "+strings.Join(s.Fields[k], ","))
+		}
+		a["fields"] = strings.Join(fs, "; ")
 	}
 	return a
 }

@@ -227,6 +227,9 @@ func detail(kind string, a map[string]string) string {
 		if a["channels"] != "" {
 			parts = append(parts, "channels "+a["channels"])
 		}
+		if a["fields"] != "" {
+			parts = append(parts, "fields "+a["fields"])
+		}
 		return strings.Join(parts, ", ")
 	}
 	return ""

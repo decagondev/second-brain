@@ -60,7 +60,7 @@ func Sync(ctx context.Context, st ports.SpaceStore, keys *Keys, t manifest.Tenan
 		}
 		if err := st.PutSpace(ctx, ports.Space{ID: ID(n), Tenant: t.Tenant, Name: n, Template: s.Template, Label: s.Label,
 			Members: s.Members, Stewards: s.Stewards, Agents: s.Agents, Scope: s.Scope, RetentionDays: s.RetentionDays,
-			Channels: s.Channels}); err != nil {
+			Channels: s.Channels, Fields: s.Fields}); err != nil {
 			return fmt.Errorf("spaces: %s: %w", n, err)
 		}
 	}

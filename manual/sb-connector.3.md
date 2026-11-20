@@ -42,6 +42,10 @@ Returns the document's text and structure, its **version** (monotonic per docume
 
 `Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one.
 
+### Fields (SB-1106)
+
+A connector to a **structured** system (an HRIS, an accounting system) returns a document's data as named **fields** rather than as text, and **declares** every field it can return: its name and whether it's **sensitive** (pay, performance, cases, personal identifiers, bank details, tax ids). It never declares a field it returns under another name. Ingest decides which fields become text (sb-ingest(7), Fields); the connector never does. A connector that returns fields but can't declare them returns nothing that is ingested.
+
 ### ACL
 
 The **authority** on who may see what. Called live, at answer time, for a batch of up to 200 refs. Returns one `Verdict` per ref, in order:

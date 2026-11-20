@@ -65,6 +65,13 @@ func Format(t Tenant) []byte {
 			fmt.Fprintf(&b, "    label: %s%s", sp.Label, nl)
 			fmt.Fprintf(&b, "    agents: %s%s", flowList(sp.Agents, false), nl)
 			fmt.Fprintf(&b, "    retention_days: %d%s", sp.RetentionDays, nl)
+			if len(sp.Fields) > 0 {
+				fp := make([]string, 0, len(sp.Fields))
+				for _, k := range sorted(sp.Fields) {
+					fp = append(fp, k+": "+flowList(sp.Fields[k], false))
+				}
+				fmt.Fprintf(&b, "    fields: { %s }%s", strings.Join(fp, ", "), nl)
+			}
 			if len(sp.Channels) > 0 {
 				fmt.Fprintf(&b, "    channels: %s%s", flowList(sp.Channels, true), nl)
 			}

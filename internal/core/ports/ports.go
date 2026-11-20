@@ -42,6 +42,21 @@ type Document struct {
 	// Location is where the document lives at the source, for routing to spaces, and Label
 	// the source's own sensitivity label, "" for none (sb-connector(3); SB-1005).
 	Location, Label string
+	// Fields are a structured document's data by field name (SB-1106); ingest builds the
+	// text from the allowed ones. nil for a document that is text.
+	Fields map[string]string
+}
+
+// Field is one field a structured connector can return (sb-connector(3), Fields).
+type Field struct {
+	Name      string
+	Sensitive bool // pay, performance, cases, personal identifiers, bank details, tax ids
+}
+
+// FieldDeclarer is a connector that returns fields. ok is false when it can't say what it
+// returns; then none of its fields is ingested.
+type FieldDeclarer interface {
+	Fields() (fields []Field, ok bool)
 }
 
 // Verdict is a source's live answer. The zero value is VerdictUnknown, so a

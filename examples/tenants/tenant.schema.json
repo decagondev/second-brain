@@ -169,6 +169,16 @@
             "type": "array",
             "uniqueItems": true
           },
+          "fields": {
+            "additionalProperties": {
+              "items": {
+                "pattern": "^[a-z][a-z0-9_]*$",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
           "label": {
             "enum": [
               "public",

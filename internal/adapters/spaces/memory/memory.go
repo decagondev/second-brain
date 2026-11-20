@@ -32,6 +32,12 @@ func clone(s ports.Space) ports.Space {
 	c.Stewards = append([]string(nil), s.Stewards...)
 	c.Agents = append([]string(nil), s.Agents...)
 	c.Channels = append([]string(nil), s.Channels...)
+	if s.Fields != nil {
+		c.Fields = map[string][]string{}
+		for k, v := range s.Fields {
+			c.Fields[k] = append([]string(nil), v...)
+		}
+	}
 	c.Scope = map[string][]string{}
 	for kind, ps := range s.Scope {
 		c.Scope[kind] = append([]string(nil), ps...)

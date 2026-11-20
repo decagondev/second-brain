@@ -33,6 +33,7 @@ spaces:
     stewards: [group:finance-leads]
     label: restricted
     retention_days: 365
+    fields: { docs: [salary_band] }
     scope:
       docs: ["/Finance/**"]
 barriers:
@@ -47,11 +48,11 @@ func TestSpacesValid(t *testing.T) {
 	want := map[string]Space{
 		"engineering": {Template: "engineering", Members: []string{"group:eng", "group:product"}, Stewards: []string{"group:eng-leads"},
 			Label: "internal", Scope: map[string][]string{"docs": {"/Engineering/**", "/Specs/**"}, "chat": {"#eng-*"}, "tickets": {"ENG", "OPS"}},
-			Agents: []string{"ask"}, RetentionDays: 730, Channels: []string{}},
+			Agents: []string{"ask"}, RetentionDays: 730, Channels: []string{}, Fields: map[string][]string{}},
 		"people": {Template: "people", Members: []string{"group:people-team"}, Stewards: []string{"group:people-leads"},
-			Label: "restricted", Scope: map[string][]string{"docs": {"/People/**"}}, Agents: []string{"ask"}, RetentionDays: 365, Channels: []string{}},
+			Label: "restricted", Scope: map[string][]string{"docs": {"/People/**"}}, Agents: []string{"ask"}, RetentionDays: 365, Channels: []string{}, Fields: map[string][]string{}},
 		"finance": {Template: "finance", Members: []string{"group:finance"}, Stewards: []string{"group:finance-leads"},
-			Label: "restricted", Scope: map[string][]string{"docs": {"/Finance/**"}}, Agents: []string{"ask"}, RetentionDays: 365, Channels: []string{}},
+			Label: "restricted", Scope: map[string][]string{"docs": {"/Finance/**"}}, Agents: []string{"ask"}, RetentionDays: 365, Channels: []string{}, Fields: map[string][]string{"docs": {"salary_band"}}},
 	}
 	if !reflect.DeepEqual(got.Spaces, want) {
 		t.Fatalf("spaces:\n%+v\nwant\n%+v", got.Spaces, want)
@@ -108,6 +109,8 @@ func TestSpaceRules(t *testing.T) {
 		{"barrier with itself", valid + "barriers:\n  - [group:a, group:a]\n", "walled off from itself"},
 		{"barrier twice", valid + "barriers:\n  - [group:a, group:b]\n  - [group:b, group:a]\n", "the same barrier as barriers[0]"},
 		{"barrier not a group", valid + "barriers:\n  - [group:a, b]\n", `"b" must be a group`},
+		{"fields kind not in scope", sp(base + "    fields: { tickets: [salary] }\n"), `kind "tickets" isn't in this space's scope`},
+		{"bad field name", sp(base + "    fields: { docs: [Salary] }\n"), `"Salary" isn't a field name`},
 		{"bad channel", sp(base + "    channels: [finance]\n"), `"finance" must be a channel`},
 		{"channel in two spaces", valid + "spaces:\n  eng:\n" + base + "    channels: [\"#ask\"]\n  ops:\n" + base + "    channels: [\"#ask\"]\n", `"#ask" already asks in space "eng"`},
 		{"barrier inside a space", sp("    members: [group:a, group:b]\n    scope: { docs: [\"/Eng/**\"] }\n") + "barriers:\n  - [group:b, group:a]\n", `space "eng" has both group:a and group:b`},

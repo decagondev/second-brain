@@ -115,6 +115,9 @@ type Pipeline struct {
 	// SecretDropped counts a chunk dropped for holding a secret (sb_ingest_secrets_dropped_total,
 	// by connector kind and pattern name); nil counts nothing, and the chunk is dropped anyway.
 	SecretDropped func(kind, pattern string)
+	// FieldsDropped reports a structured document's dropped fields by name, never value
+	// (sb_ingest_fields_dropped_total); "(undeclared)" is a source that can't declare them.
+	FieldsDropped func(kind string, names []string)
 	// Secrets is the secret scanner; nil is SecretIn, the only one a cell ships.
 	Secrets func(text string) string
 	// Kind is the connector kind this pipeline ingests; Reroute touches only its documents.
@@ -157,6 +160,17 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			rt = route.Route
 		}
 		holders, label = rt(spaces, ref.Kind, doc.Location, doc.Label)
+	}
+	if doc.Fields != nil {
+		text, sensitive, ok := p.fieldText(ref.Kind, doc, spaces, holders)
+		if !ok {
+			// A structured source that can't declare its fields is never ingested (SB-1106).
+			return p.Index.Delete(ctx, p.Tenant, ref)
+		}
+		doc.Text = text
+		if sensitive {
+			label = "restricted" // an allow-listed sensitive field (LAW-20)
+		}
 	}
 	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
 	text := Normalise(clean)

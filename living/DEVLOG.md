@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S11.3a Field-level allow-lists for structured sources (SB-1106)
+
+**Wave/slice:** W11 / S11.3a · **Author:** platform lead + Claude · **Status:** Done
+
+**What:** `ports.Field`, `ports.FieldDeclarer` and `Document.Fields`; `internal/core/ingest/fields.go`; `fields` on a space through the manifest, plan and registry; structured records in the mock source; `laws/law07fields.go`. The manual changed first: sb-connector(3), sb-ingest(7) and sb-space(5).
+
+**Why this way:** For an HR or ledger record the dangerous thing isn't the document but one field of it, so the decision moves from "which documents" to "which fields", and it is made once, in ingest, from the connector's declaration and the space's allow-list, never by each connector writing its own text. A sensitive field a steward allows makes the whole record restricted, because a salary next to a name is only as safe as its most sensitive line.
+
+**Learned:** "Can't declare its fields" has to mean "feeds nothing", not "feeds everything as text": the second would turn the safest-looking connector into the leakiest.
+
+**Laws:** LAW-07 and LAW-20 extended (two law tests, one mutation caught). LAW-21 to LAW-23 stay red.
+
+**Next:** S11.3b, the BambooHR and QuickBooks Online connectors (SB-1104, SB-1105).
+
 ## 2026-11-20 S11.2 The GitHub code connector (SB-1103)
 
 **Wave/slice:** W11 / S11.2 · **Author:** platform lead + Claude · **Status:** In review (a real organisation)

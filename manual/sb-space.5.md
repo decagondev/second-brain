@@ -40,6 +40,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 | `scope` | map kind → list of patterns | yes | | Kinds are the manifest's connector kinds (`docs`, `chat`, `tickets`, `crm`, and from W11 `code`, `hris`, `accounting`). Every kind used must be in `connectors`. Patterns are as in `exclude` (sb-tenant(5)): `/Folder/**` for docs, `#name-*` for chat, a project or repository name for the others |
 | `agents` | list | no | from the template | A subset of the manifest's `agents`. An agent not listed in `agents` is an error |
 | `retention_days` | int | no | the tenant's | 30 to the tenant's `retention_days`. A space can keep less, never more |
+| `fields` | map kind → list of field names | no | `{}` | For a structured source (sb-connector(3), Fields): the sensitive fields this space lets ingest index, for example `{ hris: [salary_band] }`. A document with one of them is `restricted`. Non-sensitive declared fields need no listing. Every kind used must be in the space's `scope` |
 | `channels` | list of `#name` | no | `[]` | The chat-app channels whose `/ask` asks in this space (sb-ask(3), The chat app). A channel belongs to at most one space |
 
 ### `barriers`
@@ -67,6 +68,7 @@ All of these are errors, reported with line and column like every manifest error
 9. An agent in a space that isn't in the manifest's `agents`.
 10. A channel that isn't `#name` (lower case letters, digits, `-` and `_`), or a channel listed in two spaces.
 11. A department agent (sb-agents(7)) in a space whose template doesn't list it, such as `close-checklist` in an `engineering` space.
+12. A `fields` kind that isn't in the space's `scope`, or a field name that isn't `[a-z][a-z0-9_]*`.
 
 A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always `ask`), and the retention (the template's, or else the tenant's, never more than the tenant's).
 

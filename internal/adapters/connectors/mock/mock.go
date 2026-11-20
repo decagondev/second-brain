@@ -31,6 +31,7 @@ const ACLDeadline = 800 * time.Millisecond
 type doc struct {
 	title, text     string
 	location, label string
+	fields          map[string]string
 	version         int
 	viewers         map[string]bool // user emails
 	deleted         bool
@@ -52,6 +53,8 @@ type Source struct {
 	issuesIDs bool
 	receipts  map[ports.IdempotencyKey]string
 	effects   int
+	declared  []ports.Field // SB-1106: the fields this source declares
+	declares  bool
 }
 
 // NewSource makes an empty source of one connector kind (docs, chat, tickets, crm).
@@ -87,6 +90,33 @@ func (s *Source) PutAt(id, title, text, location, label string, viewers ...strin
 	defer s.mu.Unlock()
 	s.docs[id].location, s.docs[id].label = location, label
 }
+
+// Declare makes the source a structured one that declares these fields (SB-1106).
+func (s *Source) Declare(fields ...ports.Field) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.declared, s.declares = append([]ports.Field(nil), fields...), true
+}
+
+// PutFields creates or edits a structured document: a content change.
+func (s *Source) PutFields(id, title string, fields map[string]string, viewers ...string) {
+	s.Put(id, title, "", viewers...)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.docs[id].fields = map[string]string{}
+	for k, v := range fields {
+		s.docs[id].fields[k] = v
+	}
+}
+
+// Fields declares the source's fields; ok is false for a source that never declared any.
+func (c *Connector) Fields() ([]ports.Field, bool) {
+	c.src.mu.Lock()
+	defer c.src.mu.Unlock()
+	return append([]ports.Field(nil), c.src.declared...), c.src.declares
+}
+
+var _ ports.FieldDeclarer = (*Connector)(nil)
 
 // Place sets where a document lives and its source label (SB-1005): a content change, as
 // moving a file or changing its classification is at a real source.
@@ -196,7 +226,14 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 	for v := range d.viewers {
 		pre = append(pre, v)
 	}
-	return ports.Document{Ref: ref, Version: d.version, Title: d.title, Text: d.text, ACLPrefilter: pre, Location: d.location, Label: d.label}, nil
+	var fields map[string]string
+	if d.fields != nil {
+		fields = map[string]string{}
+		for k, v := range d.fields {
+			fields[k] = v
+		}
+	}
+	return ports.Document{Ref: ref, Version: d.version, Title: d.title, Text: d.text, ACLPrefilter: pre, Location: d.location, Label: d.label, Fields: fields}, nil
 }
 
 // ACL answers live. Every fault makes every verdict Unknown; so does a late answer.

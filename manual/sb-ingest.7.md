@@ -54,6 +54,16 @@ The rules, in order (`internal/core/ingest`, `Sanitise`):
 
 Flags are per chunk and appear on its citation. A flagged chunk is still indexed and can be cited; it just can't steer the agent. The corpus in `evals/corpus/injection.json` (visible, hidden and benign look-alike cases) runs in `make check`. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).
 
+### Fields (SB-1106)
+
+For a document that arrives as fields (sb-connector(3), Fields), ingest builds the text itself, before chunking, from the fields that are **allowed**:
+
+- a declared field that isn't sensitive is allowed;
+- a declared sensitive field is allowed only if the `fields` allow-list of a space that holds the document names it (sb-space(5)), and then the document is labelled `restricted`, whatever its source or space would say (LAW-20);
+- a field the connector didn't declare is never allowed.
+
+Every other field is **dropped**: its value is never chunked, embedded, indexed or logged. The sync reports the dropped fields by name and count only, as `sb_ingest_fields_dropped_total{tenant, connector, field}`. The text is the document's title, then one `Name: value` line per allowed field, in the order the connector declares them. A document that arrives as fields from a connector that can't declare them isn't ingested at all, and is counted as `undeclared`, so a source that can't say what it holds never feeds a restricted space.
+
 ### Secrets never stored (SB-1103)
 
 Every chunk of every connector passes a secret scanner before it's embedded or written. A chunk that holds what looks like a credential (a private key block, a cloud access key, a GitHub, Slack or Stripe token, or an assignment such as `password = "…"` with a long value) is **dropped**: it is never embedded, indexed or logged, and `sb_ingest_secrets_dropped_total{tenant, connector}` counts it. The rest of the document is indexed as usual. Only the chunk's id and the pattern's name reach the trace of the sync, never the match (LAW-07).
