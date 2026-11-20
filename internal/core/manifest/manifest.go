@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // Tenant is a valid manifest with defaults applied. Absent optional lists and maps are nil.
@@ -224,6 +225,20 @@ func Check(src []byte) (Tenant, []Diag) {
 	if len(c.diags) > 0 {
 		return Tenant{}, c.diags
 	}
+	// An empty map means the same as no field; keep one form, so a checked manifest and its
+	// Format read back identical (SB-1402, found by FuzzCheck).
+	if len(c.t.Exclude) == 0 {
+		c.t.Exclude = nil
+	}
+	if len(c.t.Approval) == 0 {
+		c.t.Approval = nil
+	}
+	if len(c.t.Duties) == 0 {
+		c.t.Duties = nil
+	}
+	if len(c.t.Groups) == 0 {
+		c.t.Groups = nil
+	}
 	return c.t, nil
 }
 
@@ -268,6 +283,14 @@ func (c *checker) scalar(n *node, field string) (string, bool) {
 	if n.value == "" {
 		c.add(n, field, "needs a value")
 		return "", false
+	}
+	for _, r := range n.value {
+		if unicode.IsControl(r) {
+			// A control character can't be written back as it was read (SB-1402, found by
+			// FuzzCheck), and has no place in a manifest.
+			c.add(n, field, "%q has a control character", n.value)
+			return "", false
+		}
 	}
 	return n.value, true
 }

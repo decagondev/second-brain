@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: policy integration ci-rules check build test lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
+.PHONY: policy integration ci-rules check build test fuzz lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -14,9 +14,16 @@ check: gen-check lint deps build test laws smoke regress evals examples policy c
 build:                 ## compile everything; the sb binary goes to bin/
 	$(GO) build ./...
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb ./cmd/sb
-test:                  ## unit tests (Go and Python)
-	$(GO) test ./internal/... ./cmd/...
+test:                  ## unit tests (Go and Python), under the race detector (SB-1402)
+	$(GO) test -race ./internal/... ./cmd/... ./tests/spaces/... ./tests/groupsync/...
 	$(PY) -m unittest discover -s evals/tests -t . -q
+fuzz:                  ## each fuzz target for FUZZTIME (default 30s); make check runs their corpora as tests (SB-1402)
+	$(GO) test -run=^$$ -fuzz=^FuzzCheck$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/manifest
+	$(GO) test -run=^$$ -fuzz=^FuzzCanonical$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/approvals
+	$(GO) test -run=^$$ -fuzz=^FuzzParse$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/reorg
+	$(GO) test -run=^$$ -fuzz=^FuzzChunksAndSecrets$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/ingest
+	$(GO) test -run=^$$ -fuzz=^FuzzMatch$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/route
+	$(GO) test -run=^$$ -fuzz=^FuzzUsers$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/scim
 lint:                  ## gofmt + golangci-lint (includes depguard, SB-008)
 	@test -z "$$(gofmt -l .)" || { gofmt -l .; echo "gofmt: files above need formatting"; exit 1; }
 	golangci-lint run ./...

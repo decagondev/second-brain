@@ -325,3 +325,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestACLNeverUsesAnotherMembersIdentity` and `TestIssuesPastTheFirstPage` (the GitHub fake now pages and can ignore its identity filter); the GCP fake's key rings carry no labels. Why it wasn't caught before: the fakes were kinder than the services.
 
+## BUG-0021 An accepted manifest could read back differently
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, fuzzing (`FuzzCheck`) | Low | SB-1402 | Fixed |
+
+**Symptom:** `exclude: {}` checked as an empty map, `Format` left it out, and the result read back as no map; a value with a control character checked, `Format` wrote it escaped, and the result didn't parse.
+
+**Root cause:** `Check` kept two forms of "nothing" and accepted characters `Format` can't write back.
+
+**Fix:** `Check` keeps one form for empty `exclude`, `approval`, `duties` and `groups`, and refuses control characters in every value.
+
+**Caught by now:** `FuzzCheck`, with both failing inputs kept in `internal/core/manifest/testdata/fuzz`. Why it wasn't caught before: every manifest test was written by hand. Since BUG-0015, a value that reads back differently is a security question, not only a tidiness one.
+

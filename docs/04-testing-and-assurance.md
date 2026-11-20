@@ -63,6 +63,12 @@ stateDiagram-v2
 
 Property tests express a law over generated worlds. They live in `laws/` and are named for their law. `laws.Check` runs seeds 1..300 deterministically; `SB_SEED=n` reproduces one failure (ADR-0016).
 
+### Fuzzing and races (SB-1402)
+
+Every parser of outside input has a Go fuzz target: the tenant manifest (`FuzzCheck`: an accepted manifest reads back identical after `Format`), action payloads and their hash (`FuzzCanonical`: canonical JSON is a fixed point and the hash depends on nothing else), the reorg snapshot (`FuzzParse`), chunking and the secret scanner (`FuzzChunksAndSecrets`: spans stay inside the text, and a chunk holding a secret overlaps a document span), scope patterns (`FuzzMatch`: no panic, no blow-up on hostile patterns) and the SCIM user endpoints (`FuzzUsers`: no panic and no server error on any body). `make fuzz` runs each for `FUZZTIME` (30 seconds by default); every input that ever failed is kept in the target's `testdata/fuzz` and runs as a test in `make check`. Connector responses are decoded by `encoding/json` into fixed shapes and checked by the contract kit, so they have no target of their own.
+
+`make test` runs every unit test, and the `tests/spaces` and `tests/groupsync` suites, under Go's race detector.
+
 ### The red ratchet
 
 A law test exists before its feature, so it starts red. `laws/expected_red.txt` lists each red law and the ticket that will turn it green. `make laws` (`tools/check/laws.py`) enforces three rules:

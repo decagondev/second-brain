@@ -19,6 +19,20 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-20 S13.2 Fuzzing and the race detector (SB-1402)
+
+**Wave/slice:** W13 / S13.2 · **Status:** Done
+
+**What:** Fuzz targets for the manifest, payload hashing, the reorg snapshot, chunking and secrets, scope patterns and the SCIM endpoints; `make fuzz`; `-race` in `make test`; `tests/spaces` and `tests/groupsync` added to `make check`. BUG-0021.
+
+**Why this way:** Each target checks a property, not just "no panic": a manifest reads back as it was checked, a hash depends only on the canonical form, a secret in a chunk is a secret in the document. That is what turned a fuzzer into a bug finder within a minute.
+
+**Learned:** Two test suites (`tests/spaces`, `tests/groupsync`) were never run by `make check`; the regression tests from S13.1d lived in one of them. Adding a suite now means adding it to the Makefile in the same change.
+
+**Laws:** LAW-07, LAW-15, LAW-16 fuzzed.
+
+**Next:** S13.3, stricter lint and tidier big files (SB-1403).
+
 ## 2026-11-20 S13.1d Ingest, connector and runtime findings (SB-1401)
 
 **Wave/slice:** W13 / S13.1d · **Status:** Done (SB-1401)

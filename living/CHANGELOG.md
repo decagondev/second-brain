@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Fuzzing and races (S13.2: SB-1402): six fuzz targets and `make fuzz`; `make test` runs under the race detector and includes `tests/spaces` and `tests/groupsync`.
 - Hardening (S13.1d: SB-1401): re-routing never wedges a sync, sensitive fields go only to the spaces that allow them, allow-list changes re-ingest; GitHub identity and paging, QuickBooks paging, Drive folder cache, KMS key rings, Cloud Run updates and shred order fixed.
 - Hardening (S13.1c: SB-1401): governance decisions are atomic and audited, operators can complete access reviews, per-space retention is enforced, and review removals are never dropped.
 - Hardening (S13.1b: SB-1401): approval and barrier evasions fixed (edits, negative amounts, rejection, viewing across a barrier, owners by email, barriers without spaces, chat attributes).

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte(" \ntenant: 000\nchannel: stable\nidp: oidc://0.0\nregion: eu\nconnectors: {docs: 0,chat: 0}\nagents: [ask]\n#0000000000000000000\nexclude: {}")
