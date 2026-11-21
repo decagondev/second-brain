@@ -366,3 +366,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** One composition root, `internal/cell/wire`, builds every part for every service: holds are read at the moment retention, erasure or a space removal needs them (holds that can't be read hold everything); the tool bus gets each requester's manager from the directory; the gateway gets the budget guard and a usage ledger that keeps tokens, drafts and spend by date; the report and cost endpoints read that ledger. The jobs service's `retention` uses the same `retention.Job`, with each space's days.
 
 **Caught by now:** `TestRetentionKeepsHeldRecords` (tests/cell: a held trace survives the retention job and goes once the hold is released), `TestOneOfEachKind`, and the usage ledger's own tests.
+
+## BUG-0024 The first hand-off approval crashed once the plan had been stored
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-21, the hand-off rehearsal against a running local cell (SB-1507) | Medium | SB-705 | Fixed |
+
+**Symptom:** `sb factory handoff approve` panicked on the first approval of a plan read back from the file store.
+
+**Root cause:** A new plan's approvals are an empty map, and JSON leaves an empty map out, so a stored plan came back with none, and `Approve` wrote into a nil map. Every earlier test used the in-memory store, which keeps the map.
+
+**Fix:** `Approve` makes the map when the stored state has none.
+
+**Caught by now:** `TestApproveAfterAStoredRoundTrip` (a store that round-trips through JSON) and `TestHandoffAndDetachRehearsal`.

@@ -20,7 +20,7 @@ sb factory handoff  approve PLAN --as factory|tenant
 sb factory handoff  execute PLAN
 sb factory handoff  abort   PLAN --reason TEXT
 sb factory access   TENANT
-sb factory detach   TENANT --accept-unsupported --out DIR
+sb factory detach   TENANT --accept-unsupported --out DIR [--cell URL]
 sb factory verify-export DIR
 ```
 
@@ -104,7 +104,7 @@ The global options (`--json`, `--endpoint`) are in [sb(1)](sb.1.md).
 
 0 success · 1 a check failed: unlisted access (`ELAW`), chain or law verification failed during execute (`ECHAIN`, `ELAW`) · 2 usage, a bad plan hash, the wrong region, or not built yet (`EUSAGE`, `EINVAL`, `ENOTIMPL`) · 3 not permitted (`EPERM`, `EAUTH`) · 5 approvals missing or for another hash (`ENOAPPROVAL`) · 7 the registry, an account or a KMS is unreachable (`EUNAVAIL`).
 
-Until its ticket lands, a command exits 2 with `ENOTIMPL` and names it: `handoff` SB-705, `detach` SB-708 (it needs a running tenant-custody cell to export from). `verify-export` works today. `access` works on the local control plane, where the sources are the wrap inventory and `DIR/access/TENANT.json` (local accounts have no IAM). On GCP the source is the project's IAM, read with the verifier identity.
+Every command works on the local control plane (`--endpoint file:///DIR`, SB-1507). There `access` reads the wrap inventory and `DIR/access/TENANT.json` (local accounts have no IAM) and, after a hand-off, checks them against the approved plan's retained grants. A hand-off's state is `DIR/handoffs/TENANT.json`, so `execute` resumes from its last finished step in a new invocation, and the actor is `SB_ACTOR`. `handoff` rehearses with `tenant-account://local/ID`: it stamps the cell's resources in that local account, re-wraps the root key under that account's key, moves a copy of the running cell's audit chain there and verifies it end to end, records the cutover, then revokes the unretained paths and destroys the factory's wrap. Locally both accounts are on one machine, so the running cell serves throughout. Another provider needs its adapter's hand-off target (`gcp`, SB-908). `detach` asks the running cell (the registry's endpoint, or `--cell URL`) for its package over the control plane's identity, adds the runbooks, writes it and verifies it before anything is detached; a package that doesn't verify detaches nothing. On GCP the access source is the project's IAM, read with the verifier identity.
 
 ## LAWS
 

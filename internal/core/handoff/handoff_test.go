@@ -3,6 +3,7 @@ package handoff
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -273,5 +274,47 @@ func TestPlanRules(t *testing.T) {
 	s, _ := c.State(ctx, "gamma-parts")
 	if len(s.Approvals) != 0 {
 		t.Fatal("a new plan kept the old approvals")
+	}
+}
+
+// jsonStore keeps states as JSON, as every durable store does: an empty map comes back nil.
+type jsonStore struct{ m map[string][]byte }
+
+func (j *jsonStore) Get(_ context.Context, tenant string) (State, bool, error) {
+	b, ok := j.m[tenant]
+	if !ok {
+		return State{}, false, nil
+	}
+	var s State
+	return s, true, json.Unmarshal(b, &s)
+}
+
+func (j *jsonStore) Put(_ context.Context, tenant string, s State) error {
+	b, err := json.Marshal(s)
+	if j.m == nil {
+		j.m = map[string][]byte{}
+	}
+	j.m[tenant] = b
+	return err
+}
+
+// BUG-0024: a plan read back from a durable store has no approvals map, and the first
+// approval crashed on it.
+func TestApproveAfterAStoredRoundTrip(t *testing.T) {
+	ctx := context.Background()
+	c, _, _, _, _ := setup(t)
+	c.Store = &jsonStore{}
+	h, err := c.Plan(ctx, "gamma-parts", "fo_ann", to, "eu", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Approve(ctx, "gamma-parts", "factory", "fo_bob", h); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Approve(ctx, "gamma-parts", "tenant", "to_dee", h); err != nil {
+		t.Fatal(err)
+	}
+	if s, _ := c.State(ctx, "gamma-parts"); len(s.Approvals) != 2 {
+		t.Fatalf("approvals %v", s.Approvals)
 	}
 }

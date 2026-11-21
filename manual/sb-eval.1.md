@@ -14,7 +14,7 @@ sb-eval — run evaluation suites against a cell or a mock model
 
 ```text
 sb eval run  SUITE... [--tenant T] [--release REL] [--model mock]
-sb eval diff REL_A REL_B [--suite SUITE]
+sb eval diff RESULTS/REL_A RESULTS/REL_B [--suite SUITE] [--gate FILE]
 sb eval gate RESULTS/REL [--stable RESULTS/REL_STABLE]
 ```
 
@@ -28,7 +28,7 @@ Models: `--model mock` answers from canned responses in the suite's fixture worl
 
 **gate** applies `evals/gate.yaml` to one release's stored results (SB-502). For each suite in the gate file, it needs that suite's result, and checks `failures_max` against the failure count and `score_min` against the score: the mean support for `citation`, the pass rate for everything else. With `--stable`, it also checks `drop_max`: how far the score may fall below the current stable's. A missing result is a failure, never a pass. It prints one line per suite and exits 1 (`EEVAL`) if any suite fails. `sb release promote` refuses a release whose gate failed.
 
-**diff** compares stored results for two releases and highlights regressions against the thresholds in `evals/gate.yaml`.
+**diff** compares two releases' stored results (`--results`), suite by suite, and prints each suite's score and failures for A and B (SB-1507). B **regresses** on a suite when it misses the gate rule A met, when its score drops by more than `drop_max`, when a case A passed fails, or when B has no result for a suite A has. A suite only B has is reported, not a regression. It exits 1 (`EEVAL`) on any regression and 7 if either directory has no results.
 
 ## EXIT STATUS
 

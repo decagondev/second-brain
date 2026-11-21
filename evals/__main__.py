@@ -13,6 +13,9 @@ def main(argv):
     if argv and argv[0] == "gate":
         from .gate import main as gate_main
         return gate_main(argv[1:])
+    if argv and argv[0] == "diff":
+        from .gate import diff_main
+        return diff_main(argv[1:])
     if len(argv) < 2 or argv[0] != "run":
         print("usage: python3 -m evals run SUITE... --model mock|extractive [--tenant-dir DIR]", file=sys.stderr)
         return 2

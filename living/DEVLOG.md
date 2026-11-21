@@ -19,6 +19,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-21 S14.4 The CLI against a running cell (SB-1507)
+
+**Wave/slice:** W14 / S14.4 · **Status:** Done
+
+**What:** the last `ENOTIMPL` commands: `sb audit verify --tenant`, `tail` and `export` against a running cell; `sb eval diff`; `sb factory handoff` and `detach` on the local control plane, rehearsed end to end against a running local cell; three control-plane routes in the cell (audit rows, the signed export, the detach package).
+
+**Why this way:** Each command reuses what was already proven offline: verify reads the cell's export with the `--export` code, detach writes the package with `export.Write` and refuses to detach until `export.Verify` passes, and the hand-off runs the same controller the game day checked against `Handoff.tla`. Only the target is new, and locally it is honest about what it is: a second local account and a moved copy of the chain, with the running cell serving throughout.
+
+**Learned:** The first time a hand-off state went through a real store, the first approval crashed: JSON drops an empty map, and every earlier test had used the in-memory store (BUG-0024). `factory status` also reported the tenant's own wrap as broken after a hand-off, because it only knew the factory's keys.
+
+**Laws:** LAW-11 (exports verify before they are written), LAW-17 (only retained paths remain after a hand-off, none after detach), LAW-18 (a cell's key always has a working wrap, the tenant's after hand-off).
+
 ## 2026-11-21 S14.3 The updater, and apply against a running cell (SB-1505, SB-1506)
 
 **Wave/slice:** W14 / S14.3 · **Status:** Done

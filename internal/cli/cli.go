@@ -4,7 +4,6 @@
 package cli
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -48,11 +47,7 @@ type env struct {
 }
 
 // planned maps "command sub" to the ticket that builds it.
-var planned = map[string]string{
-	"audit tail": "SB-208", "audit export": "SB-208", // need a running cell; verify --export works offline
-	"eval diff":       "SB-501",
-	"factory handoff": "SB-705", "factory detach": "SB-708",
-}
+var planned = map[string]string{}
 
 const usage = `usage: sb [--json] [--tenant NAME] [--endpoint URL] [-q] COMMAND [ARGS]
 
@@ -89,8 +84,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case "version":
 		return e.version()
 	case "eval":
-		if len(rest) > 1 && rest[1] == "run" {
-			return e.evalRun(rest[2:])
+		if len(rest) > 1 && (rest[1] == "run" || rest[1] == "gate" || rest[1] == "diff") {
+			return e.evalPython(rest[1], rest[2:])
 		}
 	case "kill", "unkill":
 		return e.kill(cmd, rest[1:])
@@ -121,6 +116,14 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.factoryVerifyExport(rest[2:])
 	case "audit verify":
 		return e.auditVerify(rest[2:])
+	case "audit tail":
+		return e.auditTail(rest[2:])
+	case "audit export":
+		return e.auditExport(rest[2:])
+	case "factory handoff":
+		return e.factoryHandoff(rest[2:])
+	case "factory detach":
+		return e.factoryDetach(rest[2:])
 	case "space init":
 		return e.spaceInit(rest[2:])
 	case "space templates":
@@ -146,7 +149,7 @@ func hasSub(cmd string) bool {
 			return true
 		}
 	}
-	return cmd == "eval" || cmd == "kill" || cmd == "unkill" || cmd == "release"
+	return cmd == "eval" || cmd == "kill" || cmd == "unkill" || cmd == "release" || cmd == "audit" || cmd == "factory"
 }
 
 func parseGlobals(args []string, g *Globals) ([]string, error) {
@@ -305,40 +308,9 @@ func (e *env) tenantVerify(args []string) int {
 	return 0
 }
 
-// cellCall posts body to a running cell's control-plane endpoint with SB_TOKEN, the
-// control plane's identity, and returns the answer or the cell's own error.
+// cellCall posts body to a running cell's control-plane endpoint (cellDo).
 func cellCall(cellURL, path, contentType string, body []byte, timeout time.Duration) ([]byte, error) {
-	if !strings.HasPrefix(cellURL, "https://") && !strings.HasPrefix(cellURL, "http://127.0.0.1") && !strings.HasPrefix(cellURL, "http://localhost") {
-		return nil, errs.New(errs.EUSAGE, "--cell must be an https URL")
-	}
-	token := os.Getenv("SB_TOKEN")
-	if token == "" {
-		return nil, errs.New(errs.EAUTH, "set SB_TOKEN to the control plane's identity token")
-	}
-	hreq, err := http.NewRequest(http.MethodPost, strings.TrimRight(cellURL, "/")+path, bytes.NewReader(body))
-	if err != nil {
-		return nil, errs.New(errs.EUSAGE, "bad --cell URL: %v", err)
-	}
-	hreq.Header.Set("Authorization", "Bearer "+token)
-	hreq.Header.Set("Content-Type", contentType)
-	resp, err := (&http.Client{Timeout: timeout}).Do(hreq)
-	if err != nil {
-		return nil, errs.New(errs.EUNAVAIL, "the cell didn't answer: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if resp.StatusCode != http.StatusOK {
-		var eb struct {
-			Error struct{ Code, Message string }
-		}
-		_ = json.Unmarshal(raw, &eb)
-		c := errs.Code(eb.Error.Code)
-		if c == "" {
-			c = errs.EUNAVAIL
-		}
-		return nil, errs.New(c, "the cell refused: %s", eb.Error.Message)
-	}
-	return raw, nil
+	return cellDo(http.MethodPost, cellURL, path, contentType, body, timeout)
 }
 
 // tenantApply implements `sb tenant apply FILE [--plan] [--cell URL]` (SB-102, SB-104,
@@ -480,9 +452,20 @@ func (e *env) factoryStatus(args []string) int {
 			}
 		}
 	}
+	keys := map[string]ports.Keys{cell.KeyCustodianFactory: deps.Keys}
+	phase := "none"
+	if ctl, _, err := e.controller(c.Tenant); err == nil {
+		if st, err := ctl.State(ctx, c.Tenant); err == nil && st.Plan != nil {
+			phase = string(st.Phase)
+			if provider, id, ok := cell.ParseTenantAccount(st.Plan.Target); ok && provider == "local" {
+				root := strings.TrimPrefix(e.endpoint(), "file://")
+				keys[cell.KeyCustodianTenant] = local.Account{Root: filepath.Join(root, "accounts"), Name: id}
+			}
+		}
+	}
 	wraps, orphaned := "unknown", false
 	if deps.Wraps != nil {
-		inv, err := keywrap.Inventory(ctx, c.Tenant, deps.Wraps, map[string]ports.Keys{cell.KeyCustodianFactory: deps.Keys})
+		inv, err := keywrap.Inventory(ctx, c.Tenant, deps.Wraps, keys)
 		if err != nil {
 			return e.fail(name, errs.New(errs.EUNAVAIL, "key-wrap inventory unavailable: %v", err))
 		}
@@ -490,14 +473,14 @@ func (e *env) factoryStatus(args []string) int {
 	}
 	if e.g.JSON {
 		code := e.json(map[string]string{"tenant": c.Tenant, "custody": c.Custody, "placement": c.Placement,
-			"key_custodian": c.KeyCustodian, "key_wraps": wraps, "channel": channel, "handoff": "none"})
+			"key_custodian": c.KeyCustodian, "key_wraps": wraps, "channel": channel, "handoff": phase})
 		if code == 0 && orphaned {
 			return 1
 		}
 		return code
 	}
 	for _, kv := range [][2]string{{"custody", c.Custody}, {"placement", c.Placement}, {"key_custodian", c.KeyCustodian},
-		{"key_wraps", wraps}, {"channel", channel}, {"handoff", "none"}} {
+		{"key_wraps", wraps}, {"channel", channel}, {"handoff", phase}} {
 		fmt.Fprintf(e.out, "%-14s %s\n", kv[0], kv[1])
 	}
 	if orphaned {
@@ -530,12 +513,43 @@ func (e *env) factoryAccess(args []string) int {
 		return e.fail(name, errs.New(errs.EUNAVAIL, "tenant registry unavailable: %v", err))
 	case !found:
 		return e.fail(name, errs.New(errs.EUSAGE, "no cell for tenant %q", args[0]))
-	case c.Custody != cell.CustodyFactory:
-		return e.fail(name, errs.New(errs.EUNAVAIL, "the hand-off record store for %s custody arrives with sb factory handoff (SB-705)", c.Custody))
 	}
-	res, err := access.Check(ctx, c.Tenant, []access.Source{access.Wraps{Store: deps.Wraps}, deps.AccessFile}, nil)
+	var retain []string
+	if c.Custody != cell.CustodyFactory {
+		// After a hand-off the record is the plan both sides approved (sb-factory(1), access).
+		ctl, _, err := e.controller(c.Tenant)
+		if err != nil {
+			return e.fail(name, err)
+		}
+		st, err := ctl.State(ctx, c.Tenant)
+		if err != nil || st.Plan == nil {
+			return e.fail(name, errs.New(errs.EUNAVAIL, "the hand-off record for %s can't be read", c.Tenant))
+		}
+		retain = st.Plan.Retain
+	}
+	res, err := access.Check(ctx, c.Tenant, []access.Source{access.Wraps{Store: deps.Wraps}, deps.AccessFile}, retain)
 	if err != nil {
 		return e.fail(name, errs.New(errs.EUNAVAIL, "%v", err))
+	}
+	if c.Custody != cell.CustodyFactory {
+		if e.g.JSON {
+			e.json(map[string]any{"tenant": c.Tenant, "custody": c.Custody, "paths": res.Paths, "unlisted": res.Unlisted})
+		} else {
+			for _, p := range res.Paths {
+				fmt.Fprintf(e.out, "  %-12s %-40s %s\n", p.Kind, p.ID, p.Grant)
+			}
+		}
+		if len(res.Unlisted) > 0 {
+			ids := make([]string, len(res.Unlisted))
+			for i, p := range res.Unlisted {
+				ids[i] = p.ID
+			}
+			return e.fail(name, errs.New(errs.ELAW, "factory access not in the hand-off record (LAW-17): %s", strings.Join(ids, ", ")))
+		}
+		if !e.g.JSON {
+			fmt.Fprintf(e.out, "access: %s: every factory path serves a retained grant (LAW-17)\n", c.Tenant)
+		}
+		return 0
 	}
 	if e.g.JSON {
 		return e.json(map[string]any{"tenant": c.Tenant, "custody": c.Custody, "paths": res.Paths, "law": "LAW-17 applies after hand-off"})
@@ -618,13 +632,14 @@ func (e *env) version() int {
 	return 0
 }
 
-// evalRun delegates to the Python eval runner (SB-015). In W0 only --model mock exists.
-func (e *env) evalRun(args []string) int {
+// evalPython delegates run, gate and diff to the Python eval harness (SB-015, SB-502,
+// SB-1507).
+func (e *env) evalPython(sub string, args []string) int {
 	root, ok := findRepo()
 	if !ok {
-		return e.fail("sb eval run", errs.New(errs.EUNAVAIL, "eval runner not found; run from inside the repository"))
+		return e.fail("sb eval "+sub, errs.New(errs.EUNAVAIL, "eval runner not found; run from inside the repository"))
 	}
-	c := exec.Command("python3", append([]string{"-m", "evals", "run"}, args...)...)
+	c := exec.Command("python3", append([]string{"-m", "evals", sub}, args...)...)
 	c.Dir, c.Stdout, c.Stderr = root, e.out, e.err
 	c.Env = append(os.Environ(), "PYTHONPATH="+root)
 	if err := c.Run(); err != nil {
@@ -632,7 +647,7 @@ func (e *env) evalRun(args []string) int {
 		if errors.As(err, &x) {
 			return x.ExitCode()
 		}
-		return e.fail("sb eval run", errs.New(errs.EUNAVAIL, "python3 not available: %v", err))
+		return e.fail("sb eval "+sub, errs.New(errs.EUNAVAIL, "python3 not available: %v", err))
 	}
 	return 0
 }
@@ -681,8 +696,15 @@ func (e *env) fail(prefix string, err error) int {
 // running cell it needs the cell runtime.
 func (e *env) auditVerify(args []string) int {
 	const name = "sb audit verify"
-	var file, key string
+	var file, key, since string
+	var o cellOpts
 	for i := 0; i < len(args); i++ {
+		if took, err := o.take(args, &i); took {
+			if err != nil {
+				return e.fail(name, err)
+			}
+			continue
+		}
 		switch args[i] {
 		case "--export", "--key", "--since":
 			if i+1 >= len(args) {
@@ -693,6 +715,8 @@ func (e *env) auditVerify(args []string) int {
 				file = args[i+1]
 			case "--key":
 				key = args[i+1]
+			case "--since":
+				since = args[i+1]
 			}
 			i++
 		default:
@@ -700,12 +724,20 @@ func (e *env) auditVerify(args []string) int {
 		}
 	}
 	if file == "" {
-		return e.fail(name, errs.New(errs.ENOTIMPL, "verifying a running cell needs the cell runtime (SB-208); use --export FILE"))
+		if !o.set() && e.g.Tenant == "" {
+			return e.fail(name, errs.New(errs.EUSAGE, "name a cell (--tenant T or --cell URL) or a file (--export FILE)"))
+		}
+		return e.auditVerifyCell(name, o, since, key)
 	}
 	b, err := os.ReadFile(file)
 	if err != nil {
 		return e.fail(name, errs.New(errs.EUSAGE, "cannot read %s: %v", file, err))
 	}
+	return e.verifyExport(name, b, key)
+}
+
+// verifyExport checks an export's chain and anchors (sb-audit(1), verify).
+func (e *env) verifyExport(name string, b []byte, key string) int {
 	tenant := e.g.Tenant
 	if tenant == "" {
 		tenant = firstTenant(b)

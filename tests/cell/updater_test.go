@@ -36,12 +36,17 @@ func publish(t *testing.T, store relfs.Dir, n int, sign, pass bool) string {
 	for _, s := range runtime.Services {
 		b.Code[s.Image] = release.SHA256([]byte(fmt.Sprintf("%s image %d", s.Name, n)))
 	}
+	sbom := []byte(`{"spdxVersion":"SPDX-2.3"}`)
+	b.Code["sbom"] = release.SHA256(sbom)
 	m, err := b.Seal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	raw, _ := json.Marshal(m)
 	if err := store.Put(m.ID, "bundle.json", raw); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Put(m.ID, "artefacts/sbom", sbom); err != nil {
 		t.Fatal(err)
 	}
 	if sign {

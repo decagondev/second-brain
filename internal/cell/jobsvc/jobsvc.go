@@ -6,7 +6,6 @@ package jobsvc
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -158,20 +157,8 @@ func (s *Service) sync(ctx context.Context) error {
 	return fmt.Errorf("jobs: sync failed for %s", strings.Join(msgs, "; "))
 }
 
-// signer is the cell's anchor key (sb-audit(5), Anchors), read at each run. Locally its
-// seed is vault://tenants/TENANT/audit/anchor-seed (32 bytes, base64); on GCP it is a data
-// key wrapped by the cell's own KMS key.
-func (s *Service) signer(ctx context.Context) (audit.Signer, error) {
-	raw, err := s.Cell.Secret("audit/anchor-seed")(ctx)
-	if err != nil {
-		return audit.Signer{}, fmt.Errorf("jobs: the anchor key can't be read: %w", err)
-	}
-	seed, err := base64.StdEncoding.DecodeString(strings.TrimSpace(raw))
-	if err != nil {
-		return audit.Signer{}, fmt.Errorf("jobs: the anchor seed isn't base64")
-	}
-	return audit.NewSigner(s.Cell.Config.Tenant, seed)
-}
+// signer is the cell's anchor key (wire.Cell.AnchorSigner).
+func (s *Service) signer(ctx context.Context) (audit.Signer, error) { return s.Cell.AnchorSigner(ctx) }
 
 // lastRow is the audit log's last row, or the zero row for an empty log.
 func lastRow(ctx context.Context, st audit.Store) (audit.Row, error) {

@@ -260,6 +260,9 @@ func (c *Controller) Approve(ctx context.Context, tenant, side, who, hash string
 	if err := c.audit(ctx, who, tenant, "Approved", side+" approves "+hash); err != nil {
 		return err
 	}
+	if s.Approvals == nil { // a stored state keeps no empty map
+		s.Approvals = map[string]Approval{}
+	}
 	s.Approvals[side] = Approval{Who: who, Hash: hash}
 	return c.Store.Put(ctx, tenant, s)
 }

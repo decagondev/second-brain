@@ -59,7 +59,7 @@ func TestJSONErrors(t *testing.T) {
 	var v struct {
 		Error struct{ Code, Message, Remedy string }
 	}
-	if c != 2 || json.Unmarshal([]byte(out), &v) != nil || v.Error.Code != "ENOTIMPL" || v.Error.Remedy == "" {
+	if c != 7 || json.Unmarshal([]byte(out), &v) != nil || v.Error.Code != "EUNAVAIL" || v.Error.Remedy == "" {
 		t.Fatalf("json error: %d %q", c, out)
 	}
 }

@@ -436,6 +436,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Holds{Tenant: tenant, Policy: c.Policy, Manifests: man, Service: holds.Service{Store: c.Holds, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
 	public.HandleFunc("POST /v1/cell/manifest", c.applyHandler)
 	public.HandleFunc("GET /v1/cell/live", c.liveHandler)
+	public.HandleFunc("GET /v1/cell/audit", c.auditRows)
+	public.HandleFunc("GET /v1/cell/audit/export", c.auditExport)
+	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
 	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, handler: public}, nil
 }

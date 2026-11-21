@@ -63,7 +63,7 @@ func TestAuditVerifyExport(t *testing.T) {
 	if c, _, errOut := run("audit", "verify", "--export", bad, "--key", s.Key()); c != 1 || !strings.Contains(errOut, "[ECHAIN]") || !strings.Contains(errOut, "seq 1") {
 		t.Fatalf("tampered: %d %q", c, errOut)
 	}
-	if c, _, errOut := run("audit", "verify"); c != 2 || !strings.Contains(errOut, "[ENOTIMPL]") {
-		t.Fatalf("online: %d %q", c, errOut)
+	if c, _, errOut := run("audit", "verify"); c != 2 || !strings.Contains(errOut, "[EUSAGE]") {
+		t.Fatalf("no cell and no file: %d %q", c, errOut)
 	}
 }
