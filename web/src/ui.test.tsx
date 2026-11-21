@@ -222,3 +222,20 @@ describe("spaces", () => {
     }
   });
 });
+
+describe("signed out", () => {
+  it("sends a signed-out user to sign in, and never repeats the same words twice", async () => {
+    const fetcher: Fetch = async (u) => {
+      if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 401 });
+      return new Response(JSON.stringify({ error: { code: "EAUTH", message: "sign in again", remedy: "Sign in again", trace: "" } }), { status: 401 });
+    };
+    const { container } = render(<App fetcher={fetcher} />);
+    fireEvent.change(screen.getByLabelText("Ask a question"), { target: { value: "what documents do we have?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    });
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login");
+    expect(container.textContent).not.toMatch(/sign in again.*sign in again/i);
+    expect(await violations(container)).toEqual([]);
+  });
+});

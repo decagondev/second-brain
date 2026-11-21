@@ -40,7 +40,7 @@ A self-hosted cell is the whole cell on one machine: a VM or an on-prem server t
 
 **What comes later.** The `updater` and its write-once store for anchors are S15.2 (SB-1603, SB-1604); until then the self-hosted cell has no WORM store, so its `anchor` job fails loudly, and it is upgraded by `make images` and `make selfhost`. The install for a real VM, with the company's own IdP and real TLS, is SB-1605.
 
-**`make selfhost`** builds the images, writes a configuration, vaults and an example manifest under `build/selfhost/` (secrets made fresh, never committed), copies each vault into its volume with the right owner and mode, brings the containers up, waits for `/readyz` through the proxy, and provisions a demo user over SCIM. The cell is then at `https://cell.localhost:8443` and signs in through the demo IdP at `http://idp.localhost:8081`; both names resolve to this machine in a browser. The browser warns about Caddy's local certificate until it is trusted (`caddy trust` in the proxy container). `make cell` (sb-runtime(7)) stays the flat, no-container way to run the same binaries for development.
+**`make selfhost`** builds the images, writes a configuration, vaults and an example manifest under `build/selfhost/` (secrets made fresh, never committed), copies each vault into its volume with the right owner and mode, brings the containers up, waits for `/readyz` through the proxy, and provisions a demo user over SCIM. The cell is then at `https://cell.localhost:8443`; `/login` signs in as the demo user through the demo IdP at `http://idp.localhost:8081`; both names resolve to this machine in a browser. The browser warns about Caddy's local certificate until it is trusted (`caddy trust` in the proxy container). `make cell` (sb-runtime(7)) stays the flat, no-container way to run the same binaries for development.
 
 **The demo IdP** is `tools/devidp`. It has no passwords, so it refuses any address but loopback unless started with `--demo`, which the compose layout does, publishing it on this machine's loopback only. It never fronts a real cell.
 
@@ -53,7 +53,7 @@ A self-hosted cell is the whole cell on one machine: a VM or an on-prem server t
 ```text
 $ make selfhost
 selfhost: acme-logistics is running at https://cell.localhost:8443 (demo IdP http://idp.localhost:8081)
-selfhost: sign in as ann; make selfhost-stop stops it
+selfhost: sign in as ann at https://cell.localhost:8443/login; make selfhost-stop stops it
 ```
 
 ## SEE ALSO

@@ -103,7 +103,7 @@ Feedback is stored against the trace id with the release, and exported weekly (M
 
 On GCP the web UI is served from a Firebase Hosting site in the cell's own project, which rewrites `/v1/` to that cell's `api` only (sb-runtime(7), Web UI hosting).
 
-The cell serves its web chat UI at `/` on the tenant's own hostname, from the release's built assets (SB-307). It calls only this cell's `/v1` API, with the session cookie, and loads nothing from anywhere else: the page is served with `Content-Security-Policy: default-src 'self'; frame-ancestors 'none'` and no third-party scripts, fonts or analytics.
+The cell serves its web chat UI at `/` on the tenant's own hostname, from the release's built assets (SB-307). It calls only this cell's `/v1` API, with the session cookie, and loads nothing from anywhere else. When the API answers `EAUTH` (no session, or one that ended), it says the person is signed out and links to `/login`, which signs them in and returns them to `/`: the page is served with `Content-Security-Policy: default-src 'self'; frame-ancestors 'none'` and no third-party scripts, fonts or analytics.
 
 | Element | Rule |
 |---|---|

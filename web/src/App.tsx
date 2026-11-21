@@ -59,8 +59,16 @@ export function App({ fetcher }: { fetcher?: Fetch }) {
             {t.answer && <FeedbackBar answer={t.answer} fetcher={fetcher} />}
             {t.error && (
               <div className="error" role="alert">
-                <p>{t.error.message}</p>
-                <p>{t.error.remedy}</p>
+                {t.error.code === "EAUTH" ? (
+                  <p>
+                    You're signed out. <a href="/login">Sign in</a>, then ask again.
+                  </p>
+                ) : (
+                  <>
+                    <p>{t.error.message}</p>
+                    {t.error.remedy && t.error.remedy.toLowerCase() !== t.error.message.toLowerCase() && <p>{t.error.remedy}</p>}
+                  </>
+                )}
                 {t.error.trace && <p>Quote trace {t.error.trace} to support.</p>}
               </div>
             )}

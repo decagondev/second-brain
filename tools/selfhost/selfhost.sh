@@ -104,4 +104,4 @@ id=$(printf '%s' "$body" | sed -nE 's/.*"id":"(usr_[0-9a-f]+)".*/\1/p')
 if [ -n "$id" ]; then printf '%s' "$id" >"$DIR/demo-user"; else id=$(cat "$DIR/demo-user" 2>/dev/null || true); fi # ann exists from an earlier run
 [ -n "$id" ] && "$CURL" -s -X POST "$IDP/dev/user?id=$id" >/dev/null
 echo "selfhost: $TENANT is running at $CELL (demo IdP $IDP)"
-echo "selfhost: sign in as ann ($id); make selfhost-stop stops it, make selfhost-clean deletes its data"
+echo "selfhost: sign in as ann ($id) at $CELL/login; make selfhost-stop stops it, make selfhost-clean deletes its data"
