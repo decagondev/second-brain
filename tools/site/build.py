@@ -252,7 +252,8 @@ def devlog_page(pages):
         date, name = (m.group(1), m.group(2)) if m else ("", title)
         body, _ = render_md(rest)
         body = re.sub(r'href="(?![a-z]+:|#)([^"]+)"', r'href="living/\1"', body)  # entries are written relative to living/
-        cards.append(f'<article class="entry"><div class="date">{date}</div><div class="card"><h2>{html.escape(name)}</h2>{body}</div></article>')
+        cards.append((date, f'<article class="entry"><div class="date">{date}</div><div class="card"><h2>{html.escape(name)}</h2>{body}</div></article>'))
+    cards = [c for _, c in sorted(cards, key=lambda dc: dc[0], reverse=True)]  # newest first even if an entry was filed out of order; stable within a day
     hero = (f'<div class="crumbs"><a href="index.html">{BRAND}</a> / devlog</div><h1>Devlog</h1>'
             '<p class="lede">The running story of Second Brain, newest first. Every PR adds an entry, and so does every significant design step. '
             'The <b>Learned</b> line is the most valuable part.</p>'

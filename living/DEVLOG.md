@@ -7,17 +7,17 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
-## 2026-11-19 W8 to W13 planned: department brains and the GCP runtime
+## 2026-11-21 W15 planned: the self-hosted cell
 
-**Wave/slice:** W8 to W13 (plan) · **Author:** platform lead + Claude · **Status:** Planned
+**Wave/slice:** W15 (plan) · **Status:** Planned
 
-**What:** [08-department-brains.md](../docs/08-department-brains.md), ADR-0020 (department spaces inside the cell) and ADR-0021 (the GCP cell runtime), five new epics (E09 to E13), seven W8 tickets in E00, and 42 tickets in all across six waves. The PRD, the plan index, open questions Q-11 and Q-12, risks R-13 to R-15 and the glossary follow.
+**What:** ADR-0022 (proposed) and epic E16: nine tickets in four slices (SB-1601 to SB-1609). Container images for every service and a cell in containers that mirror how GCP runs one; write-once audit storage on the box and upgrades without the Docker socket; a sovereign install on a VM or an on-prem server, and a folder connector; and four easy wins (cell health, a budget warning with report delivery, and a queue of unhelpful answers). The PRD's wave list now shows W13 Hardening, W14 Cell Runtime and W15, with the portfolio grants parked.
 
-**Why this way:** Companies organise by function and control access by role, attribute, label and barrier, so a department brain is a space with exactly those four layers, inside the company's cell. A cell per department would treat colleagues like strangers. A space can only narrow what the source allows, so ADR-0002 and every existing law still hold, and the new laws (LAW-19 to LAW-23) are about the inside of a company. The GCP runtime comes first (W9) because spaces need a cell that really runs, and it closes most of what W1 to W7 left In review.
+**Why this way:** W14 left a whole cell running on one machine with Postgres, so the shortest path to a company that keeps its data on its own hardware, and to a cell for demos and testing, is the same cell in containers that mirror GCP rather than a second runtime.
 
-**Learned:** The hard part isn't splitting the index, it's the company-wide ask. It has to union what someone may see across spaces without pulling restricted content along, so LAW-20 is the law the design turns on, and the Alloy model checks it before any code.
+**Learned:** The site's wave list is built from the PRD's wave table, so a wave planned only in the plan index doesn't show on the home page; the PRD has to change with the plan.
 
-**Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
+**Laws:** no change; each ticket names the laws it must keep green.
 
 ## 2026-11-21 S14.5 Console screens for stewards and access reviews (SB-1509)
 
@@ -90,6 +90,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 **Learned:** Wiring found what unit tests couldn't: four routes the manual didn't name (`/login`, `/callback`, `/readyz`, the Slack events endpoint), a chat app that needs a workspace id no file held, and the issuer rule (SB-108), which needed `auth.WithIssuer` so the composition root never makes an Issuer itself. The report endpoints had no usage source in a running cell, so they answer `EUNAVAIL` until the jobs service keeps one, rather than zeros.
 
 **Laws:** LAW-02 (one configuration, one tenant: another tenant's manifest refuses), LAW-03 (nothing that can't be built is skipped: `TestRefusesToStart`), LAW-16 (the cell runs its checked manifest), LAW-01 and LAW-12 through the real sign-in and middleware.
+
+## 2026-11-20 W14 planned: the cell runtime
+
+**Wave/slice:** W14 (plan) · **Status:** Planned
+
+**What:** epic E15, nine tickets in five slices (SB-1501 to SB-1509): one cell configuration and composition root, the `api`, `ingest`, `jobs` and `updater` services, `sb tenant apply` against a running cell, the CLI commands that need one, a whole cell running locally end to end, and the console screens for stewards and access reviews.
+
+**Why this way:** after W13 every part of a cell was built and tested on its own; the last piece between "built and tested" and "deployable" is running them together as real services from one configuration.
+
+**Learned:** (recorded after the fact, 2026-11-21) this entry was missing from the devlog when the wave was planned; the plan itself is in the commit "W14 plan: the cell runtime".
+
+**Laws:** no change; each ticket names the laws it must keep green.
 
 ## 2026-11-20 S13.6 Quick fixes after hardening
 
@@ -216,6 +228,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 **Laws:** LAW-07 and LAW-16 hold again where they didn't; regression tests for each.
 
 **Next:** S13.1b, the authorisation and approval findings.
+
+## 2026-11-20 W13 planned: hardening instead of portfolio grants
+
+**Wave/slice:** W13 (plan) · **Status:** Planned
+
+**What:** Q-01 stays no, so the portfolio grants epic (E13) is parked and LAW-23 stays in the red ratchet. W13 becomes a hardening wave (E14, SB-1401 to SB-1405): a fresh-eyes review of W8 to W12, fuzzing and the race detector, stricter lint and tidier files, the manual and the code in agreement, and the coverage gaps in the core.
+
+**Why this way:** before calling the platform feature complete, the code should be reviewed, fuzzed, tidied and matched to its manual, so that what is handed to companies is as solid as its laws say.
+
+**Learned:** (recorded after the fact, 2026-11-21) this entry was missing from the devlog when the wave was planned; the plan itself is in the commit "W13 plan: hardening instead of portfolio grants".
+
+**Laws:** LAW-23 stays red while E13 is parked.
 
 ## 2026-11-20 S12.4b Cross-space red team (SB-1208)
 
@@ -650,6 +674,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 **Laws:** LAW-16 extended (`TestLAW16_UnbuiltFieldsAreRefused`, with its mutation caught). LAW-19 to LAW-23 come in S8.2 as red tests. All law tests are green.
 
 **Next:** S8.2: the five new laws as red tests (SB-804), `Spaces.als` (SB-805), threat model v1 (SB-806) and the space-leak eval scaffold (SB-807).
+
+## 2026-11-19 W8 to W13 planned: department brains and the GCP runtime
+
+**Wave/slice:** W8 to W13 (plan) · **Author:** platform lead + Claude · **Status:** Planned
+
+**What:** [08-department-brains.md](../docs/08-department-brains.md), ADR-0020 (department spaces inside the cell) and ADR-0021 (the GCP cell runtime), five new epics (E09 to E13), seven W8 tickets in E00, and 42 tickets in all across six waves. The PRD, the plan index, open questions Q-11 and Q-12, risks R-13 to R-15 and the glossary follow.
+
+**Why this way:** Companies organise by function and control access by role, attribute, label and barrier, so a department brain is a space with exactly those four layers, inside the company's cell. A cell per department would treat colleagues like strangers. A space can only narrow what the source allows, so ADR-0002 and every existing law still hold, and the new laws (LAW-19 to LAW-23) are about the inside of a company. The GCP runtime comes first (W9) because spaces need a cell that really runs, and it closes most of what W1 to W7 left In review.
+
+**Learned:** The hard part isn't splitting the index, it's the company-wide ask. It has to union what someone may see across spaces without pulling restricted content along, so LAW-20 is the law the design turns on, and the Alloy model checks it before any code.
+
+**Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
 ## 2026-11-19 S7.3c The hand-off game day (SB-710)
 
