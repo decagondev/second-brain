@@ -15,7 +15,7 @@ sb-tenant — validate a manifest, make a cell match it, and prove the laws hold
 ```text
 sb tenant check  FILE
 sb tenant apply  FILE [--plan] [--cell URL]
-sb tenant verify FILE [--law LAW-nn]... [--sample N]
+sb tenant verify FILE [--law LAW-nn]... [--sample N] [--cell URL] [--foreign FILE]
 ```
 
 ## DESCRIPTION
@@ -72,7 +72,7 @@ How verify decides the other laws, exactly (SB-601):
 - **LAW-14.** Every claim of every sampled answer must have a citation or be labelled `uncited`.
 - **Report.** One line per law: `pass`, `fail` or `unknown`, with counts only. The exit status is 0 only if every law passes. `unknown` (for example, no users to sample) is a failure.
 
-Verify runs against a cell through the same `verify.Target` interface whether the cell is local or deployed. Against a deployed cell, `sb tenant verify FILE --cell URL` posts the request to the cell's **verifier endpoint** (sb-runtime(7), Endpoints), which runs the checks inside the cell and returns only the report. The caller authenticates with the control plane's identity (`SB_TOKEN`). The local cell (`tools/evalcell --verify`) runs the same checks over a fixture world.
+Verify runs against a cell through the same `verify.Target` interface whether the cell is local or deployed. Against a deployed cell, `sb tenant verify FILE --cell URL` posts the request to the cell's **verifier endpoint** (sb-runtime(7), Endpoints), which runs the checks inside the cell and returns only the report. Inside the cell the checks sample the directory's active users and the opening words of indexed documents, ask through the cell's own ask path, check every citation live at the source, and inject LAW-03's timeout into a copy of the agent's connectors only, so no other answer is affected (SB-1508). The caller authenticates with the control plane's identity (`SB_TOKEN`). The local cell (`tools/evalcell --verify`) runs the same checks over a fixture world.
 
 ## OPTIONS
 
@@ -81,6 +81,7 @@ Verify runs against a cell through the same `verify.Target` interface whether th
 | `--plan` | (apply) Show the diff only |
 | `--law LAW-nn` | (verify) Run only the given law; repeatable |
 | `--sample N` | (verify) Users × questions sampled (default 50) |
+| `--foreign FILE` | (verify) A JSON list of other tenants' document ids for LAW-02, until the control-plane client reads them from the registry (SB-105); without it LAW-02 is `unknown` |
 | `--cell URL` | (apply, verify) The running cell's base URL, e.g. `https://api-gamma-prod-7731.a.run.app`; its verifier endpoint answers |
 | `--json` | Machine output |
 

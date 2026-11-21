@@ -380,3 +380,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** `Approve` makes the map when the stored state has none.
 
 **Caught by now:** `TestApproveAfterAStoredRoundTrip` (a store that round-trips through JSON) and `TestHandoffAndDetachRehearsal`.
+
+## BUG-0025 Legal holds and erasure refused every user SCIM had made
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-21, the end-to-end test of a whole cell (SB-1508) | High | SB-107 | Fixed |
+
+**Symptom:** A legal steward couldn't place a hold on a real custodian, and an operator couldn't erase a real user's data: both refused the user's id as `EINVAL`.
+
+**Root cause:** SCIM gave users bare 24-character hex ids, while legal holds, erasure and the manual name users `usr_…`. Every earlier test made its users by hand with `usr_` ids, so the two never met.
+
+**Fix:** SCIM ids are `usr_` (users) and `grp_` (groups) followed by 24 hex characters, as sb-identity(7) now says.
+
+**Caught by now:** `TestWholeCellOnPostgres`, which provisions its users through SCIM and places a hold on one of them.

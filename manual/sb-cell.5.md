@@ -68,14 +68,15 @@ It never starts with a part switched off.
 | `release.registry` | string | with `release` | Where the bundle's images live |
 | `release.trusted`, `release.cosign_identity` | string | exactly one, with `release` | The one release identity the cell trusts: an Ed25519 key (`ed25519:BASE64`), or the release workflow's cosign identity |
 | `release.deploy.kind`, `.project`, `.location` | string | with `release` | `local`, or `gcp` with the cell's project and region |
-| `durable` | bool | no, `false` | `true` refuses to start while any store is in-memory only |
+| `database` | DSN | for `durable` | The cell's own Postgres (with `pgvector`), e.g. `postgres:///sb_acme?host=/var/run/postgresql`: every record store, the index, the spaces registry and the audit log live there, and each service creates its tables at start, one at a time (SB-1508) |
+| `durable` | bool | no, `false` | `true` refuses to start without a `database`, so no store is in memory |
 
 ### Stores
 
 | Store | Adapter |
 |---|---|
 | audit log, kill switches, key wraps, sync cursors, logs, job finishes (`runs/`), the usage ledger (`usage/`), anchors (`worm/`, write-once), weekly reports (`reports/`), what each service runs (`deploy/`) | files under `state` |
-| directory and sessions, traces and conversations, actions and receipts, spaces registry, index, chat events inbox, proposals, access reviews, legal holds | in memory today; durable adapters are SB-1501's follow-up, and `durable: true` refuses to start until they exist |
+| directory and sessions (a session is kept by a hash of its id, never the cookie value), traces and conversations, actions and receipts, spaces registry, index, chat events inbox, proposals, access reviews, legal holds, and the audit log | the `database` when it is set (`internal/adapters/postgres`); without one, in memory (the audit log in files under `state`), for development and tests only |
 
 ### Connectors
 

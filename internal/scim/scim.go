@@ -127,12 +127,14 @@ func fromDoc(d userDoc, u ports.User) ports.User {
 	return u
 }
 
-func newID() string {
+// newID is a new directory id: usr_ or grp_ and 24 hex characters, the form legal holds,
+// erasure and the audit trail name people by (BUG-0025).
+func newID(prefix string) string {
 	b := make([]byte, 12)
 	if _, err := rand.Read(b); err != nil {
 		panic("scim: no randomness: " + err.Error())
 	}
-	return hex.EncodeToString(b)
+	return prefix + hex.EncodeToString(b)
 }
 
 func read(r *http.Request, v any) bool {
@@ -163,7 +165,7 @@ func (e *Endpoint) createUser(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusConflict, "userName already exists")
 		return
 	}
-	u := fromDoc(d, ports.User{ID: newID(), Tenant: e.Tenant})
+	u := fromDoc(d, ports.User{ID: newID("usr_"), Tenant: e.Tenant})
 	if err := e.Directory.PutUser(ctx, u); err != nil {
 		fail(w, http.StatusServiceUnavailable, "directory unavailable")
 		return
@@ -348,7 +350,7 @@ func (e *Endpoint) createGroup(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "displayName is required")
 		return
 	}
-	g := ports.Group{ID: newID(), Tenant: e.Tenant, Name: d.DisplayName, Members: members(d)}
+	g := ports.Group{ID: newID("grp_"), Tenant: e.Tenant, Name: d.DisplayName, Members: members(d)}
 	if err := e.Directory.PutGroup(r.Context(), g); err != nil {
 		fail(w, http.StatusServiceUnavailable, "directory unavailable")
 		return

@@ -19,6 +19,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-21 S14.4 A whole cell on Postgres, end to end (SB-1508)
+
+**Wave/slice:** W14 / S14.4 · **Status:** In review (the GCP path waits for a project)
+
+**What:** Postgres adapters for every store that was in memory, the cell wired to them with `database`, the verifier's checks run against the cell itself, `make cell` with a development IdP, and an end-to-end test of a durable cell that also restarts it.
+
+**Why this way:** The records are JSON documents keyed by tenant, kind and id, with the time, user and space the queries need beside them, so one small helper serves nine stores, and the decisions that must not race (an action's state, a proposal or review decided) lock their row in a transaction. The verifier asks through a copy of the agent, so LAW-03's injected timeout can't touch anyone's real answers.
+
+**Learned:** The first test to provision its users through SCIM found that legal holds and erasure refused every SCIM id (BUG-0025, PT-0015): every earlier test had made its users by hand. It also found that the services, started together, raced to create the same tables, and that a test helper shared one cookie jar between three users. The local vault refuses secrets on a Windows drive mounted in WSL, where every file is 0777, so `make cell` keeps its files in `~/.sb-cell`.
+
+**Laws:** LAW-01, LAW-03 and LAW-14 through `sb tenant verify --cell` on a durable cell, LAW-02 with the control plane's foreign ids, LAW-13 (a hold placed by a legal steward only, BUG-0025), LAW-15 (the requester can't approve), LAW-11 (the audit log survives a restart).
+
 ## 2026-11-21 S14.4 The CLI against a running cell (SB-1507)
 
 **Wave/slice:** W14 / S14.4 · **Status:** Done

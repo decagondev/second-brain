@@ -261,6 +261,17 @@ func (e *env) tenantVerify(args []string) int {
 				return e.fail(name, errs.New(errs.EUSAGE, "--law needs a law, e.g. LAW-01"))
 			}
 			laws = append(laws, v)
+		case a == "--foreign":
+			v, ok := next()
+			if !ok {
+				return e.fail(name, errs.New(errs.EUSAGE, "--foreign needs a file"))
+			}
+			b, err := os.ReadFile(v)
+			var ids []string
+			if err != nil || json.Unmarshal(b, &ids) != nil {
+				return e.fail(name, errs.New(errs.EUSAGE, "--foreign FILE must be a JSON list of document ids"))
+			}
+			req["foreign_ids"] = ids
 		case a == "--sample":
 			v, ok := next()
 			n, err := strconv.Atoi(v)
@@ -271,11 +282,11 @@ func (e *env) tenantVerify(args []string) int {
 		case file == "" && !strings.HasPrefix(a, "-"):
 			file = a
 		default:
-			return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N]"))
+			return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N] [--foreign FILE]"))
 		}
 	}
 	if file == "" {
-		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N]"))
+		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant verify FILE --cell URL [--law LAW-nn]... [--sample N] [--foreign FILE]"))
 	}
 	m, code, ok := e.readManifest(name, file)
 	if !ok {

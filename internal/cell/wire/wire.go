@@ -16,9 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	actmem "example.com/second-brain/internal/adapters/actions/memory"
 	"example.com/second-brain/internal/adapters/alert/webhook"
-	auditfs "example.com/second-brain/internal/adapters/audit/localfs"
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/adapters/connectors/bamboohr"
 	"example.com/second-brain/internal/adapters/connectors/gdrive"
@@ -28,9 +26,7 @@ import (
 	"example.com/second-brain/internal/adapters/connectors/quickbooks"
 	"example.com/second-brain/internal/adapters/connectors/slack"
 	cursorfs "example.com/second-brain/internal/adapters/cursor/filestore"
-	dirmem "example.com/second-brain/internal/adapters/directory/memory"
 	"example.com/second-brain/internal/adapters/embed/hashing"
-	memindex "example.com/second-brain/internal/adapters/index/memory"
 	killfs "example.com/second-brain/internal/adapters/kill/localfs"
 	logfs "example.com/second-brain/internal/adapters/logs/localfs"
 	"example.com/second-brain/internal/adapters/model/anthropic"
@@ -42,9 +38,6 @@ import (
 	"example.com/second-brain/internal/adapters/policy/cedar"
 	runsfs "example.com/second-brain/internal/adapters/runs/localfs"
 	"example.com/second-brain/internal/adapters/secrets/localvault"
-	sessmem "example.com/second-brain/internal/adapters/sessions/memory"
-	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
-	tracemem "example.com/second-brain/internal/adapters/traces/memory"
 	usagefs "example.com/second-brain/internal/adapters/usage/localfs"
 	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/auth"
@@ -75,10 +68,10 @@ import (
 	"example.com/second-brain/internal/version"
 )
 
-// MemoryStores are the stores that have only an in-memory adapter today (sb-cell(5),
-// Stores); a durable cell refuses to start while this list isn't empty.
+// MemoryStores are the stores kept in memory when the configuration names no database
+// (sb-cell(5), Stores); a durable cell needs a database for them.
 var MemoryStores = []string{"directory and sessions", "traces and conversations", "actions and receipts", "spaces registry",
-	"index", "chat events inbox", "proposals", "access reviews", "legal holds"}
+	"index", "chat events inbox", "proposals", "access reviews", "legal holds", "audit log (in files)"}
 
 // Vendors are the connector adapters a cell can run, by the manifest's vendor name.
 var Vendors = map[string]string{"gdrive": "docs", "slack": "chat", "linear": "tickets", "hubspot": "crm", "github": "code",
@@ -92,12 +85,12 @@ type Cell struct {
 	Audit     *audit.Log
 	Kill      *kill.Checker
 	Policy    policy.Kernel
-	Directory *dirmem.Dir
-	Sessions  *sessmem.Store
-	Spaces    *spacemem.Store
-	Index     *memindex.Index
-	Traces    *tracemem.Store
-	Holds     *holds.MemoryStore
+	Directory DirectoryStore
+	Sessions  ports.Sessions
+	Spaces    ports.SpaceStore
+	Index     IndexStore
+	Traces    TraceStore
+	Holds     holds.Store
 	Metrics   *obs.Metrics
 	Auth      *auth.Cell
 
@@ -106,9 +99,9 @@ type Cell struct {
 	Runs      runsfs.Dir
 	Usage     *usagefs.Ledger
 	Report    report.Source // the weekly report's numbers
-	Reviews   *reviews.MemoryStore
-	Proposals *proposals.MemoryStore
-	Actions   *actmem.Store
+	Reviews   reviews.Store
+	Proposals proposals.Store
+	Actions   ActionStore
 	Logs      *logfs.Files
 	Redact    *obs.Redactor
 	// Secret reads vault://tenants/TENANT/PATH at call time.
@@ -123,7 +116,8 @@ type Cell struct {
 
 	opt      Options
 	model    func(m manifest.Tenant) (ports.Model, error)
-	inbox    *slack.MemoryInbox
+	inbox    slack.Inbox
+	closeDB  func()
 	receipts toolbus.Receipts
 	engine   policy.Evaluator
 	parts    atomic.Pointer[Parts]
@@ -163,10 +157,10 @@ func (a applied) Applied(context.Context) (manifest.Tenant, string, error) { ret
 
 // usage is the weekly report's source over the cell's own stores (SB-606, SB-1504).
 type usage struct {
-	traces  *tracemem.Store
+	traces  TraceStore
 	ledger  *usagefs.Ledger
-	actions *actmem.Store
-	dir     *dirmem.Dir
+	actions ActionStore
+	dir     DirectoryStore
 }
 
 func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
@@ -215,8 +209,8 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	if opt.HTTP == nil {
 		opt.HTTP = http.DefaultClient
 	}
-	if cfg.Durable {
-		return nil, fmt.Errorf("%w: durable is true, but these stores are in memory only: %s", ErrConfig, strings.Join(MemoryStores, ", "))
+	if cfg.Durable && cfg.Database == "" {
+		return nil, fmt.Errorf("%w: durable is true, but with no database these stores are in memory only: %s", ErrConfig, strings.Join(MemoryStores, ", "))
 	}
 	src, err := os.ReadFile(cfg.Manifest)
 	if err != nil {
@@ -245,8 +239,14 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	n := atomic.Int64{}
 	newID := func(p string) string { return fmt.Sprintf("%s%d%06d", p, time.Now().UnixMilli(), n.Add(1)%1000000) }
 
-	c.Audit = &audit.Log{Tenant: tenant, Release: func() string { return c.Release }, Store: auditfs.Dir{Root: filepath.Join(cfg.State, "audit"), Tenant: tenant},
-		Now: time.Now, Redact: redact}
+	st := memoryStores(cfg)
+	if cfg.Database != "" {
+		if st, err = postgresStores(ctx, cfg); err != nil {
+			return nil, err
+		}
+	}
+	c.closeDB = st.close
+	c.Audit = &audit.Log{Tenant: tenant, Release: func() string { return c.Release }, Store: st.audit, Now: time.Now, Redact: redact}
 	c.Policy = policy.Kernel{Engine: engine, Recorder: c.Audit}
 	c.Secret, c.Redact, c.NewID = secret, redact, newID
 	if opt.Log == nil {
@@ -265,8 +265,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	if err := c.Kill.Refresh(ctx); err != nil {
 		return nil, fmt.Errorf("%w: kill switches: %v", ErrConfig, err)
 	}
-	c.Directory, c.Sessions = dirmem.New(), sessmem.New()
-	c.Spaces, c.Index, c.Traces, c.Holds = spacemem.New(), memindex.New(), tracemem.New(), &holds.MemoryStore{}
+	c.Directory, c.Sessions, c.Spaces, c.Index, c.Traces, c.Holds = st.directory, st.sessions, st.spaces, st.index, st.traces, st.holds
 	c.HeldNow = func(ctx context.Context) holds.Set {
 		set, err := holds.Active(ctx, c.Holds)
 		if err != nil {
@@ -282,8 +281,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 			return nil, fmt.Errorf("%w: groups: %v", ErrConfig, err)
 		}
 	}
-	c.inbox, c.receipts, c.Actions = &slack.MemoryInbox{}, actmem.NewReceipts(), actmem.New()
-	c.Proposals, c.Reviews = &proposals.MemoryStore{}, &reviews.MemoryStore{}
+	c.inbox, c.receipts, c.Actions, c.Proposals, c.Reviews = st.inbox, st.receipts, st.actions, st.proposals, st.reviews
 	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
 	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory}
 	c.model = func(m manifest.Tenant) (ports.Model, error) {
@@ -351,7 +349,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		}
 		return u.Emails, nil
 	}
-	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index.Bind(tenant), Embedder: hashing.Embedder{}, Auth: authz,
+	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: hashing.Embedder{}, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
 		NewID: newID, Now: time.Now, Metrics: c.Metrics, Enabled: func(a string) bool { return contains(m.Agents, a) },
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
@@ -407,7 +405,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /login", c.Auth.Login)
 	public.HandleFunc("GET /callback", c.Auth.Callback)
 	public.Handle("/scim/v2/", (&scim.Endpoint{Tenant: tenant, Directory: c.Directory, Sessions: c.Sessions, Token: secret("scim")}).Handler())
-	api.Verifier{Release: c.Release, Metrics: c.Metrics.Handler(), ControlPlane: c.controlPlane, Attest: c.attestor()}.Register(public)
+	api.Verifier{Release: c.Release, Metrics: c.Metrics.Handler(), ControlPlane: c.controlPlane, Attest: c.attestor(), TargetFor: c.VerifyTarget}.Register(public)
 	if sc, ok := conns["chat"].(*slack.Connector); ok {
 		public.Handle("POST /connectors/slack/events", sc.EventsHandler(time.Now))
 		creds := secret("connectors/chat")
@@ -448,6 +446,13 @@ func (c *Cell) Ready() bool { return c.ready.Load() }
 
 // Stop marks the cell not ready, so the platform stops sending it requests.
 func (c *Cell) Stop() { c.ready.Store(false) }
+
+// Close releases the cell's database connections, after it has stopped serving.
+func (c *Cell) Close() {
+	if c.closeDB != nil {
+		c.closeDB()
+	}
+}
 
 func loadPolicies(dir string) (policy.Evaluator, error) {
 	files := map[string][]byte{}

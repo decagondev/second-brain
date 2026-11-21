@@ -114,3 +114,11 @@ findings:
     found: 2026-11-20
     bug: BUG-0022
     source: internal
+  - id: PT-0015
+    title: SCIM made user ids that legal holds and erasure refused, so neither could act on a real user
+    severity: high
+    status: fixed
+    laws: [LAW-13]
+    found: 2026-11-21
+    bug: BUG-0025
+    source: internal

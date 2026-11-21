@@ -167,3 +167,17 @@ func (d *Dir) ActiveUsers(_ context.Context, tenant string) (int, error) {
 	}
 	return n, nil
 }
+
+// ActiveUserIDs lists a tenant's active users' ids, sorted (the verifier's sample).
+func (d *Dir) ActiveUserIDs(_ context.Context, tenant string) ([]string, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	var out []string
+	for _, u := range d.users {
+		if u.Tenant == tenant && u.Active {
+			out = append(out, u.ID)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}

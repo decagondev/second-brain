@@ -28,31 +28,49 @@ type IdP struct {
 	KID                      string
 	ClientID, Secret, Tenant string
 	User                     string // who signs in at /authorize
+	// URL, when set, is the issuer instead of Server's (an IdP served by Handler).
+	URL string
 
 	mu    sync.Mutex
 	codes map[string]pending
 }
 
-type pending struct{ nonce, challenge, redirect string }
+type pending struct{ nonce, challenge, redirect, user string }
 
 // New starts an IdP over TLS for one tenant's client.
 func New(tenant, clientID, secret string) *IdP {
+	idp := NewAt(tenant, clientID, secret, "")
+	idp.Server = httptest.NewTLSServer(idp.Handler())
+	return idp
+}
+
+// NewAt is an IdP whose issuer is url, served by Handler wherever the caller serves it
+// (tools/devidp, for a local cell).
+func NewAt(tenant, clientID, secret, url string) *IdP {
 	k, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}
-	idp := &IdP{Key: k, KID: "k-" + tenant, ClientID: clientID, Secret: secret, Tenant: tenant, User: "usr_1", codes: map[string]pending{}}
+	return &IdP{Key: k, KID: "k-" + tenant, ClientID: clientID, Secret: secret, Tenant: tenant, User: "usr_1", URL: url, codes: map[string]pending{}}
+}
+
+// Handler serves discovery, the key set, /authorize and /token.
+func (i *IdP) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/.well-known/openid-configuration", idp.discovery)
-	mux.HandleFunc("/jwks", idp.jwks)
-	mux.HandleFunc("/authorize", idp.authorize)
-	mux.HandleFunc("/token", idp.token)
-	idp.Server = httptest.NewTLSServer(mux)
-	return idp
+	mux.HandleFunc("/.well-known/openid-configuration", i.discovery)
+	mux.HandleFunc("/jwks", i.jwks)
+	mux.HandleFunc("/authorize", i.authorize)
+	mux.HandleFunc("/token", i.token)
+	return mux
 }
 
 // Issuer is the IdP's issuer URL.
-func (i *IdP) Issuer() string { return i.Server.URL }
+func (i *IdP) Issuer() string {
+	if i.URL != "" {
+		return i.URL
+	}
+	return i.Server.URL
+}
 
 func (i *IdP) discovery(w http.ResponseWriter, _ *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"issuer": i.Issuer(), "authorization_endpoint": i.Issuer() + "/authorize",
@@ -73,7 +91,7 @@ func (i *IdP) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 	code := "code-" + q.Get("state")
 	i.mu.Lock()
-	i.codes[code] = pending{q.Get("nonce"), q.Get("code_challenge"), q.Get("redirect_uri")}
+	i.codes[code] = pending{q.Get("nonce"), q.Get("code_challenge"), q.Get("redirect_uri"), i.User}
 	i.mu.Unlock()
 	u, _ := url.Parse(q.Get("redirect_uri"))
 	u.RawQuery = url.Values{"code": {code}, "state": {q.Get("state")}}.Encode()
@@ -96,8 +114,8 @@ func (i *IdP) token(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid_grant", http.StatusBadRequest)
 		return
 	}
-	tok := i.Mint(map[string]any{"iss": i.Issuer(), "aud": i.ClientID, "sub": i.User, "tenant": i.Tenant,
-		"nonce": p.nonce, "email": i.User + "@" + i.Tenant + ".example"}, i.Key, i.KID)
+	tok := i.Mint(map[string]any{"iss": i.Issuer(), "aud": i.ClientID, "sub": p.user, "tenant": i.Tenant,
+		"nonce": p.nonce, "email": p.user + "@" + i.Tenant + ".example"}, i.Key, i.KID)
 	_ = json.NewEncoder(w).Encode(map[string]string{"id_token": tok, "token_type": "Bearer"})
 }
 

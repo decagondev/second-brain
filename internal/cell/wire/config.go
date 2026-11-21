@@ -51,7 +51,10 @@ type Config struct {
 		Retain []string `json:"retain"`
 	} `json:"custody"`
 	Release ReleaseConfig `json:"release"`
-	Durable bool          `json:"durable"`
+	// Database is the cell's Postgres (a DSN, e.g. postgres:///sb_acme?host=/var/run/postgresql):
+	// every record store and the audit log live there (SB-1508). Without it they are in memory.
+	Database string `json:"database"`
+	Durable  bool   `json:"durable"`
 }
 
 // ReleaseConfig is where the cell's updater pulls releases from and how it deploys them

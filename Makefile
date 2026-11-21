@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: policy integration ci-rules check build test fuzz coverage lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
+.PHONY: cell cell-stop policy integration ci-rules check build test fuzz coverage lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -104,6 +104,11 @@ release-build:         ## reproducible build twice, SBOM and bundle into build/r
 integration:           ## adapter tests against real services; needs SB_TEST_POSTGRES_DSN (SB-105)
 	@test -n "$$SB_TEST_POSTGRES_DSN" || { echo "integration: set SB_TEST_POSTGRES_DSN"; exit 1; }
 	$(GO) test -count=1 ./internal/adapters/postgres/...
+	$(GO) test -count=1 -run WholeCell ./tests/cell/...   # a whole cell on Postgres, end to end (SB-1508)
+cell:                  ## a whole cell on this machine against local Postgres (SB-1508); make cell-stop stops it
+	bash tools/cell/cell.sh
+cell-stop:
+	bash tools/cell/cell.sh stop
 tools:                 ## fetch pinned tool jars and verify checksums
 	tools/ci/fetch_tools.sh
 clean:

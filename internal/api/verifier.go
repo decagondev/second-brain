@@ -20,6 +20,9 @@ type Verifier struct {
 	ControlPlane func(r *http.Request) bool
 	Attest       func(ctx context.Context) (attest.Signed, error)
 	Target       verify.Target
+	// TargetFor, when set, is the target for one request, with the control plane's
+	// other-tenant document ids it carried (SB-1508); it takes the place of Target.
+	TargetFor func(foreign []string) verify.Target
 }
 
 // Laws verify may be asked for.
@@ -66,6 +69,9 @@ type VerifyRequest struct {
 	Laws   []string `json:"laws"`
 	Sample int      `json:"sample"`
 	Seed   int64    `json:"seed"`
+	// ForeignIDs are other tenants' document ids from the control plane's registry, ids
+	// only, for LAW-02.
+	ForeignIDs []string `json:"foreign_ids,omitempty"`
 }
 
 func (v Verifier) verify(w http.ResponseWriter, r *http.Request) {
@@ -81,11 +87,15 @@ func (v Verifier) verify(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if v.Target == nil {
+	target := v.Target
+	if v.TargetFor != nil {
+		target = v.TargetFor(req.ForeignIDs)
+	}
+	if target == nil {
 		v.fail(w, errs.New(errs.EUNAVAIL, "This cell can't run the verifier's checks yet."))
 		return
 	}
-	rep := verify.Run(r.Context(), v.Target, verify.Options{Laws: req.Laws, Sample: req.Sample, Seed: req.Seed})
+	rep := verify.Run(r.Context(), target, verify.Options{Laws: req.Laws, Sample: req.Sample, Seed: req.Seed})
 	v.ok(w, rep)
 }
 
