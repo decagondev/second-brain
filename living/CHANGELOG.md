@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Console screens for stewards and access reviews (S14.5: SB-1509): `/?steward=NAME` proposes space changes and decides reviews; the admin console approves proposals by their hash and lists reviews, overdue first. **W14 Cell Runtime built** (SB-1508's GCP path waits for a project).
 - A whole cell on Postgres (S14.4: SB-1508): `database` in sb-cell(5) keeps every store durable, `make cell` runs a cell locally with a development IdP, and `sb tenant verify --cell` runs its checks inside a running cell.
 
 ### Fixed

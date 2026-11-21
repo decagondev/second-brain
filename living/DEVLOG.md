@@ -19,6 +19,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-21 S14.5 Console screens for stewards and access reviews (SB-1509)
+
+**Wave/slice:** W14 / S14.5 · **Status:** Done
+
+**What:** the steward's screen for a space (propose a change, decide access reviews) and two new sections of the admin console (open proposals approved by their hash, every review overdue first).
+
+**Why this way:** Both screens are clients of APIs that already enforce the rules, so the screens add no power of their own: an approval sends back the hash on screen, exactly as the approver view does for actions, and a decision the cell refuses (your own access) is shown, not hidden. A removal asks for its reason before it is sent, because the audit row needs one.
+
+**Learned:** Two buttons with the same accessible name ("Remove usr_bo") made the test, and a screen reader, ambiguous; the confirming button now says what it confirms.
+
+**Laws:** LAW-15 (an operator approves a proposal only by its hash; nobody decides on their own access), LAW-16 (nothing changes until the approved manifest is applied).
+
 ## 2026-11-21 S14.4 A whole cell on Postgres, end to end (SB-1508)
 
 **Wave/slice:** W14 / S14.4 · **Status:** In review (the GCP path waits for a project)

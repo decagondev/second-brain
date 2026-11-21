@@ -38,7 +38,7 @@ GET  /v1/holds                                (Legal stewards, operators)
 
 ## DESCRIPTION
 
-The console is a client of this API and has no other powers. Every endpoint needs the `operator` role (Cedar policy) except `usage` and `costs`, which `approver` may also read.
+The console (`/?admin`) is a client of this API and has no other powers. Beside the kill switches and the applied manifest it has the open steward proposals, each with its diff and its hash, approved only by sending back the hash shown or rejected with a reason, and every access review with its state, `overdue` and a link to its evidence (SB-1509; the stewards' own screen is in sb-spaces(7)). Every endpoint needs the `operator` role (Cedar policy) except `usage` and `costs`, which `approver` may also read.
 
 **`GET /v1/admin/manifest`** returns the applied manifest and its git commit.
 
