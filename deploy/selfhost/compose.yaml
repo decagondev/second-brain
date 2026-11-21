@@ -1,0 +1,106 @@
+# A self-hosted cell (sb-selfhost(7); ADR-0022, SB-1602): one container per service, laid
+# out the way GCP lays out a cell. `make selfhost` writes ../../build/selfhost and fills
+# the volumes before this runs; images come from `make images`.
+name: sb-selfhost
+
+x-cell: &cell
+  user: "65532:65532"
+  read_only: true
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  environment:
+    SSL_CERT_DIR: /etc/ssl/certs
+  volumes:
+    - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
+    - ../../build/selfhost/policy:/etc/sb/policy:ro
+    - state:/var/lib/sb/state
+  depends_on:
+    postgres: { condition: service_healthy }
+    idp: { condition: service_started }
+
+services:
+  proxy:            # the HTTPS load balancer: the only published port for the cell
+    image: caddy@sha256:226d1f059b75399fe19182893c7184591c07b97afc8dfcf44eeb80c9a77a530f
+    restart: unless-stopped
+    ports: ["127.0.0.1:8443:8443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+    networks: [edge]
+    depends_on: [api]
+
+  api:
+    <<: *cell
+    image: sb-api:local
+    command: ["--config", "/etc/sb/cell.json"]
+    volumes:
+      - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
+      - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - state:/var/lib/sb/state
+      - vault-api:/var/lib/sb/vault
+    networks: [edge, data, egress]
+
+  ingest:
+    <<: *cell
+    image: sb-ingest:local
+    command: ["--config", "/etc/sb/cell.json"]
+    volumes:
+      - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
+      - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - state:/var/lib/sb/state
+      - vault-ingest:/var/lib/sb/vault
+    networks: [data, egress]
+
+  jobs:
+    <<: *cell
+    image: sb-jobs:local
+    command: ["--config", "/etc/sb/cell.json"]
+    volumes:
+      - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
+      - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - state:/var/lib/sb/state
+      - vault-jobs:/var/lib/sb/vault
+    networks: [data, egress]
+
+  postgres:         # Cloud SQL, private IP: on the internal network only
+    image: pgvector/pgvector@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sb
+      POSTGRES_DB: sb
+      POSTGRES_PASSWORD_FILE: /run/sb/db-password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../build/selfhost/db-password:/run/sb/db-password:ro
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sb -d sb"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  idp:              # demo only: the development IdP, published on this machine's loopback
+    image: sb-devidp:local
+    user: "65532:65532"
+    read_only: true
+    command: ["--demo", "--listen", "0.0.0.0:8081", "--issuer", "http://idp.localhost:8081",
+              "--tenant", "acme-logistics", "--client", "sb-acme-logistics", "--secret-file", "/run/sb/oidc"]
+    ports: ["127.0.0.1:8081:8081"]
+    volumes:
+      - ../../build/selfhost/vault/api/vault/tenants/acme-logistics/oidc:/run/sb/oidc:ro
+    networks:
+      egress: { aliases: [idp.localhost] }
+
+networks:
+  edge: {}
+  data: { internal: true }
+  egress: {}
+
+volumes:
+  state: {}
+  vault-api: {}
+  vault-ingest: {}
+  vault-jobs: {}
+  pgdata: {}
+  caddy: {}

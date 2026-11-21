@@ -10,7 +10,7 @@ summary: "The updater must deploy by digest, but a container holding the Docker 
 | Epic | [E16 Self-hosted Cell](README.md) |
 | Wave / slice | W15 / S15.2 |
 | Stories | US-16.1 |
-| Manual | [`sb-runtime(7)`](../../manual/sb-runtime.7.md), `sb-selfhost(7)` |
+| Manual | [`sb-runtime(7)`](../../manual/sb-runtime.7.md), [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md) |
 | Laws | LAW-06 |
 | Depends on | [SB-1602](SB-1602-compose-layout.md) |
 | Status | Open |

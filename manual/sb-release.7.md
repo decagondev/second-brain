@@ -70,7 +70,7 @@ A tenant may **pause pulls** by withholding the pull token. While paused, the ce
 
 ### Channels
 
-Tenants choose `stable` or `testing`, never a version (ADR-0004). The release controller points each channel at one release in the store, `channels/stable` and `channels/testing`, each holding a release id; a cell's updater reads its channel's pointer with its pull token and admits the release it names like any other (SB-1505). A pointer to a release that fails admission changes nothing in the cell.
+Tenants choose `stable` or `testing`, never a version (ADR-0004). The release controller points each channel at one release in the store, `channels/stable` and `channels/testing`, each holding a release id; a cell's updater reads its channel's pointer with its pull token and admits the release it names like any other (SB-1505). A pointer to a release that fails admission changes nothing in the cell. A bundle names each service's image by digest as `image/api`, `image/ingest`, `image/jobs`, `image/updater` (and `image/web`); `make images` builds them and `tools/release/bundle --image NAME=sha256:…` records them (sb-selfhost(7)).
 
 ### Rings and promotion
 

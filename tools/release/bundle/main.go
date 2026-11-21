@@ -3,7 +3,10 @@
 // policies, the pinned model and the eval gate, sealed with its release id.
 //
 //	go run ./tools/release/bundle --artefact sb=bin/sb [--artefact web=web/dist.tar] \
-//	    --created 2027-03-02 --out bundle.json
+//	    [--image api=sha256:…]... --created 2027-03-02 --out bundle.json
+//
+// --image records a service's image by digest as image/NAME (sb-release(7)), what the
+// updater deploys by; make images prints them (sb-selfhost(7)).
 package main
 
 import (
@@ -12,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -27,14 +31,15 @@ func (l *list) String() string     { return strings.Join(*l, ",") }
 func (l *list) Set(v string) error { *l = append(*l, v); return nil }
 
 func main() {
-	var arts list
+	var arts, images list
+	flag.Var(&images, "image", "name=sha256:DIGEST of a service image (repeatable)")
 	flag.Var(&arts, "artefact", "name=path of a built artefact (repeatable)")
 	root := flag.String("root", ".", "repository root")
 	created := flag.String("created", "", "build date, YYYY-MM-DD")
 	out := flag.String("out", "bundle.json", "where to write the manifest")
 	digestOut := flag.String("digest-out", "", "also write the message to sign: sb-release:v1:<bundle digest>")
 	flag.Parse()
-	m, err := build(*root, arts, *created)
+	m, err := build(*root, arts, *created, images...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "bundle:", err)
 		os.Exit(1)
@@ -58,8 +63,18 @@ func main() {
 	fmt.Fprintln(os.Stdout, m.ID)
 }
 
-func build(root string, arts []string, created string) (release.Manifest, error) {
+var imageDigest = regexp.MustCompile(`^sha256:([0-9a-f]{64})$`)
+
+func build(root string, arts []string, created string, images ...string) (release.Manifest, error) {
 	b := release.Bundle{Code: map[string]string{}, Prompts: map[string]string{}, Policies: map[string]string{}, Created: created}
+	for _, im := range images {
+		name, d, ok := strings.Cut(im, "=")
+		m := imageDigest.FindStringSubmatch(d)
+		if !ok || name == "" || m == nil {
+			return release.Manifest{}, fmt.Errorf("--image wants name=sha256:<64 hex>, got %q", im)
+		}
+		b.Code["image/"+name] = m[1]
+	}
 	for _, a := range arts {
 		name, path, ok := strings.Cut(a, "=")
 		if !ok || name == "" {

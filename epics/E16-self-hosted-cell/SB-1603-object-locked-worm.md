@@ -10,7 +10,7 @@ summary: "LAW-11 needs anchors and the off-site backup copy that nobody can over
 | Epic | [E16 Self-hosted Cell](README.md) |
 | Wave / slice | W15 / S15.2 |
 | Stories | US-16.1 |
-| Manual | [`sb-audit(7)`](../../manual/sb-audit.7.md), `sb-selfhost(7)` |
+| Manual | [`sb-audit(7)`](../../manual/sb-audit.7.md), [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md) |
 | Laws | LAW-11 |
 | Depends on | [SB-1602](SB-1602-compose-layout.md) |
 | Status | Open |

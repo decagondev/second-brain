@@ -10,7 +10,7 @@ summary: "The self-hosted cell is for a company that keeps its data on its own h
 | Epic | [E16 Self-hosted Cell](README.md) |
 | Wave / slice | W15 / S15.3 |
 | Stories | US-16.1 |
-| Manual | `sb-selfhost(7)`, [`sb-identity(7)`](../../manual/sb-identity.7.md) |
+| Manual | [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md), [`sb-identity(7)`](../../manual/sb-identity.7.md) |
 | Laws | LAW-04, LAW-11, LAW-12, LAW-17, LAW-18 |
 | Depends on | [SB-1603](SB-1603-object-locked-worm.md), [SB-1604](SB-1604-upgrades-without-the-socket.md) |
 | Status | Open |

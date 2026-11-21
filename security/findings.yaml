@@ -122,3 +122,11 @@ findings:
     found: 2026-11-21
     bug: BUG-0025
     source: internal
+  - id: PT-0016
+    title: A cell with its web UI configured panicked at start, so no real cell could run
+    severity: high
+    status: fixed
+    laws: [LAW-03]
+    found: 2026-11-21
+    bug: BUG-0026
+    source: internal

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	actmem "example.com/second-brain/internal/adapters/actions/memory"
@@ -17,6 +18,7 @@ import (
 	"example.com/second-brain/internal/adapters/postgres/cellstore"
 	pgindex "example.com/second-brain/internal/adapters/postgres/index"
 	pgspaces "example.com/second-brain/internal/adapters/postgres/spaces"
+	"example.com/second-brain/internal/adapters/secrets/localvault"
 	sessmem "example.com/second-brain/internal/adapters/sessions/memory"
 	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	tracemem "example.com/second-brain/internal/adapters/traces/memory"
@@ -91,8 +93,18 @@ func memoryStores(cfg Config) stores {
 
 // postgresStores are the durable stores in the cell's own database (SB-1508), each table
 // created if it isn't there.
-func postgresStores(ctx context.Context, cfg Config) (stores, error) {
-	pool, err := cellstore.Open(ctx, cfg.Database)
+func postgresStores(ctx context.Context, cfg Config) (st stores, err error) {
+	dsn := cfg.Database
+	if strings.HasPrefix(dsn, "vault://") {
+		if dsn != "vault://tenants/"+cfg.Tenant+"/database" {
+			return stores{}, fmt.Errorf("%w: database: only vault://tenants/%s/database names the DSN", ErrConfig, cfg.Tenant)
+		}
+		if dsn, err = (localvault.Dir{Root: cfg.Vault}).Get(ctx, dsn); err != nil {
+			return stores{}, fmt.Errorf("%w: database: %v", ErrConfig, err)
+		}
+		dsn = strings.TrimSpace(dsn)
+	}
+	pool, err := cellstore.Open(ctx, dsn)
 	if err != nil {
 		return stores{}, fmt.Errorf("%w: database: %v", ErrConfig, err)
 	}

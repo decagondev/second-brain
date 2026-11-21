@@ -1,0 +1,11 @@
+# The cell's only door (sb-selfhost(7)). Caddy's own local CA signs cell.localhost; trust
+# it in the browser with `caddy trust` in this container, or replace this site block with
+# the company's certificate on a real install (SB-1605).
+{
+	local_certs
+	auto_https disable_redirects
+}
+
+cell.localhost:8443 {
+	reverse_proxy api:8080
+}

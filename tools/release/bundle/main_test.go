@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,5 +26,19 @@ func TestBuildFromTheRepository(t *testing.T) {
 	}
 	if _, err := build("../../..", []string{"no-equals"}, "2027-03-02"); err == nil {
 		t.Error("a bad --artefact was accepted")
+	}
+}
+
+// SB-1601: --image records a service image by digest as image/NAME; anything else is refused.
+func TestImages(t *testing.T) {
+	d := "sha256:" + strings.Repeat("ab", 32)
+	m, err := build("../../..", nil, "2027-03-02", "api="+d)
+	if err != nil || m.Code["image/api"] != strings.Repeat("ab", 32) {
+		t.Fatalf("%v %v", m.Code, err)
+	}
+	for _, bad := range []string{"api", "api=latest", "=" + d, "api=sha256:abc"} {
+		if _, err := build("../../..", nil, "2027-03-02", bad); err == nil {
+			t.Errorf("--image %q accepted", bad)
+		}
 	}
 }

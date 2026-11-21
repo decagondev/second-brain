@@ -19,7 +19,7 @@ summary: Epics, waves, slices and tickets.
 | W8 to W12 | 19 | 17 | 2 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. **W12 built.** Open: SB-903, SB-908 (a real GCP project) |
 | W13 Hardening | 5 | 0 | 0 | Planned 2026-11-20 with the user (E14): review, fuzz, tidy, manual and code agree, coverage |
 | W14 Cell Runtime | 8 | 1 | 0 | Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end |
-| W15 Self-hosted Cell | 0 | 0 | 9 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins |
+| W15 Self-hosted Cell | 2 | 0 | 7 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -347,8 +347,8 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-1601](E16-self-hosted-cell/SB-1601-container-images.md) | S15.1 | E16 | Container images for every service | Open |
-| [SB-1602](E16-self-hosted-cell/SB-1602-compose-layout.md) | S15.1 | E16 | A self-hosted cell in containers that mirror GCP | Open |
+| [SB-1601](E16-self-hosted-cell/SB-1601-container-images.md) | S15.1 | E16 | Container images for every service | Done |
+| [SB-1602](E16-self-hosted-cell/SB-1602-compose-layout.md) | S15.1 | E16 | A self-hosted cell in containers that mirror GCP | Done |
 | [SB-1603](E16-self-hosted-cell/SB-1603-object-locked-worm.md) | S15.2 | E16 | Write-once audit storage on the box | Open |
 | [SB-1604](E16-self-hosted-cell/SB-1604-upgrades-without-the-socket.md) | S15.2 | E16 | Upgrades without giving the cell the Docker socket | Open |
 | [SB-1605](E16-self-hosted-cell/SB-1605-sovereign-install.md) | S15.3 | E16 | A sovereign install on a VM or an on-prem server | Open |

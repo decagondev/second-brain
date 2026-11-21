@@ -17,12 +17,19 @@ type Web struct {
 	Files fs.FS
 }
 
-// Register mounts the UI on mux; the more specific /v1 patterns win.
+// Register mounts the UI on mux as its catch-all, for every method, so it never conflicts
+// with a route that takes any method (SCIM, /v1); the more specific patterns win, and
+// the UI answers only GET and HEAD (BUG-0026).
 func (h Web) Register(mux *http.ServeMux) {
-	mux.Handle("GET /", h)
+	mux.Handle("/", h) // route: GET /
 }
 
 func (h Web) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	hd := w.Header()
 	hd.Set("Content-Security-Policy", CSP)
 	hd.Set("X-Content-Type-Options", "nosniff")

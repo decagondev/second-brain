@@ -394,3 +394,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** SCIM ids are `usr_` (users) and `grp_` (groups) followed by 24 hex characters, as sb-identity(7) now says.
 
 **Caught by now:** `TestWholeCellOnPostgres`, which provisions its users through SCIM and places a hold on one of them.
+
+## BUG-0026 A cell with its web UI configured panicked at start
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-21, the first self-hosted cell (SB-1602) | High | SB-1502 | Fixed |
+
+**Symptom:** `sb-api` with `web` set in sb-cell(5) panicked before serving anything: Go's router refused `GET /` (the UI) beside `/scim/v2/` (SCIM, any method). Every real cell sets `web`, so none could have started.
+
+**Root cause:** A pattern with a method and a more general path conflicts with one with no method and a more specific path. Every cell test left `web` unset, so the two were never registered together.
+
+**Fix:** The UI is the router's catch-all `/` for every method and answers only GET and HEAD itself (405 otherwise); the more specific SCIM and `/v1` patterns still win.
+
+**Caught by now:** `TestCellWithWebUI` (tests/cell: the UI, SCIM and `/v1` side by side) and `make selfhost-smoke`, which serves the UI through the proxy.

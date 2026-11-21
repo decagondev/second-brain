@@ -68,7 +68,7 @@ It never starts with a part switched off.
 | `release.registry` | string | with `release` | Where the bundle's images live |
 | `release.trusted`, `release.cosign_identity` | string | exactly one, with `release` | The one release identity the cell trusts: an Ed25519 key (`ed25519:BASE64`), or the release workflow's cosign identity |
 | `release.deploy.kind`, `.project`, `.location` | string | with `release` | `local`, or `gcp` with the cell's project and region |
-| `database` | DSN | for `durable` | The cell's own Postgres (with `pgvector`), e.g. `postgres:///sb_acme?host=/var/run/postgresql`: every record store, the index, the spaces registry and the audit log live there, and each service creates its tables at start, one at a time (SB-1508) |
+| `database` | DSN | for `durable` | The cell's own Postgres (with `pgvector`), e.g. `postgres:///sb_acme?host=/var/run/postgresql`, or `vault://tenants/TENANT/database` to read that DSN, password and all, from the vault at start (sb-selfhost(7)): every record store, the index, the spaces registry and the audit log live there, and each service creates its tables at start, one at a time (SB-1508) |
 | `durable` | bool | no, `false` | `true` refuses to start without a `database`, so no store is in memory |
 
 ### Stores

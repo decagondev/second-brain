@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-21 S15.1 Container images and a cell in containers (SB-1601, SB-1602)
+
+**Wave/slice:** W15 / S15.1 · **Status:** Done
+
+**What:** one distroless, non-root, read-only image per service with reproducible digests; `deploy/selfhost/compose.yaml`, which lays a cell out the way GCP does (a TLS proxy as the only door, each service with its own vault, Postgres on a network with no way out); `make selfhost`, `make selfhost-smoke`, and a CI job running both; the database DSN read from the vault.
+
+**Why this way:** The same images serve Cloud Run and the box, so a cell tested on a laptop is the cell that ships. Splitting secrets by volume does on one machine what separate service accounts do on GCP: `ingest` can't read the sign-in secret because it doesn't have it. The smoke checks look from outside, as an auditor would, rather than trusting the compose file.
+
+**Learned:** The first real cell with its UI configured couldn't start at all (BUG-0026): no test had ever set `web`. Image digests differed between two builds of one commit until BuildKit's provenance attestation, which stamps the build's own time, was turned off; the files' and image's dates now come from the commit. Docker Desktop's engine is reached from WSL through its Windows `docker.exe`, so the scripts take `DOCKER` and `CURL`.
+
+**Laws:** LAW-07 (each service holds only its own secrets, closed to everyone else), LAW-02 (one machine, one tenant), LAW-03 (BUG-0026: a part that can't be built stops the cell, and now the cell can be built).
+
 ## 2026-11-21 W15 planned: the self-hosted cell
 
 **Wave/slice:** W15 (plan) · **Status:** Planned

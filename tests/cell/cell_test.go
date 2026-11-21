@@ -169,3 +169,27 @@ func TestRefusesToStart(t *testing.T) {
 		}
 	})
 }
+
+// BUG-0026: a cell with its web UI configured panicked at start, because the UI's "GET /"
+// clashed with SCIM's "/scim/v2/". Now it starts, serves the UI, and SCIM still answers.
+func TestCellWithWebUI(t *testing.T) {
+	web := t.TempDir()
+	celltest.Write(t, filepath.Join(web, "index.html"), "<!doctype html><title>sb</title>", 0o600)
+	r := startWith(t, func(idp *oidctest.IdP, base string) wire.Config {
+		cfg := celltest.Fixture(t, idp, base)
+		cfg.Web = web
+		return cfg
+	})
+	if code, body := r.do(t, "GET", "/", ""); code != 200 || !strings.Contains(body, "<title>sb</title>") {
+		t.Fatalf("GET /: %d %q", code, body)
+	}
+	if code, _ := r.do(t, "POST", "/", "x"); code != 405 {
+		t.Fatalf("POST /: %d, want 405", code)
+	}
+	if code, _ := r.do(t, "POST", "/scim/v2/Users", `{"userName":"ann"}`, "Authorization", "Bearer scim-token", "Content-Type", "application/scim+json"); code != 201 {
+		t.Fatalf("SCIM beside the UI: %d", code)
+	}
+	if code, _ := r.do(t, "GET", "/v1/spaces", ""); code != 401 {
+		t.Fatalf("/v1 beside the UI: %d, want 401", code)
+	}
+}

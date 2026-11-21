@@ -35,8 +35,13 @@ def norm(path):
     return "/".join(parts)
 
 
+# A catch-all registered for every method that answers one itself, marked in the code
+# with `// route: METHOD /path` beside it (the web UI, BUG-0026).
+MARKED = re.compile(r'// route: (GET|POST|PUT|PATCH|DELETE) (/[^\s]*)')
+
+
 def code_routes(texts):
-    return {(m, norm(p)) for t in texts for m, p in ROUTE.findall(t)}
+    return {(m, norm(p)) for t in texts for m, p in ROUTE.findall(t) + MARKED.findall(t)}
 
 
 def manual_routes(texts):

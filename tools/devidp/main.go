@@ -28,18 +28,27 @@ func main() {
 	client := flag.String("client", "", "the cell's OIDC client id")
 	secretFile := flag.String("secret-file", "", "a file holding the client secret (the cell reads the same from its vault)")
 	user := flag.String("user", "usr_dev", "who signs in until /dev/user changes it")
+	issuer := flag.String("issuer", "", "the issuer URL, when it isn't http://LISTEN (a container's published name)")
+	demo := flag.Bool("demo", false, "allow a non-loopback address, for a demo container whose port is published on loopback only (sb-selfhost(7))")
 	flag.Parse()
 	host, _, err := net.SplitHostPort(*listen)
-	if err != nil || (host != "127.0.0.1" && host != "localhost" && host != "::1") {
-		fmt.Fprintln(os.Stderr, "devidp: --listen must be a loopback address; this IdP has no passwords")
+	if err != nil || (!*demo && host != "127.0.0.1" && host != "localhost" && host != "::1") {
+		fmt.Fprintln(os.Stderr, "devidp: --listen must be a loopback address; this IdP has no passwords (--demo only in a demo container)")
 		os.Exit(2)
+	}
+	if *demo {
+		fmt.Fprintln(os.Stderr, "devidp: DEMO MODE: anyone who reaches this address signs in with no password; never front a real cell")
 	}
 	secret, err := os.ReadFile(*secretFile)
 	if err != nil || *tenant == "" || *client == "" {
 		fmt.Fprintln(os.Stderr, "devidp: --tenant, --client and a readable --secret-file are required")
 		os.Exit(2)
 	}
-	idp := oidctest.NewAt(*tenant, *client, strings.TrimSpace(string(secret)), "http://"+*listen)
+	iss := *issuer
+	if iss == "" {
+		iss = "http://" + *listen
+	}
+	idp := oidctest.NewAt(*tenant, *client, strings.TrimSpace(string(secret)), iss)
 	idp.User = *user
 	mux := http.NewServeMux()
 	mux.Handle("/", idp.Handler())
