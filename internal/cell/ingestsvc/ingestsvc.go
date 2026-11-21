@@ -45,8 +45,8 @@ func (s *Service) now() time.Time {
 
 // Kinds are the cell's connector kinds, sorted.
 func (s *Service) Kinds() []string {
-	out := make([]string, 0, len(s.Cell.Connectors))
-	for k := range s.Cell.Connectors {
+	out := make([]string, 0, len(s.Cell.Parts().Connectors))
+	for k := range s.Cell.Parts().Connectors {
 		out = append(out, k)
 	}
 	sort.Strings(out)
@@ -57,7 +57,7 @@ func (s *Service) Kinds() []string {
 func (s *Service) Pipeline(kind string) ingest.Pipeline {
 	c := s.Cell
 	m := c.Metrics
-	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Connectors[kind], Embedder: c.Agent.Embedder,
+	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Parts().Connectors[kind], Embedder: c.Parts().Agent.Embedder,
 		Index: c.Index, Kind: kind,
 		Spaces: func(ctx context.Context) ([]ports.Space, error) { return c.Spaces.Spaces(ctx, c.Config.Tenant) },
 		SecretDropped: func(k, pattern string) {

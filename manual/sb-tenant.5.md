@@ -44,6 +44,9 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 | `vault://tenants/TENANT/canary` | the cell's canary secret; nothing may use it ([sb-observability(7)](sb-observability.7.md#canaries-and-the-secret-scanner)) |
 | `vault://tenants/TENANT/connectors/docs-classification` | the Drive label that carries sensitivity, no secret in it (sb-connector(3)); optional |
 | `vault://tenants/TENANT/audit/anchor-seed` | the cell's audit anchor key seed, 32 bytes in base64, on a local cell (sb-audit(5), Anchors); on GCP it is a data key wrapped by the cell's KMS key |
+| `vault://tenants/TENANT/attest-seed` | the cell's attestation key seed, 32 bytes in base64, on a local cell (sb-release(7), Attestation) |
+| `vault://tenants/TENANT/control-plane` | the control plane's identity token, which the cell compares for apply, the live configuration and the verifier (sb-api(3)) |
+| `vault://tenants/TENANT/release-pull` | the read token for the factory's release store (sb-release(7), Cells in a tenant's account) |
 
 A reference is resolved through the `Secrets` port at the moment of the call, and only for the cell's own tenant: a reference to another tenant's path is refused. Resolved values are never stored in a struct field and never cached past the call. Every value resolved is also registered with the logger's redactor, so it is replaced by `[REDACTED]` anywhere it would appear in a log line: message, attribute, error or nested group. Attributes whose names contain `secret`, `password`, `token` or `key` are redacted whatever their value. For development, `file:///DIR` keeps the vault in `DIR/vault/tenants/…`, one file per secret, readable only by its owner; a file anyone else can read is refused.
 
@@ -140,7 +143,7 @@ A record exactly `retention_days` old is kept, and one older is deleted. The job
 
 ## DRIFT
 
-Every hour, each cell reports its live configuration as resources in the plan's terms (kind, name, attributes), and the control plane compares it with what was last applied from the manifest (SB-510). Any difference is a `manifest_drift` alert that names the resource and the field, for example `connector tickets: attribute vendor: applied jira, live linear`, or `agent draft-reply: present live, not applied`. Values are configuration, never secrets (secrets aren't in the manifest). Drift isn't fixed automatically: `sb tenant apply` with the manifest makes the cell match again, and if the live change was intended, the manifest changes first (LAW-16).
+Every hour, each cell reports its live configuration as resources in the plan's terms (kind, name, attributes), and the control plane compares it with what was last applied from the manifest (SB-510). Any difference is a `manifest_drift` alert that names the resource and the field, for example `connector tickets: attribute vendor: applied jira, live linear`, or `agent draft-reply: present live, not applied`. Values are configuration, never secrets (secrets aren't in the manifest). Exactly (SB-1506): the cell's `drift` job (sb-runtime(7), Schedules) compares what it runs, with its spaces as the registry holds them, against the manifest file it last applied, and `GET /v1/cell/live` gives the control plane the same resources. A manifest that can't be read counts as a failed run, never as no drift. Drift isn't fixed automatically: `sb tenant apply` with the manifest makes the cell match again, and if the live change was intended, the manifest changes first (LAW-16).
 
 ## LAWS
 

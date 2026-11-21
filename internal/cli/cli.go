@@ -281,37 +281,11 @@ func (e *env) tenantVerify(args []string) int {
 	if cellURL == "" {
 		return e.fail(name, errs.New(errs.EUSAGE, "--cell URL is required (the deployed cell); the local cell runs it with tools/evalcell --verify"))
 	}
-	if !strings.HasPrefix(cellURL, "https://") && !strings.HasPrefix(cellURL, "http://127.0.0.1") && !strings.HasPrefix(cellURL, "http://localhost") {
-		return e.fail(name, errs.New(errs.EUSAGE, "--cell must be an https URL"))
-	}
 	req["laws"] = laws
-	token := os.Getenv("SB_TOKEN")
-	if token == "" {
-		return e.fail(name, errs.New(errs.EAUTH, "set SB_TOKEN to the control plane's identity token"))
-	}
 	body, _ := json.Marshal(req)
-	hreq, err := http.NewRequest(http.MethodPost, strings.TrimRight(cellURL, "/")+"/v1/verifier/verify", bytes.NewReader(body))
+	raw, err := cellCall(cellURL, "/v1/verifier/verify", "application/json", body, 10*time.Minute)
 	if err != nil {
-		return e.fail(name, errs.New(errs.EUSAGE, "bad --cell URL: %v", err))
-	}
-	hreq.Header.Set("Authorization", "Bearer "+token)
-	hreq.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 10 * time.Minute}).Do(hreq)
-	if err != nil {
-		return e.fail(name, errs.New(errs.EUNAVAIL, "the cell's verifier didn't answer: %v", err))
-	}
-	defer func() { _ = resp.Body.Close() }()
-	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if resp.StatusCode != http.StatusOK {
-		var eb struct {
-			Error struct{ Code, Message string }
-		}
-		_ = json.Unmarshal(raw, &eb)
-		c := errs.Code(eb.Error.Code)
-		if c == "" {
-			c = errs.EUNAVAIL
-		}
-		return e.fail(name, errs.New(c, "the cell refused: %s", eb.Error.Message))
+		return e.fail(name, err)
 	}
 	var rep verify.Report
 	if err := json.Unmarshal(raw, &rep); err != nil {
@@ -331,23 +305,66 @@ func (e *env) tenantVerify(args []string) int {
 	return 0
 }
 
-// tenantApply implements `sb tenant apply FILE [--plan]` (SB-102, SB-104).
+// cellCall posts body to a running cell's control-plane endpoint with SB_TOKEN, the
+// control plane's identity, and returns the answer or the cell's own error.
+func cellCall(cellURL, path, contentType string, body []byte, timeout time.Duration) ([]byte, error) {
+	if !strings.HasPrefix(cellURL, "https://") && !strings.HasPrefix(cellURL, "http://127.0.0.1") && !strings.HasPrefix(cellURL, "http://localhost") {
+		return nil, errs.New(errs.EUSAGE, "--cell must be an https URL")
+	}
+	token := os.Getenv("SB_TOKEN")
+	if token == "" {
+		return nil, errs.New(errs.EAUTH, "set SB_TOKEN to the control plane's identity token")
+	}
+	hreq, err := http.NewRequest(http.MethodPost, strings.TrimRight(cellURL, "/")+path, bytes.NewReader(body))
+	if err != nil {
+		return nil, errs.New(errs.EUSAGE, "bad --cell URL: %v", err)
+	}
+	hreq.Header.Set("Authorization", "Bearer "+token)
+	hreq.Header.Set("Content-Type", contentType)
+	resp, err := (&http.Client{Timeout: timeout}).Do(hreq)
+	if err != nil {
+		return nil, errs.New(errs.EUNAVAIL, "the cell didn't answer: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if resp.StatusCode != http.StatusOK {
+		var eb struct {
+			Error struct{ Code, Message string }
+		}
+		_ = json.Unmarshal(raw, &eb)
+		c := errs.Code(eb.Error.Code)
+		if c == "" {
+			c = errs.EUNAVAIL
+		}
+		return nil, errs.New(c, "the cell refused: %s", eb.Error.Message)
+	}
+	return raw, nil
+}
+
+// tenantApply implements `sb tenant apply FILE [--plan] [--cell URL]` (SB-102, SB-104,
+// SB-1506): after the control plane's apply, --cell sends the manifest to the running cell.
 func (e *env) tenantApply(args []string) int {
 	const name = "sb tenant apply"
-	var file string
+	const usage = "usage: sb tenant apply FILE [--plan] [--cell URL]"
+	var file, cellURL string
 	planOnly := false
-	for _, a := range e.localArgs(args) {
+	args = e.localArgs(args)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
 		switch {
 		case a == "--plan":
 			planOnly = true
+		case a == "--cell" && i+1 < len(args):
+			i++
+			cellURL = args[i]
 		case file == "" && !strings.HasPrefix(a, "-"):
 			file = a
 		default:
-			return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant apply FILE [--plan]"))
+			return e.fail(name, errs.New(errs.EUSAGE, usage))
 		}
 	}
-	if file == "" {
-		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb tenant apply FILE [--plan]"))
+	if file == "" || (planOnly && cellURL != "") {
+		return e.fail(name, errs.New(errs.EUSAGE, usage))
 	}
 	t, code, ok := e.readManifest(name, file)
 	if !ok {
@@ -388,6 +405,8 @@ func (e *env) tenantApply(args []string) int {
 		return e.fail(name, errs.New(errs.EEVAL, "%v", err))
 	case err != nil:
 		return e.fail(name, errs.New(errs.EUNAVAIL, "%v; run apply again to resume", err))
+	case cellURL != "":
+		return e.applyToCell(name, file, cellURL)
 	case e.g.JSON:
 		return e.json(p)
 	case len(p.Changes) == 0:
@@ -395,6 +414,38 @@ func (e *env) tenantApply(args []string) int {
 	default:
 		fmt.Fprintf(e.out, "apply: %d added, %d changed, %d removed\n", p.Add, p.Change, p.Remove)
 	}
+	return 0
+}
+
+// applyToCell sends the checked manifest to the running cell (POST /v1/cell/manifest).
+func (e *env) applyToCell(name, file, cellURL string) int {
+	src, err := os.ReadFile(file)
+	if err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "%s: %v", file, err))
+	}
+	raw, err := cellCall(cellURL, "/v1/cell/manifest", "application/yaml", src, time.Minute)
+	if err != nil {
+		return e.fail(name, err)
+	}
+	var res struct {
+		SHA256  string   `json:"sha256"`
+		Changed bool     `json:"changed"`
+		Changes []string `json:"changes"`
+	}
+	if err := json.Unmarshal(raw, &res); err != nil {
+		return e.fail(name, errs.New(errs.EUNAVAIL, "the cell's answer is unreadable"))
+	}
+	if e.g.JSON {
+		return e.json(res)
+	}
+	for _, c := range res.Changes {
+		fmt.Fprintln(e.out, c)
+	}
+	if !res.Changed {
+		fmt.Fprintln(e.out, "apply: the cell already runs this manifest")
+		return 0
+	}
+	fmt.Fprintf(e.out, "apply: the cell runs sha256:%s\n", res.SHA256)
 	return 0
 }
 

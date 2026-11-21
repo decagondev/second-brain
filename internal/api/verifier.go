@@ -49,6 +49,10 @@ func (v Verifier) guard(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func (v Verifier) attestation(w http.ResponseWriter, r *http.Request) {
+	if v.Attest == nil {
+		v.fail(w, errs.New(errs.EUNAVAIL, "The running build can't be read right now."))
+		return
+	}
 	s, err := v.Attest(r.Context())
 	if err != nil {
 		v.fail(w, errs.New(errs.EUNAVAIL, "The running build can't be read right now."))
@@ -76,6 +80,10 @@ func (v Verifier) verify(w http.ResponseWriter, r *http.Request) {
 			v.fail(w, errs.New(errs.EINVAL, "Verify can't check %s.", l))
 			return
 		}
+	}
+	if v.Target == nil {
+		v.fail(w, errs.New(errs.EUNAVAIL, "This cell can't run the verifier's checks yet."))
+		return
 	}
 	rep := verify.Run(r.Context(), v.Target, verify.Options{Laws: req.Laws, Sample: req.Sample, Seed: req.Seed})
 	v.ok(w, rep)

@@ -47,3 +47,33 @@ func (d Dir) Put(release, name string, data []byte) error {
 	}
 	return os.WriteFile(p, data, 0o644)
 }
+
+var channelRe = regexp.MustCompile(`^(stable|testing)$`)
+
+// Channel returns the release a channel should run (DIR/channels/CHANNEL), as the release
+// controller last set it.
+func (d Dir) Channel(_ context.Context, channel string) (string, error) {
+	if !channelRe.MatchString(channel) {
+		return "", fmt.Errorf("release store: bad channel %q", channel)
+	}
+	b, err := os.ReadFile(filepath.Join(d.Root, "channels", channel))
+	if err != nil {
+		return "", err
+	}
+	id := strings.TrimSpace(string(b))
+	if !idRe.MatchString(id) {
+		return "", fmt.Errorf("release store: channel %s names %q, not a release", channel, id)
+	}
+	return id, nil
+}
+
+// SetChannel points a channel at a release (the release controller's side).
+func (d Dir) SetChannel(channel, id string) error {
+	if !channelRe.MatchString(channel) || !idRe.MatchString(id) {
+		return fmt.Errorf("release store: bad channel %q or release %q", channel, id)
+	}
+	if err := os.MkdirAll(filepath.Join(d.Root, "channels"), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(d.Root, "channels", channel), []byte(id+"\n"), 0o644)
+}

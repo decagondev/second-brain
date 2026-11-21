@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The updater and apply against a running cell (S14.3: SB-1505, SB-1506): `sb-updater` pulls the channel's release, admits it and deploys each service by digest; `sb tenant apply FILE --cell URL` makes a running cell run a new manifest at once, refusing a held space's removal; the cell reports drift hourly.
 - The ingest and jobs services (S14.2: SB-1503, SB-1504): syncs that run from stored cursors with backoff and a staleness alert, every scheduled job with its finish recorded and a watchdog, `sb-api --with ingest,jobs`, `sb-jobs run JOB`; the budget guard, token metering and the weekly report wired; legal holds and reporting lines wired in every service (PT-0011).
 - One cell configuration and the api service (S14.1: SB-1501, SB-1502): `sb-api --config FILE` (sb-cell(5)) builds the whole cell and serves every endpoint, with `/healthz`, `/readyz` and graceful shutdown.
 - Quick fixes (S13.6): no change lost in the cursor's own second (GitHub, BambooHR, QuickBooks), opted-in repository source backfilled, QuickBooks open-month reports refreshed hourly, conversations tagged with their space for legal holds, and coverage in its own `make coverage` step and CI job.

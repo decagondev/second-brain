@@ -50,7 +50,24 @@ type Config struct {
 		Tenant bool     `json:"tenant"`
 		Retain []string `json:"retain"`
 	} `json:"custody"`
-	Durable bool `json:"durable"`
+	Release ReleaseConfig `json:"release"`
+	Durable bool          `json:"durable"`
+}
+
+// ReleaseConfig is where the cell's updater pulls releases from and how it deploys them
+// (sb-runtime(7), Updates are pulled; SB-1505).
+type ReleaseConfig struct {
+	Store    string `json:"store"`    // file:///DIR or an https release store
+	Registry string `json:"registry"` // where the bundle's images live, e.g. europe-west1-docker.pkg.dev/sb-factory/releases
+	// Exactly one of Trusted (the release key, ed25519:BASE64) and CosignIdentity (the
+	// release workflow's identity, verified with cosign).
+	Trusted        string `json:"trusted"`
+	CosignIdentity string `json:"cosign_identity"`
+	Deploy         struct {
+		Kind     string `json:"kind"` // local or gcp
+		Project  string `json:"project"`
+		Location string `json:"location"`
+	} `json:"deploy"`
 }
 
 // ConnectorConfig overrides one connector (sb-cell(5), Fields).
@@ -128,6 +145,9 @@ func Parse(b []byte) (Config, error) {
 			return Config{}, fmt.Errorf("%w: alerts.webhook must be an https URL", ErrConfig)
 		}
 	}
+	if err := c.Release.check(); err != nil {
+		return Config{}, err
+	}
 	for i, b := range c.Backups {
 		if b.Dir == "" || b.Media == "" {
 			return Config{}, fmt.Errorf("%w: backups[%d] needs dir and media", ErrConfig, i)
@@ -154,6 +174,35 @@ var ErrInProcess = errors.New("wire: this cell's stores are in memory, so ingest
 func Separate(c Config) error {
 	if !c.Durable {
 		return ErrInProcess
+	}
+	return nil
+}
+
+// check: a release block is all or nothing.
+func (r ReleaseConfig) check() error {
+	if r == (ReleaseConfig{}) {
+		return nil
+	}
+	if u, err := url.Parse(r.Store); err != nil || (u.Scheme != "file" && u.Scheme != "https") {
+		return fmt.Errorf("%w: release.store must be file:///DIR or https://HOST", ErrConfig)
+	}
+	if r.Registry == "" {
+		return fmt.Errorf("%w: release.registry is required", ErrConfig)
+	}
+	if (r.Trusted == "") == (r.CosignIdentity == "") {
+		return fmt.Errorf("%w: release needs exactly one of trusted and cosign_identity", ErrConfig)
+	}
+	if r.Trusted != "" && !strings.HasPrefix(r.Trusted, "ed25519:") {
+		return fmt.Errorf("%w: release.trusted must be ed25519:BASE64", ErrConfig)
+	}
+	switch r.Deploy.Kind {
+	case "local":
+	case "gcp":
+		if r.Deploy.Project == "" || r.Deploy.Location == "" {
+			return fmt.Errorf("%w: release.deploy gcp needs project and location", ErrConfig)
+		}
+	default:
+		return fmt.Errorf("%w: release.deploy.kind must be local or gcp", ErrConfig)
 	}
 	return nil
 }

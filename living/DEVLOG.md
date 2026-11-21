@@ -19,6 +19,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-21 S14.3 The updater, and apply against a running cell (SB-1505, SB-1506)
+
+**Wave/slice:** W14 / S14.3 · **Status:** Done
+
+**What:** `cmd/sb-updater` with channel pointers in both release stores, a local deployer that refuses unattested images, the Cloud Run deployer with a metadata-server token, and a Sev-1 on any release that isn't admitted; the control plane's identity in the cell, guarding the verifier, `POST /v1/cell/manifest` and `GET /v1/cell/live`; `wire.Cell.Apply`, which swaps every manifest-derived part in whole; `sb tenant apply --cell`; the hourly `drift` job.
+
+**Why this way:** Most of a cell's parts were built from the manifest by value, so changing the manifest in place would leave some parts on the old one. Splitting the composition root into what is built once (stores, sign-in) and what comes from the manifest (`Parts`) lets an apply build the new set completely, refuse before anything changes, and swap it in with one atomic store. The updater needs only files, so unlike ingest and jobs it runs on its own today.
+
+**Learned:** Wiring the verifier found two nil functions that would have panicked once a caller had the right identity (attestation and the checks), now `EUNAVAIL`; an Identity Platform cell's `groups` were never applied at start; and three more vault paths the manual named weren't allowed by the reference parser.
+
+**Laws:** LAW-06 (an unsigned or ungated release changes nothing, with a Sev-1), LAW-13 (apply never removes a held space), LAW-16 (the running cell runs exactly its applied manifest, audited; drift is reported, never fixed silently).
+
 ## 2026-11-21 S14.2 The ingest and jobs services (SB-1503, SB-1504)
 
 **Wave/slice:** W14 / S14.2 · **Status:** Done

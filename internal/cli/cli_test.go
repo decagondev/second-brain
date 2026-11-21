@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -103,5 +105,35 @@ func TestTenantVerifyCell(t *testing.T) {
 	}
 	if code, _, _ := run("tenant", "verify", "../../examples/tenants/pilot.yaml", "--cell", "http://evil.example", "--law", "LAW-01"); code != 2 {
 		t.Fatalf("a plain-http cell URL: exit %d", code)
+	}
+}
+
+// SB-1506: sb tenant apply --cell applies to the control plane, then sends the manifest
+// to the running cell with the control plane's identity.
+func TestTenantApplyCell(t *testing.T) {
+	var got, body string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("Authorization")
+		b, _ := io.ReadAll(r.Body)
+		body = string(b)
+		if r.URL.Path != "/v1/cell/manifest" || r.Header.Get("Content-Type") != "application/yaml" {
+			w.WriteHeader(400)
+			return
+		}
+		_, _ = w.Write([]byte(`{"sha256":"abc","changed":true,"changes":["+ agent ask"]}`))
+	}))
+	defer srv.Close()
+	t.Setenv("SB_TOKEN", "cp-token")
+	reg := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(reg, "tenants"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ep := "file://" + reg
+	code, out, errOut := run("--endpoint", ep, "tenant", "apply", "../../examples/tenants/pilot.yaml", "--cell", srv.URL)
+	if code != 0 || !strings.Contains(out, "the cell runs sha256:abc") || got != "Bearer cp-token" || !strings.Contains(body, "tenant: acme-logistics") {
+		t.Fatalf("exit %d %q %q, auth %q", code, out, errOut, got)
+	}
+	if code, _, _ := run("--endpoint", ep, "tenant", "apply", "../../examples/tenants/pilot.yaml", "--plan", "--cell", srv.URL); code != 2 {
+		t.Fatalf("--plan with --cell: exit %d", code)
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -55,6 +56,7 @@ import (
 	"example.com/second-brain/internal/core/canary"
 	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/gateway"
+	"example.com/second-brain/internal/core/groupsync"
 	"example.com/second-brain/internal/core/holds"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
@@ -84,9 +86,8 @@ var Vendors = map[string]string{"gdrive": "docs", "slack": "chat", "linear": "ti
 
 // Cell is a built cell: every part, and the API handler that serves them.
 type Cell struct {
-	Config   Config
-	Manifest manifest.Tenant
-	Release  string
+	Config  Config
+	Release string
 
 	Audit     *audit.Log
 	Kill      *kill.Checker
@@ -97,23 +98,19 @@ type Cell struct {
 	Index     *memindex.Index
 	Traces    *tracemem.Store
 	Holds     *holds.MemoryStore
-	Bus       *toolbus.Bus
-	Agent     ask.Agent
 	Metrics   *obs.Metrics
 	Auth      *auth.Cell
 
 	// The parts the ingest and jobs services run (SB-1503, SB-1504).
-	Connectors map[string]ports.Connector
-	Cursors    ports.CursorStore
-	Runs       runsfs.Dir
-	Usage      *usagefs.Ledger
-	Report     report.Source // the weekly report's numbers
-	Retention  retention.Job
-	Reviews    *reviews.MemoryStore
-	Proposals  *proposals.MemoryStore
-	Actions    *actmem.Store
-	Logs       *logfs.Files
-	Redact     *obs.Redactor
+	Cursors   ports.CursorStore
+	Runs      runsfs.Dir
+	Usage     *usagefs.Ledger
+	Report    report.Source // the weekly report's numbers
+	Reviews   *reviews.MemoryStore
+	Proposals *proposals.MemoryStore
+	Actions   *actmem.Store
+	Logs      *logfs.Files
+	Redact    *obs.Redactor
 	// Secret reads vault://tenants/TENANT/PATH at call time.
 	Secret func(path string) func(context.Context) (string, error)
 	// HeldNow is the active legal holds, read when asked; holds that can't be read hold
@@ -124,12 +121,38 @@ type Cell struct {
 	Log     *slog.Logger
 	Alerter canary.Alerter
 
-	handler http.Handler
-	ready   atomic.Bool
+	opt      Options
+	model    func(m manifest.Tenant) (ports.Model, error)
+	inbox    *slack.MemoryInbox
+	receipts toolbus.Receipts
+	engine   policy.Evaluator
+	parts    atomic.Pointer[Parts]
+	applyMu  sync.Mutex
+	ready    atomic.Bool
 }
 
-// Handler serves the whole API (sb-api(3)).
-func (c *Cell) Handler() http.Handler { return c.handler }
+// Parts are everything built from the applied manifest. An apply builds a new set and
+// swaps it in whole (SB-1506), so a request sees one manifest from start to end.
+type Parts struct {
+	Manifest   manifest.Tenant
+	SHA256     string // of the applied manifest's text
+	Connectors map[string]ports.Connector
+	Agent      ask.Agent
+	Bus        *toolbus.Bus
+	Retention  retention.Job
+	handler    http.Handler
+}
+
+// Parts returns the parts built from the manifest the cell runs now.
+func (c *Cell) Parts() *Parts { return c.parts.Load() }
+
+// Manifest is the manifest the cell runs now.
+func (c *Cell) Manifest() manifest.Tenant { return c.Parts().Manifest }
+
+// Handler serves the whole API (sb-api(3)) with the parts of the manifest applied now.
+func (c *Cell) Handler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { c.Parts().handler.ServeHTTP(w, r) })
+}
 
 type applied struct {
 	t      manifest.Tenant
@@ -199,17 +222,9 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: manifest: %v", ErrConfig, err)
 	}
-	m, ds := manifest.Check(src)
-	if len(ds) > 0 {
-		return nil, fmt.Errorf("%w: the manifest doesn't check: %s", ErrConfig, ds[0].Format(cfg.Manifest))
-	}
-	if m.Tenant != cfg.Tenant {
-		return nil, fmt.Errorf("%w: the manifest is for %s, not %s", ErrConfig, m.Tenant, cfg.Tenant)
-	}
-	for kind, vendor := range m.Connectors {
-		if Vendors[vendor] != kind {
-			return nil, fmt.Errorf("%w: connector %s: no adapter for vendor %q", ErrConfig, kind, vendor)
-		}
+	m, err := checkManifest(cfg, src, cfg.Manifest)
+	if err != nil {
+		return nil, err
 	}
 	engine, err := loadPolicies(cfg.Policies)
 	if err != nil {
@@ -220,7 +235,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 			return nil, fmt.Errorf("%w: %s is not a directory", ErrConfig, d)
 		}
 	}
-	c := &Cell{Config: cfg, Manifest: m, Release: "rel_" + version.Version, Metrics: obs.NewMetrics()}
+	c := &Cell{Config: cfg, Release: "rel_" + version.Version, Metrics: obs.NewMetrics(), opt: opt, engine: engine}
 	tenant := cfg.Tenant
 	vault := localvault.Dir{Root: cfg.Vault}
 	secret := func(path string) func(context.Context) (string, error) {
@@ -262,25 +277,19 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	if err := spaces.SyncHeld(ctx, c.Spaces, nil, m, func(id string) bool { return c.HeldNow(ctx).HeldSpace(id) }); err != nil {
 		return nil, fmt.Errorf("%w: spaces: %v", ErrConfig, err)
 	}
-	spaceFacts := func(ctx context.Context) ([]ports.Space, [][2]string, error) {
-		all, err := c.Spaces.Spaces(ctx, tenant)
-		return all, m.Barriers, err
+	if len(m.Groups) > 0 {
+		if _, err := groupsync.Apply(ctx, c.Directory, c.Sessions, tenant, nil, m.Groups); err != nil {
+			return nil, fmt.Errorf("%w: groups: %v", ErrConfig, err)
+		}
 	}
-
-	if m.Connectors["chat"] == "slack" && cfg.Chat.TeamID == "" {
-		return nil, fmt.Errorf("%w: the manifest's chat is slack, so chat.team_id is required", ErrConfig)
-	}
-	inbox := &slack.MemoryInbox{}
-	conns, err := connectors(cfg, m, secret, redact, inbox, opt.ConnectorHTTP)
-	if err != nil {
-		return nil, err
-	}
-	c.Connectors = conns
-	guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
-		Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}}
-	model, err := buildModel(cfg, tenant, secret, redact, c.Usage, guard)
-	if err != nil {
-		return nil, err
+	c.inbox, c.receipts, c.Actions = &slack.MemoryInbox{}, actmem.NewReceipts(), actmem.New()
+	c.Proposals, c.Reviews = &proposals.MemoryStore{}, &reviews.MemoryStore{}
+	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
+	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory}
+	c.model = func(m manifest.Tenant) (ports.Model, error) {
+		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
+			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}}
+		return buildModel(cfg, tenant, secret, redact, c.Usage, guard)
 	}
 
 	// Sign-in (sb-identity(7)).
@@ -303,6 +312,35 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		Redirect: strings.TrimRight(cfg.BaseURL, "/") + "/callback", Now: time.Now,
 		GroupsOf: c.Directory.GroupsOf, Spaces: c.Spaces, Attributes: auth.DirectoryAttributes(c.Directory)})
 
+	p, err := c.assemble(m, sha(src))
+	if err != nil {
+		return nil, err
+	}
+	c.parts.Store(p)
+	c.ready.Store(true)
+	return c, nil
+}
+
+// assemble builds every part that comes from the manifest, without changing anything the
+// cell runs: Build and Apply swap the result in.
+func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
+	cfg, tenant, secret, redact, newID := c.Config, c.Config.Tenant, c.Secret, c.Redact, c.NewID
+	if m.Connectors["chat"] == "slack" && cfg.Chat.TeamID == "" {
+		return nil, fmt.Errorf("%w: the manifest's chat is slack, so chat.team_id is required", ErrConfig)
+	}
+	conns, err := connectors(cfg, m, secret, redact, c.inbox, c.opt.ConnectorHTTP)
+	if err != nil {
+		return nil, err
+	}
+	model, err := c.model(m)
+	if err != nil {
+		return nil, err
+	}
+	spaceFacts := func(ctx context.Context) ([]ports.Space, [][2]string, error) {
+		all, err := c.Spaces.Spaces(ctx, tenant)
+		return all, m.Barriers, err
+	}
+
 	// Asking (sb-ask(3)).
 	authz := retrieve.Authoriser{Connectors: conns, Policy: c.Policy, Killed: c.Kill.ConnectorKilled, Spaces: spaceFacts,
 		SpaceKilled: c.Kill.SpaceKilled, Owners: barrier.Directory(c.Directory, tenant), Metrics: c.Metrics}
@@ -313,7 +351,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		}
 		return u.Emails, nil
 	}
-	c.Agent = ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index.Bind(tenant), Embedder: hashing.Embedder{}, Auth: authz,
+	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index.Bind(tenant), Embedder: hashing.Embedder{}, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
 		NewID: newID, Now: time.Now, Metrics: c.Metrics, Enabled: func(a string) bool { return contains(m.Agents, a) },
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
@@ -333,10 +371,8 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		}
 		return conn.Fetch(ctx, ref)
 	}
-	c.Actions = actmem.New()
-	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory}
-	c.Bus = &toolbus.Bus{Tenant: tenant, Tools: tools, Kill: c.Kill, Policy: c.Policy, Audit: c.Audit, Actions: c.Actions,
-		Connectors: conns, Now: time.Now, NewID: newID, Receipts: actmem.NewReceipts(),
+	bus := &toolbus.Bus{Tenant: tenant, Tools: tools, Kill: c.Kill, Policy: c.Policy, Audit: c.Audit, Actions: c.Actions,
+		Connectors: conns, Now: time.Now, NewID: newID, Receipts: c.receipts,
 		Barriers: barrier.Cell{Spaces: spaceFacts, GroupsOf: func(ctx context.Context, u string) ([]string, error) { return c.Directory.GroupsOf(ctx, tenant, u) },
 			Owners: barrier.Directory(c.Directory, tenant), Locate: locate},
 		Managers: func(ctx context.Context, u string) (string, error) {
@@ -348,17 +384,16 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		}}
 
 	// Retention and erasure, holds always read at the moment they're needed (PT-0011).
-	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
 	spaceDays := map[string]int{}
 	for name, sp := range m.Spaces {
 		if sp.RetentionDays > 0 && sp.RetentionDays < m.RetentionDays {
 			spaceDays["spc_"+name] = sp.RetentionDays
 		}
 	}
-	c.Retention = retention.Job{Tenant: tenant, Days: m.RetentionDays, Stores: append(c.Traces.Retention(), c.Logs), Audit: c.Audit, Now: time.Now,
+	ret := retention.Job{Tenant: tenant, Days: m.RetentionDays, Stores: append(c.Traces.Retention(), c.Logs), Audit: c.Audit, Now: time.Now,
 		Held: func(space, user string) bool { return c.HeldNow(context.Background()).Held(space, user) }, SpaceDays: spaceDays}
 
-	man := applied{t: m, commit: "local"}
+	man := applied{t: m, commit: "sha256:" + digest}
 	mux := http.NewServeMux()
 	public := http.NewServeMux()
 	public.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
@@ -372,38 +407,37 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	public.HandleFunc("GET /login", c.Auth.Login)
 	public.HandleFunc("GET /callback", c.Auth.Callback)
 	public.Handle("/scim/v2/", (&scim.Endpoint{Tenant: tenant, Directory: c.Directory, Sessions: c.Sessions, Token: secret("scim")}).Handler())
-	api.Verifier{Release: c.Release, Metrics: c.Metrics.Handler(), ControlPlane: func(*http.Request) bool { return false }}.Register(public)
+	api.Verifier{Release: c.Release, Metrics: c.Metrics.Handler(), ControlPlane: c.controlPlane, Attest: c.attestor()}.Register(public)
 	if sc, ok := conns["chat"].(*slack.Connector); ok {
 		public.Handle("POST /connectors/slack/events", sc.EventsHandler(time.Now))
 		creds := secret("connectors/chat")
 		app := &slackapp.App{Tenant: tenant, TeamID: cfg.Chat.TeamID, Secret: slackField(creds, "signing_secret"),
 			Email: slackapp.WebEmail(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second}),
-			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: c.Agent, Spaces: c.Spaces, Now: time.Now}
+			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now}
 		app.Register(public)
 	}
 	if cfg.Web != "" {
 		api.Web{Files: os.DirFS(cfg.Web)}.Register(public)
 	}
-	api.Ask{Agent: c.Agent, Feedback: ask.Feedbacks{Agent: c.Agent, Store: c.Traces}, Release: c.Release, NewID: newID}.Register(mux)
-	api.Drafts{Agent: ask.Drafts{Agent: c.Agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
-		Ask: api.Ask{Agent: c.Agent, Release: c.Release, NewID: newID}}.Register(mux)
-	api.Actions{Bus: c.Bus, Release: c.Release, NewID: newID}.Register(mux)
+	api.Ask{Agent: agent, Feedback: ask.Feedbacks{Agent: agent, Store: c.Traces}, Release: c.Release, NewID: newID}.Register(mux)
+	api.Drafts{Agent: ask.Drafts{Agent: agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
+		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
+	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
 	api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: c.Retention}.Register(mux)
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
-	c.Proposals, c.Reviews = &proposals.MemoryStore{}, &reviews.MemoryStore{}
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now}.Register(mux)
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)
 	api.Holds{Tenant: tenant, Policy: c.Policy, Manifests: man, Service: holds.Service{Store: c.Holds, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
+	public.HandleFunc("POST /v1/cell/manifest", c.applyHandler)
+	public.HandleFunc("GET /v1/cell/live", c.liveHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
-	c.handler = public
-	c.ready.Store(true)
-	return c, nil
+	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, handler: public}, nil
 }
 
 // Ready reports whether every part was built (GET /readyz).

@@ -14,7 +14,7 @@ sb-tenant — validate a manifest, make a cell match it, and prove the laws hold
 
 ```text
 sb tenant check  FILE
-sb tenant apply  FILE [--plan]
+sb tenant apply  FILE [--plan] [--cell URL]
 sb tenant verify FILE [--law LAW-nn]... [--sample N]
 ```
 
@@ -25,6 +25,8 @@ These three verbs are the whole onboarding story.
 **check** parses and validates `FILE` against [sb-tenant(5)](sb-tenant.5.md). It needs no network and changes nothing. A valid file prints `FILE: ok` and exits 0. Otherwise errors go to standard output in compiler format, `file:line:col: field: message`, one per line and sorted by position, so editors and agents can jump to them. A count line (`N errors`) follows, and the command exits 1 with `EMANIFEST` on standard error. With `--json` it prints `{"file": …, "errors": [{"line", "col", "field", "message"}]}` and the same exit status. An unreadable `FILE` is a usage error (exit 2).
 
 **apply** makes the tenant's cell match `FILE`. It creates the cell if it doesn't exist (database, index, vault namespace, KMS key, queue, region pin), enables connectors and agents, and loads approval rules. Apply is **idempotent**: running it twice with the same file changes nothing the second time. It is **resumable**: if interrupted, run it again. `--plan` prints what would change and exits.
+
+**Against a running cell** (SB-1506): with `--cell URL`, after the control plane's apply, `sb tenant apply` sends the checked manifest to the cell, `POST /v1/cell/manifest` with the control plane's identity (`SB_TOKEN`). The cell checks it again, builds every part from it (connectors, agents, workflows and duties, spaces and barriers, retention, budget) and swaps them in whole, so a request sees one manifest or the other, never a mix. It syncs its spaces registry, and refuses with `EHOLD`, changing nothing, if a space a legal hold covers would go; it applies an Identity Platform cell's `groups`; it rewrites the manifest file its configuration names, so a restart runs the same one; and it writes a `config` audit row with the manifest's SHA-256. The same manifest twice changes nothing the second time. A change of `idp` needs the cell restarted with the new manifest (`EMANIFEST`). `--plan` and `--cell` don't go together.
 
 Immutable fields (`tenant`, `region`) can't be changed by apply; changing them is a new tenant. A plan that would change `region` fails with `EMANIFEST`.
 
@@ -79,7 +81,7 @@ Verify runs against a cell through the same `verify.Target` interface whether th
 | `--plan` | (apply) Show the diff only |
 | `--law LAW-nn` | (verify) Run only the given law; repeatable |
 | `--sample N` | (verify) Users × questions sampled (default 50) |
-| `--cell URL` | (verify) The deployed cell's base URL, e.g. `https://api-gamma-prod-7731.a.run.app`; its verifier endpoint answers |
+| `--cell URL` | (apply, verify) The running cell's base URL, e.g. `https://api-gamma-prod-7731.a.run.app`; its verifier endpoint answers |
 | `--json` | Machine output |
 
 ## EXIT STATUS

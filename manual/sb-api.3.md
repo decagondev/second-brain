@@ -21,7 +21,7 @@ Idempotency-Key: <client-chosen ULID>        (on POSTs that create actions)
 
 ## DESCRIPTION
 
-Each tenant's cell serves its own API at its own hostname. There is no shared, multi-tenant API endpoint for content. The same host serves the web UI (SB-307) on `GET /` and every path outside `/v1`, so the browser app can route; an API path is never answered by the UI. `GET /healthz` and `GET /readyz` answer the platform's health checks with no content (sb-runtime(7)); `GET /login` and `GET /callback` are the sign-in (sb-identity(7)). The verifier routes answer `EPERM` to everyone until the control plane's identity is wired into the cell (SB-1505). `sb-api` serves all of it from one configuration (sb-cell(5)).
+Each tenant's cell serves its own API at its own hostname. There is no shared, multi-tenant API endpoint for content. The same host serves the web UI (SB-307) on `GET /` and every path outside `/v1`, so the browser app can route; an API path is never answered by the UI. `GET /healthz` and `GET /readyz` answer the platform's health checks with no content (sb-runtime(7)); `GET /login` and `GET /callback` are the sign-in (sb-identity(7)). Three routes answer the control plane only, by its identity (a bearer token equal to `vault://tenants/TENANT/control-plane`): the verifier's, `POST /v1/cell/manifest` (apply against a running cell, sb-tenant(1)) and `GET /v1/cell/live` (the running configuration in the plan's terms, for the drift check, sb-tenant(5)). Without the header they answer `EAUTH`, with another token `EPERM`. `sb-api` serves all of it from one configuration (sb-cell(5)).
 
 ### Authentication
 

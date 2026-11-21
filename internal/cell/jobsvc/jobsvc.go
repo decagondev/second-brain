@@ -65,6 +65,7 @@ func (s *Service) Jobs() map[string]func(ctx context.Context) error {
 		"report":    s.report,
 		"access":    s.access,
 		"review":    s.review,
+		"drift":     s.drift,
 	}
 }
 
@@ -214,7 +215,7 @@ func (s *Service) anchor(ctx context.Context) error {
 }
 
 func (s *Service) retention(ctx context.Context) error {
-	r, err := s.Cell.Retention.Sweep(ctx)
+	r, err := s.Cell.Parts().Retention.Sweep(ctx)
 	if err == nil && len(r.Failed) > 0 {
 		err = fmt.Errorf("jobs: retention failed for %s", strings.Join(r.Failed, ", "))
 	}
@@ -289,6 +290,22 @@ func (s *Service) review(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("jobs: the audit log can't be read: %w", err)
 	}
-	_, err = reviews.Run(ctx, c.Manifest, s.now(), roster{c}, reviews.FromAudit(rows), c.Reviews, c.NewID)
+	_, err = reviews.Run(ctx, c.Manifest(), s.now(), roster{c}, reviews.FromAudit(rows), c.Reviews, c.NewID)
 	return err
+}
+
+// drift compares what the cell runs with the manifest last applied and sends one
+// manifest_drift alert per finding (sb-tenant(5), Drift). Drift is reported, never fixed.
+func (s *Service) drift(ctx context.Context) error {
+	c := s.Cell
+	fs, err := c.Drift(ctx)
+	if err != nil {
+		return err
+	}
+	c.Metrics.Set("sb_manifest_drift", "Differences between the running cell and its applied manifest (LAW-16).",
+		map[string]string{"tenant": c.Config.Tenant}, float64(len(fs)))
+	for _, f := range fs {
+		_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev2", Kind: "manifest_drift", Tenant: c.Config.Tenant, Where: f.Key(), Ref: f.Message()})
+	}
+	return nil
 }

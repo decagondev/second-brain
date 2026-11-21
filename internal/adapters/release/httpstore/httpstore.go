@@ -61,3 +61,35 @@ func (s Store) Get(ctx context.Context, rel, name string) ([]byte, error) {
 	}
 	return b, nil
 }
+
+var channelRe = regexp.MustCompile(`^(stable|testing)$`)
+
+// Channel returns the release a channel should run, from the release controller
+// (GET BASE/channels/CHANNEL), read with the cell's pull token.
+func (s Store) Channel(ctx context.Context, channel string) (string, error) {
+	if !channelRe.MatchString(channel) {
+		return "", fmt.Errorf("httpstore: bad channel %q", channel)
+	}
+	tok, err := s.Token(ctx)
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.Base+"/channels/"+channel, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "Bearer "+tok)
+	resp, err := s.HTTP.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("httpstore: HTTP %d for channel %s", resp.StatusCode, channel)
+	}
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 256))
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(b)), nil
+}
