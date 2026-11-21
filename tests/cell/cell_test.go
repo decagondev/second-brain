@@ -31,13 +31,19 @@ type running struct {
 
 func start(t *testing.T) running {
 	t.Helper()
+	return startWith(t, func(idp *oidctest.IdP, base string) wire.Config { return celltest.Fixture(t, idp, base) })
+}
+
+// startWith starts a cell from the configuration fixture returns.
+func startWith(t *testing.T, fixture func(idp *oidctest.IdP, base string) wire.Config) running {
+	t.Helper()
 	idp := oidctest.New(tenant, "sb-acme-logistics", "oidc-secret")
 	t.Cleanup(idp.Server.Close)
 	h := http.NotFoundHandler()
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { h.ServeHTTP(w, r) }))
 	srv.StartTLS()
 	t.Cleanup(srv.Close)
-	cell, err := wire.Build(context.Background(), celltest.Fixture(t, idp, srv.URL), wire.Options{HTTP: idp.Server.Client()})
+	cell, err := wire.Build(context.Background(), fixture(idp, srv.URL), wire.Options{HTTP: idp.Server.Client(), ConnectorHTTP: idp.Server.Client(), Log: io.Discard})
 	if err != nil {
 		t.Fatal(err)
 	}

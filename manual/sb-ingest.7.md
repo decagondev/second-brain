@@ -28,7 +28,7 @@ Changes, including deletes and permission changes, are indexed with a p95 of 15 
 
 ### Sync
 
-Each connector of a cell is synced by a scheduler every 60 seconds, with up to 10 seconds of jitter. One sync reads the connector's changes from its stored cursor, ingests them, and only then stores the new cursor. If anything fails, the old cursor stays, so the next run repeats the work. Ingest is idempotent, so repeating it is harmless. A cell restart resumes from the stored cursors and never from the beginning.
+Each connector of a cell is synced by a scheduler every 60 seconds, with up to 10 seconds of jitter. One sync reads the connector's changes from its stored cursor, ingests them, and only then stores the new cursor. If anything fails, the old cursor stays, so the next run repeats the work. Ingest is idempotent, so repeating it is harmless. A cell restart resumes from the stored cursors and never from the beginning; a cursor that was never stored, or was lost, starts from the beginning, so nothing is skipped. The ingest service (`sb-ingest`, or `sb-api --with ingest`; sb-runtime(7)) re-routes every connector's documents to the current spaces before its first sync, runs each connector in its own loop, and backs a failing connector off (one minute, doubling, at most 15 minutes) without slowing the others. When a connector's last success, or the service's start if it has none, is more than 15 minutes old, it sends one `ingest_stale` alert (Sev-2) until the connector succeeds again. Secrets and fields dropped at ingest are counted in `sb_ingest_secrets_dropped_total{connector, pattern}` and `sb_ingest_fields_dropped_total{connector, field}`.
 
 On GCP that scheduler is Cloud Scheduler, every minute, and a missed run alerts (sb-runtime(7), Schedules).
 

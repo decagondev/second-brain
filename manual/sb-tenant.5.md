@@ -42,6 +42,8 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 | `vault://tenants/TENANT/scim` | the IdP's SCIM bearer token |
 | `vault://tenants/TENANT/model` | the model gateway's API key (ADR-0019) |
 | `vault://tenants/TENANT/canary` | the cell's canary secret; nothing may use it ([sb-observability(7)](sb-observability.7.md#canaries-and-the-secret-scanner)) |
+| `vault://tenants/TENANT/connectors/docs-classification` | the Drive label that carries sensitivity, no secret in it (sb-connector(3)); optional |
+| `vault://tenants/TENANT/audit/anchor-seed` | the cell's audit anchor key seed, 32 bytes in base64, on a local cell (sb-audit(5), Anchors); on GCP it is a data key wrapped by the cell's KMS key |
 
 A reference is resolved through the `Secrets` port at the moment of the call, and only for the cell's own tenant: a reference to another tenant's path is refused. Resolved values are never stored in a struct field and never cached past the call. Every value resolved is also registered with the logger's redactor, so it is replaced by `[REDACTED]` anywhere it would appear in a log line: message, attribute, error or nested group. Attributes whose names contain `secret`, `password`, `token` or `key` are redacted whatever their value. For development, `file:///DIR` keeps the vault in `DIR/vault/tenants/…`, one file per secret, readable only by its owner; a file anyone else can read is refused.
 

@@ -33,14 +33,37 @@ type Config struct {
 		Provider string `json:"provider"`
 		Base     string `json:"base"`
 		ID       string `json:"id"`
+		Price    struct {
+			InPerM  float64 `json:"in_per_m"`
+			OutPerM float64 `json:"out_per_m"`
+		} `json:"price"`
 	} `json:"model"`
-	Connectors map[string]struct {
-		Base string `json:"base"`
-	} `json:"connectors"`
-	Chat struct {
+	Connectors map[string]ConnectorConfig `json:"connectors"`
+	Chat       struct {
 		TeamID string `json:"team_id"`
 	} `json:"chat"`
+	Alerts struct {
+		Webhook string `json:"webhook"`
+	} `json:"alerts"`
+	Backups []Backup `json:"backups"`
+	Custody struct {
+		Tenant bool     `json:"tenant"`
+		Retain []string `json:"retain"`
+	} `json:"custody"`
 	Durable bool `json:"durable"`
+}
+
+// ConnectorConfig overrides one connector (sb-cell(5), Fields).
+type ConnectorConfig struct {
+	Base string `json:"base"` // the vendor API's address, for a sandbox or a recorded fake
+}
+
+// Backup is one copy the nightly backup writes (sb-audit(7), Backups): three copies on
+// two kinds of media, one of them off-site.
+type Backup struct {
+	Dir     string `json:"dir"`
+	Media   string `json:"media"`
+	Offsite bool   `json:"offsite"`
 }
 
 // ErrConfig is a configuration a cell can't start with.
@@ -97,6 +120,19 @@ func Parse(b []byte) (Config, error) {
 	if c.Model.Provider != "extractive" && (c.Model.Base == "" || c.Model.ID == "") {
 		return Config{}, fmt.Errorf("%w: model.provider %s needs model.base and model.id", ErrConfig, c.Model.Provider)
 	}
+	if c.Model.Provider != "extractive" && (c.Model.Price.InPerM <= 0 || c.Model.Price.OutPerM <= 0) {
+		return Config{}, fmt.Errorf("%w: model.provider %s needs model.price, or the budget can't be kept", ErrConfig, c.Model.Provider)
+	}
+	if c.Alerts.Webhook != "" {
+		if u, err := url.Parse(c.Alerts.Webhook); err != nil || u.Scheme != "https" || u.Host == "" {
+			return Config{}, fmt.Errorf("%w: alerts.webhook must be an https URL", ErrConfig)
+		}
+	}
+	for i, b := range c.Backups {
+		if b.Dir == "" || b.Media == "" {
+			return Config{}, fmt.Errorf("%w: backups[%d] needs dir and media", ErrConfig, i)
+		}
+	}
 	return c, nil
 }
 
@@ -107,4 +143,17 @@ func sorted(xs []string) []string {
 		}
 	}
 	return xs
+}
+
+// ErrInProcess is a service started on its own while the cell's stores are in memory: it
+// would share nothing with the api, so it runs inside sb-api instead (sb-cell(5)).
+var ErrInProcess = errors.New("wire: this cell's stores are in memory, so ingest and jobs run inside the api: sb-api --config FILE --with ingest,jobs")
+
+// Separate reports whether a service other than the api may run on its own with c: only
+// when the stores are shared, which needs durable ones (SB-1508).
+func Separate(c Config) error {
+	if !c.Durable {
+		return ErrInProcess
+	}
+	return nil
 }

@@ -116,16 +116,23 @@ func (s *Store) PutFeedback(_ context.Context, f ask.Feedback) error {
 func (s *Store) FeedbackBetween(_ context.Context, tenant string, from, to time.Time) ([]ask.Feedback, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var out []ask.Feedback
-	for _, f := range s.feedback {
-		if f.Tenant == tenant && !f.At.Before(from) && f.At.Before(to) {
-			out = append(out, f)
+	return window(s.feedback, func(f ask.Feedback) (string, time.Time, string) { return f.Tenant, f.At, f.Trace }, tenant, from, to), nil
+}
+
+// window is a map's values of tenant in [from, to), by time and then key.
+func window[T any](m map[string]T, of func(T) (tenant string, at time.Time, key string), tenant string, from, to time.Time) []T {
+	var out []T
+	for _, v := range m {
+		if t, at, _ := of(v); t == tenant && !at.Before(from) && at.Before(to) {
+			out = append(out, v)
 		}
 	}
 	sort.Slice(out, func(i, j int) bool {
-		return out[i].At.Before(out[j].At) || (out[i].At.Equal(out[j].At) && out[i].Trace < out[j].Trace)
+		_, a, ka := of(out[i])
+		_, b, kb := of(out[j])
+		return a.Before(b) || (a.Equal(b) && ka < kb)
 	})
-	return out, nil
+	return out
 }
 
 // Retention returns the store's three retention stores: traces (answers and drafts),
@@ -206,4 +213,11 @@ func spaceOf(s string) string {
 		return ""
 	}
 	return s
+}
+
+// Between lists a tenant's traces asked in [from, to), oldest first (the weekly report).
+func (s *Store) Between(_ context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return window(s.traces, func(t ask.Trace) (string, time.Time, string) { return t.Tenant, t.At, t.ID }, tenant, from, to), nil
 }

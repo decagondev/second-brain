@@ -15,6 +15,8 @@ build:                 ## compile everything; the sb binary goes to bin/
 	$(GO) build ./...
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb ./cmd/sb
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb-api ./cmd/sb-api
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb-ingest ./cmd/sb-ingest
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb-jobs ./cmd/sb-jobs
 # Coverage profiles are written only by `make coverage` (COVERAGE=1): measuring every suite
 # roughly doubles make check's time, so it is its own CI job (SB-1405).
 COVER = $(if $(COVERAGE),-coverpkg=./internal/core/... -coverprofile=build/cover,)

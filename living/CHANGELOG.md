@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The ingest and jobs services (S14.2: SB-1503, SB-1504): syncs that run from stored cursors with backoff and a staleness alert, every scheduled job with its finish recorded and a watchdog, `sb-api --with ingest,jobs`, `sb-jobs run JOB`; the budget guard, token metering and the weekly report wired; legal holds and reporting lines wired in every service (PT-0011).
 - One cell configuration and the api service (S14.1: SB-1501, SB-1502): `sb-api --config FILE` (sb-cell(5)) builds the whole cell and serves every endpoint, with `/healthz`, `/readyz` and graceful shutdown.
 - Quick fixes (S13.6): no change lost in the cursor's own second (GitHub, BambooHR, QuickBooks), opted-in repository source backfilled, QuickBooks open-month reports refreshed hourly, conversations tagged with their space for legal holds, and coverage in its own `make coverage` step and CI job.
 - Coverage floor (S13.5: SB-1405): every core package at or above 75% over every suite, checked in `make check`. **W13 Hardening built.**

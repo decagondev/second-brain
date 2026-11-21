@@ -353,3 +353,16 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestSameSecondChangeIsNotLost` (GitHub, BambooHR, QuickBooks; the fakes' clocks can be frozen), `TestSourceOptInBackfills`, `TestOpenMonthReportsRefresh` and `TestConversationSpaceForHolds`.
 
+## BUG-0023 Legal holds, reporting lines and the budget weren't wired in a running cell
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-20, the W13 review (PT-0011); the rest while wiring the cell (S14.1, S14.2) | Medium | SB-1504 | Fixed |
+
+**Symptom:** Retention, erasure and space removal honour legal holds, and the tool bus honours reporting lines, only if whoever builds them passes the holds and the managers in. Nothing built a running cell, so nothing passed them in. Wiring the cell found three more parts left out the same way: the model gateway had no budget guard and metered no tokens, the draft outcomes were counted but never kept by date, and the weekly report and cost statement had no source.
+
+**Root cause:** Each part takes its dependencies as optional fields, with nil meaning "none", which is right for a unit test and wrong for a cell that forgets one.
+
+**Fix:** One composition root, `internal/cell/wire`, builds every part for every service: holds are read at the moment retention, erasure or a space removal needs them (holds that can't be read hold everything); the tool bus gets each requester's manager from the directory; the gateway gets the budget guard and a usage ledger that keeps tokens, drafts and spend by date; the report and cost endpoints read that ledger. The jobs service's `retention` uses the same `retention.Job`, with each space's days.
+
+**Caught by now:** `TestRetentionKeepsHeldRecords` (tests/cell: a held trace survives the retention job and goes once the hold is released), `TestOneOfEachKind`, and the usage ledger's own tests.

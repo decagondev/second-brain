@@ -4,6 +4,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -137,4 +138,32 @@ func (d *Dir) MyGroups(ctx context.Context, s tenancy.Scope) ([]string, error) {
 		return nil, err
 	}
 	return d.GroupsOf(ctx, s.Tenant(), s.User())
+}
+
+// Members lists the user ids of a tenant's group by name, sorted; a group no one has
+// created is an error, never an empty group.
+func (d *Dir) Members(_ context.Context, tenant, name string) ([]string, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for _, g := range d.groups {
+		if g.Tenant == tenant && g.Name == name {
+			out := append([]string{}, g.Members...)
+			sort.Strings(out)
+			return out, nil
+		}
+	}
+	return nil, fmt.Errorf("directory: no group %q", name)
+}
+
+// ActiveUsers counts a tenant's active users (seats, for the weekly report).
+func (d *Dir) ActiveUsers(_ context.Context, tenant string) (int, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	n := 0
+	for _, u := range d.users {
+		if u.Tenant == tenant && u.Active {
+			n++
+		}
+	}
+	return n, nil
 }

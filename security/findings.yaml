@@ -85,9 +85,10 @@ findings:
   - id: PT-0011
     title: Legal holds and reporting lines are wired by the cell runtime, which isn't built yet; until it is, a caller that leaves them out gets no holds
     severity: medium
-    status: accepted
+    status: fixed
     laws: [LAW-13]
     found: 2026-11-20
+    bug: BUG-0023
     source: internal
   - id: PT-0012
     title: Ingest gaps - one unfetchable document wedged a connector's sync, a removed field allow-list left values indexed, and a sensitive field allowed by one space was readable through every space holding the record

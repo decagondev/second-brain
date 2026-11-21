@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +16,7 @@ import (
 	"time"
 
 	actmem "example.com/second-brain/internal/adapters/actions/memory"
+	"example.com/second-brain/internal/adapters/alert/webhook"
 	auditfs "example.com/second-brain/internal/adapters/audit/localfs"
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/adapters/connectors/bamboohr"
@@ -22,6 +26,7 @@ import (
 	"example.com/second-brain/internal/adapters/connectors/linear"
 	"example.com/second-brain/internal/adapters/connectors/quickbooks"
 	"example.com/second-brain/internal/adapters/connectors/slack"
+	cursorfs "example.com/second-brain/internal/adapters/cursor/filestore"
 	dirmem "example.com/second-brain/internal/adapters/directory/memory"
 	"example.com/second-brain/internal/adapters/embed/hashing"
 	memindex "example.com/second-brain/internal/adapters/index/memory"
@@ -34,16 +39,21 @@ import (
 	"example.com/second-brain/internal/adapters/model/openrouter"
 	"example.com/second-brain/internal/adapters/oidc"
 	"example.com/second-brain/internal/adapters/policy/cedar"
+	runsfs "example.com/second-brain/internal/adapters/runs/localfs"
 	"example.com/second-brain/internal/adapters/secrets/localvault"
 	sessmem "example.com/second-brain/internal/adapters/sessions/memory"
 	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	tracemem "example.com/second-brain/internal/adapters/traces/memory"
+	usagefs "example.com/second-brain/internal/adapters/usage/localfs"
 	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/auth"
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/barrier"
+	"example.com/second-brain/internal/core/budget"
+	"example.com/second-brain/internal/core/canary"
+	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/gateway"
 	"example.com/second-brain/internal/core/holds"
 	"example.com/second-brain/internal/core/kill"
@@ -92,6 +102,28 @@ type Cell struct {
 	Metrics   *obs.Metrics
 	Auth      *auth.Cell
 
+	// The parts the ingest and jobs services run (SB-1503, SB-1504).
+	Connectors map[string]ports.Connector
+	Cursors    ports.CursorStore
+	Runs       runsfs.Dir
+	Usage      *usagefs.Ledger
+	Report     report.Source // the weekly report's numbers
+	Retention  retention.Job
+	Reviews    *reviews.MemoryStore
+	Proposals  *proposals.MemoryStore
+	Actions    *actmem.Store
+	Logs       *logfs.Files
+	Redact     *obs.Redactor
+	// Secret reads vault://tenants/TENANT/PATH at call time.
+	Secret func(path string) func(context.Context) (string, error)
+	// HeldNow is the active legal holds, read when asked; holds that can't be read hold
+	// everything (PT-0011).
+	HeldNow func(ctx context.Context) holds.Set
+	NewID   func(prefix string) string
+	// Log is the cell's redacting logger; Alerter sends alerts to it and to alerts.webhook.
+	Log     *slog.Logger
+	Alerter canary.Alerter
+
 	handler http.Handler
 	ready   atomic.Bool
 }
@@ -106,32 +138,52 @@ type applied struct {
 
 func (a applied) Applied(context.Context) (manifest.Tenant, string, error) { return a.t, a.commit, nil }
 
-// noUsage is the usage source until the jobs service keeps one (SB-1504): it answers
-// EUNAVAIL, never numbers it doesn't have.
-type noUsage struct{}
-
-var errNoUsage = errors.New("usage is kept by the jobs service (SB-1504)")
-
-func (noUsage) Traces(context.Context, string, time.Time, time.Time) ([]ask.Trace, error) {
-	return nil, errNoUsage
-}
-func (noUsage) Drafts(context.Context, string, time.Time, time.Time) (int, int, error) {
-	return 0, 0, errNoUsage
-}
-func (noUsage) Actions(context.Context, string, time.Time, time.Time) ([]approvals.Action, error) {
-	return nil, errNoUsage
-}
-func (noUsage) Seats(context.Context, string) (int, error) { return 0, errNoUsage }
-func (noUsage) Tokens(context.Context, string, time.Time, time.Time) (int, int, error) {
-	return 0, 0, errNoUsage
+// usage is the weekly report's source over the cell's own stores (SB-606, SB-1504).
+type usage struct {
+	traces  *tracemem.Store
+	ledger  *usagefs.Ledger
+	actions *actmem.Store
+	dir     *dirmem.Dir
 }
 
-var _ report.Source = noUsage{}
+func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
+	return u.traces.Between(ctx, tenant, from, to)
+}
+func (u usage) Drafts(ctx context.Context, tenant string, from, to time.Time) (int, int, error) {
+	return u.ledger.Drafts(ctx, tenant, from, to)
+}
+func (u usage) Tokens(ctx context.Context, tenant string, from, to time.Time) (int, int, error) {
+	return u.ledger.Tokens(ctx, tenant, from, to)
+}
+func (u usage) Seats(ctx context.Context, tenant string) (int, error) {
+	return u.dir.ActiveUsers(ctx, tenant)
+}
+
+// Actions are those finished in [from, to), and those still open whose expiry is after from.
+func (u usage) Actions(ctx context.Context, tenant string, from, to time.Time) ([]approvals.Action, error) {
+	all, err := u.actions.All(ctx, tenant)
+	if err != nil {
+		return nil, err
+	}
+	var out []approvals.Action
+	for _, a := range all {
+		if f := a.FinishedAt; (!f.IsZero() && !f.Before(from) && f.Before(to)) || (f.IsZero() && !a.ExpiresAt.Before(from)) {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+
+var _ report.Source = usage{}
 
 // Options are what a test may change about how a cell reaches the outside: the zero value
 // is what the services run with.
 type Options struct {
 	HTTP *http.Client // for the identity provider; nil is http.DefaultClient
+	// ConnectorHTTP is the connectors' client; nil is one with a 30-second timeout.
+	ConnectorHTTP *http.Client
+	// Log is where the cell logs; nil is standard error.
+	Log io.Writer
 }
 
 // Build builds every part of a cell from its configuration. Anything it can't build stops
@@ -181,20 +233,33 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.Audit = &audit.Log{Tenant: tenant, Release: func() string { return c.Release }, Store: auditfs.Dir{Root: filepath.Join(cfg.State, "audit"), Tenant: tenant},
 		Now: time.Now, Redact: redact}
 	c.Policy = policy.Kernel{Engine: engine, Recorder: c.Audit}
+	c.Secret, c.Redact, c.NewID = secret, redact, newID
+	if opt.Log == nil {
+		opt.Log = os.Stderr
+	}
+	c.Log = obs.NewLogger(opt.Log, redact)
+	al := alerter{log: c.Log, metrics: c.Metrics}
+	if cfg.Alerts.Webhook != "" {
+		al.webhook = webhook.Sender{URL: cfg.Alerts.Webhook, HTTP: &http.Client{Timeout: 10 * time.Second}}
+	}
+	c.Alerter = al
+	c.Cursors = cursorfs.Store{Root: cfg.State}
+	c.Runs = runsfs.Dir{Root: filepath.Join(cfg.State, "runs")}
+	c.Usage = &usagefs.Ledger{Root: filepath.Join(cfg.State, "usage"), Tenant: tenant, Next: c.Metrics, Now: time.Now}
 	c.Kill = &kill.Checker{Tenant: tenant, Store: killfs.Dir{Root: filepath.Join(cfg.State, "kill")}, Now: time.Now}
 	if err := c.Kill.Refresh(ctx); err != nil {
 		return nil, fmt.Errorf("%w: kill switches: %v", ErrConfig, err)
 	}
 	c.Directory, c.Sessions = dirmem.New(), sessmem.New()
 	c.Spaces, c.Index, c.Traces, c.Holds = spacemem.New(), memindex.New(), tracemem.New(), &holds.MemoryStore{}
-	heldNow := func(ctx context.Context) holds.Set {
+	c.HeldNow = func(ctx context.Context) holds.Set {
 		set, err := holds.Active(ctx, c.Holds)
 		if err != nil {
 			return holds.Set{{Space: ""}} // holds can't be read: everything is held
 		}
 		return set
 	}
-	if err := spaces.SyncHeld(ctx, c.Spaces, nil, m, func(id string) bool { return heldNow(ctx).HeldSpace(id) }); err != nil {
+	if err := spaces.SyncHeld(ctx, c.Spaces, nil, m, func(id string) bool { return c.HeldNow(ctx).HeldSpace(id) }); err != nil {
 		return nil, fmt.Errorf("%w: spaces: %v", ErrConfig, err)
 	}
 	spaceFacts := func(ctx context.Context) ([]ports.Space, [][2]string, error) {
@@ -206,11 +271,14 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		return nil, fmt.Errorf("%w: the manifest's chat is slack, so chat.team_id is required", ErrConfig)
 	}
 	inbox := &slack.MemoryInbox{}
-	conns, err := connectors(cfg, m, secret, redact, inbox)
+	conns, err := connectors(cfg, m, secret, redact, inbox, opt.ConnectorHTTP)
 	if err != nil {
 		return nil, err
 	}
-	model, err := buildModel(cfg, tenant, secret, redact)
+	c.Connectors = conns
+	guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
+		Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}}
+	model, err := buildModel(cfg, tenant, secret, redact, c.Usage, guard)
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +333,9 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		}
 		return conn.Fetch(ctx, ref)
 	}
-	c.Bus = &toolbus.Bus{Tenant: tenant, Tools: tools, Kill: c.Kill, Policy: c.Policy, Audit: c.Audit, Actions: actmem.New(),
+	c.Actions = actmem.New()
+	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory}
+	c.Bus = &toolbus.Bus{Tenant: tenant, Tools: tools, Kill: c.Kill, Policy: c.Policy, Audit: c.Audit, Actions: c.Actions,
 		Connectors: conns, Now: time.Now, NewID: newID, Receipts: actmem.NewReceipts(),
 		Barriers: barrier.Cell{Spaces: spaceFacts, GroupsOf: func(ctx context.Context, u string) ([]string, error) { return c.Directory.GroupsOf(ctx, tenant, u) },
 			Owners: barrier.Directory(c.Directory, tenant), Locate: locate},
@@ -278,9 +348,15 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		}}
 
 	// Retention and erasure, holds always read at the moment they're needed (PT-0011).
-	logs := &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
-	erasure := retention.Job{Tenant: tenant, Days: m.RetentionDays, Stores: append(c.Traces.Retention(), logs), Audit: c.Audit, Now: time.Now,
-		Held: func(space, user string) bool { return heldNow(context.Background()).Held(space, user) }}
+	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
+	spaceDays := map[string]int{}
+	for name, sp := range m.Spaces {
+		if sp.RetentionDays > 0 && sp.RetentionDays < m.RetentionDays {
+			spaceDays["spc_"+name] = sp.RetentionDays
+		}
+	}
+	c.Retention = retention.Job{Tenant: tenant, Days: m.RetentionDays, Stores: append(c.Traces.Retention(), c.Logs), Audit: c.Audit, Now: time.Now,
+		Held: func(space, user string) bool { return c.HeldNow(context.Background()).Held(space, user) }, SpaceDays: spaceDays}
 
 	man := applied{t: m, commit: "local"}
 	mux := http.NewServeMux()
@@ -309,16 +385,19 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		api.Web{Files: os.DirFS(cfg.Web)}.Register(public)
 	}
 	api.Ask{Agent: c.Agent, Feedback: ask.Feedbacks{Agent: c.Agent, Store: c.Traces}, Release: c.Release, NewID: newID}.Register(mux)
-	api.Drafts{Agent: ask.Drafts{Agent: c.Agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Metrics},
+	api.Drafts{Agent: ask.Drafts{Agent: c.Agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
 		Ask: api.Ask{Agent: c.Agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: c.Bus, Release: c.Release, NewID: newID}.Register(mux)
 	api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
-		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Usage: noUsage{}, Approvers: approvers(m),
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: erasure}.Register(mux)
+		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
+		Usage: c.Report,
+		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
+		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: c.Retention}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
-	proposalStore := &proposals.MemoryStore{}
-	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: proposalStore, NewID: newID, Now: time.Now}.Register(mux)
-	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: &reviews.MemoryStore{}, Proposals: proposalStore,
+	c.Proposals, c.Reviews = &proposals.MemoryStore{}, &reviews.MemoryStore{}
+	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now}.Register(mux)
+	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)
 	api.Holds{Tenant: tenant, Policy: c.Policy, Manifests: man, Service: holds.Service{Store: c.Holds, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
@@ -352,15 +431,23 @@ func loadPolicies(dir string) (policy.Evaluator, error) {
 	return cedar.Load(files)
 }
 
-func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.Context) (string, error), redact *obs.Redactor, inbox slack.Inbox) (map[string]ports.Connector, error) {
+func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.Context) (string, error), redact *obs.Redactor, inbox slack.Inbox,
+	hc *http.Client) (map[string]ports.Connector, error) {
 	out := map[string]ports.Connector{}
-	hc := &http.Client{Timeout: 30 * time.Second}
+	if hc == nil {
+		hc = &http.Client{Timeout: 30 * time.Second}
+	}
 	for kind, vendor := range m.Connectors {
 		base := cfg.Connectors[kind].Base
 		creds := secret("connectors/" + kind)
 		switch vendor {
 		case "gdrive":
-			out[kind] = &gdrive.Connector{Base: base, HTTP: hc, Tokens: &gdrive.ServiceAccount{Key: creds, HTTP: hc, Redact: redact, Now: time.Now}}
+			cls, err := classification(secret("connectors/" + kind + "-classification"))
+			if err != nil {
+				return nil, fmt.Errorf("%w: connector %s: %v", ErrConfig, kind, err)
+			}
+			out[kind] = &gdrive.Connector{Base: base, HTTP: hc, Classification: cls,
+				Tokens: &gdrive.ServiceAccount{Key: creds, HTTP: hc, Redact: redact, Now: time.Now}}
 		case "slack":
 			out[kind] = &slack.Connector{Base: base, HTTP: hc, Creds: creds, Redact: redact, Exclude: m.Exclude[kind], Inbox: inbox}
 		case "linear":
@@ -380,7 +467,8 @@ func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.
 	return out, nil
 }
 
-func buildModel(cfg Config, tenant string, secret func(string) func(context.Context) (string, error), redact *obs.Redactor) (ports.Model, error) {
+func buildModel(cfg Config, tenant string, secret func(string) func(context.Context) (string, error), redact *obs.Redactor,
+	meter gateway.Counter, guard *budget.Guard) (ports.Model, error) {
 	var adapter ports.Model
 	hc := &http.Client{Timeout: 60 * time.Second}
 	key := secret("model")
@@ -398,7 +486,25 @@ func buildModel(cfg Config, tenant string, secret func(string) func(context.Cont
 	default:
 		return nil, fmt.Errorf("%w: model.provider %q", ErrConfig, cfg.Model.Provider)
 	}
-	return gateway.Gateway{Tenant: tenant, Provider: cfg.Model.Provider, ModelID: cfg.Model.ID, Model: adapter, Secrets: redact}, nil
+	return gateway.Gateway{Tenant: tenant, Provider: cfg.Model.Provider, ModelID: cfg.Model.ID, Model: adapter, Secrets: redact,
+		Metrics: meter, Budget: guard}, nil
+}
+
+// classification reads the Drive label that carries sensitivity (sb-connector(3)): none
+// when the vault has no such secret, and an error, never none, when it can't be read.
+func classification(read func(context.Context) (string, error)) (*gdrive.Classification, error) {
+	raw, err := read(context.Background())
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var c gdrive.Classification
+	if err := json.Unmarshal([]byte(raw), &c); err != nil || c.Label == "" || c.Field == "" {
+		return nil, fmt.Errorf("the docs classification isn't {label, field, choices}")
+	}
+	return &c, nil
 }
 
 // slackField reads one field of the chat credentials (sb-connector(3), Slack) at call time.
@@ -431,4 +537,26 @@ func contains(xs []string, x string) bool {
 		}
 	}
 	return false
+}
+
+// alerter sends every alert to the log and, when one is configured, to the webhook
+// (sb-observability(7)); a webhook that fails is logged and counted, never dropped quietly.
+type alerter struct {
+	webhook canary.Alerter
+	log     *slog.Logger
+	metrics *obs.Metrics
+}
+
+func (a alerter) Alert(ctx context.Context, al canary.Alert) error {
+	a.log.Warn("alert", "kind", al.Kind, "severity", al.Severity, "where", al.Where, "ref", al.Ref)
+	a.metrics.Add("sb_alerts_total", "Alerts raised, by kind and severity.", map[string]string{"kind": al.Kind, "severity": al.Severity}, 1)
+	if a.webhook == nil {
+		return nil
+	}
+	if err := a.webhook.Alert(ctx, al); err != nil {
+		a.log.Error("alert not delivered", "kind", al.Kind, "error", err.Error())
+		a.metrics.Add("sb_alert_failures_total", "Alerts the webhook didn't take.", map[string]string{"kind": al.Kind}, 1)
+		return err
+	}
+	return nil
 }

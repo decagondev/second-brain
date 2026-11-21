@@ -12,9 +12,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"sync"
 	"syscall"
 	"time"
 
+	"example.com/second-brain/internal/cell/ingestsvc"
+	"example.com/second-brain/internal/cell/jobsvc"
 	"example.com/second-brain/internal/cell/wire"
 )
 
@@ -34,7 +38,13 @@ func run(ctx context.Context, args []string, stderr io.Writer, ready chan<- stri
 	fs := flag.NewFlagSet("sb-api", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	path := fs.String("config", "", "the cell's configuration file (sb-cell(5))")
+	with := fs.String("with", "", "services to run in this process too: ingest, jobs, or ingest,jobs (sb-cell(5))")
 	if err := fs.Parse(args); err != nil {
+		return 1
+	}
+	also, err := services(*with)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "sb-api:", err)
 		return 1
 	}
 	if *path == "" {
@@ -56,11 +66,40 @@ func run(ctx context.Context, args []string, stderr io.Writer, ready chan<- stri
 		_, _ = fmt.Fprintln(stderr, "sb-api:", err)
 		return 1
 	}
-	if err := serve(ctx, cell, ln, ready); err != nil {
+	bg, stopBG := context.WithCancel(ctx)
+	var wg sync.WaitGroup
+	ing := &ingestsvc.Service{Cell: cell}
+	if also["ingest"] {
+		wg.Add(1)
+		go func() { defer wg.Done(); ing.Run(bg) }()
+	}
+	if also["jobs"] {
+		wg.Add(1)
+		go func() { defer wg.Done(); (&jobsvc.Service{Cell: cell, Ingest: ing}).Loop(bg) }()
+	}
+	err = serve(ctx, cell, ln, ready)
+	stopBG()
+	wg.Wait()
+	if err != nil {
 		_, _ = fmt.Fprintln(stderr, "sb-api:", err)
 		return 1
 	}
 	return 0
+}
+
+// services parses --with.
+func services(with string) (map[string]bool, error) {
+	out := map[string]bool{}
+	if with == "" {
+		return out, nil
+	}
+	for _, s := range strings.Split(with, ",") {
+		if s != "ingest" && s != "jobs" {
+			return nil, fmt.Errorf("--with %q: name ingest, jobs or both", with)
+		}
+		out[s] = true
+	}
+	return out, nil
 }
 
 // serve serves the cell on ln until ctx ends, then stops taking requests (readiness goes

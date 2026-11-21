@@ -91,3 +91,11 @@ func TestGracefulShutdown(t *testing.T) {
 		t.Fatalf("still serving after shutdown: %d", code)
 	}
 }
+
+func TestWith(t *testing.T) {
+	for in, ok := range map[string]bool{"": true, "ingest": true, "jobs": true, "ingest,jobs": true, "web": false, "ingest,": false} {
+		if _, err := services(in); (err == nil) != ok {
+			t.Errorf("services(%q): %v", in, err)
+		}
+	}
+}

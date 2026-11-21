@@ -136,7 +136,7 @@ The register is `security/findings.yaml`. Fixed findings and what changed in thi
 | PT-0008 | High | Approval evasion: edits re-decide the duty and keep the expiry, amounts count by size, reject shares approve's checks, a duty needs reporting lines (BUG-0016) | LAW-15 |
 | PT-0009 | High | Barrier evasion: owners by email, barriers need spaces, no reading actions across a barrier, chat attributes, one re-route for old chunks (BUG-0017) | LAW-22 |
 | PT-0010 | Medium | Governance: atomic, audited decisions; operators can complete reviews; per-space retention; removals never dropped (BUG-0018) | LAW-11, LAW-13, LAW-16 |
-| PT-0011 | Medium (accepted) | Holds and reporting lines depend on the cell runtime's wiring (not built yet) | LAW-13 |
+| PT-0011 | Medium (fixed, BUG-0023) | Holds and reporting lines depended on the cell runtime's wiring; `internal/cell/wire` now wires them once for every service | LAW-13 |
 | PT-0012 | High | Ingest: re-routing never wedges a sync, allow-list changes re-ingest, sensitive fields go only to the spaces that allow them (BUG-0019) | LAW-13, LAW-20 |
 | PT-0013 | Medium | Connectors and runtime: GitHub identity and paging, QuickBooks paging, Drive folder cache, KMS key rings, Cloud Run updates, shred order (BUG-0020) | LAW-03, LAW-13, LAW-18 |
 | PT-0014 | Medium | Same-second change cursors, source opt-in backfill, QuickBooks open-month reports (BUG-0022) | LAW-13 |

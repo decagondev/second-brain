@@ -64,8 +64,15 @@ func copyFile(t *testing.T, from, to string) {
 // Fixture is one local cell's files: a manifest, policies, a vault and empty state.
 func Fixture(t *testing.T, idp *oidctest.IdP, base string) wire.Config {
 	t.Helper()
+	return FixtureFor(t, idp, base, Manifest, nil)
+}
+
+// FixtureFor is Fixture with another manifest and more vault secrets (path -> value, under
+// vault://tenants/acme-logistics/).
+func FixtureFor(t *testing.T, idp *oidctest.IdP, base, manifest string, more map[string]string) wire.Config {
+	t.Helper()
 	dir := t.TempDir()
-	Write(t, filepath.Join(dir, "tenant.yaml"), Manifest, 0o600)
+	Write(t, filepath.Join(dir, "tenant.yaml"), manifest, 0o600)
 	for _, f := range []string{"base.cedar", "spaces.cedar"} {
 		copyFile(t, filepath.Join(root(t), "policy", "platform", f), filepath.Join(dir, "policy", "platform", f))
 	}
@@ -74,6 +81,9 @@ func Fixture(t *testing.T, idp *oidctest.IdP, base string) wire.Config {
 	Write(t, filepath.Join(secrets, "oidc"), idp.Secret, 0o600)
 	Write(t, filepath.Join(secrets, "scim"), "scim-token", 0o600)
 	Write(t, filepath.Join(secrets, "connectors", "chat"), `{"bot_token":"xoxb-test","signing_secret":"sign"}`, 0o600)
+	for p, v := range more {
+		Write(t, filepath.Join(secrets, filepath.FromSlash(p)), v, 0o600)
+	}
 	if err := os.MkdirAll(filepath.Join(dir, "state"), 0o700); err != nil {
 		t.Fatal(err)
 	}

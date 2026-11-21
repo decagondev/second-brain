@@ -19,6 +19,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-21 S14.2 The ingest and jobs services (SB-1503, SB-1504)
+
+**Wave/slice:** W14 / S14.2 · **Status:** Done
+
+**What:** `internal/cell/ingestsvc` (syncs from stored cursors, re-route first, per-connector backoff, the `ingest_stale` alert) and `internal/cell/jobsvc` (every scheduled job, finishes recorded, the watchdog, a local clock and `sb-jobs run JOB`); `cmd/sb-ingest`, `cmd/sb-jobs` and `sb-api --with ingest,jobs`; `schedule.Due`; file adapters for job finishes and a usage ledger; the budget guard, token metering, the weekly report and the cost statement wired; legal holds and reporting lines wired once for every service (PT-0011 fixed, BUG-0023).
+
+**Why this way:** The services share the cell's stores, and most stores are still in memory, so a separate ingest process would fill an index the api never reads. Rather than pretend, the separate binaries refuse to start until the stores are durable (SB-1508), and the api runs ingest and jobs in its own process meanwhile. A job records a finish only when it succeeds, so the watchdog treats a failing job exactly like a missed one; there is no third state to forget about.
+
+**Learned:** Wiring found three more "nil means none" gaps beside PT-0011: the gateway had no budget guard and metered nothing, draft outcomes were counted but not kept, and the report had no source. All three are now one usage ledger. Two vault paths the manual already used (`connectors/docs-classification`) or needed (`audit/anchor-seed`) weren't allowed by the reference parser.
+
+**Laws:** LAW-13 (`TestLAW13_IngestThroughARunningCell`, `TestRetentionKeepsHeldRecords`), LAW-01 (a scope change at the source stops answers through a running cell), LAW-11 (anchors write-once, backups 3-2-1), LAW-16 and LAW-17 (the review and access jobs run and their misses are Sev-1).
+
 ## 2026-11-21 S14.1 One configuration, and the api service (SB-1501, SB-1502)
 
 **Wave/slice:** W14 / S14.1 · **Status:** Done
