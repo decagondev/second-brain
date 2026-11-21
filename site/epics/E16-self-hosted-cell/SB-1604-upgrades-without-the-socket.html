@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-1604: Upgrades without giving the cell the Docker socket · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a><a href="../../epics/E16-self-hosted-cell/README.html">E16 Self-hosted Cell</a></div><div class="group"><h4>Tickets in E16</h4><a href="../../epics/E16-self-hosted-cell/SB-1601-container-images.html">SB-1601: Container images for every service</a><a href="../../epics/E16-self-hosted-cell/SB-1602-compose-layout.html">SB-1602: A self-hosted cell in containers that mirror GCP</a><a href="../../epics/E16-self-hosted-cell/SB-1603-object-locked-worm.html">SB-1603: Write-once audit storage on the box</a><a class="current" href="../../epics/E16-self-hosted-cell/SB-1604-upgrades-without-the-socket.html">SB-1604: Upgrades without giving the cell the Docker socket</a><a href="../../epics/E16-self-hosted-cell/SB-1605-sovereign-install.html">SB-1605: A sovereign install on a VM or an on-prem server</a><a href="../../epics/E16-self-hosted-cell/SB-1606-folder-connector.html">SB-1606: A folder connector for file shares and demos</a><a href="../../epics/E16-self-hosted-cell/SB-1607-health-panel.html">SB-1607: Cell health in the console</a><a href="../../epics/E16-self-hosted-cell/SB-1608-budget-warning-and-report-delivery.html">SB-1608: Budget warning at 80% and the weekly report delivered</a><a href="../../epics/E16-self-hosted-cell/SB-1609-unhelpful-answer-queue.html">SB-1609: A queue of answers people marked unhelpful</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E16-self-hosted-cell</div><h1 id="sb-1604-upgrades-without-giving-the-cell-the-docker-socket">SB-1604: Upgrades without giving the cell the Docker socket</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E16 Self-hosted Cell</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W15 / S15.2</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-16.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-runtime.7.html"><code>sb-runtime(7)</code></a>, <code>sb-selfhost(7)</code></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td>LAW-06</td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="SB-1602-compose-layout.html">SB-1602</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Open</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>The updater must deploy by digest, but a container holding the Docker socket holds the whole machine.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task"><span class="box"></span>The updater admits the release and records the digests to run (the local deployer, SB-1505); a host step run by a systemd timer reads them and runs only those digests, refusing a tag or an unattested image</li>
+<li class="task"><span class="box"></span>No container mounts the Docker socket; an unsigned or ungated release changes nothing and raises a Sev-1</li>
+<li class="task"><span class="box"></span>The verifier's attestation reports what the containers really run</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task"><span class="box"></span>Host apply step and timer</li>
+<li class="task"><span class="box"></span>Refusals</li>
+<li class="task"><span class="box"></span>Attestation check</li>
+<li class="task"><span class="box"></span>Write or extend the law tests</li>
+<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E16-self-hosted-cell/SB-1604-upgrades-without-the-socket.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

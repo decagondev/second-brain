@@ -17,7 +17,9 @@ v1 ships in seven waves (W0 to W6), roughly 19 weeks. The formal models and law 
 
 The control plane is a **factory**: it produces and runs every tenant's Second Brain. After v1, wave **W7** (3 weeks) adds **hand-off**: transferring custody of one tenant's Second Brain into that company's own cloud account under its own keys, or detaching it entirely. v1 doesn't build hand-off, but it does build the seams that make hand-off a workflow rather than a migration (ADR-0015, SB-114).
 
-After W7, waves **W8 to W13** (17 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md).
+After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
+
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (planned) puts a whole cell on one machine the company owns (ADR-0022).
 
 ## Problem
 
@@ -307,7 +309,11 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W10 | Spaces in a Cell | 3 weeks | Spaces live in the manifest, the policy and the index; people ask one department's brain or the whole company; LAW-19 and LAW-20 green. |
 | W11 | Department Templates | 3 weeks | Twelve department templates with agents and evals; code, HR and accounting sources read-only; restricted fields never ingested. |
 | W12 | Space Governance | 3 weeks | Stewards run their spaces; barriers, segregation of duties, access reviews and 5-minute reorgs; LAW-21 and LAW-22 green. |
-| W13 | Portfolio Department Grants | 3 weeks | Only if Q-01 says yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green. |
+| W13 | Hardening | — | Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps. |
+| W14 | Cell Runtime | — | Every part of a cell runs together as real services from one configuration, ending with a whole cell end to end. |
+| W15 | Self-hosted Cell | — | A whole cell on one machine the company owns, in containers that mirror GCP, plus four easy wins. |
+
+The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
 ```mermaid
 gantt
@@ -575,9 +581,58 @@ gantt
 | S12.3 | Reorgs | SCIM attributes in policy; joiner, mover, leaver in 5 minutes; reorg preview | [SB-1205](../epics/E12-space-governance/SB-1205-scim-attributes-and-five-minute-moves.md), [SB-1206](../epics/E12-space-governance/SB-1206-reorg-preview.md) |
 | S12.4 | Harden | Legal hold and a cross-space red team | [SB-1207](../epics/E12-space-governance/SB-1207-legal-hold-per-space.md), [SB-1208](../epics/E12-space-governance/SB-1208-cross-space-red-team-and-game-day.md) |
 
-#### W13 Portfolio Department Grants
+#### W13 Hardening
 
-*Only if Q-01 says yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green.*
+*Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps.*
+
+**Exit gate**
+
+- [x] A fresh-eyes review of W8 to W12 leaves no open critical or high finding
+- [x] Every parser fuzzed; every test passes under the race detector
+- [x] The manual and the code agree, and a check keeps them agreeing
+- [x] Every core package at 75% coverage or more (`make coverage`)
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S13.1 | Review | Fresh-eyes review of W8 to W12 | [SB-1401](../epics/E14-hardening/SB-1401-fresh-eyes-review.md) |
+| S13.2 | Fuzz and races | Fuzzed parsers; every test under the race detector | [SB-1402](../epics/E14-hardening/SB-1402-fuzzing-and-races.md) |
+| S13.3 | Tidy | Stricter lint and tidier big files | [SB-1403](../epics/E14-hardening/SB-1403-clean-and-concise.md) |
+| S13.4 | Manual and code | The manual and the code agree | [SB-1404](../epics/E14-hardening/SB-1404-manual-matches-code.md) |
+| S13.5 | Coverage | Coverage gaps in the core closed | [SB-1405](../epics/E14-hardening/SB-1405-coverage-gaps.md) |
+
+#### W14 Cell Runtime
+
+*Every part of a cell runs together as real services from one configuration, ending with a whole cell end to end.*
+
+**Exit gate**
+
+- [x] One configuration wires the `api`, `ingest`, `jobs` and `updater` services
+- [x] `sb tenant apply` and every CLI command work against a running cell; nothing answers ENOTIMPL
+- [x] A whole cell runs locally on Postgres, end to end
+- [ ] The same cell runs on a real GCP project (SB-1508, waits for a project)
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S14.1 | Wiring | Cell configuration and the `api` service | [SB-1501](../epics/E15-cell-runtime/SB-1501-cell-configuration-and-wiring.md), [SB-1502](../epics/E15-cell-runtime/SB-1502-api-service.md) |
+| S14.2 | Services | The `ingest` and `jobs` services | [SB-1503](../epics/E15-cell-runtime/SB-1503-ingest-service.md), [SB-1504](../epics/E15-cell-runtime/SB-1504-jobs-service.md) |
+| S14.3 | Updates | The `updater` job and apply against a running cell | [SB-1505](../epics/E15-cell-runtime/SB-1505-updater-service.md), [SB-1506](../epics/E15-cell-runtime/SB-1506-apply-to-a-running-cell.md) |
+| S14.4 | End to end | The CLI against a running cell; a whole cell locally | [SB-1507](../epics/E15-cell-runtime/SB-1507-cli-against-running-cells.md), [SB-1508](../epics/E15-cell-runtime/SB-1508-local-cell-end-to-end.md) |
+| S14.5 | Console | Console screens for stewards and access reviews | [SB-1509](../epics/E15-cell-runtime/SB-1509-console-screens.md) |
+
+#### W15 Self-hosted Cell
+
+*A whole cell on one machine the company owns, in containers that mirror GCP: for sovereign data, on-prem sites, demos and testing; plus four easy wins. Planned 2026-11-21 (ADR-0022, proposed).*
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S15.1 | Containers | Images for every service and a cell in containers that mirror GCP | [SB-1601](../epics/E16-self-hosted-cell/SB-1601-container-images.md), [SB-1602](../epics/E16-self-hosted-cell/SB-1602-compose-layout.md) |
+| S15.2 | On the box | Write-once audit storage and upgrades without the Docker socket | [SB-1603](../epics/E16-self-hosted-cell/SB-1603-object-locked-worm.md), [SB-1604](../epics/E16-self-hosted-cell/SB-1604-upgrades-without-the-socket.md) |
+| S15.3 | Sovereign install | An install on a VM or on-prem server, and a folder connector | [SB-1605](../epics/E16-self-hosted-cell/SB-1605-sovereign-install.md), [SB-1606](../epics/E16-self-hosted-cell/SB-1606-folder-connector.md) |
+| S15.4 | Easy wins | Cell health, a budget warning and report delivery, and a queue of unhelpful answers | [SB-1607](../epics/E16-self-hosted-cell/SB-1607-health-panel.md), [SB-1608](../epics/E16-self-hosted-cell/SB-1608-budget-warning-and-report-delivery.md), [SB-1609](../epics/E16-self-hosted-cell/SB-1609-unhelpful-answer-queue.md) |
+
+#### Parked: Portfolio Department Grants
+
+*Parked while Q-01 stays no (2026-11-20). If it becomes yes: a company grants a parent space consented, aggregate-only, revocable access; LAW-23 green.*
 
 **Exit gate**
 
