@@ -23,7 +23,7 @@ users:    SCIM only        →  deactivate revokes in ≤ 5 min
 
 Users sign in with the company's own OIDC IdP, named by `idp` in the manifest. The cell checks the token's issuer, audience and `tenant` claim. MFA and conditional access are the IdP's job, and we inherit them.
 
-Sign-in is the OIDC authorization-code flow with PKCE (`S256`), a `state` and a `nonce`. The cell's OIDC client secret is read from `vault://tenants/TENANT/oidc` at call time (LAW-07). The ID token is accepted only if **every** check below passes. Any failure, including an IdP or key set that can't be reached, is `EAUTH`; there is no fallback.
+Sign-in is the OIDC authorization-code flow with PKCE (`S256`), a `state` and a `nonce`. `GET /login` starts it and redirects to the IdP; the IdP returns to `GET /callback` at the cell's `base_url` (sb-cell(5)), which checks the token, sets the session cookie (`HttpOnly`, `Secure`, `SameSite=Lax`) and redirects to `/`. A `state` is single use and lives 10 minutes. The cell's OIDC client secret is read from `vault://tenants/TENANT/oidc` at call time (LAW-07). The ID token is accepted only if **every** check below passes. Any failure, including an IdP or key set that can't be reached, is `EAUTH`; there is no fallback.
 
 | Check | Rule |
 |---|---|

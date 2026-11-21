@@ -24,6 +24,10 @@ project (one per cell, in the tenant's folder)
 
 This page describes the runtime that ADR-0021 chose. It is built in W9 against the recorded GCP fake, and runs in a real project from SB-903. The placement of each resource is in [sb-tenancy(7), Placement on GCP](sb-tenancy.7.md#placement-on-gcp-exactly-sb-703). This page covers what runs, who it runs as, and how a new release gets in.
 
+### One configuration, every service (SB-1501, SB-1502)
+
+Every service of a cell is built from the cell's configuration file (sb-cell(5)) by one composition root, `internal/cell/wire`: `sb-api --config FILE` serves the whole API (sb-api(3)) on `listen.api`, with `GET /healthz` (the process is up) and `GET /readyz` (every part was built and the policies, manifest and identity provider answer). On SIGTERM it stops taking requests and finishes those in flight before it exits. The same binaries run locally and in Cloud Run.
+
 ### Services, exactly (SB-901)
 
 | Service | Kind | Service account | Its roles, in the cell's project only |

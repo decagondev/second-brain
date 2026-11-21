@@ -19,6 +19,18 @@ Every PR adds an entry, and so does every significant design step. Newest first.
 
 **Laws:** LAW-19 to LAW-23 proposed, to be written as red tests in W8 (SB-804).
 
+## 2026-11-21 S14.1 One configuration, and the api service (SB-1501, SB-1502)
+
+**Wave/slice:** W14 / S14.1 · **Status:** Done
+
+**What:** sb-cell(5), a cell's own configuration, parsed strictly by `internal/cell/wire`; `wire.Build`, the one composition root that builds every part of a cell; `cmd/sb-api`, which serves every endpoint from it with health, readiness and graceful shutdown; `tests/cell`, which signs in through a test IdP and sends one request of each kind.
+
+**Why this way:** Every part was already built and tested on its own, and the eval cell and the law tests each wired their own subset. One composition root means a running cell is built the same way in every service, and a part that can't be built stops the cell rather than leaving it running without that part. The in-memory stores are named in the manual and `durable: true` refuses them, so nobody runs a cell they think is durable when it isn't. The Postgres stores are wired with `make cell` (SB-1508).
+
+**Learned:** Wiring found what unit tests couldn't: four routes the manual didn't name (`/login`, `/callback`, `/readyz`, the Slack events endpoint), a chat app that needs a workspace id no file held, and the issuer rule (SB-108), which needed `auth.WithIssuer` so the composition root never makes an Issuer itself. The report endpoints had no usage source in a running cell, so they answer `EUNAVAIL` until the jobs service keeps one, rather than zeros.
+
+**Laws:** LAW-02 (one configuration, one tenant: another tenant's manifest refuses), LAW-03 (nothing that can't be built is skipped: `TestRefusesToStart`), LAW-16 (the cell runs its checked manifest), LAW-01 and LAW-12 through the real sign-in and middleware.
+
 ## 2026-11-20 S13.6 Quick fixes after hardening
 
 **Wave/slice:** W13 / S13.6 · **Status:** Done

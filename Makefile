@@ -14,13 +14,14 @@ check: gen-check lint deps build test laws smoke regress evals examples policy c
 build:                 ## compile everything; the sb binary goes to bin/
 	$(GO) build ./...
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb ./cmd/sb
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/sb-api ./cmd/sb-api
 # Coverage profiles are written only by `make coverage` (COVERAGE=1): measuring every suite
 # roughly doubles make check's time, so it is its own CI job (SB-1405).
 COVER = $(if $(COVERAGE),-coverpkg=./internal/core/... -coverprofile=build/cover,)
 cov = $(if $(COVERAGE),$(COVER)/$(1).out,)
 test:                  ## unit tests (Go and Python), under the race detector (SB-1402)
 	@mkdir -p build/cover
-	$(GO) test -race $(call cov,unit) ./internal/... ./cmd/... ./tests/spaces/... ./tests/groupsync/...
+	$(GO) test -race $(call cov,unit) ./internal/... ./cmd/... ./tests/spaces/... ./tests/groupsync/... ./tests/cell/...
 	$(PY) -m unittest discover -s evals/tests -t . -q
 fuzz:                  ## each fuzz target for FUZZTIME (default 30s); make check runs their corpora as tests (SB-1402)
 	$(GO) test -run=^$$ -fuzz=^FuzzCheck$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/manifest

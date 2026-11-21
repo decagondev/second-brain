@@ -228,3 +228,11 @@ func refuse(w http.ResponseWriter, e *errs.Error) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{
 		"code": string(e.Code), "message": e.Msg, "remedy": errs.Remedy(e.Code)}})
 }
+
+// WithIssuer gives c the cell's one Issuer, for c's own tenant (SB-108, SB-1501): the
+// composition root builds the Cell and auth makes its Issuer, so nothing outside auth
+// ever holds one.
+func WithIssuer(c *Cell) *Cell {
+	c.Issuer = tenancy.NewIssuer(c.Tenant)
+	return c
+}
