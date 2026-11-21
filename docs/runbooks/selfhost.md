@@ -1,0 +1,99 @@
+---
+title: Self-hosted install
+summary: Install, people, upgrades, backup and restore for a cell on one machine the company owns (SB-1605).
+---
+
+# Self-hosted install
+
+A self-hosted cell is a whole cell on one Linux VM or on-prem server that the company owns ([sb-selfhost(7)](../../manual/sb-selfhost.7.md)). This runbook is for the company's IT team. Every step says what to check before moving on.
+
+## Before you start
+
+- A Linux VM or server (Debian 12 or Ubuntu 24.04 tested; 4 vCPU, 16 GB RAM, 200 GB disk for a company of a few hundred), with systemd.
+- Docker Engine and the compose plugin, or let the install add them from the distribution with `--install-docker`.
+- A DNS name for the cell, such as `brain.acme.example`, and either a certificate and key for it (`SB_TLS=files`) or ports 80 and 443 reachable from the internet so Caddy can get one (`SB_TLS=acme`).
+- Sign-in: the company's OIDC IdP, set up with a client whose redirect is `https://HOST/callback`, a `tenant` claim equal to the tenant, `sub` equal to the directory id, and SCIM provisioning to `https://HOST/scim/v2` ([sb-identity(7)](../../manual/sb-identity.7.md)). Or the bundled IdP, [sb-idp(1)](../../manual/sb-idp.1.md), for a site with none.
+- A directory on **another machine** for the off-box backup copy, mounted on this one (NFS or SMB) and writable by uid 65532.
+- The tenant's manifest ([sb-tenant(5)](../../manual/sb-tenant.5.md)) and, from the factory, the release store's address, its pull token and the release identity to trust. An air-gapped site gets an install bundle and a directory of releases instead.
+- Who may log in to the machine. Shell and Docker access is the whole machine, so keep it to the company's own administrators; the factory gets none.
+
+## Install
+
+1. Copy the install bundle (`make selfhost-bundle` makes it) or a checkout of the repository to `/opt/second-brain`, and unpack it there.
+2. Copy `deploy/selfhost/install.env.example` to `/etc/second-brain/install.env` and fill it in. Put the files it names (manifest, certificate, key, OIDC client secret, pull token) under `/etc/second-brain`, owned by root, mode 0600.
+3. Check the machine and the file without changing anything:
+
+   ```text
+   sudo /opt/second-brain/tools/selfhost/install.sh --check /etc/second-brain/install.env
+   ```
+
+   Fix anything it reports. A warning that `SB_OFFSITE` is on the root disk means the off-box copy isn't off the box: mount the other machine's directory first.
+4. Install:
+
+   ```text
+   sudo /opt/second-brain/tools/selfhost/install.sh /etc/second-brain/install.env
+   ```
+
+   It makes every key and secret on this machine, brings the layout up, makes and proves the write-once bucket, applies the first release, and enables `sb-selfhost.service`, `sb-selfhost-update.timer` and `sb-selfhost-dbdump.timer`.
+5. Check: `https://HOST/readyz` answers `200`; `systemctl list-timers 'sb-selfhost*'` shows both timers; `tools/selfhost/compose.sh ps` shows every service up.
+
+## People
+
+- **Company IdP:** people arrive over SCIM from the IdP. Assign the app to the pilot group first ([sb-onboarding(7)](../../manual/sb-onboarding.7.md)).
+- **Bundled IdP:** add each person, with a password of at least 12 characters given on stdin:
+
+  ```text
+  printf '%s' "$PASSWORD" | tools/selfhost/compose.sh run --rm -T idp user add --data /var/lib/sb-idp \
+      --email ann@acme.example --scim http://api:8080/scim/v2 --scim-token-file /run/sb/scim
+  ```
+
+  `user disable --email …` (same options) removes a person: the IdP refuses them at once and the cell ends their sessions within 5 minutes (LAW-12). `user list --data /var/lib/sb-idp` lists who exists.
+- Check: the person signs in at `https://HOST/login` and an ask answers with citations.
+
+## Check the laws
+
+From any machine that reaches the cell, with the control plane's token from `build/selfhost/vault/api/vault/tenants/TENANT/control-plane`:
+
+```text
+SB_TOKEN=… sb tenant verify /etc/second-brain/tenant.yaml --cell https://HOST
+```
+
+Every line should say `pass`. Run it after the install, after each upgrade you watch, and monthly.
+
+## Upgrades
+
+The `sb-selfhost-update.timer` runs `tools/selfhost/update.sh` hourly. The updater admits the channel's release (signature, gate, the four checks of [sb-release(7)](../../manual/sb-release.7.md)) and records the digests; the host step starts exactly those and records what runs. A release the cell doesn't admit changes nothing, fails the unit and raises a Sev-1 `release_unsigned` ([LAW-06](LAW-06.md)).
+
+- Check after an upgrade: `systemctl status sb-selfhost-update.service` succeeded; `/v1/verifier/attestation` names the new release.
+- To hold upgrades, `systemctl stop sb-selfhost-update.timer`; `start` resumes them ([pausing release pulls](pause-pulls.md)).
+- Air-gapped: copy the new release into the releases directory named by `SB_RELEASE_STORE`, load its images (`docker load -i`), then run `sudo /opt/second-brain/tools/selfhost/install.sh /etc/second-brain/install.env` again, which copies it in and applies it; secrets already made are kept.
+
+## Backup
+
+Three copies, two kinds of media, one off the box ([sb-audit(7)](../../manual/sb-audit.7.md)):
+
+- The nightly `backup` job writes the audit log and approvals to `state/backups`, the write-once store, and `SB_OFFSITE`. It refuses to run with fewer than three copies.
+- `sb-selfhost-dbdump.timer` dumps the database nightly to `build/selfhost/db-dumps` and `SB_OFFSITE/db`, fourteen nights each.
+- Anchors go hourly to the write-once store, locked for seven years.
+- Back up `/etc/second-brain` and `/opt/second-brain/build/selfhost` with the machine's own encrypted backup: they hold the keys, and nothing else does.
+
+Check weekly: today's files in `SB_OFFSITE/TENANT/DATE/` and `SB_OFFSITE/db/`; `sb audit verify --tenant TENANT` is green.
+
+## Restore
+
+To a new machine, after losing the old one:
+
+1. Install as above with the same `install.env`, after putting the old `build/selfhost` back under `/opt/second-brain` so the same keys are used. Without it the cell gets new keys, and the audit chain's earlier anchors verify only against the old anchor key, which is in that directory.
+2. Stop the services that write: `tools/selfhost/compose.sh stop api ingest jobs`.
+3. Restore the newest database dump:
+
+   ```text
+   tools/selfhost/compose.sh exec -T postgres pg_restore --clean --if-exists -U sb -d sb < SB_OFFSITE/db/sb-DATE.dump
+   ```
+
+4. Start them again: `tools/selfhost/compose.sh up -d`. Check `sb audit verify` against the backup's copy of the audit log, and `sb tenant verify`.
+5. The index rebuilds from the sources on its own if the dump is older than the last sync ([LAW-13](../../manual/sb-laws.7.md#law-13)); nothing else is lost but what changed after the dump.
+
+## LAW-17 on one machine
+
+There is no IAM to enumerate, so the cell keeps its own list of what the factory can reach (`state/iam/TENANT.json`): at most the release store's read-only pull token. The monthly `access` job checks it and leaves a signed statement in `state/access/statement-DATE.json`, whose hash is in the audit log and so in the next anchor. An unlisted path is a Sev-1 `access_path` ([LAW-17](LAW-17.md)). To show an auditor: the statement, `sb audit verify`, and the anchor covering the statement's audit row.

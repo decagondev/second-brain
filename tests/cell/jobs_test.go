@@ -165,3 +165,43 @@ func TestBackupWritesThreeCopies(t *testing.T) {
 		t.Fatal("a backup with two copies passed the 3-2-1 rule")
 	}
 }
+
+// SB-1605: on a tenant-custody cell the monthly access check leaves a statement under
+// state/access, and an audit row with its hash, which the next anchor signs (LAW-17 on one
+// machine). An unlisted path still fails the job and alerts.
+func TestAccessStatement(t *testing.T) {
+	r, svc, c, got := jobsCell(t, true)
+	ctx := context.Background()
+	r.cell.Config.Custody.Tenant = true
+	r.cell.Config.Custody.Retain = []string{"release-pull"}
+	iam := filepath.Join(r.cell.Config.State, "iam")
+	if err := os.MkdirAll(iam, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	write := func(paths string) {
+		if err := os.WriteFile(filepath.Join(iam, tenant+".json"), []byte(paths), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(`[{"kind":"pull-token","id":"release-pull","grant":"release-pull"}]`)
+	if err := svc.Run(ctx, "access"); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(r.cell.Config.State, "access", "statement-"+c.t.Format("2006-01-02")+".json"))
+	if err != nil || !strings.Contains(string(b), `"release-pull"`) || !strings.Contains(string(b), `"unlisted": []`) {
+		t.Fatalf("statement %s %v", b, err)
+	}
+	rows, _ := r.cell.Audit.Store.Range(ctx, 1, 1<<20)
+	last := rows[len(rows)-1]
+	if last.Kind != "access" || last.State != "Checked" || len(last.PayloadSHA256) != 64 {
+		t.Fatalf("audit row %+v", last)
+	}
+	write(`[{"kind":"pull-token","id":"release-pull","grant":"release-pull"},{"kind":"ssh-key","id":"vendor-laptop"}]`)
+	if err := svc.Run(ctx, "access"); !errors.Is(err, jobsvc.ErrAccess) {
+		t.Fatalf("an unlisted path: %v", err)
+	}
+	rows, _ = r.cell.Audit.Store.Range(ctx, 1, 1<<20)
+	if rows[len(rows)-1].State != "Unlisted" || len(got.got) == 0 {
+		t.Fatalf("unlisted: row %+v, alerts %+v", rows[len(rows)-1], got.got)
+	}
+}

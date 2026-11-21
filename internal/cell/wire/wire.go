@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"example.com/second-brain/internal/adapters/alert/webhook"
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/adapters/connectors/bamboohr"
+	"example.com/second-brain/internal/adapters/connectors/folder"
 	"example.com/second-brain/internal/adapters/connectors/gdrive"
 	"example.com/second-brain/internal/adapters/connectors/github"
 	"example.com/second-brain/internal/adapters/connectors/hubspot"
@@ -74,7 +76,7 @@ var MemoryStores = []string{"directory and sessions", "traces and conversations"
 	"index", "chat events inbox", "proposals", "access reviews", "legal holds", "audit log (in files)"}
 
 // Vendors are the connector adapters a cell can run, by the manifest's vendor name.
-var Vendors = map[string]string{"gdrive": "docs", "slack": "chat", "linear": "tickets", "hubspot": "crm", "github": "code",
+var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "slack": "chat", "linear": "tickets", "hubspot": "crm", "github": "code",
 	"bamboohr": "hris", "quickbooks": "accounting"}
 
 // Cell is a built cell: every part, and the API handler that serves them.
@@ -490,6 +492,16 @@ func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.
 			}
 			out[kind] = &gdrive.Connector{Base: base, HTTP: hc, Classification: cls,
 				Tokens: &gdrive.ServiceAccount{Key: creds, HTTP: hc, Redact: redact, Now: time.Now}}
+		case "folder":
+			u, err := url.Parse(base)
+			if err != nil || u.Scheme != "file" || u.Path == "" {
+				return nil, fmt.Errorf("%w: connector %s: folder needs connectors.%s.base as file:///DIR", ErrConfig, kind, kind)
+			}
+			c, err := folder.Open(u.Path, filepath.Join(cfg.State, "connectors", kind))
+			if err != nil {
+				return nil, fmt.Errorf("%w: connector %s: %v", ErrConfig, kind, err)
+			}
+			out[kind] = c
 		case "slack":
 			out[kind] = &slack.Connector{Base: base, HTTP: hc, Creds: creds, Redact: redact, Exclude: m.Exclude[kind], Inbox: inbox}
 		case "linear":

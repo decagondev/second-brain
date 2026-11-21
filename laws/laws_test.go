@@ -135,6 +135,15 @@ func TestLAW13_RebuildDrill(t *testing.T) {
 	Check(t, "LAW-13", runs, law13Drill)
 }
 
+func TestLAW03_FolderUnknownIsNeverAllow(t *testing.T) {
+	w := NewFolderWorld(t.TempDir())
+	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
+}
+
+func TestLAW13_FolderIndexIsDerived(t *testing.T) {
+	Check(t, "LAW-13", 20, func(r *rand.Rand) error { return law13(r, NewFolderIngestWorld(t.TempDir())) })
+}
+
 func TestLAW03_SlackUnknownIsNeverAllow(t *testing.T) {
 	w := NewSlackWorld()
 	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })

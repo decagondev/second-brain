@@ -102,6 +102,22 @@ Read-only. Name it in a manifest as `connectors: { docs: google-drive }`.
 
 The connector is tested against `drivetest`, a recorded fake of the Drive API, and passes the contract kit there. A run against a real Google Workspace sandbox needs a service account the user provides.
 
+### `docs: folder` (SB-1606)
+
+Read-only. A directory the cell can read, such as a file share mounted read-only on a self-hosted cell (sb-selfhost(7)), or the example share a demo ships with. Name it as `connectors: { docs: folder }` and give its directory in sb-cell(5) as `connectors.docs.base: "file:///srv/share"`. It needs no credential.
+
+| Concern | Behaviour |
+|---|---|
+| Documents | Every `.txt`, `.md` and `.pdf` file under the directory, by its path from the top, e.g. `finance/q3-forecast.md`. Names starting with `.`, `.acl` files and other types are never documents. The directory is opened as a root the connector can't leave, so a link that points outside it is never read |
+| Fetch | Text and Markdown as they are (a file that isn't UTF-8 is indexed by name only); a PDF's text from its text operators, uncompressed or Flate-compressed, which covers the PDFs office tools write with standard fonts; a PDF with no text it can read, or any file over 8 MiB, is indexed by name only. `version` is the modification time in nanoseconds. The title is the file's name without its extension; the prefilter is the ACL file's readers |
+| ACL file | Who may read a file is written beside it in `FILE.acl` (`q3-forecast.md.acl`), or in `.acl` in the same folder for every file there without its own. One rule a line: `read EMAIL`, `read domain:DOMAIN`, `owner EMAIL` (the owner also reads), `label NAME` (the sensitivity label, e.g. `confidential`); `#` starts a comment. A line it doesn't understand makes the whole file unreadable |
+| Location and label | Location is the file's folder from the top, then its name: `/finance/q3-forecast`. The label is the ACL file's `label`, none without one |
+| ACL | Read live, per document, from the ACL file: a reader listed by email or domain → `Allow`; a readable ACL file that doesn't list the user → `Deny`. A file with **no ACL file** is `Unknown`, never allowed, and so is an ACL file that can't be read or parsed, a file that's gone, or an answer later than the 800 ms deadline |
+| Changes | Each sync lists the directory and compares it with the listing the cursor names: a new or modified file is a change, a file whose ACL file alone changed is permission-only, and a file that's gone is a delete. Listings are kept, named by their content, under the cell's state (`state/connectors/docs/`), so a sync restarted from an old cursor reports the same changes; the eight newest are kept. A cursor whose listing is gone is an error, never a fresh start that would miss deletes. An empty cursor lists everything |
+| Act | `ENOTSUP` (read-only) |
+
+Tested on a temporary directory, where it passes the contract kit; a fault-injecting view of the directory stands in for an ACL file that can't be read, a slow share and a missing file.
+
 ### `chat: slack` (SB-204)
 
 Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"] }` patterns match channel names.

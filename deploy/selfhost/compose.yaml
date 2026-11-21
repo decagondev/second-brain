@@ -1,8 +1,10 @@
-# A self-hosted cell (sb-selfhost(7); ADR-0022, SB-1602 to SB-1604): one container per
-# service, laid out the way GCP lays out a cell. `make selfhost` writes ../../build/selfhost
-# and fills the volumes before this runs; images come from `make images`, and after the
-# first upgrade from the digests the updater admitted (SB_*_IMAGE, written by the host
-# step into ../../build/selfhost/images.env). No container mounts the Docker socket.
+# A self-hosted cell (sb-selfhost(7); ADR-0022, SB-1602 to SB-1605): one container per
+# service, laid out the way GCP lays out a cell. tools/selfhost/selfhost.sh writes
+# ../../build/selfhost (the configuration, the vaults, the Caddyfile and compose.env, which
+# carries every ${…} below) and fills the volumes before this runs. Run it through
+# tools/selfhost/compose.sh, which passes compose.env and the install's profiles. Images
+# come from `make images` or an install bundle, and after the first upgrade from the
+# digests the updater admitted (SB_*_IMAGE). No container mounts the Docker socket.
 name: sb-selfhost
 
 x-cell: &cell
@@ -12,26 +14,33 @@ x-cell: &cell
   security_opt: ["no-new-privileges:true"]
   cap_drop: [ALL]
   environment:
-    SSL_CERT_DIR: /etc/ssl/certs
-  volumes:
-    - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
-    - ../../build/selfhost/policy:/etc/sb/policy:ro
-    - state:/var/lib/sb/state
+    # The system's roots, plus the CA of a proxy certificate the cell must trust to reach
+    # its own sign-in (Caddy's local CA, or a company CA), copied in by selfhost.sh.
+    SSL_CERT_DIR: /etc/ssl/certs:/etc/sb/ca
   depends_on:
     postgres: { condition: service_healthy }
     worm: { condition: service_started }
-    idp: { condition: service_started }
+
+x-hardened: &hardened
+  user: "65532:65532"
+  read_only: true
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
 
 services:
   proxy:            # the HTTPS load balancer: the only published port for the cell
     image: caddy@sha256:226d1f059b75399fe19182893c7184591c07b97afc8dfcf44eeb80c9a77a530f
     restart: unless-stopped
-    ports: ["127.0.0.1:8443:8443"]
+    ports: ["${SB_BIND:-127.0.0.1}:${SB_PORT:-8443}:${SB_PORT:-8443}", "${SB_BIND:-127.0.0.1}:${SB_HTTP_PORT:-8080}:80"]
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../../build/selfhost/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../../build/selfhost/tls:/etc/sb/tls:ro
       - caddy:/data
-    networks: [edge]
-    depends_on: [api]
+    networks:
+      # The cell reaches its own sign-in at its public name, through this proxy.
+      edge: { aliases: ["${SB_HOST:-cell.localhost}"] }
+      egress: { aliases: ["${SB_HOST:-cell.localhost}"] }   # ingest and jobs build the sign-in too
 
   api:
     <<: *cell
@@ -40,8 +49,10 @@ services:
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
       - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - ../../build/selfhost/ca:/etc/sb/ca:ro
       - state:/var/lib/sb/state
       - vault-api:/var/lib/sb/vault
+      - ${SB_SHARE:-../../examples/share}:/srv/share:ro   # the docs: folder share (SB-1606)
     networks: [edge, data, egress]
 
   ingest:
@@ -51,8 +62,10 @@ services:
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
       - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - ../../build/selfhost/ca:/etc/sb/ca:ro
       - state:/var/lib/sb/state
       - vault-ingest:/var/lib/sb/vault
+      - ${SB_SHARE:-../../examples/share}:/srv/share:ro
     networks: [data, egress]
 
   jobs:
@@ -62,8 +75,12 @@ services:
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
       - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - ../../build/selfhost/ca:/etc/sb/ca:ro
       - state:/var/lib/sb/state
       - vault-jobs:/var/lib/sb/vault
+      - ${SB_SHARE:-../../examples/share}:/srv/share:ro
+      # The backup's off-box copy: a directory on another machine, mounted on the host (SB-1605).
+      - ${SB_OFFSITE:-../../build/selfhost/.offsite}:/srv/backup-offsite
     networks: [data, egress]
 
   updater:          # the updater job: run by the host step on a timer, never always on (SB-1604)
@@ -75,10 +92,11 @@ services:
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
       - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - ../../build/selfhost/ca:/etc/sb/ca:ro
       - state:/var/lib/sb/state
       - releases:/var/lib/sb/releases:ro
       - vault-updater:/var/lib/sb/vault
-    networks: [data]
+    networks: [data, egress]
 
   worm:             # the WORM bucket: S3 with compliance-mode object lock, on the box (SB-1603)
     image: versity/versitygw@sha256:8319a530d08d537426e2f855bae5280709795dc73a3f0c347973ef915d6343c5
@@ -90,13 +108,13 @@ services:
     networks: [data]
 
   wormsetup:        # one shot at install: the bucket, its seven-year lock, and a probe that proves it
+    <<: *hardened
     image: sb-wormsetup:local
     profiles: [setup]
-    user: "65532:65532"
-    read_only: true
+    restart: "no"
     command: ["--endpoint", "http://worm:7070", "--bucket", "sb-worm", "--creds-file", "/run/sb/worm-creds"]
     volumes:
-      - ../../build/selfhost/vault/jobs/vault/tenants/acme-logistics/worm:/run/sb/worm-creds:ro
+      - ../../build/selfhost/vault/jobs/vault/tenants/${SB_TENANT:-acme-logistics}/worm:/run/sb/worm-creds:ro
     networks: [data]
     depends_on: [worm]
 
@@ -117,15 +135,28 @@ services:
       timeout: 3s
       retries: 30
 
-  idp:              # demo only: the development IdP, published on this machine's loopback
+  idp:              # the bundled IdP, sb-idp(1): passwords, behind the proxy at /idp (SB-1605)
+    <<: *hardened
+    image: sb-idp:local
+    profiles: [bundled]
+    command: ["serve", "--issuer", "${SB_ISSUER:-https://cell.localhost:8443/idp}", "--data", "/var/lib/sb-idp",
+              "--tenant", "${SB_TENANT:-acme-logistics}", "--client", "sb-${SB_TENANT:-acme-logistics}", "--secret-file", "/run/sb/oidc",
+              "--redirect", "${SB_BASE_URL:-https://cell.localhost:8443}/callback", "--behind-proxy"]
+    volumes:
+      - idp-data:/var/lib/sb-idp
+      - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/oidc:/run/sb/oidc:ro
+      - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/scim:/run/sb/scim:ro
+    networks: [edge]
+
+  devidp:           # development only: the IdP with no passwords, on this machine's loopback
+    <<: *hardened
     image: sb-devidp:local
-    user: "65532:65532"
-    read_only: true
+    profiles: [dev]
     command: ["--demo", "--listen", "0.0.0.0:8081", "--issuer", "http://idp.localhost:8081",
-              "--tenant", "acme-logistics", "--client", "sb-acme-logistics", "--secret-file", "/run/sb/oidc"]
+              "--tenant", "${SB_TENANT:-acme-logistics}", "--client", "sb-${SB_TENANT:-acme-logistics}", "--secret-file", "/run/sb/oidc"]
     ports: ["127.0.0.1:8081:8081"]
     volumes:
-      - ../../build/selfhost/vault/api/vault/tenants/acme-logistics/oidc:/run/sb/oidc:ro
+      - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/oidc:/run/sb/oidc:ro
     networks:
       egress: { aliases: [idp.localhost] }
 
@@ -142,5 +173,6 @@ volumes:
   vault-updater: {}
   releases: {}
   worm-data: {}
+  idp-data: {}
   pgdata: {}
   caddy: {}

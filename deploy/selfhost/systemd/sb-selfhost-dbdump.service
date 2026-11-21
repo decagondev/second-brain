@@ -1,0 +1,10 @@
+# The nightly database dump (sb-selfhost(7), Backup and restore; SB-1605).
+[Unit]
+Description=Second Brain self-hosted cell: dump the database, here and off the box
+Requires=docker.service
+After=docker.service sb-selfhost.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/second-brain
+ExecStart=/bin/bash tools/selfhost/dbdump.sh

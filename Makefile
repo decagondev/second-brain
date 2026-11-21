@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: images selfhost selfhost-smoke selfhost-update selfhost-stop selfhost-clean cell cell-stop policy integration ci-rules check build test fuzz coverage lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
+.PHONY: images selfhost selfhost-smoke selfhost-update selfhost-bundle selfhost-stop selfhost-clean cell cell-stop policy integration ci-rules check build test fuzz coverage lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -113,6 +113,8 @@ selfhost-smoke:        ## check a running self-hosted cell from outside (SB-1601
 	bash tools/selfhost/smoke.sh
 selfhost-update:       ## one upgrade: the updater admits the channel's release, the host starts it (SB-1604)
 	bash tools/selfhost/update.sh
+selfhost-bundle:       ## an offline install bundle: every image and the install files (SB-1605)
+	bash tools/selfhost/bundle.sh
 selfhost-stop:
 	bash tools/selfhost/selfhost.sh stop
 selfhost-clean:        ## stop the self-hosted cell and delete its volumes

@@ -17,6 +17,7 @@ New here? Take the [tour](sb-tour.7.md) first.
 | [sb-laws(7)](sb-laws.7.md) | The eighteen laws, and how each is checked |
 | [sb-tenancy(7)](sb-tenancy.7.md) | Cells, isolation, regions |
 | [sb-runtime(7)](sb-runtime.7.md) | How a cell runs on GCP: Cloud Run services, the in-cell updater, Binary Authorization, Cloud SQL (W9) |
+| [sb-selfhost(7)](sb-selfhost.7.md) | A cell on one machine the company owns: containers, write-once storage, upgrades, the install (W15) |
 | [sb-spaces(7)](sb-spaces.7.md) | Department spaces inside a cell: membership, labels, barriers, company-wide asks (W8 draft) |
 | [sb-departments(7)](sb-departments.7.md) | The twelve department templates and the access practices behind them (W8 draft) |
 | [sb-factory(7)](sb-factory.7.md) | The factory, custody levels and hand-off |
@@ -45,6 +46,7 @@ New here? Take the [tour](sb-tour.7.md) first.
 | [sb-release(1)](sb-release.1.md) | `status`, `promote`, `rollback` (maintainers) |
 | [sb-eval(1)](sb-eval.1.md) | `run`, `diff` |
 | [sb-factory(1)](sb-factory.1.md) | `status`, `handoff`, `access`, `detach` (factory operators, tenant owners) |
+| [sb-idp(1)](sb-idp.1.md) | The bundled sign-in for a self-hosted cell: `serve`, `user add`, `user disable` |
 
 ## (3) API
 

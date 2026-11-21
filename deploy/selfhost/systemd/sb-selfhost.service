@@ -11,8 +11,8 @@ After=docker.service network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/second-brain
-ExecStart=/bin/sh -c 'if [ -f build/selfhost/images.env ]; then exec docker compose --env-file build/selfhost/images.env -f deploy/selfhost/compose.yaml up -d; else exec docker compose -f deploy/selfhost/compose.yaml up -d; fi'
-ExecStop=/usr/bin/docker compose -f deploy/selfhost/compose.yaml stop
+ExecStart=/bin/bash tools/selfhost/compose.sh up -d
+ExecStop=/bin/bash tools/selfhost/compose.sh stop
 
 [Install]
 WantedBy=multi-user.target

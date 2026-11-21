@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-21 S15.3 A sovereign install and a folder connector (SB-1605, SB-1606)
+
+**Wave/slice:** W15 / S15.3 · **Status:** SB-1606 Done, SB-1605 In review (a real VM run)
+
+**What:** the `docs: folder` connector with ACL files and PDF text, and an example share for the demo; one setup path for every self-hosted cell (`selfhost.sh` with or without `SB_CONFIG`), `install.sh` for a Linux VM, an offline install bundle, a nightly database dump, and the systemd units; the bundled IdP, sb-idp(1); the monthly access statement; the self-hosted runbook. The demo now answers from documents and signs in with a password.
+
+**Why this way:** A file share has no permission API, so the permission lives beside the file in a plain file the company's own admins can read and review, and a file without one is never shown: Unknown, the same as any connector that can't answer. Change detection keeps its listings by content hash so a sync restarted from any recent cursor sees the same changes, which is what the contract kit asks of every connector. The bundled IdP exists because the cell's sign-in rules (a `tenant` claim, `sub` the directory id) can't be met by an off-the-shelf IdP without per-site setup, and an air-gapped site has nothing else; it is small, does one tenant and one client, and provisions users over the same SCIM a company IdP would, so the directory stays the one source of who exists. On one machine there is no IAM to enumerate, so LAW-17 becomes a list the cell keeps of the factory's paths, checked monthly, with each check's statement anchored into the write-once store.
+
+**Learned:** Every service builds the whole cell, sign-in included, so ingest and jobs must reach the cell's own public name too; the proxy now answers that name on both inner networks. A sign-in limit counted per client address counts the proxy, and so locks everyone out at once; behind the proxy the IdP counts the address the proxy saw. Files a container writes into a Windows folder can't be read or removed from WSL, so the demo's clean removes its stand-in off-box copy through a container, and the smoke checks read it through one.
+
+**Laws:** LAW-03 (no ACL file, a slow share or a bad ACL is never Allow; an unknown or disabled user never signs in), LAW-13 (the folder index rebuilds to the same entries), LAW-01 (verify green on the demo), LAW-12 (disabling a bundled user deprovisions them), LAW-17 (the signed access statement), LAW-07 (password hashes only; every key made and kept on the box).
+
 ## 2026-11-21 S15.2 Write-once storage and upgrades on the box (SB-1603, SB-1604)
 
 **Wave/slice:** W15 / S15.2 · **Status:** Done

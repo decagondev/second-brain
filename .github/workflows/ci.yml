@@ -51,7 +51,7 @@ jobs:
         with: { go-version: "1.24" }
       - run: make integration
         env: { SB_TEST_POSTGRES_DSN: "postgres://postgres:sb@localhost:5432/sb_test?sslmode=disable" }
-  selfhost:               # SB-1601, SB-1602: the images, and a self-hosted cell checked from outside
+  selfhost:               # SB-1601 to SB-1606: the images, and a self-hosted cell checked from outside
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -60,9 +60,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
       - run: npm ci --prefix web --no-audit --no-fund && npm run --prefix web build
-      - run: make selfhost && make selfhost-smoke
+      - run: make selfhost && make selfhost-update && make selfhost-smoke
       - if: always()
-        run: docker compose -f deploy/selfhost/compose.yaml logs --tail 50 || true
+        run: bash tools/selfhost/compose.sh logs --tail 50 || true
   diagrams:               # SB-009
     runs-on: ubuntu-latest
     steps:

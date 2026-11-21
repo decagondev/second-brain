@@ -35,6 +35,8 @@ Sign-in is the OIDC authorization-code flow with PKCE (`S256`), a `state` and a 
 | Tenant | `tenant` equals the cell's tenant. A token from another tenant's IdP, or with another tenant's claim, never signs in here (LAW-02) |
 | Subject | `sub` is present; it becomes the user id |
 
+A self-hosted cell at a site with no IdP it can reach, such as an air-gapped one, signs in with the bundled IdP, sb-idp(1), instead: the same flow and the same token rules, with passwords kept as PBKDF2 hashes and users provisioned in the cell over SCIM as they are added (sb-selfhost(7), Install).
+
 ### Users and groups
 
 Users and groups exist **only** if SCIM created them. Nobody can add a user by hand, so access always follows the IdP. Groups drive policy (`group:NAME` in the manifest and Cedar) and are read from the directory at decision time, never from a cached token, so a membership change applies to the very next decision.

@@ -1,0 +1,11 @@
+# Dump the database nightly (sb-selfhost(7), Backup and restore; SB-1605).
+[Unit]
+Description=Second Brain self-hosted cell: nightly database dump
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

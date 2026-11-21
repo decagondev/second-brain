@@ -6,6 +6,8 @@ package jobsvc
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -266,11 +268,49 @@ func (s *Service) access(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := s.statement(ctx, res); err != nil {
+		return err
+	}
 	if len(res.Unlisted) > 0 {
 		_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev1", Kind: "access_path", Tenant: c.Config.Tenant, Where: "job:access", Ref: res.Unlisted[0].ID})
 		return fmt.Errorf("%w: %d unlisted", ErrAccess, len(res.Unlisted))
 	}
 	return nil
+}
+
+// statement records what the access check found (sb-selfhost(7), LAW-17 on one machine):
+// the statement itself under STATE/access/, and its hash in an audit row, so it is signed
+// by the next anchor and can't be changed afterwards without the chain showing it.
+func (s *Service) statement(ctx context.Context, res access.Result) error {
+	c := s.Cell
+	now := s.now().UTC()
+	st := struct {
+		Tenant    string        `json:"tenant"`
+		CheckedAt string        `json:"checked_at"`
+		Retain    []string      `json:"retain"`
+		Paths     []access.Path `json:"paths"`
+		Unlisted  []access.Path `json:"unlisted"`
+	}{c.Config.Tenant, now.Format(time.RFC3339), append([]string{}, c.Config.Custody.Retain...), append([]access.Path{}, res.Paths...),
+		append([]access.Path{}, res.Unlisted...)}
+	b, err := json.MarshalIndent(st, "", " ")
+	if err != nil {
+		return err
+	}
+	dir := filepath.Join(c.Config.State, "access")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "statement-"+now.Format("2006-01-02")+".json"), b, 0o600); err != nil {
+		return fmt.Errorf("jobs: the access statement can't be written: %w", err)
+	}
+	sum := sha256.Sum256(b)
+	state := "Checked"
+	if len(res.Unlisted) > 0 {
+		state = "Unlisted"
+	}
+	_, err = c.Audit.Write(ctx, audit.Event{Actor: "sys_jobs", Kind: "access", Subject: "access_statement:" + now.Format("2006-01-02"), State: state,
+		PayloadSHA256: hex.EncodeToString(sum[:]), Reason: fmt.Sprintf("paths=%d,unlisted=%d", len(res.Paths), len(res.Unlisted))})
+	return err
 }
 
 type roster struct{ c *wire.Cell }

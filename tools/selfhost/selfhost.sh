@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
-# make selfhost (sb-selfhost(7); SB-1602): an example tenant's cell in containers on this
-# machine's Docker. It builds the images, writes a configuration, per-service vaults and a
-# manifest under build/selfhost (secrets made fresh, never committed), copies each vault
+# make selfhost (sb-selfhost(7); SB-1602 to SB-1605): one tenant's cell in containers on
+# this machine's Docker. With no configuration it is the demo: an example tenant, the
+# example share, the bundled sign-in with a demo user, and a release signed by a key made
+# for this machine. With SB_CONFIG=FILE (deploy/selfhost/install.env.example; install.sh
+# passes it) it is a real install: the company's manifest, IdP, TLS, release store and
+# off-box backup directory.
+#
+# It writes build/selfhost (the configuration, per-service vaults, the Caddyfile and
+# compose.env; secrets made on this machine, once, and never committed), copies each vault
 # into its own volume owned by the service user and readable by nobody else, brings the
-# layout up, waits for /readyz through the proxy, and provisions a demo user over SCIM.
+# layout up, makes and proves the write-once bucket, and waits for /readyz.
 #
 #   selfhost.sh [up|stop|clean]   DOCKER names the Docker command (Docker Desktop's
 #                                 docker.exe on Windows); CURL the curl that reaches the
@@ -12,94 +18,217 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 DOCKER=${DOCKER:-docker}
 CURL=${CURL:-curl}
-TENANT=acme-logistics
 DIR=build/selfhost
-COMPOSE=("$DOCKER" compose -f deploy/selfhost/compose.yaml)
-[ -f build/selfhost/images.env ] && COMPOSE=("$DOCKER" compose --env-file build/selfhost/images.env -f deploy/selfhost/compose.yaml)
 HELPER=caddy@sha256:226d1f059b75399fe19182893c7184591c07b97afc8dfcf44eeb80c9a77a530f  # has a shell, for the volume step
-CELL=https://cell.localhost:8443
-IDP=http://idp.localhost:8081
+compose() { DOCKER="$DOCKER" bash tools/selfhost/compose.sh "$@"; }
+hostpath() { # a path the Docker command understands
+  if command -v wslpath >/dev/null && [[ "$DOCKER" == *.exe ]]; then wslpath -w "$1"; else realpath "$1"; fi
+}
+die() { echo "selfhost: $*" >&2; exit 1; }
 
 case "${1:-up}" in
-stop) "${COMPOSE[@]}" stop; exit 0 ;;
-clean) "${COMPOSE[@]}" --profile setup --profile update down -v; rm -rf "$DIR"; exit 0 ;;
+stop) compose stop; exit 0 ;;
+clean)
+  compose --profile setup --profile update --profile bundled --profile dev down -v
+  # The demo's stand-in off-box copy was written by the jobs container, so remove it through one.
+  if [ -d "$DIR/.offsite" ]; then
+    "$DOCKER" run --rm -u 0 -v "$(hostpath "$(cd "$DIR/.offsite" && pwd)"):/o" "$HELPER" sh -c 'rm -rf /o/* /o/.[!.]*' >/dev/null
+  fi
+  rm -rf "$DIR"; exit 0 ;;
 up) ;;
 *) echo "usage: selfhost.sh [up|stop|clean]" >&2; exit 2 ;;
 esac
 
-hostpath() { # a path the Docker command understands
-  if command -v wslpath >/dev/null && [[ "$DOCKER" == *.exe ]]; then wslpath -w "$1"; else realpath "$1"; fi
-}
+# --- The configuration: the install's file, or the demo's defaults.
+DEMO=1
+if [ -n "${SB_CONFIG:-}" ]; then
+  [ -f "$SB_CONFIG" ] || die "no configuration at $SB_CONFIG"
+  # shellcheck disable=SC1090
+  set -a; . "$SB_CONFIG"; set +a
+  DEMO=
+fi
+SB_TENANT=${SB_TENANT:-acme-logistics}
+SB_HOST=${SB_HOST:-cell.localhost}
+SB_PORT=${SB_PORT:-8443}
+SB_HTTP_PORT=${SB_HTTP_PORT:-8180}
+SB_BIND=${SB_BIND:-127.0.0.1}
+SB_TLS=${SB_TLS:-internal}
+SB_IDP=${SB_IDP:-bundled}
+SB_OFFSITE=${SB_OFFSITE:-}
+SB_SHARE=${SB_SHARE:-}
+[[ "$SB_TENANT" =~ ^[a-z0-9][a-z0-9-]{1,62}$ ]] || die "SB_TENANT must be lower-case letters, digits and dashes"
+[[ "$SB_HOST" =~ ^[a-z0-9.-]+$ ]] || die "SB_HOST must be a host name"
+if [ "$SB_PORT" = 443 ]; then BASE=https://$SB_HOST; else BASE=https://$SB_HOST:$SB_PORT; fi
+case "$SB_TLS" in
+internal | acme) ;;
+files) [ -f "${SB_TLS_CERT:-}" ] && [ -f "${SB_TLS_KEY:-}" ] || die "SB_TLS=files needs SB_TLS_CERT and SB_TLS_KEY" ;;
+*) die "SB_TLS is internal, acme or files" ;;
+esac
+case "$SB_IDP" in
+bundled) ISSUER=$BASE/idp CLIENT=sb-$SB_TENANT ;;
+company)
+  [ -n "${SB_OIDC_ISSUER:-}" ] && [ -n "${SB_OIDC_CLIENT_ID:-}" ] && [ -f "${SB_OIDC_SECRET_FILE:-}" ] ||
+    die "SB_IDP=company needs SB_OIDC_ISSUER, SB_OIDC_CLIENT_ID and SB_OIDC_SECRET_FILE"
+  [[ "$SB_OIDC_ISSUER" == https://* ]] || die "the company's issuer must be https://"
+  ISSUER=$SB_OIDC_ISSUER CLIENT=$SB_OIDC_CLIENT_ID ;;
+dev)
+  # The development IdP has no passwords: never where anyone but this machine can reach it.
+  [ "$SB_BIND" = 127.0.0.1 ] || die "SB_IDP=dev has no passwords and is refused unless SB_BIND=127.0.0.1"
+  ISSUER=http://idp.localhost:8081 CLIENT=sb-$SB_TENANT ;;
+*) die "SB_IDP is bundled, company or dev" ;;
+esac
+if [ -n "$DEMO" ]; then
+  SB_SHARE=${SB_SHARE:-examples/share}
+  SB_OFFSITE=${SB_OFFSITE:-$DIR/.offsite}
+else
+  [ -f "${SB_MANIFEST:-}" ] || die "SB_MANIFEST must name the tenant's manifest (sb-tenant(5))"
+  [ -n "$SB_OFFSITE" ] && [ -d "$SB_OFFSITE" ] || die "SB_OFFSITE must name a directory on another machine, mounted here (the off-box backup copy)"
+  [ -n "${SB_RELEASE_STORE:-}" ] && [ -n "${SB_RELEASE_TRUSTED:-}" ] || die "SB_RELEASE_STORE and SB_RELEASE_TRUSTED name where releases come from and who signs them"
+fi
+abs() { mkdir -p "$1" && (cd "$1" && pwd); }
+
 rand() { head -c 32 /dev/urandom | base64 | tr -d '\n/+=' | head -c 40; }
 
 [ "${SKIP_IMAGES:-}" = 1 ] || DOCKER="$DOCKER" bash tools/selfhost/images.sh >/dev/null
 
+# --- Secrets and keys: made on this machine, once, and never anywhere else.
+V=$DIR/vault
+put() { mkdir -p "$(dirname "$V/$1/vault/tenants/$SB_TENANT/$2")"; printf '%s' "$3" >"$V/$1/vault/tenants/$SB_TENANT/$2"; }
+mkdir -p "$DIR/policy/platform" "$DIR/tls" "$DIR/ca" "$DIR/releases" "$DIR/iam" "$V/updater/vault/tenants/$SB_TENANT"
 if [ ! -f "$DIR/db-password" ]; then
-  mkdir -p "$DIR/policy/platform"
-  cp policy/platform/*.cedar "$DIR/policy/platform/"
-  cp examples/policies/$TENANT.cedar "$DIR/policy/"
   dbpw=$(rand)
   printf '%s' "$dbpw" >"$DIR/db-password"
   oidc=$(rand) scim=$(rand) cp=$(rand)
   anchor=$(head -c 32 /dev/urandom | base64 | tr -d '\n') attest=$(head -c 32 /dev/urandom | base64 | tr -d '\n')
   dsn="postgres://sb:$dbpw@postgres:5432/sb?sslmode=disable"
-  put() { mkdir -p "$(dirname "$DIR/vault/$1/vault/tenants/$TENANT/$2")"; printf '%s' "$3" >"$DIR/vault/$1/vault/tenants/$TENANT/$2"; }
   # Each service's vault holds only what that service reads (sb-selfhost(7), The layout).
   for f in "oidc $oidc" "scim $scim" "control-plane $cp" "audit/anchor-seed $anchor" "attest-seed $attest" "database $dsn"; do put api ${f%% *} "${f#* }"; done
   put ingest database "$dsn"
   for f in "audit/anchor-seed $anchor" "database $dsn"; do put jobs ${f%% *} "${f#* }"; done
-  cat >"$DIR/tenant.yaml" <<YAML
-tenant: $TENANT
-channel: stable
-idp: oidc://login.acme.example
-region: eu
-connectors: { docs: gdrive }
-agents: [ask, draft-reply]
-retention_days: 365
-budget_usd_month: 1500
-YAML
 fi
-
+if [ "$SB_IDP" = company ]; then put api oidc "$(cat "$SB_OIDC_SECRET_FILE")"; fi
+if [ -n "${SB_RELEASE_PULL_TOKEN_FILE:-}" ]; then put updater release-pull "$(cat "$SB_RELEASE_PULL_TOKEN_FILE")"; fi
 # The write-once store's key (SB-1603): the store reads the secret, the jobs service the pair.
 if [ ! -f "$DIR/worm-secret" ]; then
   wormsecret=$(rand)
   printf '%s' "$wormsecret" >"$DIR/worm-secret"
-  printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret" >"$DIR/vault/jobs/vault/tenants/$TENANT/worm"
+  put jobs worm "$(printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret")"
 fi
-mkdir -p "$DIR/vault/updater/vault/tenants/$TENANT" "$DIR/releases"
 
-# The demo release: this machine's images, signed with this machine's own key, published
-# to the local release store the updater reads (SB-1604).
-digest() { sed -nE "s/^$1 (sha256:[0-9a-f]{64})\$/\1/p" build/images/digests.txt | tr -d '\r'; }
-echo "demo release of $(git rev-parse --short HEAD 2>/dev/null): make selfhost" >"$DIR/gate-results.txt"
-go run ./tools/release/bundle --image api="$(digest api)" --image ingest="$(digest ingest)" --image jobs="$(digest jobs)" \
-  --image updater="$(digest updater)" --created "$(date -u +%F)" --out "$DIR/bundle.json" >/dev/null
-read -r REL PUB < <(go run ./tools/selfhost/devrelease --bundle "$DIR/bundle.json" --store "$DIR/releases" \
-  --key-file "$DIR/release-key" --gate-results "$DIR/gate-results.txt")
+# --- Policies and the manifest.
+cp policy/platform/*.cedar "$DIR/policy/platform/"
+if [ -n "${SB_POLICY:-}" ]; then cp "$SB_POLICY" "$DIR/policy/$SB_TENANT.cedar"
+elif [ -f "examples/policies/$SB_TENANT.cedar" ]; then cp "examples/policies/$SB_TENANT.cedar" "$DIR/policy/"; fi
+if [ -n "$DEMO" ]; then
+  cat >"$DIR/tenant.yaml" <<YAML
+tenant: $SB_TENANT
+channel: stable
+idp: oidc://login.acme.example
+region: eu
+connectors: { docs: folder }
+agents: [ask, draft-reply]
+retention_days: 365
+budget_usd_month: 1500
+YAML
+else
+  cp "$SB_MANIFEST" "$DIR/tenant.yaml"
+  grep -qE "^tenant: *$SB_TENANT *$" "$DIR/tenant.yaml" || die "the manifest's tenant isn't $SB_TENANT"
+fi
 
+# --- The release the updater admits. The demo signs this machine's own images with a key
+# made for this machine (SB-1604); an install trusts the factory's release identity.
+if [ -n "$DEMO" ]; then
+  digest() { sed -nE "s/^$1 (sha256:[0-9a-f]{64})\$/\1/p" build/images/digests.txt | tr -d '\r'; }
+  echo "demo release of $(git rev-parse --short HEAD 2>/dev/null): make selfhost" >"$DIR/gate-results.txt"
+  go run ./tools/release/bundle --image api="$(digest api)" --image ingest="$(digest ingest)" --image jobs="$(digest jobs)" \
+    --image updater="$(digest updater)" --created "$(date -u +%F)" --out "$DIR/bundle.json" >/dev/null
+  read -r _ TRUSTED < <(go run ./tools/selfhost/devrelease --bundle "$DIR/bundle.json" --store "$DIR/releases" \
+    --key-file "$DIR/release-key" --gate-results "$DIR/gate-results.txt")
+  STORE=file:///var/lib/sb/releases REGISTRY=local
+else
+  TRUSTED=$SB_RELEASE_TRUSTED REGISTRY=${SB_RELEASE_REGISTRY:-local}
+  case "$SB_RELEASE_STORE" in
+  https://*) STORE=$SB_RELEASE_STORE ;;
+  *) [ -d "$SB_RELEASE_STORE" ] || die "SB_RELEASE_STORE is an https:// store or a directory of releases"
+     cp -a "$SB_RELEASE_STORE/." "$DIR/releases/"; STORE=file:///var/lib/sb/releases ;;
+  esac
+fi
+
+# --- What the factory can reach (LAW-17 on one machine): at most the release store's pull
+# token, read-only. The monthly access job checks this list and records a statement.
+if [[ "$STORE" == https://* ]]; then
+  printf '[{"kind":"pull-token","id":"release-pull","grant":"release-pull"}]\n' >"$DIR/iam/$SB_TENANT.json"
+  RETAIN='["release-pull"]'
+else
+  printf '[]\n' >"$DIR/iam/$SB_TENANT.json"
+  RETAIN='[]'
+fi
+
+# --- The cell's configuration (sb-cell(5)).
+CONNECTORS='{}'
+if [ -n "$SB_SHARE" ]; then CONNECTORS='{ "docs": { "base": "file:///srv/share" } }'; fi
 cat >"$DIR/cell.json" <<JSON
 {
-  "tenant": "$TENANT",
+  "tenant": "$SB_TENANT",
   "manifest": "/var/lib/sb/state/tenant.yaml",
   "state": "/var/lib/sb/state",
   "vault": "/var/lib/sb/vault",
   "policies": "/etc/sb/policy",
   "listen": { "api": "0.0.0.0:8080" },
-  "base_url": "$CELL",
-  "oidc": { "client_id": "sb-$TENANT", "issuer": "$IDP" },
+  "base_url": "$BASE",
+  "oidc": { "client_id": "$CLIENT", "issuer": "$ISSUER" },
   "web": "/sb/web",
   "model": { "provider": "extractive" },
-  "database": "vault://tenants/$TENANT/database",
+  "database": "vault://tenants/$SB_TENANT/database",
+  "connectors": $CONNECTORS,
   "worm": { "endpoint": "http://worm:7070", "bucket": "sb-worm" },
-  "release": { "store": "file:///var/lib/sb/releases", "registry": "local", "trusted": "$PUB", "deploy": { "kind": "local" } },
+  "backups": [
+    { "dir": "/var/lib/sb/state/backups", "media": "disk" },
+    { "worm": true },
+    { "dir": "/srv/backup-offsite", "media": "disk", "offsite": true }
+  ],
+  "custody": { "tenant": true, "retain": $RETAIN },
+  "release": { "store": "$STORE", "registry": "$REGISTRY", "trusted": "$TRUSTED", "deploy": { "kind": "local" } },
   "durable": true
 }
 JSON
 
-# Fill the volumes: each vault owned by the service user (65532) with no access for others.
-"${COMPOSE[@]}" create --no-recreate >/dev/null 2>&1 || "${COMPOSE[@]}" create >/dev/null
-# The updater's volumes belong to a profile, so `create` leaves them out: make them as compose would.
-for v in vault-updater releases; do
+# --- The proxy: the cell, the bundled sign-in at /idp, and the install's TLS.
+{
+  echo "{"
+  case "$SB_TLS" in
+  internal) printf '\tlocal_certs\n\tauto_https disable_redirects\n' ;;
+  acme) if [ -n "${SB_ACME_EMAIL:-}" ]; then printf '\temail %s\n' "$SB_ACME_EMAIL"; fi ;;
+  files) printf '\tauto_https disable_certs\n' ;;
+  esac
+  echo "}"
+  echo
+  echo "$SB_HOST:$SB_PORT {"
+  if [ "$SB_TLS" = files ]; then printf '\ttls /etc/sb/tls/cert.pem /etc/sb/tls/key.pem\n'; fi
+  printf '\theader Strict-Transport-Security "max-age=31536000"\n'
+  if [ "$SB_IDP" = bundled ]; then printf '\thandle /idp/* {\n\t\treverse_proxy idp:8082\n\t}\n'; fi
+  printf '\thandle {\n\t\treverse_proxy api:8080\n\t}\n'
+  echo "}"
+} >"$DIR/Caddyfile"
+if [ "$SB_TLS" = files ]; then
+  cp "$SB_TLS_CERT" "$DIR/tls/cert.pem"; cp "$SB_TLS_KEY" "$DIR/tls/key.pem"; chmod 600 "$DIR/tls/key.pem"
+  if [ -n "${SB_TLS_CA:-}" ]; then cp "$SB_TLS_CA" "$DIR/ca/company-ca.crt"; fi
+fi
+
+# --- compose.env carries the layout's settings; the admitted image digests stay.
+profiles=$SB_IDP
+[ "$SB_IDP" = company ] && profiles=
+{
+  echo "SB_TENANT=$SB_TENANT"; echo "SB_HOST=$SB_HOST"; echo "SB_PORT=$SB_PORT"; echo "SB_HTTP_PORT=$SB_HTTP_PORT"
+  echo "SB_BIND=$SB_BIND"; echo "SB_BASE_URL=$BASE"; echo "SB_ISSUER=$ISSUER"
+  echo "SB_SHARE=$(hostpath "$(abs "${SB_SHARE:-$DIR/empty-share}")")"; echo "SB_OFFSITE=$(hostpath "$(abs "$SB_OFFSITE")")"
+  echo "SB_PROFILES=$profiles"
+  if [ -f "$DIR/compose.env" ]; then grep -E '^SB_[A-Z]+_IMAGE=' "$DIR/compose.env" || true; fi
+} >"$DIR/compose.env.new"
+mv "$DIR/compose.env.new" "$DIR/compose.env"
+
+# --- Fill the volumes: each vault owned by the service user (65532) with no access for others.
+for v in vault-api vault-ingest vault-jobs vault-updater releases state idp-data caddy worm-data pgdata; do
   "$DOCKER" volume inspect "sb-selfhost_$v" >/dev/null 2>&1 ||
     "$DOCKER" volume create --label com.docker.compose.project=sb-selfhost --label com.docker.compose.volume=$v "sb-selfhost_$v" >/dev/null
 done
@@ -107,30 +236,57 @@ fill() { # volume source-dir
   "$DOCKER" run --rm -u 0 -v "sb-selfhost_$1:/dst" -v "$(hostpath "$2"):/src:ro" "$HELPER" \
     sh -c 'cp -a /src/. /dst/ && chown -R 65532:65532 /dst && chmod -R u=rwX,go= /dst' >/dev/null
 }
-for svc in api ingest jobs updater; do fill "vault-$svc" "$DIR/vault/$svc"; done
+for svc in api ingest jobs updater; do fill "vault-$svc" "$V/$svc"; done
 fill releases "$DIR/releases"
 "$DOCKER" run --rm -u 0 -v sb-selfhost_state:/dst -v "$(hostpath "$DIR"):/src:ro" "$HELPER" \
-  sh -c '[ -f /dst/tenant.yaml ] || cp /src/tenant.yaml /dst/; chown -R 65532:65532 /dst; chmod 700 /dst' >/dev/null
+  sh -c 'cp /src/tenant.yaml /dst/tenant.yaml && mkdir -p /dst/iam /dst/backups && cp /src/iam/*.json /dst/iam/ &&
+         chown -R 65532:65532 /dst && chmod 700 /dst' >/dev/null
+"$DOCKER" run --rm -u 0 -v sb-selfhost_idp-data:/dst "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 700 /dst' >/dev/null
 
-"${COMPOSE[@]}" up -d >/dev/null
+# --- Up: the proxy first, so the cell can trust its local CA before it looks for its IdP.
+compose up -d proxy >/dev/null 2>&1 || compose up -d proxy
+if [ "$SB_TLS" = internal ]; then
+  for _ in $(seq 30); do
+    if "$DOCKER" run --rm -v sb-selfhost_caddy:/c:ro "$HELPER" test -s /c/caddy/pki/authorities/local/root.crt; then break; fi
+    sleep 1
+  done
+  "$DOCKER" run --rm -v sb-selfhost_caddy:/c:ro "$HELPER" cat /c/caddy/pki/authorities/local/root.crt | tr -d '\r' >"$DIR/ca/caddy-root.crt"
+  [ -s "$DIR/ca/caddy-root.crt" ] || die "the proxy made no local CA; 'tools/selfhost/compose.sh logs proxy' says why"
+fi
+compose up -d >/dev/null 2>&1 || compose up -d
 # The write-once bucket: created once, locked for seven years, and proved by a probe.
-"${COMPOSE[@]}" --profile setup run --rm wormsetup >/dev/null
+compose --profile setup run --rm wormsetup >/dev/null 2>&1 || compose --profile setup run --rm wormsetup
 ok=
 for _ in $(seq 90); do
-  if "$CURL" -ksf --resolve cell.localhost:8443:127.0.0.1 "$CELL/readyz" >/dev/null 2>&1; then ok=1; break; fi
+  if "$CURL" -ksf --resolve "$SB_HOST:$SB_PORT:127.0.0.1" "$BASE/readyz" >/dev/null 2>&1; then ok=1; break; fi
   sleep 1
 done
-if [ -z "$ok" ]; then
-  echo "selfhost: the cell didn't become ready; '${COMPOSE[*]} logs api' says why" >&2
-  exit 1
-fi
+[ -n "$ok" ] || die "the cell didn't become ready; 'tools/selfhost/compose.sh logs api' says why"
 
-# A demo user, provisioned the way a company's IdP would: over SCIM.
-scim=$(cat "$DIR/vault/api/vault/tenants/$TENANT/scim")
-body=$("$CURL" -ks --resolve cell.localhost:8443:127.0.0.1 -X POST "$CELL/scim/v2/Users" -H "Authorization: Bearer $scim" \
-  -H "Content-Type: application/scim+json" -d '{"userName":"ann","emails":[{"value":"ann@acme.example"}]}')
-id=$(printf '%s' "$body" | sed -nE 's/.*"id":"(usr_[0-9a-f]+)".*/\1/p')
-if [ -n "$id" ]; then printf '%s' "$id" >"$DIR/demo-user"; else id=$(cat "$DIR/demo-user" 2>/dev/null || true); fi # ann exists from an earlier run
-[ -n "$id" ] && "$CURL" -s -X POST "$IDP/dev/user?id=$id" >/dev/null
-echo "selfhost: $TENANT is running at $CELL (demo IdP $IDP)"
-echo "selfhost: sign in as ann ($id) at $CELL/login; make selfhost-stop stops it, make selfhost-clean deletes its data"
+# --- The demo's user, provisioned the way a company's IdP would: over SCIM.
+if [ -n "$DEMO" ]; then
+  if [ "$SB_IDP" = bundled ]; then
+    if [ ! -f "$DIR/demo-password" ]; then
+      pw=$(rand | head -c 20)
+      if printf '%s' "$pw" | compose run --rm -T idp user add --data /var/lib/sb-idp --email ann@acme.example \
+        --scim http://api:8080/scim/v2 --scim-token-file /run/sb/scim >/dev/null 2>&1; then
+        printf '%s' "$pw" >"$DIR/demo-password"
+      else
+        die "the demo user couldn't be added; 'tools/selfhost/compose.sh run --rm idp user list --data /var/lib/sb-idp' shows who exists"
+      fi
+    fi
+    echo "selfhost: $SB_TENANT is running at $BASE"
+    echo "selfhost: sign in at $BASE/login as ann@acme.example with the password in $DIR/demo-password"
+  else
+    scim=$(cat "$V/api/vault/tenants/$SB_TENANT/scim")
+    body=$("$CURL" -ks --resolve "$SB_HOST:$SB_PORT:127.0.0.1" -X POST "$BASE/scim/v2/Users" -H "Authorization: Bearer $scim" \
+      -H "Content-Type: application/scim+json" -d '{"userName":"ann","emails":[{"value":"ann@acme.example"}]}')
+    id=$(printf '%s' "$body" | sed -nE 's/.*"id":"(usr_[0-9a-f]+)".*/\1/p')
+    if [ -n "$id" ]; then printf '%s' "$id" >"$DIR/demo-user"; else id=$(cat "$DIR/demo-user" 2>/dev/null || true); fi
+    [ -n "$id" ] && "$CURL" -s -X POST "http://idp.localhost:8081/dev/user?id=$id" --resolve idp.localhost:8081:127.0.0.1 >/dev/null
+    echo "selfhost: $SB_TENANT is running at $BASE; /login signs in as ann ($id) with no password (SB_IDP=dev)"
+  fi
+  echo "selfhost: make selfhost-update moves it onto the admitted release; make selfhost-stop stops it, make selfhost-clean deletes its data"
+else
+  echo "selfhost: $SB_TENANT is running at $BASE"
+fi

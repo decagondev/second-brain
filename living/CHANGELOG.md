@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- A sovereign install and a folder connector (S15.3: SB-1605, SB-1606): `docs: folder` reads a directory's text, Markdown and PDF files with an ACL file beside each (sb-connector(3)); `tools/selfhost/install.sh` sets up a Linux VM or server from a configuration file or an offline bundle (`make selfhost-bundle`) with the company's TLS and IdP, three backup copies with one off the box, and nightly database dumps; the bundled sign-in sb-idp(1) for sites with no IdP; a signed monthly access statement. The self-hosted demo now answers from an example share and signs in with a password.
 - Write-once audit storage and signed upgrades on a self-hosted cell (S15.2: SB-1603, SB-1604): `worm` in sb-cell(5) writes anchors and a backup copy to an S3 store with compliance-mode object lock, made and proved at install; `make selfhost-update` and a systemd timer upgrade the box by digest, and no container holds the Docker socket (sb-selfhost(7)).
 - Container images and a self-hosted cell in containers (S15.1: SB-1601, SB-1602): `make images`, `make selfhost`, `make selfhost-smoke` (sb-selfhost(7)); `database` may name a vault path.
 - Console screens for stewards and access reviews (S14.5: SB-1509): `/?steward=NAME` proposes space changes and decides reviews; the admin console approves proposals by their hash and lists reviews, overdue first. **W14 Cell Runtime built** (SB-1508's GCP path waits for a project).

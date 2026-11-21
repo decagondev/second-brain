@@ -23,6 +23,10 @@ Hand-off:
 
 - [Hand-off](handoff.md): move a cell to the company's own cloud account under its own key (SB-701)
 
+Self-hosted cells:
+
+- [Self-hosted install](selfhost.md): install, people, upgrades, backup and restore on one machine the company owns (SB-1605)
+
 Releases:
 
 - [Pausing release pulls](pause-pulls.md): a tenant-custody cell stops taking releases for a while, or detaches (SB-707)
