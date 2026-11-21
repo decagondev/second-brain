@@ -75,9 +75,14 @@ func (d Dir) Deploy(_ context.Context, svc runtime.Service, image, releaseID str
 	return os.Rename(tmp, filepath.Join(dir, svc.Name+".json"))
 }
 
-// Running implements runtime.Deployer.
+// Running implements runtime.Deployer: what the host step recorded it started
+// (ROOT/running, SB-1604), or, where nothing starts services but the cell itself (make
+// cell), what was asked for.
 func (d Dir) Running(_ context.Context, svc runtime.Service) (string, string, error) {
-	b, err := os.ReadFile(filepath.Join(d.Root, "services", svc.Name+".json"))
+	b, err := os.ReadFile(filepath.Join(d.Root, "running", svc.Name+".json"))
+	if errors.Is(err, fs.ErrNotExist) {
+		b, err = os.ReadFile(filepath.Join(d.Root, "services", svc.Name+".json"))
+	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", "", nil
 	}

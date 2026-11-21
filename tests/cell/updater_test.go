@@ -98,7 +98,7 @@ func TestUpdaterPullsAdmitsAndDeploys(t *testing.T) {
 		t.Fatal(err)
 	}
 	res, err := job.Run(ctx)
-	if err != nil || res.Release != good || len(res.Deployed) != len(runtime.Services) {
+	if err != nil || res.Release != good || len(res.Deployed) != len(runtime.SelfHosted) {
 		t.Fatalf("first run: %+v %v", res, err)
 	}
 	if res, err := job.Run(ctx); err != nil || len(res.Deployed) != 0 {

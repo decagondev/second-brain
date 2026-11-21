@@ -15,15 +15,16 @@ for svc in api ingest jobs updater; do
   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build "${flags[@]}" -o "$OUT/ctx/bin/$svc" "./cmd/sb-$svc"
 done
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build "${flags[@]}" -o "$OUT/ctx/bin/devidp" ./tools/devidp
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build "${flags[@]}" -o "$OUT/ctx/bin/wormsetup" ./tools/selfhost/wormsetup
 if [ -d web/dist ]; then cp -r web/dist/. "$OUT/ctx/web/"; else echo "images: web/dist not built (make web); the api image serves no UI" >&2; fi
 cp deploy/images/Dockerfile "$OUT/ctx/Dockerfile"
 find "$OUT/ctx" -exec touch -h -d "@$EPOCH" {} +
 : >"$OUT/digests.txt"
-for svc in api ingest jobs updater devidp; do
+for svc in api ingest jobs updater devidp wormsetup; do
   "$DOCKER" buildx build -q --build-arg "SVC=$svc" --build-arg "SOURCE_DATE_EPOCH=$EPOCH" --provenance=false     --output "type=docker,name=sb-$svc:$COMMIT" "$OUT/ctx" >/dev/null
   "$DOCKER" tag "sb-$svc:$COMMIT" "sb-$svc:local"
   id=$("$DOCKER" image inspect --format '{{.Id}}' "sb-$svc:$COMMIT" | tr -d '\r')
   echo "$svc $id" >>"$OUT/digests.txt"
-  [ "$svc" = devidp ] || go run ./tools/release/sbom --binary "$OUT/ctx/bin/$svc" --name "sb-$svc" --created "$CREATED" --out "$OUT/$svc.spdx.json"
+  case $svc in devidp|wormsetup) ;; *) go run ./tools/release/sbom --binary "$OUT/ctx/bin/$svc" --name "sb-$svc" --created "$CREATED" --out "$OUT/$svc.spdx.json" ;; esac
 done
 cat "$OUT/digests.txt"

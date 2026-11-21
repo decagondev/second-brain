@@ -48,6 +48,7 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 | `vault://tenants/TENANT/control-plane` | the control plane's identity token, which the cell compares for apply, the live configuration and the verifier (sb-api(3)) |
 | `vault://tenants/TENANT/release-pull` | the read token for the factory's release store (sb-release(7), Cells in a tenant's account) |
 | `vault://tenants/TENANT/database` | the cell database's DSN, when sb-cell(5) `database` names this path (sb-selfhost(7)) |
+| `vault://tenants/TENANT/worm` | the write-once store's S3 key pair, `{"access_key", "secret_key"}`, when sb-cell(5) sets `worm` (sb-selfhost(7), Write-once storage) |
 
 A reference is resolved through the `Secrets` port at the moment of the call, and only for the cell's own tenant: a reference to another tenant's path is refused. Resolved values are never stored in a struct field and never cached past the call. Every value resolved is also registered with the logger's redactor, so it is replaced by `[REDACTED]` anywhere it would appear in a log line: message, attribute, error or nested group. Attributes whose names contain `secret`, `password`, `token` or `key` are redacted whatever their value. For development, `file:///DIR` keeps the vault in `DIR/vault/tenants/…`, one file per secret, readable only by its owner; a file anyone else can read is refused.
 

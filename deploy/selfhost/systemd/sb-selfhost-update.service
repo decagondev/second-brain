@@ -1,0 +1,12 @@
+# One upgrade of the self-hosted cell (sb-selfhost(7), Upgrades; SB-1604): the updater
+# admits or refuses the channel's release, and the host step starts what it admitted.
+# A refused release changes nothing and exits non-zero, so systemd records the failure.
+[Unit]
+Description=Second Brain self-hosted cell: pull and admit the channel's release
+Requires=docker.service
+After=docker.service sb-selfhost.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/second-brain
+ExecStart=/bin/bash tools/selfhost/update.sh

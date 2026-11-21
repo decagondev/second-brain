@@ -53,8 +53,9 @@ type Config struct {
 	Release ReleaseConfig `json:"release"`
 	// Database is the cell's Postgres (a DSN, e.g. postgres:///sb_acme?host=/var/run/postgresql):
 	// every record store and the audit log live there (SB-1508). Without it they are in memory.
-	Database string `json:"database"`
-	Durable  bool   `json:"durable"`
+	Database string     `json:"database"`
+	Worm     WormConfig `json:"worm"`
+	Durable  bool       `json:"durable"`
 }
 
 // ReleaseConfig is where the cell's updater pulls releases from and how it deploys them
@@ -84,6 +85,20 @@ type Backup struct {
 	Dir     string `json:"dir"`
 	Media   string `json:"media"`
 	Offsite bool   `json:"offsite"`
+	// Worm, instead of dir and media, is the copy in the write-once store (worm): an
+	// object store, off the box when its endpoint is (SB-1603).
+	Worm bool `json:"worm"`
+}
+
+// WormConfig is the write-once store for anchors and a backup copy (sb-audit(7), WORM
+// storage; SB-1603): an S3-compatible bucket with compliance-mode object lock of at
+// least seven years, its credentials at vault://tenants/TENANT/worm. Without it the
+// anchors go to files under state, which is for development only.
+type WormConfig struct {
+	Endpoint string `json:"endpoint"`
+	Bucket   string `json:"bucket"`
+	Region   string `json:"region"`
+	Offsite  bool   `json:"offsite"`
 }
 
 // ErrConfig is a configuration a cell can't start with.
@@ -151,9 +166,17 @@ func Parse(b []byte) (Config, error) {
 	if err := c.Release.check(); err != nil {
 		return Config{}, err
 	}
+	if c.Worm != (WormConfig{}) {
+		if u, err := url.Parse(c.Worm.Endpoint); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || c.Worm.Bucket == "" {
+			return Config{}, fmt.Errorf("%w: worm needs an http(s) endpoint and a bucket", ErrConfig)
+		}
+	}
 	for i, b := range c.Backups {
-		if b.Dir == "" || b.Media == "" {
-			return Config{}, fmt.Errorf("%w: backups[%d] needs dir and media", ErrConfig, i)
+		switch {
+		case b.Worm && c.Worm == (WormConfig{}):
+			return Config{}, fmt.Errorf("%w: backups[%d] is the worm copy, but there is no worm store", ErrConfig, i)
+		case !b.Worm && (b.Dir == "" || b.Media == ""):
+			return Config{}, fmt.Errorf("%w: backups[%d] needs dir and media, or worm", ErrConfig, i)
 		}
 	}
 	return c, nil

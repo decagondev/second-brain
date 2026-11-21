@@ -1,0 +1,18 @@
+# The self-hosted cell as a system service (sb-selfhost(7), Running it on a box; SB-1604).
+# Install: copy the repository (or the release's deploy/ and tools/selfhost) to
+# /opt/second-brain, run `make selfhost` once, then
+#   systemctl enable --now sb-selfhost.service sb-selfhost-update.timer
+[Unit]
+Description=Second Brain self-hosted cell
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/second-brain
+ExecStart=/bin/sh -c 'if [ -f build/selfhost/images.env ]; then exec docker compose --env-file build/selfhost/images.env -f deploy/selfhost/compose.yaml up -d; else exec docker compose -f deploy/selfhost/compose.yaml up -d; fi'
+ExecStop=/usr/bin/docker compose -f deploy/selfhost/compose.yaml stop
+
+[Install]
+WantedBy=multi-user.target

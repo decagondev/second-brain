@@ -15,13 +15,14 @@ CURL=${CURL:-curl}
 TENANT=acme-logistics
 DIR=build/selfhost
 COMPOSE=("$DOCKER" compose -f deploy/selfhost/compose.yaml)
+[ -f build/selfhost/images.env ] && COMPOSE=("$DOCKER" compose --env-file build/selfhost/images.env -f deploy/selfhost/compose.yaml)
 HELPER=caddy@sha256:226d1f059b75399fe19182893c7184591c07b97afc8dfcf44eeb80c9a77a530f  # has a shell, for the volume step
 CELL=https://cell.localhost:8443
 IDP=http://idp.localhost:8081
 
 case "${1:-up}" in
 stop) "${COMPOSE[@]}" stop; exit 0 ;;
-clean) "${COMPOSE[@]}" down -v; rm -rf "$DIR"; exit 0 ;;
+clean) "${COMPOSE[@]}" --profile setup --profile update down -v; rm -rf "$DIR"; exit 0 ;;
 up) ;;
 *) echo "usage: selfhost.sh [up|stop|clean]" >&2; exit 2 ;;
 esac
@@ -33,7 +34,7 @@ rand() { head -c 32 /dev/urandom | base64 | tr -d '\n/+=' | head -c 40; }
 
 [ "${SKIP_IMAGES:-}" = 1 ] || DOCKER="$DOCKER" bash tools/selfhost/images.sh >/dev/null
 
-if [ ! -f "$DIR/cell.json" ]; then
+if [ ! -f "$DIR/db-password" ]; then
   mkdir -p "$DIR/policy/platform"
   cp policy/platform/*.cedar "$DIR/policy/platform/"
   cp examples/policies/$TENANT.cedar "$DIR/policy/"
@@ -57,7 +58,26 @@ agents: [ask, draft-reply]
 retention_days: 365
 budget_usd_month: 1500
 YAML
-  cat >"$DIR/cell.json" <<JSON
+fi
+
+# The write-once store's key (SB-1603): the store reads the secret, the jobs service the pair.
+if [ ! -f "$DIR/worm-secret" ]; then
+  wormsecret=$(rand)
+  printf '%s' "$wormsecret" >"$DIR/worm-secret"
+  printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret" >"$DIR/vault/jobs/vault/tenants/$TENANT/worm"
+fi
+mkdir -p "$DIR/vault/updater/vault/tenants/$TENANT" "$DIR/releases"
+
+# The demo release: this machine's images, signed with this machine's own key, published
+# to the local release store the updater reads (SB-1604).
+digest() { sed -nE "s/^$1 (sha256:[0-9a-f]{64})\$/\1/p" build/images/digests.txt | tr -d '\r'; }
+echo "demo release of $(git rev-parse --short HEAD 2>/dev/null): make selfhost" >"$DIR/gate-results.txt"
+go run ./tools/release/bundle --image api="$(digest api)" --image ingest="$(digest ingest)" --image jobs="$(digest jobs)" \
+  --image updater="$(digest updater)" --created "$(date -u +%F)" --out "$DIR/bundle.json" >/dev/null
+read -r REL PUB < <(go run ./tools/selfhost/devrelease --bundle "$DIR/bundle.json" --store "$DIR/releases" \
+  --key-file "$DIR/release-key" --gate-results "$DIR/gate-results.txt")
+
+cat >"$DIR/cell.json" <<JSON
 {
   "tenant": "$TENANT",
   "manifest": "/var/lib/sb/state/tenant.yaml",
@@ -70,22 +90,31 @@ YAML
   "web": "/sb/web",
   "model": { "provider": "extractive" },
   "database": "vault://tenants/$TENANT/database",
+  "worm": { "endpoint": "http://worm:7070", "bucket": "sb-worm" },
+  "release": { "store": "file:///var/lib/sb/releases", "registry": "local", "trusted": "$PUB", "deploy": { "kind": "local" } },
   "durable": true
 }
 JSON
-fi
 
 # Fill the volumes: each vault owned by the service user (65532) with no access for others.
 "${COMPOSE[@]}" create --no-recreate >/dev/null 2>&1 || "${COMPOSE[@]}" create >/dev/null
+# The updater's volumes belong to a profile, so `create` leaves them out: make them as compose would.
+for v in vault-updater releases; do
+  "$DOCKER" volume inspect "sb-selfhost_$v" >/dev/null 2>&1 ||
+    "$DOCKER" volume create --label com.docker.compose.project=sb-selfhost --label com.docker.compose.volume=$v "sb-selfhost_$v" >/dev/null
+done
 fill() { # volume source-dir
   "$DOCKER" run --rm -u 0 -v "sb-selfhost_$1:/dst" -v "$(hostpath "$2"):/src:ro" "$HELPER" \
     sh -c 'cp -a /src/. /dst/ && chown -R 65532:65532 /dst && chmod -R u=rwX,go= /dst' >/dev/null
 }
-for svc in api ingest jobs; do fill "vault-$svc" "$DIR/vault/$svc"; done
+for svc in api ingest jobs updater; do fill "vault-$svc" "$DIR/vault/$svc"; done
+fill releases "$DIR/releases"
 "$DOCKER" run --rm -u 0 -v sb-selfhost_state:/dst -v "$(hostpath "$DIR"):/src:ro" "$HELPER" \
   sh -c '[ -f /dst/tenant.yaml ] || cp /src/tenant.yaml /dst/; chown -R 65532:65532 /dst; chmod 700 /dst' >/dev/null
 
 "${COMPOSE[@]}" up -d >/dev/null
+# The write-once bucket: created once, locked for seven years, and proved by a probe.
+"${COMPOSE[@]}" --profile setup run --rm wormsetup >/dev/null
 ok=
 for _ in $(seq 90); do
   if "$CURL" -ksf --resolve cell.localhost:8443:127.0.0.1 "$CELL/readyz" >/dev/null 2>&1; then ok=1; break; fi

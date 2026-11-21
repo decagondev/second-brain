@@ -25,7 +25,16 @@ type Service struct {
 	Image string // the bundle's Code key for its image, e.g. image/api
 }
 
-// Services are every cell's, in deploy order; the updater deploys itself last.
+// SelfHosted are a self-hosted cell's services (sb-selfhost(7)): the api serves the web UI
+// itself, so there is no web service; the updater deploys itself last.
+var SelfHosted = []Service{
+	{Name: "api", Image: "image/api"},
+	{Name: "ingest", Image: "image/ingest"},
+	{Name: "jobs", Job: true, Image: "image/jobs"},
+	{Name: "updater", Job: true, Image: "image/updater"},
+}
+
+// Services are every cell's on GCP, in deploy order; the updater deploys itself last.
 var Services = []Service{
 	{Name: "api", Image: "image/api"},
 	{Name: "ingest", Image: "image/ingest"},
@@ -60,6 +69,15 @@ type Updater struct {
 	// Target is the release the cell's channel should run (from the release controller).
 	Target func(ctx context.Context) (string, error)
 	Deploy Deployer
+	// Services are the services to deploy; nil is Services (GCP).
+	Services []Service
+}
+
+func (u Updater) services() []Service {
+	if u.Services != nil {
+		return u.Services
+	}
+	return Services
 }
 
 // Image is a service's image reference by digest; tags are never used.
@@ -85,7 +103,7 @@ func (u Updater) Run(ctx context.Context) (Result, error) {
 		return Result{}, fmt.Errorf("%w: %v", ErrUnsigned, err)
 	}
 	images := map[string]string{}
-	for _, s := range Services {
+	for _, s := range u.services() {
 		d, ok := m.Code[s.Image]
 		if !ok || !digestRe.MatchString(d) {
 			return Result{}, fmt.Errorf("%w: %s", ErrImage, s.Name)
@@ -93,7 +111,7 @@ func (u Updater) Run(ctx context.Context) (Result, error) {
 		images[s.Name] = u.Image(s, d)
 	}
 	res := Result{Release: id}
-	for _, s := range Services {
+	for _, s := range u.services() {
 		cur, rel, err := u.Deploy.Running(ctx, s)
 		if err != nil {
 			return res, err
@@ -115,10 +133,12 @@ func (u Updater) Run(ctx context.Context) (Result, error) {
 // Attestor reports what the cell's services actually run, read from the runtime at the moment
 // of the call, signed with the cell's attestation key (sb-runtime(7), Endpoints; SB-905).
 type Attestor struct {
-	Tenant string
-	Deploy Deployer
-	Key    ed25519.PrivateKey
-	Now    func() time.Time
+	// Services are the services to report; nil is Services (GCP).
+	Services []Service
+	Tenant   string
+	Deploy   Deployer
+	Key      ed25519.PrivateKey
+	Now      func() time.Time
 
 	mu  sync.Mutex
 	seq int64
@@ -128,7 +148,11 @@ type Attestor struct {
 // running another release's image shows up as a digest the bundle doesn't list.
 func (a *Attestor) Attest(ctx context.Context) (attest.Signed, error) {
 	r := attest.Report{Tenant: a.Tenant, Digests: map[string]string{}, At: a.Now().UTC()}
-	for _, s := range Services {
+	services := a.Services
+	if services == nil {
+		services = Services
+	}
+	for _, s := range services {
 		img, rel, err := a.Deploy.Running(ctx, s)
 		if err != nil {
 			return attest.Signed{}, err

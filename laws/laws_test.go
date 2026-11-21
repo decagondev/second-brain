@@ -318,6 +318,10 @@ func TestLAW11_AnchorsAreWriteOnce(t *testing.T) {
 	Check(t, "LAW-11", 40, law11WORM)
 }
 
+func TestLAW11_AnchorsAreWriteOnceOnTheBox(t *testing.T) {
+	Check(t, "LAW-11", 40, law11Box)
+}
+
 func TestLAW11_MissedAnchorOrBackupAlerts(t *testing.T) {
 	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return lawWatched("LAW-11")(r, NewWatch()) })
 }

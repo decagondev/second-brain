@@ -1,0 +1,12 @@
+# Pull the channel's release hourly (sb-selfhost(7), Upgrades; SB-1604).
+[Unit]
+Description=Second Brain self-hosted cell: hourly upgrade check
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=1h
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

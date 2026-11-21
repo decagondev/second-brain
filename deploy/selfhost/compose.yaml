@@ -1,6 +1,8 @@
-# A self-hosted cell (sb-selfhost(7); ADR-0022, SB-1602): one container per service, laid
-# out the way GCP lays out a cell. `make selfhost` writes ../../build/selfhost and fills
-# the volumes before this runs; images come from `make images`.
+# A self-hosted cell (sb-selfhost(7); ADR-0022, SB-1602 to SB-1604): one container per
+# service, laid out the way GCP lays out a cell. `make selfhost` writes ../../build/selfhost
+# and fills the volumes before this runs; images come from `make images`, and after the
+# first upgrade from the digests the updater admitted (SB_*_IMAGE, written by the host
+# step into ../../build/selfhost/images.env). No container mounts the Docker socket.
 name: sb-selfhost
 
 x-cell: &cell
@@ -17,6 +19,7 @@ x-cell: &cell
     - state:/var/lib/sb/state
   depends_on:
     postgres: { condition: service_healthy }
+    worm: { condition: service_started }
     idp: { condition: service_started }
 
 services:
@@ -32,7 +35,7 @@ services:
 
   api:
     <<: *cell
-    image: sb-api:local
+    image: ${SB_API_IMAGE:-sb-api:local}
     command: ["--config", "/etc/sb/cell.json"]
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
@@ -43,7 +46,7 @@ services:
 
   ingest:
     <<: *cell
-    image: sb-ingest:local
+    image: ${SB_INGEST_IMAGE:-sb-ingest:local}
     command: ["--config", "/etc/sb/cell.json"]
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
@@ -54,7 +57,7 @@ services:
 
   jobs:
     <<: *cell
-    image: sb-jobs:local
+    image: ${SB_JOBS_IMAGE:-sb-jobs:local}
     command: ["--config", "/etc/sb/cell.json"]
     volumes:
       - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
@@ -62,6 +65,40 @@ services:
       - state:/var/lib/sb/state
       - vault-jobs:/var/lib/sb/vault
     networks: [data, egress]
+
+  updater:          # the updater job: run by the host step on a timer, never always on (SB-1604)
+    <<: *cell
+    image: ${SB_UPDATER_IMAGE:-sb-updater:local}
+    profiles: [update]
+    restart: "no"
+    command: ["--config", "/etc/sb/cell.json"]
+    volumes:
+      - ../../build/selfhost/cell.json:/etc/sb/cell.json:ro
+      - ../../build/selfhost/policy:/etc/sb/policy:ro
+      - state:/var/lib/sb/state
+      - releases:/var/lib/sb/releases:ro
+      - vault-updater:/var/lib/sb/vault
+    networks: [data]
+
+  worm:             # the WORM bucket: S3 with compliance-mode object lock, on the box (SB-1603)
+    image: versity/versitygw@sha256:8319a530d08d537426e2f855bae5280709795dc73a3f0c347973ef915d6343c5
+    restart: unless-stopped
+    entrypoint: ["sh", "-c", "mkdir -p /data/objects /data/versions && ROOT_ACCESS_KEY=sb-worm ROOT_SECRET_KEY=$$(cat /run/sb/worm-secret) exec versitygw posix --versioning-dir /data/versions /data/objects"]
+    volumes:
+      - worm-data:/data
+      - ../../build/selfhost/worm-secret:/run/sb/worm-secret:ro
+    networks: [data]
+
+  wormsetup:        # one shot at install: the bucket, its seven-year lock, and a probe that proves it
+    image: sb-wormsetup:local
+    profiles: [setup]
+    user: "65532:65532"
+    read_only: true
+    command: ["--endpoint", "http://worm:7070", "--bucket", "sb-worm", "--creds-file", "/run/sb/worm-creds"]
+    volumes:
+      - ../../build/selfhost/vault/jobs/vault/tenants/acme-logistics/worm:/run/sb/worm-creds:ro
+    networks: [data]
+    depends_on: [worm]
 
   postgres:         # Cloud SQL, private IP: on the internal network only
     image: pgvector/pgvector@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
@@ -102,5 +139,8 @@ volumes:
   vault-api: {}
   vault-ingest: {}
   vault-jobs: {}
+  vault-updater: {}
+  releases: {}
+  worm-data: {}
   pgdata: {}
   caddy: {}

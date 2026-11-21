@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-21 S15.2 Write-once storage and upgrades on the box (SB-1603, SB-1604)
+
+**Wave/slice:** W15 / S15.2 · **Status:** Done
+
+**What:** `internal/adapters/backup/s3`, a write-once target over the S3 API with SigV4 in the standard library, and its fake `s3test`; `worm` in sb-cell(5), used by the `anchor` and `backup` jobs; versitygw and a one-shot `wormsetup` in the compose layout; the `updater` as a one-shot container, the host step `tools/selfhost/update.sh` with `make selfhost-update` and systemd units, a demo release signed with the machine's own key (`tools/selfhost/devrelease`), and the `local` deployer reporting what the host started. Nine new smoke checks (24 in all) and the law test `TestLAW11_AnchorsAreWriteOnceOnTheBox`.
+
+**Why this way:** Object lock in compliance mode is the one thing an S3 store offers that nobody, root included, can lift, so it is the box's equivalent of a locked retention policy; the cell checks the lock before every write and proves at install, with a probe it can't delete, that the store really enforces it, because a configuration can claim a lock a store doesn't keep. Upgrades are split so that the part that reads releases can't start anything and the part that starts containers decides nothing: the updater only admits and records, and a small host script starts exactly what was recorded, after checking it is a digest the cell attested.
+
+**Learned:** MinIO's published images can no longer be pulled, so the store is versitygw, which keeps object versions and enforces compliance retention on a plain directory. Volumes used only by a compose profile aren't made by `compose create`, and one made by hand without compose's labels draws a warning on every run, so `make selfhost` makes them with those labels.
+
+**Laws:** LAW-11 (anchors and the write-once copy can't be overwritten or deleted for seven years, and a weak or unenforced lock is refused), LAW-06 (only admitted, attested digests run; an unadmitted release changes nothing and raises a Sev-1).
+
 ## 2026-11-21 S15.1 Container images and a cell in containers (SB-1601, SB-1602)
 
 **Wave/slice:** W15 / S15.1 · **Status:** Done

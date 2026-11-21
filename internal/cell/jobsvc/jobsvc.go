@@ -17,6 +17,7 @@ import (
 
 	accessfs "example.com/second-brain/internal/adapters/access/localfs"
 	backupfs "example.com/second-brain/internal/adapters/backup/localfs"
+	"example.com/second-brain/internal/adapters/backup/s3"
 	wrapfs "example.com/second-brain/internal/adapters/keywrap/localfs"
 	"example.com/second-brain/internal/cell/ingestsvc"
 	"example.com/second-brain/internal/cell/wire"
@@ -176,10 +177,6 @@ func lastRow(ctx context.Context, st audit.Store) (audit.Row, error) {
 	}
 }
 
-func (s *Service) worm() backupfs.Dir {
-	return backupfs.Dir{Root: filepath.Join(s.Cell.Config.State, "worm"), Label: "worm", Media: "disk"}
-}
-
 // anchor signs the audit log's last row and writes the anchor, write-once, for seven years.
 // An anchor already written for that row is the same work done: it is not an error.
 func (s *Service) anchor(ctx context.Context) error {
@@ -195,7 +192,11 @@ func (s *Service) anchor(ctx context.Context) error {
 	a := sg.Sign(last.Seq, last.Hash, now)
 	b, _ := json.Marshal(a)
 	name := fmt.Sprintf("anchors/%012d.json", last.Seq)
-	if err := s.worm().Put(ctx, name, b, now.Add(AnchorRetention)); err != nil && !errors.Is(err, backupfs.ErrExists) {
+	worm, err := s.Cell.WormTarget(ctx)
+	if err != nil {
+		return fmt.Errorf("jobs: the write-once store: %w", err)
+	}
+	if err := worm.Put(ctx, name, b, now.Add(AnchorRetention)); err != nil && !errors.Is(err, backupfs.ErrExists) && !errors.Is(err, s3.ErrExists) {
 		return fmt.Errorf("jobs: the anchor can't be written: %w", err)
 	}
 	return nil
@@ -216,6 +217,14 @@ func (s *Service) backup(ctx context.Context) error {
 	}
 	var ts []backup.Target
 	for _, b := range c.Config.Backups {
+		if b.Worm {
+			t, err := c.WormTarget(ctx)
+			if err != nil {
+				return fmt.Errorf("jobs: the write-once store: %w", err)
+			}
+			ts = append(ts, t)
+			continue
+		}
 		ts = append(ts, backupfs.Dir{Root: b.Dir, Label: b.Dir, Media: b.Media, Away: b.Offsite})
 	}
 	if err := backup.Check(ts); err != nil {

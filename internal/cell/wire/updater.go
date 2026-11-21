@@ -96,8 +96,12 @@ func NewUpdater(cfg Config, alerter canary.Alerter, metrics *obs.Metrics) (*Upda
 		return nil, err
 	}
 	channel := m.Channel
+	var services []runtime.Service
+	if cfg.Release.Deploy.Kind == "local" {
+		services = runtime.SelfHosted
+	}
 	return &UpdaterJob{Tenant: cfg.Tenant, Alerter: alerter, Metrics: metrics,
-		Updater: runtime.Updater{Registry: cfg.Release.Registry, Store: store, Verifier: v, Deploy: dep,
+		Updater: runtime.Updater{Registry: cfg.Release.Registry, Store: store, Verifier: v, Deploy: dep, Services: services,
 			Target: func(ctx context.Context) (string, error) { return ch.Channel(ctx, channel) }}}, nil
 }
 
@@ -135,7 +139,11 @@ func (c *Cell) attestor() func(ctx context.Context) (attest.Signed, error) {
 		if derr != nil || len(seed) != ed25519.SeedSize {
 			return attest.Signed{}, fmt.Errorf("wire: the attestation seed isn't 32 bytes of base64")
 		}
-		a := &runtime.Attestor{Tenant: c.Config.Tenant, Deploy: dep, Key: ed25519.NewKeyFromSeed(seed), Now: time.Now}
+		var services []runtime.Service
+		if c.Config.Release.Deploy.Kind == "local" {
+			services = runtime.SelfHosted
+		}
+		a := &runtime.Attestor{Tenant: c.Config.Tenant, Deploy: dep, Key: ed25519.NewKeyFromSeed(seed), Now: time.Now, Services: services}
 		return a.Attest(ctx)
 	}
 }

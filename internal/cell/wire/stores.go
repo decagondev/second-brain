@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
 	actmem "example.com/second-brain/internal/adapters/actions/memory"
 	auditfs "example.com/second-brain/internal/adapters/audit/localfs"
+	backupfs "example.com/second-brain/internal/adapters/backup/localfs"
+	"example.com/second-brain/internal/adapters/backup/s3"
 	"example.com/second-brain/internal/adapters/connectors/slack"
 	dirmem "example.com/second-brain/internal/adapters/directory/memory"
 	"example.com/second-brain/internal/adapters/embed/hashing"
@@ -25,6 +28,7 @@ import (
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/backup"
 	"example.com/second-brain/internal/core/holds"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
@@ -150,4 +154,20 @@ func (i queueInbox) Read(ctx context.Context, from int) ([]slack.Event, int, err
 		out = append(out, e)
 	}
 	return out, next, nil
+}
+
+// WormTarget is the cell's write-once store: the configured bucket, or files under state
+// for development (sb-cell(5), worm). A bucket's lock is checked before each use, so a
+// store whose lock was loosened is refused, never written to.
+func (c *Cell) WormTarget(ctx context.Context) (backup.Target, error) {
+	w := c.Config.Worm
+	if w == (WormConfig{}) {
+		return backupfs.Dir{Root: filepath.Join(c.Config.State, "worm"), Label: "worm", Media: "disk"}, nil
+	}
+	b := s3.Bucket{Endpoint: w.Endpoint, BucketName: w.Bucket, Region: w.Region, Creds: c.Secret("worm"), Label: "worm", Away: w.Offsite,
+		HTTP: &http.Client{Timeout: time.Minute}}
+	if err := b.Check(ctx); err != nil {
+		return nil, err
+	}
+	return b, nil
 }

@@ -62,7 +62,9 @@ It never starts with a part switched off.
 | `connectors.KIND` | object | no | Overrides for one connector: `base` (the vendor API's address, for a sandbox or a recorded fake) |
 | `chat.team_id` | string | when `chat: slack` | The tenant's Slack workspace id: the chat app (sb-ask(3)) answers only requests from it, and `POST /connectors/slack/events` takes its events |
 | `alerts.webhook` | https URL | no | Where alerts are posted as JSON (sb-observability(7)); every alert is also logged and counted in `sb_alerts_total` |
-| `backups` | list | for the `backup` job | The nightly backup's copies, each `{dir, media, offsite}`: at least three, on two kinds of media, one off-site (sb-audit(7)). Without them the `backup` job fails, and its missed run is a Sev-1 |
+| `backups` | list | for the `backup` job | The nightly backup's copies, each `{dir, media, offsite}` or `{worm: true}` for the `worm` store: at least three, on two kinds of media, one off-site (sb-audit(7)). Without them the `backup` job fails, and its missed run is a Sev-1 |
+| `worm.endpoint`, `worm.bucket` | URL, string | no | The write-once store for anchors and the backup's `worm` copy: an S3 API with compliance-mode object lock of at least seven years (sb-selfhost(7), Write-once storage), its key pair at `vault://tenants/TENANT/worm` as `{"access_key", "secret_key"}`. The cell checks the lock before each write and refuses a bucket without it, in governance mode, or shorter. Without `worm`, anchors go to `state/worm/` (development only) |
+| `worm.region`, `worm.offsite` | string, bool | no | The signing region (default `us-east-1`), and whether the store is off this machine, so the backup's `worm` copy counts as off-site |
 | `custody.tenant`, `custody.retain` | bool, list | no | A tenant-custody cell (sb-factory(7)): the monthly `access` job checks every factory access path against `retain`, the grants the hand-off record keeps |
 | `release.store` | URL | for `sb-updater` | The release store: `file:///DIR`, or the factory's `https://` store read with `vault://tenants/TENANT/release-pull` |
 | `release.registry` | string | with `release` | Where the bundle's images live |
