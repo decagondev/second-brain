@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-1402: Fuzz the parsers and run every test under the race detector · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a></div><div class="group"><h4>Tickets in E14</h4><a href="../../epics/E14-hardening/SB-1401-fresh-eyes-review.html">SB-1401: Fresh-eyes review of W8 to W12</a><a class="current" href="../../epics/E14-hardening/SB-1402-fuzzing-and-races.html">SB-1402: Fuzz the parsers and run every test under the race detector</a><a href="../../epics/E14-hardening/SB-1403-clean-and-concise.html">SB-1403: Clean and concise: stricter lint and tidier big files</a><a href="../../epics/E14-hardening/SB-1404-manual-matches-code.html">SB-1404: The manual and the code agree</a><a href="../../epics/E14-hardening/SB-1405-coverage-gaps.html">SB-1405: Close the coverage gaps in the core</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E14-hardening</div><h1 id="sb-1402-fuzz-the-parsers-and-run-every-test-under-the-race-detector">SB-1402: Fuzz the parsers and run every test under the race detector</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E14 Hardening</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W13 / S13.2</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-14.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td>as the change needs (manual first, P2)</td>
+</tr>
+<tr>
+<td>Laws</td>
+<td>LAW-03, LAW-07</td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="SB-1401-fresh-eyes-review.html">SB-1401</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Done</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Parsers that take outside input are where a crash or a wrong accept hides; concurrent code is where a race hides.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Go fuzz tests for every parser of outside input: the tenant manifest, SCIM bodies, action payloads and their hash, the reorg snapshot, and connector responses</li>
+<li class="task done"><span class="box">✓</span><code>make fuzz</code> runs each fuzz target for a bounded time, and its corpus is checked in</li>
+<li class="task done"><span class="box">✓</span><code>go test -race</code> passes over every package in <code>make check</code></li>
+<li class="task done"><span class="box">✓</span>Every crash or wrong accept found is fixed with a regression test</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages the change touches first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Fuzz targets and corpus</li>
+<li class="task done"><span class="box">✓</span>Race detector in <code>make check</code></li>
+<li class="task done"><span class="box">✓</span>Fix what they find</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-20 (slice S13.2): six fuzz targets (<code>FuzzCheck</code>, <code>FuzzCanonical</code>, <code>FuzzParse</code>, <code>FuzzChunksAndSecrets</code>, <code>FuzzMatch</code>, <code>FuzzUsers</code>) and <code>make fuzz</code>; <code>make test</code> runs under <code>-race</code>, and now includes <code>tests/spaces</code> and <code>tests/groupsync</code>, which <code>make check</code> hadn't run before. Each target ran for 45 seconds to 2 minutes; <code>FuzzCheck</code> found two ways an accepted manifest read back differently (BUG-0021), both fixed, with their inputs kept as regression seeds. The race detector found nothing. Connector responses are decoded by <code>encoding/json</code> into fixed shapes and covered by the contract kit, so they have no target of their own (docs/04-testing-and-assurance.md).</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E14-hardening/SB-1402-fuzzing-and-races.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-1501: Cell configuration and one composition root · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a></div><div class="group"><h4>Tickets in E15</h4><a class="current" href="../../epics/E15-cell-runtime/SB-1501-cell-configuration-and-wiring.html">SB-1501: Cell configuration and one composition root</a><a href="../../epics/E15-cell-runtime/SB-1502-api-service.html">SB-1502: The api service: every endpoint, mounted</a><a href="../../epics/E15-cell-runtime/SB-1503-ingest-service.html">SB-1503: The ingest service: syncs that run</a><a href="../../epics/E15-cell-runtime/SB-1504-jobs-service.html">SB-1504: The jobs service: every schedule, run</a><a href="../../epics/E15-cell-runtime/SB-1505-updater-service.html">SB-1505: The updater job: releases pulled and admitted</a><a href="../../epics/E15-cell-runtime/SB-1506-apply-to-a-running-cell.html">SB-1506: sb tenant apply against a running cell</a><a href="../../epics/E15-cell-runtime/SB-1507-cli-against-running-cells.html">SB-1507: The CLI commands that need a running cell</a><a href="../../epics/E15-cell-runtime/SB-1508-local-cell-end-to-end.html">SB-1508: A whole cell running locally, end to end</a><a href="../../epics/E15-cell-runtime/SB-1509-console-screens.html">SB-1509: Console screens for stewards and access reviews</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E15-cell-runtime</div><h1 id="sb-1501-cell-configuration-and-one-composition-root">SB-1501: Cell configuration and one composition root</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E15 Cell Runtime</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W14 / S14.1</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-15.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-cell.5.html"><code>sb-cell(5)</code></a> (new), <a href="../../manual/sb-runtime.7.html"><code>sb-runtime(7)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td>LAW-02, LAW-03, LAW-16</td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Done</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Every part of a cell is built and tested, but nothing builds the whole cell from one configuration.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>A cell's configuration (<code>sb-cell(5)</code>: tenant, manifest, state, vault, policies, listen address, sign-in, model, connector overrides) is parsed strictly; unknown fields, missing fields and wrong types are errors</li>
+<li class="task done"><span class="box">✓</span><code>internal/cell/wire</code> builds every port and service of a cell from it in one place, with nothing built twice. Local adapters today; the Postgres stores are wired with SB-1508 (<code>make cell</code> against local Postgres), and until then <code>durable: true</code> refuses to start</li>
+<li class="task done"><span class="box">✓</span>A missing or unreadable dependency stops the cell from starting; it never runs with a part switched off</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Configuration format and parser</li>
+<li class="task done"><span class="box">✓</span>Composition root</li>
+<li class="task done"><span class="box">✓</span>Start-up checks</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-21 (slice S14.1): <code>internal/cell/wire/config.go</code> parses sb-cell(5) strictly (unknown fields, missing required fields, wrong types, a listen address that isn't <code>host:port</code>, a URL that isn't http(s), an unknown model provider, a gateway provider without <code>model.base</code> and <code>model.id</code>). <code>wire.Build</code> builds the whole cell once: the manifest (checked, and for this tenant), the Cedar policies, audit, kill switches, logs, the directory, sessions, spaces (synced from the manifest, held spaces kept), sign-in (the IdP's discovery and keys fetched at start), SCIM, connectors by vendor with vault credentials, the model (extractive, or one of ADR-0019's gateways), retrieval, the ask and draft agents, the tool bus with barriers and reporting lines, retention with legal holds read when they're needed, and every API handler. The cell's tenancy Issuer is made by <code>auth.WithIssuer</code>, so only <code>internal/auth</code> makes one (SB-108). It refuses to start, with <code>ErrConfig</code> and the reason, on <code>durable: true</code> while stores are in memory, another tenant's manifest, missing policies or state, an unreachable IdP, an unknown connector vendor, or Slack chat without <code>chat.team_id</code> (<code>tests/cell</code>, <code>TestRefusesToStart</code>). The usage reports answer <code>EUNAVAIL</code> until the jobs service keeps usage (SB-1504), never made-up numbers.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E15-cell-runtime/SB-1501-cell-configuration-and-wiring.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

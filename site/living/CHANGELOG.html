@@ -22,6 +22,25 @@
 <h2 id="unreleased">Unreleased</h2>
 <h3 id="added">Added</h3>
 <ul>
+<li>A whole cell on Postgres (S14.4: SB-1508): <code>database</code> in sb-cell(5) keeps every store durable, <code>make cell</code> runs a cell locally with a development IdP, and <code>sb tenant verify --cell</code> runs its checks inside a running cell.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li>SCIM user and group ids are <code>usr_…</code> and <code>grp_…</code>, so legal holds and erasure accept real users (BUG-0025).</li>
+<li>The CLI against a running cell (S14.4: SB-1507): <code>sb audit verify|tail|export --tenant T</code>, <code>sb eval diff</code>, and <code>sb factory handoff</code> and <code>detach</code> on the local control plane; no <code>sb</code> command answers <code>ENOTIMPL</code> any more.</li>
+<li>The updater and apply against a running cell (S14.3: SB-1505, SB-1506): <code>sb-updater</code> pulls the channel's release, admits it and deploys each service by digest; <code>sb tenant apply FILE --cell URL</code> makes a running cell run a new manifest at once, refusing a held space's removal; the cell reports drift hourly.</li>
+<li>The ingest and jobs services (S14.2: SB-1503, SB-1504): syncs that run from stored cursors with backoff and a staleness alert, every scheduled job with its finish recorded and a watchdog, <code>sb-api --with ingest,jobs</code>, <code>sb-jobs run JOB</code>; the budget guard, token metering and the weekly report wired; legal holds and reporting lines wired in every service (PT-0011).</li>
+<li>One cell configuration and the api service (S14.1: SB-1501, SB-1502): <code>sb-api --config FILE</code> (sb-cell(5)) builds the whole cell and serves every endpoint, with <code>/healthz</code>, <code>/readyz</code> and graceful shutdown.</li>
+<li>Quick fixes (S13.6): no change lost in the cursor's own second (GitHub, BambooHR, QuickBooks), opted-in repository source backfilled, QuickBooks open-month reports refreshed hourly, conversations tagged with their space for legal holds, and coverage in its own <code>make coverage</code> step and CI job.</li>
+<li>Coverage floor (S13.5: SB-1405): every core package at or above 75% over every suite, checked in <code>make check</code>. <strong>W13 Hardening built.</strong></li>
+<li>The manual and the code agree (S13.4: SB-1404): a check in <code>make lint</code> that endpoints, commands and flags match the manual both ways; six drifts fixed; CLAUDE.md's state section summarised.</li>
+<li>Clean and concise (S13.3: SB-1403): eleven stricter linters, their findings fixed; the tool bus, the verifier and the API helpers tidied with no behaviour change.</li>
+<li>Fuzzing and races (S13.2: SB-1402): six fuzz targets and <code>make fuzz</code>; <code>make test</code> runs under the race detector and includes <code>tests/spaces</code> and <code>tests/groupsync</code>.</li>
+<li>Hardening (S13.1d: SB-1401): re-routing never wedges a sync, sensitive fields go only to the spaces that allow them, allow-list changes re-ingest; GitHub identity and paging, QuickBooks paging, Drive folder cache, KMS key rings, Cloud Run updates and shred order fixed.</li>
+<li>Hardening (S13.1c: SB-1401): governance decisions are atomic and audited, operators can complete access reviews, per-space retention is enforced, and review removals are never dropped.</li>
+<li>Hardening (S13.1b: SB-1401): approval and barrier evasions fixed (edits, negative amounts, rejection, viewing across a barrier, owners by email, barriers without spaces, chat attributes).</li>
+<li>Hardening (S13.1a: SB-1401): the review's two critical findings fixed. Secrets are found across chunk boundaries and in more forms; steward proposals must read back as written; manifest diffs name each line's space.</li>
+<li>Cross-space red team (S12.4b: SB-1208): the plan, the <code>space-redteam</code> gating eval, the game day runbook, and a new <code>sb tenant check</code> rule refusing a scope that reaches into a restricted space (PT-0003).</li>
 <li>Legal holds (S12.4a: SB-1207): Legal stewards hold a space, custodians or both; retention keeps held records, erasure and space removal are refused with <code>EHOLD</code>, and holds and releases are audited first.</li>
 <li>Reorg preview (S12.3b: SB-1206): <code>sb space diff FILE --idp-snapshot SNAPSHOT</code> lists per person the spaces a reorg would add and remove, and flags anyone losing every space, gaining a restricted one, or straddling a barrier. Offline; changes nothing.</li>
 <li>Directory attributes and five-minute moves (S12.3a: SB-1205): SCIM <code>title</code>, <code>department</code>, <code>division</code>, <code>costCenter</code> and <code>manager</code> reach policy at every request, and moves between groups change spaces at the next request. LAW-21 is green.</li>
@@ -126,7 +145,7 @@
 <li><code>ENOTIMPL</code> error code. ADR-0016 (standard library only in W0).</li>
 <li><code>tools/ci/mutations.py</code>: the 13 model mutation checks, run by <code>make proofs</code>.</li>
 </ul>
-<h3 id="fixed">Fixed</h3>
+<h3 id="fixed_1">Fixed</h3>
 <ul>
 <li>Barriers matched groups only when both sides were written <code>group:NAME</code>; they now compare names (SB-1107).</li>
 <li>Law tests no longer leave their release stores in <code>/tmp</code> (BUG-0013).</li>
@@ -154,7 +173,7 @@
 <li>Docs site generator <code>tools/site/build.py</code>.</li>
 <li>Factory and hand-off design: ADR-0015, architecture doc 16, <code>sb-factory(7)</code>, LAW-17 and LAW-18, <code>Handoff.tla</code>, epic E08 in wave W7, and v1 seams (SB-114 plus extra acceptance on SB-103, SB-105, SB-401, SB-506, SB-509).</li>
 </ul><p class="srcline">Source: <code>living/CHANGELOG.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#unreleased">Unreleased</a></li><li class="l3"><a href="#added">Added</a></li><li class="l3"><a href="#fixed">Fixed</a></li><li class="l3"><a href="#changed">Changed</a></li><li class="l3"><a href="#design-baseline">Design baseline</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#unreleased">Unreleased</a></li><li class="l3"><a href="#added">Added</a></li><li class="l3"><a href="#fixed">Fixed</a></li><li class="l3"><a href="#fixed_1">Fixed</a></li><li class="l3"><a href="#changed">Changed</a></li><li class="l3"><a href="#design-baseline">Design baseline</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

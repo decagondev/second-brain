@@ -411,8 +411,307 @@
 <p><strong>Symptom:</strong> <code>TestLAW06_TenantAccountPullsOnlySignedGatedBuilds</code> failed writing to <code>/tmp</code> with plenty of bytes free. <code>/tmp</code> held about 20,000 <code>sb-law06-*</code> directories.</p>
 <p><strong>Root cause:</strong> <code>newReleaseWorld</code> made a temporary release store with <code>os.MkdirTemp</code> for every run of every LAW-06 world, and nothing removed it. Each <code>make check</code> added several hundred more, until the tmpfs ran out of inodes.</p>
 <p><strong>Fix:</strong> The worlds record each directory they make, and <code>laws/main_test.go</code> removes them all when the test binary ends.</p>
-<p><strong>Caught by now:</strong> the failure itself, and a run of <code>make check</code> now leaves no <code>sb-law06-*</code> behind. Why it wasn't caught before: nothing checked what a test run leaves behind, and the leak only failed once enough runs had piled up. Rule: a test that makes a directory removes it, through <code>t.TempDir()</code> or the shared cleanup.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li><li class="l2"><a href="#bug-0010-the-log-redactor-missed-encoded-secrets">BUG-0010 The log redactor missed encoded secrets</a></li><li class="l2"><a href="#bug-0011-markdown-role-labels-escaped-the-injection-flags">BUG-0011 Markdown role labels escaped the injection flags</a></li><li class="l2"><a href="#bug-0012-cutover-revoked-a-retained-grant">BUG-0012 Cutover revoked a retained grant</a></li><li class="l2"><a href="#bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013 Law tests leaked release stores into /tmp</a></li></ul></aside>
+<p><strong>Caught by now:</strong> the failure itself, and a run of <code>make check</code> now leaves no <code>sb-law06-*</code> behind. Why it wasn't caught before: nothing checked what a test run leaves behind, and the leak only failed once enough runs had piled up. Rule: a test that makes a directory removes it, through <code>t.TempDir()</code> or the shared cleanup.</p>
+<h2 id="bug-0013-a-spaces-scope-could-reach-into-a-restricted-space">BUG-0013 A space's scope could reach into a restricted space</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the cross-space red team (PT-0003)</td>
+<td>Security (medium)</td>
+<td>SB-1208</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A manifest with a <code>custom</code> space scoped <code>docs: ["/**"]</code> beside a restricted People space scoped <code>["/People/**"]</code> checked and applied. Ingest routed every People document to both spaces, so the custom space's members were holders of People's restricted files, and the label check let them read them wherever the source did.</p>
+<p><strong>Root cause:</strong> <code>sb tenant check</code> checked each space on its own. Nothing related one space's scope to another's, and holding a document is what membership checks.</p>
+<p><strong>Fix:</strong> sb-space(5) rule 13: a scope pattern that reaches into a restricted space's pattern (either matches the other as text) is refused unless the space's members are all the restricted space's members.</p>
+<p><strong>Caught by now:</strong> <code>TestScopeReach</code> in <code>internal/core/manifest</code>, written first and red. Why it wasn't caught before: the space laws' generators draw each space's scope from its own folder, so no generated manifest ever overlapped.</p>
+<h2 id="bug-0014-a-long-secret-was-split-across-chunks-and-indexed">BUG-0014 A long secret was split across chunks and indexed</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0005)</td>
+<td>Security (critical)</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A 2048-bit RSA private key in a README or Drive document (about 1.7 KB with no blank lines) was cut into chunks at its only spaces, inside the <code>BEGIN ... PRIVATE KEY</code> header, so no chunk matched the private-key pattern and the key body was embedded and indexed. A GCP service-account file did the same. Separately, <code>aws_secret_access_key = …</code>, JWTs, bearer tokens, URL credentials, quoted passwords with spaces, GitLab tokens and model-provider keys matched no pattern.</p>
+<p><strong>Root cause:</strong> The scanner ran on each chunk alone and matched only the PEM header; the assignment pattern needed the keyword right before the <code>=</code> and an unquoted value.</p>
+<p><strong>Fix:</strong> The whole document is scanned first and every chunk touching a secret span is dropped; the private-key pattern covers the block from header to footer; new patterns cover the missed forms.</p>
+<p><strong>Caught by now:</strong> <code>TestLongPrivateKeyIsDroppedEverywhere</code> and <code>TestSecretInMoreForms</code> in <code>internal/core/ingest</code>. Why it wasn't caught before: every secret in the tests fit inside one chunk, and the patterns were tested only on the forms they were written for.</p>
+<h2 id="bug-0015-a-stewards-proposal-could-read-back-differently-and-the-diff-could-hide-it">BUG-0015 A steward's proposal could read back differently, and the diff could hide it</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0006, PT-0007)</td>
+<td>Security (critical)</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A steward of a restricted space proposed <code>{"label": "public #"}</code>. The rank check counted the unknown label as above <code>restricted</code>, <code>Format</code> wrote <code>label: public #</code>, the checker read <code>public</code>, and the space came back public. The diff the operator saw compared lines as a set, so a member change or a label line could vanish when another space had the same text.</p>
+<p><strong>Root cause:</strong> <code>StewardChange</code> judged the value before it was written, not what was checked after; <code>Diff</code> dropped every line's context.</p>
+<p><strong>Fix:</strong> Unknown labels are refused, and the checked space must read back exactly as proposed (label, members, stewards, agents, channels, scope); the diff writes nested lines with their full path and compares them as a multiset.</p>
+<p><strong>Caught by now:</strong> <code>TestStewardChangeRefusesValuesThatReadBackDifferently</code> and <code>TestDiffNamesTheSpace</code> in <code>internal/core/manifest</code>. Why it wasn't caught before: the steward law test generated only well-formed values, and no test had two spaces sharing a line.</p>
+<h2 id="bug-0016-segregation-of-duties-could-be-evaded">BUG-0016 Segregation of duties could be evaded</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0008)</td>
+<td>Security (high)</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A payment proposed at 50 and edited to 900,000,000 kept needing one approval. Each edit restarted the 24-hour expiry. <code>{"amount": -5000000}</code> needed one approval. A requester's manager could reject, and a duty-group member couldn't reject after a first approval. A bus with no reporting lines approved under a duty.</p>
+<p><strong>Root cause:</strong> <code>Needs</code> was computed once, at proposal; <code>Edit</code> reset the expiry; the threshold compared a signed amount; <code>Reject</code> had its own, older checks; a nil <code>Managers</code> meant "nobody manages anyone".</p>
+<p><strong>Fix:</strong> An edit decides <code>Needs</code> again from the new payload and keeps the expiry; the amount's size decides; approve and reject share <code>mayDecide</code>; a duty without reporting lines refuses.</p>
+<p><strong>Caught by now:</strong> <code>TestEditRecomputesTheDuty</code>, <code>TestEditKeepsTheExpiry</code>, <code>TestNegativeAmountNeedsBoth</code> and <code>TestRejectTakesTheApprovalChecks</code> in <code>internal/core/toolbus</code>. Why it wasn't caught before: the duty law test never edited an action, never used a negative amount, and never rejected.</p>
+<h2 id="bug-0017-information-barriers-could-be-evaded">BUG-0017 Information barriers could be evaded</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0009)</td>
+<td>Security (high)</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A deal-team member whose SCIM userName wasn't their email owned a file shared company-wide; the owner lookup missed them, so the file had no owner groups and crossed the barrier. A manifest with barriers and no spaces enforced them on actions but not on reads. An approver across a barrier could read the action's payload and target. Chat asks carried no directory attributes. Chunks indexed before owners existed never got one.</p>
+<p><strong>Root cause:</strong> The lookup used <code>UserByName</code>, an exact match on the sign-in name; the read path's space step ran only with spaces; <code>Get</code> checked group membership only; the chat app built its scope without attributes; the routing fingerprint didn't change when what ingest records changed.</p>
+<p><strong>Fix:</strong> Owners are found by any email, ignoring case, with every match's groups; <code>sb tenant check</code> refuses barriers without spaces (sb-space(5) rule 14); <code>Get</code> refuses anyone across a barrier from the requester; the chat app passes the directory user's attributes; the routing version makes every document re-route once.</p>
+<p><strong>Caught by now:</strong> <code>TestOwnerByEmail</code>, <code>TestBarriersNeedSpaces</code>, <code>TestGetHidesTheActionAcrossABarrier</code> and <code>TestChatScopeCarriesAttributes</code>. Why it wasn't caught before: the law tests used user ids as owner emails, never declared barriers without spaces, and only drove approvals, not reads of actions.</p>
+<h2 id="bug-0018-governance-decisions-could-be-lost-dropped-or-unaudited">BUG-0018 Governance decisions could be lost, dropped or unaudited</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0010)</td>
+<td>Medium</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> Two operators deciding one proposal at the same time both succeeded; a stale proposal was closed with no audit row; two stewards deciding a review at once lost one decision; a review whose only steward was its last undecided member could never complete; a space's shorter <code>retention_days</code> was ignored; a removal from a manifest group that didn't list the person was dropped; a held erasure answered <code>EUNAVAIL</code>; a SCIM manager sent as a plain string failed the whole PATCH, <code>active: false</code> included.</p>
+<p><strong>Root cause:</strong> Read-check-write handlers with blind <code>Put</code>s; the stale path skipped the audit; only stewards could decide; the sweep used only the tenant's days; <code>Requests</code> produced a manifest request with no change; the erase handler didn't know <code>ErrHeld</code>; the manager parser took one shape.</p>
+<p><strong>Fix:</strong> <code>proposals.Store.Update</code> and <code>reviews.Store.Update</code> make each decision one atomic step, audited first; stale proposals are audited; operators may decide reviews; spaces with fewer days get their own sweep pass; such removals are IdP requests; <code>EHOLD</code>; both manager shapes and <code>remove</code>.</p>
+<p><strong>Caught by now:</strong> <code>TestProposalDecisionsAreAtomicAndStaleIsAudited</code> (under <code>-race</code>), <code>TestSpaceRetentionIsEnforced</code>, <code>TestRemovalNotInTheListIsAnIdPRequest</code> and <code>TestManagerForms</code>. Why it wasn't caught before: no test decided twice at once, and the governance tests used one shape of each input.</p>
+<h2 id="bug-0019-ingest-could-wedge-a-sync-or-put-fields-where-they-dont-belong">BUG-0019 Ingest could wedge a sync or put fields where they don't belong</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0012)</td>
+<td>Security (high)</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> After a scope change, a document deleted at the source made every later sync fail on its fetch, and the cursor never moved. Removing <code>ssn</code> from a space's allow-list left <code>ssn: 123-45-6789</code> indexed. An employee held by People (which allows <code>payRate</code>) and Finance (which doesn't) let Finance members read <code>payRate</code>.</p>
+<p><strong>Root cause:</strong> <code>Reroute</code> returned on the first fetch error; the routing fingerprint didn't include field allow-lists; a sensitive field was let in if any holder allowed it, but the chunk kept every holder.</p>
+<p><strong>Fix:</strong> <code>Reroute</code> takes an unfetchable document out of the index and goes on; the fingerprint includes field allow-lists; holders narrow to the spaces that allow every sensitive field a chunk carries.</p>
+<p><strong>Caught by now:</strong> <code>TestRerouteNeverWedgesTheSync</code>, <code>TestSensitiveFieldsNarrowTheHolders</code> and <code>TestFieldAllowListChangesRoute</code> in <code>tests/spaces</code>. Why it wasn't caught before: no test changed a scope after a source deletion, changed an allow-list, or had two spaces holding one structured record.</p>
+<h2 id="bug-0020-connector-and-runtime-edge-cases">BUG-0020 Connector and runtime edge cases</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0013)</td>
+<td>Medium</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> GitHub took any identity the SSO query returned as the asker's, and read only the first 100 repositories, issues and commits; QuickBooks account and budget queries stopped at 100 rows; Drive cached folder names and parents for the connector's lifetime; a real Cloud KMS key ring never passed its label check; a Cloud Run update sent a partial resource; a failed shred after the space row was gone was never retried.</p>
+<p><strong>Root cause:</strong> Each was an assumption that held in the fake but not in the real service.</p>
+<p><strong>Fix:</strong> The GitHub identity must match the asker's email, exactly once, and listings page; QuickBooks queries page by 1,000; the Drive folder cache lives for one sync; key rings are checked by name (they have no labels, now in the fake too); Cloud Run updates read, change and write back the whole resource; <code>spaces.Sync</code> shreds before it drops the row.</p>
+<p><strong>Caught by now:</strong> <code>TestACLNeverUsesAnotherMembersIdentity</code> and <code>TestIssuesPastTheFirstPage</code> (the GitHub fake now pages and can ignore its identity filter); the GCP fake's key rings carry no labels. Why it wasn't caught before: the fakes were kinder than the services.</p>
+<h2 id="bug-0021-an-accepted-manifest-could-read-back-differently">BUG-0021 An accepted manifest could read back differently</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, fuzzing (<code>FuzzCheck</code>)</td>
+<td>Low</td>
+<td>SB-1402</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>exclude: {}</code> checked as an empty map, <code>Format</code> left it out, and the result read back as no map; a value with a control character checked, <code>Format</code> wrote it escaped, and the result didn't parse.</p>
+<p><strong>Root cause:</strong> <code>Check</code> kept two forms of "nothing" and accepted characters <code>Format</code> can't write back.</p>
+<p><strong>Fix:</strong> <code>Check</code> keeps one form for empty <code>exclude</code>, <code>approval</code>, <code>duties</code> and <code>groups</code>, and refuses control characters in every value.</p>
+<p><strong>Caught by now:</strong> <code>FuzzCheck</code>, with both failing inputs kept in <code>internal/core/manifest/testdata/fuzz</code>. Why it wasn't caught before: every manifest test was written by hand. Since BUG-0015, a value that reads back differently is a security question, not only a tidiness one.</p>
+<h2 id="bug-0022-changes-in-the-cursors-own-second-opted-in-source-open-month-reports-and-conversation-spaces">BUG-0022 Changes in the cursor's own second, opted-in source, open-month reports and conversation spaces</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 fresh-eyes review (PT-0014) and SB-1207's devlog</td>
+<td>Medium</td>
+<td>SB-1401</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> GitHub, BambooHR and QuickBooks stored whole-second cursors and took only changes strictly after them, so a change in the cursor's own second, after the last sync, was never seen. Opting a repository's source in listed only files changed afterwards. QuickBooks' open-month reports kept the version of the last account change, so new transactions never re-ingested them. A conversation didn't know its space, so a hold on one space kept every conversation.</p>
+<p><strong>Root cause:</strong> The cursors kept a time and nothing about what was already reported at it; the GitHub cursor didn't remember which repositories were opted in; the report version came only from accounts; conversations were stored without the request's space.</p>
+<p><strong>Fix:</strong> Each cursor keeps the changes already reported at its exact time, as the Linear connector does; the GitHub cursor keeps the opted-in repositories and lists a newly opted-in one's files; the open month's reports take the hour as a version floor and are listed once an hour; conversations are tagged with the space they're asked in (<code>ask.SpaceTagger</code>), and one asked in two spaces is kept by a hold on either.</p>
+<p><strong>Caught by now:</strong> <code>TestSameSecondChangeIsNotLost</code> (GitHub, BambooHR, QuickBooks; the fakes' clocks can be frozen), <code>TestSourceOptInBackfills</code>, <code>TestOpenMonthReportsRefresh</code> and <code>TestConversationSpaceForHolds</code>.</p>
+<h2 id="bug-0023-legal-holds-reporting-lines-and-the-budget-werent-wired-in-a-running-cell">BUG-0023 Legal holds, reporting lines and the budget weren't wired in a running cell</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-20, the W13 review (PT-0011); the rest while wiring the cell (S14.1, S14.2)</td>
+<td>Medium</td>
+<td>SB-1504</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> Retention, erasure and space removal honour legal holds, and the tool bus honours reporting lines, only if whoever builds them passes the holds and the managers in. Nothing built a running cell, so nothing passed them in. Wiring the cell found three more parts left out the same way: the model gateway had no budget guard and metered no tokens, the draft outcomes were counted but never kept by date, and the weekly report and cost statement had no source.</p>
+<p><strong>Root cause:</strong> Each part takes its dependencies as optional fields, with nil meaning "none", which is right for a unit test and wrong for a cell that forgets one.</p>
+<p><strong>Fix:</strong> One composition root, <code>internal/cell/wire</code>, builds every part for every service: holds are read at the moment retention, erasure or a space removal needs them (holds that can't be read hold everything); the tool bus gets each requester's manager from the directory; the gateway gets the budget guard and a usage ledger that keeps tokens, drafts and spend by date; the report and cost endpoints read that ledger. The jobs service's <code>retention</code> uses the same <code>retention.Job</code>, with each space's days.</p>
+<p><strong>Caught by now:</strong> <code>TestRetentionKeepsHeldRecords</code> (tests/cell: a held trace survives the retention job and goes once the hold is released), <code>TestOneOfEachKind</code>, and the usage ledger's own tests.</p>
+<h2 id="bug-0024-the-first-hand-off-approval-crashed-once-the-plan-had-been-stored">BUG-0024 The first hand-off approval crashed once the plan had been stored</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-21, the hand-off rehearsal against a running local cell (SB-1507)</td>
+<td>Medium</td>
+<td>SB-705</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>sb factory handoff approve</code> panicked on the first approval of a plan read back from the file store.</p>
+<p><strong>Root cause:</strong> A new plan's approvals are an empty map, and JSON leaves an empty map out, so a stored plan came back with none, and <code>Approve</code> wrote into a nil map. Every earlier test used the in-memory store, which keeps the map.</p>
+<p><strong>Fix:</strong> <code>Approve</code> makes the map when the stored state has none.</p>
+<p><strong>Caught by now:</strong> <code>TestApproveAfterAStoredRoundTrip</code> (a store that round-trips through JSON) and <code>TestHandoffAndDetachRehearsal</code>.</p>
+<h2 id="bug-0025-legal-holds-and-erasure-refused-every-user-scim-had-made">BUG-0025 Legal holds and erasure refused every user SCIM had made</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-21, the end-to-end test of a whole cell (SB-1508)</td>
+<td>High</td>
+<td>SB-107</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> A legal steward couldn't place a hold on a real custodian, and an operator couldn't erase a real user's data: both refused the user's id as <code>EINVAL</code>.</p>
+<p><strong>Root cause:</strong> SCIM gave users bare 24-character hex ids, while legal holds, erasure and the manual name users <code>usr_…</code>. Every earlier test made its users by hand with <code>usr_</code> ids, so the two never met.</p>
+<p><strong>Fix:</strong> SCIM ids are <code>usr_</code> (users) and <code>grp_</code> (groups) followed by 24 hex characters, as sb-identity(7) now says.</p>
+<p><strong>Caught by now:</strong> <code>TestWholeCellOnPostgres</code>, which provisions its users through SCIM and places a hold on one of them.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li><li class="l2"><a href="#bug-0010-the-log-redactor-missed-encoded-secrets">BUG-0010 The log redactor missed encoded secrets</a></li><li class="l2"><a href="#bug-0011-markdown-role-labels-escaped-the-injection-flags">BUG-0011 Markdown role labels escaped the injection flags</a></li><li class="l2"><a href="#bug-0012-cutover-revoked-a-retained-grant">BUG-0012 Cutover revoked a retained grant</a></li><li class="l2"><a href="#bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013 Law tests leaked release stores into /tmp</a></li><li class="l2"><a href="#bug-0013-a-spaces-scope-could-reach-into-a-restricted-space">BUG-0013 A space's scope could reach into a restricted space</a></li><li class="l2"><a href="#bug-0014-a-long-secret-was-split-across-chunks-and-indexed">BUG-0014 A long secret was split across chunks and indexed</a></li><li class="l2"><a href="#bug-0015-a-stewards-proposal-could-read-back-differently-and-the-diff-could-hide-it">BUG-0015 A steward's proposal could read back differently, and the diff could hide it</a></li><li class="l2"><a href="#bug-0016-segregation-of-duties-could-be-evaded">BUG-0016 Segregation of duties could be evaded</a></li><li class="l2"><a href="#bug-0017-information-barriers-could-be-evaded">BUG-0017 Information barriers could be evaded</a></li><li class="l2"><a href="#bug-0018-governance-decisions-could-be-lost-dropped-or-unaudited">BUG-0018 Governance decisions could be lost, dropped or unaudited</a></li><li class="l2"><a href="#bug-0019-ingest-could-wedge-a-sync-or-put-fields-where-they-dont-belong">BUG-0019 Ingest could wedge a sync or put fields where they don't belong</a></li><li class="l2"><a href="#bug-0020-connector-and-runtime-edge-cases">BUG-0020 Connector and runtime edge cases</a></li><li class="l2"><a href="#bug-0021-an-accepted-manifest-could-read-back-differently">BUG-0021 An accepted manifest could read back differently</a></li><li class="l2"><a href="#bug-0022-changes-in-the-cursors-own-second-opted-in-source-open-month-reports-and-conversation-spaces">BUG-0022 Changes in the cursor's own second, opted-in source, open-month reports and conversation spaces</a></li><li class="l2"><a href="#bug-0023-legal-holds-reporting-lines-and-the-budget-werent-wired-in-a-running-cell">BUG-0023 Legal holds, reporting lines and the budget weren't wired in a running cell</a></li><li class="l2"><a href="#bug-0024-the-first-hand-off-approval-crashed-once-the-plan-had-been-stored">BUG-0024 The first hand-off approval crashed once the plan had been stored</a></li><li class="l2"><a href="#bug-0025-legal-holds-and-erasure-refused-every-user-scim-had-made">BUG-0025 Legal holds and erasure refused every user SCIM had made</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

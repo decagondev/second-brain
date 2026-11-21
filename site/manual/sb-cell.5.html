@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sb-cell(5) · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="active" href="../manual/README.html">Manual</a><a class="" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Manual</h4><a href="../manual/README.html">Manual</a></div><div class="group"><h4>(7) Concepts</h4><a href="../manual/sb-tour.7.html">sb-tour(7)</a><a href="../manual/sb-laws.7.html">sb-laws(7)</a><a href="../manual/sb-tenancy.7.html">sb-tenancy(7)</a><a href="../manual/sb-runtime.7.html">sb-runtime(7)</a><a href="../manual/sb-spaces.7.html">sb-spaces(7)</a><a href="../manual/sb-departments.7.html">sb-departments(7)</a><a href="../manual/sb-factory.7.html">sb-factory(7)</a><a href="../manual/sb-identity.7.html">sb-identity(7)</a><a href="../manual/sb-permissions.7.html">sb-permissions(7)</a><a href="../manual/sb-ingest.7.html">sb-ingest(7)</a><a href="../manual/sb-citations.7.html">sb-citations(7)</a><a href="../manual/sb-agents.7.html">sb-agents(7)</a><a href="../manual/sb-approvals.7.html">sb-approvals(7)</a><a href="../manual/sb-audit.7.html">sb-audit(7)</a><a href="../manual/sb-kill-switches.7.html">sb-kill-switches(7)</a><a href="../manual/sb-evals.7.html">sb-evals(7)</a><a href="../manual/sb-release.7.html">sb-release(7)</a><a href="../manual/sb-observability.7.html">sb-observability(7)</a><a href="../manual/sb-onboarding.7.html">sb-onboarding(7)</a><a href="../manual/sb-errors.7.html">sb-errors(7)</a></div><div class="group"><h4>(1) Commands</h4><a href="../manual/sb.1.html">sb(1)</a><a href="../manual/sb-tenant.1.html">sb-tenant(1)</a><a href="../manual/sb-kill.1.html">sb-kill(1)</a><a href="../manual/sb-audit.1.html">sb-audit(1)</a><a href="../manual/sb-release.1.html">sb-release(1)</a><a href="../manual/sb-eval.1.html">sb-eval(1)</a><a href="../manual/sb-factory.1.html">sb-factory(1)</a><a href="../manual/sb-space.1.html">sb-space(1)</a></div><div class="group"><h4>(3) API</h4><a href="../manual/sb-api.3.html">sb-api(3)</a><a href="../manual/sb-ask.3.html">sb-ask(3)</a><a href="../manual/sb-actions.3.html">sb-actions(3)</a><a href="../manual/sb-admin.3.html">sb-admin(3)</a><a href="../manual/sb-connector.3.html">sb-connector(3)</a></div><div class="group"><h4>(5) File formats</h4><a href="../manual/sb-tenant.5.html">sb-tenant(5)</a><a href="../manual/sb-space.5.html">sb-space(5)</a><a href="../manual/sb-policy.5.html">sb-policy(5)</a><a href="../manual/sb-eval.5.html">sb-eval(5)</a><a href="../manual/sb-audit.5.html">sb-audit(5)</a><a class="current" href="../manual/sb-cell.5.html">sb-cell(5)</a></div></aside>
+  <main class="content" id="main"><div class="manhead"><span>SB-CELL(5)</span><span>Second Brain Manual</span><span>SB-CELL(5)</span></div><div class="crumbs"><a href="../index.html">second brain</a> / manual</div><h1 id="sb-cell5">sb-cell(5)</h1>
+<h2 id="name">NAME</h2>
+<p>sb-cell — the configuration of one running cell</p>
+<h2 id="synopsis">SYNOPSIS</h2>
+<pre><code class="language-json">{
+  &quot;tenant&quot;: &quot;acme-logistics&quot;,
+  &quot;manifest&quot;: &quot;/etc/sb/acme-logistics.yaml&quot;,
+  &quot;state&quot;: &quot;/var/lib/sb&quot;,
+  &quot;vault&quot;: &quot;/var/lib/sb/vault&quot;,
+  &quot;policies&quot;: &quot;/etc/sb/policy&quot;,
+  &quot;listen&quot;: { &quot;api&quot;: &quot;127.0.0.1:8080&quot; },
+  &quot;base_url&quot;: &quot;https://acme-logistics.sb.localhost&quot;,
+  &quot;oidc&quot;: { &quot;client_id&quot;: &quot;sb-acme-logistics&quot; },
+  &quot;model&quot;: { &quot;provider&quot;: &quot;extractive&quot; },
+  &quot;durable&quot;: false
+}
+</code></pre>
+<h2 id="description">DESCRIPTION</h2>
+<p>The manifest (sb-tenant(5)) says what a tenant's brain is; this file says how one cell runs it: where its state lives, where its secrets are, what it listens on. The cell's services (<code>sb-api</code>, <code>sb-ingest</code> and <code>sb-jobs</code>) each read it with <code>--config FILE</code> and build every part of the cell from it in one place, <code>internal/cell/wire</code>, so no part is built twice or differently in two services.</p>
+<p>A cell refuses to start, with the reason and nothing served, if:</p>
+<ul>
+<li>the file has an unknown field, a missing required field, or a value of the wrong type;</li>
+<li>the manifest doesn't pass <code>sb tenant check</code>, or its <code>tenant</code> isn't this file's <code>tenant</code>;</li>
+<li>the policies don't load, the state or vault directory can't be opened, or the identity provider can't be reached (its discovery document and keys);</li>
+<li>a connector kind in the manifest has a vendor no adapter serves (the cell would answer <code>Unknown</code> for all of it for ever);</li>
+<li><code>durable</code> is true and any store has only an in-memory adapter today (see Stores).</li>
+</ul>
+<p>It never starts with a part switched off.</p>
+<h2 id="fields">FIELDS</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tenant</code></td>
+<td>string</td>
+<td>yes</td>
+<td>The tenant this cell serves; must match the manifest</td>
+</tr>
+<tr>
+<td><code>manifest</code></td>
+<td>path</td>
+<td>yes</td>
+<td>The applied manifest (sb-tenant(5))</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>path</td>
+<td>yes</td>
+<td>The cell's own state directory: audit log, kill switches, key wraps, cursors, logs, backups</td>
+</tr>
+<tr>
+<td><code>vault</code></td>
+<td>path</td>
+<td>yes</td>
+<td>The local vault root (<code>vault://tenants/TENANT/…</code> paths, sb-tenant(5), Secrets)</td>
+</tr>
+<tr>
+<td><code>policies</code></td>
+<td>path</td>
+<td>yes</td>
+<td>The policy directory: <code>platform/*.cedar</code> and the tenant's own</td>
+</tr>
+<tr>
+<td><code>listen.api</code></td>
+<td>host:port</td>
+<td>yes</td>
+<td>Where <code>sb-api</code> listens</td>
+</tr>
+<tr>
+<td><code>base_url</code></td>
+<td>URL</td>
+<td>yes</td>
+<td>The cell's public address, for sign-in redirects</td>
+</tr>
+<tr>
+<td><code>oidc.client_id</code></td>
+<td>string</td>
+<td>yes</td>
+<td>The cell's OIDC client id at the tenant's IdP; its secret is <code>vault://tenants/TENANT/oidc</code></td>
+</tr>
+<tr>
+<td><code>oidc.issuer</code></td>
+<td>URL</td>
+<td>no</td>
+<td>The issuer, when it isn't the manifest's <code>idp</code> written as <code>https://</code> (a local test IdP)</td>
+</tr>
+<tr>
+<td><code>web</code></td>
+<td>path</td>
+<td>no</td>
+<td>The built web UI (<code>web/dist</code>); without it, <code>GET /</code> is not served</td>
+</tr>
+<tr>
+<td><code>model.provider</code></td>
+<td>string</td>
+<td>yes</td>
+<td><code>extractive</code> (a local model that quotes its sources, for development and tests), or a gateway provider of ADR-0019 (<code>openaicompat</code>, <code>anthropic</code>, <code>groq</code>, <code>openrouter</code>) with its key at <code>vault://tenants/TENANT/model</code></td>
+</tr>
+<tr>
+<td><code>model.base</code></td>
+<td>URL</td>
+<td>for a gateway provider</td>
+<td>The provider's API</td>
+</tr>
+<tr>
+<td><code>model.id</code></td>
+<td>string</td>
+<td>for a gateway provider</td>
+<td>The model id</td>
+</tr>
+<tr>
+<td><code>model.price.in_per_m</code>, <code>model.price.out_per_m</code></td>
+<td>number</td>
+<td>for a gateway provider</td>
+<td>USD per million input and output tokens, until the release bundle carries the price table: the budget guard (<code>budget_usd_month</code>), the weekly report and the cost statement use it. <code>extractive</code> costs nothing</td>
+</tr>
+<tr>
+<td><code>connectors.KIND</code></td>
+<td>object</td>
+<td>no</td>
+<td>Overrides for one connector: <code>base</code> (the vendor API's address, for a sandbox or a recorded fake)</td>
+</tr>
+<tr>
+<td><code>chat.team_id</code></td>
+<td>string</td>
+<td>when <code>chat: slack</code></td>
+<td>The tenant's Slack workspace id: the chat app (sb-ask(3)) answers only requests from it, and <code>POST /connectors/slack/events</code> takes its events</td>
+</tr>
+<tr>
+<td><code>alerts.webhook</code></td>
+<td>https URL</td>
+<td>no</td>
+<td>Where alerts are posted as JSON (sb-observability(7)); every alert is also logged and counted in <code>sb_alerts_total</code></td>
+</tr>
+<tr>
+<td><code>backups</code></td>
+<td>list</td>
+<td>for the <code>backup</code> job</td>
+<td>The nightly backup's copies, each <code>{dir, media, offsite}</code>: at least three, on two kinds of media, one off-site (sb-audit(7)). Without them the <code>backup</code> job fails, and its missed run is a Sev-1</td>
+</tr>
+<tr>
+<td><code>custody.tenant</code>, <code>custody.retain</code></td>
+<td>bool, list</td>
+<td>no</td>
+<td>A tenant-custody cell (sb-factory(7)): the monthly <code>access</code> job checks every factory access path against <code>retain</code>, the grants the hand-off record keeps</td>
+</tr>
+<tr>
+<td><code>release.store</code></td>
+<td>URL</td>
+<td>for <code>sb-updater</code></td>
+<td>The release store: <code>file:///DIR</code>, or the factory's <code>https://</code> store read with <code>vault://tenants/TENANT/release-pull</code></td>
+</tr>
+<tr>
+<td><code>release.registry</code></td>
+<td>string</td>
+<td>with <code>release</code></td>
+<td>Where the bundle's images live</td>
+</tr>
+<tr>
+<td><code>release.trusted</code>, <code>release.cosign_identity</code></td>
+<td>string</td>
+<td>exactly one, with <code>release</code></td>
+<td>The one release identity the cell trusts: an Ed25519 key (<code>ed25519:BASE64</code>), or the release workflow's cosign identity</td>
+</tr>
+<tr>
+<td><code>release.deploy.kind</code>, <code>.project</code>, <code>.location</code></td>
+<td>string</td>
+<td>with <code>release</code></td>
+<td><code>local</code>, or <code>gcp</code> with the cell's project and region</td>
+</tr>
+<tr>
+<td><code>database</code></td>
+<td>DSN</td>
+<td>for <code>durable</code></td>
+<td>The cell's own Postgres (with <code>pgvector</code>), e.g. <code>postgres:///sb_acme?host=/var/run/postgresql</code>: every record store, the index, the spaces registry and the audit log live there, and each service creates its tables at start, one at a time (SB-1508)</td>
+</tr>
+<tr>
+<td><code>durable</code></td>
+<td>bool</td>
+<td>no, <code>false</code></td>
+<td><code>true</code> refuses to start without a <code>database</code>, so no store is in memory</td>
+</tr>
+</tbody>
+</table>
+<h3 id="stores">Stores</h3>
+<table>
+<thead>
+<tr>
+<th>Store</th>
+<th>Adapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>audit log, kill switches, key wraps, sync cursors, logs, job finishes (<code>runs/</code>), the usage ledger (<code>usage/</code>), anchors (<code>worm/</code>, write-once), weekly reports (<code>reports/</code>), what each service runs (<code>deploy/</code>)</td>
+<td>files under <code>state</code></td>
+</tr>
+<tr>
+<td>directory and sessions (a session is kept by a hash of its id, never the cookie value), traces and conversations, actions and receipts, spaces registry, index, chat events inbox, proposals, access reviews, legal holds, and the audit log</td>
+<td>the <code>database</code> when it is set (<code>internal/adapters/postgres</code>); without one, in memory (the audit log in files under <code>state</code>), for development and tests only</td>
+</tr>
+</tbody>
+</table>
+<h3 id="connectors">Connectors</h3>
+<p>Each kind in the manifest's <code>connectors</code> is served by the vendor's adapter: <code>docs: gdrive</code>, <code>chat: slack</code>, <code>tickets: linear</code>, <code>crm: hubspot</code>, <code>code: github</code>, <code>hris: bamboohr</code>, <code>accounting: quickbooks</code>. Credentials are read from the vault at each call (sb-connector(3)). Any other vendor stops the cell from starting.</p>
+<h3 id="one-process-or-several">One process or several</h3>
+<p><code>sb-ingest</code> and <code>sb-jobs</code> share the cell's stores with <code>sb-api</code>. While any store is in memory there is nothing to share, so they refuse to start on their own and run inside the api instead: <code>sb-api --config FILE --with ingest,jobs</code> (or <code>--with ingest</code>, <code>--with jobs</code>). With durable stores (SB-1508) each runs as its own service, as on GCP.</p>
+<h2 id="exit-status">EXIT STATUS</h2>
+<p><code>sb-api</code> exits 0 after a clean shutdown (SIGTERM or SIGINT: it stops taking requests and finishes those in flight), and 1 with the reason if it can't start.</p>
+<h2 id="laws">LAWS</h2>
+<p><a href="sb-laws.7.html#law-02">LAW-02</a>: one file, one tenant, one cell. <a href="sb-laws.7.html#law-03">LAW-03</a>: nothing that can't be built is skipped. <a href="sb-laws.7.html#law-16">LAW-16</a>: the cell runs its manifest, nothing else.</p>
+<h2 id="see-also">SEE ALSO</h2>
+<p><a href="sb-runtime.7.html">sb-runtime(7)</a>, <a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-api.3.html">sb-api(3)</a>, <a href="sb-connector.3.html">sb-connector(3)</a></p><p class="srcline">Source: <code>manual/sb-cell.5.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l2"><a href="#fields">FIELDS</a></li><li class="l3"><a href="#stores">Stores</a></li><li class="l3"><a href="#connectors">Connectors</a></li><li class="l3"><a href="#one-process-or-several">One process or several</a></li><li class="l2"><a href="#exit-status">EXIT STATUS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

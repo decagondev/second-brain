@@ -780,6 +780,66 @@
 <td>Tested (extended)</td>
 <td>SB-1207: no record a legal hold covers is deleted by the sweep, an erasure or a space removal, unheld records age out, and holds and releases are audited first (ignore-holds and remove-held-space mutations caught)</td>
 </tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-19, LAW-20, LAW-21, LAW-22</td>
+<td>Tested (extended)</td>
+<td>SB-1208: the <code>space-redteam</code> eval (mislabelled and misfiled files, injected instructions, an owner across a barrier, a mid-reorg ask) gates releases; the red team's over-broad-scope finding (PT-0003) is fixed by sb-space(5) rule 13 and <code>TestLAW20_NoScopeReachesARestrictedSpace</code> (a check without it is caught); the game day is human</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-03, LAW-07, LAW-11, LAW-13, LAW-15, LAW-16, LAW-20, LAW-22</td>
+<td>Tested (extended)</td>
+<td>SB-1401: an independent review of W8 to W12 found 2 critical and 5 high findings (PT-0005 to PT-0009, PT-0012) and medium ones; every critical and high one fixed with a regression test (BUG-0014 to BUG-0020)</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-07, LAW-15, LAW-16</td>
+<td>Fuzzed</td>
+<td>SB-1402: six fuzz targets over the parsers of outside input (manifest, payload hash, reorg snapshot, chunking and secrets, scope patterns, SCIM); BUG-0021 found and fixed; every unit test under the race detector</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>LAW-16</td>
+<td>Static (new)</td>
+<td>SB-1404: <code>tools/check/manual_code.py</code> in <code>make lint</code>: endpoints, commands and flags match the manual both ways; six drifts fixed</td>
+</tr>
+<tr>
+<td>2026-11-20</td>
+<td>all</td>
+<td>Coverage floor (new)</td>
+<td>SB-1405: every core package at or above 75% over the unit, law and suite tests together; <code>proposals</code> raised from 67.7% to 100%, <code>barrier</code>'s action facts tested</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-02, LAW-03, LAW-16</td>
+<td>Tested (new)</td>
+<td>SB-1501, SB-1502: a cell built from one configuration refuses to start on a durable request with in-memory stores, another tenant's manifest, missing policies or state, an unreachable IdP, an unknown vendor or a missing chat workspace; the api signs in through a test IdP and answers one request of each kind with no server error; shutdown finishes requests in flight</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-01, LAW-11, LAW-13, LAW-16, LAW-17</td>
+<td>Tested (new)</td>
+<td>SB-1503, SB-1504: a running cell ingests through a recorded Drive fake, stops answering a viewer the source removed and drops a deleted file's chunks; a lost cursor resyncs; a failing connector backs off and alerts once; every job runs at its minute on a fake clock, a failed one records no finish and its miss is alerted (Sev-1 for law jobs); a held trace survives retention until released; backups refuse fewer than three copies</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-06, LAW-13, LAW-16</td>
+<td>Tested (new)</td>
+<td>SB-1505, SB-1506: the updater deploys every service by digest and nothing twice, and an unsigned or ungated release changes nothing with one Sev-1; a running cell takes a manifest only from the control plane, runs it at once, rewrites its file and audits it, refuses to remove a held space with nothing changed, and reports a hand-edited manifest as drift</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-11, LAW-17, LAW-18</td>
+<td>Rehearsed (new)</td>
+<td>SB-1507: a running cell's audit chain verifies, tails and exports through the CLI with the control plane's identity only; the hand-off rehearsal against a running local cell refuses a wrong region, execution before approvals and the planner's own approval, reaches TenantOwned with only the retained grant's path, and detach writes a package that verifies and leaves no factory path; BUG-0024 found and fixed</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-01, LAW-02, LAW-03, LAW-11, LAW-13, LAW-14, LAW-15</td>
+<td>Tested end to end (new)</td>
+<td>SB-1508: a durable cell on Postgres ingests, answers with live-checked citations, drafts, refuses a self-approval and runs an approved action at the vendor, places a hold only for a legal steward, passes <code>sb tenant verify --cell</code>, and keeps everything across a restart; the Postgres stores' own tests cover tenant isolation, holds in retention and racing decisions; BUG-0025 found and fixed</td>
+</tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
   

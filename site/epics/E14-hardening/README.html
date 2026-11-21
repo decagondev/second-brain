@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E14 Hardening · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a class="current" href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a></div><div class="group"><h4>Tickets in E14</h4><a href="../../epics/E14-hardening/SB-1401-fresh-eyes-review.html">SB-1401: Fresh-eyes review of W8 to W12</a><a href="../../epics/E14-hardening/SB-1402-fuzzing-and-races.html">SB-1402: Fuzz the parsers and run every test under the race detector</a><a href="../../epics/E14-hardening/SB-1403-clean-and-concise.html">SB-1403: Clean and concise: stricter lint and tidier big files</a><a href="../../epics/E14-hardening/SB-1404-manual-matches-code.html">SB-1404: The manual and the code agree</a><a href="../../epics/E14-hardening/SB-1405-coverage-gaps.html">SB-1405: Close the coverage gaps in the core</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E14-hardening</div><h1 id="e14-hardening">E14: Hardening</h1>
+<blockquote>
+<p>Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps.</p>
+</blockquote>
+<p><strong>Waves:</strong> W13 · <strong>Tickets:</strong> 5 · <strong>Stories:</strong> 1</p>
+<p>Planned 2026-11-20 with the user, who kept Q-01 as no: the portfolio grants of <a href="../E13-portfolio-grants/README.html">E13</a> are parked, and W13 is this hardening wave instead.</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-14.1</strong>: As the <em>platform owner</em>, I want the code reviewed, fuzzed, tidied and matched to its manual before we call it feature complete, so that what we hand to companies is as solid as its laws say. Delivered by every ticket below.</li>
+</ul>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-1401-fresh-eyes-review.html">SB-1401</a></td>
+<td>W13 / S13.1</td>
+<td>Fresh-eyes review of W8 to W12</td>
+<td>LAW-19, LAW-20, LAW-22</td>
+</tr>
+<tr>
+<td><a href="SB-1402-fuzzing-and-races.html">SB-1402</a></td>
+<td>W13 / S13.2</td>
+<td>Fuzz the parsers and run every test under the race detector</td>
+<td>LAW-03, LAW-07</td>
+</tr>
+<tr>
+<td><a href="SB-1403-clean-and-concise.html">SB-1403</a></td>
+<td>W13 / S13.3</td>
+<td>Clean and concise: stricter lint and tidier big files</td>
+<td>none (no behaviour change)</td>
+</tr>
+<tr>
+<td><a href="SB-1404-manual-matches-code.html">SB-1404</a></td>
+<td>W13 / S13.4</td>
+<td>The manual and the code agree</td>
+<td>LAW-16</td>
+</tr>
+<tr>
+<td><a href="SB-1405-coverage-gaps.html">SB-1405</a></td>
+<td>W13 / S13.5</td>
+<td>Close the coverage gaps in the core</td>
+<td>every law a thin package carries</td>
+</tr>
+</tbody>
+</table><p class="srcline">Source: <code>epics/E14-hardening/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#tickets">Tickets</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

@@ -16,9 +16,9 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a class="current" href="../epics/README.html">Plan</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a class="current" href="../epics/README.html">Plan</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../epics/E14-hardening/README.html">E14 Hardening</a><a href="../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a></div></aside>
   <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / epics</div><h1 id="plan-epics-and-tickets">Plan: epics and tickets</h1>
-<p>14 epics, 63 user stories and 138 tickets across 14 waves. W8 to W13 add department brains (<a href="../docs/08-department-brains.html">08-department-brains.md</a>). The narrative, wave exit gates and slices are in the <a href="../docs/03-prd.html#waves">PRD</a>.</p>
+<p>16 epics, 65 user stories and 152 tickets across 15 waves. W8 to W12 add department brains, and W13 hardens everything (<a href="../docs/08-department-brains.html">08-department-brains.md</a>). The narrative, wave exit gates and slices are in the <a href="../docs/03-prd.html#waves">PRD</a>.</p>
 <p><strong>How to pick up work:</strong> take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.</p>
 <h2 id="progress">Progress</h2>
 <table>
@@ -54,11 +54,32 @@
 <td>W2 built (4 done, 7 in review); W3 S3.1 to S3.6: SB-301, SB-302, SB-304, SB-305 done; SB-303 (staging p95), SB-306 (audit chain), SB-307 (WCAG audit, connector links), SB-308 (real Slack workspace), SB-309 (tenant verify, staging model) SB-310 (weekly schedule) and SB-311 (the pilot itself, human) in review; W4 S4.1 to S4.3: SB-409 done; SB-401 to SB-408 and SB-410 to SB-412 in review (W4 built); W5 built: SB-501 to SB-510 in review; W6 S6.1 and S6.2: SB-603 done; SB-601, SB-602, SB-604 to SB-609 in review; S6.3b: SB-610 (HubSpot, real sandbox) in review; S6.3c: SB-611 (nightly schedule in a running cell) in review; S6.4a: SB-613 (the game day itself, human) in review; S6.4b: SB-612 (the external pen test, human) in review; <strong>W6 built</strong>; W7 S7.1a: SB-701 (security and tenant review, human) in review; S7.1b: SB-702 done; S7.1c: SB-703 (real GCP project) in review; S7.2a: SB-704 done; S7.2b: SB-705 (CLI and a cloud Target) in review; LAW-17 and LAW-18 hand-off tests green; S7.2c: SB-706 (verify on a deployed cell, monthly schedule) in review; S7.2d: SB-707 (a cell in a real tenant account) in review; S7.3a: SB-708 (detach on a running cell) in review; S7.3b: SB-709 (usage meter in a running cell) in review; S7.3c: SB-710 (the game day with a friendly tenant, human) in review; <strong>W7 built</strong></td>
 </tr>
 <tr>
-<td>W8 to W13</td>
+<td>W8 to W12</td>
 <td>19</td>
-<td>16</td>
+<td>17</td>
+<td>2</td>
+<td>Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. <strong>W12 built.</strong> Open: SB-903, SB-908 (a real GCP project)</td>
+</tr>
+<tr>
+<td>W13 Hardening</td>
+<td>5</td>
+<td>0</td>
+<td>0</td>
+<td>Planned 2026-11-20 with the user (E14): review, fuzz, tidy, manual and code agree, coverage</td>
+</tr>
+<tr>
+<td>W14 Cell Runtime</td>
 <td>7</td>
-<td>Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. W13 starts only if Q-01 is answered yes</td>
+<td>1</td>
+<td>1</td>
+<td>Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end</td>
+</tr>
+<tr>
+<td>Parked</td>
+<td>0</td>
+<td>0</td>
+<td>4</td>
+<td>E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20)</td>
 </tr>
 </tbody>
 </table>
@@ -103,7 +124,9 @@
   E10[&quot;E10 Department Spaces&quot;]
   E11[&quot;E11 Department Templates and Connectors&quot;]
   E12[&quot;E12 Space Governance&quot;]
-  E13[&quot;E13 Portfolio Department Grants&quot;]
+  E13[&quot;E13 Portfolio Department Grants (parked)&quot;]
+  E14[&quot;E14 Hardening&quot;]
+  E15[&quot;E15 Cell Runtime&quot;]
   E01 --&gt; E09
   E08 --&gt; E09
   E02 --&gt; E10
@@ -115,6 +138,9 @@
   E10 --&gt; E12
   E10 --&gt; E13
   E12 --&gt; E13
+  E12 --&gt; E14
+  E14 --&gt; E15
+  E09 --&gt; E15
 </pre></div>
 <h2 id="epics">Epics</h2>
 <table>
@@ -207,9 +233,21 @@
 </tr>
 <tr>
 <td><a href="E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a></td>
-<td>If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser.</td>
-<td>W13</td>
+<td>If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser. <strong>Parked: Q-01 stays no (2026-11-20).</strong></td>
+<td>parked</td>
 <td>4</td>
+</tr>
+<tr>
+<td><a href="E14-hardening/README.html">E14 Hardening</a></td>
+<td>Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps.</td>
+<td>W13</td>
+<td>5</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/README.html">E15 Cell Runtime</a></td>
+<td>Every part of a cell runs together as real services, from one configuration to a whole cell end to end.</td>
+<td>W14</td>
+<td>9</td>
 </tr>
 </tbody>
 </table>
@@ -1243,11 +1281,11 @@
 <td>S12.4</td>
 <td>E12</td>
 <td>Cross-space red team and game day</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
-<h3 id="w13-portfolio-department-grants">W13 Portfolio Department Grants</h3>
+<h3 id="parked-portfolio-department-grants-q-01-stays-no">Parked: Portfolio Department Grants (Q-01 stays no)</h3>
 <table>
 <thead>
 <tr>
@@ -1288,8 +1326,134 @@
 <td>Open</td>
 </tr>
 </tbody>
+</table>
+<h3 id="w13-hardening">W13 Hardening</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E14-hardening/SB-1401-fresh-eyes-review.html">SB-1401</a></td>
+<td>S13.1</td>
+<td>E14</td>
+<td>Fresh-eyes review of W8 to W12</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E14-hardening/SB-1402-fuzzing-and-races.html">SB-1402</a></td>
+<td>S13.2</td>
+<td>E14</td>
+<td>Fuzz the parsers and run every test under the race detector</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E14-hardening/SB-1403-clean-and-concise.html">SB-1403</a></td>
+<td>S13.3</td>
+<td>E14</td>
+<td>Clean and concise: stricter lint and tidier big files</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E14-hardening/SB-1404-manual-matches-code.html">SB-1404</a></td>
+<td>S13.4</td>
+<td>E14</td>
+<td>The manual and the code agree</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E14-hardening/SB-1405-coverage-gaps.html">SB-1405</a></td>
+<td>S13.5</td>
+<td>E14</td>
+<td>Close the coverage gaps in the core</td>
+<td>Done</td>
+</tr>
+</tbody>
+</table>
+<h3 id="w14-cell-runtime">W14 Cell Runtime</h3>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Slice</th>
+<th>Epic</th>
+<th>Title</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="E15-cell-runtime/SB-1501-cell-configuration-and-wiring.html">SB-1501</a></td>
+<td>S14.1</td>
+<td>E15</td>
+<td>Cell configuration and one composition root</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1502-api-service.html">SB-1502</a></td>
+<td>S14.1</td>
+<td>E15</td>
+<td>The <code>api</code> service: every endpoint, mounted</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1503-ingest-service.html">SB-1503</a></td>
+<td>S14.2</td>
+<td>E15</td>
+<td>The <code>ingest</code> service: syncs that run</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1504-jobs-service.html">SB-1504</a></td>
+<td>S14.2</td>
+<td>E15</td>
+<td>The <code>jobs</code> service: every schedule, run</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1505-updater-service.html">SB-1505</a></td>
+<td>S14.3</td>
+<td>E15</td>
+<td>The <code>updater</code> job: releases pulled and admitted</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1506-apply-to-a-running-cell.html">SB-1506</a></td>
+<td>S14.3</td>
+<td>E15</td>
+<td><code>sb tenant apply</code> against a running cell</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1507-cli-against-running-cells.html">SB-1507</a></td>
+<td>S14.4</td>
+<td>E15</td>
+<td>The CLI commands that need a running cell</td>
+<td>Done</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1508-local-cell-end-to-end.html">SB-1508</a></td>
+<td>S14.4</td>
+<td>E15</td>
+<td>A whole cell running locally, end to end</td>
+<td>In review</td>
+</tr>
+<tr>
+<td><a href="E15-cell-runtime/SB-1509-console-screens.html">SB-1509</a></td>
+<td>S14.5</td>
+<td>E15</td>
+<td>Console screens for stewards and access reviews</td>
+<td>Open</td>
+</tr>
+</tbody>
 </table><p class="srcline">Source: <code>epics/README.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#epic-dependencies">Epic dependencies</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#all-tickets-by-wave">All tickets by wave</a></li><li class="l3"><a href="#w0-manual-and-laws">W0 Manual and Laws</a></li><li class="l3"><a href="#w1-first-cell">W1 First Cell</a></li><li class="l3"><a href="#w2-ingestion">W2 Ingestion</a></li><li class="l3"><a href="#w3-cited-answers">W3 Cited Answers</a></li><li class="l3"><a href="#w4-safe-actions">W4 Safe Actions</a></li><li class="l3"><a href="#w5-gated-releases">W5 Gated Releases</a></li><li class="l3"><a href="#w6-portfolio-roll-out">W6 Portfolio Roll-out</a></li><li class="l3"><a href="#w7-factory-hand-off">W7 Factory Hand-off</a></li><li class="l3"><a href="#w8-space-manual-and-laws">W8 Space Manual and Laws</a></li><li class="l3"><a href="#w9-cells-on-gcp">W9 Cells on GCP</a></li><li class="l3"><a href="#w10-spaces-in-a-cell">W10 Spaces in a Cell</a></li><li class="l3"><a href="#w11-department-templates">W11 Department Templates</a></li><li class="l3"><a href="#w12-space-governance">W12 Space Governance</a></li><li class="l3"><a href="#w13-portfolio-department-grants">W13 Portfolio Department Grants</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#epic-dependencies">Epic dependencies</a></li><li class="l2"><a href="#epics">Epics</a></li><li class="l2"><a href="#all-tickets-by-wave">All tickets by wave</a></li><li class="l3"><a href="#w0-manual-and-laws">W0 Manual and Laws</a></li><li class="l3"><a href="#w1-first-cell">W1 First Cell</a></li><li class="l3"><a href="#w2-ingestion">W2 Ingestion</a></li><li class="l3"><a href="#w3-cited-answers">W3 Cited Answers</a></li><li class="l3"><a href="#w4-safe-actions">W4 Safe Actions</a></li><li class="l3"><a href="#w5-gated-releases">W5 Gated Releases</a></li><li class="l3"><a href="#w6-portfolio-roll-out">W6 Portfolio Roll-out</a></li><li class="l3"><a href="#w7-factory-hand-off">W7 Factory Hand-off</a></li><li class="l3"><a href="#w8-space-manual-and-laws">W8 Space Manual and Laws</a></li><li class="l3"><a href="#w9-cells-on-gcp">W9 Cells on GCP</a></li><li class="l3"><a href="#w10-spaces-in-a-cell">W10 Spaces in a Cell</a></li><li class="l3"><a href="#w11-department-templates">W11 Department Templates</a></li><li class="l3"><a href="#w12-space-governance">W12 Space Governance</a></li><li class="l3"><a href="#parked-portfolio-department-grants-q-01-stays-no">Parked: Portfolio Department Grants (Q-01 stays no)</a></li><li class="l3"><a href="#w13-hardening">W13 Hardening</a></li><li class="l3"><a href="#w14-cell-runtime">W14 Cell Runtime</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-1503: The ingest service: syncs that run · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a></div><div class="group"><h4>Tickets in E15</h4><a href="../../epics/E15-cell-runtime/SB-1501-cell-configuration-and-wiring.html">SB-1501: Cell configuration and one composition root</a><a href="../../epics/E15-cell-runtime/SB-1502-api-service.html">SB-1502: The api service: every endpoint, mounted</a><a class="current" href="../../epics/E15-cell-runtime/SB-1503-ingest-service.html">SB-1503: The ingest service: syncs that run</a><a href="../../epics/E15-cell-runtime/SB-1504-jobs-service.html">SB-1504: The jobs service: every schedule, run</a><a href="../../epics/E15-cell-runtime/SB-1505-updater-service.html">SB-1505: The updater job: releases pulled and admitted</a><a href="../../epics/E15-cell-runtime/SB-1506-apply-to-a-running-cell.html">SB-1506: sb tenant apply against a running cell</a><a href="../../epics/E15-cell-runtime/SB-1507-cli-against-running-cells.html">SB-1507: The CLI commands that need a running cell</a><a href="../../epics/E15-cell-runtime/SB-1508-local-cell-end-to-end.html">SB-1508: A whole cell running locally, end to end</a><a href="../../epics/E15-cell-runtime/SB-1509-console-screens.html">SB-1509: Console screens for stewards and access reviews</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E15-cell-runtime</div><h1 id="sb-1503-the-ingest-service-syncs-that-run">SB-1503: The <code>ingest</code> service: syncs that run</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E15 Cell Runtime</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W14 / S14.2</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-15.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-ingest.7.html"><code>sb-ingest(7)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td>LAW-07, LAW-13</td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td><a href="SB-1501-cell-configuration-and-wiring.html">SB-1501</a></td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Done</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>Connectors and the pipeline exist; nothing runs a sync on a schedule and keeps its cursor.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span><code>cmd/sb-ingest</code> runs each connector's sync with its cursor stored durably, re-routing first, with the secret and field hooks counted in <code>/metrics</code></li>
+<li class="task done"><span class="box">✓</span>A failing connector backs off and alerts without stopping the others; a lost cursor resyncs from the start rather than skipping</li>
+<li class="task done"><span class="box">✓</span>A law test drives a local cell through ingest, a scope change and a source deletion</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Sync runner and cursor store</li>
+<li class="task done"><span class="box">✓</span>Backoff and alerts</li>
+<li class="task done"><span class="box">✓</span>Law test</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-21 (slice S14.2): <code>internal/cell/ingestsvc</code> builds each connector's pipeline from the cell (<code>wire.Cell</code>): the cell's index and embedder, the spaces registry for routing, and counters for dropped secrets, fields and reroutes in <code>/metrics</code>. <code>Run</code> re-routes every connector first, then syncs each in its own loop from its cursor in <code>state/cursors</code>; a failure backs that connector off (one minute doubling to 15) and never slows another, and a connector stale past 15 minutes sends one <code>ingest_stale</code> alert until it recovers. <code>cmd/sb-ingest</code> runs it on its own once the stores are durable (SB-1508); until then <code>sb-api --with ingest</code> runs it in the api's process (sb-cell(5)). <code>tests/cell</code> drives a running cell through a recorded Drive fake: <code>TestLAW13_IngestThroughARunningCell</code> (ingest, then ann asks and is answered; the source stops sharing with her and she isn't; the file is deleted and its chunks leave the index), <code>TestIngestRestartResumes</code> (a lost cursor resyncs everything) and <code>TestFailingConnectorAlertsAndBacksOff</code>. Drive's classification label is wired from <code>vault://tenants/TENANT/connectors/docs-classification</code>, now an allowed vault path.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E15-cell-runtime/SB-1503-ingest-service.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>
