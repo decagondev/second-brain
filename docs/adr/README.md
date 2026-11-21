@@ -30,6 +30,7 @@ An ADR records one decision, the alternatives we rejected and the consequences w
 | [ADR-0019](ADR-0019-provider-neutral-model-gateway.md) | A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter | Accepted |
 | [ADR-0020](ADR-0020-department-spaces-inside-the-cell.md) | Department brains are spaces inside the company's cell, and a space can only narrow access | Accepted (plan, W8 to W13) |
 | [ADR-0021](ADR-0021-gcp-cell-runtime.md) | Cells run on Cloud Run with Cloud SQL, one project per cell; Firebase only for hosting and identity | Accepted (plan, W9) |
+| [ADR-0022](ADR-0022-self-hosted-cell.md) | A self-hosted cell runs in containers that mirror GCP, on one machine | Proposed (plan, W15) |
 
 ## Sign-off (SB-014)
 

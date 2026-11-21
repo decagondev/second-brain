@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-16 epics, 65 user stories and 152 tickets across 15 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+17 epics, 66 user stories and 161 tickets across 16 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -19,6 +19,7 @@ summary: Epics, waves, slices and tickets.
 | W8 to W12 | 19 | 17 | 2 | Planned 2026-11-19 (ADR-0020, ADR-0021): department spaces and the GCP runtime. **W12 built.** Open: SB-903, SB-908 (a real GCP project) |
 | W13 Hardening | 5 | 0 | 0 | Planned 2026-11-20 with the user (E14): review, fuzz, tidy, manual and code agree, coverage |
 | W14 Cell Runtime | 8 | 1 | 0 | Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end |
+| W15 Self-hosted Cell | 0 | 0 | 9 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -68,6 +69,7 @@ flowchart LR
   E13["E13 Portfolio Department Grants (parked)"]
   E14["E14 Hardening"]
   E15["E15 Cell Runtime"]
+  E16["E16 Self-hosted Cell"]
   E01 --> E09
   E08 --> E09
   E02 --> E10
@@ -81,6 +83,7 @@ flowchart LR
   E12 --> E13
   E12 --> E14
   E14 --> E15
+  E15 --> E16
   E09 --> E15
 ```
 
@@ -104,6 +107,7 @@ flowchart LR
 | [E13 Portfolio Department Grants](E13-portfolio-grants/README.md) | If the parent reads company data at all, it gets consented, aggregate-only, revocable grants on named spaces, never a superuser. **Parked: Q-01 stays no (2026-11-20).** | parked | 4 |
 | [E14 Hardening](E14-hardening/README.md) | Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps. | W13 | 5 |
 | [E15 Cell Runtime](E15-cell-runtime/README.md) | Every part of a cell runs together as real services, from one configuration to a whole cell end to end. | W14 | 9 |
+| [E16 Self-hosted Cell](E16-self-hosted-cell/README.md) | A whole cell on one machine the company owns, in containers that mirror GCP, plus four easy wins. | W15 | 9 |
 
 ## All tickets by wave
 
@@ -338,3 +342,17 @@ flowchart LR
 | [SB-1507](E15-cell-runtime/SB-1507-cli-against-running-cells.md) | S14.4 | E15 | The CLI commands that need a running cell | Done |
 | [SB-1508](E15-cell-runtime/SB-1508-local-cell-end-to-end.md) | S14.4 | E15 | A whole cell running locally, end to end | In review |
 | [SB-1509](E15-cell-runtime/SB-1509-console-screens.md) | S14.5 | E15 | Console screens for stewards and access reviews | Done |
+
+### W15 Self-hosted Cell
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1601](E16-self-hosted-cell/SB-1601-container-images.md) | S15.1 | E16 | Container images for every service | Open |
+| [SB-1602](E16-self-hosted-cell/SB-1602-compose-layout.md) | S15.1 | E16 | A self-hosted cell in containers that mirror GCP | Open |
+| [SB-1603](E16-self-hosted-cell/SB-1603-object-locked-worm.md) | S15.2 | E16 | Write-once audit storage on the box | Open |
+| [SB-1604](E16-self-hosted-cell/SB-1604-upgrades-without-the-socket.md) | S15.2 | E16 | Upgrades without giving the cell the Docker socket | Open |
+| [SB-1605](E16-self-hosted-cell/SB-1605-sovereign-install.md) | S15.3 | E16 | A sovereign install on a VM or an on-prem server | Open |
+| [SB-1606](E16-self-hosted-cell/SB-1606-folder-connector.md) | S15.3 | E16 | A folder connector for file shares and demos | Open |
+| [SB-1607](E16-self-hosted-cell/SB-1607-health-panel.md) | S15.4 | E16 | Cell health in the console | Open |
+| [SB-1608](E16-self-hosted-cell/SB-1608-budget-warning-and-report-delivery.md) | S15.4 | E16 | Budget warning at 80% and the weekly report delivered | Open |
+| [SB-1609](E16-self-hosted-cell/SB-1609-unhelpful-answer-queue.md) | S15.4 | E16 | A queue of answers people marked unhelpful | Open |
