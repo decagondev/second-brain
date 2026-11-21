@@ -840,6 +840,12 @@
 <td>Tested end to end (new)</td>
 <td>SB-1508: a durable cell on Postgres ingests, answers with live-checked citations, drafts, refuses a self-approval and runs an approved action at the vendor, places a hold only for a legal steward, passes <code>sb tenant verify --cell</code>, and keeps everything across a restart; the Postgres stores' own tests cover tenant isolation, holds in retention and racing decisions; BUG-0025 found and fixed</td>
 </tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-15, LAW-16</td>
+<td>Tested (UI)</td>
+<td>SB-1509: the steward screen sends only valid JSON proposals, shows the hash and every refusal reason, asks for a removal's reason first and shows a refused self-decision; the console approves a proposal only with the hash it shows, needs a reason to reject, and lists reviews overdue first; axe finds no violations on either screen</td>
+</tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
   
