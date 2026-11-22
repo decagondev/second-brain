@@ -51,7 +51,7 @@ done
 
 tmp=$(mktemp)
 {
-  grep -vE '^SB_[A-Z]+_IMAGE=' "$ENV" || true
+  grep -vE '^SB_(API|INGEST|JOBS|UPDATER)_IMAGE=' "$ENV" || true  # SB_MODEL_IMAGE is the model profile's own pin (SB-1710)
   for svc in "${SERVICES[@]}"; do printf 'SB_%s_IMAGE=%s\n' "${svc^^}" "${IMG[$svc]}"; done
 } >"$tmp"
 mv "$tmp" "$ENV"

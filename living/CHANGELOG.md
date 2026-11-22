@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- A local model run for real (SB-1710): `make selfhost-model` gates and switches to Qwen2.5-7B-Instruct and nomic-embed-text-v1.5 on the box; `python3 -m evals run --model openaicompat=BASE#MODEL`; the smoke run prints answer latency. **W16 Team Knowledge done.**
 - A model on the box (S16.5: SB-1710, in review): `embed` in sb-cell(5) with an OpenAI-compatible embedder and `model.local`; changing the embedder rebuilds the index; the compose profile `model` (llama.cpp's server, pinned by digest, on the data network only) and `make selfhost-model`, which gates the exact weights before switching the cell; the release bundle pins the weights. **W16 Team Knowledge built** (SB-1710's run with real weights waits for the user).
 - What changed and documents to review (S16.4: SB-1708, SB-1709): `GET /v1/changes` lists documents with a new version in the person's spaces, and a rebuild never shows as changes; stewards get `GET /v1/spaces/NAME/review`, relied-on documents older than the space's new `review_after_days` or marked as wrong citations; cites carry `age_days` and `stale`, shown on the chip.
 - Start here and handover briefs (S16.3: SB-1706, SB-1707): a space's `start_here` reading list (sb-space(5)), shown to members with `GET /v1/start` and checked by `sb tenant verify`; `POST /v1/handover` briefs the documents a person owns that the asker can open, for the person, their manager or a steward of one of their spaces, with an eval suite in the gate.

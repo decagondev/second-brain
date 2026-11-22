@@ -44,7 +44,7 @@ echo "selfhost-model: image $PINNED"
 # 2. The weights' hashes, then the weights into the models volume, read-only for the servers.
 W=$(sha256sum "$SB_MODEL_GGUF" | cut -d' ' -f1)
 E=$(sha256sum "$SB_EMBED_GGUF" | cut -d' ' -f1)
-"$DOCKER" volume create sb-selfhost_models >/dev/null
+"$DOCKER" volume create --label com.docker.compose.project=sb-selfhost --label com.docker.compose.volume=models sb-selfhost_models >/dev/null
 "$DOCKER" run --rm -u 0 -v sb-selfhost_models:/dst -v "$(hostpath "$(cd "$(dirname "$SB_MODEL_GGUF")" && pwd)"):/m:ro" \
   -v "$(hostpath "$(cd "$(dirname "$SB_EMBED_GGUF")" && pwd)"):/e:ro" "$HELPER" \
   sh -c "cp '/m/$(basename "$SB_MODEL_GGUF")' /dst/model.gguf && cp '/e/$(basename "$SB_EMBED_GGUF")' /dst/embed.gguf && chown -R 65532:65532 /dst && chmod 0444 /dst/*.gguf" >/dev/null
@@ -57,7 +57,7 @@ trap '"$DOCKER" rm -f sb-model-gate >/dev/null 2>&1 || true' EXIT
 for _ in $(seq 120); do "$CURL" -sf http://127.0.0.1:18080/health >/dev/null 2>&1 && break; sleep 5; done
 "$CURL" -sf http://127.0.0.1:18080/health >/dev/null 2>&1 || die "the model server didn't come up"
 rm -rf build/evals-model
-SUITES="evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/space-redteam.yaml evals/suites/agent-*.yaml"
+SUITES="evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/space-redteam.yaml evals/suites/agent-*.yaml evals/suites/template-*.yaml"
 # shellcheck disable=SC2086
 python3 -m evals run $SUITES --model "openaicompat=http://127.0.0.1:18080/v1#$SB_MODEL_ID" --results build/evals-model --release rel_model ||
   die "the model failed an eval suite; the cell keeps its model"

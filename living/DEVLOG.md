@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 SB-1710 run for real: a 7B model and an embedder on the box, gated
+
+**Wave/slice:** W16 / S16.5 · **Status:** Done. **W16 built**, every ticket Done.
+
+**What:** with the user's approval, llama.cpp's server image pinned by digest, Qwen2.5-7B-Instruct Q4_K_M and nomic-embed-text-v1.5 Q8_0 fetched and checked against Hugging Face's published SHA-256s, `make selfhost-model` run until the gate passed, and `make selfhost-smoke` green with the model profile. Fixes the run found: the Python eval CLI takes `openaicompat=BASE#MODEL`, `model.sh` runs the template suites the gate requires, `update.sh` keeps the model image pin, the models volume carries Compose's labels, and the handover prompt requires one claim per document. The smoke run now prints the answer latency it measures.
+
+**Why this way:** The gate did its job before anything was configured: it refused the model when a handover brief skipped a document the person owned, and refused it again when the script hadn't run every suite the gate names. The fix for the first was the prompt, which ships in the release, not the test; the fix for the second was the script.
+
+**Learned:** 32 minutes for the gate and a median of 15 seconds an answer on 16 CPU cores: a local 7B model is right for sovereignty and demos, and search stays the fast path. A volume one script creates and Compose then uses should carry Compose's labels, or every compose call warns.
+
+**Laws:** LAW-06 (the exact weights are hashed into the release and gated), LAW-07 (the model servers hold no secret and have no route out), LAW-13 (the index was rebuilt from the share for the new embedder).
+
 ## 2026-11-22 S16.5 On the box: a local model and embedder, pinned and gated (SB-1710)
 
 **Wave/slice:** W16 / S16.5 · **Status:** In review (the run needs model weights the user fetches). **W16 built**: SB-1701 to SB-1709 Done.

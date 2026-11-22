@@ -1,4 +1,4 @@
-"""python3 -m evals run SUITE... [--model mock|extractive|misattributing] [--tenant-dir DIR] (sb-eval(1))."""
+"""python3 -m evals run SUITE... [--model mock|extractive|misattributing|openaicompat=BASE#MODEL] [--tenant-dir DIR] (sb-eval(1))."""
 import sys
 
 import yaml
@@ -48,7 +48,8 @@ def main(argv):
     if (results_dir is None) != (release is None):
         print("sb eval run: --results and --release go together [EUSAGE]", file=sys.stderr)
         return 2
-    if model not in MODELS:
+    # A model on a cell's own machine (SB-1710): openaicompat=BASE#MODEL, run in the local cell.
+    if model not in MODELS and not (model or "").startswith("openaicompat="):
         print(f"sb eval run: --model must be one of {', '.join(MODELS)}; deployed cells arrive with SB-501 [ENOTIMPL]", file=sys.stderr)
         return 2
     print(f"{'suite':<26}{'case':<14}result")

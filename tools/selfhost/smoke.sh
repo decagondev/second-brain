@@ -79,6 +79,12 @@ if [ -f build/selfhost/model.json ]; then
     check "$svc runs as 65532 on a read-only root (SB-1710)" "[ \"\$(\"$DOCKER\" inspect -f '{{.Config.User}} {{.HostConfig.ReadonlyRootfs}}' $c | tr -d '\r')\" = '65532:65532 true' ]"
   done
   check "an answer comes from the model on the box (SB-1710)" "ask 'how long do customers have to return a pallet?' | grep -q 'docs:operations/returns-policy.md@'"
+  # The answer latency to expect on this machine (sb-selfhost(7), Hardware and latency).
+  ts=()
+  for q in "how long do customers have to return a pallet?" "who approves a refund?" "what is in the returns policy?" "how are returns inspected?" "what happens to a damaged pallet?"; do
+    ts+=("$("$CURL" -ksf -o $NUL -w '%{time_total}' "${R[@]}" -b "$jarp" -X POST https://cell.localhost:8443/v1/ask -H 'Content-Type: application/json' -d "{\"question\":\"$q\"}" || echo fail)")
+  done
+  echo "info  answer latency with the model on the box, 5 asks (s): ${ts[*]}"
 fi
 if [ -f build/selfhost/demo-password ]; then
   # S15.4: the demo's operator sees the cell's health and the unhelpful-answer queue.
