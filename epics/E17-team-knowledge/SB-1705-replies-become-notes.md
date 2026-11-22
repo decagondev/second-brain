@@ -13,7 +13,7 @@ summary: "A steward's answer lives in a reply or a chat thread and is found once
 | Manual | [`sb-connector(3)`](../../manual/sb-connector.3.md), [`sb-agents(7)`](../../manual/sb-agents.7.md), [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md) |
 | Laws | LAW-04, LAW-05, LAW-09, LAW-13, LAW-15 |
 | Depends on | [SB-1704](SB-1704-ask-the-stewards.md) |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -39,7 +39,7 @@ A steward's answer lives in a reply or a chat thread and is found once; the next
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 

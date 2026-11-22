@@ -13,7 +13,7 @@ summary: "The most damaging answer is a confident one from an old document, and 
 | Manual | [`sb-spaces(7)`](../../manual/sb-spaces.7.md), [`sb-space(5)`](../../manual/sb-space.5.md), [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-14, LAW-16 |
 | Depends on | — |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -37,7 +37,7 @@ The most damaging answer is a confident one from an old document, and nobody see
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 

@@ -7,9 +7,9 @@ summary: "Ten small features that let a team hand knowledge to each other throug
 
 > Ten small features that let a team hand knowledge to each other through the brain, and keep it current, on one sovereign machine.
 
-**Waves:** W16 (proposed) · **Tickets:** 10 · **Stories:** 5
+**Waves:** W16 · **Tickets:** 10 · **Stories:** 5
 
-Proposed 2026-11-22 for the user's review, after W15. The research and the concept are in [09-team-knowledge.md](../../docs/09-team-knowledge.md). Every ticket keeps to the bloat rules there: no new service the cell must run (the model container is an optional profile), no new store, no new third-party Go module, at most one manifest field a feature, and one page in the web UI.
+Proposed 2026-11-22 after W15 and accepted by the user the same day, with every recommended decision. The research and the concept are in [09-team-knowledge.md](../../docs/09-team-knowledge.md). Every ticket keeps to the bloat rules there: no new service the cell must run (the model container is an optional profile), no new store, no new third-party Go module, at most one manifest field a feature, and one page in the web UI.
 
 ## User stories
 
@@ -29,7 +29,7 @@ Proposed 2026-11-22 for the user's review, after W15. The research and the conce
 | S16.4 | Keep it current | What changed, and documents to review | SB-1708, SB-1709 |
 | S16.5 | On the box | A local model and embedder, pinned and gated | SB-1710 |
 
-## Exit gate (proposed)
+## Exit gate
 
 - [ ] A search answers with no model call, and returns only documents the asker can open now
 - [ ] A question nothing answered reaches a steward, and their published note answers the next ask with a cite
@@ -55,4 +55,4 @@ Proposed 2026-11-22 for the user's review, after W15. The research and the conce
 
 ## Decisions for the user
 
-See [09-team-knowledge.md](../../docs/09-team-knowledge.md#decisions-for-the-user): accept W16 or a subset; how a note is approved (SB-1705); which model server (SB-1710); who may ask for a handover brief (SB-1707).
+Decided 2026-11-22 ([09-team-knowledge.md](../../docs/09-team-knowledge.md#decisions-for-the-user)): all of W16; a steward's publish is a note's approval, bound to its hash (SB-1705); llama.cpp's server (SB-1710); a handover brief for the person's manager, a steward of one of their spaces, or the person (SB-1707).

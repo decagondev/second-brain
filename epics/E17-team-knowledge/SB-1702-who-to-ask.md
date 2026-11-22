@@ -13,7 +13,7 @@ summary: "Chunks already carry their document's owner for barriers, but an answe
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-identity(7)`](../../manual/sb-identity.7.md) |
 | Laws | LAW-01, LAW-12, LAW-22 |
 | Depends on | — |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -37,7 +37,7 @@ Chunks already carry their document's owner for barriers, but an answer never sa
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 

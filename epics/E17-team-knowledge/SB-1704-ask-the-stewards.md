@@ -13,7 +13,7 @@ summary: "When nothing answers, the asker is told so and left there, and the per
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md), [`sb-space(5)`](../../manual/sb-space.5.md) |
 | Laws | LAW-01, LAW-04, LAW-07, LAW-21 |
 | Depends on | [SB-1701](SB-1701-search-without-the-model.md) |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -37,7 +37,7 @@ When nothing answers, the asker is told so and left there, and the person who kn
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 

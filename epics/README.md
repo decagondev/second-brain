@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-18 epics, 71 user stories and 171 tickets across 17 waves, W16 proposed. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+18 epics, 71 user stories and 171 tickets across 17 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -20,7 +20,7 @@ summary: Epics, waves, slices and tickets.
 | W13 Hardening | 5 | 0 | 0 | Planned 2026-11-20 with the user (E14): review, fuzz, tidy, manual and code agree, coverage |
 | W14 Cell Runtime | 8 | 1 | 0 | Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end |
 | W15 Self-hosted Cell | 8 | 1 | 0 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins. **W15 built.** Open: SB-1605 (a run on a real VM) |
-| W16 Team Knowledge | 0 | 0 | 10 | Proposed 2026-11-22 for the user's review (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)) |
+| W16 Team Knowledge | 0 | 0 | 10 | Planned 2026-11-22 with the user (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -71,7 +71,7 @@ flowchart LR
   E14["E14 Hardening"]
   E15["E15 Cell Runtime"]
   E16["E16 Self-hosted Cell"]
-  E17["E17 Team Knowledge (proposed)"]
+  E17["E17 Team Knowledge"]
   E01 --> E09
   E08 --> E09
   E02 --> E10
@@ -111,7 +111,7 @@ flowchart LR
 | [E14 Hardening](E14-hardening/README.md) | Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps. | W13 | 5 |
 | [E15 Cell Runtime](E15-cell-runtime/README.md) | Every part of a cell runs together as real services, from one configuration to a whole cell end to end. | W14 | 9 |
 | [E16 Self-hosted Cell](E16-self-hosted-cell/README.md) | A whole cell on one machine the company owns, in containers that mirror GCP, plus four easy wins. | W15 | 9 |
-| [E17 Team Knowledge](E17-team-knowledge/README.md) | Ten small features that let a team hand knowledge to each other and keep it current, on one sovereign machine. **Proposed.** | W16 | 10 |
+| [E17 Team Knowledge](E17-team-knowledge/README.md) | Ten small features that let a team hand knowledge to each other and keep it current, on one sovereign machine. | W16 | 10 |
 
 ## All tickets by wave
 
@@ -361,17 +361,17 @@ flowchart LR
 | [SB-1608](E16-self-hosted-cell/SB-1608-budget-warning-and-report-delivery.md) | S15.4 | E16 | Budget warning at 80% and the weekly report delivered | Done |
 | [SB-1609](E16-self-hosted-cell/SB-1609-unhelpful-answer-queue.md) | S15.4 | E16 | A queue of answers people marked unhelpful | Done |
 
-### W16 Team Knowledge (proposed)
+### W16 Team Knowledge
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-1701](E17-team-knowledge/SB-1701-search-without-the-model.md) | S16.1 | E17 | Search without the model | Proposed |
-| [SB-1702](E17-team-knowledge/SB-1702-who-to-ask.md) | S16.1 | E17 | Who to ask: owners on citations | Proposed |
-| [SB-1703](E17-team-knowledge/SB-1703-save-and-share-a-question.md) | S16.1 | E17 | Save and share a question | Proposed |
-| [SB-1704](E17-team-knowledge/SB-1704-ask-the-stewards.md) | S16.2 | E17 | Ask the stewards when nothing answers | Proposed |
-| [SB-1705](E17-team-knowledge/SB-1705-replies-become-notes.md) | S16.2 | E17 | Answer once: replies become notes | Proposed |
-| [SB-1706](E17-team-knowledge/SB-1706-start-here.md) | S16.3 | E17 | Start here: a reading list per space | Proposed |
-| [SB-1707](E17-team-knowledge/SB-1707-handover-brief.md) | S16.3 | E17 | Handover brief for a successor | Proposed |
-| [SB-1708](E17-team-knowledge/SB-1708-what-changed.md) | S16.4 | E17 | What changed in my spaces | Proposed |
-| [SB-1709](E17-team-knowledge/SB-1709-documents-to-review.md) | S16.4 | E17 | Documents to review for stewards | Proposed |
-| [SB-1710](E17-team-knowledge/SB-1710-local-model-on-the-box.md) | S16.5 | E17 | A local model on the box | Proposed |
+| [SB-1701](E17-team-knowledge/SB-1701-search-without-the-model.md) | S16.1 | E17 | Search without the model | Open |
+| [SB-1702](E17-team-knowledge/SB-1702-who-to-ask.md) | S16.1 | E17 | Who to ask: owners on citations | Open |
+| [SB-1703](E17-team-knowledge/SB-1703-save-and-share-a-question.md) | S16.1 | E17 | Save and share a question | Open |
+| [SB-1704](E17-team-knowledge/SB-1704-ask-the-stewards.md) | S16.2 | E17 | Ask the stewards when nothing answers | Open |
+| [SB-1705](E17-team-knowledge/SB-1705-replies-become-notes.md) | S16.2 | E17 | Answer once: replies become notes | Open |
+| [SB-1706](E17-team-knowledge/SB-1706-start-here.md) | S16.3 | E17 | Start here: a reading list per space | Open |
+| [SB-1707](E17-team-knowledge/SB-1707-handover-brief.md) | S16.3 | E17 | Handover brief for a successor | Open |
+| [SB-1708](E17-team-knowledge/SB-1708-what-changed.md) | S16.4 | E17 | What changed in my spaces | Open |
+| [SB-1709](E17-team-knowledge/SB-1709-documents-to-review.md) | S16.4 | E17 | Documents to review for stewards | Open |
+| [SB-1710](E17-team-knowledge/SB-1710-local-model-on-the-box.md) | S16.5 | E17 | A local model on the box | Open |

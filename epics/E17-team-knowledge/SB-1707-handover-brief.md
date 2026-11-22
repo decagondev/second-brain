@@ -13,7 +13,7 @@ summary: "When someone leaves or changes role, the documents they own and the co
 | Manual | [`sb-agents(7)`](../../manual/sb-agents.7.md), [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-policy(5)`](../../manual/sb-policy.5.md) |
 | Laws | LAW-01, LAW-09, LAW-12, LAW-14 |
 | Depends on | [SB-1702](SB-1702-who-to-ask.md) |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -37,7 +37,7 @@ When someone leaves or changes role, the documents they own and the context arou
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 

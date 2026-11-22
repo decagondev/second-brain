@@ -7,7 +7,7 @@ summary: Research and concept for W16 (proposed): ten small features that make t
 
 | Version | Date | Owner | Status | Related |
 |---|---|---|---|---|
-| 0.1 | 2026-11-22 | Platform lead | Proposed, for the user's review | [Principles](01-principles.md) · [ADR-0002](adr/ADR-0002-source-acl-is-authority.md) · [ADR-0022](adr/ADR-0022-self-hosted-cell.md) · [PRD waves](03-prd.md#waves) · [E17 plan](../epics/E17-team-knowledge/README.md) |
+| 0.2 | 2026-11-22 | Platform lead | Plan accepted (the user, 2026-11-22), with every recommended decision | [Principles](01-principles.md) · [ADR-0002](adr/ADR-0002-source-acl-is-authority.md) · [ADR-0022](adr/ADR-0022-self-hosted-cell.md) · [PRD waves](03-prd.md#waves) · [E17 plan](../epics/E17-team-knowledge/README.md) |
 
 ## Summary
 
@@ -15,7 +15,7 @@ After W15 a company can run its whole brain on one machine it owns: it asks, get
 
 Today an answer ends at the answer. When nothing answers, the asker is told so and left there. Nobody knows who to ask, a good answer can't be kept or handed on, a new joiner has nowhere to start, a leaver's knowledge goes with them, and nobody sees which documents everyone relies on but nobody has touched in a year.
 
-This plan proposes **W16 Team Knowledge** (epic E17, SB-1701 to SB-1710): ten small features, each a few endpoints and a console or UI section on records the cell already keeps. None adds a service the cell must run, a store, a third-party Go module or a per-company code path. Every one keeps the source ACL as the authority (ADR-0002), counts what a person can't see instead of naming it, and writes its audit row first. The tenth puts a local model on the box, so a cell can answer with nothing leaving the machine at all.
+This plan adds **W16 Team Knowledge** (epic E17, SB-1701 to SB-1710): ten small features, each a few endpoints and a console or UI section on records the cell already keeps. None adds a service the cell must run, a store, a third-party Go module or a per-company code path. Every one keeps the source ACL as the authority (ADR-0002), counts what a person can't see instead of naming it, and writes its audit row first. The tenth puts a local model on the box, so a cell can answer with nothing leaving the machine at all.
 
 ## What blocks knowledge transfer in a team
 
@@ -141,10 +141,12 @@ Indicative footprint: a cell without the model runs as today on a 4 vCPU, 16 GB 
 
 ## Decisions for the user
 
-1. **Accept W16 as proposed**, or pick a subset. The recommended order is the slices in the [plan](../epics/E17-team-knowledge/README.md).
-2. **Notes approval (SB-1705).** Recommended: the steward's publish is the approval, bound to the note's hash, with segregation of duties off for notes. The alternative is a second steward approving each note, which is safer and slower.
-3. **Model server (SB-1710).** Recommended: llama.cpp's server (one binary, MIT licence, answers and embeddings, CPU or GPU). The alternative is Ollama, easier to try and heavier to pin.
-4. **Who may ask for a handover brief (SB-1707).** Recommended: the person's manager, a steward of one of their spaces, or the person.
+All four decided by the user on 2026-11-22: the whole of W16, and the recommended option for each of the others.
+
+1. **Accept W16 as proposed**, or pick a subset. **Decided:** all of W16, in the slice order of the [plan](../epics/E17-team-knowledge/README.md).
+2. **Notes approval (SB-1705).** Recommended: the steward's publish is the approval, bound to the note's hash, with segregation of duties off for notes (**decided**). The alternative is a second steward approving each note, which is safer and slower.
+3. **Model server (SB-1710).** Recommended: llama.cpp's server (one binary, MIT licence, answers and embeddings, CPU or GPU) (**decided**). The alternative is Ollama, easier to try and heavier to pin.
+4. **Who may ask for a handover brief (SB-1707).** Recommended: the person's manager, a steward of one of their spaces, or the person (**decided**).
 
 ## Sources
 

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 W16 accepted
+
+**Wave/slice:** W16 (plan) · **Status:** Planned
+
+**What:** the user accepted all of W16 and the recommended option for each decision: a steward's publish is a note's approval, bound to its hash (SB-1705); llama.cpp's server for the local model (SB-1710); a handover brief for the person's manager, a steward of one of their spaces, or the person (SB-1707). Tickets SB-1701 to SB-1710 are Open.
+
+**Why this way:** each recommendation was the smaller of the two options that keeps the laws as they are.
+
+**Learned:** nothing new.
+
+**Laws:** no change.
+
 ## 2026-11-22 W16 proposed: team knowledge
 
 **Wave/slice:** W16 (plan) · **Status:** Proposed, for the user's review

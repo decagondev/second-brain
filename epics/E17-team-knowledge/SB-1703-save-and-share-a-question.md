@@ -13,7 +13,7 @@ summary: "People re-find the same answer every week and forward answers to colle
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-api(3)`](../../manual/sb-api.3.md) |
 | Laws | LAW-01, LAW-02, LAW-07 |
 | Depends on | — |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -37,7 +37,7 @@ People re-find the same answer every week and forward answers to colleagues, and
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 

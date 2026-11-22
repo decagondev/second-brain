@@ -13,7 +13,7 @@ summary: "A sovereign cell that sends every question to a hosted model isn't ful
 | Manual | [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md), [`sb-cell(5)`](../../manual/sb-cell.5.md), [`sb-ingest(7)`](../../manual/sb-ingest.7.md), [`sb-release(7)`](../../manual/sb-release.7.md) |
 | Laws | LAW-02, LAW-06, LAW-07, LAW-13 |
 | Depends on | [SB-1701](SB-1701-search-without-the-model.md) |
-| Status | Proposed |
+| Status | Open |
 
 ## Why
 
@@ -38,7 +38,7 @@ A sovereign cell that sends every question to a hosted model isn't fully soverei
 
 ## Progress
 
-Proposed 2026-11-22 with W16 ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
 
 ## Definition of done
 
