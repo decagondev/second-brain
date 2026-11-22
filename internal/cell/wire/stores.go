@@ -29,12 +29,14 @@ import (
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/backup"
+	"example.com/second-brain/internal/core/health"
 	"example.com/second-brain/internal/core/holds"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
 	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/reviews"
 	"example.com/second-brain/internal/core/toolbus"
+	"sort"
 )
 
 // DirectoryStore is the directory as the cell uses it: SCIM writes it, sign-in, policy,
@@ -52,6 +54,7 @@ type DirectoryStore interface {
 type TraceStore interface {
 	ask.Store
 	ask.FeedbackStore
+	ask.FeedbackReader
 	ask.SpaceTagger
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
@@ -170,4 +173,15 @@ func (c *Cell) WormTarget(ctx context.Context) (backup.Target, error) {
 		return nil, err
 	}
 	return b, nil
+}
+
+// Health is the cell's health from its own records (sb-admin(3); SB-1607): the job
+// finishes every service writes and the sync records the ingest service writes.
+func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error) {
+	kinds := make([]string, 0, len(c.Parts().Connectors))
+	for k := range c.Parts().Connectors {
+		kinds = append(kinds, k)
+	}
+	sort.Strings(kinds)
+	return health.Build(ctx, c.Runs, c.Syncs, kinds, now)
 }

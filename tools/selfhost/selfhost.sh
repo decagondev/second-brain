@@ -268,15 +268,22 @@ if [ -n "$DEMO" ]; then
   if [ "$SB_IDP" = bundled ]; then
     if [ ! -f "$DIR/demo-password" ]; then
       pw=$(rand | head -c 20)
-      if printf '%s' "$pw" | compose run --rm -T idp user add --data /var/lib/sb-idp --email ann@acme.example \
-        --scim http://api:8080/scim/v2 --scim-token-file /run/sb/scim >/dev/null 2>&1; then
+      if out=$(printf '%s' "$pw" | compose run --rm -T idp user add --data /var/lib/sb-idp --email ann@acme.example \
+        --scim http://api:8080/scim/v2 --scim-token-file /run/sb/scim 2>/dev/null); then
         printf '%s' "$pw" >"$DIR/demo-password"
+        # The demo's one user is its operator too, so the console (health, the unhelpful-
+        # answer queue) can be tried: sb-operators, over SCIM like any group (sb-admin(3)).
+        id=$(printf '%s' "$out" | sed -nE 's/.* as (usr_[A-Za-z0-9_]+).*/\1/p' | tr -d '\r')
+        scim=$(cat "$V/api/vault/tenants/$SB_TENANT/scim")
+        [ -n "$id" ] && "$CURL" -ksf --resolve "$SB_HOST:$SB_PORT:127.0.0.1" -X POST "$BASE/scim/v2/Groups" -H "Authorization: Bearer $scim" \
+          -H "Content-Type: application/scim+json" -d "{\"displayName\":\"sb-operators\",\"members\":[{\"value\":\"$id\"}]}" >/dev/null ||
+          echo "selfhost: ann couldn't be made the demo's operator; the console will say so" >&2
       else
         die "the demo user couldn't be added; 'tools/selfhost/compose.sh run --rm idp user list --data /var/lib/sb-idp' shows who exists"
       fi
     fi
     echo "selfhost: $SB_TENANT is running at $BASE"
-    echo "selfhost: sign in at $BASE/login as ann@acme.example with the password in $DIR/demo-password"
+    echo "selfhost: sign in at $BASE/login as ann@acme.example with the password in $DIR/demo-password; $BASE/?admin is the console"
   else
     scim=$(cat "$V/api/vault/tenants/$SB_TENANT/scim")
     body=$("$CURL" -ks --resolve "$SB_HOST:$SB_PORT:127.0.0.1" -X POST "$BASE/scim/v2/Users" -H "Authorization: Bearer $scim" \

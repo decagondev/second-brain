@@ -112,6 +112,14 @@ func (s *Store) PutFeedback(_ context.Context, f ask.Feedback) error {
 	return nil
 }
 
+// GetFeedback implements ask.FeedbackReader.
+func (s *Store) GetFeedback(_ context.Context, tenant, trace string) (ask.Feedback, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	f, ok := s.feedback[tenant+"/"+trace]
+	return f, ok, nil
+}
+
 // FeedbackBetween implements ask.FeedbackStore: the tenant's feedback in [from, to), oldest first.
 func (s *Store) FeedbackBetween(_ context.Context, tenant string, from, to time.Time) ([]ask.Feedback, error) {
 	s.mu.Lock()

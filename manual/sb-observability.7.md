@@ -34,6 +34,7 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 | Freshness | p95 > 15 min | Sev-2 |
 | Unknown ratio | > 1% for 30 min on a connector | Sev-3 |
 | Budget pace | > 120% | Sev-3 |
+| Budget warning | this month's spend passes 80% of `budget_usd_month`, once a month (`budget_warning`, SB-1608) | Sev-3, to the tenant operator |
 | An access review is overdue | `sb_access_review_overdue{space}` is 1: a review open 14 days (sb-spaces(7), Access reviews) | Sev-2, to the tenant operator |
 | A scheduled job missed its run | `sb_job_overdue{job}` is 1 | Sev-1 for `anchor`, `backup`, `access`, `review`; Sev-2 otherwise (sb-runtime(7), Schedules) |
 
@@ -70,7 +71,7 @@ The model gateway checks two limits **before** every model call, and refuses wit
 - **Monthly budget:** the tenant's spend this calendar month (UTC), at the release's price table, plus the call's worst case (its `max_tokens` at the output price), must stay within `budget_usd_month`. Spend is metered from the provider's reported usage after each call.
 - **Rate limit:** 30 model calls per user per minute (a token bucket). A refused call is counted in `sb_budget_refusals_total{reason}` with `reason` either `budget` or `rate`.
 
-Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (`EUNAVAIL`). A budget pace above 120% of the month so far raises the Sev-3 alert above.
+Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (`EUNAVAIL`). A budget pace above 120% of the month so far raises the Sev-3 alert above. **Before the budget runs out** (SB-1608): the first metered call that takes the month's spend past 80% of `budget_usd_month` sends one `budget_warning` alert (Sev-3, `where` `budget`, `ref` the month, e.g. `2027-03`), so operators hear of it while answers still work. It goes once a month, whatever the number of services or restarts: a marker in the usage ledger (`state/usage/once-budget-warning-TENANT-MONTH`) is made with an exclusive create before the alert is sent, so only the first wins; a meter or marker that can't be read sends nothing, and the next metered call tries again. A budget of 0 sends none.
 
 ### Disaster-recovery game day, exactly (SB-613)
 
@@ -111,7 +112,7 @@ Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report g
 | Actions | proposed, approved, rejected, expired, `Ran` with a receipt, `DidNotRun` |
 | Spend | model tokens and their cost at the release's price table |
 
-The same numbers answer `GET /v1/admin/usage?week=2027-W10` (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat).
+The same numbers answer `GET /v1/admin/usage?week=2027-W10` (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat). Exactly (SB-1608): the `report` job writes it to `state/reports/WEEK.md` and posts it as JSON, `{ "kind": "weekly_report", "tenant", "week", "markdown" }`, to `alerts.report_webhook`, or to `alerts.webhook` when that is the only one set (sb-cell(5)). A delivery that fails after its retries fails the run, so its missed finish raises `job_missed`; with neither webhook set the file is the delivery.
 
 ### Telemetry rules
 

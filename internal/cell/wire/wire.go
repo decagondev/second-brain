@@ -99,6 +99,7 @@ type Cell struct {
 	// The parts the ingest and jobs services run (SB-1503, SB-1504).
 	Cursors   ports.CursorStore
 	Runs      runsfs.Dir
+	Syncs     runsfs.Syncs // each connector's last sync (SB-1607)
 	Usage     *usagefs.Ledger
 	Report    report.Source // the weekly report's numbers
 	Reviews   reviews.Store
@@ -262,6 +263,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.Alerter = al
 	c.Cursors = cursorfs.Store{Root: cfg.State}
 	c.Runs = runsfs.Dir{Root: filepath.Join(cfg.State, "runs")}
+	c.Syncs = runsfs.Syncs{Root: filepath.Join(cfg.State, "runs")}
 	c.Usage = &usagefs.Ledger{Root: filepath.Join(cfg.State, "usage"), Tenant: tenant, Next: c.Metrics, Now: time.Now}
 	c.Kill = &kill.Checker{Tenant: tenant, Store: killfs.Dir{Root: filepath.Join(cfg.State, "kill")}, Now: time.Now}
 	if err := c.Kill.Refresh(ctx); err != nil {
@@ -288,7 +290,13 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory}
 	c.model = func(m manifest.Tenant) (ports.Model, error) {
 		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
-			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}}
+			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}, Once: c.Usage,
+			// The warning goes through whichever alerter the cell has when it fires (SB-1608).
+			Warn: func(ctx context.Context, month string, _ float64) {
+				if c.Alerter != nil {
+					_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev3", Kind: "budget_warning", Tenant: tenant, Where: "budget", Ref: month})
+				}
+			}}
 		return buildModel(cfg, tenant, secret, redact, c.Usage, guard)
 	}
 
@@ -423,12 +431,14 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Drafts{Agent: ask.Drafts{Agent: agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
-	api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
+	admin := api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret}.Register(mux)
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret}
+	admin.Register(mux)
+	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now}.Register(mux)
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,

@@ -21,12 +21,24 @@ type Sender struct {
 }
 
 // Alert implements canary.Alerter. It retries once on a network error or 5xx.
-func (s Sender) Alert(ctx context.Context, a canary.Alert) error {
+func (s Sender) Alert(ctx context.Context, a canary.Alert) error { return s.Post(ctx, a) }
+
+// Report is the weekly report as it is posted (sb-observability(7), Weekly leadership
+// report; SB-1608): the report's Markdown, which holds counts and never content.
+type Report struct {
+	Kind     string `json:"kind"` // weekly_report
+	Tenant   string `json:"tenant"`
+	Week     string `json:"week"`
+	Markdown string `json:"markdown"`
+}
+
+// Post sends v as JSON, retrying once on a network error or 5xx.
+func (s Sender) Post(ctx context.Context, v any) error {
 	u, err := url.Parse(s.URL)
 	if err != nil || u.Scheme != "https" || u.Host == "" {
 		return fmt.Errorf("webhook: alert URL must be https")
 	}
-	b, err := json.Marshal(a)
+	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 	"unicode/utf8"
 
@@ -29,6 +30,15 @@ type Feedback struct {
 	Comment                      string
 	At                           time.Time
 	Claims, Uncited, Refused     int
+	// ReviewedBy and ReviewedAt: the operator who reviewed it in the queue (SB-1609). A
+	// later feedback on the trace replaces the record, and so puts it back in the queue.
+	ReviewedBy string
+	ReviewedAt time.Time
+}
+
+// FeedbackReader finds one trace's feedback (the operators' queue, SB-1609).
+type FeedbackReader interface {
+	GetFeedback(ctx context.Context, tenant, trace string) (Feedback, bool, error)
 }
 
 // FeedbackStore keeps feedback for one cell. Put replaces any earlier feedback on a trace.
@@ -123,4 +133,107 @@ func (f Feedbacks) Export(ctx context.Context, tenant string, from, to time.Time
 		}
 	}
 	return len(fs), nil
+}
+
+// QueueWindow is how far back the operators' queue looks (sb-admin(3)).
+const QueueWindow = 90 * 24 * time.Hour
+
+// QueueItem is one answer in the operators' feedback queue: ids, counts, the trace's policy
+// decisions counted by verdict and reason, and the user's own comment. Never the question,
+// the answer, or the cites the answer was refused (SB-1609).
+type QueueItem struct {
+	Trace         string          `json:"trace"`
+	At            time.Time       `json:"at"`
+	User          string          `json:"user"`
+	Release       string          `json:"release"`
+	Rating        string          `json:"rating"`
+	WrongCitation string          `json:"wrong_citation,omitempty"`
+	Comment       string          `json:"comment,omitempty"`
+	Claims        int             `json:"claims"`
+	Uncited       int             `json:"uncited"`
+	Refused       int             `json:"refused"`
+	Decisions     []DecisionCount `json:"decisions"`
+	Reviewed      *Review         `json:"reviewed,omitempty"`
+}
+
+// DecisionCount is how many of a trace's retrieval decisions had one verdict and reason.
+type DecisionCount struct {
+	Verdict string `json:"verdict"`
+	Reason  string `json:"reason"`
+	Count   int    `json:"count"`
+}
+
+// Review is who marked an item reviewed, and when.
+type Review struct {
+	By string    `json:"by"`
+	At time.Time `json:"at"`
+}
+
+// Queue lists one tenant's feedback of a rating from the last QueueWindow, newest first,
+// leaving out reviewed items unless withReviewed. A trace that has expired keeps its
+// counts and has no decisions.
+func Queue(ctx context.Context, fs FeedbackStore, traces Store, tenant, rating string, withReviewed bool, now time.Time) ([]QueueItem, error) {
+	if rating != "up" && rating != "down" {
+		return nil, fmt.Errorf("%w: rating must be up or down", ErrInvalid)
+	}
+	all, err := fs.FeedbackBetween(ctx, tenant, now.Add(-QueueWindow), now.Add(time.Second))
+	if err != nil {
+		return nil, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
+	}
+	out := []QueueItem{}
+	for i := len(all) - 1; i >= 0; i-- {
+		f := all[i]
+		if f.Tenant != tenant {
+			return nil, fmt.Errorf("feedback: store returned another tenant's feedback")
+		}
+		if f.Rating != rating || (f.ReviewedBy != "" && !withReviewed) {
+			continue
+		}
+		it := QueueItem{Trace: f.Trace, At: f.At.UTC(), User: f.User, Release: f.Release, Rating: f.Rating, WrongCitation: f.WrongCitation,
+			Comment: f.Comment, Claims: f.Claims, Uncited: f.Uncited, Refused: f.Refused, Decisions: []DecisionCount{}}
+		if f.ReviewedBy != "" {
+			it.Reviewed = &Review{By: f.ReviewedBy, At: f.ReviewedAt.UTC()}
+		}
+		t, found, err := traces.GetTrace(ctx, tenant, f.Trace)
+		if err != nil {
+			return nil, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
+		}
+		if found {
+			counts := map[[2]string]int{}
+			for _, d := range t.Decisions {
+				counts[[2]string{d.Verdict, d.Reason}]++
+			}
+			for k, n := range counts {
+				it.Decisions = append(it.Decisions, DecisionCount{Verdict: k[0], Reason: k[1], Count: n})
+			}
+			sort.Slice(it.Decisions, func(a, b int) bool {
+				if it.Decisions[a].Verdict != it.Decisions[b].Verdict {
+					return it.Decisions[a].Verdict < it.Decisions[b].Verdict
+				}
+				return it.Decisions[a].Reason < it.Decisions[b].Reason
+			})
+		}
+		out = append(out, it)
+	}
+	return out, nil
+}
+
+// MarkReviewed marks a trace's feedback reviewed by an operator. first is false when it
+// was already reviewed, which keeps the first review.
+func MarkReviewed(ctx context.Context, fs FeedbackStore, fr FeedbackReader, tenant, trace, by string, now time.Time) (Feedback, bool, error) {
+	f, found, err := fr.GetFeedback(ctx, tenant, trace)
+	if err != nil {
+		return Feedback{}, false, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
+	}
+	if !found || f.Tenant != tenant {
+		return Feedback{}, false, ErrNotFound
+	}
+	if f.ReviewedBy != "" {
+		return f, false, nil
+	}
+	f.ReviewedBy, f.ReviewedAt = by, now.UTC()
+	if err := fs.PutFeedback(ctx, f); err != nil {
+		return Feedback{}, false, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
+	}
+	return f, true, nil
 }

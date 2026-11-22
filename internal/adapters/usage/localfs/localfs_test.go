@@ -54,3 +54,19 @@ func TestLedger(t *testing.T) {
 		t.Fatal("a damaged ledger must be an error, never a short count")
 	}
 }
+
+// SB-1608: only the first claim of a key wins, across ledgers over the same directory.
+func TestFirstClaimWins(t *testing.T) {
+	dir := t.TempDir()
+	a, b := &Ledger{Root: dir}, &Ledger{Root: dir}
+	ctx := context.Background()
+	if first, err := a.First(ctx, "budget-warning-acme-logistics-2027-03"); err != nil || !first {
+		t.Fatalf("first claim: %v %v", first, err)
+	}
+	if first, _ := b.First(ctx, "budget-warning-acme-logistics-2027-03"); first {
+		t.Fatal("a second ledger won the same claim")
+	}
+	if _, err := a.First(ctx, "../x"); err == nil {
+		t.Fatal("an unsafe key was claimed")
+	}
+}

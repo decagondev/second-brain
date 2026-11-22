@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 S15.4 Cell health, a budget warning and the unhelpful-answer queue (SB-1607 to SB-1609)
+
+**Wave/slice:** W15 / S15.4 · **Status:** Done. **W15 built**; SB-1605's real-VM run is in review.
+
+**What:** `internal/core/health` and `GET /v1/admin/health`, from the job records and a new per-connector sync record the ingest service writes; the budget guard's `budget_warning` at 80%, once a month; the weekly report posted to a webhook; `ask.Queue`, `ask.MarkReviewed`, `GET /v1/admin/feedback` and `POST /v1/admin/feedback/TRACE/reviewed`; the console's health panel and queue, first on the page. The demo's user is now its operator, so the console can be tried.
+
+**Why this way:** Health reads the same records the watchdog and the ingest service already keep, so the panel can't disagree with the alerts, and it refuses to draw a report from a record it can't read rather than show green. The warning's once-a-month guarantee lives in the usage ledger as an exclusive create, because the api, ingest and jobs services each meter calls and any of them can be first. The queue shows what an operator needs to triage, counts and the asker's own words, and counts the retrieval decisions instead of listing their cites, because a refused cite names a document the operator may not be allowed to see.
+
+**Learned:** Every admin call writes its own policy decision row, so a test that counts audit rows to find "one new row" counts the guard's decision too; tests now look for the row by its subject. A console section that one older cell can't answer shouldn't blank the others, so health and the queue load on their own.
+
+**Laws:** LAW-03 (health never shows an unreadable record as healthy), LAW-13 (stale connectors are visible), LAW-14 (the feedback loop on uncited and refused answers reaches someone), LAW-16 (the report and the warning come from the cell's own records).
+
 ## 2026-11-21 S15.3 A sovereign install and a folder connector (SB-1605, SB-1606)
 
 **Wave/slice:** W15 / S15.3 · **Status:** SB-1606 Done, SB-1605 In review (a real VM run)

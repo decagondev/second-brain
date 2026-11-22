@@ -90,11 +90,21 @@ func (r recorder) SyncSucceeded(tenant, connector string, at time.Time) {
 	r.s.mu.Unlock()
 	r.s.Cell.Metrics.Set("sb_ingest_last_success_age_seconds", "Age of a connector's last successful sync (sb-ingest(7)).",
 		map[string]string{"tenant": tenant, "connector": connector}, 0)
+	r.record(r.s.Cell.Syncs.Succeeded(context.Background(), connector, at))
+}
+
+// record counts a sync record that couldn't be written: the console then shows the
+// connector stale, which is the safe way to be wrong (SB-1607).
+func (r recorder) record(err error) {
+	if err != nil {
+		r.s.Cell.Metrics.Add("sb_health_record_failures_total", "Sync records the console reads that couldn't be written (SB-1607).", nil, 1)
+	}
 }
 
 func (r recorder) SyncFailed(tenant, connector string) {
 	r.s.Cell.Metrics.Add("sb_ingest_sync_failures_total", "Failed syncs by connector (sb-ingest(7)).",
 		map[string]string{"tenant": tenant, "connector": connector}, 1)
+	r.record(r.s.Cell.Syncs.Failed(context.Background(), connector, r.s.now()))
 }
 
 // Reroute re-routes every connector's documents to the cell's current spaces, before the

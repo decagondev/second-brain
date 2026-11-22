@@ -13,6 +13,9 @@ sb-admin — manifest diffs, kill switches, audit and usage
 ## SYNOPSIS
 
 ```http
+GET  /v1/admin/health
+GET  /v1/admin/feedback?rating=down[&reviewed=true]
+POST /v1/admin/feedback/TRACE/reviewed
 GET  /v1/admin/manifest
 POST /v1/admin/manifest/diff
 POST /v1/admin/kill
@@ -38,7 +41,13 @@ GET  /v1/holds                                (Legal stewards, operators)
 
 ## DESCRIPTION
 
-The console (`/?admin`) is a client of this API and has no other powers. Beside the kill switches and the applied manifest it has the open steward proposals, each with its diff and its hash, approved only by sending back the hash shown or rejected with a reason, and every access review with its state, `overdue` and a link to its evidence (SB-1509; the stewards' own screen is in sb-spaces(7)). Every endpoint needs the `operator` role (Cedar policy) except `usage` and `costs`, which `approver` may also read.
+The console (`/?admin`) is a client of this API and has no other powers. It opens on the cell's health, overdue jobs and stale connectors first (SB-1607), then the queue of answers people marked unhelpful (SB-1609). Beside the kill switches and the applied manifest it has the open steward proposals, each with its diff and its hash, approved only by sending back the hash shown or rejected with a reason, and every access review with its state, `overdue` and a link to its evidence (SB-1509; the stewards' own screen is in sb-spaces(7)). Every endpoint needs the `operator` role (Cedar policy) except `usage` and `costs`, which `approver` may also read.
+
+**`GET /v1/admin/health`** is the cell's health from its own records (SB-1607): `{ "jobs": [{ "name", "law", "last_finish", "overdue", "unreadable" }], "connectors": [{ "kind", "last_success", "last_failure", "failures", "stale" }], "at" }`. A job is overdue when it hasn't finished within its grace (sb-runtime(7), Schedules), or has never finished, or its record can't be read (`unreadable`), exactly as the watchdog decides. A connector is stale when its last successful sync is older than the 15-minute freshness target or it has none; `failures` counts the syncs that failed since its last success. Overdue jobs and stale connectors come first. It reads only finish times and counts, never content, and a store it can't read answers `EUNAVAIL`, never a healthy report.
+
+**`GET /v1/admin/feedback?rating=down`** is the queue of answers people marked unhelpful (SB-1609), newest first, the last 90 days: `{ "items": [{ "trace", "at", "user", "release", "rating", "wrong_citation", "comment", "claims", "uncited", "refused", "decisions": [{ "verdict", "reason", "count" }], "reviewed": { "by", "at" } }] }`. Each item carries the trace's counts, its recorded retrieval decisions counted by verdict and reason (`allow`/`allowed`, `refuse`/`source_denied` and so on), and the user's own comment, which they wrote to be read; it never carries the question, the answer text or the cites, so it shows nothing of a document the operator couldn't open. A trace that has expired keeps its counts and has no decisions. Reviewed items are left out unless `reviewed=true`. `rating` is `down` or `up`; anything else is `EINVAL`.
+
+**`POST /v1/admin/feedback/TRACE/reviewed`** marks an item reviewed by the operator who sends it, and records that in the audit log (`config` row, subject `feedback:TRACE`). Marking an item twice keeps the first review. A trace with no feedback is `EINVAL`.
 
 **`GET /v1/admin/manifest`** returns the applied manifest and its git commit.
 

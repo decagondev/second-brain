@@ -42,6 +42,11 @@ type Guard struct {
 	Meter      Meter
 	Metrics    Counter
 	Now        func() time.Time
+	// Warn is told once a month when spend passes WarnAt of the budget (SB-1608); Once
+	// decides which call is the first, across every service and restart. Either nil sends
+	// none.
+	Warn func(ctx context.Context, month string, spent float64)
+	Once Once
 
 	mu      sync.Mutex
 	buckets map[string]*bucket
@@ -72,10 +77,39 @@ func (g *Guard) Allow(ctx context.Context, user string, maxTokens int) error {
 	return nil
 }
 
-// Record meters a finished call from the provider's reported usage.
+// WarnAt is the share of the monthly budget that sends the budget warning.
+const WarnAt = 0.8
+
+// Once reports whether this is the first time key is claimed; only one caller ever wins.
+type Once interface {
+	First(ctx context.Context, key string) (bool, error)
+}
+
+// Record meters a finished call from the provider's reported usage, and sends the month's
+// budget warning if this call took spend past WarnAt of the budget.
 func (g *Guard) Record(ctx context.Context, input, output int) error {
 	usd := float64(input)/1e6*g.Price.InputPerM + float64(output)/1e6*g.Price.OutputPerM
-	return g.Meter.Add(ctx, g.Tenant, g.month(), usd)
+	month := g.month()
+	if err := g.Meter.Add(ctx, g.Tenant, month, usd); err != nil {
+		return err
+	}
+	g.warn(ctx, month)
+	return nil
+}
+
+// warn sends the budget warning once a month. A meter or marker it can't read sends
+// nothing now; the next metered call tries again.
+func (g *Guard) warn(ctx context.Context, month string) {
+	if g.Warn == nil || g.Once == nil || g.MonthlyUSD <= 0 {
+		return
+	}
+	spent, err := g.Meter.Spent(ctx, g.Tenant, month)
+	if err != nil || spent < WarnAt*g.MonthlyUSD {
+		return
+	}
+	if first, err := g.Once.First(ctx, "budget-warning-"+g.Tenant+"-"+month); err == nil && first {
+		g.Warn(ctx, month, spent)
+	}
 }
 
 func (g *Guard) take(user string) bool {

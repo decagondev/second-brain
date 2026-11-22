@@ -205,3 +205,24 @@ func (s *Spend) Spent(ctx context.Context, tenant, month string) (float64, error
 func (s *Spend) Add(_ context.Context, tenant, month string, usd float64) error {
 	return s.l.append(entry{At: s.l.Now().UTC(), Kind: "spend_usd", N: usd, Tenant: tenant, Month: month})
 }
+
+// First implements budget.Once with an exclusive create under ROOT, so across every
+// service of a cell only the first claim of a key wins (SB-1608).
+func (l *Ledger) First(_ context.Context, key string) (bool, error) {
+	for _, r := range key {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+			return false, fmt.Errorf("usage: unsafe key %q", key)
+		}
+	}
+	if err := os.MkdirAll(l.Root, 0o700); err != nil {
+		return false, err
+	}
+	f, err := os.OpenFile(filepath.Join(l.Root, "once-"+key), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if errors.Is(err, fs.ErrExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, f.Close()
+}

@@ -10,6 +10,33 @@ interface Proposal {
   diff: string[];
 }
 
+// The cell's health (sb-admin(3), GET /v1/admin/health; SB-1607).
+export interface Health {
+  jobs: { name: string; law?: string; last_finish: string | null; overdue: boolean; unreadable?: boolean }[];
+  connectors: { kind: string; last_success: string | null; last_failure: string | null; failures: number; stale: boolean }[];
+  at: string;
+}
+
+// One answer in the unhelpful-answer queue (SB-1609): counts, decisions and the asker's own
+// comment, never the question or the answer.
+export interface QueueItem {
+  trace: string;
+  at: string;
+  user: string;
+  rating: string;
+  wrong_citation?: string;
+  comment?: string;
+  claims: number;
+  uncited: number;
+  refused: number;
+  decisions: { verdict: string; reason: string; count: number }[];
+  reviewed?: { by: string; at: string };
+}
+
+function when(t: string | null): string {
+  return t ? new Date(t).toISOString().replace("T", " ").slice(0, 16) + " UTC" : "never";
+}
+
 interface Switch {
   scope: string;
   reason: string;
@@ -37,9 +64,45 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [applyText, setApplyText] = useState<string>();
   const [rejectReason, setRejectReason] = useState("");
+  const [health, setHealth] = useState<Health>();
+  const [healthError, setHealthError] = useState<string>();
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [queueError, setQueueError] = useState<string>();
   const ids = { scope: useId(), name: useId(), reason: useId(), reject: useId() };
 
+  // Health and the queue load on their own, so one the cell can't answer never hides the rest.
+  async function loadHealth() {
+    try {
+      const h = (await call(fetcher, "GET", "/v1/admin/health")) as Partial<Health>;
+      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "" });
+      setHealthError(undefined);
+    } catch (e) {
+      setHealth(undefined);
+      setHealthError((e as Error).message);
+    }
+  }
+  async function loadQueue() {
+    try {
+      const q = await call(fetcher, "GET", "/v1/admin/feedback?rating=down");
+      setQueue((q.items as QueueItem[]) ?? []);
+      setQueueError(undefined);
+    } catch (e) {
+      setQueueError((e as Error).message);
+    }
+  }
+  async function reviewed(item: QueueItem) {
+    try {
+      await call(fetcher, "POST", `/v1/admin/feedback/${encodeURIComponent(item.trace)}/reviewed`);
+      setStatus(`Marked ${item.trace} reviewed.`);
+      await loadQueue();
+    } catch (e) {
+      setStatus((e as Error).message);
+    }
+  }
+
   async function load() {
+    void loadHealth();
+    void loadQueue();
     try {
       const m = await call(fetcher, "GET", "/v1/admin/manifest");
       setManifest(String(m.manifest ?? ""));
@@ -116,6 +179,67 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   return (
     <main>
       <h1>Admin console</h1>
+      <section aria-label="Cell health">
+        <h2>Cell health</h2>
+        {healthError ? (
+          <p className="error">Health can't be shown: {healthError}</p>
+        ) : !health ? (
+          <p>Loading health…</p>
+        ) : (
+          <>
+            <h3>Connectors</h3>
+            {health.connectors.length === 0 ? (
+              <p>No connectors.</p>
+            ) : (
+              <ul>
+                {health.connectors.map((c) => (
+                  <li key={c.kind} className={c.stale ? "attention" : undefined}>
+                    <strong>{c.kind}</strong>: {c.stale ? "stale" : "fresh"}, last synced {when(c.last_success)}
+                    {c.failures > 0 ? `, ${c.failures} failed ${c.failures === 1 ? "sync" : "syncs"} since (last ${when(c.last_failure)})` : ""}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <h3>Scheduled jobs</h3>
+            <ul>
+              {health.jobs.map((j) => (
+                <li key={j.name} className={j.overdue ? "attention" : undefined}>
+                  <strong>{j.name}</strong>
+                  {j.law ? ` (${j.law})` : ""}: {j.overdue ? (j.unreadable ? "overdue, its record can't be read" : "overdue") : "on time"}, last finished {when(j.last_finish)}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+      <section aria-label="Unhelpful answers">
+        <h2>Unhelpful answers</h2>
+        {queueError ? (
+          <p className="error">The queue can't be shown: {queueError}</p>
+        ) : queue.length === 0 ? (
+          <p>No unhelpful answers to review.</p>
+        ) : (
+          <ul>
+            {queue.map((q) => (
+              <li key={q.trace}>
+                <article aria-label={`Feedback on ${q.trace}`}>
+                  <p>
+                    <strong>{q.trace}</strong> from {q.user}, {when(q.at)}: {q.claims} claims, {q.uncited} uncited, {q.refused} refused
+                    {q.wrong_citation ? `; wrong citation ${q.wrong_citation}` : ""}
+                  </p>
+                  {q.comment && <blockquote>{q.comment}</blockquote>}
+                  <p>
+                    Decisions: {q.decisions.length === 0 ? "none recorded" : q.decisions.map((d) => `${d.verdict} ${d.reason} ×${d.count}`).join(", ")}
+                  </p>
+                  <button type="button" onClick={() => reviewed(q)}>
+                    Mark {q.trace} reviewed
+                  </button>
+                </article>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <section aria-label="Kill switches">
         <h2>Kill switches</h2>
         {switches.length === 0 ? (

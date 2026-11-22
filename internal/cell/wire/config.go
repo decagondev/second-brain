@@ -44,6 +44,8 @@ type Config struct {
 	} `json:"chat"`
 	Alerts struct {
 		Webhook string `json:"webhook"`
+		// ReportWebhook is where the weekly report is posted; "" is Webhook (SB-1608).
+		ReportWebhook string `json:"report_webhook"`
 	} `json:"alerts"`
 	Backups []Backup `json:"backups"`
 	Custody struct {
@@ -158,9 +160,9 @@ func Parse(b []byte) (Config, error) {
 	if c.Model.Provider != "extractive" && (c.Model.Price.InPerM <= 0 || c.Model.Price.OutPerM <= 0) {
 		return Config{}, fmt.Errorf("%w: model.provider %s needs model.price, or the budget can't be kept", ErrConfig, c.Model.Provider)
 	}
-	if c.Alerts.Webhook != "" {
-		if u, err := url.Parse(c.Alerts.Webhook); err != nil || u.Scheme != "https" || u.Host == "" {
-			return Config{}, fmt.Errorf("%w: alerts.webhook must be an https URL", ErrConfig)
+	for field, v := range map[string]string{"alerts.webhook": c.Alerts.Webhook, "alerts.report_webhook": c.Alerts.ReportWebhook} {
+		if u, err := url.Parse(v); v != "" && (err != nil || u.Scheme != "https" || u.Host == "") {
+			return Config{}, fmt.Errorf("%w: %s must be an https URL", ErrConfig, field)
 		}
 	}
 	if err := c.Release.check(); err != nil {

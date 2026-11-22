@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -18,6 +19,7 @@ import (
 	"time"
 
 	accessfs "example.com/second-brain/internal/adapters/access/localfs"
+	"example.com/second-brain/internal/adapters/alert/webhook"
 	backupfs "example.com/second-brain/internal/adapters/backup/localfs"
 	"example.com/second-brain/internal/adapters/backup/s3"
 	wrapfs "example.com/second-brain/internal/adapters/keywrap/localfs"
@@ -48,6 +50,9 @@ type Service struct {
 	Ingest *ingestsvc.Service
 	// Now is the clock; nil is the real one.
 	Now func() time.Time
+	// HTTP posts the weekly report; nil is a client with a 30-second timeout (tests set a
+	// TLS test server's).
+	HTTP *http.Client
 }
 
 func (s *Service) now() time.Time {
@@ -250,9 +255,34 @@ func (s *Service) report(ctx context.Context) error {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			return err
 		}
-		return os.WriteFile(filepath.Join(dir, week+".md"), []byte(md), 0o600)
+		if err := os.WriteFile(filepath.Join(dir, week+".md"), []byte(md), 0o600); err != nil {
+			return err
+		}
+		return s.deliver(ctx, week, md)
 	})
 	return err
+}
+
+// deliver posts the weekly report to the report webhook, or the alert webhook when that is
+// the only one set (SB-1608). A delivery that fails fails the run, so the watchdog sees it.
+func (s *Service) deliver(ctx context.Context, week, md string) error {
+	a := s.Cell.Config.Alerts
+	to := a.ReportWebhook
+	if to == "" {
+		to = a.Webhook
+	}
+	if to == "" {
+		return nil // the file is the delivery
+	}
+	hc := s.HTTP
+	if hc == nil {
+		hc = &http.Client{Timeout: 30 * time.Second}
+	}
+	err := webhook.Sender{URL: to, HTTP: hc}.Post(ctx, webhook.Report{Kind: "weekly_report", Tenant: s.Cell.Config.Tenant, Week: week, Markdown: md})
+	if err != nil {
+		return fmt.Errorf("jobs: the weekly report wasn't delivered: %w", err)
+	}
+	return nil
 }
 
 // access is the LAW-17 re-check for a tenant-custody cell; a factory-custody cell has no

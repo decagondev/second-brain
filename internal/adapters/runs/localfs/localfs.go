@@ -5,6 +5,7 @@ package localfs
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -13,6 +14,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"example.com/second-brain/internal/core/health"
 )
 
 // Dir is rooted at Root.
@@ -59,6 +62,68 @@ func (d Dir) Finished(_ context.Context, job string, at time.Time) error {
 	}
 	tmp := p + ".tmp"
 	if err := os.WriteFile(tmp, []byte(at.UTC().Format(time.RFC3339Nano)+"\n"), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, p)
+}
+
+// Syncs keeps each connector's sync record (health.Syncs; SB-1607) as ROOT/sync-KIND.json:
+// the ingest service writes it after each sync, and the console's health reads it.
+type Syncs struct{ Root string }
+
+func (s Syncs) path(kind string) (string, error) {
+	if !safe.MatchString(kind) {
+		return "", fmt.Errorf("runs: unsafe connector kind %q", kind)
+	}
+	return filepath.Join(s.Root, "sync-"+kind+".json"), nil
+}
+
+// Sync implements health.Syncs.
+func (s Syncs) Sync(_ context.Context, kind string) (health.Sync, bool, error) {
+	p, err := s.path(kind)
+	if err != nil {
+		return health.Sync{}, false, err
+	}
+	b, err := os.ReadFile(p)
+	if errors.Is(err, fs.ErrNotExist) {
+		return health.Sync{}, false, nil
+	}
+	if err != nil {
+		return health.Sync{}, false, err
+	}
+	var x health.Sync
+	if err := json.Unmarshal(b, &x); err != nil {
+		return health.Sync{}, false, fmt.Errorf("runs: sync-%s.json: %w", kind, err)
+	}
+	return x, true, nil
+}
+
+// Succeeded records a successful sync, clearing the failures.
+func (s Syncs) Succeeded(ctx context.Context, kind string, at time.Time) error {
+	return s.update(ctx, kind, func(x *health.Sync) { x.LastSuccess, x.Failures = at.UTC(), 0 })
+}
+
+// Failed records a failed sync.
+func (s Syncs) Failed(ctx context.Context, kind string, at time.Time) error {
+	return s.update(ctx, kind, func(x *health.Sync) { x.LastFailure = at.UTC(); x.Failures++ })
+}
+
+func (s Syncs) update(ctx context.Context, kind string, f func(*health.Sync)) error {
+	x, _, err := s.Sync(ctx, kind)
+	if err != nil {
+		x = health.Sync{} // an unreadable record is replaced by the next sync's
+	}
+	f(&x)
+	p, err := s.path(kind)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(s.Root, 0o700); err != nil {
+		return err
+	}
+	b, _ := json.Marshal(x)
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
 		return err
 	}
 	return os.Rename(tmp, p)

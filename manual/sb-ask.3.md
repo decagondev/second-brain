@@ -97,7 +97,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | Repeats | One feedback per trace: a later one replaces the earlier one |
 | Response | `200 { "trace": "tr_…", "stored": true }` |
 
-Feedback is stored against the trace id with the release, and exported weekly (Monday 00:00 UTC, the previous seven days) as JSON lines for the pilot review. Each line holds the trace, release, rating, wrong citation, comment, time, and the answer's claim, uncited and refused counts, but never the question or the answer text. Reviewers who need those open the trace with auditor rights.
+Feedback is stored against the trace id with the release, and exported weekly (Monday 00:00 UTC, the previous seven days) as JSON lines for the pilot review. Each line holds the trace, release, rating, wrong citation, comment, time, and the answer's claim, uncited and refused counts, but never the question or the answer text. Reviewers who need those open the trace with auditor rights. Operators see every unhelpful answer in the console's queue, `GET /v1/admin/feedback?rating=down` (sb-admin(3); SB-1609), with the same counts, the trace's policy decisions and the asker's comment, and mark each one reviewed. A later feedback on a reviewed trace puts it back in the queue.
 
 ### The web UI
 

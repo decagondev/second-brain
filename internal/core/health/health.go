@@ -1,0 +1,93 @@
+// Package health is the cell's health from its own records (sb-admin(3), GET
+// /v1/admin/health; SB-1607): each scheduled job's last finish and whether it is overdue,
+// decided exactly as the watchdog decides it, and each connector's last successful sync,
+// its failures since, and whether it is stale. It reads finish times and counts only.
+package health
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"sort"
+	"time"
+
+	"example.com/second-brain/internal/core/ingest"
+	"example.com/second-brain/internal/core/schedule"
+)
+
+// FreshnessSLA is how old a connector's last success may be before it is stale: the
+// ingest freshness target (sb-ingest(7)).
+const FreshnessSLA = ingest.FreshnessSLA
+
+// Sync is one connector's sync record.
+type Sync struct {
+	LastSuccess time.Time `json:"last_success"`
+	LastFailure time.Time `json:"last_failure"`
+	Failures    int       `json:"failures"` // since the last success
+}
+
+// Syncs keeps each connector's sync record. found is false for a connector that has never
+// synced; an unreadable record is an error, never "never synced".
+type Syncs interface {
+	Sync(ctx context.Context, kind string) (s Sync, found bool, err error)
+}
+
+// Job is one scheduled job's health.
+type Job struct {
+	Name       string     `json:"name"`
+	Law        string     `json:"law,omitempty"`
+	LastFinish *time.Time `json:"last_finish"`
+	Overdue    bool       `json:"overdue"`
+	Unreadable bool       `json:"unreadable,omitempty"`
+}
+
+// Connector is one connector's health.
+type Connector struct {
+	Kind        string     `json:"kind"`
+	LastSuccess *time.Time `json:"last_success"`
+	LastFailure *time.Time `json:"last_failure"`
+	Failures    int        `json:"failures"`
+	Stale       bool       `json:"stale"`
+}
+
+// Report is the cell's health, overdue and stale items first.
+type Report struct {
+	Jobs       []Job       `json:"jobs"`
+	Connectors []Connector `json:"connectors"`
+	At         time.Time   `json:"at"`
+}
+
+// ErrUnavailable is a store that can't be read: the report would claim health it can't see.
+var ErrUnavailable = errors.New("health: EUNAVAIL")
+
+func ptr(t time.Time, ok bool) *time.Time {
+	if !ok || t.IsZero() {
+		return nil
+	}
+	u := t.UTC()
+	return &u
+}
+
+// Build reads every job's and every connector's record. An unreadable job record is that
+// job overdue, as the watchdog treats it; an unreadable connector record fails the report.
+func Build(ctx context.Context, runs schedule.Runs, syncs Syncs, kinds []string, now time.Time) (Report, error) {
+	r := Report{Jobs: []Job{}, Connectors: []Connector{}, At: now.UTC()}
+	for _, j := range schedule.Jobs {
+		at, found, err := runs.LastFinish(ctx, j.Name)
+		h := Job{Name: j.Name, Law: j.Law, LastFinish: ptr(at, found && err == nil), Unreadable: err != nil}
+		h.Overdue = err != nil || !found || now.Sub(at) > j.Grace()
+		r.Jobs = append(r.Jobs, h)
+	}
+	for _, k := range kinds {
+		s, found, err := syncs.Sync(ctx, k)
+		if err != nil {
+			return Report{}, fmt.Errorf("%w: connector %s: %v", ErrUnavailable, k, err)
+		}
+		c := Connector{Kind: k, LastSuccess: ptr(s.LastSuccess, found), LastFailure: ptr(s.LastFailure, found), Failures: s.Failures}
+		c.Stale = !found || s.LastSuccess.IsZero() || now.Sub(s.LastSuccess) > FreshnessSLA
+		r.Connectors = append(r.Connectors, c)
+	}
+	sort.SliceStable(r.Jobs, func(a, b int) bool { return r.Jobs[a].Overdue && !r.Jobs[b].Overdue })
+	sort.SliceStable(r.Connectors, func(a, b int) bool { return r.Connectors[a].Stale && !r.Connectors[b].Stale })
+	return r, nil
+}

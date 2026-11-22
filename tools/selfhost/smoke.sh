@@ -63,6 +63,11 @@ for _ in $(seq 30); do ask "how long do customers have to return a pallet?" | gr
 check "an answer cites the example share (SB-1606)" "[ -n '$ok' ]"
 check "a file ann can't read is never cited" "! ask 'what are the salary bands?' | grep -q 'docs:people/'"
 check "a file with no ACL file is never cited" "! ask 'what is the example share?' | grep -q 'docs:README.md'"
+if [ -f build/selfhost/demo-password ]; then
+  # S15.4: the demo's operator sees the cell's health and the unhelpful-answer queue.
+  check "the console's health answers (SB-1607)" "\"$CURL\" -ksf ${R[*]} -b '$jarp' https://cell.localhost:8443/v1/admin/health | grep -q '\"connectors\":\\[{\"kind\":\"docs\"'"
+  check "the unhelpful-answer queue answers (SB-1609)" "\"$CURL\" -ksf ${R[*]} -b '$jarp' 'https://cell.localhost:8443/v1/admin/feedback?rating=down' | grep -q '\"items\"'"
+fi
 check "asking without signing in is refused" "! \"$CURL\" -ksf ${R[*]} -X POST https://cell.localhost:8443/v1/ask -d '{}'"
 check "the database network has no route out" "! \"$DOCKER\" run --rm --network sb-selfhost_data $HELPER wget -q -T 5 -O /dev/null http://example.com"
 for svc in api ingest jobs; do

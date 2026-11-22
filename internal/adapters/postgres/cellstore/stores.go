@@ -192,9 +192,10 @@ func (s Sessions) RevokeUser(ctx context.Context, tenant, user string) (int, err
 type Traces struct{ DB }
 
 var (
-	_ ask.Store         = Traces{}
-	_ ask.FeedbackStore = Traces{}
-	_ ask.SpaceTagger   = Traces{}
+	_ ask.Store          = Traces{}
+	_ ask.FeedbackStore  = Traces{}
+	_ ask.FeedbackReader = Traces{}
+	_ ask.SpaceTagger    = Traces{}
 )
 
 type conv struct {
@@ -266,6 +267,11 @@ func (t Traces) TagSpace(ctx context.Context, tenant, id, space string) error {
 // PutFeedback implements ask.FeedbackStore; a later feedback replaces it.
 func (t Traces) PutFeedback(ctx context.Context, f ask.Feedback) error {
 	return put(ctx, t.Pool, f.Tenant, "feedback", f.Trace, meta{at: f.At, user: f.User}, f, false)
+}
+
+// GetFeedback implements ask.FeedbackReader.
+func (t Traces) GetFeedback(ctx context.Context, tenant, trace string) (ask.Feedback, bool, error) {
+	return get[ask.Feedback](ctx, t.Pool, tenant, "feedback", trace, false)
 }
 
 // FeedbackBetween implements ask.FeedbackStore, oldest first.

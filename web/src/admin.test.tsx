@@ -92,3 +92,80 @@ describe("admin console: proposals and reviews", () => {
     expect(r.violations.map((v) => v.id)).toEqual([]);
   });
 });
+
+describe("admin console: health and the unhelpful-answer queue", () => {
+  it("shows stale and overdue items, never question text, and marks an answer reviewed", async () => {
+    const calls: { method: string; url: string }[] = [];
+    let reviewed = false;
+    const fetcher: Fetch = async (url, init) => {
+      const method = init?.method ?? "GET";
+      calls.push({ method, url });
+      if (url === "/v1/admin/health")
+        return new Response(
+          JSON.stringify({
+            jobs: [
+              { name: "backup", law: "LAW-11", last_finish: null, overdue: true },
+              { name: "sync", law: "LAW-13", last_finish: "2027-03-10T11:59:00Z", overdue: false },
+            ],
+            connectors: [{ kind: "docs", last_success: "2027-03-10T11:00:00Z", last_failure: "2027-03-10T11:58:00Z", failures: 3, stale: true }],
+            at: "2027-03-10T12:00:00Z",
+          }),
+        );
+      if (url === "/v1/admin/feedback?rating=down")
+        return new Response(
+          JSON.stringify({
+            items: reviewed
+              ? []
+              : [
+                  {
+                    trace: "tr_7",
+                    at: "2027-03-10T10:00:00Z",
+                    user: "usr_ann",
+                    rating: "down",
+                    comment: "it missed the EU limit",
+                    claims: 2,
+                    uncited: 1,
+                    refused: 1,
+                    decisions: [{ verdict: "refuse", reason: "source_denied", count: 1 }],
+                  },
+                ],
+          }),
+        );
+      if (url === "/v1/admin/feedback/tr_7/reviewed") {
+        reviewed = true;
+        return new Response(JSON.stringify({ trace: "tr_7", reviewed: { by: "usr_olga", at: "2027-03-10T12:01:00Z" } }));
+      }
+      if (url === "/v1/admin/manifest") return new Response(JSON.stringify({ manifest: "tenant: acme-logistics\n" }));
+      return new Response(JSON.stringify({}));
+    };
+    const { container } = render(<AdminConsole fetcher={fetcher} />);
+    await screen.findByText(/3 failed syncs since/);
+    const health = screen.getByRole("region", { name: "Cell health" });
+    expect(health.textContent).toMatch(/docs: stale/);
+    expect(health.textContent).toMatch(/backup \(LAW-11\): overdue, last finished never/);
+    // Health and the queue come before everything else.
+    const order = Array.from(container.querySelectorAll("h2")).map((h) => h.textContent);
+    expect(order.slice(0, 2)).toEqual(["Cell health", "Unhelpful answers"]);
+    const q = await screen.findByRole("article", { name: "Feedback on tr_7" });
+    expect(q.textContent).toMatch(/it missed the EU limit/);
+    expect(q.textContent).toMatch(/refuse source_denied ×1/);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Mark tr_7 reviewed" }));
+    });
+    expect(calls.some((c) => c.method === "POST" && c.url === "/v1/admin/feedback/tr_7/reviewed")).toBe(true);
+    await screen.findByText("No unhelpful answers to review.");
+    const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+    expect(r.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  it("says when health can't be read, and still shows the rest", async () => {
+    const fetcher: Fetch = async (url) => {
+      if (url === "/v1/admin/health") return new Response(JSON.stringify({ error: { code: "EUNAVAIL", message: "The cell's health records can't be read right now." } }), { status: 503 });
+      if (url === "/v1/admin/manifest") return new Response(JSON.stringify({ manifest: "tenant: acme-logistics\n" }));
+      return new Response(JSON.stringify({}));
+    };
+    render(<AdminConsole fetcher={fetcher} />);
+    await screen.findByText(/Health can't be shown: The cell's health records can't be read right now./);
+    await screen.findByText(/tenant: acme-logistics/);
+  });
+});

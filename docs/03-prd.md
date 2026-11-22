@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (planned) puts a whole cell on one machine the company owns (ADR-0022).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022).
 
 ## Problem
 
@@ -621,7 +621,15 @@ gantt
 
 #### W15 Self-hosted Cell
 
-*A whole cell on one machine the company owns, in containers that mirror GCP: for sovereign data, on-prem sites, demos and testing; plus four easy wins. Planned 2026-11-21 (ADR-0022, proposed).*
+*A whole cell on one machine the company owns, in containers that mirror GCP: for sovereign data, on-prem sites, demos and testing; plus four easy wins. Planned 2026-11-21 (ADR-0022, proposed); built 2026-11-22.*
+
+**Exit gate**
+
+- [x] Every service in its own image, in a layout that mirrors GCP, checked from outside (`make selfhost-smoke`, 36 checks)
+- [x] Anchors and a backup copy write-once for seven years on the box; upgrades by digest with no Docker socket
+- [x] An install for a VM from a configuration file or an offline bundle, with the company's IdP or the bundled one
+- [x] The demo answers from a folder share, and operators see health and unhelpful answers in the console
+- [ ] An install on a real Linux VM with the company's IdP and certificate (SB-1605, needs a machine)
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

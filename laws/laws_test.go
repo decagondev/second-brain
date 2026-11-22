@@ -135,6 +135,10 @@ func TestLAW13_RebuildDrill(t *testing.T) {
 	Check(t, "LAW-13", runs, law13Drill)
 }
 
+func TestLAW03_HealthNeverShowsAnUnreadableRecordAsHealthy(t *testing.T) {
+	Check(t, "LAW-03", runs, law03Health)
+}
+
 func TestLAW03_FolderUnknownIsNeverAllow(t *testing.T) {
 	w := NewFolderWorld(t.TempDir())
 	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })
