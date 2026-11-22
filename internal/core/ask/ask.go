@@ -63,6 +63,8 @@ type Response struct {
 	// left out (sb-agents(7), Department agents); 0 for ask.
 	Agent   string `json:"agent"`
 	Dropped int    `json:"dropped"`
+	// People is who to ask: the owners of the answer's cited documents (SB-1702).
+	People []PersonRef `json:"people"`
 }
 
 // Trace is a stored answer with its decision list (GET /v1/traces/{id}).
@@ -70,8 +72,10 @@ type Trace struct {
 	ID, Tenant, User string
 	Space            string // the space it was asked in, spc_NAME or company (SB-1207)
 	At               time.Time
-	Response         Response
-	Decisions        []retrieve.Decision
+	// QuerySHA256 is a search's query, hashed (SB-1701); a search keeps no text.
+	QuerySHA256 string `json:",omitempty"`
+	Response    Response
+	Decisions   []retrieve.Decision
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -132,6 +136,9 @@ type Agent struct {
 	Enabled     func(agent string) bool
 	SpaceOf     func(ctx context.Context, id string) (ports.Space, bool, error)
 	AgentKilled func(agent string) bool
+	// Owner finds the one active directory user with an email (SB-1702; ActiveOwner); nil
+	// shows no owners.
+	Owner func(ctx context.Context, email string) (answer.Person, bool)
 }
 
 // Ask answers one question for the scope's user.
@@ -196,35 +203,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		conv = a.NewID("cv_")
 	}
 
-	var emails []string
-	if a.Emails != nil {
-		e, err := a.Emails(ctx, s.User())
-		if err != nil {
-			return Response{}, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
-		}
-		emails = e
-	}
-	query := ports.Query{Text: q, Kinds: req.Sources}
-	if a.Embedder != nil {
-		vs, err := a.Embedder.Embed(ctx, []string{q})
-		if err != nil || len(vs) != 1 {
-			return Response{}, fmt.Errorf("%w: embedder", ErrUnavailable)
-		}
-		query.Vector = vs[0]
-	}
-	// Connectors ask the source about the person by email (sb-connector(3), ACL), so the
-	// user reference carries the directory's primary email (BUG-0007).
-	who := ports.UserRef{ID: s.User()}
-	if len(emails) > 0 {
-		who.Email = emails[0]
-	}
-	res, err := retrieve.Context(ctx, s, who, emails, a.Index, a.Auth, query)
+	res, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Budget)
 	if err != nil {
-		return Response{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+		return Response{}, err
 	}
 
 	trace := a.NewID("tr_")
-	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask"}
+	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}}
 	if dept != nil {
 		resp.Agent = dept.Name
 	}
@@ -248,6 +233,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 			claims, resp.Dropped = citedOnly(claims)
 		}
 		resp.Answer.Claims = claims
+		resp.People = people(claims)
 		uncited := 0
 		for _, c := range claims {
 			if c.Uncited {
@@ -295,15 +281,18 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		return nil, fmt.Errorf("%w: model: %v", ErrUnavailable, err)
 	}
 	res := answer.Compose(out.Text, actx, nil)
-	if a.Link != nil {
-		byCite := map[string]ports.Chunk{}
-		for _, ch := range chunks {
-			byCite[ch.Cite] = ch
-		}
-		for i := range res.Claims {
-			for j := range res.Claims[i].Cites {
-				res.Claims[i].Cites[j].URL = a.Link(byCite[res.Claims[i].Cites[j].Cite])
+	byCite := map[string]ports.Chunk{}
+	for _, ch := range chunks {
+		byCite[ch.Cite] = ch
+	}
+	own := a.owners()
+	for i := range res.Claims {
+		for j := range res.Claims[i].Cites {
+			ch := byCite[res.Claims[i].Cites[j].Cite]
+			if a.Link != nil {
+				res.Claims[i].Cites[j].URL = a.Link(ch)
 			}
+			res.Claims[i].Cites[j].Owner = own.of(ctx, ch) // only allowed chunks are ever cited
 		}
 	}
 	for _, l := range res.Spoofs {

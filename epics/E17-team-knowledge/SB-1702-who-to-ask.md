@@ -13,7 +13,7 @@ summary: "Chunks already carry their document's owner for barriers, but an answe
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-identity(7)`](../../manual/sb-identity.7.md) |
 | Laws | LAW-01, LAW-12, LAW-22 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ Chunks already carry their document's owner for barriers, but an answer never sa
 
 ## Acceptance criteria
 
-- [ ] Each allowed cite gains `owner`: the owner's email and `title` from the directory, only for an active user; omitted otherwise
-- [ ] The answer gains `people`: the owners of its allowed cites, most cited first, at most three; the UI shows "Ask …, owner of …"
-- [ ] An owner is never shown for a refused cite, and a deprovisioned owner is never suggested
-- [ ] No activity or expertise profile is built; ownership at the source is the only signal
+- [x] Each allowed cite gains `owner`: the owner's email and `title` from the directory, only for an active user; omitted otherwise
+- [x] The answer gains `people`: the owners of its allowed cites, most cited first, at most three; the UI shows "Ask …, owner of …"
+- [x] An owner is never shown for a refused cite, and a deprovisioned owner is never suggested
+- [x] No activity or expertise profile is built; ownership at the source is the only signal
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Owner lookup on allowed cites
-- [ ] UI and Slack reply
-- [ ] Tests, including a deprovisioned owner
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Owner lookup on allowed cites
+- [x] UI and Slack reply
+- [x] Tests, including a deprovisioned owner
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Planned 2026-11-22 with W16, accepted by the user the same day ([09-team-knowledge.md](../../docs/09-team-knowledge.md)). Not started.
+2026-11-22 (slice S16.1): each cite gains `owner` (email and SCIM title) through `ask.ActiveOwner`, only when exactly one active directory user has the owner's email, looked up per answer and never cached; a failing directory shows no owner rather than failing the answer. The answer gains `people`, the owners of its cites, most cited first, at most three. Cites now carry the indexed title. The web UI shows "Ask …, owner of …" under an answer, and the Slack reply ends with the same line. Tests: `TestLAW12_OwnersAreActiveAndAllowed` (its self-test catches a lookup that ignores deprovisioning), `TestAskNamesOwnersOfAllowedCites` (a refused document's owner and a deprovisioned owner are never shown), the Slack render and UI tests.
 
 ## Definition of done
 

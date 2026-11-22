@@ -166,6 +166,13 @@ var ErrNoScope = errors.New("retrieve: no valid scope")
 
 // Context runs retrieve, fuse, live check and budget for one request.
 func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []string, r ports.Retriever, a Authoriser, q ports.Query) (Result, error) {
+	return ContextUpTo(ctx, s, user, emails, r, a, q, Budget)
+}
+
+// ContextUpTo is Context keeping up to budget allowed chunks: search (SB-1701) keeps every
+// allowed candidate, since it shows documents rather than filling a prompt. The checks are
+// the same ones, in the same order.
+func ContextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []string, r ports.Retriever, a Authoriser, q ports.Query, budget int) (Result, error) {
 	if err := s.Check(); err != nil {
 		return Result{}, ErrNoScope
 	}
@@ -249,7 +256,7 @@ func Context(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []
 		if reason != "allowed" {
 			continue
 		}
-		if len(res.Context) < Budget {
+		if len(res.Context) < budget {
 			res.Context = append(res.Context, c)
 		}
 	}

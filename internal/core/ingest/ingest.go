@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/route"
@@ -126,6 +127,9 @@ type Pipeline struct {
 	// Kind is the connector kind this pipeline ingests; Reroute touches only its documents.
 	// Empty means the index holds this connector's documents only.
 	Kind string
+	// Now stamps when the index first saw a version (Chunk.Seen, SB-1701); nil leaves it
+	// unknown. Re-ingesting the same version keeps the first time (the index does that).
+	Now func() time.Time
 }
 
 func (p Pipeline) spaces(ctx context.Context) ([]ports.Space, error) {
@@ -183,6 +187,11 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 	cite := Cite(ref, doc.Version)
 	acl := append([]string(nil), doc.ACLPrefilter...)
 	sort.Strings(acl)
+	title := Title(doc.Title, text)
+	var seen time.Time
+	if p.Now != nil {
+		seen = p.Now().UTC()
+	}
 	chunks := make([]ports.Chunk, 0, len(spans))
 	texts := make([]string, 0, len(spans))
 	scan := p.Secrets
@@ -209,7 +218,8 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		chunks = append(chunks, ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
-			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner))})
+			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
+			Title: title, Seen: seen})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)
@@ -224,6 +234,23 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		}
 	}
 	return p.Index.Replace(ctx, p.Tenant, ref, doc.Version, chunks)
+}
+
+// MaxTitle is the longest indexed title, in characters.
+const MaxTitle = 200
+
+// Title is a document's title as indexed: the first line of its sanitised, normalised text
+// when the source gave a title (ingest puts the title first), cut to MaxTitle; "" otherwise.
+// It is taken from the sanitised text, so a stripped secret or injection never reaches it.
+func Title(source, text string) string {
+	if strings.TrimSpace(source) == "" {
+		return ""
+	}
+	line, _, _ := strings.Cut(text, "\n")
+	if rs := []rune(line); len(rs) > MaxTitle {
+		line = string(rs[:MaxTitle])
+	}
+	return strings.TrimSpace(line)
 }
 
 // Sync handles every change after cursor (the last change per document wins) and

@@ -73,6 +73,10 @@ SCIM gives each user an id `usr_` and 24 hex characters, and each group `grp_` a
 
 **Groups still come from SCIM.** Identity Platform signs people in; it doesn't say who is in which group. A company that can't run SCIM may instead list its groups in the manifest with `groups:` (sb-tenant(5)), which its stewards change by manifest diff like any other field. `groups:` is accepted **only** with an `identity-platform://` idp. Someone who signs in but isn't in any listed group, or in the directory, has no groups and can use nothing, so the sign-in is never open. Removing someone from `groups:` and applying the manifest revokes them within 5 minutes, the same bound as a SCIM deactivate (LAW-12).
 
+### Owners shown to askers (SB-1702)
+
+An answer or a search names the owner of a cited document, so the asker knows who to ask (sb-ask(3), Who to ask). The owner is the document's owner at the source, an email, matched to the directory by that email: it is shown, with the user's SCIM `title`, only when exactly one active user has it. A user SCIM deactivates stops being shown at once, since the lookup is made for every answer, never cached (LAW-12). No other fact about a person is shown, and nothing about what anyone does in the cell is recorded to decide who knows what.
+
 ### Sessions
 
 Sessions last at most 12 hours from sign-in and are never extended: after 12 hours the user signs in again. Each session is re-validated against the directory every 60 seconds. A user the directory doesn't know, or a directory that can't answer, ends the session with `EAUTH`. A SCIM deactivate triggers immediate revocation as well, so the 5-minute bound (LAW-12) has plenty of margin. Sessions live in the cell's own session store; no session is valid in any other cell.

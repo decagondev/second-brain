@@ -19,6 +19,8 @@ type Store struct {
 	traces   map[string]ask.Trace
 	convs    map[string]conv
 	feedback map[string]ask.Feedback // tenant/trace
+	saved    map[string]ask.SavedQuestion
+	shares   map[string]ask.Share
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -32,7 +34,8 @@ type conv struct {
 
 // New returns an empty store.
 func New() *Store {
-	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{}}
+	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
+		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}}
 }
 
 // PutTrace implements ask.Store.
@@ -147,7 +150,7 @@ func window[T any](m map[string]T, of func(T) (tenant string, at time.Time, key 
 // conversations and feedback (sb-tenant(5), Retention and deletion).
 func (s *Store) Retention() []retention.Store {
 	// Feedback first: it takes its space from its trace, which must still be there (SB-1401).
-	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}}
+	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}}
 }
 
 type view struct {
@@ -200,6 +203,18 @@ func (v view) drop(match func(tenant, user, space string, at time.Time) bool, he
 				delete(s.convs, k)
 			}
 		}
+	case "saved questions":
+		for k, q := range s.saved {
+			if try(q.Tenant, q.User, spaceOf(q.Space), q.At) {
+				delete(s.saved, k)
+			}
+		}
+	case "shares":
+		for k, sh := range s.shares {
+			if try(sh.Tenant, sh.User, spaceOf(sh.Space), sh.At) {
+				delete(s.shares, k)
+			}
+		}
 	case "feedback":
 		for k, f := range s.feedback {
 			space := ""
@@ -221,6 +236,66 @@ func spaceOf(s string) string {
 		return ""
 	}
 	return s
+}
+
+var _ ask.QuestionStore = (*Store)(nil)
+
+// PutSaved implements ask.QuestionStore.
+func (s *Store) PutSaved(_ context.Context, q ask.SavedQuestion) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, dup := s.saved[q.Tenant+"/"+q.ID]; dup {
+		return errors.New("traces: duplicate saved question id")
+	}
+	s.saved[q.Tenant+"/"+q.ID] = q
+	return nil
+}
+
+// SavedOf implements ask.QuestionStore: newest first.
+func (s *Store) SavedOf(_ context.Context, tenant, user string) ([]ask.SavedQuestion, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []ask.SavedQuestion
+	for _, q := range s.saved {
+		if q.Tenant == tenant && q.User == user {
+			out = append(out, q)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.After(out[j].At) || (out[i].At.Equal(out[j].At) && out[i].ID > out[j].ID)
+	})
+	return out, nil
+}
+
+// DeleteSaved implements ask.QuestionStore.
+func (s *Store) DeleteSaved(_ context.Context, tenant, user, id string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	q, ok := s.saved[tenant+"/"+id]
+	if !ok || q.User != user {
+		return false, nil
+	}
+	delete(s.saved, tenant+"/"+id)
+	return true, nil
+}
+
+// PutShare implements ask.QuestionStore.
+func (s *Store) PutShare(_ context.Context, sh ask.Share) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, dup := s.shares[sh.Tenant+"/"+sh.ID]; dup {
+		return errors.New("traces: duplicate share id")
+	}
+	s.shares[sh.Tenant+"/"+sh.ID] = sh
+	return nil
+}
+
+// GetShare implements ask.QuestionStore.
+func (s *Store) GetShare(_ context.Context, tenant, id string) (ask.Share, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sh, ok := s.shares[tenant+"/"+id]
+	return sh, ok, nil
 }
 
 // Between lists a tenant's traces asked in [from, to), oldest first (the weekly report).

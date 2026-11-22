@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 S16.1 Find: search without the model, who to ask, saved and shared questions (SB-1701 to SB-1703)
+
+**Wave/slice:** W16 / S16.1 · **Status:** Done.
+
+**What:** `GET /v1/search` (the ask path's retrieval and live check, stopped before the composer), owners and `people` on answers from the directory's active users, and saved and shared questions (`/v1/saved`, `/v1/shares`, `/q/sh_…`). Chunks carry their title and when the index first saw their version. The web UI became one page with Answer, Documents and Saved tabs; the Slack reply names who to ask.
+
+**Why this way:** Search is a second exit from the one retrieval function, `retrieve.ContextUpTo`, so it can't drift from what an answer is allowed to use; only the budget of chunks differs. Owners are shown only on cites, which are only ever allowed chunks, so the rule "never name the owner of a document you can't open" holds by construction rather than by a filter. A share holds the question and nothing else, and the recipient asks it: the Slack Share button's rule, now for the web. Share ids come from crypto/rand because the cell's other ids are time-ordered and guessable. Saved questions and shares live in the trace stores as two more record kinds, so retention, holds and erasure cover them with no new store.
+
+**Learned:** In the running cell a refused document usually doesn't reach the live check at all: the prefilter drops it, so `refused` stays 0 for someone with no access. Tests assert on what is shown, not on the refused count. A core test may not import an adapter even for a convenient store; the store contract is tested in the adapter.
+
+**Laws:** LAW-01 (search and owners only from allowed documents), LAW-02 (shares stay in their tenant), LAW-03 (Unknown or late never shown), LAW-07 (the query and the shared question are hashed in traces and audit), LAW-12 (a deprovisioned owner is never suggested), LAW-14 (a snippet is a quote with its cite).
+
 ## 2026-11-22 W16 accepted
 
 **Wave/slice:** W16 (plan) · **Status:** Planned

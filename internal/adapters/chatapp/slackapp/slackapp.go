@@ -257,6 +257,13 @@ func Render(question string, r ask.Response) Message {
 		}
 		b.WriteString("• " + escape(c.Text) + " " + links(c.Cites) + "\n")
 	}
+	for _, p := range r.People {
+		who := p.Email
+		if p.Title != "" {
+			who += " (" + p.Title + ")"
+		}
+		b.WriteString("_Ask " + escape(who) + ", owner of " + escape(ownedTitles(r, p.Email)) + "_\n")
+	}
 	if r.Notice != nil {
 		b.WriteString("\n_" + notices[*r.Notice] + "_\n")
 	}
@@ -269,6 +276,26 @@ func Render(question string, r ask.Response) Message {
 		{Type: "section", Text: &Text{Type: "mrkdwn", Text: "*" + escape(question) + "*\n" + text}},
 		{Type: "actions", Elements: []Element{{Type: "button", Text: &Text{Type: "plain_text", Text: "Share in channel"}, ActionID: "share", Value: r.Trace}}},
 	}}
+}
+
+// ownedTitles names the documents of one owner the answer cites (SB-1702), by title or cite.
+func ownedTitles(r ask.Response, email string) string {
+	var names []string
+	seen := map[string]bool{}
+	for _, c := range r.Answer.Claims {
+		for _, ci := range c.Cites {
+			if ci.Owner == nil || ci.Owner.Email != email || seen[ci.Cite] {
+				continue
+			}
+			seen[ci.Cite] = true
+			n := ci.Title
+			if n == "" {
+				n = ci.Cite
+			}
+			names = append(names, n)
+		}
+	}
+	return strings.Join(names, ", ")
 }
 
 var notices = map[string]string{

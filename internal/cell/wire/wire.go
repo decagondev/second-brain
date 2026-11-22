@@ -365,7 +365,10 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
-		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) }}
+		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
+		Owner: ask.ActiveOwner(func(ctx context.Context, email string) ([]ports.User, error) {
+			return c.Directory.UsersByEmail(ctx, tenant, email)
+		})}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -431,6 +434,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Drafts{Agent: ask.Drafts{Agent: agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
+	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
+		Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
 	admin := api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
 		Usage: c.Report,

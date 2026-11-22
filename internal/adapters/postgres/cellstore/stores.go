@@ -287,7 +287,67 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}}
+}
+
+var _ ask.QuestionStore = Traces{}
+
+// PutSaved implements ask.QuestionStore (SB-1703).
+func (t Traces) PutSaved(ctx context.Context, q ask.SavedQuestion) error {
+	return put(ctx, t.Pool, q.Tenant, "saved", q.ID, meta{at: q.At, user: q.User, space: q.Space}, savedRec{q, q.Tenant, q.User}, true)
+}
+
+// SavedOf implements ask.QuestionStore: newest first.
+func (t Traces) SavedOf(ctx context.Context, tenant, user string) ([]ask.SavedQuestion, error) {
+	rs, err := list[savedRec](ctx, t.Pool, tenant, "saved", "usr = $3", "at DESC, id DESC", user)
+	out := make([]ask.SavedQuestion, 0, len(rs))
+	for _, r := range rs {
+		out = append(out, r.full())
+	}
+	return out, err
+}
+
+// DeleteSaved implements ask.QuestionStore.
+func (t Traces) DeleteSaved(ctx context.Context, tenant, user, id string) (bool, error) {
+	tag, err := t.Pool.Exec(ctx, `DELETE FROM cell_docs WHERE tenant = $1 AND kind = 'saved' AND id = $2 AND usr = $3`, tenant, id, user)
+	return tag.RowsAffected() == 1, err
+}
+
+// PutShare implements ask.QuestionStore.
+func (t Traces) PutShare(ctx context.Context, sh ask.Share) error {
+	return put(ctx, t.Pool, sh.Tenant, "share", sh.ID, meta{at: sh.At, user: sh.User, space: sh.Space}, shareRec{sh, sh.Tenant, sh.User, sh.At}, true)
+}
+
+// GetShare implements ask.QuestionStore.
+func (t Traces) GetShare(ctx context.Context, tenant, id string) (ask.Share, bool, error) {
+	r, found, err := get[shareRec](ctx, t.Pool, tenant, "share", id, false)
+	return r.full(), found, err
+}
+
+// savedRec and shareRec keep the fields the API never shows (tenant, user, time).
+type savedRec struct {
+	ask.SavedQuestion
+	T string `json:"tenant"`
+	U string `json:"user"`
+}
+
+func (r savedRec) full() ask.SavedQuestion {
+	q := r.SavedQuestion
+	q.Tenant, q.User = r.T, r.U
+	return q
+}
+
+type shareRec struct {
+	ask.Share
+	T  string    `json:"tenant"`
+	U  string    `json:"user"`
+	At time.Time `json:"made"`
+}
+
+func (r shareRec) full() ask.Share {
+	sh := r.Share
+	sh.Tenant, sh.User, sh.At = r.T, r.U, r.At
+	return sh
 }
 
 type view struct {
@@ -296,7 +356,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one

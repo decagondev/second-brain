@@ -53,9 +53,10 @@ func (a *agent) Ask(_ context.Context, s tenancy.Scope, r ask.Request) (ask.Resp
 	}
 	n := ask.NoticeMostUncited
 	return ask.Response{Trace: "tr_1", Notice: &n, Refused: 2, Answer: ask.Answer{Claims: []answer.Claim{
-		{Text: "Limit is 500 <!channel>", Cites: []answer.Cite{{Cite: "docs:refunds@3", URL: "https://drive.example/r?v=3"}, {Cite: "tickets:LIN-7@2"}}},
+		{Text: "Limit is 500 <!channel>", Cites: []answer.Cite{{Cite: "docs:refunds@3", URL: "https://drive.example/r?v=3", Title: "Refund policy",
+			Owner: &answer.Person{Email: "ann@acme-logistics.example", Title: "Support lead"}}, {Cite: "tickets:LIN-7@2"}}},
 		{Text: "Ask finance.", Cites: []answer.Cite{}, Uncited: true},
-	}}}, nil
+	}}, People: []ask.PersonRef{{Email: "ann@acme-logistics.example", Title: "Support lead", Cites: 1}}}, nil
 }
 
 func (a *agent) Trace(_ context.Context, s tenancy.Scope, id string) (ask.Trace, error) {
@@ -133,7 +134,8 @@ func TestAnswerIsEphemeralWithLinks(t *testing.T) {
 		t.Fatalf("posted %d, asked as %v", len(*posted), ag.asked)
 	}
 	m := (*posted)[0]
-	for _, want := range []string{"<https://drive.example/r?v=3|docs:refunds@3>", "`tickets:LIN-7@2`", "_Uncited:_ Ask finance.", "&lt;!channel&gt;", "2 source(s) were not shown", "Trace tr_1", "Most of this answer"} {
+	for _, want := range []string{"<https://drive.example/r?v=3|docs:refunds@3>", "`tickets:LIN-7@2`", "_Uncited:_ Ask finance.", "&lt;!channel&gt;", "2 source(s) were not shown", "Trace tr_1", "Most of this answer",
+		"_Ask ann@acme-logistics.example (Support lead), owner of Refund policy_"} {
 		if !strings.Contains(m.Text, want) {
 			t.Errorf("reply lacks %q:\n%s", want, m.Text)
 		}

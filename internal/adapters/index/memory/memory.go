@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
@@ -44,8 +45,28 @@ func (x *Index) Replace(_ context.Context, tenant string, ref ports.SourceRef, v
 	if x.m[tenant] == nil {
 		x.m[tenant] = map[string]entry{}
 	}
-	x.m[tenant][key(ref)] = entry{version: version, chunks: append([]ports.Chunk(nil), chunks...)}
+	chunks = append([]ports.Chunk(nil), chunks...)
+	if old, ok := x.m[tenant][key(ref)]; ok && old.version == version {
+		keepSeen(old.chunks, chunks) // the same version again: it was first seen earlier
+	}
+	x.m[tenant][key(ref)] = entry{version: version, chunks: chunks}
 	return nil
+}
+
+// keepSeen gives new chunks of a version the earliest time the index saw that version.
+func keepSeen(old, chunks []ports.Chunk) {
+	var first time.Time
+	for _, c := range old {
+		if !c.Seen.IsZero() && (first.IsZero() || c.Seen.Before(first)) {
+			first = c.Seen
+		}
+	}
+	if first.IsZero() {
+		return
+	}
+	for i := range chunks {
+		chunks[i].Seen = first
+	}
 }
 
 func (x *Index) Delete(_ context.Context, tenant string, ref ports.SourceRef) error {

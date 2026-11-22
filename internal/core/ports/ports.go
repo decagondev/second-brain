@@ -307,6 +307,10 @@ type Chunk struct {
 	// Owner is the document's owner at the source, an email or "" (SB-1203): barriers
 	// check the owner's groups, from the directory at decision time.
 	Owner string
+	// Title is the document's title as indexed, and Seen when the index first saw this
+	// version (zero when it doesn't know) (SB-1701).
+	Title string
+	Seen  time.Time
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.

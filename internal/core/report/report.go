@@ -34,6 +34,7 @@ type Report struct {
 	Seats           int            `json:"seats"`
 	ActivePerSeat   float64        `json:"active_per_seat"`
 	Asks            int            `json:"asks"`
+	Searches        int            `json:"searches"` // searches without the model (SB-1701)
 	CitedAnswerRate float64        `json:"cited_answer_rate"`
 	Gaps            map[string]int `json:"gaps"`
 	DraftsUsed      int            `json:"drafts_used"`
@@ -81,6 +82,11 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 	active := map[string]bool{}
 	cited := 0
 	for _, t := range traces {
+		if t.Response.Agent == ask.AgentSearch {
+			r.Searches++
+			active[t.User] = true
+			continue
+		}
 		r.Asks++
 		active[t.User] = true
 		any := false
@@ -144,6 +150,7 @@ func (r Report) Markdown() string {
 	fmt.Fprintf(&b, "| Measure | This week |\n|---|---|\n")
 	fmt.Fprintf(&b, "| Weekly active users per seat | %d of %d (%.0f%%) |\n", r.ActiveUsers, r.Seats, 100*r.ActivePerSeat)
 	fmt.Fprintf(&b, "| Asks | %d |\n", r.Asks)
+	fmt.Fprintf(&b, "| Searches | %d |\n", r.Searches)
 	fmt.Fprintf(&b, "| Cited-answer rate | %.0f%% |\n", 100*r.CitedAnswerRate)
 	kinds := make([]string, 0, len(r.Gaps))
 	for k := range r.Gaps {

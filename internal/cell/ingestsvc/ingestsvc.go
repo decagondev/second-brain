@@ -58,7 +58,7 @@ func (s *Service) Pipeline(kind string) ingest.Pipeline {
 	c := s.Cell
 	m := c.Metrics
 	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Parts().Connectors[kind], Embedder: c.Parts().Agent.Embedder,
-		Index: c.Index, Kind: kind,
+		Index: c.Index, Kind: kind, Now: s.now,
 		Spaces: func(ctx context.Context) ([]ports.Space, error) { return c.Spaces.Spaces(ctx, c.Config.Tenant) },
 		SecretDropped: func(k, pattern string) {
 			m.Add("sb_ingest_secrets_dropped_total", "Chunks dropped for holding a secret (SB-1103).", map[string]string{"connector": k, "pattern": pattern}, 1)

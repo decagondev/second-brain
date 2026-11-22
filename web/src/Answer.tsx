@@ -1,4 +1,4 @@
-import type { AskResponse, Cite, Claim, Notice } from "./api";
+import type { AskResponse, Cite, Claim, Notice, Person } from "./api";
 import { isCited } from "./api";
 
 const notices: Record<Exclude<Notice, null>, string> = {
@@ -8,7 +8,7 @@ const notices: Record<Exclude<Notice, null>, string> = {
 };
 
 // "Finance · restricted": the spaces that hold a source and its label, in words.
-export function placeOf(cite: Cite): string {
+export function placeOf(cite: { spaces?: string[]; label?: string }): string {
   const spaces = (cite.spaces ?? []).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(", ");
   return [spaces, cite.label ?? ""].filter((x) => x !== "").join(" · ");
 }
@@ -47,6 +47,49 @@ export function ClaimView({ claim, trace }: { claim: Claim; trace: string }) {
   );
 }
 
+// "ann@acme-logistics.example (Support lead)": an owner as the asker sees them.
+export function PersonName({ person }: { person: Person }) {
+  return (
+    <span className="person">
+      {person.email}
+      {person.title ? ` (${person.title})` : ""}
+    </span>
+  );
+}
+
+// Who to ask (SB-1702): each owner with the documents of theirs this answer cites, and
+// only those, since a cite is only ever a document the asker may open.
+export function PeopleView({ answer }: { answer: AskResponse }) {
+  const people = answer.people ?? [];
+  if (people.length === 0) return null;
+  const owned = (email: string) => {
+    const names: string[] = [];
+    for (const c of answer.answer.claims) {
+      if (!isCited(c)) continue;
+      for (const ci of c.cites) {
+        const n = ci.title ?? ci.cite;
+        if (ci.owner?.email === email && !names.includes(n)) names.push(n);
+      }
+    }
+    return names;
+  };
+  return (
+    <ul className="people" aria-label="Who to ask">
+      {people.map((p) => (
+        <li key={p.email}>
+          Ask <PersonName person={p} />, owner of{" "}
+          {owned(p.email).map((n, i) => (
+            <span key={n}>
+              {i > 0 && ", "}
+              <em>{n}</em>
+            </span>
+          ))}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function AnswerView({ answer }: { answer: AskResponse }) {
   return (
     <article className="answer" aria-label="Answer">
@@ -56,6 +99,7 @@ export function AnswerView({ answer }: { answer: AskResponse }) {
           <ClaimView key={i} claim={c} trace={answer.trace} />
         ))}
       </ul>
+      <PeopleView answer={answer} />
       {answer.refused > 0 && (
         <p className="refused">
           {answer.refused === 1 ? "1 source was" : `${answer.refused} sources were`} not shown because you can't open them.

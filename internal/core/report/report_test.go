@@ -18,7 +18,8 @@ func notice(s string) *string { return &s }
 func (src) Traces(context.Context, string, time.Time, time.Time) ([]ask.Trace, error) {
 	cited := ask.Response{Answer: ask.Answer{Claims: []answer.Claim{{Text: "SECRET-CONTENT", Cites: []answer.Cite{{Cite: "docs:a@1"}}}}}}
 	none := ask.Response{Notice: notice("no_access"), Answer: ask.Answer{Claims: []answer.Claim{{Text: "nothing", Uncited: true}}}}
-	return []ask.Trace{{User: "u1", Response: cited}, {User: "u1", Response: cited}, {User: "u2", Response: none}, {User: "u3", Response: cited}}, nil
+	return []ask.Trace{{User: "u1", Response: cited}, {User: "u1", Response: cited}, {User: "u2", Response: none}, {User: "u3", Response: cited},
+		{User: "u3", Response: ask.Response{Agent: ask.AgentSearch}}}, nil // a search counts apart (SB-1701)
 }
 func (src) Drafts(context.Context, string, time.Time, time.Time) (int, int, error) { return 6, 2, nil }
 func (src) Actions(context.Context, string, time.Time, time.Time) ([]approvals.Action, error) {
@@ -38,14 +39,14 @@ func TestBuildAndMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Week != "2027-W10" || r.ActiveUsers != 3 || r.ActivePerSeat != 0.3 || r.Asks != 4 || r.CitedAnswerRate != 0.75 || r.Gaps["no_access"] != 1 {
+	if r.Week != "2027-W10" || r.ActiveUsers != 3 || r.ActivePerSeat != 0.3 || r.Asks != 4 || r.CitedAnswerRate != 0.75 || r.Gaps["no_access"] != 1 || r.Searches != 1 {
 		t.Fatalf("%+v", r)
 	}
 	if r.Actions["proposed"] != 3 || r.Actions["ran_with_receipt"] != 1 || r.Actions["rejected"] != 1 || r.SpendUSD != 13.5 {
 		t.Fatalf("%+v", r)
 	}
 	md := r.Markdown()
-	for _, want := range []string{"3 of 10 (30%)", "| Cited-answer rate | 75% |", "no_access 1", "6 / 2 (3.0 to 1)", "$13.50"} {
+	for _, want := range []string{"3 of 10 (30%)", "| Cited-answer rate | 75% |", "no_access 1", "6 / 2 (3.0 to 1)", "$13.50", "| Searches | 1 |"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("report lacks %q:\n%s", want, md)
 		}

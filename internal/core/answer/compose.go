@@ -23,6 +23,15 @@ type Cite struct {
 	// and its label.
 	Spaces []string `json:"spaces,omitempty"`
 	Label  string   `json:"label,omitempty"`
+	// Owner is who to ask about the cited document (SB-1702): set only for an owner who is
+	// one active directory user, and only ever on a cite the asker was allowed.
+	Owner *Person `json:"owner,omitempty"`
+}
+
+// Person is a document owner as an asker sees them: their email and job title, nothing else.
+type Person struct {
+	Email string `json:"email"`
+	Title string `json:"title,omitempty"`
 }
 
 // Claim is one sentence or short passage of an answer.
@@ -101,7 +110,11 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 			for _, id := range ch.Spaces {
 				held = append(held, strings.TrimPrefix(id, "spc_"))
 			}
-			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: titles[ch.Cite], Span: [2]int{ch.Start, ch.End}, Flags: flags,
+			title := titles[ch.Cite]
+			if title == "" {
+				title = ch.Title
+			}
+			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: title, Span: [2]int{ch.Start, ch.End}, Flags: flags,
 				Spaces: held, Label: ch.Label})
 		}
 		c.Uncited = len(c.Cites) == 0

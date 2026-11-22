@@ -8,7 +8,7 @@ summary: Ask a question and get a cited answer.
 
 ## NAME
 
-sb-ask — `POST /v1/ask`, `GET /v1/traces/{id}`, `POST /v1/feedback`
+sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`
 
 ## SYNOPSIS
 
@@ -46,6 +46,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
           {
             "cite": "docs:4f2a9c11@17",
             "title": "Refund policy",
+            "owner": { "email": "ann@acme-logistics.example", "title": "Support lead" },
             "span": [1840, 2615],
             "url": "https://…/refund-policy?version=17",
             "flags": [],
@@ -61,7 +62,8 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "notice": null,
   "conversation": "cv_01JD3QB9…",
   "agent": "ask",
-  "dropped": 0
+  "dropped": 0,
+  "people": [{ "email": "ann@acme-logistics.example", "title": "Support lead", "cites": 1 }]
 }
 ```
 
@@ -72,6 +74,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `refused` | How many candidate documents were refused (deny or unknown). Never their titles |
 | `notice` | `null`, `"most_uncited"`, `"no_access"` or `"no_sources"` |
 | `conversation` | The conversation this turn belongs to, `cv_…` |
+| `claims[].cites[].title` | The cited document's title at the source, as indexed |
+| `claims[].cites[].owner` | The cited document's owner at the source: their `email` and job `title` from the directory, only when exactly one **active** directory user has that email. Omitted otherwise (SB-1702) |
+| `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner |
 
 ### How the `ask` agent runs, exactly
 
@@ -83,6 +88,60 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 6. **Trace:** every answer gets a new trace id `tr_…`, returned in the body and in `X-SB-Trace`, and stored with the answer and its decision list for 30 days.
 
 **Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist.
+
+### Who to ask, exactly (SB-1702)
+
+Every chunk carries its document's owner at the source (an email, SB-1203). The owner is looked up in the directory when the answer is built, and shown only if exactly one active user has that email; a deprovisioned, duplicated or unknown owner is left out, and a directory that can't answer leaves every owner out rather than failing the answer. Owners come only from the answer's cites, and a cite is only ever a chunk that passed the live check for this asker, so nobody learns who owns a document they can't open (LAW-01, LAW-12). Ownership at the source is the only signal: the cell builds no activity, chat or expertise profile of anyone.
+
+### Search, exactly (SB-1701)
+
+`GET /v1/search?q=TEXT[&sources=docs,chat][&space=NAME]` finds documents without the model. It runs steps 1 and 2 of the `ask` agent exactly (validation, retrieval, the space checks and the live ACL batch) and stops before the composer, so it makes **no model call** and uses no budget or tokens:
+
+```json
+{
+  "trace": "tr_01JD3QC1…",
+  "release": "rel_2027-03-02_9b1c4e",
+  "results": [
+    {
+      "cite": "docs:4f2a9c11@17",
+      "title": "Refund policy",
+      "url": "https://…/refund-policy?version=17",
+      "owner": { "email": "ann@acme-logistics.example", "title": "Support lead" },
+      "age_days": 41,
+      "snippet": "Refunds over £500 need a team lead's approval…",
+      "flags": [],
+      "spaces": ["support"],
+      "label": "internal"
+    }
+  ],
+  "refused": 1
+}
+```
+
+| Rule | Detail |
+|---|---|
+| Results | Up to 20 documents, each once, in the order of their best-ranked allowed chunk. Only documents that passed every check for this asker now; a document whose check is denied, Unknown or late is never returned, only counted in `refused` (LAW-01, LAW-03) |
+| `snippet` | The first 300 characters of the document's best allowed chunk: a quote of the source with its cite, never a claim (LAW-14). `flags` are that chunk's flags |
+| `age_days` | Whole days since the cell first indexed this version; omitted when the index doesn't know |
+| `owner` | As on a cite (Who to ask) |
+| Errors | As for `POST /v1/ask`: `EINVAL` for an empty or over-long `q` or an unknown kind, `EKILLED` when the `ask` agent, the tenant or the space is killed, `EUNAVAIL` when the index or directory can't answer. Never `EBUDGET` |
+| Trace | Every search gets a trace `tr_…` with its decision list, like an answer, with `agent` `search`. The trace keeps the SHA-256 of the query, never its text, and the policy kernel writes its decision rows to the audit log as for an ask |
+
+The weekly report counts searches apart from answers.
+
+### Saved and shared questions, exactly (SB-1703)
+
+A person can keep a question and pass it on. Only the question's text is kept, never an answer: opening a saved or shared question asks it again, live, under the access of whoever opens it.
+
+| Endpoint | Does |
+|---|---|
+| `POST /v1/saved` `{ "question": "…" }` | Saves a question (1 to 4,000 characters) in the space of the request. `200 { "id": "sq_…" }` |
+| `GET /v1/saved` | `{ "items": [{ "id", "question", "space", "at" }] }`: the caller's own, newest first, at most 100 |
+| `DELETE /v1/saved/{id}` | Removes one of the caller's own; anyone else's, or an unknown id, is `EPERM` |
+| `POST /v1/shares` `{ "question": "…" }` | Makes a share `sh_…` with an unguessable id and the link `/q/sh_…`, valid for 30 days. `200 { "id": "sh_…", "url": "/q/sh_…", "expires": "…" }` |
+| `GET /v1/shares/{id}` | `{ "id", "question", "space", "expires" }` for any signed-in person of the same tenant. Another tenant's share, an unknown id or an expired one is `EPERM` (LAW-02) |
+
+The link `/q/sh_…` opens the web UI on the shared question with an **Ask** button; asking it is an ordinary `POST /v1/ask` by the recipient, so they see only what their own access allows, never the sharer's answer (LAW-01). Creating a share writes an `access` audit row whose subject is the share id and whose `payload_sha256` is the SHA-256 of the question; the text itself never reaches a log or the audit log (LAW-07). Saved questions and shares are cell records kept under the tenant's retention (and a space's shorter one), held by legal holds like conversations, and erased with the person (`POST /v1/admin/subjects/erase`).
 
 `GET /v1/traces/{id}` returns the same answer plus the decision list (`cite`, `verdict`, `reason`, one per candidate document), for the user who asked and for auditors. Anyone else gets `EPERM`, the same as an unknown id. `reason` is one of `allowed`, `source_denied`, `source_unknown` or `policy_denied`, and in a cell with spaces `space_denied` (not held by the space asked in), `label_denied` (a `confidential` or `restricted` chunk held only by spaces the asker isn't in) or `barrier_denied`. The policy kernel makes every one of these decisions; the reason only explains it, and a refused document is never named in the answer.
 
@@ -114,7 +173,11 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | `refused` | "N sources were not shown because you can't open them", never their names |
 | Space switcher | In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from `GET /v1/spaces`, and nothing else. The chosen space goes on the ask as `?space=`. Changing it starts a new conversation. A cell without spaces shows no switcher |
 | Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |
-| Errors | The error's `message` and `remedy`, with the trace id to quote to support |
+| Errors | The error's `message` and `remedy`, with the trace id to quote to support. An ask that fails with `EUNAVAIL` or `EBUDGET` also offers "Search documents instead", which runs the same text as a search |
+| Tabs | One page with tabs: **Answer**, **Documents** (search) and **Saved**, a labelled `tablist` usable by keyboard |
+| Documents | Each result shows its title (or cite) as a link to the source, its snippet as a quote, its owner and age, and the same space and label words as a chip |
+| Who to ask | Under an answer with `people`: "Ask ann@acme-logistics.example (Support lead), owner of *Refund policy*" for each person, naming only documents cited in that answer |
+| Save and share | Each answered turn has **Save** and **Share**. Share shows the `/q/sh_…` link to copy. The Saved tab lists saved questions; opening one asks it again |
 
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
 
@@ -130,7 +193,7 @@ Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `a
 
 1. **Verify.** The cell checks Slack's request signature with the signing secret from `vault://tenants/TENANT/connectors/chat` and refuses any request older than 5 minutes. The `team_id` must be the tenant's workspace. Anything else gets HTTP 401 and no reply.
 2. **Map the person.** The bot looks up the Slack user's email (`users.info`) and finds the **one active** directory user with that email (SCIM-provisioned, sb-identity(7)). No match, more than one match, or an inactive user gets an ephemeral reply saying the account can't be matched, and **no answer**. The bot never falls back to a shared or service identity.
-3. **Answer privately.** Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's `response_url` (only `https://hooks.slack.com/`), also **ephemeral**, so only the asker sees it. Claims show as text with their citations as links (`<url|cite>`). Uncited claims start with *Uncited:*. The reply ends with the notice, the refused count and the trace id.
+3. **Answer privately.** Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's `response_url` (only `https://hooks.slack.com/`), also **ephemeral**, so only the asker sees it. Claims show as text with their citations as links (`<url|cite>`). Uncited claims start with *Uncited:*. The reply ends with who to ask (the answer's `people`, each with the documents of theirs it cites), the notice, the refused count and the trace id.
 4. **Spaces.** In a cell with spaces, the channel the command was typed in picks the space: a space's `channels` in the manifest (sb-space(5)) list the channels that ask in it. A mapped channel asks in that space, and someone who isn't a member gets an ephemeral reply saying so and **no answer**, never a company-wide one. An unmapped channel, or a direct message, asks company-wide.
 5. **Share.** A *Share in channel* button posts the question and the **citation links only, never the claim text**, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.
 
@@ -153,7 +216,7 @@ A refused source is **not** an error. The answer reports it through `refused` an
 
 ## LAWS
 
-[LAW-01](sb-laws.7.md#law-01), [LAW-02](sb-laws.7.md#law-02), [LAW-03](sb-laws.7.md#law-03), [LAW-14](sb-laws.7.md#law-14).
+[LAW-01](sb-laws.7.md#law-01), [LAW-02](sb-laws.7.md#law-02), [LAW-03](sb-laws.7.md#law-03), [LAW-07](sb-laws.7.md#law-07), [LAW-12](sb-laws.7.md#law-12), [LAW-14](sb-laws.7.md#law-14).
 
 ## EXAMPLES
 

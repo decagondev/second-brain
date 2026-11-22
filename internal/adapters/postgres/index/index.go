@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -72,6 +73,9 @@ func (x Index) Migrate(ctx context.Context) error {
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS routing text NOT NULL DEFAULT ''`,
 		// Barriers (SB-1203): the document's owner at the source.
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS owner text NOT NULL DEFAULT ''`,
+		// Search (SB-1701): the title as indexed, and when the index first saw the version.
+		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS title text NOT NULL DEFAULT ''`,
+		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS seen timestamptz`,
 		`CREATE INDEX IF NOT EXISTS chunks_acl ON ` + sc + `.chunks USING gin (acl)`,
 		`CREATE INDEX IF NOT EXISTS chunks_tsv ON ` + sc + `.chunks USING gin (tsv)`,
 		`CREATE INDEX IF NOT EXISTS chunks_src ON ` + sc + `.chunks (kind, source_id)`,
@@ -122,17 +126,28 @@ func (x Index) Replace(ctx context.Context, tenant string, ref ports.SourceRef, 
 		return err
 	}
 	return pgx.BeginFunc(ctx, x.Pool, func(tx pgx.Tx) error {
+		// The same version again keeps the time the index first saw it (SB-1701).
+		var first *time.Time
+		if err := tx.QueryRow(ctx, `SELECT min(seen) FROM `+sc+`.chunks WHERE kind = $1 AND source_id = $2 AND version = $3`,
+			ref.Kind, ref.ID, version).Scan(&first); err != nil {
+			return err
+		}
 		if _, err := tx.Exec(ctx, `DELETE FROM `+sc+`.chunks WHERE kind = $1 AND source_id = $2`, ref.Kind, ref.ID); err != nil {
 			return err
 		}
 		for _, c := range chunks {
+			seen := first
+			if seen == nil && !c.Seen.IsZero() {
+				t := c.Seen.UTC()
+				seen = &t
+			}
 			if c.Tenant != x.Tenant {
 				return ErrOtherTenant
 			}
 			if _, err := tx.Exec(ctx, `INSERT INTO `+sc+`.chunks (id, tenant, cite, kind, source_id, version, span_start, span_end,
-				body, sha256, flags, acl, release, embedding, label, spaces, routing, owner) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::vector,$15,$16,$17,$18)`,
+				body, sha256, flags, acl, release, embedding, label, spaces, routing, owner, title, seen) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::vector,$15,$16,$17,$18,$19,$20)`,
 				c.ID, c.Tenant, c.Cite, c.Kind, c.SourceID, c.Version, c.Start, c.End, c.Text, c.ContentSHA256,
-				nonNil(c.Flags), nonNil(c.ACLPrefilter), c.Release, vec(c.Vector), c.Label, nonNil(c.Spaces), c.Routing, c.Owner); err != nil {
+				nonNil(c.Flags), nonNil(c.ACLPrefilter), c.Release, vec(c.Vector), c.Label, nonNil(c.Spaces), c.Routing, c.Owner, c.Title, seen); err != nil {
 				return err
 			}
 		}
@@ -166,12 +181,16 @@ func (x Index) Delete(ctx context.Context, tenant string, ref ports.SourceRef) e
 	})
 }
 
-const cols = `id, tenant, cite, kind, source_id, version, span_start, span_end, body, sha256, flags, acl, release, label, spaces, routing, owner`
+const cols = `id, tenant, cite, kind, source_id, version, span_start, span_end, body, sha256, flags, acl, release, label, spaces, routing, owner, title, seen`
 
 func scan(rows pgx.Rows) (ports.Chunk, error) {
 	var c ports.Chunk
+	var seen *time.Time
 	err := rows.Scan(&c.ID, &c.Tenant, &c.Cite, &c.Kind, &c.SourceID, &c.Version, &c.Start, &c.End, &c.Text,
-		&c.ContentSHA256, &c.Flags, &c.ACLPrefilter, &c.Release, &c.Label, &c.Spaces, &c.Routing, &c.Owner)
+		&c.ContentSHA256, &c.Flags, &c.ACLPrefilter, &c.Release, &c.Label, &c.Spaces, &c.Routing, &c.Owner, &c.Title, &seen)
+	if seen != nil {
+		c.Seen = seen.UTC()
+	}
 	if len(c.Flags) == 0 {
 		c.Flags = nil
 	}

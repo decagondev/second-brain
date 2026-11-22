@@ -31,7 +31,7 @@ Proposed 2026-11-22 after W15 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A search answers with no model call, and returns only documents the asker can open now
+- [x] A search answers with no model call, and returns only documents the asker can open now
 - [ ] A question nothing answered reaches a steward, and their published note answers the next ask with a cite
 - [ ] A new member sees their space's start list, and a successor gets a cited handover brief
 - [ ] Stewards see stale, relied-on documents; askers see what changed, each item checked live

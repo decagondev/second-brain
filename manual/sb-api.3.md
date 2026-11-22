@@ -50,11 +50,15 @@ Messages are safe to show to the user. They never include the titles or content 
 
 ### Spaces
 
-Every request is in one space or company-wide (sb-spaces(7)). A request names its space with the query parameter `space`, for example `POST /v1/ask?space=finance`. Without it, or with `space=company`, the request is company-wide. A space the cell doesn't hold, or one the asker isn't a member of, is `ESPACE` (403), never a company-wide request instead. A space name is never read from a body or a header, so one request can't name two spaces.
+Every request is in one space or company-wide (sb-spaces(7)). A request names its space with the query parameter `space`, for example `POST /v1/ask?space=finance`. Without it, or with `space=company`, the request is company-wide. A space the cell doesn't hold, or one the asker isn't a member of, is `ESPACE` (403), never a company-wide request instead. `GET /v1/search` takes `space` the same way, and a saved question or share keeps the space it was made in. A space name is never read from a body or a header, so one request can't name two spaces.
 
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.
+
+### Links for people
+
+A share link is `/q/sh_…` on the cell's own hostname (sb-ask(3), Saved and shared questions). The web UI serves it, never `/v1`, and it holds no answer: the UI reads the share with `GET /v1/shares/{id}`, and the recipient asks it under their own access. A share id is 128 random bits, so one link can't be guessed from another.
 
 ### Pagination
 

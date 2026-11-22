@@ -63,3 +63,15 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .draft input { font: inherit; padding: 0.5rem; min-height: 44px; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
 
 .attention { border-left: 4px solid var(--flag); padding-left: 0.5rem; }
+
+.tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--muted); margin: 1rem 0; }
+.tabs [role="tab"] { border: 1px solid var(--muted); border-bottom: none; background: var(--bg); color: var(--fg); }
+.tabs [role="tab"][aria-selected="true"] { font-weight: 700; border-bottom: 3px solid var(--accent); }
+.results { list-style: none; padding: 0; }
+.result { padding: 0.5rem 0; border-bottom: 1px solid var(--chip-bg); }
+.result-title { font-size: 1rem; margin: 0; }
+.snippet { margin: 0.25rem 0; padding-left: 0.75rem; border-left: 3px solid var(--chip-bg); }
+.meta, .people { color: var(--muted); font-size: 0.9rem; }
+.turn-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.turn-tools input, .documents input { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
+.shared { border: 2px solid var(--accent); padding: 0.5rem 0.75rem; }

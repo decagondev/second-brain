@@ -9,6 +9,17 @@ export interface Cite {
   // In a cell with spaces (SB-1007): the spaces that hold the source, and its label.
   spaces?: string[];
   label?: string;
+  // Who to ask about it (SB-1702): only for one active owner, only on an allowed cite.
+  owner?: Person;
+}
+
+export interface Person {
+  email: string;
+  title?: string;
+}
+
+export interface PersonRef extends Person {
+  cites: number;
 }
 
 export interface Space {
@@ -45,6 +56,7 @@ export interface AskResponse {
   refused: number;
   notice: Notice;
   conversation: string;
+  people?: PersonRef[];
 }
 
 export interface ApiError {
@@ -114,4 +126,93 @@ export async function sendFeedback(req: FeedbackRequest, f: Fetch = fetch): Prom
     const data = (await res.json().catch(() => null)) as { error?: ApiError } | null;
     throw new AskError(data?.error ?? { code: "EUNAVAIL", message: "Feedback couldn't be sent.", trace: req.trace, remedy: "Try again in a minute." });
   }
+}
+
+// ---- Search, saved and shared questions (sb-ask(3); SB-1701, SB-1703) ----
+
+export interface SearchResult {
+  cite: string;
+  title?: string;
+  url?: string;
+  owner?: Person;
+  age_days?: number;
+  snippet: string;
+  flags: string[];
+  spaces?: string[];
+  label?: string;
+}
+
+export interface SearchResponse {
+  trace: string;
+  release: string;
+  results: SearchResult[];
+  refused: number;
+}
+
+export interface SavedQuestion {
+  id: string;
+  question: string;
+  space: string;
+  at: string;
+}
+
+export interface SharedQuestion {
+  id: string;
+  question: string;
+  space: string;
+  expires: string;
+}
+
+const unavailable: ApiError = { code: "EUNAVAIL", message: "This is unavailable right now.", trace: "", remedy: "Try again in a minute." };
+
+// call is one JSON request to the cell's API; any failure is an AskError with the API's error.
+async function call<T>(url: string, init: RequestInit, f: Fetch): Promise<T> {
+  let res: Response;
+  try {
+    res = await f(url, { credentials: "same-origin", ...init });
+  } catch {
+    throw new AskError(unavailable);
+  }
+  const data: unknown = await res.json().catch(() => null);
+  if (!res.ok) throw new AskError((data as { error?: ApiError } | null)?.error ?? unavailable);
+  return data as T;
+}
+
+function post(body: unknown): RequestInit {
+  return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+}
+
+function inSpace(path: string, space?: string): string {
+  if (!space) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}space=${encodeURIComponent(space)}`;
+}
+
+export function search(q: string, f: Fetch = fetch, space?: string): Promise<SearchResponse> {
+  return call<SearchResponse>(inSpace(`/v1/search?q=${encodeURIComponent(q)}`, space), {}, f);
+}
+
+export function saveQuestion(question: string, f: Fetch = fetch, space?: string): Promise<{ id: string }> {
+  return call(inSpace("/v1/saved", space), post({ question }), f);
+}
+
+export async function listSaved(f: Fetch = fetch): Promise<SavedQuestion[]> {
+  const data = await call<{ items?: SavedQuestion[] }>("/v1/saved", {}, f);
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export function removeSaved(id: string, f: Fetch = fetch): Promise<unknown> {
+  return call(`/v1/saved/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+}
+
+export function shareQuestion(question: string, f: Fetch = fetch, space?: string): Promise<{ id: string; url: string; expires: string }> {
+  return call(inSpace("/v1/shares", space), post({ question }), f);
+}
+
+export function openShare(id: string, f: Fetch = fetch): Promise<SharedQuestion> {
+  return call(`/v1/shares/${encodeURIComponent(id)}`, {}, f);
+}
+
+// The space name of a record's space ("spc_finance" -> "finance"; company-wide -> "").
+export function spaceName(space: string): string {
+  return space.startsWith("spc_") ? space.slice(4) : "";
 }

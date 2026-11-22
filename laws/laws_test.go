@@ -362,3 +362,15 @@ func TestLAW17_VerifyReportsAccessPaths(t *testing.T) {
 func TestLAW02_SitesReachOnlyTheirOwnCell(t *testing.T) {
 	Check(t, "LAW-02", 40, func(r *rand.Rand) error { return law02Hosting(r, NewPublisher()) })
 }
+
+func TestLAW01_SearchShowsOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01Search(r, searchSystem{}) })
+}
+
+func TestLAW12_OwnersAreActiveAndAllowed(t *testing.T) {
+	Check(t, "LAW-12", runs, func(r *rand.Rand) error { return law12Owners(r, searchSystem{}) })
+}
+
+func TestLAW02_SharesStayInTheirTenant(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Shares(r, shareSystem{}) })
+}
