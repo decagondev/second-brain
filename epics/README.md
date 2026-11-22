@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-18 epics, 71 user stories and 171 tickets across 17 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+21 epics, 80 user stories and 191 tickets across 20 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -21,6 +21,9 @@ summary: Epics, waves, slices and tickets.
 | W14 Cell Runtime | 8 | 1 | 0 | Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end |
 | W15 Self-hosted Cell | 8 | 1 | 0 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins. **W15 built.** Open: SB-1605 (a run on a real VM) |
 | W16 Team Knowledge | 10 | 0 | 0 | Planned 2026-11-22 with the user (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)). **W16 built**, SB-1710 run with real weights 2026-11-22 |
+| W17 Easy to Run | 0 | 0 | 8 | Planned 2026-11-22 with the user (E18): doctor, host health, restore, offline upgrade, rollback, proxy, external Postgres, support bundle ([10-run-protect-close.md](../docs/10-run-protect-close.md)) |
+| W18 Protect the Data | 0 | 0 | 7 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
+| W19 Close the Loops | 0 | 0 | 5 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -88,6 +91,12 @@ flowchart LR
   E15 --> E16
   E09 --> E15
   E16 --> E17
+  E18["E18 Easy to Run"]
+  E19["E19 Protect the Data"]
+  E20["E20 Close the Loops"]
+  E16 --> E18
+  E18 --> E19
+  E17 --> E20
 ```
 
 ## Epics
@@ -112,6 +121,9 @@ flowchart LR
 | [E15 Cell Runtime](E15-cell-runtime/README.md) | Every part of a cell runs together as real services, from one configuration to a whole cell end to end. | W14 | 9 |
 | [E16 Self-hosted Cell](E16-self-hosted-cell/README.md) | A whole cell on one machine the company owns, in containers that mirror GCP, plus four easy wins. | W15 | 9 |
 | [E17 Team Knowledge](E17-team-knowledge/README.md) | Ten small features that let a team hand knowledge to each other and keep it current, on one sovereign machine. | W16 | 10 |
+| [E18 Easy to Run](E18-easy-to-run/README.md) | IT runs, upgrades, restores and gets help for a cell with one command each, on one machine or two VMs. | W17 | 8 |
+| [E19 Protect the Data](E19-protect-the-data/README.md) | Nothing readable leaves the box, the keys survive the box, and data-protection duties are met from the console. | W18 | 7 |
+| [E20 Close the Loops](E20-close-the-loops/README.md) | W16's features work everywhere, and the brain reads Word files and answers in Mattermost. | W19 | 5 |
 
 ## All tickets by wave
 
@@ -375,3 +387,38 @@ flowchart LR
 | [SB-1708](E17-team-knowledge/SB-1708-what-changed.md) | S16.4 | E17 | What changed in my spaces | Done |
 | [SB-1709](E17-team-knowledge/SB-1709-documents-to-review.md) | S16.4 | E17 | Documents to review for stewards | Done |
 | [SB-1710](E17-team-knowledge/SB-1710-local-model-on-the-box.md) | S16.5 | E17 | A local model on the box | Done |
+
+### W17 Easy to Run
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1801](E18-easy-to-run/SB-1801-doctor.md) | S17.1 | E18 | `install.sh --doctor`: check the running box | Open |
+| [SB-1802](E18-easy-to-run/SB-1802-host-health.md) | S17.1 | E18 | Host health in the console | Open |
+| [SB-1803](E18-easy-to-run/SB-1803-restore.md) | S17.2 | E18 | One-command restore and a monthly restore drill | Open |
+| [SB-1804](E18-easy-to-run/SB-1804-offline-upgrade.md) | S17.2 | E18 | Offline upgrade, verified before it's loaded | Open |
+| [SB-1805](E18-easy-to-run/SB-1805-rollback.md) | S17.2 | E18 | Roll back the box in one command | Open |
+| [SB-1806](E18-easy-to-run/SB-1806-proxy.md) | S17.3 | E18 | Outbound proxy | Open |
+| [SB-1807](E18-easy-to-run/SB-1807-external-postgres.md) | S17.3 | E18 | Use the company's Postgres: two VMs | Open |
+| [SB-1808](E18-easy-to-run/SB-1808-support-bundle.md) | S17.3 | E18 | A support bundle with no content | Open |
+
+### W18 Protect the Data
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-1901](E19-protect-the-data/SB-1901-sealed-offsite.md) | S18.1 | E19 | Off-box copies sealed | Open |
+| [SB-1902](E19-protect-the-data/SB-1902-recovery-kit.md) | S18.1 | E19 | Recovery kit in shares | Open |
+| [SB-1903](E19-protect-the-data/SB-1903-subject-export.md) | S18.2 | E19 | Give a person their data | Open |
+| [SB-1904](E19-protect-the-data/SB-1904-pii-flags.md) | S18.2 | E19 | Personal data flags at ingest | Open |
+| [SB-1905](E19-protect-the-data/SB-1905-retention-preview.md) | S18.2 | E19 | Retention preview | Open |
+| [SB-1906](E19-protect-the-data/SB-1906-sign-out-everywhere.md) | S18.2 | E19 | Sign out everywhere | Open |
+| [SB-1907](E19-protect-the-data/SB-1907-retire.md) | S18.3 | E19 | Retire a box with proof | Open |
+
+### W19 Close the Loops
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2001](E20-close-the-loops/SB-2001-notes-with-barriers.md) | S19.1 | E20 | Notes in cells with information barriers | Open |
+| [SB-2002](E20-close-the-loops/SB-2002-handover-ui.md) | S19.1 | E20 | Handover brief in the UI | Open |
+| [SB-2003](E20-close-the-loops/SB-2003-office-documents.md) | S19.2 | E20 | Word, OpenDocument and HTML on file shares | Open |
+| [SB-2004](E20-close-the-loops/SB-2004-notes-stay-narrow.md) | S19.2 | E20 | Notes stay narrow | Open |
+| [SB-2005](E20-close-the-loops/SB-2005-mattermost.md) | S19.3 | E20 | Mattermost entry point | Open |

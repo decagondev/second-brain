@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 W17 to W19 plan accepted: run it, protect it, close the loops
+
+**Wave/slice:** W17 to W19 (planning) · **Status:** Accepted by the user, with every recommended decision.
+
+**What:** `docs/10-run-protect-close.md` and epics E18 to E20: twenty small features in eight slices (SB-1801 to SB-1808, SB-1901 to SB-1907, SB-2001 to SB-2005). W17 makes the self-hosted box easy to run (doctor, host health, one-command restore and drill, verified offline upgrades, rollback, an outbound proxy, the company's own Postgres, a support bundle). W18 protects the data (sealed off-box copies, a 3-of-5 recovery kit, subject export, personal data flags, a retention preview, sign out everywhere, retiring a box with proof). W19 closes W16's gaps (notes with barriers, the handover brief in the UI, Word files on shares, notes that stay narrow, Mattermost).
+
+**Why this way:** Reading the selfhost runbook and the scripts at `b6ed548`, most of what's left is the operator's day: an offline upgrade loads images before their signature is checked, the nightly dump goes off the box in plain text, and the keys exist only on the box. Each fix is a script flag or a few endpoints on records the cell keeps, under W16's bloat rules.
+
+**Learned:** The committed `site/` lags the sources because `make docs` rebuilds it locally; commits keep to their own paths, as CLAUDE.md says.
+
+**Laws:** none changed; the tickets name the laws each will test.
+
 ## 2026-11-22 SB-1710 run for real: a 7B model and an embedder on the box, gated
 
 **Wave/slice:** W16 / S16.5 · **Status:** Done. **W16 built**, every ticket Done.

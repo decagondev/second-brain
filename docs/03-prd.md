@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)).
 
 ## Problem
 
@@ -313,6 +313,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W14 | Cell Runtime | — | Every part of a cell runs together as real services from one configuration, ending with a whole cell end to end. |
 | W15 | Self-hosted Cell | — | A whole cell on one machine the company owns, in containers that mirror GCP, plus four easy wins. |
 | W16 | Team Knowledge | — | A team hands knowledge to each other through the brain and keeps it current, on one sovereign machine: ten small features. |
+| W17 | Easy to Run | — | IT runs, upgrades, restores and gets help for a cell with one command each, on one machine or two VMs. |
+| W18 | Protect the Data | — | Nothing readable leaves the box, the keys survive the box, and data-protection duties are met from the console. |
+| W19 | Close the Loops | — | W16's features work everywhere, and the brain reads Word files and answers in Mattermost. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -658,6 +661,63 @@ gantt
 | S16.3 | Onboard and hand over | Start here per space, and a handover brief | [SB-1706](../epics/E17-team-knowledge/SB-1706-start-here.md), [SB-1707](../epics/E17-team-knowledge/SB-1707-handover-brief.md) |
 | S16.4 | Keep it current | What changed, and documents to review | [SB-1708](../epics/E17-team-knowledge/SB-1708-what-changed.md), [SB-1709](../epics/E17-team-knowledge/SB-1709-documents-to-review.md) |
 | S16.5 | On the box | A local model and embedder, pinned and gated | [SB-1710](../epics/E17-team-knowledge/SB-1710-local-model-on-the-box.md) |
+
+#### W17 Easy to Run
+
+*A company's IT team runs, upgrades, restores and gets help for a cell without reading the source, on one machine or two VMs. Accepted 2026-11-22 ([10-run-protect-close.md](10-run-protect-close.md)).*
+
+**Exit gate**
+
+- [ ] `--doctor` is green on a running box, and each check has a test that makes it fail
+- [ ] The console shows the box's disk, certificate and backup ages, unknown when it can't read them
+- [ ] A restore is one command, and the monthly drill proves the newest dump restores
+- [ ] A tampered or unsigned offline bundle loads nothing; a rollback starts only admitted digests
+- [ ] A proxy, an external Postgres and a support bundle work, and the bundle carries no secret
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S17.1 | Know it's healthy | `--doctor` and host health in the console | [SB-1801](../epics/E18-easy-to-run/SB-1801-doctor.md), [SB-1802](../epics/E18-easy-to-run/SB-1802-host-health.md) |
+| S17.2 | Upgrade and recover | One-command restore and drill, verified offline upgrades, rollback | [SB-1803](../epics/E18-easy-to-run/SB-1803-restore.md), [SB-1804](../epics/E18-easy-to-run/SB-1804-offline-upgrade.md), [SB-1805](../epics/E18-easy-to-run/SB-1805-rollback.md) |
+| S17.3 | Fit the network | Outbound proxy, the company's Postgres, a support bundle | [SB-1806](../epics/E18-easy-to-run/SB-1806-proxy.md), [SB-1807](../epics/E18-easy-to-run/SB-1807-external-postgres.md), [SB-1808](../epics/E18-easy-to-run/SB-1808-support-bundle.md) |
+
+#### W18 Protect the Data
+
+*Nothing readable leaves the box, the keys can't be lost with the box, and the company can meet a data-protection request without a developer. Accepted 2026-11-22 ([10-run-protect-close.md](10-run-protect-close.md)).*
+
+**Exit gate**
+
+- [ ] Nothing in `SB_OFFSITE` is readable without the recovery key
+- [ ] Any three of five shares rebuild the keys; two reveal nothing
+- [ ] Export, erase, export round-trips to empty
+- [ ] Retention plans match what the job deletes; a revoked session is refused
+- [ ] A retired box leaves a signed statement and no key
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S18.1 | Off the box | Sealed off-box copies and a 3-of-5 recovery kit | [SB-1901](../epics/E19-protect-the-data/SB-1901-sealed-offsite.md), [SB-1902](../epics/E19-protect-the-data/SB-1902-recovery-kit.md) |
+| S18.2 | Duties to people | Subject export, personal data flags, retention preview, sign out everywhere | [SB-1903](../epics/E19-protect-the-data/SB-1903-subject-export.md), [SB-1904](../epics/E19-protect-the-data/SB-1904-pii-flags.md), [SB-1905](../epics/E19-protect-the-data/SB-1905-retention-preview.md), [SB-1906](../epics/E19-protect-the-data/SB-1906-sign-out-everywhere.md) |
+| S18.3 | End of life | Retire a box with proof | [SB-1907](../epics/E19-protect-the-data/SB-1907-retire.md) |
+
+#### W19 Close the Loops
+
+*W16's features work everywhere, and the brain reads the documents companies actually keep. Accepted 2026-11-22 ([10-run-protect-close.md](10-run-protect-close.md)).*
+
+**Exit gate**
+
+- [ ] A barrier cell publishes a note, and still refuses one across the barrier
+- [ ] A manager reads a handover brief in the UI
+- [ ] A share of Word files answers with cites
+- [ ] A narrowed space lists its notes for review
+- [ ] Mattermost asks answer under the asker's access
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S19.1 | Finish W16 | Notes with barriers, the handover brief in the UI | [SB-2001](../epics/E20-close-the-loops/SB-2001-notes-with-barriers.md), [SB-2002](../epics/E20-close-the-loops/SB-2002-handover-ui.md) |
+| S19.2 | Read more, leak less | Office documents and HTML, notes that stay narrow | [SB-2003](../epics/E20-close-the-loops/SB-2003-office-documents.md), [SB-2004](../epics/E20-close-the-loops/SB-2004-notes-stay-narrow.md) |
+| S19.3 | Our own chat | A Mattermost entry point | [SB-2005](../epics/E20-close-the-loops/SB-2005-mattermost.md) |
 
 #### Parked: Portfolio Department Grants
 
