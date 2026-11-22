@@ -55,6 +55,8 @@ Every tool call takes the same path, in this order:
 
 There's no other way to call a tool (LAW-04, LAW-10).
 
+**`note-publish` (SB-1705).** The one tool a person, not an agent, calls: a steward publishing a reply as a note (sb-spaces(7)). It is in the registry only when the manifest sets `notes: true`. It isn't consequential in the approvals sense, because the decision for notes is that the steward's publish is the approval: the steward confirms the note's text, readers and the count of narrower cites, and the call carries that payload, so the `Executing` audit row binds the note's hash before the write (LAW-15's binding, without a second approver). `call_tool` on `note-publish` is permitted only to a steward of the note's space: the cell passes the space's stewards and the caller's groups in the policy context, and the platform policy refuses anyone else. No model ever calls it, and an agent's output can't reach it: the payload is the steward's own text from their request (LAW-09). In a cell with information barriers a note's target can't be placed before the note exists, so `note-publish` is refused there (`EPERM`, never published unplaced).
+
 In code, the bus is `internal/core/toolbus`, and it is the **only** caller of a connector's `Act`. A lint (`tools/check/toolbus.py`) fails the build if any other non-test package calls `.Act(`. Tools come from the release bundle's tool registry. Each has a name, a connector kind, and whether it's consequential. A call to a tool that isn't in the registry is `EPERM`, never "best effort".
 
 | Call | Path |

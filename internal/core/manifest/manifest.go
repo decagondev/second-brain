@@ -16,22 +16,26 @@ import (
 
 // Tenant is a valid manifest with defaults applied. Absent optional lists and maps are nil.
 type Tenant struct {
-	Tenant         string              `json:"tenant"`
-	Channel        string              `json:"channel"`
-	IdP            string              `json:"idp"`
-	Region         string              `json:"region"`
-	Connectors     map[string]string   `json:"connectors"`
-	Agents         []string            `json:"agents"`
-	Workflows      []string            `json:"workflows"`
-	Approval       map[string]string   `json:"approval"`
-	Duties         map[string]Duty     `json:"duties"`
-	RetentionDays  int                 `json:"retention_days"`
-	BudgetUSDMonth int                 `json:"budget_usd_month"`
-	PilotGroup     string              `json:"pilot_group"`
-	Exclude        map[string][]string `json:"exclude"`
-	Groups         map[string][]string `json:"groups"`
-	Spaces         map[string]Space    `json:"spaces"`
-	Barriers       [][2]string         `json:"barriers"`
+	Tenant         string            `json:"tenant"`
+	Channel        string            `json:"channel"`
+	IdP            string            `json:"idp"`
+	Region         string            `json:"region"`
+	Connectors     map[string]string `json:"connectors"`
+	Agents         []string          `json:"agents"`
+	Workflows      []string          `json:"workflows"`
+	Approval       map[string]string `json:"approval"`
+	Duties         map[string]Duty   `json:"duties"`
+	RetentionDays  int               `json:"retention_days"`
+	BudgetUSDMonth int               `json:"budget_usd_month"`
+	PilotGroup     string            `json:"pilot_group"`
+	// QuestionsTo answers company-wide questions nothing answered (SB-1704); Notes lets
+	// stewards publish replies as notes into the docs: folder share (SB-1705).
+	QuestionsTo string              `json:"questions_to"`
+	Notes       bool                `json:"notes"`
+	Exclude     map[string][]string `json:"exclude"`
+	Groups      map[string][]string `json:"groups"`
+	Spaces      map[string]Space    `json:"spaces"`
+	Barriers    [][2]string         `json:"barriers"`
 }
 
 // Duty is a workflow's segregation of duties (sb-approvals(7); SB-1204): above Above (in
@@ -126,6 +130,18 @@ var fields = []field{
 		c.t.BudgetUSDMonth = c.intIn(n, "budget_usd_month", MinBudgetUSDMonth, 0)
 	}},
 	{"pilot_group", false, func(c *checker, n *node) { c.t.PilotGroup = c.group(n, "pilot_group") }},
+	{"questions_to", false, func(c *checker, n *node) { c.t.QuestionsTo = c.group(n, "questions_to") }},
+	{"notes", false, func(c *checker, n *node) {
+		if v, ok := c.scalar(n, "notes"); ok {
+			switch v {
+			case "true":
+				c.t.Notes = true
+			case "false":
+			default:
+				c.add(n, "notes", "must be true or false")
+			}
+		}
+	}},
 	{"exclude", false, (*checker).exclude},
 	{"groups", false, (*checker).groups},
 	{"spaces", false, (*checker).spaces},
@@ -562,6 +578,9 @@ func IdentityPlatform(idp string) (project, idpTenant string, ok bool) {
 // A rule about connectors applies only when connectors is a map; otherwise that field
 // already has its own error.
 func (c *checker) crossChecks() {
+	if n := c.seen["notes"]; c.t.Notes && c.t.Connectors["docs"] != "folder" {
+		c.add(n, "notes", "notes are written into a docs: folder share; add connectors: { docs: folder } or remove notes")
+	}
 	for i, w := range c.t.Workflows {
 		n := c.wfNodes[i]
 		f := fmt.Sprintf("workflows[%d]", indexOf(c.seen["workflows"].items, n))

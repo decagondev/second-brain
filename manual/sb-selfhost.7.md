@@ -57,7 +57,7 @@ A self-hosted cell is the whole cell on one machine: a VM or an on-prem server t
 | `SB_HOST`, `SB_PORT`, `SB_HTTP_PORT`, `SB_BIND` | where people reach the cell: on a VM its DNS name, 443, 80 and `0.0.0.0` |
 | `SB_TLS` | `acme` (a public name; Caddy gets and renews the certificate), `files` (`SB_TLS_CERT`, `SB_TLS_KEY`, and `SB_TLS_CA` for a company CA) or `internal` (Caddy's own CA, for a lab) |
 | `SB_IDP` | `company` (`SB_OIDC_ISSUER`, `SB_OIDC_CLIENT_ID`, `SB_OIDC_SECRET_FILE`), `bundled` (sb-idp(1)), or `dev`, which is refused unless `SB_BIND` is loopback |
-| `SB_SHARE` | a directory for `docs: folder` (sb-connector(3)), mounted read-only into the cell |
+| `SB_SHARE` | a directory for `docs: folder` (sb-connector(3)), mounted read-only into the cell; with the manifest's `notes: true`, its `notes/` folder alone is mounted writable into `api`, for stewards' notes (SB-1705) |
 | `SB_OFFSITE` | the backup's off-box copy: a directory on another machine, mounted here |
 | `SB_RELEASE_STORE`, `SB_RELEASE_TRUSTED`, `SB_RELEASE_PULL_TOKEN_FILE`, `SB_RELEASE_REGISTRY` | where releases come from (the factory's `https://` store, or a directory releases are copied into on an air-gapped site), the one identity that signs them, and where their images live |
 

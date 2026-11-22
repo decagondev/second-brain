@@ -374,3 +374,20 @@ func TestLAW12_OwnersAreActiveAndAllowed(t *testing.T) {
 func TestLAW02_SharesStayInTheirTenant(t *testing.T) {
 	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02Shares(r, shareSystem{}) })
 }
+
+func TestLAW01_StewardRepliesShowOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01StewardCites(r, questionSystem{}) })
+}
+
+func TestLAW21_AMovedStewardLosesTheQueue(t *testing.T) {
+	Check(t, "LAW-21", runs, func(r *rand.Rand) error { return law21StewardQueue(r, questionSystem{}) })
+}
+
+func TestLAW04_QuestionsAreAuditedFirst(t *testing.T) {
+	Check(t, "LAW-04", 100, law04Questions)
+}
+
+func TestLAW05_NotesRanMeansTheFileOnTheShare(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-05", 60, func(r *rand.Rand) error { return law05Notes(r, dir) })
+}

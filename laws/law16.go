@@ -104,6 +104,9 @@ func genTenant(r *rand.Rand) manifest.Tenant {
 		t.PilotGroup = "group:sb-pilot"
 	}
 	if r.Intn(2) == 0 {
+		t.QuestionsTo = "group:sb-answers"
+	}
+	if r.Intn(2) == 0 {
 		t.Exclude = map[string][]string{}
 		for k := range t.Connectors {
 			if r.Intn(2) == 0 {
@@ -187,6 +190,9 @@ func renderTenant(r *rand.Rand, t manifest.Tenant) []string {
 	}
 	if t.PilotGroup != "" {
 		es = append(es, scalar("pilot_group", t.PilotGroup))
+	}
+	if t.QuestionsTo != "" {
+		es = append(es, scalar("questions_to", t.QuestionsTo))
 	}
 	if t.Exclude != nil {
 		s := "exclude:\n"

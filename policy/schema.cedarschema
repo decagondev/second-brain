@@ -24,13 +24,15 @@ entity CellCustody { tenant: Tenant, cell: Tenant };
 // In a cell with spaces the kernel sets the whole read context (SB-1004); without spaces, none of it.
 action "read"      appliesTo { principal: [User], resource: [Chunk, Document], context: { space?: String, member_spaces?: Set<String>, barred_spaces?: Set<String>, barred_groups?: Set<String> } };
 action "use_agent" appliesTo { principal: [User], resource: [Agent], context: { target_project?: String } };
-action "call_tool" appliesTo { principal: [User], resource: [Tool], context: { barred_spaces?: Set<String>, barred_groups?: Set<String>, target_spaces?: Set<String>, target_owners?: Set<String> } };
+action "call_tool" appliesTo { principal: [User], resource: [Tool], context: { barred_spaces?: Set<String>, barred_groups?: Set<String>, target_spaces?: Set<String>, target_owners?: Set<String>, stewards?: Set<String>, groups?: Set<String> } };
 action "propose"   appliesTo { principal: [User], resource: [Workflow], context: { barred_spaces?: Set<String>, barred_groups?: Set<String>, target_spaces?: Set<String>, target_owners?: Set<String> } };
 action "approve"   appliesTo { principal: [User], resource: [ProposedAction], context: { barred_groups?: Set<String>, requester_groups?: Set<String> } };
 action "admin"     appliesTo { principal: [User], resource: [Cell] };
 action "propose_space" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 action "approve_space" appliesTo { principal: [User], resource: [SpaceProposal] };
 action "review_space"  appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
+// Questions to stewards (SB-1704): a space's stewards, or questions_to for "company".
+action "answer_questions" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 action "place_hold"   appliesTo { principal: [User], resource: [LegalHold], context: { groups?: Set<String> } };
 action "release_hold" appliesTo { principal: [User], resource: [LegalHold], context: { groups?: Set<String> } };
 

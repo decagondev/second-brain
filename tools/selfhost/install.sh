@@ -52,6 +52,11 @@ if [ "$(findmnt -n -o TARGET -T "$SB_OFFSITE" 2>/dev/null || echo /)" = / ]; the
   echo "install: SB_OFFSITE ($SB_OFFSITE) is on this machine's root disk; the off-box copy must be on another machine" >&2
 fi
 if [ -n "$CHECK" ]; then echo "install: the machine and $CONFIG look right; nothing changed"; exit 0; fi
+if [ -n "${SB_SHARE:-}" ]; then # stewards' notes (SB-1705): the share's notes/ folder, the only one api writes
+  SB_NOTES=${SB_NOTES:-$SB_SHARE/notes}; mkdir -p "$SB_NOTES"
+  chown 65532:65532 "$SB_NOTES" 2>/dev/null || echo "install: couldn't give $SB_NOTES to uid 65532; stewards can't publish notes" >&2
+  export SB_NOTES
+fi
 chown 65532:65532 "$SB_OFFSITE" 2>/dev/null || echo "install: couldn't give $SB_OFFSITE to uid 65532; the backup job must be able to write there" >&2
 
 # The images: the bundle's, or built here.

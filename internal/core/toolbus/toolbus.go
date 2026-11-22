@@ -119,6 +119,9 @@ type Call struct {
 	Tool    string
 	Target  string
 	Payload json.RawMessage
+	// Context is policy context the cell knows about the call, such as a note's stewards
+	// and the caller's groups (SB-1705). The barrier facts are added after it and win.
+	Context map[string]any
 }
 
 // Invoke runs a call through the bus. A call that isn't consequential runs now and comes
@@ -144,6 +147,16 @@ func (b *Bus) Invoke(ctx context.Context, s tenancy.Scope, c Call) (approvals.Ac
 			return approvals.Action{}, fmt.Errorf("%w: EBARRIER the target can't be placed: %v", ErrPerm, err)
 		}
 		bctx = x
+	}
+	if len(c.Context) > 0 {
+		merged := map[string]any{}
+		for k, v := range c.Context {
+			merged[k] = v
+		}
+		for k, v := range bctx {
+			merged[k] = v
+		}
+		bctx = merged
 	}
 	var decision policy.Result
 	if tool.Consequential {

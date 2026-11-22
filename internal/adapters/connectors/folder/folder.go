@@ -42,9 +42,10 @@ type Connector struct {
 	FS    fs.FS  // the directory, as a root the connector can't leave
 	State string // where listings are kept; "" keeps them in memory (tests)
 
-	mu   sync.Mutex
-	mem  map[string][]byte
-	root *os.Root
+	mu    sync.Mutex
+	mem   map[string][]byte
+	root  *os.Root
+	notes *os.Root // notes/, writable, with the manifest's notes: true (SB-1705)
 }
 
 var _ ports.Connector = (*Connector)(nil)
@@ -60,6 +61,9 @@ func Open(dir, state string) (*Connector, error) {
 
 // Close releases the root.
 func (c *Connector) Close() error {
+	if c.notes != nil {
+		_ = c.notes.Close()
+	}
 	if c.root != nil {
 		return c.root.Close()
 	}
@@ -432,9 +436,4 @@ func (c *Connector) load(cur string) (map[string]entry, error) {
 		return nil, fmt.Errorf("folder: the listing %s can't be read: %w", cur, err)
 	}
 	return l, nil
-}
-
-// Act implements ports.Connector: the connector is read-only.
-func (c *Connector) Act(context.Context, ports.Action, ports.IdempotencyKey) (ports.Receipt, error) {
-	return ports.Receipt{}, errors.New("ENOTSUP: folder connector is read-only")
 }

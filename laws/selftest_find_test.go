@@ -28,3 +28,11 @@ func TestSelfFindInactiveOwnerIsCaught(t *testing.T) {
 func TestSelfFindTenantBlindSharesAreCaught(t *testing.T) {
 	failsSomewhere(t, "shares not keyed by tenant", func(r *rand.Rand) error { return law02Shares(r, shareSystem{sharedStore: true}) })
 }
+
+func TestSelfAskStewardCitesWidenIsCaught(t *testing.T) {
+	failsSomewhere(t, "asker shown every steward cite", func(r *rand.Rand) error { return law01StewardCites(r, questionSystem{stewardSeesAll: true}) })
+}
+
+func TestSelfAskAnyoneAnswersIsCaught(t *testing.T) {
+	failsSomewhere(t, "steward rule ignoring groups", func(r *rand.Rand) error { return law21StewardQueue(r, questionSystem{anyoneAnswers: true}) })
+}

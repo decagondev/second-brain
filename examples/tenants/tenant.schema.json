@@ -154,8 +154,18 @@
       "pattern": "^(oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?|identity-platform://[a-z][a-z0-9-]{4,28}[a-z0-9]/[A-Za-z0-9-]{1,63})$",
       "type": "string"
     },
+    "notes": {
+      "default": false,
+      "description": "Stewards may publish replies as notes into the docs: folder share (SB-1705).",
+      "type": "boolean"
+    },
     "pilot_group": {
       "description": "If set, only this IdP group may sign in.",
+      "pattern": "^group:[A-Za-z0-9._-]+$",
+      "type": "string"
+    },
+    "questions_to": {
+      "description": "Who answers company-wide questions nothing answered (SB-1704).",
       "pattern": "^group:[A-Za-z0-9._-]+$",
       "type": "string"
     },

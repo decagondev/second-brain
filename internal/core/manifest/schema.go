@@ -17,11 +17,13 @@ func JSONSchema() []byte {
 		return m
 	}
 	props := map[string]any{
-		"tenant":      str("Tenant name: a DNS label. Immutable.", map[string]any{"pattern": dnsLabelRe}),
-		"channel":     str("Release channel; versions are never pinned (ADR-0004).", map[string]any{"enum": Channels}),
-		"idp":         str("Identity provider: oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT.", map[string]any{"pattern": idpRe}),
-		"region":      str("Region pin. Immutable.", map[string]any{"enum": Regions}),
-		"pilot_group": str("If set, only this IdP group may sign in.", map[string]any{"pattern": groupRe}),
+		"tenant":       str("Tenant name: a DNS label. Immutable.", map[string]any{"pattern": dnsLabelRe}),
+		"channel":      str("Release channel; versions are never pinned (ADR-0004).", map[string]any{"enum": Channels}),
+		"idp":          str("Identity provider: oidc://ISSUER-HOST[/path] or identity-platform://PROJECT/IDP_TENANT.", map[string]any{"pattern": idpRe}),
+		"region":       str("Region pin. Immutable.", map[string]any{"enum": Regions}),
+		"pilot_group":  str("If set, only this IdP group may sign in.", map[string]any{"pattern": groupRe}),
+		"questions_to": str("Who answers company-wide questions nothing answered (SB-1704).", map[string]any{"pattern": groupRe}),
+		"notes":        map[string]any{"type": "boolean", "default": false, "description": "Stewards may publish replies as notes into the docs: folder share (SB-1705)."},
 		"connectors": map[string]any{
 			"type": "object", "description": "Connector kind to vendor. Read-only unless named in workflows.",
 			"minProperties": 1, "propertyNames": map[string]any{"enum": ConnectorKinds},

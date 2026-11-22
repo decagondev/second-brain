@@ -8,7 +8,7 @@ summary: Ask a question and get a cited answer.
 
 ## NAME
 
-sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`
+sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`
 
 ## SYNOPSIS
 
@@ -143,6 +143,20 @@ A person can keep a question and pass it on. Only the question's text is kept, n
 
 The link `/q/sh_…` opens the web UI on the shared question with an **Ask** button; asking it is an ordinary `POST /v1/ask` by the recipient, so they see only what their own access allows, never the sharer's answer (LAW-01). Creating a share writes an `access` audit row whose subject is the share id and whose `payload_sha256` is the SHA-256 of the question; the text itself never reaches a log or the audit log (LAW-07). Saved questions and shares are cell records kept under the tenant's retention (and a space's shorter one), held by legal holds like conversations, and erased with the person (`POST /v1/admin/subjects/erase`).
 
+### Questions to the stewards, exactly (SB-1704)
+
+When nothing the asker can open answers (`notice` `no_sources`, `no_access` or `most_uncited`), they can send the question to the people who know: the stewards of the space they asked in (sb-space(5), `stewards`), or, for a company-wide ask, the manifest's `questions_to` group (sb-tenant(5)).
+
+| Endpoint | Does |
+|---|---|
+| `POST /v1/questions` `{ "question": "…", "trace": "tr_…" }` | Sends the question to the stewards of the request's space (`?space=`), or to `questions_to` company-wide. `trace` must be the asker's own answer in that space with one of the three notices; anything else is `EINVAL`, and so is a space with no stewards or a cell with no `questions_to`. Only the question's text is sent: never the asker's name, the answer or its cites. `200 { "id": "qs_…", "to": "finance" }` |
+| `GET /v1/questions` | `{ "items": [...] }`: the caller's own questions, newest first, each `{ "id", "question", "space", "at", "state": "open"|"answered", "reply"? }` |
+| `GET /v1/spaces/NAME/questions` | The queue of space `NAME`, or `company`, for its stewards: `{ "items": [{ "id", "question", "at", "state", "reply"? }] }`, open ones first, never the asker. Anyone else is `EPERM` |
+| `POST /v1/spaces/NAME/questions/{id}/reply` `{ "text": "…", "cites": ["docs:…@3"] }` | A steward's reply: text a person writes, 1 to 4,000 characters, and at most 10 cites the steward adds from their own search. Each cite must be one the steward can open now, checked live as a search is, or the reply is `EINVAL`. One reply a question; a second is `EINVAL` |
+| `POST /v1/spaces/NAME/questions/{id}/note` `{ "title": "…", "readers"?: [EMAIL…], "confirm"?: N }` | With the manifest's `notes: true`, publishes the reply as a note (sb-spaces(7); SB-1705). Without `confirm` it only previews: `{ "path", "readers", "narrower" }`, the note's path, how many readers it will have (the space's active members, or the listed subset of them; never more) and how many of the reply's cites some of them can't open. With `confirm` equal to that `narrower` count it publishes through the tool bus and returns `{ …, "action", "state", "receipt" }`; a different count is `EINVAL` |
+
+A reply is shown to the asker with its cites **checked live for the asker** each time they look, exactly as a search checks them: a cite they can't open now is dropped and counted (`reply.dropped`), never named, so a steward can't widen what the asker reads by quoting it (LAW-01). `reply.cites` has the same shape as a search result without the snippet. Who is a steward is decided by policy (`answer_questions` on the space, sb-policy(5)) with the caller's groups at that request, so a steward who leaves the stewards group stops seeing the queue at their next request (LAW-21). Sending writes an `access` audit row (`state` `asked`, the question's SHA-256) before the question is stored, and a reply one (`state` `answered`, the reply's SHA-256) before it is stored (LAW-04); neither row holds text (LAW-07). Questions are cell records under the tenant's retention, or the space's shorter one, so an unanswered question ages out with it; they are held by legal holds on their space and erased with the asker. The weekly report counts questions asked and answered per space, never their text.
+
 `GET /v1/traces/{id}` returns the same answer plus the decision list (`cite`, `verdict`, `reason`, one per candidate document), for the user who asked and for auditors. Anyone else gets `EPERM`, the same as an unknown id. `reason` is one of `allowed`, `source_denied`, `source_unknown` or `policy_denied`, and in a cell with spaces `space_denied` (not held by the space asked in), `label_denied` (a `confidential` or `restricted` chunk held only by spaces the asker isn't in) or `barrier_denied`. The policy kernel makes every one of these decisions; the reason only explains it, and a refused document is never named in the answer.
 
 `POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }` (SB-310):
@@ -174,9 +188,11 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | Space switcher | In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from `GET /v1/spaces`, and nothing else. The chosen space goes on the ask as `?space=`. Changing it starts a new conversation. A cell without spaces shows no switcher |
 | Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |
 | Errors | The error's `message` and `remedy`, with the trace id to quote to support. An ask that fails with `EUNAVAIL` or `EBUDGET` also offers "Search documents instead", which runs the same text as a search |
-| Tabs | One page with tabs: **Answer**, **Documents** (search) and **Saved**, a labelled `tablist` usable by keyboard |
+| Tabs | One page with tabs: **Answer**, **Documents** (search), **Saved** and **Questions**, a labelled `tablist` usable by keyboard |
 | Documents | Each result shows its title (or cite) as a link to the source, its snippet as a quote, its owner and age, and the same space and label words as a chip |
 | Who to ask | Under an answer with `people`: "Ask ann@acme-logistics.example (Support lead), owner of *Refund policy*" for each person, naming only documents cited in that answer |
+| Ask the stewards | Under an answer with `no_sources`, `no_access` or `most_uncited`: "Ask the stewards of Finance" (or "Ask the people who answer company-wide questions"). It shows exactly the text that will be sent, the question, and sends it only when the asker confirms |
+| Questions | A fourth tab lists the asker's questions to stewards with each reply, its cites as chips and how many were dropped because the asker can't open them |
 | Save and share | Each answered turn has **Save** and **Share**. Share shows the `/q/sh_…` link to copy. The Saved tab lists saved questions; opening one asks it again |
 
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.

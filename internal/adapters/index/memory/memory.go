@@ -190,3 +190,25 @@ func (x *Index) Search(_ context.Context, s tenancy.Scope, tokens []string, q po
 	}
 	return out, nil
 }
+
+var _ ports.CiteLookup = (*Index)(nil)
+
+// ChunksOf implements ports.CiteLookup: the tenant's chunks with any of the cites, by id.
+func (x *Index) ChunksOf(_ context.Context, tenant string, cites []string) ([]ports.Chunk, error) {
+	want := map[string]bool{}
+	for _, c := range cites {
+		want[c] = true
+	}
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	var out []ports.Chunk
+	for _, e := range x.m[tenant] {
+		for _, c := range e.chunks {
+			if want[c.Cite] {
+				out = append(out, c)
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}

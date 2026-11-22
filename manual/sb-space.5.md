@@ -35,7 +35,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 |---|---|---|---|---|
 | `template` | string | no | `custom` | One of the templates in [sb-departments(7)](sb-departments.7.md). It supplies the defaults below; any field set here wins |
 | `members` | list of `group:NAME` | yes | | At least one, each once. Groups come from the cell's directory (SCIM). An unknown group is an error at `apply`, never ignored |
-| `stewards` | list of `group:NAME` | no | `[]` | May propose changes to this space (W12). Stewards aren't members unless listed in `members` too. A `restricted` space needs at least one |
+| `stewards` | list of `group:NAME` | no | `[]` | May propose changes to this space (W12), and answer the questions its members send to it and publish notes (SB-1704, SB-1705; sb-spaces(7)). Stewards aren't members unless listed in `members` too. A `restricted` space needs at least one |
 | `label` | label | no | from the template | The default label for documents in this space whose source carries none: `public`, `internal`, `confidential` or `restricted` |
 | `scope` | map kind → list of patterns | yes | | Kinds are the manifest's connector kinds (`docs`, `chat`, `tickets`, `crm`, and from W11 `code`, `hris`, `accounting`). Every kind used must be in `connectors`. Patterns are as in `exclude` (sb-tenant(5)): `/Folder/**` for docs, `#name-*` for chat, a project or repository name for the others |
 | `agents` | list | no | from the template | A subset of the manifest's `agents`. An agent not listed in `agents` is an error |

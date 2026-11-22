@@ -194,6 +194,16 @@ func ContextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, email
 			chunks = append(chunks, c.Chunk)
 		}
 	}
+	return Allowed(ctx, s, user, a, chunks, budget)
+}
+
+// Allowed runs the space, label and barrier checks and the live ACL batch over chunks, in
+// order, keeping up to budget allowed ones. Retrieval ends with it; so does every other
+// path that shows a chunk to someone, such as a steward's cite shown to an asker (SB-1704).
+func Allowed(ctx context.Context, s tenancy.Scope, user ports.UserRef, a Authoriser, chunks []ports.Chunk, budget int) (Result, error) {
+	if err := s.Check(); err != nil {
+		return Result{}, ErrNoScope
+	}
 	var res Result
 	refused := map[string]bool{}
 	decided := map[string]int{}

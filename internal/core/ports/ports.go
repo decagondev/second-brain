@@ -329,6 +329,12 @@ type Index interface {
 	Drop(ctx context.Context, tenant string) error
 }
 
+// CiteLookup is an index that finds chunks by their citation (doc@version), for a cite a
+// person added, such as a steward's reply (SB-1704); found chunks still take the live check.
+type CiteLookup interface {
+	ChunksOf(ctx context.Context, tenant string, cites []string) ([]Chunk, error)
+}
+
 // CursorStore keeps each connector's sync cursor (SB-208). found is false only when no
 // cursor was ever stored; an unreadable store is an error.
 type CursorStore interface {

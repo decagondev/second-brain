@@ -169,6 +169,9 @@ type usage struct {
 func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
 	return u.traces.Between(ctx, tenant, from, to)
 }
+func (u usage) StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error) {
+	return u.traces.StewardQuestionsBetween(ctx, tenant, from, to)
+}
 func (u usage) Drafts(ctx context.Context, tenant string, from, to time.Time) (int, int, error) {
 	return u.ledger.Drafts(ctx, tenant, from, to)
 }
@@ -375,6 +378,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: workflows: %v", ErrConfig, err)
 	}
+	if m.Notes {
+		tools[ask.NoteTool] = toolbus.Tool{Name: ask.NoteTool, Connector: "docs"} // a steward's publish (SB-1705)
+	}
 	locate := func(ctx context.Context, ref ports.SourceRef) (ports.Document, error) {
 		conn, ok := conns[ref.Kind]
 		if !ok {
@@ -434,6 +440,18 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Drafts{Agent: ask.Drafts{Agent: agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
+	stewards := ask.Stewards{Agent: agent, Store: c.Traces, Audit: c.Audit, Policy: c.Policy, NewID: newID, Now: time.Now,
+		Facts: func(space string) ([]string, string, bool) {
+			if space == "company" {
+				return []string{m.QuestionsTo}, "", m.QuestionsTo != ""
+			}
+			sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
+			return sp.Stewards, sp.Label, ok && len(sp.Stewards) > 0
+		}}
+	if m.Notes {
+		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
+	}
+	api.Questions{Service: stewards, Release: c.Release, NewID: newID}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
 		Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
 	admin := api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
@@ -515,6 +533,11 @@ func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.
 			c, err := folder.Open(u.Path, filepath.Join(cfg.State, "connectors", kind))
 			if err != nil {
 				return nil, fmt.Errorf("%w: connector %s: %v", ErrConfig, kind, err)
+			}
+			if m.Notes && kind == "docs" {
+				if err := c.EnableNotes(u.Path); err != nil {
+					return nil, fmt.Errorf("%w: connector %s: %v", ErrConfig, kind, err)
+				}
 			}
 			out[kind] = c
 		case "slack":
@@ -628,4 +651,45 @@ func (a alerter) Alert(ctx context.Context, al canary.Alert) error {
 		return err
 	}
 	return nil
+}
+
+// noteReaders are a note's default readers (SB-1705): the active members of the space now,
+// by their directory email, or every active user for a company-wide note.
+func (c *Cell) noteReaders(m manifest.Tenant) func(ctx context.Context, space string) ([]string, error) {
+	tenant := c.Config.Tenant
+	return func(ctx context.Context, space string) ([]string, error) {
+		var ids []string
+		if space == "company" {
+			all, err := c.Directory.ActiveUserIDs(ctx, tenant)
+			if err != nil {
+				return nil, err
+			}
+			ids = all
+		} else {
+			sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
+			if !ok {
+				return nil, fmt.Errorf("no space %s", space)
+			}
+			for _, g := range sp.Members {
+				ms, err := c.Directory.Members(ctx, tenant, strings.TrimPrefix(g, "group:"))
+				if err != nil {
+					return nil, err
+				}
+				ids = append(ids, ms...)
+			}
+		}
+		var out []string
+		seen := map[string]bool{}
+		for _, id := range ids {
+			u, found, err := c.Directory.User(ctx, tenant, id)
+			if err != nil {
+				return nil, err
+			}
+			if found && u.Active && len(u.Emails) > 0 && !seen[u.Emails[0]] {
+				seen[u.Emails[0]] = true
+				out = append(out, strings.ToLower(u.Emails[0]))
+			}
+		}
+		return out, nil
+	}
 }

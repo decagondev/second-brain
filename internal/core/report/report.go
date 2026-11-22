@@ -22,27 +22,35 @@ type Source interface {
 	Tokens(ctx context.Context, tenant string, from, to time.Time) (input, output int, err error)
 }
 
+// QuestionSource is a source that also has questions to stewards (SB-1704).
+type QuestionSource interface {
+	StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error)
+}
+
 // Price is the release's price per million tokens.
 type Price struct{ InputPerM, OutputPerM float64 }
 
 // Report is one week.
 type Report struct {
-	Tenant          string         `json:"tenant"`
-	Week            string         `json:"week"` // 2027-W10
-	From, To        time.Time      `json:"-"`
-	ActiveUsers     int            `json:"active_users"`
-	Seats           int            `json:"seats"`
-	ActivePerSeat   float64        `json:"active_per_seat"`
-	Asks            int            `json:"asks"`
-	Searches        int            `json:"searches"` // searches without the model (SB-1701)
-	CitedAnswerRate float64        `json:"cited_answer_rate"`
-	Gaps            map[string]int `json:"gaps"`
-	DraftsUsed      int            `json:"drafts_used"`
-	DraftsDiscarded int            `json:"drafts_discarded"`
-	Actions         map[string]int `json:"actions"`
-	TokensIn        int            `json:"tokens_in"`
-	TokensOut       int            `json:"tokens_out"`
-	SpendUSD        float64        `json:"spend_usd"`
+	Tenant        string    `json:"tenant"`
+	Week          string    `json:"week"` // 2027-W10
+	From, To      time.Time `json:"-"`
+	ActiveUsers   int       `json:"active_users"`
+	Seats         int       `json:"seats"`
+	ActivePerSeat float64   `json:"active_per_seat"`
+	Asks          int       `json:"asks"`
+	Searches      int       `json:"searches"` // searches without the model (SB-1701)
+	// Questions to stewards asked and answered this week, by space (SB-1704), never their text.
+	QuestionsAsked    map[string]int `json:"questions_asked,omitempty"`
+	QuestionsAnswered map[string]int `json:"questions_answered,omitempty"`
+	CitedAnswerRate   float64        `json:"cited_answer_rate"`
+	Gaps              map[string]int `json:"gaps"`
+	DraftsUsed        int            `json:"drafts_used"`
+	DraftsDiscarded   int            `json:"drafts_discarded"`
+	Actions           map[string]int `json:"actions"`
+	TokensIn          int            `json:"tokens_in"`
+	TokensOut         int            `json:"tokens_out"`
+	SpendUSD          float64        `json:"spend_usd"`
 }
 
 // WeekOf is the ISO week label and its Monday-to-Monday UTC bounds.
@@ -104,6 +112,20 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 	}
 	if r.Asks > 0 {
 		r.CitedAnswerRate = float64(cited) / float64(r.Asks)
+	}
+	if qs, ok := src.(QuestionSource); ok {
+		got, err := qs.StewardQuestions(ctx, tenant, from, to)
+		if err != nil {
+			return r, err
+		}
+		r.QuestionsAsked, r.QuestionsAnswered = map[string]int{}, map[string]int{}
+		for _, q := range got {
+			sp := strings.TrimPrefix(q.Space, "spc_")
+			r.QuestionsAsked[sp]++
+			if q.Reply != nil {
+				r.QuestionsAnswered[sp]++
+			}
+		}
 	}
 	if r.DraftsUsed, r.DraftsDiscarded, err = src.Drafts(ctx, tenant, from, to); err != nil {
 		return r, err
@@ -167,6 +189,18 @@ func (r Report) Markdown() string {
 		gaps = []string{"none"}
 	}
 	fmt.Fprintf(&b, "| Gaps | %s |\n", strings.Join(gaps, ", "))
+	if len(r.QuestionsAsked) > 0 {
+		sps := make([]string, 0, len(r.QuestionsAsked))
+		for k := range r.QuestionsAsked {
+			sps = append(sps, k)
+		}
+		sort.Strings(sps)
+		parts := make([]string, len(sps))
+		for i, k := range sps {
+			parts[i] = fmt.Sprintf("%s %d of %d", k, r.QuestionsAnswered[k], r.QuestionsAsked[k])
+		}
+		fmt.Fprintf(&b, "| Questions to stewards answered | %s |\n", strings.Join(parts, ", "))
+	}
 	ratio := "n/a"
 	if r.DraftsDiscarded > 0 {
 		ratio = fmt.Sprintf("%.1f to 1", float64(r.DraftsUsed)/float64(r.DraftsDiscarded))

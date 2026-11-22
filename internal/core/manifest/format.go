@@ -39,6 +39,12 @@ func Format(t Tenant) []byte {
 	if t.PilotGroup != "" {
 		line("pilot_group", t.PilotGroup)
 	}
+	if t.QuestionsTo != "" {
+		line("questions_to", t.QuestionsTo)
+	}
+	if t.Notes {
+		line("notes", "true")
+	}
 	if len(t.Exclude) > 0 {
 		keys := sorted(t.Exclude)
 		parts := make([]string, len(keys))

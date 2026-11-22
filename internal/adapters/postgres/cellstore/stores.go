@@ -287,7 +287,41 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}}
+}
+
+var _ ask.StewardStore = Traces{}
+
+func stqMeta(q ask.StewardQuestion) meta { return meta{at: q.At, user: q.Asker, space: q.Space} }
+
+// PutStewardQuestion implements ask.StewardStore (SB-1704).
+func (t Traces) PutStewardQuestion(ctx context.Context, q ask.StewardQuestion) error {
+	return put(ctx, t.Pool, q.Tenant, "stq", q.ID, stqMeta(q), q, true)
+}
+
+// GetStewardQuestion implements ask.StewardStore.
+func (t Traces) GetStewardQuestion(ctx context.Context, tenant, id string) (ask.StewardQuestion, bool, error) {
+	return get[ask.StewardQuestion](ctx, t.Pool, tenant, "stq", id, false)
+}
+
+// StewardQuestionsOf implements ask.StewardStore.
+func (t Traces) StewardQuestionsOf(ctx context.Context, tenant, asker string) ([]ask.StewardQuestion, error) {
+	return list[ask.StewardQuestion](ctx, t.Pool, tenant, "stq", "usr = $3", "at DESC, id DESC", asker)
+}
+
+// StewardQueue implements ask.StewardStore.
+func (t Traces) StewardQueue(ctx context.Context, tenant, space string) ([]ask.StewardQuestion, error) {
+	return list[ask.StewardQuestion](ctx, t.Pool, tenant, "stq", "space = $3", "at DESC, id DESC", space)
+}
+
+// StewardQuestionsBetween implements ask.StewardStore.
+func (t Traces) StewardQuestionsBetween(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error) {
+	return list[ask.StewardQuestion](ctx, t.Pool, tenant, "stq", "at >= $3 AND at < $4", "at, id", from, to)
+}
+
+// UpdateStewardQuestion implements ask.StewardStore, with the row locked.
+func (t Traces) UpdateStewardQuestion(ctx context.Context, tenant, id string, f func(*ask.StewardQuestion) error) (ask.StewardQuestion, error) {
+	return update(ctx, t.Pool, tenant, "stq", id, fmt.Errorf("questions: no question %s", id), stqMeta, f)
 }
 
 var _ ask.QuestionStore = Traces{}
@@ -356,7 +390,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one

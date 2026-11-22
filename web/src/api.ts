@@ -216,3 +216,61 @@ export function openShare(id: string, f: Fetch = fetch): Promise<SharedQuestion>
 export function spaceName(space: string): string {
   return space.startsWith("spc_") ? space.slice(4) : "";
 }
+
+// ---- Questions to the stewards and notes (sb-ask(3); SB-1704, SB-1705) ----
+
+export interface ReplyView {
+  text: string;
+  at: string;
+  cites: SearchResult[];
+  dropped: number;
+  note: boolean;
+}
+
+export interface MyQuestion {
+  id: string;
+  question: string;
+  space: string;
+  at: string;
+  state: "open" | "answered";
+  reply?: ReplyView;
+}
+
+export interface QueueQuestion {
+  id: string;
+  question: string;
+  at: string;
+  state: "open" | "answered";
+  reply?: { by: string; text: string; cites: string[]; at: string; note?: string };
+}
+
+export interface NoteResult {
+  path: string;
+  readers: number;
+  narrower: number;
+  action?: string;
+  state?: string;
+  receipt?: string;
+}
+
+export function sendToStewards(question: string, trace: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
+  return call(inSpace("/v1/questions", space), post({ question, trace }), f);
+}
+
+export async function listQuestions(f: Fetch = fetch): Promise<MyQuestion[]> {
+  const data = await call<{ items?: MyQuestion[] }>("/v1/questions", {}, f);
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export async function stewardQueue(space: string, f: Fetch = fetch): Promise<QueueQuestion[]> {
+  const data = await call<{ items?: QueueQuestion[] }>(`/v1/spaces/${encodeURIComponent(space)}/questions`, {}, f);
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export function replyToQuestion(space: string, id: string, text: string, cites: string[], f: Fetch = fetch): Promise<unknown> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/reply`, post({ text, cites }), f);
+}
+
+export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch): Promise<NoteResult> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title } : { title, confirm }), f);
+}

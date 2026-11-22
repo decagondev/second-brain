@@ -7,6 +7,7 @@ import { FeedbackBar } from "./Feedback";
 import { DraftPanel } from "./Draft";
 import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
+import { AskStewards, QuestionsView } from "./Questions";
 
 interface Turn {
   question: string;
@@ -14,11 +15,12 @@ interface Turn {
   error?: ApiError;
 }
 
-type Tab = "answer" | "documents" | "saved";
+type Tab = "answer" | "documents" | "saved" | "questions";
 const tabs: { id: Tab; name: string }[] = [
   { id: "answer", name: "Answer" },
   { id: "documents", name: "Documents" },
   { id: "saved", name: "Saved" },
+  { id: "questions", name: "Questions" },
 ];
 
 // Errors after which the same text can still be searched: search needs no model (SB-1701).
@@ -156,6 +158,7 @@ export function App({ fetcher, share }: { fetcher?: Fetch; share?: string }) {
               {t.answer && <AnswerView answer={t.answer} />}
               {t.answer && <FeedbackBar answer={t.answer} fetcher={fetcher} />}
               {t.answer && <TurnTools question={t.question} fetcher={fetcher} space={space || undefined} />}
+              {t.answer && <AskStewards question={t.question} answer={t.answer} space={space || undefined} fetcher={fetcher} />}
               {t.error && (
                 <div className="error" role="alert">
                   {t.error.code === "EAUTH" ? (
@@ -225,6 +228,9 @@ export function App({ fetcher, share }: { fetcher?: Fetch; share?: string }) {
       </div>
       <div role="tabpanel" id={`${base}-panel-saved`} aria-labelledby={`${base}-tab-saved`} hidden={tab !== "saved"}>
         {tab === "saved" && <SavedView fetcher={fetcher} onAsk={askAgain} />}
+      </div>
+      <div role="tabpanel" id={`${base}-panel-questions`} aria-labelledby={`${base}-tab-questions`} hidden={tab !== "questions"}>
+        {tab === "questions" && <QuestionsView fetcher={fetcher} />}
       </div>
     </main>
   );

@@ -33,6 +33,16 @@ when { principal.tenant == resource.tenant && context has groups && resource.ste
 permit (principal, action == Action::"review_space", resource is SpaceConfig)
 when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
 
+// Stewards answer their space's questions; questions_to answers company-wide ones (SB-1704).
+permit (principal, action == Action::"answer_questions", resource is SpaceConfig)
+when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
+
+// A note is published only by a steward of its space (SB-1705): the cell passes the space's
+// stewards and the caller's groups; a call without them is refused.
+forbid (principal, action == Action::"call_tool", resource is Tool)
+when { resource.name == "note-publish" }
+unless { context has stewards && context has groups && context.stewards.containsAny(context.groups) };
+
 // Legal stewards place and release legal holds (SB-1207).
 permit (principal, action in [Action::"place_hold", Action::"release_hold"], resource is LegalHold)
 when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };

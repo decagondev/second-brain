@@ -299,3 +299,30 @@ func (x Index) Search(ctx context.Context, s tenancy.Scope, tokens []string, q p
 	}
 	return out, nil
 }
+
+var _ ports.CiteLookup = Index{}
+
+// ChunksOf implements ports.CiteLookup.
+func (x Index) ChunksOf(ctx context.Context, tenant string, cites []string) ([]ports.Chunk, error) {
+	if err := x.own(tenant); err != nil {
+		return nil, err
+	}
+	sc, err := x.schema()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := x.Pool.Query(ctx, `SELECT `+cols+` FROM `+sc+`.chunks WHERE cite = ANY($1) ORDER BY id`, cites)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []ports.Chunk
+	for rows.Next() {
+		c, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}

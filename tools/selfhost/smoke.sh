@@ -63,6 +63,12 @@ for _ in $(seq 30); do ask "how long do customers have to return a pallet?" | gr
 check "an answer cites the example share (SB-1606)" "[ -n '$ok' ]"
 check "a file ann can't read is never cited" "! ask 'what are the salary bands?' | grep -q 'docs:people/'"
 check "a file with no ACL file is never cited" "! ask 'what is the example share?' | grep -q 'docs:README.md'"
+# S16.2: stewards' notes are the one folder of the share api may write; nobody else writes it.
+for svc in api ingest jobs; do
+  want=false; [ "$svc" = api ] && want=true
+  check "$svc mounts the share read-only and notes/ writable=$want (SB-1705)" \
+    "[ \"\$(\"$DOCKER\" inspect -f '{{range .Mounts}}{{.Destination}}={{.RW}} {{end}}' sb-selfhost-$svc-1 | tr ' ' '\n' | grep -E '^/srv/share(/notes)?=' | sort | tr '\n' ' ' | tr -d '\r')\" = '/srv/share=false /srv/share/notes=$want ' ]"
+done
 if [ -f build/selfhost/demo-password ]; then
   # S15.4: the demo's operator sees the cell's health and the unhelpful-answer queue.
   check "the console's health answers (SB-1607)" "\"$CURL\" -ksf ${R[*]} -b '$jarp' https://cell.localhost:8443/v1/admin/health | grep -q '\"connectors\":\\[{\"kind\":\"docs\"'"

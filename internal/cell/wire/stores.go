@@ -57,6 +57,7 @@ type TraceStore interface {
 	ask.FeedbackReader
 	ask.SpaceTagger
 	ask.QuestionStore
+	ask.StewardStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }

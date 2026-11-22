@@ -218,10 +218,12 @@ fi
 # --- compose.env carries the layout's settings; the admitted image digests stay.
 profiles=$SB_IDP
 [ "$SB_IDP" = company ] && profiles=
+[ -n "$SB_SHARE" ] || mkdir -p "$DIR/empty-share/notes" # the notes mount point (SB-1705)
 {
   echo "SB_TENANT=$SB_TENANT"; echo "SB_HOST=$SB_HOST"; echo "SB_PORT=$SB_PORT"; echo "SB_HTTP_PORT=$SB_HTTP_PORT"
   echo "SB_BIND=$SB_BIND"; echo "SB_BASE_URL=$BASE"; echo "SB_ISSUER=$ISSUER"
   echo "SB_SHARE=$(hostpath "$(abs "${SB_SHARE:-$DIR/empty-share}")")"; echo "SB_OFFSITE=$(hostpath "$(abs "$SB_OFFSITE")")"
+  [ -z "${SB_NOTES:-}" ] || echo "SB_NOTES=$(hostpath "$(abs "$SB_NOTES")")"
   echo "SB_PROFILES=$profiles"
   if [ -f "$DIR/compose.env" ]; then grep -E '^SB_[A-Z]+_IMAGE=' "$DIR/compose.env" || true; fi
 } >"$DIR/compose.env.new"
@@ -242,6 +244,9 @@ fill releases "$DIR/releases"
   sh -c 'cp /src/tenant.yaml /dst/tenant.yaml && mkdir -p /dst/iam /dst/backups && cp /src/iam/*.json /dst/iam/ &&
          chown -R 65532:65532 /dst && chmod 700 /dst' >/dev/null
 "$DOCKER" run --rm -u 0 -v sb-selfhost_idp-data:/dst "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 700 /dst' >/dev/null
+# Stewards' notes (SB-1705): written by api alone, read by ingest; on a real install SB_NOTES
+# names the share's own notes/ folder, given to 65532 by install.sh.
+[ -n "${SB_NOTES:-}" ] || "$DOCKER" run --rm -u 0 -v sb-selfhost_notes:/dst "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 755 /dst' >/dev/null
 
 # --- Up: the proxy first, so the cell can trust its local CA before it looks for its IdP.
 compose up -d proxy >/dev/null 2>&1 || compose up -d proxy

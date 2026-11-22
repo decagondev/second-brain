@@ -53,6 +53,8 @@ services:
       - state:/var/lib/sb/state
       - vault-api:/var/lib/sb/vault
       - ${SB_SHARE:-../../examples/share}:/srv/share:ro   # the docs: folder share (SB-1606)
+      # Stewards' notes (SB-1705): the one folder of the share api may write, and only api.
+      - ${SB_NOTES:-notes}:/srv/share/notes
     networks: [edge, data, egress]
 
   ingest:
@@ -66,6 +68,7 @@ services:
       - state:/var/lib/sb/state
       - vault-ingest:/var/lib/sb/vault
       - ${SB_SHARE:-../../examples/share}:/srv/share:ro
+      - ${SB_NOTES:-notes}:/srv/share/notes:ro
     networks: [data, egress]
 
   jobs:
@@ -79,6 +82,7 @@ services:
       - state:/var/lib/sb/state
       - vault-jobs:/var/lib/sb/vault
       - ${SB_SHARE:-../../examples/share}:/srv/share:ro
+      - ${SB_NOTES:-notes}:/srv/share/notes:ro
       # The backup's off-box copy: a directory on another machine, mounted on the host (SB-1605).
       - ${SB_OFFSITE:-../../build/selfhost/.offsite}:/srv/backup-offsite
     networks: [data, egress]
@@ -176,3 +180,4 @@ volumes:
   idp-data: {}
   pgdata: {}
   caddy: {}
+  notes: {}   # stewards' notes, unless SB_NOTES names the share's own notes/ folder

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 S16.2 Ask and capture: questions to stewards, replies become notes (SB-1704, SB-1705)
+
+**Wave/slice:** W16 / S16.2 · **Status:** Done.
+
+**What:** `ask.Stewards` (send, the asker's list, the steward's queue, reply, note), `questions_to` and `notes` in the manifest, the Cedar action `answer_questions` and a forbid on `note-publish` for non-stewards, `toolbus.Call.Context`, `retrieve.Allowed`, `ports.CiteLookup` in both indexes, the folder connector's note writer, the self-hosted `notes` mount, and the UI's Ask-the-stewards, Questions tab and steward queue.
+
+**Why this way:** A reply's cites are checked for the asker every time they look, through the same function retrieval ends with, so a steward's quote can never widen what the asker reads and a later loss of access shows at once. The steward rule is a policy decision on the caller's groups at that request, so moving out of the stewards group needs no cleanup. The note is the steward's own text, written by the one tool a person calls; the user's decision makes the steward's publish its approval, so the tool runs at once like an ordinary tool call, with the payload hash in the audit row before the write. The connector opens only `notes/` for writing and creates files exclusively, so it can't touch the share or overwrite a note, and the receipt is the hash of what it read back. Readers are resolved to emails because a folder ACL can't evaluate groups; that's why they are a snapshot of the members at publish time and can only narrow.
+
+**Learned:** In a cell with information barriers the bus places a call's target before it runs, and a note that doesn't exist yet can't be placed, so notes are refused there for now (documented, safe). Law tests that need an unanswered ask are steadier with a trace written directly than with a query a keyword index might still match.
+
+**Laws:** LAW-01 (cites re-checked for the asker), LAW-04 (audit before store), LAW-05 (Ran only with the note's hash as read back), LAW-07 (hashes, never text, in audit), LAW-09 (no model writes a note), LAW-13 (notes are source documents the next sync indexes), LAW-15 (the publish binds the note's hash), LAW-21 (a moved steward loses the queue).
+
 ## 2026-11-22 S16.1 Find: search without the model, who to ask, saved and shared questions (SB-1701 to SB-1703)
 
 **Wave/slice:** W16 / S16.1 · **Status:** Done.
