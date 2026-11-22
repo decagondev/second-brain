@@ -6,8 +6,13 @@ package ingestsvc
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"math/rand/v2"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -123,6 +128,12 @@ func (s *Service) Reroute(ctx context.Context) map[string]error {
 // stops the others. It returns each failure by kind (the jobs service's sync job).
 func (s *Service) SyncAll(ctx context.Context) map[string]error {
 	out := map[string]error{}
+	if _, err := s.EnsureEmbedder(ctx); err != nil {
+		for _, k := range s.Kinds() {
+			out[k] = err
+		}
+		return out
+	}
 	for _, k := range s.Kinds() {
 		if err := s.SyncerFor(k).Once(ctx); err != nil {
 			out[k] = err
@@ -195,6 +206,9 @@ func Backoff(n int) time.Duration {
 // Run re-routes, then syncs each connector in its own loop until ctx ends: every 60
 // seconds plus jitter while it succeeds, backing off while it fails.
 func (s *Service) Run(ctx context.Context) {
+	if _, err := s.EnsureEmbedder(ctx); err != nil {
+		s.Cell.Log.Error("ingest: the index couldn't be rebuilt for a new embedder", "err", err.Error())
+	}
 	for k, err := range s.Reroute(ctx) {
 		s.Cell.Metrics.Add("sb_ingest_reroute_failures_total", "Re-routes at start that failed (SB-1503).", map[string]string{"connector": k}, 1)
 		_ = err
@@ -242,4 +256,37 @@ func (s *Service) loop(ctx context.Context, kind string) {
 			return
 		}
 	}
+}
+
+// LegacyEmbedder is the embedder of an index built before the cell recorded one.
+const LegacyEmbedder = "local-hashing-64"
+
+// EnsureEmbedder rebuilds the index when the embedder changed since it was built (sb-ingest(7);
+// SB-1710): it drops the index and starts every connector again from the beginning, so no
+// two embedders' vectors are ever searched together. The embedder is recorded under state.
+func (s *Service) EnsureEmbedder(ctx context.Context) (bool, error) {
+	c := s.Cell
+	want := c.Embedder.Model()
+	file := filepath.Join(c.Config.State, "index", "embedder")
+	have := LegacyEmbedder
+	if b, err := os.ReadFile(file); err == nil {
+		have = strings.TrimSpace(string(b))
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return false, err
+	}
+	if have == want {
+		return false, nil
+	}
+	if err := c.Index.Drop(ctx, c.Config.Tenant); err != nil {
+		return false, err
+	}
+	for _, k := range s.Kinds() {
+		if err := c.Cursors.SaveCursor(ctx, c.Config.Tenant, k, ""); err != nil {
+			return false, err
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(file), 0o700); err != nil {
+		return false, err
+	}
+	return true, os.WriteFile(file, []byte(want+"\n"), 0o600)
 }

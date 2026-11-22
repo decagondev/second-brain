@@ -16,6 +16,7 @@ import (
 	"example.com/second-brain/internal/adapters/connectors/slack"
 	dirmem "example.com/second-brain/internal/adapters/directory/memory"
 	"example.com/second-brain/internal/adapters/embed/hashing"
+	embedoai "example.com/second-brain/internal/adapters/embed/openaicompat"
 	memindex "example.com/second-brain/internal/adapters/index/memory"
 	pgaudit "example.com/second-brain/internal/adapters/postgres/audit"
 	"example.com/second-brain/internal/adapters/postgres/cellstore"
@@ -119,7 +120,7 @@ func postgresStores(ctx context.Context, cfg Config) (st stores, err error) {
 	}
 	db := cellstore.DB{Pool: pool, Tenant: cfg.Tenant}
 	au := pgaudit.Store{Pool: pool, Tenant: cfg.Tenant}
-	ix := pgindex.Index{Pool: pool, Tenant: cfg.Tenant, Dim: hashing.Dim}
+	ix := pgindex.Index{Pool: pool, Tenant: cfg.Tenant, Dim: embedDim(cfg)}
 	sp := pgspaces.DB{Pool: pool}
 	// The services of one cell start together: one migrates at a time.
 	unlock, err := cellstore.Lock(ctx, pool, "sb-cell-migrate")
@@ -186,4 +187,20 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 	}
 	sort.Strings(kinds)
 	return health.Build(ctx, c.Runs, c.Syncs, kinds, now)
+}
+
+// embedderFor is the configured embedder (sb-cell(5), embed; SB-1710).
+func embedderFor(cfg Config) ports.Embedder {
+	if cfg.Embed.Provider == "openaicompat" {
+		return embedoai.Embedder{Base: cfg.Embed.Base, Name: cfg.Embed.Model, Dim: cfg.Embed.Dim, HTTP: &http.Client{Timeout: 2 * time.Minute}}
+	}
+	return hashing.Embedder{}
+}
+
+// embedDim is the configured embedder's vector size, which the Postgres index is made with.
+func embedDim(cfg Config) int {
+	if cfg.Embed.Provider == "openaicompat" {
+		return cfg.Embed.Dim
+	}
+	return hashing.Dim
 }

@@ -28,7 +28,6 @@ import (
 	"example.com/second-brain/internal/adapters/connectors/quickbooks"
 	"example.com/second-brain/internal/adapters/connectors/slack"
 	cursorfs "example.com/second-brain/internal/adapters/cursor/filestore"
-	"example.com/second-brain/internal/adapters/embed/hashing"
 	killfs "example.com/second-brain/internal/adapters/kill/localfs"
 	logfs "example.com/second-brain/internal/adapters/logs/localfs"
 	"example.com/second-brain/internal/adapters/model/anthropic"
@@ -107,7 +106,9 @@ type Cell struct {
 	Proposals proposals.Store
 	Actions   ActionStore
 	Logs      *logfs.Files
-	Redact    *obs.Redactor
+	// Embedder is the configured embedder (sb-cell(5), embed); ingest and asks share it.
+	Embedder ports.Embedder
+	Redact   *obs.Redactor
 	// Secret reads vault://tenants/TENANT/PATH at call time.
 	Secret func(path string) func(context.Context) (string, error)
 	// HeldNow is the active legal holds, read when asked; holds that can't be read hold
@@ -305,6 +306,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		return nil, fmt.Errorf("%w: kill switches: %v", ErrConfig, err)
 	}
 	c.Directory, c.Sessions, c.Spaces, c.Index, c.Traces, c.Holds = st.directory, st.sessions, st.spaces, st.index, st.traces, st.holds
+	c.Embedder = embedderFor(cfg)
 	c.HeldNow = func(ctx context.Context) holds.Set {
 		set, err := holds.Active(ctx, c.Holds)
 		if err != nil {
@@ -394,7 +396,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		}
 		return u.Emails, nil
 	}
-	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: hashing.Embedder{}, Auth: authz,
+	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: c.Embedder, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
 		NewID: newID, Now: time.Now, Metrics: c.Metrics, Enabled: func(a string) bool { return contains(m.Agents, a) },
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
@@ -617,6 +619,9 @@ func buildModel(cfg Config, tenant string, secret func(string) func(context.Cont
 	var adapter ports.Model
 	hc := &http.Client{Timeout: 60 * time.Second}
 	key := secret("model")
+	if cfg.Model.Local {
+		key = func(context.Context) (string, error) { return "", nil } // a model on the box holds no secret
+	}
 	switch cfg.Model.Provider {
 	case "extractive":
 		adapter = extractive.Model{}

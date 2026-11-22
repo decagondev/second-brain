@@ -59,6 +59,8 @@ It never starts with a part switched off.
 | `model.base` | URL | for a gateway provider | The provider's API |
 | `model.id` | string | for a gateway provider | The model id |
 | `model.price.in_per_m`, `model.price.out_per_m` | number | for a gateway provider | USD per million input and output tokens, until the release bundle carries the price table: the budget guard (`budget_usd_month`), the weekly report and the cost statement use it. `extractive` costs nothing |
+| `embed.provider` | string | no, `hashing` | `hashing` (the local 64-dimension embedder), or `openaicompat`: `POST {embed.base}/embeddings` with `embed.model`, no key, returning `embed.dim` numbers a text (SB-1710). A different embedder than the one the index was built with rebuilds the index (sb-ingest(7)) |
+| `embed.base`, `embed.model`, `embed.dim` | URL, string, int | with `openaicompat` | The embeddings endpoint (on a self-hosted cell `http://model-embed:8080/v1`, on the `data` network), the model's id, and its vector size (1 to 4096) |
 | `connectors.KIND` | object | no | Overrides for one connector: `base` (the vendor API's address, for a sandbox or a recorded fake). For `docs: folder` it is required and names the directory, `file:///DIR`; the connector keeps its listings under `state/connectors/KIND/` (sb-connector(3), SB-1606) |
 | `chat.team_id` | string | when `chat: slack` | The tenant's Slack workspace id: the chat app (sb-ask(3)) answers only requests from it, and `POST /connectors/slack/events` takes its events |
 | `alerts.webhook` | https URL | no | Where alerts are posted as JSON (sb-observability(7)); every alert is also logged and counted in `sb_alerts_total` |

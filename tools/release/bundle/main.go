@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 
+	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/prompts"
 	"example.com/second-brain/internal/core/release"
@@ -38,8 +39,9 @@ func main() {
 	created := flag.String("created", "", "build date, YYYY-MM-DD")
 	out := flag.String("out", "bundle.json", "where to write the manifest")
 	digestOut := flag.String("digest-out", "", "also write the message to sign: sb-release:v1:<bundle digest>")
+	weights := flag.String("model-weights", "", "a model on the box (SB-1710): JSON {model, weights_sha256, embedder} over release/model.json")
 	flag.Parse()
-	m, err := build(*root, arts, *created, images...)
+	m, err := buildWith(*root, arts, *created, *weights, images...)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "bundle:", err)
 		os.Exit(1)
@@ -65,7 +67,7 @@ func main() {
 
 var imageDigest = regexp.MustCompile(`^sha256:([0-9a-f]{64})$`)
 
-func build(root string, arts []string, created string, images ...string) (release.Manifest, error) {
+func buildWith(root string, arts []string, created, weights string, images ...string) (release.Manifest, error) {
 	b := release.Bundle{Code: map[string]string{}, Prompts: map[string]string{}, Policies: map[string]string{}, Created: created}
 	for _, im := range images {
 		name, d, ok := strings.Cut(im, "=")
@@ -102,6 +104,8 @@ func build(root string, arts []string, created string, images ...string) (releas
 		t := workflow.Templates[n]
 		b.Tools = append(b.Tools, release.Tool{Name: t.Tool, Connector: t.Connector, Consequential: true, Workflow: n, SchemaSHA256: release.SHA256([]byte(t.Schema))})
 	}
+	// A steward's note (SB-1705): the one tool a person calls, on the folder connector.
+	b.Tools = append(b.Tools, release.Tool{Name: ask.NoteTool, Connector: "docs", SchemaSHA256: release.SHA256([]byte(ask.NoteSchema))})
 	files, _ := filepath.Glob(filepath.Join(root, "policy", "platform", "*.cedar"))
 	files = append(files, filepath.Join(root, "policy", "schema.cedarschema"))
 	for _, f := range files {
@@ -119,6 +123,11 @@ func build(root string, arts []string, created string, images ...string) (releas
 	if err := json.Unmarshal(mb, &b.Model); err != nil {
 		return release.Manifest{}, fmt.Errorf("release/model.json: %w", err)
 	}
+	if weights != "" {
+		if err := overlayWeights(&b.Model, weights); err != nil {
+			return release.Manifest{}, err
+		}
+	}
 	gate, err := os.ReadFile(filepath.Join(root, "evals", "gate.yaml"))
 	if err != nil {
 		return release.Manifest{}, err
@@ -126,4 +135,22 @@ func build(root string, arts []string, created string, images ...string) (releas
 	b.Gate = release.SHA256(gate)
 	b.Catalogue = release.SHA256(manifest.Catalogue)
 	return b.Seal()
+}
+
+// overlayWeights pins a model on the box over release/model.json (SB-1710).
+func overlayWeights(m *release.Model, path string) error {
+	wb, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var w struct {
+		Model         string `json:"model"`
+		WeightsSHA256 string `json:"weights_sha256"`
+		Embedder      string `json:"embedder"`
+	}
+	if err := json.Unmarshal(wb, &w); err != nil || w.Model == "" || w.WeightsSHA256 == "" {
+		return fmt.Errorf("--model-weights wants {model, weights_sha256, embedder}")
+	}
+	m.Provider, m.Model, m.WeightsSHA256, m.Embedder = "openaicompat", w.Model, w.WeightsSHA256, w.Embedder
+	return nil
 }

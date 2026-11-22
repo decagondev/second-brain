@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,6 +22,7 @@ import (
 	"example.com/second-brain/internal/adapters/embed/hashing"
 	memindex "example.com/second-brain/internal/adapters/index/memory"
 	"example.com/second-brain/internal/adapters/model/extractive"
+	oai "example.com/second-brain/internal/adapters/model/openaicompat"
 	"example.com/second-brain/internal/adapters/policy/cedar"
 	spacemem "example.com/second-brain/internal/adapters/spaces/memory"
 	tracemem "example.com/second-brain/internal/adapters/traces/memory"
@@ -155,7 +157,15 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 	case "misattributing":
 		model = extractive.Model{Shift: true}
 	default:
-		return nil, fmt.Errorf("unknown model %q (extractive, misattributing)", modelName)
+		// openaicompat=BASE#MODEL: the eval gate run on a model on the cell's own machine
+		// (sb-selfhost(7), A model on the box; SB-1710), with no key.
+		spec, ok := strings.CutPrefix(modelName, "openaicompat=")
+		base, id, ok2 := strings.Cut(spec, "#")
+		if !ok || !ok2 || base == "" || id == "" {
+			return nil, fmt.Errorf("unknown model %q (extractive, misattributing, openaicompat=BASE#MODEL)", modelName)
+		}
+		model = modelAt{oai.Client{BaseURL: base, HTTP: &http.Client{Timeout: 5 * time.Minute},
+			Key: func(context.Context) (string, error) { return "", nil }}, id}
 	}
 
 	src := mock.NewSource("docs")
@@ -369,3 +379,17 @@ func loadPolicies(dir string) (policy.Evaluator, error) {
 type nopRecorder struct{}
 
 func (nopRecorder) RecordDecision(context.Context, policy.Record) error { return nil }
+
+// modelAt asks one model id at an OpenAI-compatible endpoint.
+type modelAt struct {
+	c  oai.Client
+	id string
+}
+
+func (m modelAt) Complete(ctx context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
+	req.Model = m.id
+	if req.MaxTokens == 0 {
+		req.MaxTokens = 1024
+	}
+	return m.c.Complete(ctx, req)
+}

@@ -28,7 +28,13 @@ type Model struct {
 	Provider  string `json:"provider"`
 	Model     string `json:"model"`
 	MaxTokens int    `json:"max_tokens"`
+	// For a model on the cell's own machine (SB-1710): the weights file's SHA-256, and the
+	// embedding model as MODEL@sha256:HEX.
+	WeightsSHA256 string `json:"weights_sha256,omitempty"`
+	Embedder      string `json:"embedder,omitempty"`
 }
+
+var embedderRe = regexp.MustCompile(`^[A-Za-z0-9._:/-]+@sha256:[0-9a-f]{64}$`)
 
 // Bundle is bundle.json without its id.
 type Bundle struct {
@@ -71,6 +77,9 @@ func (b Bundle) Validate() error {
 		if t.Name == "" || !hexRe.MatchString(t.SchemaSHA256) {
 			return fmt.Errorf("release: tool %q needs a schema hash", t.Name)
 		}
+	}
+	if (b.Model.WeightsSHA256 != "" && !hexRe.MatchString(b.Model.WeightsSHA256)) || (b.Model.Embedder != "" && !embedderRe.MatchString(b.Model.Embedder)) {
+		return fmt.Errorf("release: the model's weights or embedder pin is malformed")
 	}
 	if b.Catalogue != "" && !hexRe.MatchString(b.Catalogue) {
 		return fmt.Errorf("release: the catalogue has a bad sha256")

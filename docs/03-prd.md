@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (accepted 2026-11-22) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)).
 
 ## Problem
 
@@ -641,7 +641,7 @@ gantt
 
 #### W16 Team Knowledge
 
-*A team hands knowledge to each other through the brain and keeps it current, on one sovereign machine: ten small features with no new service, store or module. Planned 2026-11-22 and accepted by the user the same day ([09-team-knowledge.md](09-team-knowledge.md)).*
+*A team hands knowledge to each other through the brain and keeps it current, on one sovereign machine: ten small features with no new service, store or module. Planned 2026-11-22 and accepted by the user the same day ([09-team-knowledge.md](09-team-knowledge.md)); built 2026-11-22.*
 
 **Exit gate**
 

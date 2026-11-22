@@ -28,6 +28,19 @@ cp -r policy/platform "$ROOT/policy/"
 cp -r examples/share examples/policies "$ROOT/examples/"
 cp build/images/digests.txt build/images/*.spdx.json "$ROOT/build/images/" 2>/dev/null || true
 cp manual/sb-selfhost.7.md manual/sb-idp.1.md "$ROOT/"
+# The model profile's weights and its pinned image (SB-1710), when the operator names them,
+# so an air-gapped site never downloads them; install runs model.sh with SB_MODEL_GGUF and
+# SB_EMBED_GGUF pointing here.
+if [ -n "${SB_MODEL_GGUF:-}" ] && [ -n "${SB_EMBED_GGUF:-}" ]; then
+  mkdir -p "$ROOT/models"
+  cp "$SB_MODEL_GGUF" "$ROOT/models/model.gguf" && cp "$SB_EMBED_GGUF" "$ROOT/models/embed.gguf"
+  (cd "$ROOT/models" && sha256sum ./*.gguf >SHA256SUMS)
+  if [ -f build/selfhost/model.json ]; then
+    img=$(sed -nE 's/^ *"image": *"([^"]+)".*/\1/p' build/selfhost/model.json)
+    f=$ROOT/images/99-model-server.tar
+    if command -v wslpath >/dev/null && [[ "$DOCKER" == *.exe ]]; then "$DOCKER" save -o "$(wslpath -w "$f")" "$img"; else "$DOCKER" save -o "$f" "$img"; fi
+  fi
+fi
 (cd "$ROOT/images" && sha256sum ./*.tar >SHA256SUMS)
 tar -C "$OUT" -czf "$OUT/second-brain-selfhost-$COMMIT.tar.gz" "second-brain-selfhost-$COMMIT"
 rm -rf "$ROOT"

@@ -69,6 +69,17 @@ for svc in api ingest jobs; do
   check "$svc mounts the share read-only and notes/ writable=$want (SB-1705)" \
     "[ \"\$(\"$DOCKER\" inspect -f '{{range .Mounts}}{{.Destination}}={{.RW}} {{end}}' sb-selfhost-$svc-1 | tr ' ' '\n' | grep -E '^/srv/share(/notes)?=' | sort | tr '\n' ' ' | tr -d '\r')\" = '/srv/share=false /srv/share/notes=$want ' ]"
 done
+# S16.5: with the model profile, both model servers sit on the data network alone, publish
+# nothing, run as the service user on a read-only root, and the cell answers through them.
+if [ -f build/selfhost/model.json ]; then
+  for svc in model model-embed; do
+    c=sb-selfhost-$svc-1
+    check "$svc is on the data network only, with no published port (SB-1710)" \
+      "[ \"\$(\"$DOCKER\" inspect -f '{{range \$k, \$v := .NetworkSettings.Networks}}{{\$k}} {{end}}|{{len .NetworkSettings.Ports}}' $c | tr -d '\r')\" = 'sb-selfhost_data |0' ]"
+    check "$svc runs as 65532 on a read-only root (SB-1710)" "[ \"\$(\"$DOCKER\" inspect -f '{{.Config.User}} {{.HostConfig.ReadonlyRootfs}}' $c | tr -d '\r')\" = '65532:65532 true' ]"
+  done
+  check "an answer comes from the model on the box (SB-1710)" "ask 'how long do customers have to return a pallet?' | grep -q 'docs:operations/returns-policy.md@'"
+fi
 if [ -f build/selfhost/demo-password ]; then
   # S15.4: the demo's operator sees the cell's health and the unhelpful-answer queue.
   check "the console's health answers (SB-1607)" "\"$CURL\" -ksf ${R[*]} -b '$jarp' https://cell.localhost:8443/v1/admin/health | grep -q '\"connectors\":\\[{\"kind\":\"docs\"'"

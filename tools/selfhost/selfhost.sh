@@ -164,7 +164,17 @@ else
   RETAIN='[]'
 fi
 
-# --- The cell's configuration (sb-cell(5)).
+# --- The cell's configuration (sb-cell(5)). With a gated model on the box (build/selfhost/
+# model.json, written by model.sh only after the eval gate passed), the model profile.
+MODEL='{ "provider": "extractive" }'
+EMBED='{ "provider": "hashing" }'
+MODEL_IMAGE=
+if [ -f "$DIR/model.json" ]; then
+  mf() { sed -nE "s/^ *\"$1\": *\"?([^\",]*)\"?,?\$/\1/p" "$DIR/model.json"; }
+  MODEL="{ \"provider\": \"openaicompat\", \"base\": \"http://model:8080/v1\", \"id\": \"$(mf model)\", \"local\": true }"
+  EMBED="{ \"provider\": \"openaicompat\", \"base\": \"http://model-embed:8080/v1\", \"model\": \"$(mf embed_model)\", \"dim\": $(mf embed_dim) }"
+  MODEL_IMAGE=$(mf image)
+fi
 CONNECTORS='{}'
 if [ -n "$SB_SHARE" ]; then CONNECTORS='{ "docs": { "base": "file:///srv/share" } }'; fi
 cat >"$DIR/cell.json" <<JSON
@@ -178,7 +188,8 @@ cat >"$DIR/cell.json" <<JSON
   "base_url": "$BASE",
   "oidc": { "client_id": "$CLIENT", "issuer": "$ISSUER" },
   "web": "/sb/web",
-  "model": { "provider": "extractive" },
+  "model": $MODEL,
+  "embed": $EMBED,
   "database": "vault://tenants/$SB_TENANT/database",
   "connectors": $CONNECTORS,
   "worm": { "endpoint": "http://worm:7070", "bucket": "sb-worm" },
@@ -218,6 +229,7 @@ fi
 # --- compose.env carries the layout's settings; the admitted image digests stay.
 profiles=$SB_IDP
 [ "$SB_IDP" = company ] && profiles=
+[ -z "$MODEL_IMAGE" ] || profiles="$profiles model"
 [ -n "$SB_SHARE" ] || mkdir -p "$DIR/empty-share/notes" # the notes mount point (SB-1705)
 {
   echo "SB_TENANT=$SB_TENANT"; echo "SB_HOST=$SB_HOST"; echo "SB_PORT=$SB_PORT"; echo "SB_HTTP_PORT=$SB_HTTP_PORT"
@@ -225,6 +237,7 @@ profiles=$SB_IDP
   echo "SB_SHARE=$(hostpath "$(abs "${SB_SHARE:-$DIR/empty-share}")")"; echo "SB_OFFSITE=$(hostpath "$(abs "$SB_OFFSITE")")"
   [ -z "${SB_NOTES:-}" ] || echo "SB_NOTES=$(hostpath "$(abs "$SB_NOTES")")"
   echo "SB_PROFILES=$profiles"
+  [ -z "$MODEL_IMAGE" ] || echo "SB_MODEL_IMAGE=$MODEL_IMAGE"
   if [ -f "$DIR/compose.env" ]; then grep -E '^SB_[A-Z]+_IMAGE=' "$DIR/compose.env" || true; fi
 } >"$DIR/compose.env.new"
 mv "$DIR/compose.env.new" "$DIR/compose.env"

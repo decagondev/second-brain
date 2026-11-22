@@ -36,7 +36,7 @@ Proposed 2026-11-22 after W15 and accepted by the user the same day, with every 
 - [x] A new member sees their space's start list, and a successor gets a cited handover brief
 - [x] Stewards see stale, relied-on documents; askers see what changed, each item checked live
 - [ ] The self-hosted demo answers with the `model` profile and nothing leaves the box (`make selfhost-smoke`)
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

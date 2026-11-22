@@ -20,7 +20,7 @@ summary: Epics, waves, slices and tickets.
 | W13 Hardening | 5 | 0 | 0 | Planned 2026-11-20 with the user (E14): review, fuzz, tidy, manual and code agree, coverage |
 | W14 Cell Runtime | 8 | 1 | 0 | Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end |
 | W15 Self-hosted Cell | 8 | 1 | 0 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins. **W15 built.** Open: SB-1605 (a run on a real VM) |
-| W16 Team Knowledge | 9 | 0 | 1 | Planned 2026-11-22 with the user (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)) |
+| W16 Team Knowledge | 9 | 1 | 0 | Planned 2026-11-22 with the user (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)). **W16 built.** Open: SB-1710 (a run with real model weights) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -374,4 +374,4 @@ flowchart LR
 | [SB-1707](E17-team-knowledge/SB-1707-handover-brief.md) | S16.3 | E17 | Handover brief for a successor | Done |
 | [SB-1708](E17-team-knowledge/SB-1708-what-changed.md) | S16.4 | E17 | What changed in my spaces | Done |
 | [SB-1709](E17-team-knowledge/SB-1709-documents-to-review.md) | S16.4 | E17 | Documents to review for stewards | Done |
-| [SB-1710](E17-team-knowledge/SB-1710-local-model-on-the-box.md) | S16.5 | E17 | A local model on the box | Open |
+| [SB-1710](E17-team-knowledge/SB-1710-local-model-on-the-box.md) | S16.5 | E17 | A local model on the box | In review |

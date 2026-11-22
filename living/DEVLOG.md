@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 S16.5 On the box: a local model and embedder, pinned and gated (SB-1710)
+
+**Wave/slice:** W16 / S16.5 · **Status:** In review (the run needs model weights the user fetches). **W16 built**: SB-1701 to SB-1709 Done.
+
+**What:** `embed` in sb-cell(5) with an `openaicompat` embedder, `model.local`, an embedder change that rebuilds the index, the bundle's `weights_sha256` and `embedder` pins, the compose profile `model` (two llama.cpp servers from one pinned image), `make selfhost-model`, model weights in the offline bundle, and smoke checks for the profile.
+
+**Why this way:** The cell already spoke the OpenAI API, so the whole feature is configuration, an embedder adapter and a script, with no new service the cell must run. llama.cpp's server serves chat or embeddings well, not both from one process, so the profile runs the same pinned image twice, one model each; that keeps one binary and one digest to trust. The gate runs on the exact weights before the cell is ever pointed at them, and the switch is written only after a pass, so "a model that fails the gate doesn't run" is the order of the script, not a hope. An embedder change is the one change the index can't absorb in place, so the ingest service treats it as a rebuild from the sources, the law's own remedy (LAW-13).
+
+**Learned:** A record of what built the index has to live outside the index, or dropping the index forgets why it was dropped; it lives under the cell's state. A cell that predates the record is treated as built by the hashing embedder, which it was.
+
+**Laws:** LAW-02 (one model server per cell, on its own network), LAW-06 (the model's weights are part of the release), LAW-07 (the model servers hold no secret), LAW-13 (a new embedder rebuilds from the sources).
+
 ## 2026-11-22 S16.4 Keep it current: what changed, and documents to review (SB-1708, SB-1709)
 
 **Wave/slice:** W16 / S16.4 · **Status:** Done.

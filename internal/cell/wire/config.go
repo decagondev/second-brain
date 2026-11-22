@@ -37,7 +37,16 @@ type Config struct {
 			InPerM  float64 `json:"in_per_m"`
 			OutPerM float64 `json:"out_per_m"`
 		} `json:"price"`
+		// Local is a model on the cell's own machine (SB-1710): no key, and a price of 0.
+		Local bool `json:"local"`
 	} `json:"model"`
+	// Embed is the embedder (sb-ingest(7); SB-1710): "" or hashing, or openaicompat.
+	Embed struct {
+		Provider string `json:"provider"`
+		Base     string `json:"base"`
+		Model    string `json:"model"`
+		Dim      int    `json:"dim"`
+	} `json:"embed"`
 	Connectors map[string]ConnectorConfig `json:"connectors"`
 	Chat       struct {
 		TeamID string `json:"team_id"`
@@ -151,14 +160,8 @@ func Parse(b []byte) (Config, error) {
 			return Config{}, fmt.Errorf("%w: %s %q must be an http(s) URL", ErrConfig, name, v)
 		}
 	}
-	if !Providers[c.Model.Provider] {
-		return Config{}, fmt.Errorf("%w: model.provider %q is not one of extractive, openaicompat, anthropic, groq, openrouter", ErrConfig, c.Model.Provider)
-	}
-	if c.Model.Provider != "extractive" && (c.Model.Base == "" || c.Model.ID == "") {
-		return Config{}, fmt.Errorf("%w: model.provider %s needs model.base and model.id", ErrConfig, c.Model.Provider)
-	}
-	if c.Model.Provider != "extractive" && (c.Model.Price.InPerM <= 0 || c.Model.Price.OutPerM <= 0) {
-		return Config{}, fmt.Errorf("%w: model.provider %s needs model.price, or the budget can't be kept", ErrConfig, c.Model.Provider)
+	if err := c.checkModel(); err != nil {
+		return Config{}, err
 	}
 	for field, v := range map[string]string{"alerts.webhook": c.Alerts.Webhook, "alerts.report_webhook": c.Alerts.ReportWebhook} {
 		if u, err := url.Parse(v); v != "" && (err != nil || u.Scheme != "https" || u.Host == "") {
@@ -231,6 +234,32 @@ func (r ReleaseConfig) check() error {
 		}
 	default:
 		return fmt.Errorf("%w: release.deploy.kind must be local or gcp", ErrConfig)
+	}
+	return nil
+}
+
+// checkModel checks the model and the embedder (sb-cell(5); SB-1710).
+func (c Config) checkModel() error {
+	if !Providers[c.Model.Provider] {
+		return fmt.Errorf("%w: model.provider %q is not one of extractive, openaicompat, anthropic, groq, openrouter", ErrConfig, c.Model.Provider)
+	}
+	if c.Model.Provider != "extractive" && (c.Model.Base == "" || c.Model.ID == "") {
+		return fmt.Errorf("%w: model.provider %s needs model.base and model.id", ErrConfig, c.Model.Provider)
+	}
+	switch c.Embed.Provider {
+	case "", "hashing":
+	case "openaicompat":
+		if c.Embed.Base == "" || c.Embed.Model == "" || c.Embed.Dim < 1 || c.Embed.Dim > 4096 {
+			return fmt.Errorf("%w: embed.provider openaicompat needs embed.base, embed.model and embed.dim (1 to 4096)", ErrConfig)
+		}
+	default:
+		return fmt.Errorf("%w: embed.provider %q is not hashing or openaicompat", ErrConfig, c.Embed.Provider)
+	}
+	if c.Model.Local && c.Model.Provider != "openaicompat" {
+		return fmt.Errorf("%w: model.local is for an openaicompat model on the cell's own machine", ErrConfig)
+	}
+	if c.Model.Provider != "extractive" && !c.Model.Local && (c.Model.Price.InPerM <= 0 || c.Model.Price.OutPerM <= 0) {
+		return fmt.Errorf("%w: model.provider %s needs model.price, or the budget can't be kept", ErrConfig, c.Model.Provider)
 	}
 	return nil
 }

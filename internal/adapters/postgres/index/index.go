@@ -78,6 +78,12 @@ func (x Index) Migrate(ctx context.Context) error {
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS seen timestamptz`,
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS location text NOT NULL DEFAULT ''`,
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS rebuilt boolean NOT NULL DEFAULT false`,
+		// A different embedder (SB-1710): the index is derived, so vectors of another size
+		// are dropped with their chunks and the column resized; the ingest service resyncs.
+		`DO $$ BEGIN IF (SELECT atttypmod FROM pg_attribute WHERE attrelid = '` + sc + `.chunks'::regclass AND attname = 'embedding') <> ` + strconv.Itoa(x.Dim) + ` THEN
+			TRUNCATE ` + sc + `.chunks, ` + sc + `.docs;
+			ALTER TABLE ` + sc + `.chunks ALTER COLUMN embedding TYPE vector(` + strconv.Itoa(x.Dim) + `);
+		END IF; END $$`,
 		`CREATE INDEX IF NOT EXISTS chunks_acl ON ` + sc + `.chunks USING gin (acl)`,
 		`CREATE INDEX IF NOT EXISTS chunks_tsv ON ` + sc + `.chunks USING gin (tsv)`,
 		`CREATE INDEX IF NOT EXISTS chunks_src ON ` + sc + `.chunks (kind, source_id)`,

@@ -152,6 +152,25 @@ services:
       - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/scim:/run/sb/scim:ro
     networks: [edge]
 
+  # A model on the box (SB-1710, profile model): llama.cpp's server, one image pinned by
+  # digest (SB_MODEL_IMAGE, set by tools/selfhost/model.sh), weights read-only, on the data
+  # network only: no route out, no published port, no secret.
+  model:
+    <<: *hardened
+    image: ${SB_MODEL_IMAGE:-sb-model-image-unset}
+    profiles: [model]
+    command: ["--host", "0.0.0.0", "--port", "8080", "-m", "/models/model.gguf", "--ctx-size", "8192", "--no-webui"]
+    volumes: ["models:/models:ro"]
+    networks: [data]
+
+  model-embed:
+    <<: *hardened
+    image: ${SB_MODEL_IMAGE:-sb-model-image-unset}
+    profiles: [model]
+    command: ["--host", "0.0.0.0", "--port", "8080", "-m", "/models/embed.gguf", "--embeddings", "--no-webui"]
+    volumes: ["models:/models:ro"]
+    networks: [data]
+
   devidp:           # development only: the IdP with no passwords, on this machine's loopback
     <<: *hardened
     image: sb-devidp:local
@@ -180,4 +199,5 @@ volumes:
   idp-data: {}
   pgdata: {}
   caddy: {}
+  models: {}  # the model profile's weights, copied in by tools/selfhost/model.sh (SB-1710)
   notes: {}   # stewards' notes, unless SB_NOTES names the share's own notes/ folder

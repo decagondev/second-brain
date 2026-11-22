@@ -78,7 +78,7 @@ A document becomes chunks in a fixed order: normalise (line endings, trailing sp
 
 Each chunk's id is derived from tenant, `cite` and span, so ingesting the same `(source, version)` twice writes exactly the same chunks: ingest is idempotent. A newer version replaces all of the document's chunks in one write. An older or equal version than the one indexed changes nothing.
 
-Embeddings come through the `Embedder` port. Until the model provider is chosen (Q-04), cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. Chunks are written through the `Index` port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.
+Embeddings come through the `Embedder` port. By default cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. A cell can instead embed with an OpenAI-compatible embeddings endpoint (`embed` in sb-cell(5); SB-1710), such as the model server on a self-hosted cell's own machine. **Changing the embedder rebuilds the index from the sources:** the ingest service records the embedder's id and dimensions under the cell's state, and when they differ at start it drops the index and starts every connector's sync again from the beginning, so no chunk is ever searched with vectors from two embedders; the Postgres index changes its vector column's size when it is empty (LAW-13). Chunks are written through the `Index` port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.
 
 ### Spaces and labels (SB-1005)
 

@@ -46,3 +46,27 @@ func TestDurableRefuses(t *testing.T) {
 		t.Fatalf("Build: %v", err)
 	}
 }
+
+// SB-1710: a model on the box is local (no key, price 0); the embedder is checked whole.
+func TestParseModelOnTheBox(t *testing.T) {
+	local := strings.Replace(good, `"model": {"provider": "extractive"}`,
+		`"model": {"provider": "openaicompat", "base": "http://model:8080/v1", "id": "qwen", "local": true},
+		 "embed": {"provider": "openaicompat", "base": "http://model-embed:8080/v1", "model": "nomic", "dim": 768}`, 1)
+	c, err := Parse([]byte(local))
+	if err != nil || !c.Model.Local || embedDim(c) != 768 || embedderFor(c).Model() != "openaicompat:nomic:768" {
+		t.Fatalf("%+v %v", c.Model, err)
+	}
+	for name, body := range map[string]string{
+		"priced elsewhere": strings.Replace(local, `"local": true`, `"local": false`, 1),
+		"local anthropic":  strings.Replace(local, `"provider": "openaicompat", "base": "http://model:8080/v1"`, `"provider": "anthropic", "base": "http://model:8080/v1"`, 1),
+		"no dim":           strings.Replace(local, `, "dim": 768`, ``, 1),
+		"bad embedder":     strings.Replace(local, `"provider": "openaicompat", "base": "http://model-embed`, `"provider": "mystery", "base": "http://model-embed`, 1),
+	} {
+		if _, err := Parse([]byte(body)); !errors.Is(err, ErrConfig) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if c, _ := Parse([]byte(good)); embedDim(c) != 64 || embedderFor(c).Model() != "local-hashing-64" {
+		t.Fatal("the default embedder changed")
+	}
+}

@@ -32,7 +32,7 @@ The bundle manifest, `bundle.json` (SB-503):
 | `tools` | Each registered tool: name, connector, consequential, workflow, and the SHA-256 of its payload schema |
 | `policies` | Each platform policy file and the schema, with SHA-256 |
 | `catalogue` | SHA-256 of the department template catalogue, `internal/core/manifest/catalogue.json` (sb-departments(7); SB-1101) |
-| `model` | `provider`, `model` and parameters (`max_tokens`) |
+| `model` | `provider`, `model` and parameters (`max_tokens`); for a model run on the cell's own machine (SB-1710), `weights_sha256`, the SHA-256 of the weights file, and `embedder`, the embedding model's id with its weights' SHA-256 (`MODEL@sha256:HEX`), so the release names the exact bytes it answers with |
 | `gate` | The SHA-256 of `evals/gate.yaml` the release was gated with |
 | `created` | The build date, `YYYY-MM-DD` |
 

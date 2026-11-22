@@ -7,7 +7,7 @@ summary: Research and concept for W16 (proposed): ten small features that make t
 
 | Version | Date | Owner | Status | Related |
 |---|---|---|---|---|
-| 0.2 | 2026-11-22 | Platform lead | Plan accepted (the user, 2026-11-22), with every recommended decision | [Principles](01-principles.md) · [ADR-0002](adr/ADR-0002-source-acl-is-authority.md) · [ADR-0022](adr/ADR-0022-self-hosted-cell.md) · [PRD waves](03-prd.md#waves) · [E17 plan](../epics/E17-team-knowledge/README.md) |
+| 0.2 | 2026-11-22 | Platform lead | Plan accepted (the user, 2026-11-22), with every recommended decision; built 2026-11-22 (SB-1710 in review) | [Principles](01-principles.md) · [ADR-0002](adr/ADR-0002-source-acl-is-authority.md) · [ADR-0022](adr/ADR-0022-self-hosted-cell.md) · [PRD waves](03-prd.md#waves) · [E17 plan](../epics/E17-team-knowledge/README.md) |
 
 ## Summary
 

@@ -384,6 +384,9 @@ type NoteResult struct {
 	Receipt string `json:"receipt,omitempty"`
 }
 
+// NoteSchema is note-publish's payload schema, pinned by the release bundle (sb-release(7)).
+const NoteSchema = `{"type":"object","additionalProperties":false,"required":["markdown","readers","owner"],"properties":{"markdown":{"type":"string","minLength":1,"maxLength":65536},"readers":{"type":"array","minItems":1,"maxItems":500,"items":{"type":"string"}},"owner":{"type":"string"},"label":{"type":"string"}}}`
+
 // NotePayload is note-publish's payload on the folder connector (sb-connector(3), Notes).
 type NotePayload struct {
 	Markdown string   `json:"markdown"`
