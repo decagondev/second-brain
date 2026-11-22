@@ -87,6 +87,9 @@ func Format(t Tenant) []byte {
 			if len(sp.Channels) > 0 {
 				fmt.Fprintf(&b, "    channels: %s%s", flowList(sp.Channels, true), nl)
 			}
+			if sp.ReviewAfterDays != 0 && sp.ReviewAfterDays != DefaultReviewAfterDays {
+				fmt.Fprintf(&b, "    review_after_days: %d%s", sp.ReviewAfterDays, nl)
+			}
 			if len(sp.StartHere) > 0 {
 				fmt.Fprintf(&b, "    start_here: %s%s", flowList(sp.StartHere, true), nl)
 			}

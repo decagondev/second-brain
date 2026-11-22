@@ -26,6 +26,10 @@ type Cite struct {
 	// Owner is who to ask about the cited document (SB-1702): set only for an owner who is
 	// one active directory user, and only ever on a cite the asker was allowed.
 	Owner *Person `json:"owner,omitempty"`
+	// AgeDays is whole days since the index first saw this version, and Stale is an age
+	// past the review_after_days of a space that holds it (SB-1709).
+	AgeDays *int `json:"age_days,omitempty"`
+	Stale   bool `json:"stale,omitempty"`
 }
 
 // Person is a document owner as an asker sees them: their email and job title, nothing else.

@@ -314,6 +314,9 @@ type Chunk struct {
 	// Location is the document's location at the source (Document.Location), for start
 	// lists and handover briefs (SB-1706, SB-1707).
 	Location string
+	// Rebuilt marks a version a rebuild first saw, whose Seen is the rebuild's time, not
+	// when it changed: "what changed" never lists one (SB-1708).
+	Rebuilt bool
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.
@@ -343,6 +346,8 @@ type DocQuery struct {
 	Refs   []SourceRef
 	Under  []SourceRef // ID is a location prefix ending in "/"
 	Owners []string    // owner emails, lower case
+	// SeenSince picks versions first seen at or after it, never rebuilt ones (SB-1708).
+	SeenSince time.Time
 }
 
 // DocLookup is an index that finds chunks by DocQuery (SB-1706, SB-1707); found chunks

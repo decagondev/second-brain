@@ -247,5 +247,5 @@ func matchDoc(c ports.Chunk, q ports.DocQuery) bool {
 			return true
 		}
 	}
-	return false
+	return !q.SeenSince.IsZero() && !c.Rebuilt && !c.Seen.IsZero() && !c.Seen.Before(q.SeenSince)
 }

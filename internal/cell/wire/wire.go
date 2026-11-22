@@ -165,6 +165,7 @@ type usage struct {
 	ledger  *usagefs.Ledger
 	actions ActionStore
 	dir     DirectoryStore
+	index   IndexStore
 }
 
 func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
@@ -173,6 +174,36 @@ func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([
 func (u usage) StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error) {
 	return u.traces.StewardQuestionsBetween(ctx, tenant, from, to)
 }
+
+// ChangedDocs counts documents whose version the index first saw in [from, to), by the
+// space holding them ("company" for none), never a rebuilt version (SB-1708).
+func (u usage) ChangedDocs(ctx context.Context, tenant string, from, to time.Time) (map[string]int, error) {
+	lk, ok := u.index.(ports.DocLookup)
+	if !ok {
+		return nil, nil
+	}
+	chunks, err := lk.Docs(ctx, tenant, ports.DocQuery{SeenSince: from})
+	if err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	out := map[string]int{}
+	for _, c := range chunks {
+		k := c.Kind + ":" + c.SourceID
+		if seen[k] || !c.Seen.Before(to) {
+			continue
+		}
+		seen[k] = true
+		if len(c.Spaces) == 0 {
+			out["company"]++
+		}
+		for _, sp := range c.Spaces {
+			out[strings.TrimPrefix(sp, "spc_")]++
+		}
+	}
+	return out, nil
+}
+
 func (u usage) Drafts(ctx context.Context, tenant string, from, to time.Time) (int, int, error) {
 	return u.ledger.Drafts(ctx, tenant, from, to)
 }
@@ -291,7 +322,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	}
 	c.inbox, c.receipts, c.Actions, c.Proposals, c.Reviews = st.inbox, st.receipts, st.actions, st.proposals, st.reviews
 	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
-	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory}
+	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index}
 	c.model = func(m manifest.Tenant) (ports.Model, error) {
 		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
 			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}, Once: c.Usage,
@@ -370,6 +401,19 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
 		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
+		ReviewAfter: func(ids []string) int {
+			least := 0
+			for _, id := range ids {
+				d := m.Spaces[strings.TrimPrefix(id, "spc_")].ReviewAfterDays
+				if d == 0 {
+					d = manifest.DefaultReviewAfterDays
+				}
+				if least == 0 || d < least {
+					least = d
+				}
+			}
+			return least
+		},
 		Owner: ask.ActiveOwner(func(ctx context.Context, email string) ([]ports.User, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		})}
@@ -452,11 +496,13 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}
-	api.Questions{Service: stewards, Release: c.Release, NewID: newID}.Register(mux)
+	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces,
+		ReviewAfter: func(name string) int { return m.Spaces[name].ReviewAfterDays }}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
 		Start: func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error) {
 			return agent.StartHere(ctx, s, m.Spaces[strings.TrimPrefix(s.Space(), "spc_")].StartHere)
 		},
+		Changes: agent.Changes,
 		Handover: func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error) {
 			return agent.Handover(ctx, s, person, emails, c.relations(m), c.Policy)
 		},

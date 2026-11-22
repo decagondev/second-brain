@@ -130,6 +130,11 @@ type Pipeline struct {
 	// Now stamps when the index first saw a version (Chunk.Seen, SB-1701); nil leaves it
 	// unknown. Re-ingesting the same version keeps the first time (the index does that).
 	Now func() time.Time
+
+	// During a rebuild: each version's first-seen time from before the drop, and whether
+	// versions it doesn't know are marked rebuilt (SB-1708).
+	carry      map[string]time.Time
+	rebuilding bool
 }
 
 func (p Pipeline) spaces(ctx context.Context) ([]ports.Space, error) {
@@ -192,6 +197,12 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 	if p.Now != nil {
 		seen = p.Now().UTC()
 	}
+	rebuilt := false
+	if t, ok := p.carry[cite]; ok {
+		seen = t // the version was indexed before the rebuild: it keeps its time
+	} else if p.rebuilding {
+		rebuilt = true
+	}
 	chunks := make([]ports.Chunk, 0, len(spans))
 	texts := make([]string, 0, len(spans))
 	scan := p.Secrets
@@ -219,7 +230,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
-			Title: title, Seen: seen, Location: doc.Location})
+			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)
@@ -337,6 +348,18 @@ func (p Pipeline) Reroute(ctx context.Context) error {
 
 // Rebuild drops the tenant's index and replays every source document from the start.
 func (p Pipeline) Rebuild(ctx context.Context) error {
+	// First-seen times are carried across, so a rebuild never looks like a week of changes;
+	// an index that can't be read loses them, and every version is marked rebuilt.
+	p.rebuilding, p.carry = true, map[string]time.Time{}
+	if old, err := p.Index.All(ctx, p.Tenant); err == nil {
+		for _, c := range old {
+			if !c.Seen.IsZero() && !c.Rebuilt {
+				if t, ok := p.carry[c.Cite]; !ok || c.Seen.Before(t) {
+					p.carry[c.Cite] = c.Seen
+				}
+			}
+		}
+	}
 	if err := p.Index.Drop(ctx, p.Tenant); err != nil {
 		return err
 	}

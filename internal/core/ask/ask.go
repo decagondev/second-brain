@@ -139,6 +139,9 @@ type Agent struct {
 	// Owner finds the one active directory user with an email (SB-1702; ActiveOwner); nil
 	// shows no owners.
 	Owner func(ctx context.Context, email string) (answer.Person, bool)
+	// ReviewAfter is the shortest review_after_days of the spaces holding a document, by
+	// their ids (SB-1709); nil, or no spaces, is the default 365.
+	ReviewAfter func(spaces []string) int
 }
 
 // Ask answers one question for the scope's user.
@@ -293,6 +296,10 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 				res.Claims[i].Cites[j].URL = a.Link(ch)
 			}
 			res.Claims[i].Cites[j].Owner = own.of(ctx, ch) // only allowed chunks are ever cited
+			if d, ok := ageDays(ch.Seen, a.Now()); ok {
+				res.Claims[i].Cites[j].AgeDays = &d
+				res.Claims[i].Cites[j].Stale = d > a.reviewAfter(ch.Spaces)
+			}
 		}
 	}
 	for _, l := range res.Spoofs {

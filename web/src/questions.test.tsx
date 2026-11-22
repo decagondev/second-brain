@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App";
-import { StewardQuestions } from "./Questions";
+import { ReviewList, StewardQuestions } from "./Questions";
 import type { AskResponse, Fetch } from "./api";
 
 afterEach(cleanup);
@@ -143,6 +143,43 @@ describe("start here", () => {
     const list = screen.getByRole("region", { name: "Start here" });
     expect(list.textContent).toContain("Welcome to support");
     expect(list.textContent).toContain("1 item is not shown");
+    expect(await violations(container)).toEqual([]);
+  });
+});
+
+// SB-1708, SB-1709
+describe("keeping it current", () => {
+  it("shows what changed on the empty answer page, and a stale cite's age", async () => {
+    const fetcher: Fetch = async (u) => {
+      if (u === "/v1/spaces") return json({ spaces: [] });
+      if (u === "/v1/changes?since=7d") return json({ items: [{ cite: "docs:rota@4", title: "Depot rota", flags: [], snippet: "", age_days: 1 }] });
+      return json({
+        ...nothing,
+        notice: null,
+        answer: { claims: [{ text: "The limit is 500.", cites: [{ cite: "docs:r@1", title: "Refunds", span: [0, 1], flags: [], age_days: 400, stale: true }] }] },
+      });
+    };
+    const { container } = render(<App fetcher={fetcher} />);
+    await act(async () => {});
+    expect(screen.getByRole("region", { name: "What changed this week" }).textContent).toContain("Depot rota");
+    fireEvent.change(screen.getByLabelText("Ask a question"), { target: { value: "limit?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    });
+    expect(screen.queryByRole("region", { name: "What changed this week" })).toBeNull();
+    expect(screen.getByRole("link", { name: /docs:r@1, Refunds, 400 days old/ })).toBeTruthy();
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("lists documents to review for a steward, counting what they can't open with its owner", async () => {
+    const fetcher: Fetch = async () =>
+      json({ items: [{ cite: "docs:policy@2", title: "Returns policy", flags: [], snippet: "", age_days: 420, cited: 9, flagged: 1 }], hidden: [{ owner: "ann@acme-logistics.example" }] });
+    const { container } = render(<ReviewList space="support" fetcher={fetcher} />);
+    await act(async () => {});
+    const sec = screen.getByRole("region", { name: "Documents to review" });
+    expect(sec.textContent).toContain("Returns policy");
+    expect(sec.textContent).toContain("cited 9 times");
+    expect(sec.textContent).toContain("1 more document you can't open needs review; ask their owners: ann@acme-logistics.example");
     expect(await violations(container)).toEqual([]);
   });
 });

@@ -70,7 +70,7 @@ Every chunk of every connector passes a secret scanner before it's embedded or w
 
 ### Provenance
 
-Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flags and the release that ingested it.
+Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flags and the release that ingested it, and, from SB-1701 to SB-1708, the document's title and location and when the index **first saw this version** (`seen`). Ingesting the same version again keeps the first `seen`; a new version gets the time it was first ingested. That time is what search shows as a document's age, what "what changed" lists (sb-ask(3)) and what the stewards' review list measures staleness by.
 
 ### Chunks
 
@@ -93,6 +93,8 @@ Every chunk of the version carries its label, its holders (`spc_NAME` ids) and t
 ### Rebuild
 
 The index is derived data. It can be dropped and rebuilt from sources at any time, and the scheduled drill proves it (LAW-13). Each cell's ingest worker runs the drill weekly (`ingest.Drill`): it snapshots the `(cite, chunk, ACL)` set, drops the index, replays every source from the start of its change feed, and compares. The result and the rebuild time are recorded per tenant. Any difference is a LAW-13 violation and a Sev-1, reported with chunk ids and cites, never content.
+
+**First-seen times across a rebuild (SB-1708).** A rebuild reads every version's `seen` before it drops the index and gives each version the same time again when it is replayed, so a rebuild doesn't make old documents look new. A version the rebuild meets that wasn't indexed before (one that changed while the index was being dropped), or every version when the old index can't be read (a lost index), gets the rebuild's time and is **marked as rebuilt**. "What changed" never lists a rebuilt version, and the weekly report doesn't count one, so a rebuild never shows as a week of changes.
 
 ## LAWS
 

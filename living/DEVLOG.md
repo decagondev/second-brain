@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 S16.4 Keep it current: what changed, and documents to review (SB-1708, SB-1709)
+
+**Wave/slice:** W16 / S16.4 · **Status:** Done.
+
+**What:** first-seen times carried across rebuilds and a `rebuilt` mark for the ones that can't be, `DocQuery.SeenSince`, `GET /v1/changes`, What changed this week in the UI and a count per space in the weekly report; `review_after_days`, `GET /v1/spaces/NAME/review`, `age_days` and `stale` on cites, and the steward screen's Documents to review.
+
+**Why this way:** The index is derived (LAW-13), so first-seen times are a convenience it may lose. A rebuild keeps them where it can and marks where it can't, and the one reader that would be fooled by a lost time, "what changed", never reads a marked version: a rebuild can make the list shorter, never longer. The review list counts from the traces and feedback the cell already keeps, so it adds no store and no tracking of people; it checks each document as the steward, and a document the steward can't open is reduced to its owner, which is exactly what they need to ask someone to review it.
+
+**Learned:** A rebuild that only drops and replays looks like a fresh index to everything downstream; carrying the times is one map read before the drop. A space field whose default is written out would break the manifest's read-back property (FuzzCheck), so the default is stored as 0 and never printed.
+
+**Laws:** LAW-01 (changes and the review list only what the reader can open), LAW-13 (first-seen times are derived; a rebuild marks, never invents, changes), LAW-14 (age shown on cites, never hidden), LAW-16 (the threshold is in the manifest).
+
 ## 2026-11-22 S16.3 Onboard and hand over: start here and a handover brief (SB-1706, SB-1707)
 
 **Wave/slice:** W16 / S16.3 · **Status:** Done.

@@ -399,3 +399,11 @@ func TestLAW01_StartHereShowsOnlyWhatAMemberCanOpen(t *testing.T) {
 func TestLAW12_HandoverBriefsOnlyWhatTheAskerCanOpen(t *testing.T) {
 	Check(t, "LAW-12", runs, func(r *rand.Rand) error { return law12Handover(r, searchSystem{}) })
 }
+
+func TestLAW13_ARebuildIsNeverAWeekOfChanges(t *testing.T) {
+	Check(t, "LAW-13", 100, func(r *rand.Rand) error { return law13Changes(r, changeSystem{}) })
+}
+
+func TestLAW01_TheReviewListNamesOnlyWhatTheStewardCanOpen(t *testing.T) {
+	Check(t, "LAW-01", 100, law01Review)
+}

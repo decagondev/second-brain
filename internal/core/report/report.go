@@ -27,6 +27,11 @@ type QuestionSource interface {
 	StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error)
 }
 
+// ChangeSource is a source that knows which documents changed, by space (SB-1708).
+type ChangeSource interface {
+	ChangedDocs(ctx context.Context, tenant string, from, to time.Time) (map[string]int, error)
+}
+
 // Price is the release's price per million tokens.
 type Price struct{ InputPerM, OutputPerM float64 }
 
@@ -43,14 +48,16 @@ type Report struct {
 	// Questions to stewards asked and answered this week, by space (SB-1704), never their text.
 	QuestionsAsked    map[string]int `json:"questions_asked,omitempty"`
 	QuestionsAnswered map[string]int `json:"questions_answered,omitempty"`
-	CitedAnswerRate   float64        `json:"cited_answer_rate"`
-	Gaps              map[string]int `json:"gaps"`
-	DraftsUsed        int            `json:"drafts_used"`
-	DraftsDiscarded   int            `json:"drafts_discarded"`
-	Actions           map[string]int `json:"actions"`
-	TokensIn          int            `json:"tokens_in"`
-	TokensOut         int            `json:"tokens_out"`
-	SpendUSD          float64        `json:"spend_usd"`
+	// Changed documents this week by space, never rebuilt versions (SB-1708).
+	Changed         map[string]int `json:"changed,omitempty"`
+	CitedAnswerRate float64        `json:"cited_answer_rate"`
+	Gaps            map[string]int `json:"gaps"`
+	DraftsUsed      int            `json:"drafts_used"`
+	DraftsDiscarded int            `json:"drafts_discarded"`
+	Actions         map[string]int `json:"actions"`
+	TokensIn        int            `json:"tokens_in"`
+	TokensOut       int            `json:"tokens_out"`
+	SpendUSD        float64        `json:"spend_usd"`
 }
 
 // WeekOf is the ISO week label and its Monday-to-Monday UTC bounds.
@@ -127,6 +134,11 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 			}
 		}
 	}
+	if cs, ok := src.(ChangeSource); ok {
+		if r.Changed, err = cs.ChangedDocs(ctx, tenant, from, to); err != nil {
+			return r, err
+		}
+	}
 	if r.DraftsUsed, r.DraftsDiscarded, err = src.Drafts(ctx, tenant, from, to); err != nil {
 		return r, err
 	}
@@ -200,6 +212,18 @@ func (r Report) Markdown() string {
 			parts[i] = fmt.Sprintf("%s %d of %d", k, r.QuestionsAnswered[k], r.QuestionsAsked[k])
 		}
 		fmt.Fprintf(&b, "| Questions to stewards answered | %s |\n", strings.Join(parts, ", "))
+	}
+	if len(r.Changed) > 0 {
+		sps := make([]string, 0, len(r.Changed))
+		for k := range r.Changed {
+			sps = append(sps, k)
+		}
+		sort.Strings(sps)
+		parts := make([]string, len(sps))
+		for i, k := range sps {
+			parts[i] = fmt.Sprintf("%s %d", k, r.Changed[k])
+		}
+		fmt.Fprintf(&b, "| Documents changed | %s |\n", strings.Join(parts, ", "))
 	}
 	ratio := "n/a"
 	if r.DraftsDiscarded > 0 {

@@ -44,3 +44,7 @@ func TestSelfStartUnknownAsAllowIsCaught(t *testing.T) {
 func TestSelfHandoverUnknownAsAllowIsCaught(t *testing.T) {
 	failsSomewhere(t, "handover with Unknown as Allow", func(r *rand.Rand) error { return law12Handover(r, searchSystem{unknownAsAllow: true}) })
 }
+
+func TestSelfChangesForgottenSeenIsCaught(t *testing.T) {
+	failsSomewhere(t, "a rebuild that forgets first-seen times", func(r *rand.Rand) error { return law13Changes(r, changeSystem{forgetSeen: true}) })
+}

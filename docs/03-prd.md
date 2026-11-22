@@ -648,7 +648,7 @@ gantt
 - [x] A search answers with no model call, and returns only documents the asker can open now
 - [x] A question nothing answered reaches a steward, and their published note answers the next ask with a cite
 - [x] A new member sees their space's start list, and a successor gets a cited handover brief
-- [ ] Stewards see stale, relied-on documents; askers see what changed, each item checked live
+- [x] Stewards see stale, relied-on documents; askers see what changed, each item checked live
 - [ ] The self-hosted demo answers with the `model` profile and nothing leaves the box
 
 | Slice | Name | Delivers | Tickets |

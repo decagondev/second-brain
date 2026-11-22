@@ -242,6 +242,12 @@
             "minimum": 30,
             "type": "integer"
           },
+          "review_after_days": {
+            "default": 365,
+            "maximum": 3650,
+            "minimum": 30,
+            "type": "integer"
+          },
           "scope": {
             "additionalProperties": {
               "items": {

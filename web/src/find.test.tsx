@@ -160,6 +160,7 @@ describe("saved and shared questions", () => {
     const fetcher: Fetch = async (u, init) => {
       if (u === "/v1/spaces") return json({ spaces: [] });
       if (u.startsWith("/v1/shares/")) return json({ id: "sh_1", question: "who approves refunds?", space: "spc_support", expires: "2026-12-22T00:00:00Z" });
+      if (u.startsWith("/v1/changes")) return json({ items: [] });
       asked.push(`${u} ${String(init?.body)}`);
       return json(answer);
     };

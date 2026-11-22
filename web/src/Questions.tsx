@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
-import { AskError, listQuestions, publishNote, replyToQuestion, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion } from "./api";
+import { AskError, listQuestions, publishNote, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion, ReviewItem } from "./api";
 import { placeOf } from "./Answer";
 
 const askable = new Set(["no_sources", "no_access", "most_uncited"]);
@@ -206,6 +206,47 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
         </ul>
       )}
       {status && <p role="status">{status}</p>}
+    </section>
+  );
+}
+
+// Documents to review on the steward's screen (SB-1709): relied-on documents gone stale, or
+// marked as wrong citations, each one the steward can open; the rest counted with an owner.
+export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
+  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string }[] }>({ items: [], hidden: [] });
+  useEffect(() => {
+    reviewList(space, fetcher).then(setList);
+  }, [space, fetcher]);
+  return (
+    <section aria-label="Documents to review">
+      <h2>Documents to review</h2>
+      {list.items.length === 0 && list.hidden.length === 0 && <p>Nothing to review: no relied-on document here is stale or marked wrong.</p>}
+      {list.items.length > 0 && (
+        <ul className="saved-list">
+          {list.items.map((r) => (
+            <li key={r.cite}>
+              {r.url ? (
+                <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={`${r.title ?? r.cite}, source ${r.cite}, opens in a new tab`}>
+                  {r.title ?? r.cite}
+                </a>
+              ) : (
+                <span>{r.title ?? r.cite}</span>
+              )}
+              <span className="meta">
+                {" "}
+                · cited {r.cited} times in 30 days{r.age_days !== undefined ? ` · ${r.age_days} days old` : ""}
+                {r.flagged > 0 ? ` · marked wrong ${r.flagged} times` : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {list.hidden.length > 0 && (
+        <p className="refused">
+          {list.hidden.length === 1 ? "1 more document you can't open needs" : `${list.hidden.length} more documents you can't open need`} review
+          {list.hidden.some((h) => h.owner) ? `; ask their owners: ${Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ")}` : ""}.
+        </p>
+      )}
     </section>
   );
 }

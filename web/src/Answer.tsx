@@ -16,12 +16,14 @@ export function placeOf(cite: { spaces?: string[]; label?: string }): string {
 export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   const flagged = cite.flags.includes("injection_suspect");
   const place = placeOf(cite);
-  const label = `Source ${cite.cite}${cite.title ? `, ${cite.title}` : ""}${place ? `, ${place}` : ""}${flagged ? ", flagged" : ""}${cite.url ? ", opens in a new tab" : ", shows the answer's trace"}`;
+  const age = cite.stale && cite.age_days !== undefined ? `${cite.age_days} days old` : "";
+  const label = `Source ${cite.cite}${cite.title ? `, ${cite.title}` : ""}${place ? `, ${place}` : ""}${age ? `, ${age}` : ""}${flagged ? ", flagged" : ""}${cite.url ? ", opens in a new tab" : ", shows the answer's trace"}`;
   const href = cite.url ?? `/v1/traces/${encodeURIComponent(trace)}`;
   return (
     <a className="chip" href={href} target={cite.url ? "_blank" : undefined} rel={cite.url ? "noopener noreferrer" : undefined} aria-label={label}>
       <span>{cite.title ?? cite.cite}</span>
       {place && <span className="place">{place}</span>}
+      {age && <span className="place">{age}</span>}
       {flagged && <span className="flag">Flagged</span>}
     </a>
   );

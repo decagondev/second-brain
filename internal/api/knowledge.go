@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"example.com/second-brain/internal/core/ask"
@@ -26,8 +27,10 @@ type Knowledge struct {
 	Start func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error)
 	// Handover is the handover brief (SB-1707); nil doesn't mount it.
 	Handover func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error)
-	Release  string
-	NewID    func(prefix string) string
+	// Changes is what changed (SB-1708); nil doesn't mount it.
+	Changes func(ctx context.Context, s tenancy.Scope, days int) (ask.ChangesResponse, error)
+	Release string
+	NewID   func(prefix string) string
 }
 
 // Register mounts the endpoints on mux.
@@ -38,6 +41,9 @@ func (h Knowledge) Register(mux *http.ServeMux) {
 	}
 	if h.Handover != nil {
 		mux.HandleFunc("POST /v1/handover", h.handover)
+	}
+	if h.Changes != nil {
+		mux.HandleFunc("GET /v1/changes", h.changes)
 	}
 	if h.Questions.Store != nil {
 		mux.HandleFunc("POST /v1/saved", h.save)
@@ -82,6 +88,28 @@ func (h Knowledge) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp, err := h.Start(r.Context(), s)
+	if err != nil {
+		h.out().fail(w, "", mapErr(err))
+		return
+	}
+	h.out().ok(w, "", resp)
+}
+
+func (h Knowledge) changes(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	days := 7
+	if v := r.URL.Query().Get("since"); v != "" {
+		n, err := strconv.Atoi(strings.TrimSuffix(v, "d"))
+		if err != nil || !strings.HasSuffix(v, "d") {
+			h.out().fail(w, "", errs.New(errs.EINVAL, "since is a number of days, such as 7d."))
+			return
+		}
+		days = n
+	}
+	resp, err := h.Changes(r.Context(), s, days)
 	if err != nil {
 		h.out().fail(w, "", mapErr(err))
 		return

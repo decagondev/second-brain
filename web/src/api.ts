@@ -11,6 +11,9 @@ export interface Cite {
   label?: string;
   // Who to ask about it (SB-1702): only for one active owner, only on an allowed cite.
   owner?: Person;
+  // Its age, and whether that is past the review threshold of a space holding it (SB-1709).
+  age_days?: number;
+  stale?: boolean;
 }
 
 export interface Person {
@@ -282,5 +285,29 @@ export async function startHere(space: string, f: Fetch = fetch): Promise<{ item
     return { items: Array.isArray(d.items) ? d.items : [], hidden: typeof d.hidden === "number" ? d.hidden : 0 };
   } catch {
     return { items: [], hidden: 0 };
+  }
+}
+
+// What changed (SB-1708) and documents to review (SB-1709). Any failure shows none.
+export async function changes(days: number, f: Fetch = fetch, space?: string): Promise<SearchResult[]> {
+  try {
+    const d = await call<{ items?: SearchResult[] }>(inSpace(`/v1/changes?since=${days}d`, space), {}, f);
+    return Array.isArray(d.items) ? d.items : [];
+  } catch {
+    return [];
+  }
+}
+
+export interface ReviewItem extends SearchResult {
+  cited: number;
+  flagged: number;
+}
+
+export async function reviewList(space: string, f: Fetch = fetch): Promise<{ items: ReviewItem[]; hidden: { owner?: string }[] }> {
+  try {
+    const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string }[] }>(`/v1/spaces/${encodeURIComponent(space)}/review`, {}, f);
+    return { items: Array.isArray(d.items) ? d.items : [], hidden: Array.isArray(d.hidden) ? d.hidden : [] };
+  } catch {
+    return { items: [], hidden: [] };
   }
 }

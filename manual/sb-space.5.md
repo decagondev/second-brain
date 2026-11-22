@@ -42,6 +42,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 | `retention_days` | int | no | the tenant's | 30 to the tenant's `retention_days`. A space can keep less, never more: the nightly sweep ages the space's records by its own days (SB-1401). A record whose store doesn't know its space (a conversation, a log file) ages by the tenant's |
 | `fields` | map kind → list of field names | no | `{}` | For a structured source (sb-connector(3), Fields): the sensitive fields this space lets ingest index, for example `{ hris: [salary_band] }`. A document with one of them is `restricted`. Non-sensitive declared fields need no listing. Every kind used must be in the space's `scope` |
 | `channels` | list of `#name` | no | `[]` | The chat-app channels whose `/ask` asks in this space (sb-ask(3), The chat app). A channel belongs to at most one space |
+| `review_after_days` | int | no | `365` | 30 to 3650. A document this space holds whose version is older than this, and that answers keep citing, goes on the stewards' review list (sb-ask(3), Documents to review; SB-1709), and its cites show their age |
 | `start_here` | list | no | `[]` | A new member's reading list, in order (SB-1706): at most ten items, each a document `KIND:ID` (its newest version) or a folder `KIND:/Folder/` (ending in `/`: every document whose location is under it, by location). Each kind must be in the space's `scope`. Changed like any field: a steward's proposal an operator approves (sb-spaces(7)) |
 
 ### `barriers`

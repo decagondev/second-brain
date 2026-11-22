@@ -15,8 +15,12 @@ import (
 // Questions serves questions to the stewards and notes (sb-ask(3); SB-1704, SB-1705).
 type Questions struct {
 	Service ask.Stewards
-	Release string
-	NewID   func(prefix string) string
+	// Reviews are the traces the review list counts from, and ReviewAfter a space's
+	// review_after_days (SB-1709); a nil Reviews doesn't mount the list.
+	Reviews     ask.ReviewSource
+	ReviewAfter func(space string) int
+	Release     string
+	NewID       func(prefix string) string
 }
 
 // Register mounts the endpoints.
@@ -26,6 +30,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/questions", h.queue)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/reply", h.reply)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/note", h.note)
+	if h.Reviews != nil {
+		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
+	}
 }
 
 func (h Questions) k() Knowledge { return Knowledge{Release: h.Release, NewID: h.NewID} }
@@ -115,6 +122,24 @@ func (h Questions) reply(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"id": q.ID, "state": "answered"})
+}
+
+func (h Questions) review(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	name := r.PathValue("name")
+	after := 0
+	if h.ReviewAfter != nil {
+		after = h.ReviewAfter(name)
+	}
+	res, err := h.Service.Review(r.Context(), s, name, h.Reviews, after)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", res)
 }
 
 func (h Questions) note(w http.ResponseWriter, r *http.Request) {

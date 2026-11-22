@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { Fetch } from "./api";
-import { StewardQuestions } from "./Questions";
+import { ReviewList, StewardQuestions } from "./Questions";
 
 export interface ReviewItem {
   user: string;
@@ -136,6 +136,7 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
         )}
       </section>
       <StewardQuestions space={space} fetcher={fetcher} />
+      <ReviewList space={space} fetcher={fetcher} />
       <section aria-label="Access reviews">
         <h2>Access reviews</h2>
         {reviews.length === 0 ? (

@@ -26,7 +26,13 @@ type Space struct {
 	Fields        map[string][]string `json:"fields"`
 	// StartHere is a new member's reading list: KIND:ID or KIND:/Folder/ (SB-1706).
 	StartHere []string `json:"start_here"`
+	// ReviewAfterDays: a relied-on document older than this goes on the stewards' review
+	// list (SB-1709). 0 means the default.
+	ReviewAfterDays int `json:"review_after_days"`
 }
+
+// DefaultReviewAfterDays is review_after_days when a space leaves it out.
+const DefaultReviewAfterDays = 365
 
 // MaxStartHere is the longest reading list.
 const MaxStartHere = 10
@@ -112,7 +118,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -241,6 +247,10 @@ func (c *checker) space(name string, n *node, p string) {
 			}
 		case "start_here":
 			c.startHere(v, f, &s, &sn)
+		case "review_after_days":
+			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
+				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
+			}
 		default:
 			c.add(k, f, "unknown field in a space; use %s", orList(spaceFields))
 		}
@@ -455,6 +465,9 @@ func SpaceAttrs(s Space) map[string]string {
 	}
 	if len(s.StartHere) > 0 {
 		a["start_here"] = strings.Join(s.StartHere, ",")
+	}
+	if s.ReviewAfterDays != 0 && s.ReviewAfterDays != DefaultReviewAfterDays {
+		a["review_after_days"] = strconv.Itoa(s.ReviewAfterDays)
 	}
 	if len(s.Fields) > 0 {
 		var fs []string
