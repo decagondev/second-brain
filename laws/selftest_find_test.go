@@ -36,3 +36,11 @@ func TestSelfAskStewardCitesWidenIsCaught(t *testing.T) {
 func TestSelfAskAnyoneAnswersIsCaught(t *testing.T) {
 	failsSomewhere(t, "steward rule ignoring groups", func(r *rand.Rand) error { return law21StewardQueue(r, questionSystem{anyoneAnswers: true}) })
 }
+
+func TestSelfStartUnknownAsAllowIsCaught(t *testing.T) {
+	failsSomewhere(t, "start list with Unknown as Allow", func(r *rand.Rand) error { return law01StartHere(r, searchSystem{unknownAsAllow: true}) })
+}
+
+func TestSelfHandoverUnknownAsAllowIsCaught(t *testing.T) {
+	failsSomewhere(t, "handover with Unknown as Allow", func(r *rand.Rand) error { return law12Handover(r, searchSystem{unknownAsAllow: true}) })
+}

@@ -391,3 +391,11 @@ func TestLAW05_NotesRanMeansTheFileOnTheShare(t *testing.T) {
 	dir := t.TempDir()
 	Check(t, "LAW-05", 60, func(r *rand.Rand) error { return law05Notes(r, dir) })
 }
+
+func TestLAW01_StartHereShowsOnlyWhatAMemberCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01StartHere(r, searchSystem{}) })
+}
+
+func TestLAW12_HandoverBriefsOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-12", runs, func(r *rand.Rand) error { return law12Handover(r, searchSystem{}) })
+}

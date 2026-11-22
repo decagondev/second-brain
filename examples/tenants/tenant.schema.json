@@ -265,6 +265,15 @@
             },
             "type": "object"
           },
+          "start_here": {
+            "items": {
+              "pattern": "^([a-z]+):(/[^\\s]*/|[^/@\\s][^@\\s]*)$",
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array",
+            "uniqueItems": true
+          },
           "stewards": {
             "items": {
               "pattern": "^group:[A-Za-z0-9._-]+$",

@@ -124,3 +124,25 @@ describe("the steward's queue", () => {
     expect(screen.getByRole("status").textContent).toContain("Published as notes/support/qs_1.md");
   });
 });
+
+// SB-1706
+describe("start here", () => {
+  it("shows a space's list to a member, and counts what they can't open", async () => {
+    const fetcher: Fetch = async (u) => {
+      if (u === "/v1/spaces") return json({ spaces: [{ name: "support", label: "internal" }] });
+      if (u === "/v1/start?space=support")
+        return json({ items: [{ cite: "docs:welcome@2", title: "Welcome to support", url: "https://drive.example/w", flags: [], snippet: "" }], hidden: 1 });
+      return json(nothing);
+    };
+    const { container } = render(<App fetcher={fetcher} />);
+    await act(async () => {});
+    expect(screen.queryByRole("region", { name: "Start here" })).toBeNull();
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText("Ask in"), { target: { value: "support" } });
+    });
+    const list = screen.getByRole("region", { name: "Start here" });
+    expect(list.textContent).toContain("Welcome to support");
+    expect(list.textContent).toContain("1 item is not shown");
+    expect(await violations(container)).toEqual([]);
+  });
+});

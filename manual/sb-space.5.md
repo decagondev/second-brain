@@ -42,6 +42,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 | `retention_days` | int | no | the tenant's | 30 to the tenant's `retention_days`. A space can keep less, never more: the nightly sweep ages the space's records by its own days (SB-1401). A record whose store doesn't know its space (a conversation, a log file) ages by the tenant's |
 | `fields` | map kind → list of field names | no | `{}` | For a structured source (sb-connector(3), Fields): the sensitive fields this space lets ingest index, for example `{ hris: [salary_band] }`. A document with one of them is `restricted`. Non-sensitive declared fields need no listing. Every kind used must be in the space's `scope` |
 | `channels` | list of `#name` | no | `[]` | The chat-app channels whose `/ask` asks in this space (sb-ask(3), The chat app). A channel belongs to at most one space |
+| `start_here` | list | no | `[]` | A new member's reading list, in order (SB-1706): at most ten items, each a document `KIND:ID` (its newest version) or a folder `KIND:/Folder/` (ending in `/`: every document whose location is under it, by location). Each kind must be in the space's `scope`. Changed like any field: a steward's proposal an operator approves (sb-spaces(7)) |
 
 ### `barriers`
 
@@ -71,6 +72,7 @@ All of these are errors, reported with line and column like every manifest error
 12. A `fields` kind that isn't in the space's `scope`, or a field name that isn't `[a-z][a-z0-9_]*`.
 13. A scope pattern that reaches into a **restricted** space's scope (one matches the other, such as `/**` or `/People/Cases/**` against `/People/**`) when this space has members the restricted space doesn't. Holding a restricted space's documents would make those members holders of them (SB-1208; the red team's PT-0003).
 14. `barriers` with no `spaces`. The barrier checks run with the space checks, so a cell without spaces couldn't enforce them (SB-1401).
+15. A `start_here` with more than ten items, an item listed twice, an item that isn't `KIND:ID` or `KIND:/Folder/`, or a kind outside the space's `scope`.
 
 A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always `ask`), and the retention (the template's, or else the tenant's, never more than the tenant's).
 

@@ -212,3 +212,40 @@ func (x *Index) ChunksOf(_ context.Context, tenant string, cites []string) ([]po
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
 }
+
+var _ ports.DocLookup = (*Index)(nil)
+
+// Docs implements ports.DocLookup.
+func (x *Index) Docs(_ context.Context, tenant string, q ports.DocQuery) ([]ports.Chunk, error) {
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	var out []ports.Chunk
+	for _, e := range x.m[tenant] {
+		for _, c := range e.chunks {
+			if matchDoc(c, q) {
+				out = append(out, c)
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+func matchDoc(c ports.Chunk, q ports.DocQuery) bool {
+	for _, r := range q.Refs {
+		if c.Kind == r.Kind && c.SourceID == r.ID {
+			return true
+		}
+	}
+	for _, u := range q.Under {
+		if c.Kind == u.Kind && strings.HasPrefix(c.Location+"/", u.ID) {
+			return true
+		}
+	}
+	for _, o := range q.Owners {
+		if c.Owner != "" && c.Owner == o {
+			return true
+		}
+	}
+	return false
+}

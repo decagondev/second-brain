@@ -8,7 +8,7 @@ summary: Ask a question and get a cited answer.
 
 ## NAME
 
-sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`
+sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`
 
 ## SYNOPSIS
 
@@ -142,6 +142,10 @@ A person can keep a question and pass it on. Only the question's text is kept, n
 | `GET /v1/shares/{id}` | `{ "id", "question", "space", "expires" }` for any signed-in person of the same tenant. Another tenant's share, an unknown id or an expired one is `EPERM` (LAW-02) |
 
 The link `/q/sh_…` opens the web UI on the shared question with an **Ask** button; asking it is an ordinary `POST /v1/ask` by the recipient, so they see only what their own access allows, never the sharer's answer (LAW-01). Creating a share writes an `access` audit row whose subject is the share id and whose `payload_sha256` is the SHA-256 of the question; the text itself never reaches a log or the audit log (LAW-07). Saved questions and shares are cell records kept under the tenant's retention (and a space's shorter one), held by legal holds like conversations, and erased with the person (`POST /v1/admin/subjects/erase`).
+
+### Start here and handover (SB-1706, SB-1707)
+
+`GET /v1/start?space=NAME` is the space's reading list for a member (sb-spaces(7), Start here): `{ "items": [...], "hidden": 1 }`, each item a search result without the snippet. `POST /v1/handover` `{ "person": "usr_…" }` is the handover brief (sb-agents(7), Handover): `{ "trace", "person", "answer": { "claims": [...] }, "dropped", "hidden" }`, every claim cited.
 
 ### Questions to the stewards, exactly (SB-1704)
 

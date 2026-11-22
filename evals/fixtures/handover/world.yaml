@@ -1,0 +1,32 @@
+# World for the handover suite (SB-1707): Lea is leaving. Her manager may have a brief of
+# the documents of hers he can open, and so may she; a colleague may not.
+tenant: acme-logistics
+users:
+  - { id: usr_lea, email: lea@acme-logistics.example, groups: [grp_ops], manager: usr_max }
+  - { id: usr_max, email: max@acme-logistics.example, groups: [grp_ops] }
+  - { id: usr_bob, email: bob@acme-logistics.example, groups: [grp_ops] }
+documents:
+  - id: carrier-contracts
+    title: Carrier contracts register
+    text: "The register lists every carrier contract with its renewal date. The Nordic carrier renews in March."
+    path: /Ops/Contracts/register
+    owner: lea@acme-logistics.example
+    viewers: [lea@acme-logistics.example, max@acme-logistics.example, bob@acme-logistics.example]
+  - id: depot-rota
+    title: Depot rota
+    text: "The depot rota is set every Friday for the next fortnight."
+    path: /Ops/Depot/rota
+    owner: lea@acme-logistics.example
+    viewers: [lea@acme-logistics.example, max@acme-logistics.example]
+  - id: lea-review
+    title: Supplier review notes
+    text: "Notes on the supplier review that only Lea may read."
+    path: /Ops/Reviews/suppliers
+    owner: lea@acme-logistics.example
+    viewers: [lea@acme-logistics.example]
+  - id: bob-handbook
+    title: Warehouse handbook
+    text: "The warehouse handbook covers safety and shifts."
+    path: /Ops/Warehouse/handbook
+    owner: bob@acme-logistics.example
+    viewers: [lea@acme-logistics.example, max@acme-logistics.example, bob@acme-logistics.example]

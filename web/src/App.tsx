@@ -8,6 +8,7 @@ import { DraftPanel } from "./Draft";
 import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
+import { StartHere } from "./Start";
 
 interface Turn {
   question: string;
@@ -151,6 +152,7 @@ export function App({ fetcher, share }: { fetcher?: Fetch; share?: string }) {
         ))}
       </div>
       <div role="tabpanel" id={`${base}-panel-answer`} aria-labelledby={`${base}-tab-answer`} hidden={tab !== "answer"}>
+        {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
         <section aria-live="polite" aria-busy={busy} aria-label="Conversation" className="turns">
           {turns.map((t, i) => (
             <div className="turn" key={i}>

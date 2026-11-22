@@ -24,7 +24,14 @@ type Space struct {
 	RetentionDays int                 `json:"retention_days"`
 	Channels      []string            `json:"channels"`
 	Fields        map[string][]string `json:"fields"`
+	// StartHere is a new member's reading list: KIND:ID or KIND:/Folder/ (SB-1706).
+	StartHere []string `json:"start_here"`
 }
+
+// MaxStartHere is the longest reading list.
+const MaxStartHere = 10
+
+var startItem = regexp.MustCompile(`^([a-z]+):(/[^\s]*/|[^/@\s][^@\s]*)$`)
 
 // Template is a department template's defaults (sb-departments(7), The catalogue).
 // RetentionDays 0 means the tenant's.
@@ -105,7 +112,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -114,6 +121,7 @@ var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 type spaceNodes struct {
 	members, scope, agents, retention, fields *node
 	set                                       map[string]bool
+	start                                     []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -231,10 +239,13 @@ func (c *checker) space(name string, n *node, p string) {
 					}
 				}
 			}
+		case "start_here":
+			c.startHere(v, f, &s, &sn)
 		default:
 			c.add(k, f, "unknown field in a space; use %s", orList(spaceFields))
 		}
 	}
+	c.startKinds(s, sn, p)
 	for _, req := range []string{"members", "scope"} {
 		if !sn.set[req] {
 			c.add(n, p+"."+req, "required field is missing")
@@ -442,6 +453,9 @@ func SpaceAttrs(s Space) map[string]string {
 	if len(s.Channels) > 0 {
 		a["channels"] = strings.Join(s.Channels, ",")
 	}
+	if len(s.StartHere) > 0 {
+		a["start_here"] = strings.Join(s.StartHere, ",")
+	}
 	if len(s.Fields) > 0 {
 		var fs []string
 		for _, k := range sorted(s.Fields) {
@@ -486,4 +500,37 @@ func subset(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// startHere reads a space's start_here list (SB-1706).
+func (c *checker) startHere(v *node, f string, s *Space, sn *spaceNodes) {
+	vs, ns, ok := c.list(v, f, `["docs:onboarding/welcome.md", "docs:/Support/Start/"]`)
+	if !ok {
+		return
+	}
+	if len(vs) > MaxStartHere {
+		c.add(v, f, "at most %d items", MaxStartHere)
+	}
+	for j, it := range vs {
+		fj := fmt.Sprintf("%s[%d]", f, j)
+		m := startItem.FindStringSubmatch(it)
+		switch {
+		case m == nil:
+			c.add(ns[j], fj, "%q must be a document KIND:ID or a folder KIND:/Folder/", it)
+		case contains(s.StartHere, it):
+			c.add(ns[j], fj, "%q is listed twice", it)
+		default:
+			s.StartHere = append(s.StartHere, it)
+			sn.start = append(sn.start, ns[j])
+		}
+	}
+}
+
+// startKinds checks each start_here item's kind is in the space's scope.
+func (c *checker) startKinds(s Space, sn spaceNodes, p string) {
+	for j, it := range s.StartHere {
+		if kind, _, _ := strings.Cut(it, ":"); s.Scope != nil && s.Scope[kind] == nil {
+			c.add(sn.start[j], fmt.Sprintf("%s.start_here[%d]", p, j), "kind %q isn't in this space's scope", kind)
+		}
+	}
 }

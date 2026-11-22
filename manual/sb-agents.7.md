@@ -29,6 +29,7 @@ tool call: killed? → authorise → audit → approved? → execute
 | `spec-digest` | Product: what a spec decides and what it leaves open | No |
 | `close-checklist` | Finance: what is done and what is open for a month-end close | No |
 | `runbook-answer` | IT and security: the steps of a runbook for a question, in order | No |
+| `handover` | A brief of the documents one person owns, for whoever takes over from them (SB-1707) | No |
 | workflow, e.g. `ticket-update` | Proposes one consequential action | Only after approval, and only with a receipt |
 
 Agents are **definitions in the release bundle**: a prompt, a tool list and limits. No company has custom agent code (P3). Prompts and the model version are pinned per release (ADR-0013).
@@ -40,6 +41,10 @@ Agents are **definitions in the release bundle**: a prompt, a tool list and limi
 1. **Only in their template's spaces.** Each belongs to one template of the catalogue (sb-departments(7)): `incident-summary` to `engineering`, `spec-digest` to `product`, `close-checklist` to `finance` and `runbook-answer` to `it-security`. It runs only in a space made from that template whose `agents` list it (the template's default when the manifest enables it, sb-space(5)), and the manifest's `agents` must enable it. Anywhere else, and in any company-wide ask, it is refused with `EINVAL` before retrieval. A space can't borrow another department's agent.
 2. **Every claim cited.** A claim the model leaves uncited is dropped from the answer, and counted in `dropped`, rather than labelled. An answer with nothing left is the one uncited "nothing you can open answers this" claim, with its notice (LAW-14).
 3. **No tools.** None of them has a tool, so nothing they read can lead to a tool call (LAW-09).
+
+### Handover (SB-1707)
+
+`handover` is a read-only agent in the release bundle (`internal/core/prompts/set/handover.md`) for when someone leaves or changes role. `POST /v1/handover` `{ "person": "usr_…" }` briefs the documents that person owns at the source (a chunk's owner is one of the person's directory emails) **that the asker can open now**: each owned document takes the same space, label, barrier and live ACL checks as a search, as the asker, and the newest twelve go to the model with the bundled prompt. The brief is grouped by location, one line a document, and **every line is cited**: an uncited line is dropped and counted in `dropped`, as for a department agent. `hidden` counts the person's documents the asker can't open, never their titles, so a manager knows to ask for access to be moved before deprovisioning revokes it (LAW-12): the brief works on the person's documents, never with their access. Policy decides who may ask, with the Cedar action `brief_handover` on the person (sb-policy(5)): the person themselves, their manager (SCIM's `manager`), or a steward of a space whose members include one of the person's groups. Anyone else is `EPERM`, the same as an unknown person. It has no tools (LAW-09), is killed with `sb kill agent handover`, writes a trace like an answer, and has an eval suite, `evals/suites/agent-handover.yaml`, in the gate. It isn't named in the manifest's `agents`: like `ask`, every cell has it.
 
 They are asked through `POST /v1/ask` with `"agent": "NAME"` (sb-ask(3)), are killed like any agent (`sb kill agent NAME`), and each has an eval suite, `evals/suites/agent-NAME.yaml`.
 

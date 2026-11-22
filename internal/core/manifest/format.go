@@ -87,6 +87,9 @@ func Format(t Tenant) []byte {
 			if len(sp.Channels) > 0 {
 				fmt.Fprintf(&b, "    channels: %s%s", flowList(sp.Channels, true), nl)
 			}
+			if len(sp.StartHere) > 0 {
+				fmt.Fprintf(&b, "    start_here: %s%s", flowList(sp.StartHere, true), nl)
+			}
 			parts := make([]string, 0, len(sp.Scope))
 			for _, k := range sorted(sp.Scope) {
 				parts = append(parts, k+": "+flowList(sp.Scope[k], true))

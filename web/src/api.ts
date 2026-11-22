@@ -274,3 +274,13 @@ export function replyToQuestion(space: string, id: string, text: string, cites: 
 export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch): Promise<NoteResult> {
   return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title } : { title, confirm }), f);
 }
+
+// A space's start list for a member (sb-spaces(7), Start here; SB-1706). Any failure shows none.
+export async function startHere(space: string, f: Fetch = fetch): Promise<{ items: SearchResult[]; hidden: number }> {
+  try {
+    const d = await call<{ items?: SearchResult[]; hidden?: number }>(`/v1/start?space=${encodeURIComponent(space)}`, {}, f);
+    return { items: Array.isArray(d.items) ? d.items : [], hidden: typeof d.hidden === "number" ? d.hidden : 0 };
+  } catch {
+    return { items: [], hidden: 0 };
+  }
+}

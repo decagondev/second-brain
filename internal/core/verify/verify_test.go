@@ -50,3 +50,23 @@ func TestRun(t *testing.T) {
 		t.Errorf("an unknown check must fail: %s", r)
 	}
 }
+
+type startCell struct {
+	fake
+	bad []string
+}
+
+func (s startCell) Unreachable(context.Context) (int, []string, error) { return 3, s.bad, nil }
+
+// SB-1706: a start-here item no member can open fails verify, by space and position only.
+func TestStartHere(t *testing.T) {
+	ctx := context.Background()
+	ok := Run(ctx, startCell{fake: fake{answer: good(), allowed: true}}, Options{Sample: 3})
+	if !ok.Passed() || !strings.Contains(ok.String(), "START") {
+		t.Fatalf("%s", ok)
+	}
+	bad := Run(ctx, startCell{fake: fake{answer: good(), allowed: true}, bad: []string{"support[2]"}}, Options{Sample: 3})
+	if bad.Passed() || !strings.Contains(bad.String(), "support[2]") {
+		t.Fatalf("%s", bad)
+	}
+}

@@ -41,6 +41,12 @@ type Target interface {
 	Connectors() []string
 }
 
+// StartTarget is a cell with spaces' start lists (SB-1706): Unreachable names, by space and
+// position only, every item no member of its space can open now.
+type StartTarget interface {
+	Unreachable(ctx context.Context) (items int, unreachable []string, err error)
+}
+
 // AccessTarget is a cell that can run the LAW-17 access-path check (sb-factory(7)).
 type AccessTarget interface {
 	UnlistedAccess(ctx context.Context) (unlisted, paths int, err error)
@@ -118,6 +124,9 @@ func Run(ctx context.Context, t Target, o Options) Report {
 	laws := o.Laws
 	if len(laws) == 0 {
 		laws = []string{"LAW-01", "LAW-02", "LAW-03", "LAW-14"}
+		if _, ok := t.(StartTarget); ok {
+			laws = append(laws, "START")
+		}
 	}
 	v := &verifier{ctx: ctx, t: t, o: o, r: rand.New(rand.NewSource(o.Seed))}
 	users, uerr := t.Users(ctx)
@@ -134,7 +143,7 @@ func Run(ctx context.Context, t Target, o Options) Report {
 			v.samples = append(v.samples, sample{u, q, a})
 		}
 	}
-	checks := map[string]func(string) Result{"LAW-01": v.law01, "LAW-02": v.law02, "LAW-03": v.law03, "LAW-14": v.law14, "LAW-17": v.law17}
+	checks := map[string]func(string) Result{"LAW-01": v.law01, "LAW-02": v.law02, "LAW-03": v.law03, "LAW-14": v.law14, "LAW-17": v.law17, "START": v.start}
 	rep := Report{Seed: o.Seed}
 	for _, law := range laws {
 		if check, ok := checks[law]; ok {
@@ -234,6 +243,22 @@ func (v *verifier) law14(law string) Result {
 		return Result{law, "fail", d}
 	}
 	return Result{law, "pass", d}
+}
+
+// start checks every space's start list: an item no member can open fails (SB-1706).
+func (v *verifier) start(law string) Result {
+	st, ok := v.t.(StartTarget)
+	if !ok {
+		return v.unknown(law, "this cell has no start lists")
+	}
+	items, bad, err := st.Unreachable(v.ctx)
+	if err != nil {
+		return v.unknown(law, "start lists couldn't be checked: "+err.Error())
+	}
+	if len(bad) > 0 {
+		return Result{law, "fail", fmt.Sprintf("%d of %d start-here items no member can open: %s", len(bad), items, strings.Join(bad, ", "))}
+	}
+	return Result{law, "pass", fmt.Sprintf("%d start-here items, each open to a member", items)}
 }
 
 func (v *verifier) law17(law string) Result {

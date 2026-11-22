@@ -22,13 +22,23 @@ type Searcher interface {
 type Knowledge struct {
 	Search    Searcher
 	Questions ask.Questions
-	Release   string
-	NewID     func(prefix string) string
+	// Start is the reading list of the request's space (SB-1706); nil serves no list.
+	Start func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error)
+	// Handover is the handover brief (SB-1707); nil doesn't mount it.
+	Handover func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error)
+	Release  string
+	NewID    func(prefix string) string
 }
 
 // Register mounts the endpoints on mux.
 func (h Knowledge) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/search", h.search)
+	if h.Start != nil {
+		mux.HandleFunc("GET /v1/start", h.start)
+	}
+	if h.Handover != nil {
+		mux.HandleFunc("POST /v1/handover", h.handover)
+	}
 	if h.Questions.Store != nil {
 		mux.HandleFunc("POST /v1/saved", h.save)
 		mux.HandleFunc("GET /v1/saved", h.saved)
@@ -59,6 +69,43 @@ func (h Knowledge) search(w http.ResponseWriter, r *http.Request) {
 		req.Sources = strings.Split(src, ",")
 	}
 	resp, err := h.Search.Search(r.Context(), s, req)
+	if err != nil {
+		h.out().fail(w, "", mapErr(err))
+		return
+	}
+	h.out().ok(w, resp.Trace, resp)
+}
+
+func (h Knowledge) start(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	resp, err := h.Start(r.Context(), s)
+	if err != nil {
+		h.out().fail(w, "", mapErr(err))
+		return
+	}
+	h.out().ok(w, "", resp)
+}
+
+func (h Knowledge) handover(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Person string `json:"person"`
+	}
+	if !readJSON(r, &body) || body.Person == "" {
+		h.out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a person."))
+		return
+	}
+	resp, err := h.Handover(r.Context(), s, body.Person)
+	if errors.Is(err, ask.ErrNoPerson) {
+		h.out().fail(w, "", errs.New(errs.EPERM, "You can't have a handover brief of that person."))
+		return
+	}
 	if err != nil {
 		h.out().fail(w, "", mapErr(err))
 		return

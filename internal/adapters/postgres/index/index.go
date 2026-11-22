@@ -76,6 +76,7 @@ func (x Index) Migrate(ctx context.Context) error {
 		// Search (SB-1701): the title as indexed, and when the index first saw the version.
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS title text NOT NULL DEFAULT ''`,
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS seen timestamptz`,
+		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS location text NOT NULL DEFAULT ''`,
 		`CREATE INDEX IF NOT EXISTS chunks_acl ON ` + sc + `.chunks USING gin (acl)`,
 		`CREATE INDEX IF NOT EXISTS chunks_tsv ON ` + sc + `.chunks USING gin (tsv)`,
 		`CREATE INDEX IF NOT EXISTS chunks_src ON ` + sc + `.chunks (kind, source_id)`,
@@ -145,9 +146,9 @@ func (x Index) Replace(ctx context.Context, tenant string, ref ports.SourceRef, 
 				return ErrOtherTenant
 			}
 			if _, err := tx.Exec(ctx, `INSERT INTO `+sc+`.chunks (id, tenant, cite, kind, source_id, version, span_start, span_end,
-				body, sha256, flags, acl, release, embedding, label, spaces, routing, owner, title, seen) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::vector,$15,$16,$17,$18,$19,$20)`,
+				body, sha256, flags, acl, release, embedding, label, spaces, routing, owner, title, seen, location) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::vector,$15,$16,$17,$18,$19,$20,$21)`,
 				c.ID, c.Tenant, c.Cite, c.Kind, c.SourceID, c.Version, c.Start, c.End, c.Text, c.ContentSHA256,
-				nonNil(c.Flags), nonNil(c.ACLPrefilter), c.Release, vec(c.Vector), c.Label, nonNil(c.Spaces), c.Routing, c.Owner, c.Title, seen); err != nil {
+				nonNil(c.Flags), nonNil(c.ACLPrefilter), c.Release, vec(c.Vector), c.Label, nonNil(c.Spaces), c.Routing, c.Owner, c.Title, seen, c.Location); err != nil {
 				return err
 			}
 		}
@@ -181,13 +182,13 @@ func (x Index) Delete(ctx context.Context, tenant string, ref ports.SourceRef) e
 	})
 }
 
-const cols = `id, tenant, cite, kind, source_id, version, span_start, span_end, body, sha256, flags, acl, release, label, spaces, routing, owner, title, seen`
+const cols = `id, tenant, cite, kind, source_id, version, span_start, span_end, body, sha256, flags, acl, release, label, spaces, routing, owner, title, seen, location`
 
 func scan(rows pgx.Rows) (ports.Chunk, error) {
 	var c ports.Chunk
 	var seen *time.Time
 	err := rows.Scan(&c.ID, &c.Tenant, &c.Cite, &c.Kind, &c.SourceID, &c.Version, &c.Start, &c.End, &c.Text,
-		&c.ContentSHA256, &c.Flags, &c.ACLPrefilter, &c.Release, &c.Label, &c.Spaces, &c.Routing, &c.Owner, &c.Title, &seen)
+		&c.ContentSHA256, &c.Flags, &c.ACLPrefilter, &c.Release, &c.Label, &c.Spaces, &c.Routing, &c.Owner, &c.Title, &seen, &c.Location)
 	if seen != nil {
 		c.Seen = seen.UTC()
 	}
@@ -312,6 +313,44 @@ func (x Index) ChunksOf(ctx context.Context, tenant string, cites []string) ([]p
 		return nil, err
 	}
 	rows, err := x.Pool.Query(ctx, `SELECT `+cols+` FROM `+sc+`.chunks WHERE cite = ANY($1) ORDER BY id`, cites)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []ports.Chunk
+	for rows.Next() {
+		c, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+var _ ports.DocLookup = Index{}
+
+// Docs implements ports.DocLookup.
+func (x Index) Docs(ctx context.Context, tenant string, q ports.DocQuery) ([]ports.Chunk, error) {
+	if err := x.own(tenant); err != nil {
+		return nil, err
+	}
+	sc, err := x.schema()
+	if err != nil {
+		return nil, err
+	}
+	var refs, under []string
+	for _, r := range q.Refs {
+		refs = append(refs, r.Kind+":"+r.ID)
+	}
+	for _, u := range q.Under {
+		under = append(under, u.Kind+":"+u.ID)
+	}
+	rows, err := x.Pool.Query(ctx, `SELECT `+cols+` FROM `+sc+`.chunks
+		WHERE kind || ':' || source_id = ANY($1)
+		   OR EXISTS (SELECT 1 FROM unnest($2::text[]) p WHERE starts_with(kind || ':' || location || '/', p))
+		   OR (owner <> '' AND owner = ANY($3))
+		ORDER BY id`, nonNil(refs), nonNil(under), nonNil(q.Owners))
 	if err != nil {
 		return nil, err
 	}

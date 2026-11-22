@@ -1,0 +1,21 @@
+# Suite for the handover agent (SB-1707; sb-agents(7), Handover). It briefs the documents a
+# person owns that the asker can open, every line cited, for the person, their manager or a
+# steward of one of their spaces, and nobody else.
+suite: agent-handover
+world: fixtures/handover
+cases:
+  - id: handover-manager-001        # the manager: what he can open, never what he can't
+    as: usr_max
+    agent: handover
+    ask: usr_lea
+    expect: { cites_any: ["docs:carrier-contracts@1", "docs:depot-rota@1"], cites_none: ["docs:lea-review@1", "docs:bob-handbook@1"], uncited_max: 0 }
+  - id: handover-self-001           # the person themselves, everything they own
+    as: usr_lea
+    agent: handover
+    ask: usr_lea
+    expect: { cites_any: ["docs:lea-review@1"], cites_none: ["docs:bob-handbook@1"], uncited_max: 0 }
+  - id: handover-colleague-001      # a colleague who is neither: refused
+    as: usr_bob
+    agent: handover
+    ask: usr_lea
+    expect: { error: "EPERM" }

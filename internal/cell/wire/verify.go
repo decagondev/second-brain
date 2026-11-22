@@ -3,12 +3,14 @@ package wire
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync/atomic"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/core/verify"
 )
 
@@ -189,4 +191,68 @@ func (t *cellTarget) Connectors() []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+var _ verify.StartTarget = (*cellTarget)(nil)
+
+// Unreachable checks each space's start list as its members (SB-1706): an item is
+// reachable if one active member can open it now. Items are named by space and position.
+func (t *cellTarget) Unreachable(ctx context.Context) (int, []string, error) {
+	m := t.c.Manifest()
+	users, err := t.c.Directory.ActiveUserIDs(ctx, t.tenant())
+	if err != nil {
+		return 0, nil, err
+	}
+	names := make([]string, 0, len(m.Spaces))
+	for n := range m.Spaces {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	total := 0
+	var bad []string
+	for _, name := range names {
+		sp := m.Spaces[name]
+		if len(sp.StartHere) == 0 {
+			continue
+		}
+		var scopes []tenancy.Scope
+		for _, u := range users {
+			groups, err := t.c.Directory.GroupsOf(ctx, t.tenant(), u)
+			if err != nil {
+				return 0, nil, err
+			}
+			member := false
+			for _, g := range groups {
+				for _, mg := range sp.Members {
+					member = member || "group:"+g == mg
+				}
+			}
+			if !member {
+				continue
+			}
+			s, err := t.c.Auth.Issuer.IssueIn(t.tenant(), u, groups, "spc_"+name)
+			if err != nil {
+				return 0, nil, err
+			}
+			scopes = append(scopes, s)
+		}
+		for i, it := range sp.StartHere {
+			total++
+			seen := false
+			for _, s := range scopes {
+				r, err := t.agent.StartHere(ctx, s, []string{it})
+				if err != nil {
+					return 0, nil, err
+				}
+				if len(r.Items) > 0 {
+					seen = true
+					break
+				}
+			}
+			if !seen {
+				bad = append(bad, fmt.Sprintf("%s[%d]", name, i))
+			}
+		}
+	}
+	return total, bad, nil
 }

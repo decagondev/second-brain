@@ -37,6 +37,11 @@ when { principal.tenant == resource.tenant && context has groups && resource.ste
 permit (principal, action == Action::"answer_questions", resource is SpaceConfig)
 when { principal.tenant == resource.tenant && context has groups && resource.stewards.containsAny(context.groups) };
 
+// A handover brief of a person is for the person, their manager, or a steward of one of
+// their spaces (SB-1707); the cell puts those relations in context.relations.
+permit (principal, action == Action::"brief_handover", resource is User)
+when { principal.tenant == resource.tenant && context has relations && context.relations.containsAny(["self", "manager", "steward"]) };
+
 // A note is published only by a steward of its space (SB-1705): the cell passes the space's
 // stewards and the caller's groups; a call without them is refused.
 forbid (principal, action == Action::"call_tool", resource is Tool)

@@ -219,7 +219,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
-			Title: title, Seen: seen})
+			Title: title, Seen: seen, Location: doc.Location})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)

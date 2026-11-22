@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 S16.3 Onboard and hand over: start here and a handover brief (SB-1706, SB-1707)
+
+**Wave/slice:** W16 / S16.3 · **Status:** Done.
+
+**What:** `start_here` in a space, `GET /v1/start`, a Start here panel, and verify's `START` check; `handover` with `POST /v1/handover`, the `brief_handover` policy action and an eval suite in the gate. Underneath: chunks carry their location, and `ports.DocLookup` finds documents by source, folder or owner in both indexes.
+
+**Why this way:** Both features are lists of documents chosen by something other than a query, so both end in `retrieve.Allowed`, the same checks a search ends with; neither can show what an ask couldn't. A start list names its items in the manifest, so changing it is the steward-proposal-and-operator-approval path every space change already takes (LAW-16), and verify finds a list nobody can read before a new joiner does. The handover brief's "who may ask" is a policy decision over relations the cell derives from the directory at the request, so a tenant policy can narrow it and the default deny refuses everyone else. It works on the person's documents with the asker's access, never the person's, which is what keeps it on the right side of deprovisioning (LAW-12).
+
+**Learned:** A brief grouped by location needed the location on the chunk; it was already on the document for routing, so it costs one column and keeps the index derived (LAW-13). The verify target needed a member's scope in the space, which the issuer's `IssueIn` already gives.
+
+**Laws:** LAW-01 (only what the member or asker can open), LAW-03 (Unknown or late counted, never shown), LAW-09 (no tools), LAW-12 (the leaver's documents, never their access), LAW-14 (every line of a brief cited), LAW-16 (the list is in the manifest).
+
 ## 2026-11-22 S16.2 Ask and capture: questions to stewards, replies become notes (SB-1704, SB-1705)
 
 **Wave/slice:** W16 / S16.2 · **Status:** Done.

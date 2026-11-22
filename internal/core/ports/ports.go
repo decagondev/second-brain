@@ -311,6 +311,9 @@ type Chunk struct {
 	// version (zero when it doesn't know) (SB-1701).
 	Title string
 	Seen  time.Time
+	// Location is the document's location at the source (Document.Location), for start
+	// lists and handover briefs (SB-1706, SB-1707).
+	Location string
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.
@@ -333,6 +336,19 @@ type Index interface {
 // person added, such as a steward's reply (SB-1704); found chunks still take the live check.
 type CiteLookup interface {
 	ChunksOf(ctx context.Context, tenant string, cites []string) ([]Chunk, error)
+}
+
+// DocQuery picks indexed documents by source, by location under a folder, or by owner.
+type DocQuery struct {
+	Refs   []SourceRef
+	Under  []SourceRef // ID is a location prefix ending in "/"
+	Owners []string    // owner emails, lower case
+}
+
+// DocLookup is an index that finds chunks by DocQuery (SB-1706, SB-1707); found chunks
+// still take every check before anyone sees them.
+type DocLookup interface {
+	Docs(ctx context.Context, tenant string, q DocQuery) ([]Chunk, error)
 }
 
 // CursorStore keeps each connector's sync cursor (SB-208). found is false only when no

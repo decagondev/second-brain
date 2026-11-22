@@ -72,6 +72,8 @@ How verify decides the other laws, exactly (SB-601):
 - **LAW-14.** Every claim of every sampled answer must have a citation or be labelled `uncited`.
 - **Report.** One line per law: `pass`, `fail` or `unknown`, with counts only. The exit status is 0 only if every law passes. `unknown` (for example, no users to sample) is a failure.
 
+- **Start here (SB-1706).** For every space with `start_here`, verify checks each item live as each sampled member of the space. An item no member can open, or one whose document isn't indexed, is reported as `START` `fail` with the space and the item's position, never its title or text.
+
 Verify runs against a cell through the same `verify.Target` interface whether the cell is local or deployed. Against a deployed cell, `sb tenant verify FILE --cell URL` posts the request to the cell's **verifier endpoint** (sb-runtime(7), Endpoints), which runs the checks inside the cell and returns only the report. Inside the cell the checks sample the directory's active users and the opening words of indexed documents, ask through the cell's own ask path, check every citation live at the source, and inject LAW-03's timeout into a copy of the agent's connectors only, so no other answer is affected (SB-1508). The caller authenticates with the control plane's identity (`SB_TOKEN`). The local cell (`tools/evalcell --verify`) runs the same checks over a fixture world.
 
 ## OPTIONS

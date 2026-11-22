@@ -39,6 +39,8 @@ type world struct {
 		ID     string   `json:"id"`
 		Email  string   `json:"email"`
 		Groups []string `json:"groups"`
+		// Manager is the user's manager's id, for handover briefs (SB-1707).
+		Manager string `json:"manager"`
 	} `json:"users"`
 	Documents []struct {
 		ID      string   `json:"id"`
@@ -266,7 +268,26 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 		if c.Inject.ACL != "" {
 			src.QueueFaults(mock.Fault(c.Inject.ACL))
 		}
-		resp, err := agent.Ask(ctx, s, ask.Request{Question: c.Ask, Agent: c.Agent})
+		var resp ask.Response
+		if c.Agent == ask.AgentHandover {
+			// The handover brief (SB-1707): "ask" is the person's id.
+			var h ask.HandoverResponse
+			h, err = agent.Handover(ctx, s, c.Ask, agent.Emails, func(_ context.Context, s tenancy.Scope, person string) ([]string, error) {
+				var rel []string
+				if j, ok := users[person]; ok {
+					if person == s.User() {
+						rel = append(rel, "self")
+					}
+					if w.Users[j].Manager == s.User() {
+						rel = append(rel, "manager")
+					}
+				}
+				return rel, nil
+			}, agent.Auth.Policy)
+			resp = ask.Response{Answer: h.Answer, Dropped: h.Dropped}
+		} else {
+			resp, err = agent.Ask(ctx, s, ask.Request{Question: c.Ask, Agent: c.Agent})
+		}
 		src.InjectFault(mock.FaultNone)
 		if err != nil {
 			out[c.Key] = result{Error: err.Error()}

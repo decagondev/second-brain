@@ -10,6 +10,7 @@ agent-incident-summary: { failures_max: 0 }   # SB-1102
 agent-spec-digest: { failures_max: 0 }   # SB-1102
 agent-close-checklist: { failures_max: 0 }   # SB-1102
 agent-runbook-answer: { failures_max: 0 }   # SB-1102
+agent-handover: { failures_max: 0 }   # SB-1707
 template-engineering: { failures_max: 0 }   # SB-1107
 template-product: { failures_max: 0 }   # SB-1107
 template-design: { failures_max: 0 }   # SB-1107

@@ -63,6 +63,7 @@ import (
 	"example.com/second-brain/internal/core/retrieve"
 	"example.com/second-brain/internal/core/reviews"
 	"example.com/second-brain/internal/core/spaces"
+	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/core/toolbus"
 	"example.com/second-brain/internal/core/workflow"
 	"example.com/second-brain/internal/obs"
@@ -453,6 +454,12 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	}
 	api.Questions{Service: stewards, Release: c.Release, NewID: newID}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
+		Start: func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error) {
+			return agent.StartHere(ctx, s, m.Spaces[strings.TrimPrefix(s.Space(), "spc_")].StartHere)
+		},
+		Handover: func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error) {
+			return agent.Handover(ctx, s, person, emails, c.relations(m), c.Policy)
+		},
 		Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
 	admin := api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
@@ -688,6 +695,51 @@ func (c *Cell) noteReaders(m manifest.Tenant) func(ctx context.Context, space st
 			if found && u.Active && len(u.Emails) > 0 && !seen[u.Emails[0]] {
 				seen[u.Emails[0]] = true
 				out = append(out, strings.ToLower(u.Emails[0]))
+			}
+		}
+		return out, nil
+	}
+}
+
+// relations are how the asker stands to a person, for handover briefs (sb-policy(5),
+// Handover; SB-1707): self, their SCIM manager, or a steward of a space they're a member of.
+func (c *Cell) relations(m manifest.Tenant) ask.Relations {
+	tenant := c.Config.Tenant
+	return func(ctx context.Context, s tenancy.Scope, person string) ([]string, error) {
+		u, found, err := c.Directory.User(ctx, tenant, person)
+		if err != nil || !found {
+			return nil, err
+		}
+		var out []string
+		if person == s.User() {
+			out = append(out, "self")
+		}
+		if u.Manager != "" && u.Manager == s.User() {
+			out = append(out, "manager")
+		}
+		theirs, err := c.Directory.GroupsOf(ctx, tenant, person)
+		if err != nil {
+			return nil, err
+		}
+		mine := map[string]bool{}
+		for _, g := range s.Groups() {
+			mine["group:"+g] = true
+		}
+		in := map[string]bool{}
+		for _, g := range theirs {
+			in["group:"+g] = true
+		}
+		for _, sp := range m.Spaces {
+			member, steward := false, false
+			for _, g := range sp.Members {
+				member = member || in[g]
+			}
+			for _, g := range sp.Stewards {
+				steward = steward || mine[g]
+			}
+			if member && steward {
+				out = append(out, "steward")
+				break
 			}
 		}
 		return out, nil

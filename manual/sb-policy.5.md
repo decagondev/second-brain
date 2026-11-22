@@ -45,6 +45,10 @@ Every entity carries `tenant`, so every rule can be scoped. The kernel sets the 
 
 Cedar's own `Action` type names the verbs: `Action::"read"` (on `Chunk` or `Document`), `"use_agent"`, `"call_tool"`, `"propose"`, `"approve"`, `"admin"`, and the custody verbs `"view_custody"`, `"plan_handoff"`, `"approve_handoff"`, `"execute_handoff"`, `"abort_handoff"` and `"detach"` (Factory roles, below).
 
+### Handover, exactly (SB-1707)
+
+`brief_handover` on a `User` (the person whose documents are briefed) is permitted when `context.relations` holds `self`, `manager` or `steward`. The cell works the relations out from the directory at the request: `self` is the asker being the person, `manager` the person's SCIM manager being the asker, and `steward` the asker being in a `stewards` group of a space whose `members` include one of the person's groups. A tenant policy may narrow it; with no relation, the default deny refuses (`EPERM`).
+
 ### Factory roles, exactly (SB-702)
 
 The factory and the tenant owner are roles, never superusers. Both are Cedar policies in `policy/platform/base.cedar`, and both carry the tenant condition like every other permit.

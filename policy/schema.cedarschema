@@ -33,6 +33,8 @@ action "approve_space" appliesTo { principal: [User], resource: [SpaceProposal] 
 action "review_space"  appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
 // Questions to stewards (SB-1704): a space's stewards, or questions_to for "company".
 action "answer_questions" appliesTo { principal: [User], resource: [SpaceConfig], context: { groups?: Set<String> } };
+// Handover briefs (SB-1707): how the asker stands to the person, worked out by the cell.
+action "brief_handover" appliesTo { principal: [User], resource: [User], context: { relations?: Set<String> } };
 action "place_hold"   appliesTo { principal: [User], resource: [LegalHold], context: { groups?: Set<String> } };
 action "release_hold" appliesTo { principal: [User], resource: [LegalHold], context: { groups?: Set<String> } };
 
