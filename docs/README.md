@@ -18,6 +18,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 06 | [Engineering standards](06-engineering-standards.md) | Layout, dependency rule, style, errors, logging, review |
 | 07 | [Threat model](07-threat-model.md) | STRIDE and LLM threats mapped to laws |
 | 08 | [Department brains](08-department-brains.md) | How companies organise and control access, department spaces, and running cells on GCP (W8 to W13) |
+| 09 | [Team knowledge](09-team-knowledge.md) | What blocks knowledge transfer in a team, and ten small features for it on one sovereign machine (W16, proposed) |
 
 ## Architecture
 

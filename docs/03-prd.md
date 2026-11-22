@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (proposed) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)).
 
 ## Problem
 
@@ -312,6 +312,7 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W13 | Hardening | — | Before calling it feature complete: review, fuzz, tidy, reconcile the manual with the code, and close coverage gaps. |
 | W14 | Cell Runtime | — | Every part of a cell runs together as real services from one configuration, ending with a whole cell end to end. |
 | W15 | Self-hosted Cell | — | A whole cell on one machine the company owns, in containers that mirror GCP, plus four easy wins. |
+| W16 | Team Knowledge (proposed) | — | A team hands knowledge to each other through the brain and keeps it current, on one sovereign machine: ten small features. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -637,6 +638,26 @@ gantt
 | S15.2 | On the box | Write-once audit storage and upgrades without the Docker socket | [SB-1603](../epics/E16-self-hosted-cell/SB-1603-object-locked-worm.md), [SB-1604](../epics/E16-self-hosted-cell/SB-1604-upgrades-without-the-socket.md) |
 | S15.3 | Sovereign install | An install on a VM or on-prem server, and a folder connector | [SB-1605](../epics/E16-self-hosted-cell/SB-1605-sovereign-install.md), [SB-1606](../epics/E16-self-hosted-cell/SB-1606-folder-connector.md) |
 | S15.4 | Easy wins | Cell health, a budget warning and report delivery, and a queue of unhelpful answers | [SB-1607](../epics/E16-self-hosted-cell/SB-1607-health-panel.md), [SB-1608](../epics/E16-self-hosted-cell/SB-1608-budget-warning-and-report-delivery.md), [SB-1609](../epics/E16-self-hosted-cell/SB-1609-unhelpful-answer-queue.md) |
+
+#### W16 Team Knowledge (proposed)
+
+*A team hands knowledge to each other through the brain and keeps it current, on one sovereign machine: ten small features with no new service, store or module. Proposed 2026-11-22 for the user's review ([09-team-knowledge.md](09-team-knowledge.md)).*
+
+**Exit gate**
+
+- [ ] A search answers with no model call, and returns only documents the asker can open now
+- [ ] A question nothing answered reaches a steward, and their published note answers the next ask with a cite
+- [ ] A new member sees their space's start list, and a successor gets a cited handover brief
+- [ ] Stewards see stale, relied-on documents; askers see what changed, each item checked live
+- [ ] The self-hosted demo answers with the `model` profile and nothing leaves the box
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S16.1 | Find | Search without the model, owners on cites, saved and shared questions | [SB-1701](../epics/E17-team-knowledge/SB-1701-search-without-the-model.md), [SB-1702](../epics/E17-team-knowledge/SB-1702-who-to-ask.md), [SB-1703](../epics/E17-team-knowledge/SB-1703-save-and-share-a-question.md) |
+| S16.2 | Ask and capture | Questions to stewards, and replies published as notes | [SB-1704](../epics/E17-team-knowledge/SB-1704-ask-the-stewards.md), [SB-1705](../epics/E17-team-knowledge/SB-1705-replies-become-notes.md) |
+| S16.3 | Onboard and hand over | Start here per space, and a handover brief | [SB-1706](../epics/E17-team-knowledge/SB-1706-start-here.md), [SB-1707](../epics/E17-team-knowledge/SB-1707-handover-brief.md) |
+| S16.4 | Keep it current | What changed, and documents to review | [SB-1708](../epics/E17-team-knowledge/SB-1708-what-changed.md), [SB-1709](../epics/E17-team-knowledge/SB-1709-documents-to-review.md) |
+| S16.5 | On the box | A local model and embedder, pinned and gated | [SB-1710](../epics/E17-team-knowledge/SB-1710-local-model-on-the-box.md) |
 
 #### Parked: Portfolio Department Grants
 

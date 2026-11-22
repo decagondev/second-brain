@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-22 W16 proposed: team knowledge
+
+**Wave/slice:** W16 (plan) · **Status:** Proposed, for the user's review
+
+**What:** [09-team-knowledge.md](../docs/09-team-knowledge.md) and epic E17: ten tickets in five slices (SB-1701 to SB-1710). Search without the model, owners on citations, saved and shared questions; questions to stewards and replies published as notes; a start list per space and a handover brief; what changed and documents to review; and an optional local model and embedder on the box. The PRD's wave list and the plan index show W16 as proposed.
+
+**Why this way:** After W15 the cell answers, but an answer ends at the answer: nothing routes an unanswered question to the person who knows, keeps a good answer, or hands knowledge on when people join or leave. Each feature is a second use of something the cell already has (the retrieval path, the owner on every chunk, traces, the folder connector, stewards, the tool bus), so none needs a new service, store or module, and each keeps the source ACL as the authority by checking every item live for the person who sees it.
+
+**Learned:** Ownership at the source is enough to answer "who knows"; an expertise profile built from activity would be monitoring and a works-council question (Q-12).
+
+**Laws:** no change; each ticket names the laws it must keep green.
+
 ## 2026-11-22 S15.4 Cell health, a budget warning and the unhelpful-answer queue (SB-1607 to SB-1609)
 
 **Wave/slice:** W15 / S15.4 · **Status:** Done. **W15 built**; SB-1605's real-VM run is in review.
