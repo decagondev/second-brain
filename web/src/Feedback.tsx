@@ -8,15 +8,16 @@ import { errorText, t } from "./i18n";
 export function FeedbackBar({ answer, fetcher }: { answer: AskResponse; fetcher?: Fetch }) {
   const [rating, setRating] = useState<"up" | "down">();
   const [wrong, setWrong] = useState("");
+  const [outdated, setOutdated] = useState("");
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<string>();
-  const ids = { wrong: useId(), comment: useId() };
+  const ids = { wrong: useId(), outdated: useId(), comment: useId() };
   const cites = Array.from(new Set(answer.answer.claims.flatMap((c) => (c.uncited ? [] : (c.cites ?? []).map((x) => x.cite)))));
 
   async function send(r: "up" | "down") {
     setRating(r);
     try {
-      await sendFeedback({ trace: answer.trace, rating: r, ...(wrong ? { wrong_citation: wrong } : {}), ...(comment.trim() ? { comment: comment.trim() } : {}) }, fetcher);
+      await sendFeedback({ trace: answer.trace, rating: r, ...(wrong ? { wrong_citation: wrong } : {}), ...(outdated ? { outdated_citation: outdated } : {}), ...(comment.trim() ? { comment: comment.trim() } : {}) }, fetcher);
       setStatus(t("Thanks, your feedback was saved."));
     } catch (e) {
       setStatus(e instanceof AskError ? errorText(e.error).message : t("Feedback couldn't be sent."));
@@ -35,6 +36,15 @@ export function FeedbackBar({ answer, fetcher }: { answer: AskResponse; fetcher?
         <>
           <label htmlFor={ids.wrong}>{t("Wrong citation")}</label>
           <select id={ids.wrong} value={wrong} onChange={(e) => setWrong(e.target.value)}>
+            <option value="">{t("None")}</option>
+            {cites.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <label htmlFor={ids.outdated}>{t("Out of date")}</label>
+          <select id={ids.outdated} value={outdated} onChange={(e) => setOutdated(e.target.value)}>
             <option value="">{t("None")}</option>
             {cites.map((c) => (
               <option key={c} value={c}>

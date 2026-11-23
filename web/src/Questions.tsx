@@ -551,11 +551,11 @@ type ReviewData = { items: ReviewItem[]; hidden: { owner?: string; owner_gone?: 
 // reviewCSV is the review list exactly as shown (SB-2505): a row per document the steward
 // can open, and those they can't only as a count with their owners, never a title.
 export function reviewCSV(list: ReviewData): string {
-  const rows: (string | number | boolean)[][] = [["title", "cite", "cited_30_days", "age_days", "marked_wrong", "owner_gone", "owners"]];
-  for (const r of list.items) rows.push([r.title ?? r.cite, r.cite, r.cited, r.age_days ?? "", r.flagged, r.owner_gone === true, ""]);
+  const rows: (string | number | boolean)[][] = [["title", "cite", "cited_30_days", "age_days", "marked_wrong", "reported_outdated", "owner_gone", "owners"]];
+  for (const r of list.items) rows.push([r.title ?? r.cite, r.cite, r.cited, r.age_days ?? "", r.flagged, r.outdated ?? 0, r.owner_gone === true, ""]);
   if (list.hidden.length > 0) {
     const owners = Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join("; ");
-    rows.push([tn(list.hidden.length, "{n} more document you can't open", "{n} more documents you can't open"), "", "", "", "", "", owners]);
+    rows.push([tn(list.hidden.length, "{n} more document you can't open", "{n} more documents you can't open"), "", "", "", "", "", "", owners]);
   }
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
@@ -604,6 +604,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                 · {tn(r.cited, "cited {n} time in 30 days", "cited {n} times in 30 days")}
                 {r.age_days !== undefined ? ` · ${tn(r.age_days, "{n} day old", "{n} days old")}` : ""}
                 {r.flagged > 0 ? ` · ${tn(r.flagged, "marked wrong {n} time", "marked wrong {n} times")}` : ""}
+                {r.outdated ? ` · ${tn(r.outdated, "reported out of date {n} time", "reported out of date {n} times")}` : ""}
                 {r.owner_gone ? ` · ${t("owner gone: find it a new owner")}` : ""}
               </span>
               {r.copies && r.copies.length > 0 && (

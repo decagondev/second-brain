@@ -437,7 +437,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		}),
 		Glossary: func(name string) map[string]string { return m.Spaces[name].Glossary },
-		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute }}
+		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
+		Marks: c.Traces, SyncLag: c.syncLag}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)

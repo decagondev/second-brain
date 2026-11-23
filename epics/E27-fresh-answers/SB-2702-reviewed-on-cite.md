@@ -13,7 +13,7 @@ summary: "A steward's review mark doesn't reach the asker, so a reviewed documen
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-13 |
 | Depends on | SB-2501 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A steward's review mark doesn't reach the asker, so a reviewed document still lo
 
 ## Acceptance criteria
 
-- [ ] A cite with a review mark at its version carries `reviewed` and isn't stale until `review_after_days` passes from the mark
-- [ ] The chip says Reviewed DATE in words; the steward isn't named
-- [ ] Mark, then the cite isn't stale; a new version is stale again by its own age
+- [x] A cite with a review mark at its version carries `reviewed` and isn't stale until `review_after_days` passes from the mark
+- [x] The chip says Reviewed DATE in words; the steward isn't named
+- [x] Mark, then the cite isn't stale; a new version is stale again by its own age
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Cite field
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Cite field
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S26.1; tests green.
 
 ## Definition of done
 

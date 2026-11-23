@@ -108,6 +108,30 @@ func TestStewardsToolsThroughARunningCell(t *testing.T) {
 		t.Fatal("a document reported after its mark stayed off the list")
 	}
 
+	// SB-2702, SB-2703: the mark shows on the cite; an outdated report lists it again, and
+	// one for a cite the answer doesn't have is refused.
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cite":"`+wrong+`"}`); code != 200 {
+		t.Fatalf("mark again: %d %s", code, body)
+	}
+	_, body = r.do(t, "POST", "/v1/ask?space=ops", `{"question":"When is the zebra cutoff?"}`)
+	if !strings.Contains(body, `"cite":"`+wrong+`"`) || !strings.Contains(body, `"reviewed":"`+time.Now().UTC().Format("2006-01-02")+`"`) {
+		t.Fatalf("the cite doesn't say it was reviewed: %s", body)
+	}
+	var a2 struct{ Trace string }
+	_ = json.Unmarshal([]byte(body), &a2)
+	if code, body := r.do(t, "POST", "/v1/feedback", `{"trace":"`+a2.Trace+`","rating":"down","outdated_citation":"docs:nope.md@1"}`); code != http.StatusBadRequest {
+		t.Fatalf("an outdated report of a cite the answer lacks: %d %s", code, body)
+	}
+	if listed() {
+		t.Fatal("still listed after the second mark")
+	}
+	if code, body := r.do(t, "POST", "/v1/feedback", `{"trace":"`+a2.Trace+`","rating":"down","outdated_citation":"`+wrong+`"}`); code != 200 {
+		t.Fatalf("outdated: %d %s", code, body)
+	}
+	if _, body := r.do(t, "GET", "/v1/spaces/ops/review", ""); !strings.Contains(body, `"outdated":1`) {
+		t.Fatalf("an outdated report isn't on the list: %s", body)
+	}
+
 	// A claim: kim sees sam's; it goes when sam leaves the stewards. A reply still works.
 	// (The test model answers every ask, so the question is put in the store as one sent.)
 	if err := r.cell.Traces.PutStewardQuestion(context.Background(), ask.StewardQuestion{ID: "sq_1", Tenant: tenant, Asker: kim,

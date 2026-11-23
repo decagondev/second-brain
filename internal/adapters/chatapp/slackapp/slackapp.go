@@ -251,6 +251,9 @@ func (a *App) Scope(ctx context.Context, slackUser string) (tenancy.Scope, error
 // then notice, refused count and trace, and a Share button carrying only the trace id.
 func Render(question string, r ask.Response) Message {
 	var b strings.Builder
+	for _, w := range ask.Warnings(r) { // first, so they are read before the answer (SB-2701, SB-2704)
+		b.WriteString("_" + w + "_\n")
+	}
 	for _, c := range r.Answer.Claims {
 		if c.Uncited || len(c.Cites) == 0 {
 			b.WriteString("• _Uncited:_ " + escape(c.Text) + "\n")

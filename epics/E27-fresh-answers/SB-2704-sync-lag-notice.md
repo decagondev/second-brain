@@ -13,7 +13,7 @@ summary: "An answer is silent when its connector stopped syncing."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-03 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ An answer is silent when its connector stopped syncing.
 
 ## Acceptance criteria
 
-- [ ] When a cite's connector is past its freshness target, the answer carries `notice_sync` with the kind and last success, and the UI says so
-- [ ] An unreadable sync record is shown as unknown, never as fresh
-- [ ] A fake clock past the target shows the notice
+- [x] When a cite's connector is past its freshness target, the answer carries `notice_sync` with the kind and last success, and the UI says so
+- [x] An unreadable sync record is shown as unknown, never as fresh
+- [x] A fake clock past the target shows the notice
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Notice
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Notice
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S26.1; tests green.
 
 ## Definition of done
 

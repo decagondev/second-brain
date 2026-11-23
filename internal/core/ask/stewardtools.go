@@ -99,12 +99,14 @@ func covers(m ReviewMark, ok bool, c ports.Chunk, lastFlag time.Time, after int,
 	return ok && m.Version == c.Version && now.Sub(m.At) <= time.Duration(after)*24*time.Hour && !lastFlag.After(m.At)
 }
 
-// lastFlags is the time of the newest wrong-citation report of each document.
+// lastFlags is the time of the newest wrong-citation or outdated report of each document.
 func lastFlags(fbs []Feedback) map[string]time.Time {
 	out := map[string]time.Time{}
 	for _, f := range fbs {
-		if k := docKey(f.WrongCitation); f.WrongCitation != "" && f.At.After(out[k]) {
-			out[k] = f.At
+		for _, c := range []string{f.WrongCitation, f.OutdatedCitation} { // either brings it back (SB-2703)
+			if k := docKey(c); c != "" && f.At.After(out[k]) {
+				out[k] = f.At
+			}
 		}
 	}
 	return out

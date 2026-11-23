@@ -67,6 +67,10 @@ type Response struct {
 	People []PersonRef `json:"people"`
 	// Terms are the space's glossary entries the question used (SB-2203).
 	Terms []Term `json:"terms,omitempty"`
+	// NoticeStale and NoticeSync warn that most cited documents are stale, or that a
+	// connector of a cite is behind on syncing (SB-2701, SB-2704).
+	NoticeStale *StaleNotice `json:"notice_stale,omitempty"`
+	NoticeSync  []SyncNotice `json:"notice_sync,omitempty"`
 }
 
 // Trace is a stored answer with its decision list (GET /v1/traces/{id}).
@@ -152,6 +156,10 @@ type Agent struct {
 	// for DefaultAsksPerMinute (SB-2305). A nil Rate limits nothing (tests and evals).
 	Rate          *Rate
 	AsksPerMinute func() int
+	// Marks are the stewards' review marks, shown on a cite (SB-2702); nil is none.
+	Marks MarkStore
+	// SyncLag names the connectors of an answer's cites that are behind (SB-2704); nil is none.
+	SyncLag SyncLag
 }
 
 // Ask answers one question for the scope's user.
@@ -272,6 +280,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			n := NoticeMostUncited
 			resp.Notice = &n
 		}
+		resp.NoticeStale = staleNotice(claims)
+		resp.NoticeSync = a.syncNotices(ctx, claims)
 	}
 
 	if probe {
@@ -321,6 +331,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		byCite[ch.Cite] = ch
 	}
 	own := a.owners()
+	marks := &marksCache{store: a.Marks, by: map[string]map[string]ReviewMark{}}
 	for i := range res.Claims {
 		for j := range res.Claims[i].Cites {
 			ch := byCite[res.Claims[i].Cites[j].Cite]
@@ -331,6 +342,10 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 			if d, ok := ageDays(ch.Seen, a.Now()); ok {
 				res.Claims[i].Cites[j].AgeDays = &d
 				res.Claims[i].Cites[j].Stale = d > a.reviewAfter(ch.Spaces)
+			}
+			if m, ok := marks.reviewed(ctx, a.Tenant, ch); ok {
+				res.Claims[i].Cites[j].Reviewed = m.At.UTC().Format("2006-01-02")
+				res.Claims[i].Cites[j].Stale = a.Now().Sub(m.At) > time.Duration(a.reviewAfter(ch.Spaces))*24*time.Hour
 			}
 		}
 	}

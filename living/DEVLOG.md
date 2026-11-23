@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S26.1: Say when it's old
+
+**Wave/slice:** W26 / S26.1 (SB-2701, SB-2702, SB-2703, SB-2704) · **Status:** Done
+
+**What:** An answer whose cited documents are mostly stale carries notice_stale, and the web UI, Slack and Mattermost put one warning line before the answer. A cite a steward marked Reviewed, still right at its version carries reviewed, says so on its chip, and is stale only once review_after_days pass from the mark. POST /v1/feedback takes outdated_citation, which puts the document on the review list with an outdated count until a mark clears it, and never becomes an eval case. When a cite's connector is past the 15-minute freshness target, or the cell can't tell, the answer carries notice_sync and says when that kind last synced, or that it is unknown.
+
+**Why this way:** The warning counts only the cites in the answer, which the asker could open, so a hidden document changes nothing. An unreadable sync record is shown as unknown, never as fresh (LAW-03), and an unreadable mark store only means no reviewed chip, so a failure never hides staleness. Both notices name a connector kind or a count, never a document the asker didn't see.
+
+**Learned:** The mark already lived per space and version, so the cite reads it per answer with one lookup per space; an outdated report reuses the wrong-citation path on the review list, including the rule that a report after a mark brings the document back.
+
+**Laws:** LAW-01 (only the answer's own cites count), LAW-03 (unknown sync is never fresh), LAW-13 (a mark is on the document's version), LAW-14 (warnings never replace a cite's own label). Every law test is still green.
+
 ## 2026-11-23 S25.2: Know it's working
 
 **Wave/slice:** W25 / S25.2 (SB-2605, SB-2606, SB-2607) · **Status:** Done

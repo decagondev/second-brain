@@ -14,6 +14,8 @@ export interface Cite {
   // Its age, and whether that is past the review threshold of a space holding it (SB-1709).
   age_days?: number;
   stale?: boolean;
+  // A steward's review mark at this version, YYYY-MM-DD (SB-2702).
+  reviewed?: string;
 }
 
 export interface Person {
@@ -61,6 +63,9 @@ export interface AskResponse {
   conversation: string;
   people?: PersonRef[];
   terms?: Term[];
+  // Most cited documents stale, and connectors behind on syncing (SB-2701, SB-2704).
+  notice_stale?: { stale: number; of: number; oldest_days: number };
+  notice_sync?: { kind: string; last_success: string | null }[];
 }
 
 // A space glossary entry the question used (SB-2203).
@@ -118,6 +123,7 @@ export interface FeedbackRequest {
   trace: string;
   rating: "up" | "down";
   wrong_citation?: string;
+  outdated_citation?: string;
   comment?: string;
 }
 
@@ -358,6 +364,8 @@ export async function changes(days: number, f: Fetch = fetch, space?: string): P
 export interface ReviewItem extends SearchResult {
   cited: number;
   flagged: number;
+  // Reports that it is out of date (SB-2703).
+  outdated?: number;
   // A note read wider than its space now (SB-2004): how many readers to remove, and its question.
   wider?: number;
   question?: string;

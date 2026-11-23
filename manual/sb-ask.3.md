@@ -64,7 +64,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "agent": "ask",
   "dropped": 0,
   "people": [{ "email": "ann@acme-logistics.example", "title": "Support lead", "cites": 1 }],
-  "terms": [{ "term": "PO", "means": "purchase order" }]
+  "terms": [{ "term": "PO", "means": "purchase order" }],
+  "notice_stale": { "stale": 2, "of": 3, "oldest_days": 412 },
+  "notice_sync": [{ "kind": "docs", "last_success": "2027-03-10T14:05:00Z" }]
 }
 ```
 
@@ -78,6 +80,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `claims[].cites[].title` | The cited document's title at the source, as indexed |
 | `claims[].cites[].owner` | The cited document's owner at the source: their `email` and job `title` from the directory, only when exactly one **active** directory user has that email. Omitted otherwise (SB-1702) |
 | `terms` | The space's glossary entries the question used (Glossary, below; SB-2203). Omitted when none |
+| `notice_stale` | (SB-2701) `{ "stale": N, "of": M, "oldest_days": D }` when more than half of the answer's cited documents (each counted once) are `stale`, below; `oldest_days` is the oldest of the stale ones. Only cites in the answer are counted, so a document the asker can't open changes nothing. Omitted otherwise |
+| `notice_sync` | (SB-2704) `[{ "kind": "docs", "last_success": "…" }]`, one per connector kind of the answer's cites whose last successful sync is older than the 15-minute freshness target (sb-ingest(7)); `last_success` is `null` when the cell has no record of one or can't read it, which is shown as unknown, never as fresh (LAW-03). It names a connector kind only, never a document. Omitted when every kind is fresh |
+| `claims[].cites[].reviewed` | (SB-2702) The date a steward of a space that holds the document marked it **Reviewed, still right** at this version (`YYYY-MM-DD`), the newest such mark. Omitted otherwise. The steward is not named |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner |
 
 ### How the `ask` agent runs, exactly
@@ -87,7 +92,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 2. **Retrieve and check live** as in sb-permissions(7). With `sources`, candidates of other kinds are dropped before the live check. In a cell with spaces, every candidate first passes the space, label and barrier checks (sb-permissions(7), Spaces, labels and barriers) with the asker's read context; only the chunks they allow go into the live ACL batch, and the ACL still decides each of those. An ask in a space uses only what that space holds. A company-wide ask uses the union of the asker's spaces, plus `public` and `internal` content from spaces they aren't in; `confidential` and `restricted` content comes only from spaces they're a member of (SB-1006).
 3. **No allowed context:** the model is **not** called. The answer is one uncited claim saying nothing the user can open answers this, with `notice` `no_access` if any candidate was refused, or `no_sources` if there were none.
 4. **Compose:** the bundled `answer` prompt, the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as `citation_spoof` with the trace id and the label, never the claim text.
-5. **Notice:** `most_uncited` when more than half the claims are uncited.
+5. **Notice:** `most_uncited` when more than half the claims are uncited; `notice_stale` and `notice_sync` as above, beside it.
 6. **Trace:** every answer gets a new trace id `tr_…`, returned in the body and in `X-SB-Trace`, and stored with the answer and its decision list for 30 days.
 
 **Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist.
@@ -171,7 +176,9 @@ The link `/q/sh_…` opens the web UI on the shared question with an **Ask** but
 
 **Reviewed, still right (SB-2501).** `POST /v1/spaces/NAME/review/marks` `{ "cite": "docs:…@17" }` marks a document on the list as reviewed at its **current version**: only a steward of the space, only for a document they can open now (otherwise `EPERM`, the same answer as for one that doesn't exist), and the cite's version must be the current one (`EINVAL` otherwise). The cell keeps `{ space, document, version, by, at }` and writes an audit row (`config`, state `reviewed`). A marked document leaves the list while its version is that one and the mark is younger than `review_after_days`; a new version, the mark's age, or a wrong-citation report **after** the mark puts it back. Reports before the mark no longer list it. The mark is the document's version, not the index's, so a rebuild neither clears nor renews it (LAW-13). Notes read wider than the space, documents with no owner and copies are listed whatever the mark, since a mark says the text is right, not that its readers or owner are. The answer is `{ "document": "docs:…", "version": 17 }`.
 
-Every cite in an answer also carries `age_days` (whole days since the index first saw its version), and `stale: true` once that is past the `review_after_days` of a space that holds it (365 for a document no space holds). The web UI shows "N days old" on such a chip, in words, as part of its accessible name.
+Every cite in an answer also carries `age_days` (whole days since the index first saw its version), and `stale: true` once that is past the `review_after_days` of a space that holds it (365 for a document no space holds). The web UI shows "N days old" on such a chip, in words, as part of its accessible name. A cite with a **Reviewed, still right** mark at its version (SB-2702) carries `reviewed`, and is `stale` only once `review_after_days` have passed since the mark, so a document a steward checked stops warning askers; its chip says "Reviewed 2026-11-20" instead. A new version is judged by its own age again.
+
+**Reported outdated (SB-2703).** A document someone reported with `outdated_citation` in the last 30 days is on the list too, with `"outdated": N`, whatever its age. A **Reviewed, still right** mark clears the reports made before it, as it does wrong citations; a report after the mark puts it back.
 
 ### Start here and handover (SB-1706, SB-1707)
 
@@ -225,18 +232,19 @@ A send that fails is counted (`sb_notify_failed_total{kind}`) and the job return
 
 `GET /v1/traces/{id}` returns the same answer plus the decision list (`cite`, `verdict`, `reason`, one per candidate document), for the user who asked and for auditors. Anyone else gets `EPERM`, the same as an unknown id. `reason` is one of `allowed`, `source_denied`, `source_unknown` or `policy_denied`, and in a cell with spaces `space_denied` (not held by the space asked in), `label_denied` (a `confidential` or `restricted` chunk held only by spaces the asker isn't in) or `barrier_denied`. The policy kernel makes every one of these decisions; the reason only explains it, and a refused document is never named in the answer.
 
-`POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }` (SB-310):
+`POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "outdated_citation": "docs:…@17"?, "comment": "…"? }` (SB-310, SB-2703):
 
 | Rule | Detail |
 |---|---|
 | Who | Only the user who asked. Anyone else, or an unknown or expired trace, gets `EPERM` |
 | `rating` | Required, `up` or `down` |
 | `wrong_citation` | Optional. It must be a citation **in that trace's answer**, or the request is `EINVAL` |
+| `outdated_citation` | Optional (SB-2703): a citation in that trace's answer that the reader found **out of date** rather than wrong, with the same rule. It puts the document on its spaces' review list, and is never turned into an eval case, because the cite wasn't wrong when it was made |
 | `comment` | Optional, at most 2,000 characters |
 | Repeats | One feedback per trace: a later one replaces the earlier one |
 | Response | `200 { "trace": "tr_…", "stored": true }` |
 
-Feedback is stored against the trace id with the release, and exported weekly (Monday 00:00 UTC, the previous seven days) as JSON lines for the pilot review. Each line holds the trace, release, rating, wrong citation, comment, time, and the answer's claim, uncited and refused counts, but never the question or the answer text. Reviewers who need those open the trace with auditor rights. Operators see every unhelpful answer in the console's queue, `GET /v1/admin/feedback?rating=down` (sb-admin(3); SB-1609), with the same counts, the trace's policy decisions and the asker's comment, and mark each one reviewed. A later feedback on a reviewed trace puts it back in the queue.
+Feedback is stored against the trace id with the release, and exported weekly (Monday 00:00 UTC, the previous seven days) as JSON lines for the pilot review. Each line holds the trace, release, rating, wrong citation, outdated citation, comment, time, and the answer's claim, uncited and refused counts, but never the question or the answer text. Reviewers who need those open the trace with auditor rights. Operators see every unhelpful answer in the console's queue, `GET /v1/admin/feedback?rating=down` (sb-admin(3); SB-1609), with the same counts, the trace's policy decisions and the asker's comment, and mark each one reviewed. A later feedback on a reviewed trace puts it back in the queue.
 
 ### The web UI
 
@@ -251,6 +259,9 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | `flags` | A chip with `injection_suspect` says "Flagged" next to the cite |
 | `notice` | `no_access`: "Some sources you don't have access to may answer this. Ask their owner." `no_sources`: "Nothing indexed answers this yet." `most_uncited`: "Most of this answer isn't backed by your sources." |
 | `refused` | "N sources were not shown because you can't open them", never their names |
+| `notice_stale` | (SB-2701) One line **above** the answer: "Most of the sources for this answer haven't been reviewed in a while (the oldest is N days old). Check with their owner before relying on it." |
+| `notice_sync` | (SB-2704) One line above the answer for each kind: "docs last synced at 14:05; newer changes may be missing.", or "docs: when it last synced is unknown; newer changes may be missing." |
+| Feedback | Under an answer, **Helpful** and **Not helpful**, a comment, and two choices of the answer's cites: **Wrong citation** and **Out of date** (SB-2703) |
 | Space switcher | In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from `GET /v1/spaces`, and nothing else. The chosen space goes on the ask as `?space=`. Changing it starts a new conversation. A cell without spaces shows no switcher |
 | Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |
 | Errors | The error's `message` and `remedy`, with the trace id to quote to support. An ask that fails with `EUNAVAIL` or `EBUDGET` also offers "Search documents instead", which runs the same text as a search |
@@ -283,7 +294,7 @@ Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `a
 
 1. **Verify.** The cell checks Slack's request signature with the signing secret from `vault://tenants/TENANT/connectors/chat` and refuses any request older than 5 minutes. The `team_id` must be the tenant's workspace. Anything else gets HTTP 401 and no reply.
 2. **Map the person.** The bot looks up the Slack user's email (`users.info`) and finds the **one active** directory user with that email (SCIM-provisioned, sb-identity(7)). No match, more than one match, or an inactive user gets an ephemeral reply saying the account can't be matched, and **no answer**. The bot never falls back to a shared or service identity.
-3. **Answer privately.** Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's `response_url` (only `https://hooks.slack.com/`), also **ephemeral**, so only the asker sees it. Claims show as text with their citations as links (`<url|cite>`). Uncited claims start with *Uncited:*. The reply ends with who to ask (the answer's `people`, each with the documents of theirs it cites), the notice, the refused count and the trace id.
+3. **Answer privately.** Slack gets an immediate ephemeral "Looking that up…". The answer follows through Slack's `response_url` (only `https://hooks.slack.com/`), also **ephemeral**, so only the asker sees it. The stale and sync warnings (`notice_stale`, `notice_sync`; SB-2701, SB-2704) come first, in the web UI's words. Claims show as text with their citations as links (`<url|cite>`). Uncited claims start with *Uncited:*. The reply ends with who to ask (the answer's `people`, each with the documents of theirs it cites), the notice, the refused count and the trace id.
 4. **Spaces.** In a cell with spaces, the channel the command was typed in picks the space: a space's `channels` in the manifest (sb-space(5)) list the channels that ask in it. A mapped channel asks in that space, and someone who isn't a member gets an ephemeral reply saying so and **no answer**, never a company-wide one. An unmapped channel, or a direct message, asks company-wide.
 5. **Share.** A *Share in channel* button posts the question and the **citation links only, never the claim text**, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.
 
@@ -295,7 +306,7 @@ Sites that run their own Mattermost can ask from it with a slash command (SB-200
 
 1. **Verify.** The command's token (the form's `token`, or `Authorization: Token …`) must equal `command_token` in `vault://tenants/TENANT/mattermost`, read at every request, and `team_id` must be the tenant's team. Anything else is HTTP 401 and no reply.
 2. **Map the person.** The cell reads the Mattermost user's email with the bot's token (`bot_token` in the same secret; `GET /api/v4/users/ID`), and finds the **one active** directory user with that email. A deleted Mattermost user, a bot, a hidden email, no match, more than one, or a deprovisioned user (LAW-12) gets an ephemeral reply that the account can't be matched, and **no answer**.
-3. **Answer privately.** Mattermost gets an immediate ephemeral "Looking that up…", and the answer follows through the command's `response_url`, which must be the server's own `/hooks/commands/` URL, also **ephemeral**. It is Markdown: the question, each claim with its citations as links (`` [`cite`](url) ``), uncited claims marked *Uncited:*, who to ask, the notice, the refused count and the trace id. Claim text is escaped, so it can't become a link, a mention or formatting.
+3. **Answer privately.** Mattermost gets an immediate ephemeral "Looking that up…", and the answer follows through the command's `response_url`, which must be the server's own `/hooks/commands/` URL, also **ephemeral**. It is Markdown: the question, the stale and sync warnings in the web UI's words (SB-2701, SB-2704), each claim with its citations as links (`` [`cite`](url) ``), uncited claims marked *Uncited:*, who to ask, the notice, the refused count and the trace id. Claim text is escaped, so it can't become a link, a mention or formatting.
 4. **Spaces.** A space's `channels` (sb-space(5)) list Mattermost channels by name as they do Slack's: a mapped channel asks in that space, and someone who isn't a member gets an ephemeral refusal, never a company-wide answer.
 
 5. **Share** (SB-2105). The answer carries a *Share in channel* button, a message attachment action whose integration URL is the cell's `POST /chat/mattermost/actions` (sb-cell(5) `base_url`). Its context holds the trace id, the asker's Mattermost user id, the command's `response_url` and an HMAC-SHA256 over the three keyed with `command_token`; Mattermost doesn't sign action requests, so the cell checks that HMAC with the token read at the press, and anything else is HTTP 401. Only the asker can share: the pressing `user_id` must be the one in the context, mapped again to the one active directory user, and the trace is read again with that scope. The channel then gets, through the `response_url` as `in_channel`, the **citation links only, never the claim text**, exactly the Slack rule, so each reader opens the sources under their own access. Anyone else pressing it gets "Only the person who asked can share this answer." `response_url` lasts 30 minutes, so a later press says the answer can't be shared any more.

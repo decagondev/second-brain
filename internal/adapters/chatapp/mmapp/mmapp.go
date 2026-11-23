@@ -251,6 +251,9 @@ func Shared(t ask.Trace) Message {
 func Render(question string, r ask.Response) Message {
 	var b strings.Builder
 	b.WriteString("**" + escape(question) + "**\n")
+	for _, w := range ask.Warnings(r) { // before the answer (SB-2701, SB-2704)
+		b.WriteString("_" + escape(w) + "_\n")
+	}
 	for _, c := range r.Answer.Claims {
 		if c.Uncited || len(c.Cites) == 0 {
 			b.WriteString("- _Uncited:_ " + escape(c.Text) + "\n")

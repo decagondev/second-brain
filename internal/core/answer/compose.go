@@ -30,6 +30,8 @@ type Cite struct {
 	// past the review_after_days of a space that holds it (SB-1709).
 	AgeDays *int `json:"age_days,omitempty"`
 	Stale   bool `json:"stale,omitempty"`
+	// Reviewed is the date of a steward's review mark at this version (SB-2702), YYYY-MM-DD.
+	Reviewed string `json:"reviewed,omitempty"`
 }
 
 // Person is a document owner as an asker sees them: their email and job title, nothing else.

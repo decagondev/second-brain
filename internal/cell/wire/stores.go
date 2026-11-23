@@ -256,3 +256,25 @@ func embedDim(cfg Config) int {
 	}
 	return hashing.Dim
 }
+
+// syncLag is the answer's connector kinds past the freshness target, or unknown (SB-2704):
+// the same rule as the health report's stale connectors.
+func (c *Cell) syncLag(ctx context.Context, kinds []string) ([]ask.SyncNotice, error) {
+	now := time.Now()
+	var out []ask.SyncNotice
+	conns := c.Parts().Connectors
+	for _, k := range kinds {
+		if _, ok := conns[k]; !ok {
+			continue // not a connector this cell syncs
+		}
+		st, found, err := c.Syncs.Sync(ctx, k)
+		switch {
+		case err != nil || !found || st.LastSuccess.IsZero():
+			out = append(out, ask.SyncNotice{Kind: k})
+		case now.Sub(st.LastSuccess) > health.FreshnessSLA:
+			at := st.LastSuccess.UTC()
+			out = append(out, ask.SyncNotice{Kind: k, LastSuccess: &at})
+		}
+	}
+	return out, nil
+}

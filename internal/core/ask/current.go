@@ -134,6 +134,8 @@ type ReviewItem struct {
 	Result
 	Cited   int `json:"cited"`
 	Flagged int `json:"flagged"`
+	// Outdated counts reports that the document is out of date (SB-2703).
+	Outdated int `json:"outdated,omitempty"`
 	// Wider is, for a note, how many of its readers are no longer members of the space
 	// (SB-2004): a count, never who. Question is the note's question, to republish it.
 	Wider    int    `json:"wider,omitempty"`
@@ -188,6 +190,13 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		return ReviewResponse{}, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
 	}
 	cited, flagged, refs := reviewCounts(traces, fbs)
+	outdated := outdatedOf(fbs)
+	for k := range outdated {
+		if cited[k] == 0 && flagged[k] == 0 {
+			kind, id, _ := strings.Cut(k, ":")
+			refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
+		}
+	}
 	reports := reportsOf(fbs)
 	marks, err := x.marked(ctx, name)
 	if err != nil {
@@ -229,7 +238,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		age, known := ageDays(c.Seen, now)
 		stale := known && age > after && cited[k] >= ReviewCites
 		m, marked := marks[k]
-		if contains(c.Spaces, id) && (stale || flagged[k] > 0) && !covers(m, marked, c, flaggedAt[k], after, now) {
+		if contains(c.Spaces, id) && (stale || flagged[k] > 0 || outdated[k] > 0) && !covers(m, marked, c, flaggedAt[k], after, now) {
 			cand = append(cand, c)
 			in[k] = true
 		}
@@ -271,7 +280,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			copies[n] = append(copies[n], r)
 			continue // listed once, under the newest copy
 		}
-		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Wider: widerBy[k], OwnerGone: gone[c.Owner], Reports: reports[k]}
+		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Outdated: outdated[k], Wider: widerBy[k], OwnerGone: gone[c.Owner], Reports: reports[k]}
 		if it.Wider > 0 {
 			it.Question = strings.TrimSuffix(path.Base(c.SourceID), ".md")
 		}
@@ -286,7 +295,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		if (a.Wider > 0) != (b.Wider > 0) {
 			return a.Wider > 0 // a note read wider than its space comes first
 		}
-		return a.Flagged+a.Cited > b.Flagged+b.Cited
+		return a.Flagged+a.Outdated+a.Cited > b.Flagged+b.Outdated+b.Cited
 	})
 	return out, nil
 }
@@ -409,6 +418,17 @@ func reportsOf(fbs []Feedback) map[string][]string {
 	for _, f := range sorted {
 		if k := docKey(f.WrongCitation); f.WrongCitation != "" && len(out[k]) < MaxReports {
 			out[k] = append(out[k], f.Trace)
+		}
+	}
+	return out
+}
+
+// outdatedOf counts, by document, the reports that it is out of date (SB-2703).
+func outdatedOf(fbs []Feedback) map[string]int {
+	out := map[string]int{}
+	for _, f := range fbs {
+		if f.OutdatedCitation != "" {
+			out[docKey(f.OutdatedCitation)]++
 		}
 	}
 	return out

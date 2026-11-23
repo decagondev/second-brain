@@ -19,7 +19,11 @@ export function placeOf(cite: { spaces?: string[]; label?: string }): string {
 export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   const flagged = cite.flags.includes("injection_suspect");
   const place = placeOf(cite);
-  const age = cite.stale && cite.age_days !== undefined ? tn(cite.age_days, "{n} day old", "{n} days old") : "";
+  const age = cite.reviewed
+    ? t("Reviewed {date}", { date: cite.reviewed })
+    : cite.stale && cite.age_days !== undefined
+      ? tn(cite.age_days, "{n} day old", "{n} days old")
+      : "";
   const label = [
     t("Source {cite}", { cite: cite.cite }),
     cite.title ?? "",
@@ -156,6 +160,35 @@ export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fet
   );
 }
 
+// Freshness warns above the answer that most of its sources are stale, or that a source
+// is behind on syncing (SB-2701, SB-2704).
+function Freshness({ answer }: { answer: AskResponse }) {
+  const s = answer.notice_stale;
+  return (
+    <>
+      {s && (
+        <p className="notice" role="note">
+          {tn(
+            s.oldest_days,
+            "Most of the sources for this answer haven't been reviewed in a while (the oldest is {n} day old). Check with their owner before relying on it.",
+            "Most of the sources for this answer haven't been reviewed in a while (the oldest is {n} days old). Check with their owner before relying on it.",
+          )}
+        </p>
+      )}
+      {(answer.notice_sync ?? []).map((n) => (
+        <p key={n.kind} className="notice" role="note">
+          {n.last_success
+            ? t("{kind} last synced at {time}; newer changes may be missing.", {
+                kind: n.kind,
+                time: new Date(n.last_success).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              })
+            : t("{kind}: when it last synced is unknown; newer changes may be missing.", { kind: n.kind })}
+        </p>
+      ))}
+    </>
+  );
+}
+
 // Footnotes is the answer's cites, numbered, for print only (SB-2402).
 function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
   if (nums.length === 0) return null;
@@ -179,6 +212,7 @@ export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?:
   const nums = numberCites(answer);
   return (
     <article className="answer" aria-label={t("Answer")}>
+      <Freshness answer={answer} />
       {answer.notice && (
         <p className="notice" role="note">
           {t(notices[answer.notice])}

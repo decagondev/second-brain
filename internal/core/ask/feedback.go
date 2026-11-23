@@ -20,13 +20,16 @@ type FeedbackRequest struct {
 	Trace         string `json:"trace"`
 	Rating        string `json:"rating"`
 	WrongCitation string `json:"wrong_citation,omitempty"`
-	Comment       string `json:"comment,omitempty"`
+	// OutdatedCitation is a cite the reader found out of date rather than wrong (SB-2703).
+	OutdatedCitation string `json:"outdated_citation,omitempty"`
+	Comment          string `json:"comment,omitempty"`
 }
 
 // Feedback is one stored feedback, keyed by tenant and trace.
 type Feedback struct {
 	Tenant, User, Trace, Release string
 	Rating, WrongCitation        string
+	OutdatedCitation             string // SB-2703
 	Comment                      string
 	At                           time.Time
 	Claims, Uncited, Refused     int
@@ -70,7 +73,7 @@ func (f Feedbacks) Give(ctx context.Context, s tenancy.Scope, req FeedbackReques
 	}
 	fb := Feedback{Tenant: t.Tenant, User: t.User, Trace: t.ID, Release: t.Response.Release, Rating: req.Rating,
 		Comment: req.Comment, At: f.Agent.Now(), Refused: t.Response.Refused}
-	found := req.WrongCitation == ""
+	found, foundOld := req.WrongCitation == "", req.OutdatedCitation == ""
 	for _, c := range t.Response.Answer.Claims {
 		fb.Claims++
 		if c.Uncited {
@@ -80,12 +83,18 @@ func (f Feedbacks) Give(ctx context.Context, s tenancy.Scope, req FeedbackReques
 			if ci.Cite == req.WrongCitation {
 				found = true
 			}
+			if ci.Cite == req.OutdatedCitation {
+				foundOld = true
+			}
 		}
 	}
 	if !found {
 		return fmt.Errorf("%w: wrong_citation is not a citation in that answer", ErrInvalid)
 	}
-	fb.WrongCitation = req.WrongCitation
+	if !foundOld {
+		return fmt.Errorf("%w: outdated_citation is not a citation in that answer", ErrInvalid)
+	}
+	fb.WrongCitation, fb.OutdatedCitation = req.WrongCitation, req.OutdatedCitation
 	if err := f.Store.PutFeedback(ctx, fb); err != nil {
 		return fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
 	}
@@ -109,6 +118,7 @@ type exportLine struct {
 	Release       string    `json:"release"`
 	Rating        string    `json:"rating"`
 	WrongCitation string    `json:"wrong_citation,omitempty"`
+	Outdated      string    `json:"outdated_citation,omitempty"`
 	Comment       string    `json:"comment,omitempty"`
 	At            time.Time `json:"at"`
 	Claims        int       `json:"claims"`
@@ -127,7 +137,7 @@ func (f Feedbacks) Export(ctx context.Context, tenant string, from, to time.Time
 		if x.Tenant != tenant {
 			return 0, fmt.Errorf("feedback: store returned another tenant's feedback")
 		}
-		if err := enc.Encode(exportLine{Trace: x.Trace, Release: x.Release, Rating: x.Rating, WrongCitation: x.WrongCitation,
+		if err := enc.Encode(exportLine{Trace: x.Trace, Release: x.Release, Rating: x.Rating, WrongCitation: x.WrongCitation, Outdated: x.OutdatedCitation,
 			Comment: x.Comment, At: x.At.UTC(), Claims: x.Claims, Uncited: x.Uncited, Refused: x.Refused}); err != nil {
 			return 0, err
 		}

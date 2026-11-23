@@ -63,9 +63,9 @@ describe("the review list as CSV", () => {
   it("has the rows on screen, hidden documents only as a count, and no formula runs", () => {
     const csv = reviewCSV(review).split("\r\n").filter(Boolean);
     expect(csv).toHaveLength(1 + 2 + 1);
-    expect(csv[1]).toBe(`"'=HYPERLINK(""x"")","docs:returns@4","3","200","1","false",""`);
-    expect(csv[2]).toBe(`"FAQ","docs:faq@2","1","","0","true",""`);
-    expect(csv[3]).toBe(`"2 more documents you can't open","","","","","","ann@acme-logistics.example"`);
+    expect(csv[1]).toBe(`"'=HYPERLINK(""x"")","docs:returns@4","3","200","1","0","false",""`);
+    expect(csv[2]).toBe(`"FAQ","docs:faq@2","1","","0","0","true",""`);
+    expect(csv[3]).toBe(`"2 more documents you can't open","","","","","","","ann@acme-logistics.example"`);
     for (const c of ["+1", "-1", "@x", "\tx"]) expect(csvCell(c).startsWith(`"'`)).toBe(true);
   });
 

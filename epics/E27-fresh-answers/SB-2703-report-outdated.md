@@ -13,7 +13,7 @@ summary: "A reader can report a wrong citation, but not an outdated one."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A reader can report a wrong citation, but not an outdated one.
 
 ## Acceptance criteria
 
-- [ ] `POST /v1/feedback` takes `outdated_citation`; the UI offers it next to wrong citation
-- [ ] It puts the document on the review list with `outdated`, a mark clears it, and it never becomes an eval case
-- [ ] A cite the reporter wasn't shown is refused
+- [x] `POST /v1/feedback` takes `outdated_citation`; the UI offers it next to wrong citation
+- [x] It puts the document on the review list with `outdated`, a mark clears it, and it never becomes an eval case
+- [x] A cite the reporter wasn't shown is refused
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S26.1; tests green.
 
 ## Definition of done
 
