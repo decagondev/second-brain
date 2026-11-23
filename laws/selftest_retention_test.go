@@ -1,9 +1,11 @@
 package laws
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"strings"
 	"testing"
@@ -11,6 +13,7 @@ import (
 
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retention"
@@ -142,4 +145,24 @@ func TestSelf_LAW07PIIMutationsAreCaught(t *testing.T) {
 		return strings.ReplaceAll(ingest.Shown(text, flags), "••••", "4111")
 	}
 	failsSomewhere(t, "a mask that keeps more than the last four", func(r *rand.Rand) error { return law07PII(r, firstFour) })
+}
+
+func TestSelf_LAW18RetireMutationsAreCaught(t *testing.T) {
+	noSig := RealRetirer
+	noSig.Verify = func(b []byte, key string) (box.Retirement, error) {
+		var r box.Retirement
+		return r, json.Unmarshal(b, &r)
+	}
+	failsSomewhere(t, "a check that ignores the signature", func(r *rand.Rand) error { return law18Retire(r, noSig) })
+	unchecked := RealRetirer
+	unchecked.LastAnchor = func(export []byte, tenant, _ string) (audit.Anchor, int, error) {
+		return box.LastAnchor(export, tenant, "")
+	}
+	failsSomewhere(t, "an anchor taken from an export checked under its own key", func(r *rand.Rand) error { return law18Retire(r, unchecked) })
+	kept := RealRetirer
+	fixed := bytes.Repeat([]byte{9}, 64)
+	kept.Sign = func(st box.Retirement, _ io.Reader) (box.Retirement, error) {
+		return st.Sign(bytes.NewReader(fixed), time.Now())
+	}
+	failsSomewhere(t, "a statement key that is kept", func(r *rand.Rand) error { return law18Retire(r, kept) })
 }

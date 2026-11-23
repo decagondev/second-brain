@@ -452,3 +452,7 @@ func TestLAW12_SignOutEverywhereEndsEverySession(t *testing.T) {
 func TestLAW07_PersonalDataIsMasked(t *testing.T) {
 	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07PII(r, RealPIIMasker) })
 }
+
+func TestLAW18_ARetiredBoxLeavesASignedStatement(t *testing.T) {
+	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Retire(r, RealRetirer) })
+}

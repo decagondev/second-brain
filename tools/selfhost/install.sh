@@ -6,6 +6,7 @@
 #   sudo tools/selfhost/install.sh --doctor
 #   sudo tools/selfhost/install.sh --support
 #   sudo tools/selfhost/install.sh --recovery-kit [--new-key] [--custodian N=NAME]...
+#   sudo tools/selfhost/install.sh --retire [CONFIG] --yes-destroy
 #
 #   --install-docker   install Docker Engine and the compose plugin from the distribution
 #                      (Debian or Ubuntu) when they are missing; otherwise they must be there
@@ -14,6 +15,8 @@
 #   --support          write a support bundle with no content and no secret (SB-1808)
 #   --recovery-kit     take the recovery key off the box into 5 shares, any 3 of which
 #                      rebuild it (SB-1902); the rest of the arguments go to kit.sh
+#   --retire           destroy the box for good and write a signed statement of what was
+#                      destroyed (SB-1907); refuses without --yes-destroy (retire.sh)
 #
 # It loads the bundle's images (or builds them, in a checkout with Go), runs selfhost.sh
 # with CONFIG, applies the first release, installs the systemd units (the cell at boot,
@@ -25,6 +28,7 @@ HOME_DIR=$(pwd)
 die() { echo "install: $*" >&2; exit 1; }
 INSTALL_DOCKER= CHECK= CONFIG= DOCTOR= SUPPORT=
 if [ "${1:-}" = --recovery-kit ]; then shift; exec bash tools/selfhost/kit.sh "$@"; fi
+if [ "${1:-}" = --retire ]; then shift; exec bash tools/selfhost/retire.sh "$@"; fi
 for a in "$@"; do
   case "$a" in
   --install-docker) INSTALL_DOCKER=1 ;;

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- `install.sh --retire --yes-destroy` destroys a self-hosted box (units, containers, volumes, every key under `build/selfhost`) and leaves a signed statement naming what was destroyed and the last audit anchor (`sb selfhost retire-statement`, `sb selfhost verify-retirement`); the audit export stays off the box, sealed to the recovery kit (SB-1907).
 - A person's data (`POST /v1/admin/subjects/export`), the retention plan (`GET /v1/admin/retention/plan`, `sb tenant retention --plan`), sign out everywhere (`POST /v1/sessions/revoke`, `POST /v1/admin/sessions/revoke`, a link in the web UI), and IBAN and card number flags at ingest, masked to the last four characters wherever they're shown (SB-1903 to SB-1906).
 - Off-box copies of a self-hosted box are sealed to a recovery key (`SB_SEAL`, on by default; `sb backup keygen|seal|open`), and `install.sh --recovery-kit` puts the box's keys into five printed shares, any three of which rebuild them on a new machine (`restore.sh --from-kit`; `sb recovery split|join`) (SB-1901, SB-1902).
 - A self-hosted cell behind the company's outbound proxy (`SB_HTTPS_PROXY`, `SB_HTTPS_PROXY_FILE`, `SB_NO_PROXY`), on the company's own Postgres (`SB_DATABASE=external`, `sslmode=verify-full` required), and `install.sh --support` for a support bundle scanned by the new `sb secrets scan`; `sb selfhost check-proxy` and `check-dsn` check the settings (SB-1806 to SB-1808).

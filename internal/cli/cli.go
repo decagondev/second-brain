@@ -61,7 +61,8 @@ commands:
   release status|promote|rollback      release controller (maintainers)
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
-  selfhost doctor|verify-bundle|check-proxy|check-dsn   a self-hosted box's checks, bundles and settings (sb-selfhost(7))
+  selfhost doctor|verify-bundle|check-proxy|check-dsn|retire-statement|verify-retirement
+                                       a self-hosted box's checks, bundles, settings and retirement (sb-selfhost(7))
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
   backup  keygen|seal|open             seal off-box copies to the recovery key
   recovery split|join                  the 3-of-5 recovery kit
@@ -160,6 +161,10 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.selfhostVerifyBundle(args), true
 	case "selfhost check-proxy":
 		return e.selfhostCheckProxy(args), true
+	case "selfhost retire-statement":
+		return e.selfhostRetireStatement(args), true
+	case "selfhost verify-retirement":
+		return e.selfhostVerifyRetirement(args), true
 	case "selfhost check-dsn":
 		return e.selfhostCheckDSN(args), true
 	case "secrets scan":

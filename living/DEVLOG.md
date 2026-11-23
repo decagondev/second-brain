@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S18.3: retire a box with proof
+
+**Wave/slice:** W18 / S18.3 (SB-1907) · **Status:** Done
+
+**What:** `install.sh --retire [CONFIG] --yes-destroy` (`tools/selfhost/retire.sh`) destroys a self-hosted box for good: the systemd units, the containers, every volume, and every file under `build/selfhost`, each overwritten then deleted. It leaves a statement, `sb-retire/v1`, that names what was destroyed and kept, when, and the cell's own signed anchor on its last audit row, signed with a key made for it and printed. New: `internal/core/box/retire.go` (`LastAnchor`, `Retirement.Sign`, `VerifyRetirement`), `sb selfhost retire-statement` and `sb selfhost verify-retirement`. **W18 built.**
+
+**Why this way:** The audit export is taken and checked under the cell's own anchor key before anything is destroyed, so a box whose chain doesn't verify is never retired into a statement that can't be checked; its copy goes off the box sealed to the recovery key, because audit outlives the box (seven years). The statement is signed by a fresh key, not the cell's audit key, which the retirement destroys, and the private half lives only in the process that signs; a statement therefore proves it was made once, by whoever ran the retirement, and the printed key is what the company files with it. The anchor in it is the cell's own signed anchor, so anyone holding the off-box export can check the statement names where the chain really ended.
+
+**Learned:** The demo's notes volume is made outside compose and carries no compose label, so the first live run left it behind; volumes are now found by label and by name, and the script fails if any is left. The demo's `SB_OFFSITE` sits under `build/selfhost`, so the script moves an off-box directory found there out of the way instead of shredding the copies it promises to keep.
+
+**Laws:** LAW-18 and LAW-11 (`TestLAW18_ARetiredBoxLeavesASignedStatement`: the statement names the last row of a chain that verifies under the cell's key and refuses a changed or foreign one; it verifies under its own key only, every statement has a fresh key that isn't the cell's, and any changed field is refused; self-tests catch a check that ignores the signature, an anchor taken from an unpinned export, and a key that is kept). Every law test is still green.
+
 ## 2026-11-23 S18.2: a person's data, the retention plan, sign out everywhere, personal data flags
 
 **Wave/slice:** W18 / S18.2 (SB-1903 to SB-1906) · **Status:** Done

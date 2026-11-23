@@ -691,8 +691,8 @@ gantt
 - [x] Any three of five shares rebuild the keys; two reveal nothing
 - [x] Export, erase, export round-trips to empty
 - [x] Retention plans match what the job deletes; a revoked session is refused
-- [ ] A retired box leaves a signed statement and no key
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A retired box leaves a signed statement and no key
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|
@@ -711,7 +711,7 @@ gantt
 - [ ] A share of Word files answers with cites
 - [ ] A narrowed space lists its notes for review
 - [ ] Mattermost asks answer under the asker's access
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

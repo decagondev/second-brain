@@ -30,6 +30,8 @@ sb selfhost doctor [--facts FILE]        (a self-hosted box, sb-selfhost(7))
 sb selfhost verify-bundle DIR --trusted ed25519:KEY|--cosign-identity ID [--channel stable]
 sb selfhost check-proxy URL | --file FILE
 sb selfhost check-dsn FILE [--service OUT]
+sb selfhost retire-statement --tenant T --export FILE (--anchor-seed FILE --check | --cell-key KEY --host H --destroyed TEXT... [--kept TEXT]... --out FILE)
+sb selfhost verify-retirement FILE --key ed25519:KEY
 sb secrets scan [--known PATH]... PATH...   (sb-observability(7))
 sb backup keygen --public FILE --private FILE   (sb-selfhost(7), Sealed off-box copies)
 sb backup seal --to PUBFILE [--out FILE] FILE

@@ -104,6 +104,17 @@ To a new machine, after losing the old one:
 6. Check `sb tenant verify`, then make a new recovery kit (`install.sh --recovery-kit`) so the recovery key leaves this box too.
 7. The index rebuilds from the sources on its own if the dump is older than the last sync ([LAW-13](../../manual/sb-laws.7.md#law-13)); nothing else is lost but what changed after the dump.
 
+## Retire a box
+
+When the company stops using the box (SB-1907):
+
+1. Make sure the recovery kit's custodians still hold their shares, if the off-box copies must stay readable; otherwise the copies become noise once the shares are destroyed.
+2. See what goes: `sudo /opt/second-brain/tools/selfhost/install.sh --retire`. It lists the units, the volumes and the files, and stops.
+3. Destroy it: `sudo /opt/second-brain/tools/selfhost/install.sh --retire --yes-destroy`. If the audit export can't be taken or doesn't verify, it stops before anything is destroyed; fix the cell (the doctor helps) and run it again.
+4. Print `build/retired/TENANT-TIME/statement.json` together with the key it printed (`ed25519:…`); the key is kept nowhere else. File both with the company's records. Anyone can check them: `sb selfhost verify-retirement statement.json --key ed25519:…`.
+5. With `SB_DATABASE=external`, drop the company's database: the statement lists it under `kept`.
+6. Wipe or return the machine as the company's policy says; the box itself holds no key any more.
+
 ## LAW-17 on one machine
 
 There is no IAM to enumerate, so the cell keeps its own list of what the factory can reach (`state/iam/TENANT.json`): at most the release store's read-only pull token. The monthly `access` job checks it and leaves a signed statement in `state/access/statement-DATE.json`, whose hash is in the audit log and so in the next anchor. An unlisted path is a Sev-1 `access_path` ([LAW-17](LAW-17.md)). To show an auditor: the statement, `sb audit verify`, and the anchor covering the statement's audit row.
