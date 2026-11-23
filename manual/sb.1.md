@@ -16,6 +16,7 @@ sb — operate Second Brain tenants, kill switches, audit, releases and evals
 sb [--json] [--tenant NAME] [--endpoint URL] COMMAND [ARGS]
 
 sb tenant  check|apply|verify FILE
+sb tenant  retention --plan [--days N] (--cell URL | --tenant T)
 sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
 sb space   templates
 sb space   diff FILE --idp-snapshot SNAPSHOT [--json]

@@ -16,6 +16,7 @@ sb-tenant — validate a manifest, make a cell match it, and prove the laws hold
 sb tenant check  FILE
 sb tenant apply  FILE [--plan] [--cell URL]
 sb tenant verify FILE [--law LAW-nn]... [--sample N] [--cell URL] [--foreign FILE]
+sb tenant retention --plan [--days N] (--cell URL | --tenant T)
 ```
 
 ## DESCRIPTION
@@ -75,6 +76,18 @@ How verify decides the other laws, exactly (SB-601):
 - **Start here (SB-1706).** For every space with `start_here`, verify checks each item live as each sampled member of the space. An item no member can open, or one whose document isn't indexed, is reported as `START` `fail` with the space and the item's position, never its title or text.
 
 Verify runs against a cell through the same `verify.Target` interface whether the cell is local or deployed. Against a deployed cell, `sb tenant verify FILE --cell URL` posts the request to the cell's **verifier endpoint** (sb-runtime(7), Endpoints), which runs the checks inside the cell and returns only the report. Inside the cell the checks sample the directory's active users and the opening words of indexed documents, ask through the cell's own ask path, check every citation live at the source, and inject LAW-03's timeout into a copy of the agent's connectors only, so no other answer is affected (SB-1508). The caller authenticates with the control plane's identity (`SB_TOKEN`). The local cell (`tools/evalcell --verify`) runs the same checks over a fixture world.
+
+**retention --plan** (SB-1905) prints what the cell's nightly retention job would delete, by kind, with the records kept by a legal hold counted apart: `GET /v1/admin/retention/plan` (sb-admin(3)), which deletes nothing. `--days N` is the run `N` days from now (default 0, tonight's). It needs an operator's token in `SB_TOKEN`. With `--json` it prints the cell's answer. Without `--plan` it is a usage error: the job itself runs only in the cell, on its schedule.
+
+```text
+$ sb tenant retention --plan --days 30 --cell https://cell.acme.example
+The retention job in 30 days deletes records from before 2026-01-22T03:00:00Z:
+  conversations      40
+  feedback           11
+  traces             120
+  total              171
+Kept by a legal hold: 7
+```
 
 ## OPTIONS
 

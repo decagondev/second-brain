@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/audit"
@@ -45,10 +46,15 @@ type Admin struct {
 	Prices    map[string]costs.Price // provider/model -> price, from the release
 	BudgetUSD int
 	Now       func() time.Time
-	// Erasure erases one user's derived data (SB-611); nil means EUNAVAIL.
+	// Erasure erases one user's derived data (SB-611), exports it (SB-1903) and plans the
+	// retention job (SB-1905); nil means EUNAVAIL.
 	Erasure interface {
 		Erase(ctx context.Context, actor, user, reason string) (retention.Report, error)
+		Export(ctx context.Context, actor, user, reason string) (retention.Export, error)
+		Plan(ctx context.Context, in time.Duration) (retention.Report, error)
 	}
+	// Sessions ends a person's sessions (SB-1906); nil means EUNAVAIL.
+	Sessions Revoker
 }
 
 // Register mounts the endpoints.
@@ -62,6 +68,9 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/usage", h.readers(h.usage))
 	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
+	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
+	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
+	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
 		h.fail(w, errs.New(errs.ENOTIMPL, "refusal reports arrive with SB-607"))
 	}))
@@ -225,20 +234,11 @@ func (h Admin) kill(set bool) func(http.ResponseWriter, *http.Request, tenancy.S
 
 // erase is subject deletion (sb-admin(3), sb-tenant(5) Retention and deletion).
 func (h Admin) erase(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
-	var req struct {
-		User   string `json:"user"`
-		Reason string `json:"reason"`
-	}
-	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
-	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil {
-		h.fail(w, errs.New(errs.EINVAL, "The body must be {\"user\": \"usr_…\", \"reason\": \"…\"}."))
+	user, reason, ok := h.subject(w, r)
+	if !ok {
 		return
 	}
-	if h.Erasure == nil {
-		h.fail(w, errs.New(errs.EUNAVAIL, "Erasure isn't available in this cell."))
-		return
-	}
-	rep, err := h.Erasure.Erase(r.Context(), s.User(), req.User, req.Reason)
+	rep, err := h.Erasure.Erase(r.Context(), s.User(), user, reason)
 	switch {
 	case errors.Is(err, retention.ErrInvalid):
 		h.fail(w, errs.New(errs.EINVAL, "A usr_ id and a reason are required."))
@@ -248,6 +248,72 @@ func (h Admin) erase(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
 		h.fail(w, errs.New(errs.EUNAVAIL, "The erasure didn't finish; the audit log says how far it got."))
 	default:
 		h.ok(w, map[string]any{"erased": rep.Counts, "audit": rep.Audit})
+	}
+}
+
+// subject reads {user, reason} for erase and export.
+func (h Admin) subject(w http.ResponseWriter, r *http.Request) (user, reason string, ok bool) {
+	return h.subjectFor(w, r, h.Erasure != nil, "Erasure isn't available in this cell.")
+}
+
+// subjectFor reads {user, reason}; a reason is required, and available false is EUNAVAIL.
+func (h Admin) subjectFor(w http.ResponseWriter, r *http.Request, available bool, unavailable string) (user, reason string, ok bool) {
+	var req struct {
+		User   string `json:"user"`
+		Reason string `json:"reason"`
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil {
+		h.fail(w, errs.New(errs.EINVAL, "The body must be {\"user\": \"usr_…\", \"reason\": \"…\"}."))
+		return "", "", false
+	}
+	if !available {
+		h.fail(w, errs.New(errs.EUNAVAIL, "%s", unavailable))
+		return "", "", false
+	}
+	return req.User, req.Reason, true
+}
+
+// export is a copy of one person's derived data (sb-admin(3); SB-1903): what erase would remove.
+func (h Admin) export(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+	user, reason, ok := h.subject(w, r)
+	if !ok {
+		return
+	}
+	ex, err := h.Erasure.Export(r.Context(), s.User(), user, reason)
+	switch {
+	case errors.Is(err, retention.ErrInvalid):
+		h.fail(w, errs.New(errs.EINVAL, "A usr_ id and a reason are required."))
+	case err != nil:
+		h.fail(w, errs.New(errs.EUNAVAIL, "The export didn't finish, so nothing is handed over; the audit log says which store failed."))
+	default:
+		h.ok(w, ex)
+	}
+}
+
+// plan is what the retention job would delete (sb-admin(3); SB-1905), deleting nothing.
+func (h Admin) plan(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	days := 0
+	if v := r.URL.Query().Get("days"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 || n > retention.MaxDays {
+			h.fail(w, errs.New(errs.EINVAL, "days must be 0 to 3650."))
+			return
+		}
+		days = n
+	}
+	if h.Erasure == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Retention isn't available in this cell."))
+		return
+	}
+	rep, err := h.Erasure.Plan(r.Context(), time.Duration(days)*24*time.Hour)
+	switch {
+	case errors.Is(err, retention.ErrDays):
+		h.fail(w, errs.New(errs.EINVAL, "The manifest's retention_days is outside 30 to 3650."))
+	case err != nil:
+		h.fail(w, errs.New(errs.EUNAVAIL, "A store can't be read: %s.", strings.Join(rep.Failed, ", ")))
+	default:
+		h.ok(w, map[string]any{"days": days, "cutoff": rep.Cutoff, "would_delete": rep.Counts, "held": rep.Held})
 	}
 }
 

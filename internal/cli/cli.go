@@ -53,6 +53,7 @@ const usage = `usage: sb [--json] [--tenant NAME] [--endpoint URL] [-q] COMMAND 
 
 commands:
   tenant  check|apply|verify FILE      validate, apply and verify a tenant manifest
+  tenant  retention --plan [--days N]  what the retention job would delete
   space   init|templates ...           start a department space from a template
   kill    agent|connector|space|tenant ...   set a kill switch
   unkill  agent|connector|space|tenant ...   clear a kill switch
@@ -112,6 +113,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.tenantApply(rest[2:])
 	case "tenant verify":
 		return e.tenantVerify(rest[2:])
+	case "tenant retention":
+		return e.tenantRetention(rest[2:])
 	case "factory status":
 		return e.factoryStatus(rest[2:])
 	case "factory access":

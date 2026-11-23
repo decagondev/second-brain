@@ -303,10 +303,22 @@ export interface ReviewItem extends SearchResult {
   flagged: number;
 }
 
-export async function reviewList(space: string, f: Fetch = fetch): Promise<{ items: ReviewItem[]; hidden: { owner?: string }[] }> {
+// personal_data is how many documents in the space hold an IBAN or a card number (SB-1904).
+export async function reviewList(
+  space: string,
+  f: Fetch = fetch,
+): Promise<{ items: ReviewItem[]; hidden: { owner?: string }[]; personal_data?: number }> {
   try {
-    const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string }[] }>(`/v1/spaces/${encodeURIComponent(space)}/review`, {}, f);
-    return { items: Array.isArray(d.items) ? d.items : [], hidden: Array.isArray(d.hidden) ? d.hidden : [] };
+    const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string }[]; personal_data?: number }>(
+      `/v1/spaces/${encodeURIComponent(space)}/review`,
+      {},
+      f,
+    );
+    return {
+      items: Array.isArray(d.items) ? d.items : [],
+      hidden: Array.isArray(d.hidden) ? d.hidden : [],
+      personal_data: typeof d.personal_data === "number" ? d.personal_data : undefined,
+    };
   } catch {
     return { items: [], hidden: [] };
   }

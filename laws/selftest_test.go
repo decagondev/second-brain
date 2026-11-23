@@ -739,6 +739,10 @@ func (a indexAger) Expire(context.Context, string, time.Time, retention.Held) (i
 	return 1, 0, a.w.Drop()
 }
 func (indexAger) Erase(context.Context, string, string) (int, error) { return 0, nil }
+func (indexAger) Plan(context.Context, string, time.Time, retention.Held) (int, int, error) {
+	return 1, 0, nil
+}
+func (indexAger) Export(context.Context, string, string) ([]json.RawMessage, error) { return nil, nil }
 
 // offByOne deletes traces at the cutoff too.
 type offByOne struct{ w *retentionWorld }
@@ -756,6 +760,10 @@ func (o offByOne) Expire(ctx context.Context, tenant string, before time.Time, h
 	return n, 0, nil
 }
 func (offByOne) Erase(context.Context, string, string) (int, error) { return 0, nil }
+func (offByOne) Plan(context.Context, string, time.Time, retention.Held) (int, int, error) {
+	return 0, 0, nil
+}
+func (offByOne) Export(context.Context, string, string) ([]json.RawMessage, error) { return nil, nil }
 
 // LAW-11's restore check catches a restore that trusts the first copy without checking it.
 func TestSelf_LAW11RestoreMutationIsCaught(t *testing.T) {

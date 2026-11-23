@@ -348,6 +348,8 @@ type DocQuery struct {
 	Owners []string    // owner emails, lower case
 	// SeenSince picks versions first seen at or after it, never rebuilt ones (SB-1708).
 	SeenSince time.Time
+	// Flag picks chunks carrying the flag, e.g. personal_data (SB-1904).
+	Flag string
 }
 
 // DocLookup is an index that finds chunks by DocQuery (SB-1706, SB-1707); found chunks

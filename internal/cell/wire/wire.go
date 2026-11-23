@@ -61,6 +61,7 @@ import (
 	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/retrieve"
 	"example.com/second-brain/internal/core/reviews"
+	"example.com/second-brain/internal/core/session"
 	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/core/toolbus"
@@ -457,6 +458,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	ret := retention.Job{Tenant: tenant, Days: m.RetentionDays, Stores: append(c.Traces.Retention(), c.Logs), Audit: c.Audit, Now: time.Now,
 		Held: func(space, user string) bool { return c.HeldNow(context.Background()).Held(space, user) }, SpaceDays: spaceDays}
 
+	revoker := session.Revoker{Tenant: tenant, Store: c.Sessions, Audit: c.Audit}
 	man := applied{t: m, commit: "sha256:" + digest}
 	mux := http.NewServeMux()
 	public := http.NewServeMux()
@@ -514,8 +516,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret}
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker}
 	admin.Register(mux)
+	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now}.Register(mux)

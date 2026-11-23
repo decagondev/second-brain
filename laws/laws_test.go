@@ -436,3 +436,19 @@ func TestLAW11_OffBoxCopiesAreSealed(t *testing.T) {
 func TestLAW18_AnyThreeSharesAndNoTwo(t *testing.T) {
 	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Kit(r, realKit) })
 }
+
+func TestLAW16_RetentionPlanIsWhatTheSweepDeletes(t *testing.T) {
+	Check(t, "LAW-16", runs, func(r *rand.Rand) error { return law16RetentionPlan(r, RealRetentionStores) })
+}
+
+func TestLAW07_SubjectExportIsWhatEraseRemoves(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07SubjectExport(r, RealRetentionStores) })
+}
+
+func TestLAW12_SignOutEverywhereEndsEverySession(t *testing.T) {
+	Check(t, "LAW-12", runs, func(r *rand.Rand) error { return law12Revoke(r, RealSessionRevoker) })
+}
+
+func TestLAW07_PersonalDataIsMasked(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07PII(r, RealPIIMasker) })
+}

@@ -247,5 +247,12 @@ func matchDoc(c ports.Chunk, q ports.DocQuery) bool {
 			return true
 		}
 	}
+	if q.Flag != "" {
+		for _, f := range c.Flags {
+			if f == q.Flag {
+				return true
+			}
+		}
+	}
 	return !q.SeenSince.IsZero() && !c.Rebuilt && !c.Seen.IsZero() && !c.Seen.Before(q.SeenSince)
 }

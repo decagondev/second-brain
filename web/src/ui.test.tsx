@@ -241,3 +241,32 @@ describe("signed out", () => {
     expect(await violations(container)).toEqual([]);
   });
 });
+
+describe("sign out everywhere", () => {
+  it("posts the revoke and says how many sessions ended", async () => {
+    const { SignOutEverywhere } = await import("./Session");
+    const calls: string[] = [];
+    const f: Fetch = async (input, init) => {
+      calls.push(`${init?.method ?? "GET"} ${input}`);
+      return new Response(JSON.stringify({ revoked: 3, audit: ["aud_1", "aud_2"] }), { status: 200 });
+    };
+    const { container } = render(<SignOutEverywhere fetcher={f} />);
+    expect(await violations(container)).toEqual([]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere" }));
+    });
+    expect(calls).toEqual(["POST /v1/sessions/revoke"]);
+    expect(screen.getByRole("status").textContent).toContain("3 devices");
+    expect(screen.getByRole("link", { name: "Sign in again" }).getAttribute("href")).toBe("/login");
+  });
+
+  it("says so when the sessions weren't ended", async () => {
+    const { SignOutEverywhere } = await import("./Session");
+    const f: Fetch = async () => new Response("{}", { status: 503 });
+    render(<SignOutEverywhere fetcher={f} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere" }));
+    });
+    expect(screen.getByRole("alert").textContent).toContain("weren't ended");
+  });
+});

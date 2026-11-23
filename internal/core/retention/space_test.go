@@ -2,6 +2,7 @@ package retention
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 )
@@ -32,6 +33,20 @@ func (s *spaced) Expire(_ context.Context, _ string, before time.Time, held Held
 	return n, k, nil
 }
 func (*spaced) Erase(context.Context, string, string) (int, error) { return 0, nil }
+func (s *spaced) Plan(_ context.Context, _ string, before time.Time, held Held) (int, int, error) {
+	n, k := 0, 0
+	for _, r := range s.recs {
+		switch {
+		case !r.at.Before(before):
+		case held.Is(r.space, ""):
+			k++
+		default:
+			n++
+		}
+	}
+	return n, k, nil
+}
+func (*spaced) Export(context.Context, string, string) ([]json.RawMessage, error) { return nil, nil }
 
 // SB-1401: a space that keeps less ages out sooner; other spaces keep the tenant's days.
 func TestSpaceRetentionIsEnforced(t *testing.T) {

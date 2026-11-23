@@ -121,7 +121,7 @@ Every chunk carries its document's owner at the source (an email, SB-1203). The 
 | Rule | Detail |
 |---|---|
 | Results | Up to 20 documents, each once, in the order of their best-ranked allowed chunk. Only documents that passed every check for this asker now; a document whose check is denied, Unknown or late is never returned, only counted in `refused` (LAW-01, LAW-03) |
-| `snippet` | The first 300 characters of the document's best allowed chunk: a quote of the source with its cite, never a claim (LAW-14). `flags` are that chunk's flags |
+| `snippet` | The first 300 characters of the document's best allowed chunk: a quote of the source with its cite, never a claim (LAW-14). `flags` are that chunk's flags; in a chunk flagged `personal_data` each IBAN or card number is masked but its last four characters (sb-ingest(7), Personal data; SB-1904) |
 | `age_days` | Whole days since the cell first indexed this version; omitted when the index doesn't know |
 | `owner` | As on a cite (Who to ask) |
 | Errors | As for `POST /v1/ask`: `EINVAL` for an empty or over-long `q` or an unknown kind, `EKILLED` when the `ask` agent, the tenant or the space is killed, `EUNAVAIL` when the index or directory can't answer. Never `EBUDGET` |
@@ -149,7 +149,7 @@ The link `/q/sh_…` opens the web UI on the shared question with an **Ask** but
 
 ### Documents to review, exactly (SB-1709)
 
-`GET /v1/spaces/NAME/review` is the stewards' list (the Cedar action `review_space`, as for access reviews): documents the space holds that answers cited at least 5 times in the last 30 days and whose version is older than the space's `review_after_days` (sb-space(5), default 365), and any document someone marked as a `wrong_citation` (POST /v1/feedback) in those 30 days. The counts come from the traces and feedback the cell already keeps. Each document is checked as a search checks it, now, as the steward: `{ "items": [{ …result, "cited": 7, "flagged": 1 }], "hidden": [{ "owner": "ann@…" }] }`, where a document the steward can't open is only an entry in `hidden`, with its owner if there is one so they can ask the owner, never its title or cite.
+`GET /v1/spaces/NAME/review` is the stewards' list (the Cedar action `review_space`, as for access reviews): documents the space holds that answers cited at least 5 times in the last 30 days and whose version is older than the space's `review_after_days` (sb-space(5), default 365), and any document someone marked as a `wrong_citation` (POST /v1/feedback) in those 30 days. The counts come from the traces and feedback the cell already keeps. Each document is checked as a search checks it, now, as the steward: `{ "items": [{ …result, "cited": 7, "flagged": 1 }], "hidden": [{ "owner": "ann@…" }], "personal_data": 3 }`, where `personal_data` counts the documents the space holds with an IBAN or a card number in them (SB-1904), whether or not the steward can open them, and never says which; and where a document the steward can't open is only an entry in `hidden`, with its owner if there is one so they can ask the owner, never its title or cite.
 
 Every cite in an answer also carries `age_days` (whole days since the index first saw its version), and `stale: true` once that is past the `review_after_days` of a space that holds it (365 for a document no space holds). The web UI shows "N days old" on such a chip, in words, as part of its accessible name.
 

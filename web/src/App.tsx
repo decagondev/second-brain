@@ -9,6 +9,7 @@ import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged } from "./Start";
+import { SignOutEverywhere } from "./Session";
 
 interface Turn {
   question: string;
@@ -235,6 +236,7 @@ export function App({ fetcher, share }: { fetcher?: Fetch; share?: string }) {
       <div role="tabpanel" id={`${base}-panel-questions`} aria-labelledby={`${base}-tab-questions`} hidden={tab !== "questions"}>
         {tab === "questions" && <QuestionsView fetcher={fetcher} />}
       </div>
+      <SignOutEverywhere fetcher={fetcher} />
     </main>
   );
 }

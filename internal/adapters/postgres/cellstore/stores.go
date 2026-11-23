@@ -456,6 +456,41 @@ func (v view) Expire(ctx context.Context, tenant string, before time.Time, held 
 	return n, kept, nil
 }
 
+// Plan implements retention.Store: Expire's selection, deleting nothing.
+func (v view) Plan(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	rs, err := v.records(ctx, tenant, &before, "")
+	if err != nil {
+		return 0, 0, err
+	}
+	n, kept := 0, 0
+	for _, r := range rs {
+		if held.Is(spaceOf(r.space), r.user) {
+			kept++
+		} else {
+			n++
+		}
+	}
+	return n, kept, nil
+}
+
+// Export implements retention.Store: the bodies of the rows Erase deletes.
+func (v view) Export(ctx context.Context, tenant, user string) ([]json.RawMessage, error) {
+	rows, err := v.t.Pool.Query(ctx, `SELECT body FROM cell_docs WHERE tenant = $1 AND kind = $2 AND usr = $3 ORDER BY at, id`, tenant, v.kind, user)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []json.RawMessage
+	for rows.Next() {
+		var b []byte
+		if err := rows.Scan(&b); err != nil {
+			return nil, err
+		}
+		out = append(out, json.RawMessage(b))
+	}
+	return out, rows.Err()
+}
+
 // Erase implements retention.Store.
 func (v view) Erase(ctx context.Context, tenant, user string) (int, error) {
 	tag, err := v.t.Pool.Exec(ctx, `DELETE FROM cell_docs WHERE tenant = $1 AND kind = $2 AND usr = $3`, tenant, v.kind, user)

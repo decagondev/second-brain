@@ -106,6 +106,67 @@ func (f *Files) Expire(_ context.Context, _ string, before time.Time, held reten
 	return n, kept, nil
 }
 
+// Plan counts what Expire would delete and keep, by the same selection, deleting nothing.
+func (f *Files) Plan(_ context.Context, _ string, before time.Time, held retention.Held) (int, int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	days, err := f.days()
+	if err != nil {
+		return 0, 0, err
+	}
+	n, kept := 0, 0
+	for _, d := range days {
+		t, _ := time.Parse(layout, d)
+		if t.Add(24 * time.Hour).After(before) {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(f.Dir, d+".log"))
+		if err != nil {
+			return n, kept, err
+		}
+		if held.Is("", "") {
+			kept += lines(b)
+		} else {
+			n += lines(b)
+		}
+	}
+	return n, kept, nil
+}
+
+// Export returns the lines Erase would drop: a JSON line as it is, any other line as a
+// JSON string.
+func (f *Files) Export(_ context.Context, _ string, user string) ([]json.RawMessage, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	days, err := f.days()
+	if err != nil {
+		return nil, err
+	}
+	var out []json.RawMessage
+	for _, d := range days {
+		b, err := os.ReadFile(filepath.Join(f.Dir, d+".log"))
+		if err != nil {
+			return nil, err
+		}
+		sc := bufio.NewScanner(bytes.NewReader(b))
+		sc.Buffer(make([]byte, 0, 64<<10), 4<<20)
+		for sc.Scan() {
+			if !names(sc.Bytes(), user) {
+				continue
+			}
+			line := append([]byte(nil), sc.Bytes()...)
+			if !json.Valid(line) {
+				line, _ = json.Marshal(string(line))
+			}
+			out = append(out, line)
+		}
+		if err := sc.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
 // Erase rewrites every file without the lines that name the user in any field.
 func (f *Files) Erase(_ context.Context, _ string, user string) (int, error) {
 	f.mu.Lock()

@@ -67,7 +67,7 @@ func (c Context) Data() string {
 	var b strings.Builder
 	for _, l := range c.Order {
 		ch := c.Labels[l]
-		b.WriteString(ingest.Wrap(ch.Text, l+" "+ch.Cite, ch.Flags))
+		b.WriteString(ingest.Wrap(ingest.Shown(ch.Text, ch.Flags), l+" "+ch.Cite, ch.Flags)) // personal data masked (SB-1904)
 		b.WriteString("\n")
 	}
 	return b.String()
@@ -90,11 +90,11 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 		} `json:"claims"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &parsed); err != nil || len(parsed.Claims) == 0 {
-		return Result{Claims: []Claim{{Text: strings.TrimSpace(raw), Cites: []Cite{}, Uncited: true}}}
+		return Result{Claims: []Claim{{Text: ingest.MaskPII(strings.TrimSpace(raw), false), Cites: []Cite{}, Uncited: true}}}
 	}
 	var res Result
 	for _, pc := range parsed.Claims {
-		c := Claim{Text: pc.Text, Cites: []Cite{}}
+		c := Claim{Text: ingest.MaskPII(pc.Text, false), Cites: []Cite{}} // never a whole IBAN or card (SB-1904)
 		seen := map[string]bool{}
 		for _, label := range pc.Cites {
 			ch, ok := ctx.Labels[label]

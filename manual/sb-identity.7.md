@@ -81,6 +81,8 @@ An answer or a search names the owner of a cited document, so the asker knows wh
 
 Sessions last at most 12 hours from sign-in and are never extended: after 12 hours the user signs in again. Each session is re-validated against the directory every 60 seconds. A user the directory doesn't know, or a directory that can't answer, ends the session with `EAUTH`. A SCIM deactivate triggers immediate revocation as well, so the 5-minute bound (LAW-12) has plenty of margin. Sessions live in the cell's own session store; no session is valid in any other cell.
 
+**Signing out everywhere (SB-1906).** A person who has lost a laptop ends every session of theirs, this one included, with **Sign out everywhere** at the foot of the web UI, which is `POST /v1/sessions/revoke` (sb-api(3)). An operator ends a named person's sessions with `POST /v1/admin/sessions/revoke` (sb-admin(3)), policy-checked like every admin endpoint. Both write a `kind: access` audit row (subject `sessions:USER`, state `revoke_requested`) **before** any session ends, and a second row (`revoked`, with `sessions=N`) after; if the first row can't be written, nothing is revoked. A revoked session is refused with `EAUTH` at its next request, because every request reads the session from the store. Revoking ends sessions, not the account: the person can sign in again at once, as long as the directory says they are active. To keep them out, deactivate them in the IdP (SCIM), which also revokes every session.
+
 ### Approvals
 
 Approving a consequential action requires a session less than 15 minutes old, or step-up re-authentication at the IdP.

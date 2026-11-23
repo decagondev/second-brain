@@ -366,7 +366,8 @@ func (x Index) Docs(ctx context.Context, tenant string, q ports.DocQuery) ([]por
 		   OR EXISTS (SELECT 1 FROM unnest($2::text[]) p WHERE starts_with(kind || ':' || location || '/', p))
 		   OR (owner <> '' AND owner = ANY($3))
 		   OR ($4::timestamptz IS NOT NULL AND seen >= $4 AND NOT rebuilt)
-		ORDER BY id`, nonNil(refs), nonNil(under), nonNil(q.Owners), since(q.SeenSince))
+		   OR ($5 <> '' AND $5 = ANY(flags))
+		ORDER BY id`, nonNil(refs), nonNil(under), nonNil(q.Owners), since(q.SeenSince), q.Flag)
 	if err != nil {
 		return nil, err
 	}

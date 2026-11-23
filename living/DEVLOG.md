@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S18.2: a person's data, the retention plan, sign out everywhere, personal data flags
+
+**Wave/slice:** W18 / S18.2 (SB-1903 to SB-1906) · **Status:** Done
+
+**What:** `POST /v1/admin/subjects/export` hands a data-protection officer everything erase would remove for one person, audited with its hash. `GET /v1/admin/retention/plan?days=N` and `sb tenant retention --plan` show what the nightly sweep would delete, by store, with what legal holds keep counted apart. `POST /v1/sessions/revoke` (the web UI's **Sign out everywhere**) and `POST /v1/admin/sessions/revoke` end every session of a person, audited first. Ingest flags `personal_data` on chunks with a valid IBAN or card number; their snippets, the model's context and every answer show only the last four characters, and stewards see how many documents in their space carry the flag. `retention.Store` gained `Plan` and `Export`; `session.Revoker`, `ingest.PIISpans`, `ingest.MaskPII` and `ports.DocQuery.Flag` are new.
+
+**Why this way:** The plan and the export are written beside `Expire` and `Erase` in each store, over the same selection function (the memory store runs one `drop` with a dry flag), so they can't drift from what the job deletes; the law test runs plan then sweep and requires equal counts. The plan's space pass counts only the records between the space's cutoff and the tenant's, because the sweep's first pass has already deleted the older ones. Masking happens where text leaves the index (snippets, the model's context, answer text), not in the index, so the flag stays derived and a rebuild gives the same flags; masking the model's context means an answer can't quote what the model never saw. A card number needs an issuer prefix as well as Luhn, so order and phone numbers are mostly left alone.
+
+**Learned:** The card scan first took the leftmost 19 digits of a run, which missed a card after a short reference number (`Ref 12 4111 …`); it now grows each candidate group by group, at most 19 digits, so a long run of short groups stays linear. Revoking sessions needed no new store: `ports.Sessions.RevokeUser` already existed for SCIM.
+
+**Laws:** LAW-16 (`TestLAW16_RetentionPlanIsWhatTheSweepDeletes`: the plan's counts equal the sweep's per store, holds apart, and the plan deletes nothing; self-tests for a plan that ignores holds, deletes, or uses its own cutoff), LAW-07 and LAW-04 (`TestLAW07_SubjectExportIsWhatEraseRemoves`: audited first, hash not text, nobody else's records, export equals erase, empty after; `TestLAW07_PersonalDataIsMasked`: no reader is shown more than the last four characters, and a rebuild gives the same flags, LAW-13), LAW-12 (`TestLAW12_SignOutEverywhereEndsEverySession`: through the real middleware, every session of the person refused, no one else's, nothing revoked when the audit log is down).
+
 ## 2026-11-23 S18.1: off-box copies sealed, and the keys in a 3-of-5 kit
 
 **Wave/slice:** W18 / S18.1 (SB-1901, SB-1902) · **Status:** Done

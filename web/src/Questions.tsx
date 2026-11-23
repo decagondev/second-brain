@@ -213,7 +213,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
 // Documents to review on the steward's screen (SB-1709): relied-on documents gone stale, or
 // marked as wrong citations, each one the steward can open; the rest counted with an owner.
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
-  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string }[] }>({ items: [], hidden: [] });
+  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string }[]; personal_data?: number }>({ items: [], hidden: [] });
   useEffect(() => {
     reviewList(space, fetcher).then(setList);
   }, [space, fetcher]);
@@ -245,6 +245,12 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
         <p className="refused">
           {list.hidden.length === 1 ? "1 more document you can't open needs" : `${list.hidden.length} more documents you can't open need`} review
           {list.hidden.some((h) => h.owner) ? `; ask their owners: ${Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ")}` : ""}.
+        </p>
+      )}
+      {list.personal_data !== undefined && list.personal_data > 0 && (
+        <p className="personal">
+          {list.personal_data === 1 ? "1 document" : `${list.personal_data} documents`} in this space hold personal data (an IBAN or a card
+          number). Answers and snippets show only the last four characters; check that the space is the right place for them.
         </p>
       )}
     </section>

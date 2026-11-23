@@ -4,6 +4,7 @@ package memory
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sort"
 	"sync"
@@ -165,22 +166,56 @@ func (v view) Name() string { return v.name }
 // a conversation carries the space it was asked in, and one asked in several, or not yet
 // tagged, is kept by any hold that could cover it.
 func (v view) Expire(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	n, k := v.drop(func(t, _, _ string, at time.Time) bool { return t == tenant && at.Before(before) }, held)
+	n, k := v.drop(aged(tenant, before), held, false, nil)
+	return n, k, nil
+}
+
+// Plan implements retention.Store: Expire's selection, deleting nothing.
+func (v view) Plan(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	n, k := v.drop(aged(tenant, before), held, true, nil)
 	return n, k, nil
 }
 
 // Erase implements retention.Store.
 func (v view) Erase(_ context.Context, tenant, user string) (int, error) {
-	n, _ := v.drop(func(t, u, _ string, _ time.Time) bool { return t == tenant && u == user }, nil)
+	n, _ := v.drop(about(tenant, user), nil, false, nil)
 	return n, nil
 }
 
-func (v view) drop(match func(tenant, user, space string, at time.Time) bool, held retention.Held) (int, int) {
+// Export implements retention.Store: Erase's selection, deleting nothing.
+func (v view) Export(_ context.Context, tenant, user string) ([]json.RawMessage, error) {
+	var out []json.RawMessage
+	v.drop(about(tenant, user), nil, true, &out)
+	return out, nil
+}
+
+type matcher func(tenant, user, space string, at time.Time) bool
+
+func aged(tenant string, before time.Time) matcher {
+	return func(t, _, _ string, at time.Time) bool { return t == tenant && at.Before(before) }
+}
+
+func about(tenant, user string) matcher {
+	return func(t, u, _ string, _ time.Time) bool { return t == tenant && u == user }
+}
+
+// convJSON is a conversation as the Postgres store keeps it, for an export.
+type convJSON struct {
+	Tenant, User string
+	Questions    []string
+	At           time.Time
+	Space        string
+}
+
+// drop selects with match, keeps what held holds, and deletes the rest unless dry; with
+// got, every selected record is added to it as JSON. One selection serves all four of
+// Expire, Plan, Erase and Export, so the dry runs count what the deletes delete.
+func (v view) drop(match matcher, held retention.Held, dry bool, got *[]json.RawMessage) (int, int) {
 	s := v.s
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	n, kept := 0, 0
-	try := func(tenant, user, space string, at time.Time) bool {
+	try := func(tenant, user, space string, at time.Time, rec any) bool {
 		if !match(tenant, user, space, at) {
 			return false
 		}
@@ -189,36 +224,40 @@ func (v view) drop(match func(tenant, user, space string, at time.Time) bool, he
 			return false
 		}
 		n++
-		return true
+		if got != nil {
+			b, _ := json.Marshal(rec)
+			*got = append(*got, b)
+		}
+		return !dry
 	}
 	switch v.name {
 	case "traces":
 		for k, t := range s.traces {
-			if try(t.Tenant, t.User, spaceOf(t.Space), t.At) {
+			if try(t.Tenant, t.User, spaceOf(t.Space), t.At, t) {
 				delete(s.traces, k)
 			}
 		}
 	case "conversations":
 		for k, c := range s.convs {
-			if try(c.tenant, c.user, spaceOf(c.space), c.at) {
+			if try(c.tenant, c.user, spaceOf(c.space), c.at, convJSON{c.tenant, c.user, c.questions, c.at, c.space}) {
 				delete(s.convs, k)
 			}
 		}
 	case "saved questions":
 		for k, q := range s.saved {
-			if try(q.Tenant, q.User, spaceOf(q.Space), q.At) {
+			if try(q.Tenant, q.User, spaceOf(q.Space), q.At, q) {
 				delete(s.saved, k)
 			}
 		}
 	case "steward questions":
 		for k, q := range s.stq {
-			if try(q.Tenant, q.Asker, spaceOf(q.Space), q.At) {
+			if try(q.Tenant, q.Asker, spaceOf(q.Space), q.At, q) {
 				delete(s.stq, k)
 			}
 		}
 	case "shares":
 		for k, sh := range s.shares {
-			if try(sh.Tenant, sh.User, spaceOf(sh.Space), sh.At) {
+			if try(sh.Tenant, sh.User, spaceOf(sh.Space), sh.At, sh) {
 				delete(s.shares, k)
 			}
 		}
@@ -228,7 +267,7 @@ func (v view) drop(match func(tenant, user, space string, at time.Time) bool, he
 			if t, ok := s.traces[f.Trace]; ok && t.Tenant == f.Tenant {
 				space = spaceOf(t.Space)
 			}
-			if try(f.Tenant, f.User, space, f.At) {
+			if try(f.Tenant, f.User, space, f.At, f) {
 				delete(s.feedback, k)
 			}
 		}

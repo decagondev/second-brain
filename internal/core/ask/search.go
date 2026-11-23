@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"example.com/second-brain/internal/core/answer"
+	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retrieve"
 	"example.com/second-brain/internal/core/tenancy"
@@ -99,7 +100,7 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 }
 
 func (a Agent) result(ctx context.Context, own *owners, c ports.Chunk) Result {
-	r := Result{Cite: c.Cite, Title: c.Title, Owner: own.of(ctx, c), Snippet: snippet(c.Text), Flags: c.Flags, Label: c.Label}
+	r := Result{Cite: c.Cite, Title: c.Title, Owner: own.of(ctx, c), Snippet: snippet(ingest.Shown(c.Text, c.Flags)), Flags: c.Flags, Label: c.Label}
 	if r.Flags == nil {
 		r.Flags = []string{}
 	}

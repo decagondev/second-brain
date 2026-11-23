@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retrieve"
@@ -144,6 +145,9 @@ type HiddenItem struct {
 type ReviewResponse struct {
 	Items  []ReviewItem `json:"items"`
 	Hidden []HiddenItem `json:"hidden"`
+	// Personal is how many documents the space holds with personal data, an IBAN or a
+	// card number (SB-1904): a count, never which.
+	Personal int `json:"personal_data"`
 }
 
 // Review lists the documents a space holds that answers lean on but that are older than
@@ -205,12 +209,27 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		}
 	}
 	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}}
-	if len(refs) == 0 {
-		return out, nil
-	}
 	lk, ok := x.Agent.Index.(ports.DocLookup)
 	if !ok {
 		return out, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+	}
+	personal, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Flag: ingest.FlagPersonal})
+	if err != nil {
+		return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	var withPII []ports.Chunk
+	for _, c := range personal {
+		if contains(c.Flags, ingest.FlagPersonal) {
+			withPII = append(withPII, c)
+		}
+	}
+	for _, c := range firsts(withPII) {
+		if contains(c.Spaces, SpaceKey(name)) {
+			out.Personal++
+		}
+	}
+	if len(refs) == 0 {
+		return out, nil
 	}
 	chunks, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Refs: refs})
 	if err != nil {

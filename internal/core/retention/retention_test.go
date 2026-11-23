@@ -2,6 +2,7 @@ package retention
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -32,6 +33,30 @@ func (f *fake) Erase(_ context.Context, _ string, user string) (int, error) {
 		*f.log = append(*f.log, "erase "+f.name)
 	}
 	return f.drop(func(r rec) bool { return r.user == user })
+}
+func (f *fake) Plan(_ context.Context, _ string, before time.Time, held Held) (int, int, error) {
+	if f.fail {
+		return 0, 0, errors.New("down")
+	}
+	n := 0
+	for _, r := range f.recs {
+		if r.at.Before(before) && !held.Is("", r.user) {
+			n++
+		}
+	}
+	return n, 0, nil
+}
+func (f *fake) Export(_ context.Context, _ string, user string) ([]json.RawMessage, error) {
+	if f.fail {
+		return nil, errors.New("down")
+	}
+	var out []json.RawMessage
+	for _, r := range f.recs {
+		if r.user == user {
+			out = append(out, json.RawMessage(`{"user":"`+r.user+`"}`))
+		}
+	}
+	return out, nil
 }
 func (f *fake) drop(m func(rec) bool) (int, error) {
 	if f.fail {

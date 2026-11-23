@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -33,6 +34,13 @@ func (a applied) Applied(context.Context) (manifest.Tenant, string, error) {
 }
 
 func adminServer(t *testing.T) (*http.ServeMux, *auditmem.Store) {
+	h, rows := adminHandler(t)
+	mux := http.NewServeMux()
+	h.Register(mux)
+	return mux, rows
+}
+
+func adminHandler(t *testing.T) (Admin, *auditmem.Store) {
 	src, _ := os.ReadFile("../../examples/tenants/pilot.yaml")
 	m, ds := manifest.Check(src)
 	if len(ds) > 0 {
@@ -52,9 +60,7 @@ func adminServer(t *testing.T) (*http.ServeMux, *auditmem.Store) {
 	traces = tracemem.New()
 	_ = traces.PutTrace(context.Background(), ask.Trace{ID: "tr_1", Tenant: "acme-logistics", User: "usr_ann", At: time.Now()})
 	h.Erasure = retention.Job{Tenant: "acme-logistics", Days: 365, Stores: traces.Retention(), Audit: log, Now: time.Now}
-	mux := http.NewServeMux()
-	h.Register(mux)
-	return mux, rows
+	return h, rows
 }
 
 func adminCall(t *testing.T, mux *http.ServeMux, groups []string, method, path, body string) *httptest.ResponseRecorder {
@@ -169,6 +175,66 @@ func TestEraseSubject(t *testing.T) {
 	}
 	if strings.Join(states, ",") != "requested,done" {
 		t.Fatalf("audit: %v", states)
+	}
+}
+
+// SB-1903: export is operator-only, audited with a hash, and empty after an erase.
+func TestExportSubject(t *testing.T) {
+	mux, rows := adminServer(t)
+	if w := adminCall(t, mux, []string{"grp_support"}, "POST", "/v1/admin/subjects/export", `{"user":"usr_ann","reason":"r"}`); w.Code != 403 {
+		t.Fatalf("without the role: %d", w.Code)
+	}
+	op := []string{"sb-operators"}
+	if w := adminCall(t, mux, op, "POST", "/v1/admin/subjects/export", `{"user":"usr_ann"}`); w.Code != 400 {
+		t.Fatalf("no reason: %d", w.Code)
+	}
+	w := adminCall(t, mux, op, "POST", "/v1/admin/subjects/export", `{"user":"usr_ann","reason":"access request 9"}`)
+	var ex retention.Export
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &ex) != nil || len(ex.Records["traces"]) != 1 || !strings.Contains(string(ex.Records["traces"][0]), `"tr_1"`) {
+		t.Fatalf("export: %d %s", w.Code, w.Body)
+	}
+	if w := adminCall(t, mux, op, "POST", "/v1/admin/subjects/erase", `{"user":"usr_ann","reason":"erasure request 9"}`); w.Code != 200 {
+		t.Fatalf("erase: %d", w.Code)
+	}
+	w = adminCall(t, mux, op, "POST", "/v1/admin/subjects/export", `{"user":"usr_ann","reason":"check"}`)
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &ex) != nil || ex.Count() != 0 {
+		t.Fatalf("after erase: %d %s", w.Code, w.Body)
+	}
+	all, _ := rows.Range(context.Background(), 1, 100)
+	var hashed bool
+	for _, r := range all {
+		if r.Subject == "export:usr_ann" && r.State == "done" {
+			hashed = strings.Contains(r.Reason, "sha256=")
+			if strings.Contains(r.Reason, "tr_1") {
+				t.Fatalf("the audit row holds the export: %q", r.Reason)
+			}
+		}
+	}
+	if !hashed {
+		t.Fatal("no export row with a hash")
+	}
+}
+
+// SB-1905: the plan counts and deletes nothing.
+func TestRetentionPlan(t *testing.T) {
+	mux, _ := adminServer(t)
+	op := []string{"sb-operators"}
+	if w := adminCall(t, mux, []string{"grp_support"}, "GET", "/v1/admin/retention/plan", ""); w.Code != 403 {
+		t.Fatalf("without the role: %d", w.Code)
+	}
+	for _, bad := range []string{"-1", "x", "3651"} {
+		if w := adminCall(t, mux, op, "GET", "/v1/admin/retention/plan?days="+bad, ""); w.Code != 400 {
+			t.Errorf("days=%s: %d", bad, w.Code)
+		}
+	}
+	if w := adminCall(t, mux, op, "GET", "/v1/admin/retention/plan", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"traces":0`) {
+		t.Fatalf("now: %d %s", w.Code, w.Body)
+	}
+	if w := adminCall(t, mux, op, "GET", "/v1/admin/retention/plan?days=366", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"traces":1`) {
+		t.Fatalf("in 366 days: %d %s", w.Code, w.Body)
+	}
+	if _, found, _ := traces.GetTrace(context.Background(), "acme-logistics", "tr_1"); !found {
+		t.Fatal("the plan deleted the trace")
 	}
 }
 

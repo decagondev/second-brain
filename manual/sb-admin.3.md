@@ -25,6 +25,9 @@ GET  /v1/admin/audit?since=…&kind=…&space=…
 GET  /v1/admin/usage?week=2027-W10
 GET  /v1/admin/refusals?since=…
 POST /v1/admin/subjects/erase
+POST /v1/admin/subjects/export
+GET  /v1/admin/retention/plan?days=N
+POST /v1/admin/sessions/revoke
 POST /v1/spaces/NAME/proposals                 (stewards)
 GET  /v1/admin/proposals
 POST /v1/admin/proposals/ID/approve
@@ -62,6 +65,12 @@ The console (`/?admin`) is a client of this API and has no other powers. It open
 **`GET /v1/admin/refusals`** lists refusal counts by connector and reason (`deny`, `unknown`, `timeout`, `missing`), with no document titles, so operators can spot a misbehaving connector.
 
 **`POST /v1/admin/subjects/erase`** takes `{ "user": "usr_…", "reason": "…" }` and erases the user's derived data as sb-tenant(5), Retention and deletion, describes. The response is `{ "erased": { "traces": 3, "conversations": 1, "feedback": 1, "logs": 12 }, "audit": ["aud_…", "aud_…"] }`. A user id that isn't `usr_` followed by `[a-z0-9_]` is `EINVAL`, and a missing reason is `EINVAL`. Erasing a user with nothing stored succeeds with zero counts.
+
+**`POST /v1/admin/subjects/export`** (SB-1903) takes the same `{ "user": "usr_…", "reason": "…" }` and returns a copy of everything erase would remove for that person, by the same selection in each store: `{ "user", "records": { "traces": [ … ], "conversations": [ … ], "feedback": [ … ], "saved questions": [ … ], "shares": [ … ], "steward questions": [ … ], "logs": [ … ] }, "sha256", "audit": ["aud_…", "aud_…"] }`. Each record is the store's own JSON (a log line that isn't JSON is a JSON string); steward questions carry their replies. It is an operator action like erase: it writes a `kind: retention` audit row (subject `export:USER`, state `requested`, the reason) before reading anything, and a second row after whose reason holds the count per store and `sha256=` the SHA-256 of `records` as returned, never the text (LAW-07). If the first row can't be written nothing is read; if a store can't be read the second row says `failed` and the answer is `EUNAVAIL` with no records, because a partial copy is never handed over as the whole. An export after an erase is empty. The same `EINVAL`s as erase.
+
+**`GET /v1/admin/retention/plan?days=N`** (SB-1905) is what the nightly retention job (sb-tenant(5), Retention and deletion) would delete if it ran `N` days from now (default 0, at most 3650), deleting nothing: `{ "days", "cutoff", "would_delete": { "traces": 120, "conversations": 40, … }, "held": 7 }`. It runs the job's own selection in each store, the tenant's cutoff and then each shorter space's, so the counts are what that run deletes if nothing new arrives; records a legal hold keeps are counted apart in `held`, not in `would_delete`. A store that can't be read is `EUNAVAIL` and names it. `days` outside 0 to 3650 is `EINVAL`. It writes no audit row: it changes nothing and returns only counts. `sb tenant retention --plan` prints it (sb-tenant(1)).
+
+**`POST /v1/admin/sessions/revoke`** (SB-1906) takes `{ "user": "usr_…", "reason": "…" }` and ends every session of that person: `{ "user", "revoked": 2, "audit": ["aud_…", "aud_…"] }`. It writes a `kind: access` audit row (subject `sessions:USER`, state `revoke_requested`, the reason) before any session ends, and a second (`revoked`, `sessions=N`) after; if the first can't be written nothing is revoked (`EUNAVAIL`). A person with no session succeeds with `revoked: 0`. A missing reason, or a user that isn't `usr_…`, is `EINVAL`. It doesn't deactivate the person: they can sign in again (sb-identity(7), Signing out everywhere).
 
 **`GET /v1/admin/costs?month=2027-03`** returns the month's cost statement (sb-tenant(5), Model billing and cost statements): `{ "tenant", "month", "partial", "lines": [{ "provider", "model", "tokens_in", "tokens_out", "price_in_per_m", "price_out_per_m", "cost_usd" }], "total_usd", "budget_usd_month" }`. With `&format=csv` it is `text/csv` with the same columns, one row per line. A month that isn't `YYYY-MM` is `EINVAL`. Operators and approvers may read it.
 

@@ -211,6 +211,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		scan = SecretIn
 		whole = SecretSpans(text) // secrets a chunk boundary would split (SB-1401)
 	}
+	pii := PIISpans(text) // numbers a chunk boundary would cut still flag both chunks (SB-1904)
 	for _, sp := range spans {
 		t := string(rs[sp.Start:sp.End])
 		pat := overlaps(whole, sp.Start, sp.End)
@@ -228,7 +229,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		texts = append(texts, t)
 		chunks = append(chunks, ports.Chunk{ID: ChunkID(p.Tenant, cite, sp), Tenant: p.Tenant, Cite: cite, Kind: ref.Kind, SourceID: ref.ID,
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
-			ACLPrefilter: acl, Release: p.Release, Flags: merge(docFlags, p.Sanitiser.Flag(t)),
+			ACLPrefilter: acl, Release: p.Release, Flags: merge(merge(docFlags, p.Sanitiser.Flag(t)), personal(pii, sp)),
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
 			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt})
 	}

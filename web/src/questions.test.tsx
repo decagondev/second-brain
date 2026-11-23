@@ -173,13 +173,18 @@ describe("keeping it current", () => {
 
   it("lists documents to review for a steward, counting what they can't open with its owner", async () => {
     const fetcher: Fetch = async () =>
-      json({ items: [{ cite: "docs:policy@2", title: "Returns policy", flags: [], snippet: "", age_days: 420, cited: 9, flagged: 1 }], hidden: [{ owner: "ann@acme-logistics.example" }] });
+      json({
+        items: [{ cite: "docs:policy@2", title: "Returns policy", flags: [], snippet: "", age_days: 420, cited: 9, flagged: 1 }],
+        hidden: [{ owner: "ann@acme-logistics.example" }],
+        personal_data: 3,
+      });
     const { container } = render(<ReviewList space="support" fetcher={fetcher} />);
     await act(async () => {});
     const sec = screen.getByRole("region", { name: "Documents to review" });
     expect(sec.textContent).toContain("Returns policy");
     expect(sec.textContent).toContain("cited 9 times");
     expect(sec.textContent).toContain("1 more document you can't open needs review; ask their owners: ann@acme-logistics.example");
+    expect(sec.textContent).toContain("3 documents in this space hold personal data");
     expect(await violations(container)).toEqual([]);
   });
 });

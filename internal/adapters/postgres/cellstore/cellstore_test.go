@@ -169,13 +169,29 @@ func TestTracesAndRetention(t *testing.T) {
 	held := func(space, user string) bool { return space == "" || space == "spc_finance" }
 	held2 := func(space, user string) bool { return space == "spc_finance" }
 	cut := time.Now().UTC().AddDate(-1, 0, 0)
+	planned := map[string][2]int{}
 	for _, v := range tr.Retention() {
 		h := held2
 		if v.Name() == "conversations" {
 			h = held
 		}
-		if _, _, err := v.Expire(ctx, tenant, cut, h); err != nil {
+		n, k, err := v.Plan(ctx, tenant, cut, h)
+		if err != nil {
 			t.Fatal(err)
+		}
+		planned[v.Name()] = [2]int{n, k}
+	}
+	for _, v := range tr.Retention() {
+		h := held2
+		if v.Name() == "conversations" {
+			h = held
+		}
+		n, k, err := v.Expire(ctx, tenant, cut, h)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if planned[v.Name()] != [2]int{n, k} { // SB-1905: the plan is the sweep
+			t.Fatalf("%s: planned %v, expired %d kept %d", v.Name(), planned[v.Name()], n, k)
 		}
 	}
 	if _, found, _ := tr.GetTrace(ctx, tenant, "tr_1"); !found {
@@ -187,9 +203,23 @@ func TestTracesAndRetention(t *testing.T) {
 	if fs, _ := tr.FeedbackBetween(ctx, tenant, old.Add(-time.Hour), time.Now()); len(fs) != 1 {
 		t.Fatal("LAW-13: feedback on a held trace was deleted")
 	}
+	exported := map[string]int{}
+	for _, v := range tr.Retention() {
+		rs, err := v.Export(ctx, tenant, "usr_ann")
+		if err != nil {
+			t.Fatal(err)
+		}
+		exported[v.Name()] = len(rs)
+	}
 	n := 0
 	for _, v := range tr.Retention() {
 		k, _ := v.Erase(ctx, tenant, "usr_ann")
+		if k != exported[v.Name()] { // SB-1903: the export is what erase removes
+			t.Fatalf("%s: exported %d, erased %d", v.Name(), exported[v.Name()], k)
+		}
+		if rs, _ := v.Export(ctx, tenant, "usr_ann"); len(rs) != 0 {
+			t.Fatalf("%s: export after erase: %d", v.Name(), len(rs))
+		}
 		n += k
 	}
 	if n != 4 { // feedback, conversation, tr_1, tr_3
