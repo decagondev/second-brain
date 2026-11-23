@@ -68,6 +68,17 @@ func randomFacts(r *rand.Rand, now time.Time) (box.Facts, bool) {
 	} else {
 		missing = true
 	}
+	if r.Intn(4) > 0 { // the restore drill (SB-1803)
+		f.LastDrill, f.DrillOK = t(-time.Duration(r.Intn(70*24))*time.Hour), r.Intn(5) > 0
+	} else {
+		missing = true
+	}
+	if r.Intn(4) > 0 { // sealing and the recovery kit (SB-1901, SB-1902)
+		sealed := r.Intn(5) > 0
+		f.Sealed, f.Recovery = &sealed, []string{"kit", "kit", "pending"}[r.Intn(3)]
+	} else {
+		missing = true
+	}
 	return f, missing
 }
 

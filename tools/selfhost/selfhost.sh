@@ -59,6 +59,8 @@ SB_SHARE=${SB_SHARE:-}
 SB_DATABASE=${SB_DATABASE:-bundled}
 SB_HTTPS_PROXY=${SB_HTTPS_PROXY:-}
 SB_HTTPS_PROXY_FILE=${SB_HTTPS_PROXY_FILE:-}
+SB_SEAL=${SB_SEAL:-on}
+case "$SB_SEAL" in on | off) ;; *) die "SB_SEAL is on or off" ;; esac
 sbcli() { bash tools/selfhost/sb.sh "$@"; }
 [[ "$SB_TENANT" =~ ^[a-z0-9][a-z0-9-]{1,62}$ ]] || die "SB_TENANT must be lower-case letters, digits and dashes"
 [[ "$SB_HOST" =~ ^[a-z0-9.-]+$ ]] || die "SB_HOST must be a host name"
@@ -112,8 +114,9 @@ rand() { head -c 32 /dev/urandom | base64 | tr -d '\n/+=' | head -c 40; }
 
 # --- Secrets and keys: made on this machine, once, and never anywhere else.
 V=$DIR/vault
-vaultsum() { [ -d "$V" ] && find "$V" -type f -exec sha256sum {} + | sort | sha256sum; }
-VAULT_BEFORE=$(vaultsum || true)
+# The vaults and cell.json as they were, so a change to either recreates the services below.
+confsum() { [ -d "$V" ] && { find "$V" -type f -exec sha256sum {} +; sha256sum "$DIR/cell.json" 2>/dev/null; } | sort | sha256sum; }
+CONF_BEFORE=$(confsum || true)
 put() { mkdir -p "$(dirname "$V/$1/vault/tenants/$SB_TENANT/$2")"; printf '%s' "$3" >"$V/$1/vault/tenants/$SB_TENANT/$2"; }
 mkdir -p "$DIR/policy/platform" "$DIR/tls" "$DIR/ca" "$DIR/releases" "$DIR/iam" "$V/updater/vault/tenants/$SB_TENANT"
 if [ ! -f "$DIR/db-password" ]; then
@@ -157,11 +160,17 @@ if [ ! -f "$DIR/worm-secret" ]; then
   put jobs worm "$(printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret")"
 fi
 
-# A changed vault (another database, a proxy set or cleared) reaches running services only
-# when they start again; they are recreated after the layout is up.
-VAULT_AFTER=$(vaultsum || true)
-RECREATE=
-[ -z "$VAULT_BEFORE" ] || [ "$VAULT_BEFORE" = "$VAULT_AFTER" ] || RECREATE=1
+# The recovery key (SB-1901): made once, its public half kept here to seal every off-box
+# copy to; the private half waits for the recovery kit (install.sh --recovery-kit), which
+# takes it off the box.
+SEAL=
+if [ "$SB_SEAL" = on ]; then
+  [ -f "$DIR/recovery.pub" ] || sbcli backup keygen --public "$DIR/recovery.pub" --private "$DIR/recovery-key.private" >/dev/null
+  SEAL=$(tr -d '\r\n' <"$DIR/recovery.pub")
+else
+  echo "selfhost: SB_SEAL=off: off-box copies are not sealed; whoever reads SB_OFFSITE reads them" >&2
+  rm -f "$DIR/recovery.pub"
+fi
 
 # --- Policies and the manifest.
 cp policy/platform/*.cedar "$DIR/policy/platform/"
@@ -244,7 +253,7 @@ cat >"$DIR/cell.json" <<JSON
   "backups": [
     { "dir": "/var/lib/sb/state/backups", "media": "disk" },
     { "worm": true },
-    { "dir": "/srv/backup-offsite", "media": "disk", "offsite": true }
+    { "dir": "/srv/backup-offsite", "media": "disk", "offsite": true${SEAL:+, \"seal\": \"$SEAL\"} }
   ],
   "custody": { "tenant": true, "retain": $RETAIN },
   "release": { "store": "$STORE", "registry": "$REGISTRY", "trusted": "$TRUSTED", "deploy": { "kind": "local" } },
@@ -313,6 +322,13 @@ fill releases "$DIR/releases"
 # names the share's own notes/ folder, given to 65532 by install.sh.
 [ -n "${SB_NOTES:-}" ] || "$DOCKER" run --rm -u 0 -v sb-selfhost_notes:/dst "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 755 /dst' >/dev/null
 
+# A changed vault or cell.json (another database, a proxy set or cleared, sealing turned on)
+# reaches running services only when they start again; they are recreated after the
+# layout is up.
+CONF_AFTER=$(confsum || true)
+RECREATE=
+[ -z "$CONF_BEFORE" ] || [ "$CONF_BEFORE" = "$CONF_AFTER" ] || RECREATE=1
+
 # --- Up: the proxy first, so the cell can trust its local CA before it looks for its IdP.
 compose up -d proxy >/dev/null 2>&1 || compose up -d proxy
 if [ "$SB_TLS" = internal ]; then
@@ -329,11 +345,34 @@ if [ -n "$RECREATE" ]; then compose up -d --force-recreate api ingest jobs >/dev
 if [ "$SB_DATABASE" = external ]; then compose --profile db rm -sf postgres >/dev/null 2>&1 || true; fi
 # The write-once bucket: created once, locked for seven years, and proved by a probe.
 compose --profile setup run --rm wormsetup >/dev/null 2>&1 || compose --profile setup run --rm wormsetup
+ready() {
+  for _ in $(seq 90); do
+    if "$CURL" -ksf --resolve "$SB_HOST:$SB_PORT:127.0.0.1" "$BASE/readyz" >/dev/null 2>&1; then return 0; fi
+    sleep 1
+  done
+  return 1
+}
 ok=
-for _ in $(seq 90); do
-  if "$CURL" -ksf --resolve "$SB_HOST:$SB_PORT:127.0.0.1" "$BASE/readyz" >/dev/null 2>&1; then ok=1; break; fi
-  sleep 1
-done
+if ready; then ok=1
+elif grep -qE '^SB_API_IMAGE=' "$DIR/compose.env" && compose logs --tail 20 api 2>/dev/null | grep -q 'unknown field'; then
+  # The admitted release predates a setting this install writes (sb-selfhost(7), Upgrades):
+  # start the install's own images, as a first install does, keeping what ran for one
+  # rollback; update.sh (which install.sh runs next) pins the admitted release again.
+  echo "selfhost: the running release predates this install's settings; starting this install's images" >&2
+  prev=
+  for svc in api ingest jobs updater; do
+    cur=$(sed -nE "s/^SB_${svc^^}_IMAGE=//p" "$DIR/compose.env" | tr -d '\r')
+    run=$("$DOCKER" run --rm -v sb-selfhost_state:/s:ro "$HELPER" cat "/s/deploy/running/$svc.json" 2>/dev/null | tr -d '\r' || true)
+    ref=$(printf '%s' "$run" | sed -nE 's/.*"image":"([^"]+)".*/\1/p'); rel=$(printf '%s' "$run" | sed -nE 's/.*"release":"([^"]+)".*/\1/p')
+    [ -n "$cur" ] && [ -n "$ref" ] || { prev=; break; }
+    prev+="SB_${svc^^}_IMAGE=$cur"$'\n'"REF_$svc=$ref"$'\n'"REL_$svc=$rel"$'\n'
+  done
+  [ -z "$prev" ] || printf '%s' "$prev" >"$DIR/previous.env"
+  grep -vE '^SB_(API|INGEST|JOBS|UPDATER)_IMAGE=' "$DIR/compose.env" >"$DIR/compose.env.new" || true
+  mv "$DIR/compose.env.new" "$DIR/compose.env"
+  compose up -d >/dev/null 2>&1 || compose up -d
+  ready && ok=1
+fi
 [ -n "$ok" ] || die "the cell didn't become ready; 'tools/selfhost/compose.sh logs api' says why"
 
 # --- The demo's user, provisioned the way a company's IdP would: over SCIM.

@@ -428,3 +428,11 @@ func TestLAW07_ProxyCredentialsStayInAFile(t *testing.T) {
 func TestLAW02_ExternalDatabaseIsVerified(t *testing.T) {
 	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02DSN(r, realDSNCheck) })
 }
+
+func TestLAW11_OffBoxCopiesAreSealed(t *testing.T) {
+	Check(t, "LAW-11", 40, func(r *rand.Rand) error { return law11Sealed(r, realSeal) })
+}
+
+func TestLAW18_AnyThreeSharesAndNoTwo(t *testing.T) {
+	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Kit(r, realKit) })
+}

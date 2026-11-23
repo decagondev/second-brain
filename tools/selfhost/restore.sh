@@ -12,6 +12,13 @@
 #                              live database is there, and record the result in
 #                              build/selfhost/drill.json (sb-selfhost-drill.timer, monthly).
 #                              The cell keeps running, and the live database is only read.
+#   restore.sh --from-kit KIT.sealed SHARE SHARE SHARE
+#                              a new machine: rebuild the box's keys from three shares of
+#                              the recovery kit (SB-1902) into build/selfhost, before
+#                              install.sh; which shares were used is recorded, never a share.
+#
+# A dump copied off the box is sealed (NAME.dump.sealed, SB-1901): --dump opens it with the
+# recovery key, build/selfhost/recovery-key.private (put back by --from-kit), or --key FILE.
 #
 # With SB_DATABASE=external both work against the company's database (SB-1807).
 #
@@ -25,23 +32,52 @@ ENV=$DIR/compose.env
 die() { echo "restore: $*" >&2; exit 1; }
 compose() { DOCKER="$DOCKER" bash tools/selfhost/compose.sh "$@"; }
 val() { sed -nE "s/^$1=//p" "$ENV" | tr -d '\r' | tail -1; }
+
+# A new machine: the keys back from the kit, before anything else exists here.
+if [ "${1:-}" = --from-kit ]; then
+  shift
+  [ $# -ge 4 ] || die "usage: restore.sh --from-kit KIT.sealed SHARE SHARE SHARE"
+  kitfile=$1; shift
+  [ ! -e "$DIR/vault" ] || die "this machine has keys already ($DIR/vault); --from-kit is for a new machine"
+  mkdir -p "$DIR" && chmod 700 "$DIR"
+  tmp=$(mktemp "$DIR/.kit-keys.XXXXXX"); trap 'rm -f "$tmp"' EXIT
+  out=$(bash tools/selfhost/sb.sh --json recovery join --kit "$kitfile" --out "$tmp" "$@") || die "the kit didn't open (above)"
+  tar -C "$DIR" -xf "$tmp"
+  printf '{"at":"%s","kit":%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$out" >>"$DIR/kit-used.jsonl"
+  shares=$(printf '%s' "$out" | sed -nE 's/.*"shares":\[([0-9,]+)\].*/\1/p')
+  echo "restore: the box's keys are back in $DIR from shares ${shares//,/, }"
+  echo "restore: next, install.sh CONFIG (it keeps these keys), then restore.sh --dump SB_OFFSITE/db/NAME.dump.sealed"
+  echo "restore: then install.sh --recovery-kit, so the recovery key leaves this box again"
+  exit 0
+fi
 [ -f "$ENV" ] || die "no self-hosted cell here"
 # shellcheck source=tools/selfhost/pg.sh
 . tools/selfhost/pg.sh
 TENANT=$(val SB_TENANT)
 keys() { sha256sum "$DIR/vault/api/vault/tenants/$TENANT/audit/anchor-seed" 2>/dev/null | cut -c1-16; }
 
-MODE=restore DUMP=
+MODE=restore DUMP= KEY=$DIR/recovery-key.private
 while [ $# -gt 0 ]; do
   case "$1" in
   --dump) DUMP=${2:-}; shift ;;
+  --key) KEY=${2:-}; shift ;;
   --drill) MODE=drill ;;
-  *) die "usage: restore.sh [--dump FILE] | --drill" ;;
+  *) die "usage: restore.sh [--dump FILE [--key FILE]] | --drill | --from-kit KIT.sealed SHARE…" ;;
   esac
   shift
 done
 [ -n "$DUMP" ] || DUMP=$(ls -1t "$DIR"/db-dumps/sb-*.dump 2>/dev/null | head -1 || true)
 [ -n "$DUMP" ] && [ -f "$DUMP" ] || die "no dump to restore (systemctl start sb-selfhost-dbdump.service makes one)"
+# A sealed copy from off the box opens with the recovery key, into this box's dumps.
+if [[ "$DUMP" == *.sealed ]]; then
+  [ -f "$KEY" ] || die "$DUMP is sealed: it opens with the recovery key (restore.sh --from-kit puts it back, or --key FILE)"
+  rec=${DUMP%.sealed}.json
+  mkdir -p "$DIR/db-dumps" && chmod 700 "$DIR/db-dumps"
+  plain=$DIR/db-dumps/$(basename "${DUMP%.sealed}")
+  bash tools/selfhost/sb.sh -q backup open --key "$KEY" --out "$plain" "$DUMP" || die "$DUMP didn't open (above)"
+  [ -f "$rec" ] && cp "$rec" "$plain.json"
+  DUMP=$plain
+fi
 
 # Whose dump is it? dbdump.sh records the tenant and a fingerprint of the cell's audit key
 # beside each dump. Restoring another cell's dump under these keys would leave an audit

@@ -29,9 +29,17 @@ chmod 600 "$local_dir/$name"
 tenant=$(sed -nE 's/^SB_TENANT=//p' "$ENV" | tr -d '\r')
 keys=$(sha256sum "$DIR/vault/api/vault/tenants/$tenant/audit/anchor-seed" | cut -c1-16)
 printf '{"tenant":"%s","keys":"%s"}\n' "$tenant" "$keys" >"$local_dir/$name.json"
-cp "$local_dir/$name" "$off/$name.tmp" && mv "$off/$name.tmp" "$off/$name"
 cp "$local_dir/$name.json" "$off/$name.json"
+# Off the box, sealed to the recovery key (SB-1901): the copy here stays as it is.
+if [ -f "$DIR/recovery.pub" ]; then
+  bash tools/selfhost/sb.sh -q backup seal --to "$DIR/recovery.pub" --out "$off/$name.sealed" "$local_dir/$name"
+  how="sealed off it"
+  for plain in "$off"/sb-*.dump; do [ -e "$plain" ] && rm -f "$plain" "$plain.json"; done # copies from before sealing
+else
+  cp "$local_dir/$name" "$off/$name.tmp" && mv "$off/$name.tmp" "$off/$name"
+  how="off it (not sealed: SB_SEAL=off)"
+fi
 for d in "$local_dir" "$off"; do
-  ls -1t "$d"/sb-*.dump 2>/dev/null | tail -n +15 | while read -r old; do rm -f "$old" "$old.json"; done
+  ls -1t "$d"/sb-*.dump "$d"/sb-*.dump.sealed 2>/dev/null | tail -n +15 | while read -r old; do rm -f "$old" "${old%.sealed}.json"; done
 done
-echo "dbdump: $name on this machine and off it"
+echo "dbdump: $name on this machine and $how"

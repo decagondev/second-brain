@@ -71,6 +71,18 @@ if [ -f "$DIR/drill.json" ]; then
   [ -n "$da" ] && parts+=("\"last_drill\":\"$da\"" "\"drill_ok\":${dok:-false}")
 fi
 [ -f "$DIR/held" ] && parts+=("\"held\":\"$(head -1 "$DIR/held" | tr -cd 'a-z0-9_-')\"")
+# Sealing and the recovery kit (SB-1901, SB-1902): where the recovery key's private half is.
+if [ -f "$DIR/recovery.pub" ]; then
+  parts+=("\"sealed\":true")
+  if [ -f "$DIR/recovery-key.private" ]; then rec=pending
+  elif ls "$DIR"/kit/kit_*.json >/dev/null 2>&1; then rec=kit
+  else rec=none; fi
+  parts+=("\"recovery\":\"$rec\"")
+  n=$(ls -1 "$DIR"/kit/kit_*-share-*.txt 2>/dev/null | wc -l)
+  [ "$n" -gt 0 ] && parts+=("\"shares_on_box\":$n")
+elif [ -f "$ENV" ]; then
+  parts+=("\"sealed\":false")
+fi
 
 # /readyz through the proxy, as people reach it.
 host=$(val SB_HOST); port=$(val SB_PORT); bind=$(val SB_BIND)

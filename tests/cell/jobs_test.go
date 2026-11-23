@@ -1,7 +1,9 @@
 package cell
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"errors"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"example.com/second-brain/internal/cell/wire"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/holds"
+	"example.com/second-brain/internal/core/offsite"
 	"example.com/second-brain/internal/core/schedule"
 )
 
@@ -203,5 +206,48 @@ func TestAccessStatement(t *testing.T) {
 	rows, _ = r.cell.Audit.Store.Range(ctx, 1, 1<<20)
 	if rows[len(rows)-1].State != "Unlisted" || len(got.got) == 0 {
 		t.Fatalf("unlisted: row %+v, alerts %+v", rows[len(rows)-1], got.got)
+	}
+}
+
+// SB-1901: the off-box copy is sealed to the recovery key; the copies on the box stay as
+// they are, and the sealed one opens with the recovery key to the same bytes.
+func TestBackupSealsTheOffBoxCopy(t *testing.T) {
+	r, svc, _, _ := jobsCell(t, true)
+	base := t.TempDir()
+	key, err := offsite.Generate(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.cell.Config.Backups = []wire.Backup{{Dir: filepath.Join(base, "a"), Media: "disk"}, {Dir: filepath.Join(base, "b"), Media: "nas"},
+		{Dir: filepath.Join(base, "c"), Media: "disk", Offsite: true, Seal: key.Public().String()}}
+	if err := svc.Run(context.Background(), "backup"); err != nil {
+		t.Fatal(err)
+	}
+	plain, _ := filepath.Glob(filepath.Join(base, "a", "*", "*", "audit.ndjson"))
+	sealed, _ := filepath.Glob(filepath.Join(base, "c", "*", "*", "audit.ndjson.sealed"))
+	if len(plain) != 1 || len(sealed) != 1 {
+		t.Fatalf("copies: on the box %v, off it %v", plain, sealed)
+	}
+	// Every object is sealed (export, approvals and their .sha256); the adapter's .retain
+	// markers hold only a date.
+	all, _ := filepath.Glob(filepath.Join(base, "c", "*", "*", "*"))
+	n := 0
+	for _, f := range all {
+		switch {
+		case strings.HasSuffix(f, ".sealed"):
+			n++
+		case !strings.HasSuffix(f, ".sealed.retain"):
+			t.Fatalf("%s reached the off-box copy unsealed", f)
+		}
+	}
+	if n != 4 {
+		t.Fatalf("%d sealed objects off the box, want 4: %v", n, all)
+	}
+	want, _ := os.ReadFile(plain[0])
+	f, _ := os.Open(sealed[0])
+	defer func() { _ = f.Close() }()
+	var got bytes.Buffer
+	if err := offsite.Open(&got, f, key); err != nil || !bytes.Equal(got.Bytes(), want) {
+		t.Fatalf("the sealed copy doesn't open to the box's copy: %v", err)
 	}
 }

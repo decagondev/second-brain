@@ -94,6 +94,8 @@ Abort removes the tenant's wraps and keeps the factory's. Nothing ever removes t
 
 `sb factory status TENANT` prints the inventory as checked now, for example `key_wraps audit-signing: factory, tenant`, listing for each purpose the custodians whose wrap unwraps it at that moment. A wrap that fails to unwrap is shown as `factory (broken)`, and that is a Sev-1 (`sb_unwrappable_keys`, LAW-18).
 
+On a self-hosted cell the company is the custodian from the install, and the **recovery kit** is the custodian of last resort (SB-1902, sb-selfhost(7), The recovery kit): five shares, held by five people the company names, any three of which rebuild every key the box holds when the box itself is gone. The kit's record names who holds each share and never a share.
+
 ### Access paths, exactly (SB-706)
 
 An **access path** is any way the factory could reach a cell. Paths are enumerated from where they actually live, never from a list someone keeps:

@@ -687,8 +687,8 @@ gantt
 
 **Exit gate**
 
-- [ ] Nothing in `SB_OFFSITE` is readable without the recovery key
-- [ ] Any three of five shares rebuild the keys; two reveal nothing
+- [x] Nothing in `SB_OFFSITE` is readable without the recovery key
+- [x] Any three of five shares rebuild the keys; two reveal nothing
 - [ ] Export, erase, export round-trips to empty
 - [ ] Retention plans match what the job deletes; a revoked session is refused
 - [ ] A retired box leaves a signed statement and no key

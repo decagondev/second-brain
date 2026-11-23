@@ -76,9 +76,17 @@ The `sb-selfhost-update.timer` runs `tools/selfhost/update.sh` hourly. The updat
 Three copies, two kinds of media, one off the box ([sb-audit(7)](../../manual/sb-audit.7.md)):
 
 - The nightly `backup` job writes the audit log and approvals to `state/backups`, the write-once store, and `SB_OFFSITE`. It refuses to run with fewer than three copies.
-- `sb-selfhost-dbdump.timer` dumps the database nightly to `build/selfhost/db-dumps` and `SB_OFFSITE/db`, fourteen nights each.
+- `sb-selfhost-dbdump.timer` dumps the database nightly to `build/selfhost/db-dumps` and, sealed to the recovery key, to `SB_OFFSITE/db`, fourteen nights each.
 - Anchors go hourly to the write-once store, locked for seven years.
-- Back up `/etc/second-brain` and `/opt/second-brain/build/selfhost` with the machine's own encrypted backup: they hold the keys, and nothing else does.
+- Everything in `SB_OFFSITE` is sealed to the recovery key: whoever reads the NAS reads nothing.
+
+**The recovery kit, once, right after the install.** The keys that open the off-box copies and run the cell live in `build/selfhost`. Take them off the box so losing it loses nothing:
+
+1. Choose five custodians (for example two IT administrators, the DPO, finance, and the office safe). Any three of them together can rebuild the keys; two can't.
+2. `sudo /opt/second-brain/tools/selfhost/install.sh --recovery-kit --custodian "1=NAME" … --custodian "5=NAME"`. It seals an archive of the keys, copies it to `SB_OFFSITE/kit/`, deletes the recovery key's private half from the box, and writes five pages to `build/selfhost/kit/`.
+3. Print each page on a printer that keeps no copy, put it in an envelope with the custodian's name, and hand it over. Never photograph, scan or email a page.
+4. Delete the pages: `sudo rm /opt/second-brain/build/selfhost/kit/kit_*-share-*.txt`. The doctor passes "recovery kit" once the key and the pages are gone.
+5. Once a year, check each custodian still has their page. If one is lost, make a new kit: `install.sh --recovery-kit --new-key`, and give out the new pages.
 
 Check weekly: `install.sh --doctor` passes (the console's Box section shows the same checks, hourly, and a failing one raises a `box_check` alert once a day); today's files in `SB_OFFSITE/TENANT/DATE/` and `SB_OFFSITE/db/`; `sb audit verify --tenant TENANT` is green.
 
@@ -88,10 +96,13 @@ On the same machine (a bad change, a broken database): `sudo /opt/second-brain/t
 
 To a new machine, after losing the old one:
 
-1. Install as above with the same `install.env`, after putting the old `build/selfhost` back under `/opt/second-brain` so the same keys are used. Without it the cell gets new keys, and the audit chain's earlier anchors verify only against the old anchor key, which is in that directory.
-2. Copy the newest dump and its record from `SB_OFFSITE/db/` into `build/selfhost/db-dumps/`, then restore it: `sudo tools/selfhost/restore.sh --dump build/selfhost/db-dumps/sb-DATE.dump`. It refuses a dump made under other keys, starts the services again, and checks the audit chain.
-3. Check `sb tenant verify`.
-4. The index rebuilds from the sources on its own if the dump is older than the last sync ([LAW-13](../../manual/sb-laws.7.md#law-13)); nothing else is lost but what changed after the dump.
+1. Copy the install bundle to `/opt/second-brain` and mount the off-box directory at the same `SB_OFFSITE`. Gather three custodians with their pages.
+2. Rebuild the keys: `sudo tools/selfhost/restore.sh --from-kit SB_OFFSITE/kit/kit_ID.sealed page-A.txt page-B.txt page-C.txt` (the pages typed back in, or scanned and then deleted). A mistyped page fails its checksum; fix the character and run it again. Without the kit, put the old `build/selfhost` back under `/opt/second-brain` instead. With neither, the cell gets new keys, and the audit chain's earlier anchors verify only against the old anchor key.
+3. Install as above with the same `install.env`. It keeps the rebuilt keys.
+4. Restore the newest dump from off the box: `sudo tools/selfhost/restore.sh --dump SB_OFFSITE/db/sb-DATE.dump.sealed`. It opens it with the rebuilt recovery key, refuses a dump made under other keys, starts the services again, and checks the audit chain.
+5. With the bundled IdP, add people again (`sb-idp user add`); their accounts in the cell come back with the database.
+6. Check `sb tenant verify`, then make a new recovery kit (`install.sh --recovery-kit`) so the recovery key leaves this box too.
+7. The index rebuilds from the sources on its own if the dump is older than the last sync ([LAW-13](../../manual/sb-laws.7.md#law-13)); nothing else is lost but what changed after the dump.
 
 ## LAW-17 on one machine
 

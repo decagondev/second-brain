@@ -3,6 +3,7 @@ package laws
 import (
 	"archive/tar"
 	"bytes"
+	crand "crypto/rand"
 	"errors"
 	"io"
 	"math/rand"
@@ -11,6 +12,8 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/box"
+	"example.com/second-brain/internal/core/offsite"
+	"example.com/second-brain/internal/core/shamir"
 )
 
 // The W17 box law catches a judge that treats a missing fact as healthy (SB-1801).
@@ -76,4 +79,28 @@ func TestSelfDSNRequireAcceptedIsCaught(t *testing.T) {
 		return box.CheckDSN(dsn)
 	}
 	failsSomewhere(t, "sslmode=require accepted", func(r *rand.Rand) error { return law02DSN(r, lax) })
+}
+
+func TestSelfUnauthenticatedSealIsCaught(t *testing.T) {
+	// A stream cipher with no tag: unreadable, but a changed byte still "opens".
+	xor := func(b []byte, k []byte) []byte {
+		out := make([]byte, len(b))
+		for i := range b {
+			out[i] = b[i] ^ k[i%len(k)] ^ byte(i*7)
+		}
+		return out
+	}
+	broken := sealPair{
+		seal: func(p []byte, to offsite.PublicKey) ([]byte, error) { return xor(p, to.ID()), nil },
+		open: func(s []byte, k offsite.PrivateKey) ([]byte, error) { return xor(s, k.Public().ID()), nil },
+	}
+	failsSomewhere(t, "unauthenticated seal", func(r *rand.Rand) error { return law11Sealed(r, broken) })
+}
+
+func TestSelfTwoOfFiveKitIsCaught(t *testing.T) {
+	broken := kitScheme{
+		split:   func(s []byte) ([]shamir.Share, error) { return shamir.Split(s, 5, 2, crand.Reader) },
+		combine: shamir.Combine,
+	}
+	failsSomewhere(t, "2-of-5 kit", func(r *rand.Rand) error { return law18Kit(r, broken) })
 }

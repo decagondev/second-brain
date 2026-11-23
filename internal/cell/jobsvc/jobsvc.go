@@ -30,6 +30,7 @@ import (
 	"example.com/second-brain/internal/core/backup"
 	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/canary"
+	"example.com/second-brain/internal/core/offsite"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/reviews"
 	"example.com/second-brain/internal/core/schedule"
@@ -233,7 +234,15 @@ func (s *Service) backup(ctx context.Context) error {
 			ts = append(ts, t)
 			continue
 		}
-		ts = append(ts, backupfs.Dir{Root: b.Dir, Label: b.Dir, Media: b.Media, Away: b.Offsite})
+		var t backup.Target = backupfs.Dir{Root: b.Dir, Label: b.Dir, Media: b.Media, Away: b.Offsite}
+		if b.Seal != "" {
+			pub, err := offsite.ParsePublic(b.Seal)
+			if err != nil {
+				return fmt.Errorf("jobs: backups: %w", err)
+			}
+			t = offsite.Target{Target: t, To: pub}
+		}
+		ts = append(ts, t)
 	}
 	if err := backup.Check(ts); err != nil {
 		return err

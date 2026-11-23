@@ -30,6 +30,11 @@ sb selfhost verify-bundle DIR --trusted ed25519:KEY|--cosign-identity ID [--chan
 sb selfhost check-proxy URL | --file FILE
 sb selfhost check-dsn FILE [--service OUT]
 sb secrets scan [--known PATH]... PATH...   (sb-observability(7))
+sb backup keygen --public FILE --private FILE   (sb-selfhost(7), Sealed off-box copies)
+sb backup seal --to PUBFILE [--out FILE] FILE
+sb backup open --key KEYFILE [--out FILE] FILE.sealed
+sb recovery split --tenant T --out DIR [--custodian N=NAME]... ARCHIVE   (sb-selfhost(7), The recovery kit)
+sb recovery join --kit KIT.sealed --out FILE SHARE...
 sb version
 ```
 

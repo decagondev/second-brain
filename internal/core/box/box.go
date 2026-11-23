@@ -96,6 +96,13 @@ type Facts struct {
 	DrillOK   bool       `json:"drill_ok,omitempty"`
 	// Held names the release upgrades are held at after a rollback (SB-1805).
 	Held string `json:"held,omitempty"`
+	// Sealed is whether off-box copies are sealed to a recovery key (SB-1901). Recovery is
+	// where that key's private half is: "pending" (still on the box), "kit" (only in the
+	// recovery kit's shares), or "none"; SharesOnBox counts share pages not yet deleted
+	// from the box (SB-1902).
+	Sealed      *bool  `json:"sealed,omitempty"`
+	Recovery    string `json:"recovery,omitempty"`
+	SharesOnBox int    `json:"shares_on_box,omitempty"`
 }
 
 // Parse reads facts and refuses anything it doesn't know, so a typo is never a silent pass.
@@ -261,11 +268,38 @@ func checkRecovery(f Facts, now time.Time, add adder) {
 	default:
 		add("restore drill", Pass, "passed "+f.LastDrill.UTC().Format("2006-01-02"), "")
 	}
+	checkKit(f, add)
 	// Upgrades held after a rollback.
 	if f.Held != "" {
 		add("upgrades", Warn, "held at "+f.Held+" after a rollback", "tools/selfhost/update.sh --resume")
 	} else {
 		add("upgrades", Pass, "not held", "")
+	}
+}
+
+// checkKit judges the sealing of off-box copies and the recovery kit (SB-1901, SB-1902).
+func checkKit(f Facts, add adder) {
+	switch {
+	case f.Sealed == nil:
+		add("off-box sealing", Unknown, "couldn't tell whether off-box copies are sealed", "ls build/selfhost/recovery.pub")
+	case !*f.Sealed:
+		add("off-box sealing", Warn, "off-box copies are not sealed (SB_SEAL=off): whoever reads SB_OFFSITE reads them", "set SB_SEAL=on and run install.sh again")
+	default:
+		add("off-box sealing", Pass, "off-box copies are sealed to the recovery key", "")
+	}
+	switch {
+	case f.Sealed != nil && !*f.Sealed:
+		return
+	case f.Recovery == "":
+		add("recovery kit", Unknown, "couldn't tell where the recovery key is", "ls build/selfhost/kit")
+	case f.Recovery == "pending":
+		add("recovery kit", Warn, "the recovery key's private half is still on this box, so the box's loss loses the off-box copies' key and a thief gets both", "tools/selfhost/install.sh --recovery-kit")
+	case f.Recovery == "none":
+		add("recovery kit", Fail, "no recovery kit and no recovery key: the sealed off-box copies can't be opened", "tools/selfhost/install.sh --recovery-kit --new-key")
+	case f.SharesOnBox > 0:
+		add("recovery kit", Warn, fmt.Sprintf("%d share page(s) are still on this box", f.SharesOnBox), "print them for their custodians, then delete build/selfhost/kit/*-share-*.txt")
+	default:
+		add("recovery kit", Pass, "the recovery key is only in the kit's shares", "")
 	}
 }
 

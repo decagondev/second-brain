@@ -62,6 +62,8 @@ commands:
   factory status|handoff|detach        custody and hand-off (factory operators)
   selfhost doctor|verify-bundle|check-proxy|check-dsn   a self-hosted box's checks, bundles and settings (sb-selfhost(7))
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
+  backup  keygen|seal|open             seal off-box copies to the recovery key
+  recovery split|join                  the 3-of-5 recovery kit
   version                              print the version
 
 See sb(1). Exit codes are listed in sb-errors(7).
@@ -159,12 +161,22 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.selfhostCheckDSN(args), true
 	case "secrets scan":
 		return e.secretsScan(args), true
+	case "backup keygen":
+		return e.backupKeygen(args), true
+	case "backup seal":
+		return e.backupSeal(args), true
+	case "backup open":
+		return e.backupOpen(args), true
+	case "recovery split":
+		return e.recoverySplit(args), true
+	case "recovery join":
+		return e.recoveryJoin(args), true
 	}
 	return 0, false
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" || cmd == "secrets" {
+	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
 		return true
 	}
 	for k := range planned {

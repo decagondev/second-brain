@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Off-box copies of a self-hosted box are sealed to a recovery key (`SB_SEAL`, on by default; `sb backup keygen|seal|open`), and `install.sh --recovery-kit` puts the box's keys into five printed shares, any three of which rebuild them on a new machine (`restore.sh --from-kit`; `sb recovery split|join`) (SB-1901, SB-1902).
 - A self-hosted cell behind the company's outbound proxy (`SB_HTTPS_PROXY`, `SB_HTTPS_PROXY_FILE`, `SB_NO_PROXY`), on the company's own Postgres (`SB_DATABASE=external`, `sslmode=verify-full` required), and `install.sh --support` for a support bundle scanned by the new `sb secrets scan`; `sb selfhost check-proxy` and `check-dsn` check the settings (SB-1806 to SB-1808).
 - Restore, offline upgrades and rollback on the box (S17.2: SB-1803 to SB-1805): `tools/selfhost/restore.sh` restores the database in one command and `--drill` proves monthly that the newest dump restores; `update.sh --bundle FILE` checks an offline bundle's release and every image before anything is loaded; `update.sh --rollback` goes one release back and holds upgrades until `--resume`. Fixed: `sb audit verify` on a cell with no audit rows yet (BUG-0027).
 - The box's health (S17.1: SB-1801, SB-1802): `install.sh --doctor` and `sb selfhost doctor` check a running self-hosted box and print the fix for each problem; the console's health panel shows the same checks hourly as Box, and a failing one raises a `box_check` alert once a day.

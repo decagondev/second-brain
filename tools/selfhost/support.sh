@@ -47,7 +47,7 @@ done
 
 # Every value the box stores, so the scan knows them: the vaults and the files beside them.
 known=(--known "$DIR/vault")
-for f in db-password worm-secret demo-password release-key; do
+for f in db-password worm-secret demo-password release-key recovery-key.private; do
   [ -e "$DIR/$f" ] && known+=(--known "$DIR/$f")
 done
 bash tools/selfhost/sb.sh secrets scan "${known[@]}" "$stage" >&2 ||

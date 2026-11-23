@@ -437,3 +437,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** The path is absolute (`$(pwd)/build/selfhost/releases`) and the sort is `LC_ALL=C`.
 
 **Caught by now:** Running the smoke test on a Linux host, which the cloud checkout now does for each self-hosted slice. No law was involved: the release that stayed behind was still refused by the updater (LAW-06), which is how it showed.
+
+## BUG-0029 Installing a newer bundle on a running box stopped the cell
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-23, turning sealing on for the demo box (SB-1901) | Medium | SB-1605 | Fixed |
+
+**Symptom:** Running `selfhost.sh` (and so `install.sh`) from a checkout or bundle newer than the box's admitted release left the cell down: `/readyz` never answered, and the api's log said `wire: bad cell configuration: json: unknown field "seal"`.
+
+**Root cause:** The install writes `cell.json` for the code it ships, but `compose.env` still pinned the services, the updater among them, to the digests of the older admitted release, whose strict configuration parser refuses any field it doesn't know. The upgrade that would fix it couldn't run either, because the old updater refused the same file. Every release that adds a configuration field (`embed` in SB-1710 too) had the same trap; the demo hid it because `make selfhost` runs before the first upgrade.
+
+**Fix:** When the services don't come up and the api says `unknown field`, the install keeps the pinned digests and their attested references for one rollback (`previous.env`), drops the pins and starts the install's own images, as a first install does; the upgrade that `install.sh` runs next pins the admitted release again. The strict parser stays: a typo in `cell.json` is still a refusal.
+
+**Caught by now:** Re-running the install over a running demo box after a configuration change, which each self-hosted slice now does. No law was broken: an unadmitted configuration never ran, the cell refused it.

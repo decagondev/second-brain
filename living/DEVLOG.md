@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S18.1: off-box copies sealed, and the keys in a 3-of-5 kit
+
+**Wave/slice:** W18 / S18.1 (SB-1901, SB-1902) · **Status:** Done
+
+**What:** Everything a self-hosted box copies to `SB_OFFSITE` is sealed to a recovery key: the nightly dump (`sb backup seal`) and the backup job's off-box copy (`backups[].seal`, `offsite.Target`). `install.sh --recovery-kit` seals an archive of the box's keys under a kit key, splits that key into five share pages (any three rebuild it), copies the sealed archive off the box and shreds the recovery key's private half; `restore.sh --from-kit` rebuilds the keys on a new machine and `restore.sh --dump X.sealed` opens a sealed dump. New: `internal/core/offsite`, `internal/core/shamir`, `sb backup keygen|seal|open`, `sb recovery split|join`, and two doctor checks.
+
+**Why this way:** The shares split a 32-byte kit key, not the archive, so each is one page a person can type back in; the archive is sealed with that key and kept off the box, which is no weaker, since without three shares the archive is noise. Sealing uses an ephemeral X25519 key and HKDF per file and authenticated 64 KiB chunks, so a multi-gigabyte dump streams and any change, truncation or reordering fails; all of it is the Go 1.24 standard library (`crypto/ecdh`, `crypto/hkdf`), so no module was added. Only the off-box copy is sealed: the copies on the box and in the write-once store are what the drill and a same-machine restore read, and they never leave the box.
+
+**Learned:** An install that writes a configuration field the admitted release doesn't know stops the cell, and the old updater can't upgrade past it (BUG-0029): the install now starts its own images when that happens and keeps the old pins for one rollback. `internal/core/seal` already existed (per-space data keys), so the new package is `offsite`. Shamir with k-1 shares returns bytes, not an error, so the kit's record carries a 4-byte key check to say "wrong shares" rather than "changed archive".
+
+**Laws:** LAW-11 (what sits off the box reveals nothing, opens only with the recovery key, and not at all after any change: `TestLAW11_OffBoxCopiesAreSealed`, with a self-test that catches an unauthenticated cipher), LAW-18 (any three of five shares rebuild the kit key, two don't, and no share holds the key as it is: `TestLAW18_AnyThreeSharesAndNoTwo`, with a self-test that catches a 2-of-5 kit); LAW-03's box test now covers the drill and kit facts.
+
 ## 2026-11-23 S17.3: a proxy, the company's Postgres, and a support bundle with no secret
 
 **Wave/slice:** W17 / S17.3 (SB-1806 to SB-1808) · **Status:** Done

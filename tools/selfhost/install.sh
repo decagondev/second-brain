@@ -5,12 +5,15 @@
 #   sudo tools/selfhost/install.sh [--install-docker] [--check] CONFIG
 #   sudo tools/selfhost/install.sh --doctor
 #   sudo tools/selfhost/install.sh --support
+#   sudo tools/selfhost/install.sh --recovery-kit [--new-key] [--custodian N=NAME]...
 #
 #   --install-docker   install Docker Engine and the compose plugin from the distribution
 #                      (Debian or Ubuntu) when they are missing; otherwise they must be there
 #   --check            check the machine and CONFIG, change nothing
 #   --doctor           check the running box and say how to fix each problem (SB-1801)
 #   --support          write a support bundle with no content and no secret (SB-1808)
+#   --recovery-kit     take the recovery key off the box into 5 shares, any 3 of which
+#                      rebuild it (SB-1902); the rest of the arguments go to kit.sh
 #
 # It loads the bundle's images (or builds them, in a checkout with Go), runs selfhost.sh
 # with CONFIG, applies the first release, installs the systemd units (the cell at boot,
@@ -21,6 +24,7 @@ cd "$(dirname "$0")/../.."
 HOME_DIR=$(pwd)
 die() { echo "install: $*" >&2; exit 1; }
 INSTALL_DOCKER= CHECK= CONFIG= DOCTOR= SUPPORT=
+if [ "${1:-}" = --recovery-kit ]; then shift; exec bash tools/selfhost/kit.sh "$@"; fi
 for a in "$@"; do
   case "$a" in
   --install-docker) INSTALL_DOCKER=1 ;;
@@ -119,4 +123,5 @@ if [ "${SB_IDP:-bundled}" = bundled ]; then
   echo "install: add people with:  printf '%s' PASSWORD | $HOME_DIR/tools/selfhost/compose.sh run --rm -T idp user add --data /var/lib/sb-idp \\"
   echo "           --email ann@$SB_HOST --scim http://api:8080/scim/v2 --scim-token-file /run/sb/scim"
 fi
+[ ! -f build/selfhost/recovery-key.private ] || echo "install: now take the recovery key off the box: $HOME_DIR/tools/selfhost/install.sh --recovery-kit --custodian 1=NAME … (sb-selfhost(7), The recovery kit)"
 echo "install: then run the laws inside it: SB_TOKEN=\$(cat build/selfhost/vault/api/vault/tenants/$SB_TENANT/control-plane) sb tenant verify $SB_MANIFEST --cell https://$SB_HOST"

@@ -30,6 +30,8 @@ func healthy() Facts {
 		LastOffsite: tp(-3 * time.Hour),
 		LastDrill:   tp(-10 * 24 * time.Hour),
 		DrillOK:     true,
+		Sealed:      bp(true),
+		Recovery:    "kit",
 	}
 }
 
@@ -93,6 +95,12 @@ func TestEachCheckFails(t *testing.T) {
 		{"drill late", "restore drill", Warn, func(f *Facts) { f.LastDrill = tp(-40 * 24 * time.Hour) }},
 		{"drill old", "restore drill", Fail, func(f *Facts) { f.LastDrill = tp(-70 * 24 * time.Hour) }},
 		{"held", "upgrades", Warn, func(f *Facts) { f.Held = "rel_2026-11-20_abcdef" }},
+		{"not sealed", "off-box sealing", Warn, func(f *Facts) { f.Sealed = bp(false) }},
+		{"sealing unknown", "off-box sealing", Unknown, func(f *Facts) { f.Sealed = nil }},
+		{"key on the box", "recovery kit", Warn, func(f *Facts) { f.Recovery = "pending" }},
+		{"no key at all", "recovery kit", Fail, func(f *Facts) { f.Recovery = "none" }},
+		{"kit unknown", "recovery kit", Unknown, func(f *Facts) { f.Recovery = "" }},
+		{"shares left on the box", "recovery kit", Warn, func(f *Facts) { f.SharesOnBox = 2 }},
 		{"not ready", "readyz", Fail, func(f *Facts) { f.Ready = 503 }},
 		{"redirect", "readyz", Fail, func(f *Facts) { f.Ready = 302 }},
 		{"ready unknown", "readyz", Unknown, func(f *Facts) { f.Ready = 0 }},
