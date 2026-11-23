@@ -710,8 +710,100 @@
 <p><strong>Symptom:</strong> A legal steward couldn't place a hold on a real custodian, and an operator couldn't erase a real user's data: both refused the user's id as <code>EINVAL</code>.</p>
 <p><strong>Root cause:</strong> SCIM gave users bare 24-character hex ids, while legal holds, erasure and the manual name users <code>usr_…</code>. Every earlier test made its users by hand with <code>usr_</code> ids, so the two never met.</p>
 <p><strong>Fix:</strong> SCIM ids are <code>usr_</code> (users) and <code>grp_</code> (groups) followed by 24 hex characters, as sb-identity(7) now says.</p>
-<p><strong>Caught by now:</strong> <code>TestWholeCellOnPostgres</code>, which provisions its users through SCIM and places a hold on one of them.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li><li class="l2"><a href="#bug-0010-the-log-redactor-missed-encoded-secrets">BUG-0010 The log redactor missed encoded secrets</a></li><li class="l2"><a href="#bug-0011-markdown-role-labels-escaped-the-injection-flags">BUG-0011 Markdown role labels escaped the injection flags</a></li><li class="l2"><a href="#bug-0012-cutover-revoked-a-retained-grant">BUG-0012 Cutover revoked a retained grant</a></li><li class="l2"><a href="#bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013 Law tests leaked release stores into /tmp</a></li><li class="l2"><a href="#bug-0013-a-spaces-scope-could-reach-into-a-restricted-space">BUG-0013 A space's scope could reach into a restricted space</a></li><li class="l2"><a href="#bug-0014-a-long-secret-was-split-across-chunks-and-indexed">BUG-0014 A long secret was split across chunks and indexed</a></li><li class="l2"><a href="#bug-0015-a-stewards-proposal-could-read-back-differently-and-the-diff-could-hide-it">BUG-0015 A steward's proposal could read back differently, and the diff could hide it</a></li><li class="l2"><a href="#bug-0016-segregation-of-duties-could-be-evaded">BUG-0016 Segregation of duties could be evaded</a></li><li class="l2"><a href="#bug-0017-information-barriers-could-be-evaded">BUG-0017 Information barriers could be evaded</a></li><li class="l2"><a href="#bug-0018-governance-decisions-could-be-lost-dropped-or-unaudited">BUG-0018 Governance decisions could be lost, dropped or unaudited</a></li><li class="l2"><a href="#bug-0019-ingest-could-wedge-a-sync-or-put-fields-where-they-dont-belong">BUG-0019 Ingest could wedge a sync or put fields where they don't belong</a></li><li class="l2"><a href="#bug-0020-connector-and-runtime-edge-cases">BUG-0020 Connector and runtime edge cases</a></li><li class="l2"><a href="#bug-0021-an-accepted-manifest-could-read-back-differently">BUG-0021 An accepted manifest could read back differently</a></li><li class="l2"><a href="#bug-0022-changes-in-the-cursors-own-second-opted-in-source-open-month-reports-and-conversation-spaces">BUG-0022 Changes in the cursor's own second, opted-in source, open-month reports and conversation spaces</a></li><li class="l2"><a href="#bug-0023-legal-holds-reporting-lines-and-the-budget-werent-wired-in-a-running-cell">BUG-0023 Legal holds, reporting lines and the budget weren't wired in a running cell</a></li><li class="l2"><a href="#bug-0024-the-first-hand-off-approval-crashed-once-the-plan-had-been-stored">BUG-0024 The first hand-off approval crashed once the plan had been stored</a></li><li class="l2"><a href="#bug-0025-legal-holds-and-erasure-refused-every-user-scim-had-made">BUG-0025 Legal holds and erasure refused every user SCIM had made</a></li></ul></aside>
+<p><strong>Caught by now:</strong> <code>TestWholeCellOnPostgres</code>, which provisions its users through SCIM and places a hold on one of them.</p>
+<h2 id="bug-0026-a-cell-with-its-web-ui-configured-panicked-at-start">BUG-0026 A cell with its web UI configured panicked at start</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-21, the first self-hosted cell (SB-1602)</td>
+<td>High</td>
+<td>SB-1502</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>sb-api</code> with <code>web</code> set in sb-cell(5) panicked before serving anything: Go's router refused <code>GET /</code> (the UI) beside <code>/scim/v2/</code> (SCIM, any method). Every real cell sets <code>web</code>, so none could have started.</p>
+<p><strong>Root cause:</strong> A pattern with a method and a more general path conflicts with one with no method and a more specific path. Every cell test left <code>web</code> unset, so the two were never registered together.</p>
+<p><strong>Fix:</strong> The UI is the router's catch-all <code>/</code> for every method and answers only GET and HEAD itself (405 otherwise); the more specific SCIM and <code>/v1</code> patterns still win.</p>
+<p><strong>Caught by now:</strong> <code>TestCellWithWebUI</code> (tests/cell: the UI, SCIM and <code>/v1</code> side by side) and <code>make selfhost-smoke</code>, which serves the UI through the proxy.</p>
+<h2 id="bug-0027-verifying-a-new-cells-audit-log-reported-a-forged-anchor">BUG-0027 Verifying a new cell's audit log reported a forged anchor</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-23, the first one-command restore (SB-1803)</td>
+<td>Low</td>
+<td>SB-1507</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> <code>sb audit verify --cell URL</code> on a cell with no audit rows yet failed with <code>ECHAIN: anchor signature does not verify for seq 0</code>, a message that says the log was tampered with.</p>
+<p><strong>Root cause:</strong> Anchors are signed over the tenant's name. Without <code>--tenant</code>, the CLI read the tenant from the first row, and a new cell's export is one start anchor with no rows, so it verified the anchor as tenant "".</p>
+<p><strong>Fix:</strong> With no <code>--tenant</code> and no row to read it from, <code>verify</code> refuses with <code>EUSAGE</code> and says to pass <code>--tenant</code>. <code>restore.sh</code> passes it.</p>
+<p><strong>Caught by now:</strong> <code>TestAuditVerifyEmptyLog</code>. No law caught it because LAW-11's tests always write rows first; the empty log is now a case of its own.</p>
+<h2 id="bug-0028-the-self-hosted-smoke-test-failed-on-linux-and-left-a-rogue-release-behind">BUG-0028 The self-hosted smoke test failed on Linux, and left a rogue release behind</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-23, running <code>make selfhost-smoke</code> on a Linux Docker host (SB-1807)</td>
+<td>Low</td>
+<td>SB-1602</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> On Linux, <code>make selfhost-smoke</code> failed its three mount checks, and after its rogue-release check the release store still held the release signed with the other key, so the next hourly upgrade failed until the demo release was published again.</p>
+<p><strong>Root cause:</strong> Two things that only Docker Desktop on Windows hid. The step that puts the demo release back passed Docker a relative path (<code>build/selfhost/releases</code>), which Docker reads as a volume name; on Windows <code>wslpath -w</code> had always made it absolute. And the mount check sorted with the shell's locale, which on some systems sorts <code>/srv/share/notes=</code> before <code>/srv/share=</code>.</p>
+<p><strong>Fix:</strong> The path is absolute (<code>$(pwd)/build/selfhost/releases</code>) and the sort is <code>LC_ALL=C</code>.</p>
+<p><strong>Caught by now:</strong> Running the smoke test on a Linux host, which the cloud checkout now does for each self-hosted slice. No law was involved: the release that stayed behind was still refused by the updater (LAW-06), which is how it showed.</p>
+<h2 id="bug-0029-installing-a-newer-bundle-on-a-running-box-stopped-the-cell">BUG-0029 Installing a newer bundle on a running box stopped the cell</h2>
+<table>
+<thead>
+<tr>
+<th>Found</th>
+<th>Severity</th>
+<th>Ticket</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-11-23, turning sealing on for the demo box (SB-1901)</td>
+<td>Medium</td>
+<td>SB-1605</td>
+<td>Fixed</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Symptom:</strong> Running <code>selfhost.sh</code> (and so <code>install.sh</code>) from a checkout or bundle newer than the box's admitted release left the cell down: <code>/readyz</code> never answered, and the api's log said <code>wire: bad cell configuration: json: unknown field "seal"</code>.</p>
+<p><strong>Root cause:</strong> The install writes <code>cell.json</code> for the code it ships, but <code>compose.env</code> still pinned the services, the updater among them, to the digests of the older admitted release, whose strict configuration parser refuses any field it doesn't know. The upgrade that would fix it couldn't run either, because the old updater refused the same file. Every release that adds a configuration field (<code>embed</code> in SB-1710 too) had the same trap; the demo hid it because <code>make selfhost</code> runs before the first upgrade.</p>
+<p><strong>Fix:</strong> When the services don't come up and the api says <code>unknown field</code>, the install keeps the pinned digests and their attested references for one rollback (<code>previous.env</code>), drops the pins and starts the install's own images, as a first install does; the upgrade that <code>install.sh</code> runs next pins the admitted release again. The strict parser stays: a typo in <code>cell.json</code> is still a refusal.</p>
+<p><strong>Caught by now:</strong> Re-running the install over a running demo box after a configuration change, which each self-hosted slice now does. No law was broken: an unadmitted configuration never ran, the cell refused it.</p><p class="srcline">Source: <code>living/BUGS_AND_MITIGATIONS.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#bug-0001-rollout-model-assumes-atomic-rollback">BUG-0001 Rollout model assumes atomic rollback</a></li><li class="l2"><a href="#bug-0002-kill-check-order-unspecified-in-preliminary-prd">BUG-0002 Kill check order unspecified in preliminary PRD</a></li><li class="l2"><a href="#bug-0003-policy-examples-used-a-reserved-type-and-an-unguarded-optional-attribute">BUG-0003 Policy examples used a reserved type and an unguarded optional attribute</a></li><li class="l2"><a href="#bug-0004-law-generator-masked-cross-tenant-leaks">BUG-0004 Law generator masked cross-tenant leaks</a></li><li class="l2"><a href="#bug-0005-issuer-rule-never-matched">BUG-0005 Issuer rule never matched</a></li><li class="l2"><a href="#bug-0006-base-policy-permitted-another-tenants-agent">BUG-0006 Base policy permitted another tenant's agent</a></li><li class="l2"><a href="#bug-0007-the-live-check-asked-connectors-without-the-askers-email">BUG-0007 The live check asked connectors without the asker's email</a></li><li class="l2"><a href="#bug-0008-smoke-tests-were-cached-against-a-rebuilt-binary">BUG-0008 Smoke tests were cached against a rebuilt binary</a></li><li class="l2"><a href="#bug-0009-the-tla-checker-was-pinned-to-a-prerelease-rebuilt-in-place">BUG-0009 The TLA+ checker was pinned to a prerelease rebuilt in place</a></li><li class="l2"><a href="#bug-0010-the-log-redactor-missed-encoded-secrets">BUG-0010 The log redactor missed encoded secrets</a></li><li class="l2"><a href="#bug-0011-markdown-role-labels-escaped-the-injection-flags">BUG-0011 Markdown role labels escaped the injection flags</a></li><li class="l2"><a href="#bug-0012-cutover-revoked-a-retained-grant">BUG-0012 Cutover revoked a retained grant</a></li><li class="l2"><a href="#bug-0013-law-tests-leaked-release-stores-into-tmp">BUG-0013 Law tests leaked release stores into /tmp</a></li><li class="l2"><a href="#bug-0013-a-spaces-scope-could-reach-into-a-restricted-space">BUG-0013 A space's scope could reach into a restricted space</a></li><li class="l2"><a href="#bug-0014-a-long-secret-was-split-across-chunks-and-indexed">BUG-0014 A long secret was split across chunks and indexed</a></li><li class="l2"><a href="#bug-0015-a-stewards-proposal-could-read-back-differently-and-the-diff-could-hide-it">BUG-0015 A steward's proposal could read back differently, and the diff could hide it</a></li><li class="l2"><a href="#bug-0016-segregation-of-duties-could-be-evaded">BUG-0016 Segregation of duties could be evaded</a></li><li class="l2"><a href="#bug-0017-information-barriers-could-be-evaded">BUG-0017 Information barriers could be evaded</a></li><li class="l2"><a href="#bug-0018-governance-decisions-could-be-lost-dropped-or-unaudited">BUG-0018 Governance decisions could be lost, dropped or unaudited</a></li><li class="l2"><a href="#bug-0019-ingest-could-wedge-a-sync-or-put-fields-where-they-dont-belong">BUG-0019 Ingest could wedge a sync or put fields where they don't belong</a></li><li class="l2"><a href="#bug-0020-connector-and-runtime-edge-cases">BUG-0020 Connector and runtime edge cases</a></li><li class="l2"><a href="#bug-0021-an-accepted-manifest-could-read-back-differently">BUG-0021 An accepted manifest could read back differently</a></li><li class="l2"><a href="#bug-0022-changes-in-the-cursors-own-second-opted-in-source-open-month-reports-and-conversation-spaces">BUG-0022 Changes in the cursor's own second, opted-in source, open-month reports and conversation spaces</a></li><li class="l2"><a href="#bug-0023-legal-holds-reporting-lines-and-the-budget-werent-wired-in-a-running-cell">BUG-0023 Legal holds, reporting lines and the budget weren't wired in a running cell</a></li><li class="l2"><a href="#bug-0024-the-first-hand-off-approval-crashed-once-the-plan-had-been-stored">BUG-0024 The first hand-off approval crashed once the plan had been stored</a></li><li class="l2"><a href="#bug-0025-legal-holds-and-erasure-refused-every-user-scim-had-made">BUG-0025 Legal holds and erasure refused every user SCIM had made</a></li><li class="l2"><a href="#bug-0026-a-cell-with-its-web-ui-configured-panicked-at-start">BUG-0026 A cell with its web UI configured panicked at start</a></li><li class="l2"><a href="#bug-0027-verifying-a-new-cells-audit-log-reported-a-forged-anchor">BUG-0027 Verifying a new cell's audit log reported a forged anchor</a></li><li class="l2"><a href="#bug-0028-the-self-hosted-smoke-test-failed-on-linux-and-left-a-rogue-release-behind">BUG-0028 The self-hosted smoke test failed on Linux, and left a rogue release behind</a></li><li class="l2"><a href="#bug-0029-installing-a-newer-bundle-on-a-running-box-stopped-the-cell">BUG-0029 Installing a newer bundle on a running box stopped the cell</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

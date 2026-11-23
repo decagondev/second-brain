@@ -846,6 +846,222 @@
 <td>Tested (UI)</td>
 <td>SB-1509: the steward screen sends only valid JSON proposals, shows the hash and every refusal reason, asks for a removal's reason first and shows a refused self-decision; the console approves a proposal only with the hash it shows, needs a reason to reject, and lists reviews overdue first; axe finds no violations on either screen</td>
 </tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-02, LAW-03, LAW-07</td>
+<td>Tested (new)</td>
+<td>SB-1601, SB-1602: a self-hosted cell checked from outside: every service up as non-root on a read-only root, the UI and sign-in through TLS, no route out of the database network (with a control showing the open network does reach out), each vault readable only by its service, <code>ingest</code> without the sign-in secret; image digests reproducible; BUG-0026 found and fixed</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-06, LAW-11</td>
+<td>Tested (new)</td>
+<td>SB-1603, SB-1604: on a self-hosted cell, anchors and the backup's write-once copy go to an S3 store the cell refuses unless its lock is compliance mode for seven years and a probe delete is refused (<code>TestLAW11_AnchorsAreWriteOnceOnTheBox</code>); upgrades start only admitted, attested digests, with no Docker socket in any container, and a release signed with another key changes nothing (smoke checks on Docker Desktop)</td>
+</tr>
+<tr>
+<td>2026-11-21</td>
+<td>LAW-01, LAW-03, LAW-12, LAW-13, LAW-17</td>
+<td>Tested (new)</td>
+<td>SB-1605, SB-1606: the folder connector passes the contract kit; a file with no ACL file, an unreadable one, a slow share or a gone file is never Allow (<code>TestLAW03_FolderUnknownIsNeverAllow</code>); its index rebuilds to the same entries (<code>TestLAW13_FolderIndexIsDerived</code>); the bundled IdP signs in only enabled users with the right password, refuses other clients and redirects, single-use codes bound to PKCE, and a user disabled after the form (tested against the cell's OIDC client); the monthly access check writes a statement whose hash the audit chain anchors (<code>TestAccessStatement</code>); on Docker Desktop the self-hosted demo passes 34 smoke checks and <code>sb tenant verify --cell</code> (LAW-01, LAW-02, LAW-03, LAW-14) is green. A real VM install is in review</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-03, LAW-13, LAW-14, LAW-16</td>
+<td>Tested (new)</td>
+<td>SB-1607 to SB-1609: health never shows an unreadable record as healthy (<code>TestLAW03_HealthNeverShowsAnUnreadableRecordAsHealthy</code>); a failing source shows as failures and then stale; the budget warning goes once a month at 80%; a failed report delivery fails the run; the unhelpful-answer queue carries counts, decision counts and the asker's comment, never the question, the answer or a cite, and a review is audited before it is recorded. The self-hosted demo passes 36 smoke checks</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-01, LAW-02, LAW-03, LAW-07, LAW-12</td>
+<td>Tested (new)</td>
+<td>SB-1701 to SB-1703: a search returns only documents the source allows the asker now and never on Unknown or a timeout (<code>TestLAW01_SearchShowsOnlyWhatTheAskerCanOpen</code>); owners and <code>people</code> name only active owners of allowed cites (<code>TestLAW12_OwnersAreActiveAndAllowed</code>); a share from another tenant or past its 30 days is EPERM and its audit row holds the question's hash only (<code>TestLAW02_SharesStayInTheirTenant</code>); each with a self-test that catches the broken system; a running cell shows bob nothing of ann's document through search or her shared question</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-01, LAW-04, LAW-05, LAW-07, LAW-21</td>
+<td>Tested (new)</td>
+<td>SB-1704, SB-1705: a steward's reply shows the asker only cites they can open, the rest counted (<code>TestLAW01_StewardRepliesShowOnlyWhatTheAskerCanOpen</code>); someone out of the stewards group loses the queue and can't reply (<code>TestLAW21_AMovedStewardLosesTheQueue</code>); an unaudited question is never stored (<code>TestLAW04_QuestionsAreAuditedFirst</code>); a note is Ran only with the SHA-256 of the file on the share and an outsider's publish is refused by policy (<code>TestLAW05_NotesRanMeansTheFileOnTheShare</code>); self-tests catch the broken systems; a running cell answers the next ask from the published note with its cite; <code>make proofs</code> green</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-01, LAW-03, LAW-12, LAW-14</td>
+<td>Tested (new)</td>
+<td>SB-1706, SB-1707: a start list shows a member only documents the source allows them now and counts the rest, the counts adding up (<code>TestLAW01_StartHereShowsOnlyWhatAMemberCanOpen</code>); a handover brief cites only the person's documents the asker may open, counts the others, keeps no uncited line, and is refused to anyone with no relation to the person (<code>TestLAW12_HandoverBriefsOnlyWhatTheAskerCanOpen</code>); self-tests catch Unknown as Allow in both; <code>agent-handover</code> in the eval gate; verify's <code>START</code> check fails a list no member can open</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-01, LAW-13</td>
+<td>Tested (new)</td>
+<td>SB-1708, SB-1709: after a drill's rebuild or a lost index, "what changed" lists exactly the documents that changed and never a rebuilt version (<code>TestLAW13_ARebuildIsNeverAWeekOfChanges</code>, whose self-test catches a rebuild that forgets first-seen times); the stewards' review list names only documents the steward can open and counts the rest with their owners (<code>TestLAW01_TheReviewListNamesOnlyWhatTheStewardCanOpen</code>); a running cell's drill keeps every first-seen time</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-06, LAW-07, LAW-13</td>
+<td>Tested (new)</td>
+<td>SB-1710: a change of embedder drops the index and resyncs every connector, and no chunk is left with another embedder's vector (<code>TestLAW13_EmbedderChangeRebuildsTheIndex</code>, running cell); a release that pins model weights has a different id, and a malformed pin is refused (<code>TestModelWeights</code>); a local model needs no key; smoke checks for the <code>model</code> profile (data network only, no port, read-only root) are written; the run with real weights is in review</td>
+</tr>
+<tr>
+<td>2026-11-22</td>
+<td>LAW-06, LAW-07, LAW-13</td>
+<td>Tested (new)</td>
+<td>SB-1710 for real: the eval gate run on Qwen2.5-7B-Instruct Q4_K_M by its SHA-256 refused it twice (a handover brief that skipped a document; suites not run) and passed all 25 suites on the third run before the cell was switched; on Docker Desktop the cell answered from the share through the model with both model servers on the data network only, no published port, read-only roots as 65532, and <code>make selfhost-smoke</code> passed 44 checks</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-03</td>
+<td>Tested (new)</td>
+<td>SB-1801, SB-1802: a box fact the host step couldn't gather, or facts older than two hours, are never judged pass or warn, and the doctor never exits 0 with a failing or unknown line (<code>TestLAW03_BoxNeverShowsAGapAsHealthy</code>); a self-test catches a judge that treats unknown as pass; a running cell shows no box when it has no host step, unknown with no facts, and alerts once a day for a full disk</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-06, LAW-08, LAW-11</td>
+<td>Tested (new)</td>
+<td>SB-1803 to SB-1805: an image archive with any byte of any file changed, or another image's archive, is refused before it is loaded (<code>TestLAW06_OfflineBundlesLoadOnlyTheReleasesImages</code>); a self-test catches a check that trusts the index alone; a bundle signed by another key or with a changed image prints nothing to load; on a live demo box, a tampered bundle loaded nothing, a rollback started only attested digests and refused a second step back, and a restore verified the audit chain</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-02, LAW-07</td>
+<td>Tested (new)</td>
+<td>SB-1806 to SB-1808: a support bundle never carries a stored secret, a JSON credential's secret field or one line of a key (<code>TestLAW07_SupportBundlesCarryNoSecret</code>); a proxy URL with credentials is refused outside a file, without repeating them (<code>TestLAW07_ProxyCredentialsStayInAFile</code>); a non-loopback database is accepted only with <code>sslmode=verify-full</code> (<code>TestLAW02_ExternalDatabaseIsVerified</code>); each law's self-test catches a broken check; on the demo box the cell ran against a second Postgres over verified TLS, and a support bundle of 14 files scanned clean</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-11, LAW-18</td>
+<td>Tested (new)</td>
+<td>SB-1901, SB-1902: a sealed copy holds no 32-byte run of its content, opens only with its recovery key, and fails after any changed byte (<code>TestLAW11_OffBoxCopiesAreSealed</code>); any three of five shares rebuild the kit key and two don't (<code>TestLAW18_AnyThreeSharesAndNoTwo</code>); each with a self-test; on the demo box, a box wiped and rebuilt from shares 5, 1 and 3 restored its sealed off-box dump and its audit chain verified</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-04, LAW-07, LAW-12, LAW-13, LAW-16</td>
+<td>Tested (new)</td>
+<td>SB-1903 to SB-1906: export equals erase and is empty after, audited with its hash (<code>TestLAW07_SubjectExportIsWhatEraseRemoves</code>); the retention plan equals the sweep (<code>TestLAW16_RetentionPlanIsWhatTheSweepDeletes</code>); signing out everywhere ends every session at its next request (<code>TestLAW12_SignOutEverywhereEndsEverySession</code>); IBANs and card numbers are shown only to their last four characters (<code>TestLAW07_PersonalDataIsMasked</code>); each with self-tests</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-11, LAW-18</td>
+<td>Tested (new)</td>
+<td>SB-1907: a retirement statement names the last anchor of a chain that verifies under the cell's key, verifies only under its own fresh key and not after any change (<code>TestLAW18_ARetiredBoxLeavesASignedStatement</code>, with self-tests); on the demo box, nothing was left but the sealed off-box copies, and three kit shares opened the sealed audit export, whose chain verified</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-04, LAW-22</td>
+<td>Tested (new)</td>
+<td>SB-2001: notes are placed by path in barrier cells; own side publishes, across the barrier is refused and unwritten, unreadable registry refuses (<code>TestLAW22_NotesPublishOnTheirSideOfABarrier</code>, with self-tests)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-09, LAW-13</td>
+<td>Tested (new)</td>
+<td>SB-2003: office files and pages through a real share; hidden parts never indexed (<code>TestLAW09_OfficeFilesAreData</code>, <code>TestLAW13_OfficeIndexIsDerived</code>, self-test); <code>FuzzOfficeText</code></td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-19, LAW-21</td>
+<td>Tested (new)</td>
+<td>SB-2004: notes read wider than their space are listed by count and republished narrowed, never wider (<code>TestLAW19_NotesStayAsNarrowAsTheirSpace</code>, with self-tests)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-12</td>
+<td>Tested (new)</td>
+<td>SB-2005: Mattermost answers cite only what the asker can open and go only to them; the deprovisioned get no answer (<code>TestLAW01_MattermostAnswersCiteOnlyWhatTheAskerCanOpen</code>, <code>TestLAW12_MattermostRefusesTheDeprovisioned</code>, self-test)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-21, LAW-07</td>
+<td>Tested (new)</td>
+<td>SB-2101, SB-2102: notifications go to the stewards the directory has at send time and carry no question, reply, cite or asker (<code>TestLAW21_NotificationsGoToTheStewardsThereAreNow</code>, <code>TestLAW07_NotificationsSayNothingOfWhatWasAsked</code>, self-test)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-13, LAW-07</td>
+<td>Tested (new)</td>
+<td>SB-2103, SB-2104: the digest names only what the person can open when it's sent, never a rebuild; a watch keeps a hash and names no source (<code>TestLAW01_TheDigestNamesOnlyWhatThePersonCanOpenNow</code>, <code>TestLAW13_ARebuildIsNeverInTheDigest</code>, self-test)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01</td>
+<td>Tested (new)</td>
+<td>SB-2105, SB-2106: a Mattermost share posts only the asker's cites, only when the asker presses it; the handover search lists only people the asker may brief (<code>TestLAW01_MattermostSharesOnlyTheAskersCites</code>, <code>TestLAW01_HandoverSearchListsOnlyWhomTheAskerMayBrief</code>, self-tests)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-12, LAW-01, LAW-13</td>
+<td>Tested (new)</td>
+<td>SB-2201, SB-2202: a deprovisioned owner's documents are on the review list at once and the owner is never shown; answers cite the newest copy the asker can open, before and after a rebuild (<code>TestLAW12_ADeprovisionedOwnersDocumentsAreOnTheReviewList</code>, <code>TestLAW01_OwnerGoneNamesOnlyWhatTheStewardCanOpen</code>, <code>TestLAW13_AnswersCiteTheNewestCopyBeforeAndAfterARebuild</code>, self-test)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-19, LAW-09, LAW-06</td>
+<td>Tested (new)</td>
+<td>SB-2203, SB-2204: a space's glossary is used only in that space and only as data, an instruction-like entry never; a release that regresses a tenant's eval case is held for that tenant (<code>TestLAW19_ASpacesGlossaryIsUsedOnlyInThatSpace</code>, <code>TestLAW09_GlossaryEntriesAreDataNeverInstructions</code>, <code>TestLAW06_AReleaseThatRegressesATenantCaseIsHeld</code>, self-tests)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-07</td>
+<td>Tested (new)</td>
+<td>SB-2205: an access request goes only to owners of documents the source refused, names the document only to its owner, never the question, once a week (<code>TestLAW01_AskingForAccessTellsTheAskerOnlyCounts</code>, <code>TestLAW07_AnAccessRequestNeverCarriesTheQuestion</code>, self-test)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-07, LAW-09, LAW-13</td>
+<td>Tested (extended)</td>
+<td>SB-2206, SB-2207: spreadsheets on a folder share keep formulas, comments and macros out of the index; national ID numbers are flagged and masked but the last four (office law fixture, PII law fixture, self-test)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-07, LAW-11, LAW-14</td>
+<td>Tested (new)</td>
+<td>SB-2301, SB-2302, SB-2303: the UI in three languages with axe in each; every audit row reaches a SIEM in order across restarts and outages; only sealed copies and small records reach the off-box bucket (language tests, SIEM law fixture, bucket law fixture, self-tests)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-14, LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-2304, SB-2305: search's allowed sources show first and never as claims; asks_per_minute reads back from the manifest (sources test with a slow model, LAW-16 generator)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-07, LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-2306, SB-2307: API tokens end with their owner's sessions; email notifications carry only counts and links (LAW-12 generator with tokens, LAW-07 by email)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-14, LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-2401 to SB-2403: copy and print keep every cite and the uncited mark; keyboard-only use with axe in each language (copy.test.tsx)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-2404 to SB-2406: filters only narrow after every check; recent questions never leave the browser; next steps ignore the index (TestSearchFilters, findfaster.test.tsx)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-13</td>
+<td>Tested (extended)</td>
+<td>SB-2501 to SB-2503: a mark leaves the list until a new version, age or report; a removed steward's claim goes; templates stay in their space (TestStewardsToolsThroughARunningCell, TestReviewMarkCovers, stewardtools.test.tsx)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-01, LAW-07, LAW-21</td>
+<td>Tested (extended)</td>
+<td>SB-2504 to SB-2507: counts match their lists; the CSV is the rows on screen; a paused steward gets nothing and the others are told; the digest line is counts only, to stewards now (TestPauseSkipsOnlyThePausedPerson, TestDigestStewardLines, stewardlist.test.tsx)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-2601 to SB-2604: the test notification is its fixed text; no check prints a secret (TestSendMeATestThroughARunningCell, TestProbeAndTheTestMessage, TestSelfhostCheckChat*, TestCellCheckConfig)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-2606, SB-2607: the token warning and the notify run record carry no content and no other person (TestTokenExpiryToldOnce, TestNotifyRunIsKept, TestNotifyFrom)</td>
+</tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
   

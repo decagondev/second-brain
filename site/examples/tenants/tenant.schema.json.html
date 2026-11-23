@@ -16,7 +16,7 @@
   <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
 </header>
 <div class="layout">
-  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a href="../../examples/tenants/spaces.yaml.html">spaces.yaml</a><a class="current" href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
+  <aside class="side" aria-label="Section"><div class="group"><h4>Examples</h4><a href="../../examples/README.html">Examples</a><a href="../../examples/connector/README.html">Example connector</a><a href="../../examples/share/README.html">The example share</a><a href="../../examples/connector/notes.go.html">notes.go</a><a href="../../examples/evals/gate.yaml.html">gate.yaml</a><a href="../../examples/evals/injection.yaml.html">injection.yaml</a><a href="../../examples/evals/permission.yaml.html">permission.yaml</a><a href="../../examples/policies/acme-logistics.cedar.html">acme-logistics.cedar</a><a href="../../examples/share/finance/q3-forecast.html">Q3 forecast</a><a href="../../examples/share/operations/returns-policy.html">Returns policy</a><a href="../../examples/share/people/salary-bands.html">Salary bands</a><a href="../../examples/tenants/full.yaml.html">full.yaml</a><a href="../../examples/tenants/invalid.expected.html">invalid.expected</a><a href="../../examples/tenants/invalid.yaml.html">invalid.yaml</a><a href="../../examples/tenants/pilot.yaml.html">pilot.yaml</a><a href="../../examples/tenants/spaces.yaml.html">spaces.yaml</a><a class="current" href="../../examples/tenants/tenant.schema.json.html">tenant.schema.json</a></div></aside>
   <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / examples/tenants</div><h1 id="tenantschemajson">tenant.schema.json</h1>
 <pre><code class="language-json">{
   &quot;$id&quot;: &quot;https://example.com/second-brain/tenant.schema.json&quot;,
@@ -53,6 +53,13 @@
         ]
       },
       &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;asks_per_minute&quot;: {
+      &quot;default&quot;: 6,
+      &quot;description&quot;: &quot;Questions one person may ask in any minute; one more is ERATE (SB-2305).&quot;,
+      &quot;maximum&quot;: 600,
+      &quot;minimum&quot;: 1,
+      &quot;type&quot;: &quot;integer&quot;
     },
     &quot;barriers&quot;: {
       &quot;description&quot;: &quot;Information barriers: pairs of groups that never meet (sb-space(5)).&quot;,
@@ -102,6 +109,10 @@
         ]
       },
       &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;digest&quot;: {
+      &quot;description&quot;: &quot;The weekly digest's IANA time zone, or off (SB-2103). Default UTC.&quot;,
+      &quot;type&quot;: &quot;string&quot;
     },
     &quot;duties&quot;: {
       &quot;additionalProperties&quot;: {
@@ -174,8 +185,27 @@
       &quot;pattern&quot;: &quot;^(oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\\s?#]*)?|identity-platform://[a-z][a-z0-9-]{4,28}[a-z0-9]/[A-Za-z0-9-]{1,63})$&quot;,
       &quot;type&quot;: &quot;string&quot;
     },
+    &quot;language&quot;: {
+      &quot;description&quot;: &quot;The web UI's default language (SB-2301). Default en.&quot;,
+      &quot;enum&quot;: [
+        &quot;en&quot;,
+        &quot;de&quot;,
+        &quot;fr&quot;
+      ],
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;notes&quot;: {
+      &quot;default&quot;: false,
+      &quot;description&quot;: &quot;Stewards may publish replies as notes into the docs: folder share (SB-1705).&quot;,
+      &quot;type&quot;: &quot;boolean&quot;
+    },
     &quot;pilot_group&quot;: {
       &quot;description&quot;: &quot;If set, only this IdP group may sign in.&quot;,
+      &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
+      &quot;type&quot;: &quot;string&quot;
+    },
+    &quot;questions_to&quot;: {
+      &quot;description&quot;: &quot;Who answers company-wide questions nothing answered (SB-1704).&quot;,
       &quot;pattern&quot;: &quot;^group:[A-Za-z0-9._-]+$&quot;,
       &quot;type&quot;: &quot;string&quot;
     },
@@ -230,6 +260,19 @@
             },
             &quot;type&quot;: &quot;object&quot;
           },
+          &quot;glossary&quot;: {
+            &quot;additionalProperties&quot;: {
+              &quot;maxLength&quot;: 200,
+              &quot;minLength&quot;: 1,
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;maxProperties&quot;: 200,
+            &quot;propertyNames&quot;: {
+              &quot;maxLength&quot;: 40,
+              &quot;minLength&quot;: 1
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
           &quot;label&quot;: {
             &quot;enum&quot;: [
               &quot;public&quot;,
@@ -248,6 +291,12 @@
             &quot;uniqueItems&quot;: true
           },
           &quot;retention_days&quot;: {
+            &quot;maximum&quot;: 3650,
+            &quot;minimum&quot;: 30,
+            &quot;type&quot;: &quot;integer&quot;
+          },
+          &quot;review_after_days&quot;: {
+            &quot;default&quot;: 365,
             &quot;maximum&quot;: 3650,
             &quot;minimum&quot;: 30,
             &quot;type&quot;: &quot;integer&quot;
@@ -274,6 +323,15 @@
               ]
             },
             &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;start_here&quot;: {
+            &quot;items&quot;: {
+              &quot;pattern&quot;: &quot;^([a-z]+):(/[^\\s]*/|[^/@\\s][^@\\s]*)$&quot;,
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;maxItems&quot;: 10,
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
           },
           &quot;stewards&quot;: {
             &quot;items&quot;: {
