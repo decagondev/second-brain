@@ -103,3 +103,20 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .tokens code {
   word-break: break-all;
 }
+
+/* Copy, print and keyboard (SB-2401 to SB-2403). */
+.answer-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+.keys { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.skip { position: absolute; left: -10000px; top: 0; }
+.skip:focus { position: static; display: inline-block; padding: 0.5rem; }
+.print-only { display: none; }
+@media print {
+  .tabs, form.ask, button, .draft, .feedback, .turn-tools, .answer-tools, .language, .skip, .keys, .tokens, [role="tabpanel"][hidden] { display: none !important; }
+  .print-only { display: inline; }
+  section.print-only { display: block; }
+  body { background: #ffffff; color: #000000; }
+  .chips { display: none; }
+  .claim.uncited { border-left: 4px dashed #000000; background: none; }
+  .footnotes { margin-top: 1rem; border-top: 1px solid #000000; font-size: 0.9rem; }
+  a { color: #000000; }
+}

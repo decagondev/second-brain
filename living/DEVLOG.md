@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S23.1: Take the answer with you
+
+**Wave/slice:** W23 / S23.1 (SB-2401, SB-2402, SB-2403) · **Status:** Done
+
+**What:** Each answer can be copied as plain text or Markdown, or printed (and so saved as PDF), with its cites numbered and every uncited claim still marked. The page can be used from the keyboard alone: a skip link, `/` to the ask box, Ctrl+Enter to ask, Esc to close a panel.
+
+**Why this way:** The copy is built from the answer the screen shows and nothing else, so it can't carry more than the asker saw; uncited claims keep their word, as on screen (LAW-14). Printing is a stylesheet, not a server-side PDF, so there's nothing new to run or to leak. Shortcuts never fire while typing, so they can't steal a character.
+
+**Learned:** Vitest leaves CSS empty unless `css: true`; the print test needs the stylesheet's text. Markdown output needs escaping, or a claim's own brackets could turn into a link in whatever the person pastes it into.
+
+**Laws:** LAW-14 (the uncited mark survives copy and print; axe with the new controls in each language), LAW-01 (only what the answer shows). Every law test is still green.
+
 ## 2026-11-23 S22.3: Tokens and email
 
 **Wave/slice:** W22 / S22.3 (SB-2306, SB-2307) · **Status:** Done

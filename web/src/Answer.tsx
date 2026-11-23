@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { AskResponse, Cite, Claim, Fetch, Notice, Person, Term } from "./api";
 import { isCited, requestAccess } from "./api";
 import { msg, t, tj, tn } from "./i18n";
+import { numberCites, numberOf } from "./Copy";
 
 const notices: Record<Exclude<Notice, null>, string> = {
   no_access: msg("Some sources you don't have access to may answer this. Ask their owner."),
@@ -40,7 +41,7 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   );
 }
 
-export function ClaimView({ claim, trace }: { claim: Claim; trace: string }) {
+export function ClaimView({ claim, trace, nums }: { claim: Claim; trace: string; nums?: { cite: Cite; n: number }[] }) {
   if (!isCited(claim)) {
     return (
       <li className="claim uncited" title={t("No source you can open supports this.")}>
@@ -56,6 +57,7 @@ export function ClaimView({ claim, trace }: { claim: Claim; trace: string }) {
           <CitationChip key={`${c.cite}-${i}`} cite={c} trace={trace} />
         ))}
       </span>
+      {nums && <span className="print-only"> {claim.cites.map((c) => `[${numberOf(nums, c.cite)}]`).join(" ")}</span>}
     </li>
   );
 }
@@ -154,7 +156,27 @@ export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fet
   );
 }
 
+// Footnotes is the answer's cites, numbered, for print only (SB-2402).
+function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
+  if (nums.length === 0) return null;
+  return (
+    <section className="print-only footnotes" aria-hidden="true">
+      <h3>{t("Sources")}</h3>
+      <ol>
+        {nums.map(({ cite, n }) => (
+          <li key={cite.cite} value={n}>
+            {cite.title ?? cite.cite}
+            {cite.url ? `, ${cite.url}` : ""}
+            {cite.age_days !== undefined ? `, ${tn(cite.age_days, "{n} day old", "{n} days old")}` : ""}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?: Fetch }) {
+  const nums = numberCites(answer);
   return (
     <article className="answer" aria-label={t("Answer")}>
       {answer.notice && (
@@ -164,7 +186,7 @@ export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?:
       )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (
-          <ClaimView key={i} claim={c} trace={answer.trace} />
+          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} />
         ))}
       </ul>
       <PeopleView answer={answer} />
@@ -176,6 +198,7 @@ export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?:
         </p>
       )}
       <p className="trace">{t("Trace {trace}", { trace: answer.trace })}</p>
+      <Footnotes nums={nums} />
     </article>
   );
 }

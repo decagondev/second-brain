@@ -14,6 +14,7 @@ import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
+import { AnswerTools } from "./Copy";
 import { errorText, msg, t, tj } from "./i18n";
 
 interface Turn {
@@ -56,6 +57,27 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const base = useId();
   const nextTurn = useRef(0);
   const [showTokens, setShowTokens] = useState(false);
+  const tokensButton = useRef<HTMLButtonElement>(null);
+  const askBox = useRef<HTMLTextAreaElement>(null);
+
+  // Keyboard first (SB-2403): "/" goes to the ask box and Esc closes the API tokens panel,
+  // never while the person is typing in a field.
+  useEffect(() => {
+    function onKey(e: globalThis.KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      const typing = !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
+      if (e.key === "/" && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setTab("answer");
+        askBox.current?.focus();
+      } else if (e.key === "Escape" && showTokens) {
+        setShowTokens(false);
+        tokensButton.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showTokens]);
 
   useEffect(() => {
     let live = true;
@@ -136,6 +158,9 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
 
   return (
     <main>
+      <a className="skip" href="#conversation" onClick={() => setTab("answer")}>
+        {t("Skip to the conversation")}
+      </a>
       <h1>{"Second Brain"}</h1>
       {(shared || sharedError) && (
         <section className="shared" aria-label={t("Shared question")}>
@@ -177,12 +202,13 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       <div role="tabpanel" id={`${base}-panel-answer`} aria-labelledby={`${base}-tab-answer`} hidden={tab !== "answer"}>
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
-        <section aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
+        <section id="conversation" tabIndex={-1} aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
           {turns.map((x) => (
             <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
               {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} />}
+              {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
               {x.answer && <AskStewards question={x.question} answer={x.answer} space={space || undefined} fetcher={fetcher} />}
@@ -223,7 +249,24 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
             </>
           )}
           <label htmlFor={inputId}>{t("Ask a question")}</label>
-          <textarea id={inputId} value={question} maxLength={4000} rows={3} onChange={(e) => setQuestion(e.target.value)} />
+          <textarea
+            id={inputId}
+            ref={askBox}
+            value={question}
+            maxLength={4000}
+            rows={3}
+            aria-describedby={`${inputId}-keys`}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+          <p className="keys" id={`${inputId}-keys`}>
+            {t("Keyboard: / goes to the ask box, Ctrl+Enter (Cmd+Enter on a Mac) asks, Esc closes a panel.")}
+          </p>
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}
           </button>
@@ -253,7 +296,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       <div role="tabpanel" id={`${base}-panel-handover`} aria-labelledby={`${base}-tab-handover`} hidden={tab !== "handover"}>
         {tab === "handover" && <HandoverView fetcher={fetcher} />}
       </div>
-      <button type="button" className="link" aria-expanded={showTokens} onClick={() => setShowTokens((x) => !x)}>
+      <button type="button" className="link" ref={tokensButton} aria-expanded={showTokens} onClick={() => setShowTokens((x) => !x)}>
         {t("API tokens")}
       </button>
       {showTokens && <ApiTokens fetcher={fetcher} />}

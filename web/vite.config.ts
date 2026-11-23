@@ -8,5 +8,6 @@ export default defineConfig({
   plugins: [react()],
   build: { outDir: "dist", sourcemap: false, assetsInlineLimit: 0 },
   server: { proxy: { "/v1": "http://localhost:8080" } },
-  test: { environment: "jsdom", globals: true },
+  // css: the print test reads styles.css as text (SB-2402).
+  test: { environment: "jsdom", globals: true, css: true },
 });
