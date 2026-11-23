@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S20.3: Share in Mattermost and handover by name
+
+**Wave/slice:** W20 / S20.3 (SB-2105, SB-2106) · **Status:** Done
+
+**What:** A Mattermost answer can be shared to its channel with a *Share in channel* button (`POST /chat/mattermost/actions`), which posts the citation links only, as Slack's does. The Handover tab finds the person to brief by name or email (`GET /v1/handover/people`), listing only people the caller may brief. **W20 built.**
+
+**Why this way:** Mattermost sends action presses unsigned, so the button's context is signed by the cell with the command token and checked at the press; the asker is mapped again and the trace read with their scope, so no one else can post their answer's cites. The people search runs the brief's own policy decision on each match, so its list can't be wider than what `POST /v1/handover` would allow; the name filter comes first, so only matches are decided and audited.
+
+**Learned:** Mattermost's action requests carry no response URL; the slash command's own, kept in the signed context, posts in the channel without the bot joining it.
+
+**Laws:** LAW-01 (`TestLAW01_MattermostSharesOnlyTheAskersCites`, self-test catches a share carrying claims; `TestLAW01_HandoverSearchListsOnlyWhomTheAskerMayBrief`, self-test catches a search that skips the policy). Every law test is still green.
+
 ## 2026-11-23 S20.2: what changed, for you
 
 **Wave/slice:** W20 / S20.2 (SB-2103, SB-2104) · **Status:** Done

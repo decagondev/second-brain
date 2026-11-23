@@ -8,7 +8,7 @@ summary: Ask a question and get a cited answer.
 
 ## NAME
 
-sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`, `GET /v1/changes`, `POST /chat/mattermost`
+sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`, `GET /v1/handover/people`, `GET /v1/changes`, `POST /chat/mattermost`, `POST /chat/mattermost/actions`
 
 ## SYNOPSIS
 
@@ -158,7 +158,7 @@ Every cite in an answer also carries `age_days` (whole days since the index firs
 
 ### Start here and handover (SB-1706, SB-1707)
 
-`GET /v1/start?space=NAME` is the space's reading list for a member (sb-spaces(7), Start here): `{ "items": [...], "hidden": 1 }`, each item a search result without the snippet. `POST /v1/handover` `{ "person": "usr_…" }` is the handover brief (sb-agents(7), Handover): `{ "trace", "person", "answer": { "claims": [...] }, "dropped", "hidden", "locations": { CITE: LOCATION } }`, every claim cited; `locations` gives where each briefed document lives, for documents the asker can open only (SB-2002). A refusal is `EPERM` with the policy's reason: only the person, their manager or a steward of a space they are in can have the brief, and an unknown person gets the same answer. In the web UI the **Handover** tab takes the person's user id, shows the brief grouped by location, and shows `hidden` as a count with the advice to have access moved to whoever takes the work over before the person leaves, since deprovisioning revokes their access (LAW-12).
+`GET /v1/start?space=NAME` is the space's reading list for a member (sb-spaces(7), Start here): `{ "items": [...], "hidden": 1 }`, each item a search result without the snippet. `POST /v1/handover` `{ "person": "usr_…" }` is the handover brief (sb-agents(7), Handover): `{ "trace", "person", "answer": { "claims": [...] }, "dropped", "hidden", "locations": { CITE: LOCATION } }`, every claim cited; `locations` gives where each briefed document lives, for documents the asker can open only (SB-2002). A refusal is `EPERM` with the policy's reason: only the person, their manager or a steward of a space they are in can have the brief, and an unknown person gets the same answer. `GET /v1/handover/people?q=TEXT` (SB-2106) finds the people the caller may brief: `{ "items": [{ "id", "name", "email", "title" }] }`, at most 20, sorted by name, whose user name or email contains `TEXT` (2 to 100 characters, case ignored). Candidates are the caller, the people whose directory manager is the caller, and the active members of spaces the caller stewards, and each one is kept only if the same policy decision as `POST /v1/handover` allows it now, so the list names no one the caller couldn't brief (LAW-01); a colleague with no relation isn't found whatever is typed. In the web UI the **Handover** tab finds a person by name or email with that list, or takes the person's user id, shows the brief grouped by location, and shows `hidden` as a count with the advice to have access moved to whoever takes the work over before the person leaves, since deprovisioning revokes their access (LAW-12).
 
 ### Questions to the stewards, exactly (SB-1704)
 
@@ -265,7 +265,9 @@ Sites that run their own Mattermost can ask from it with a slash command (SB-200
 3. **Answer privately.** Mattermost gets an immediate ephemeral "Looking that up…", and the answer follows through the command's `response_url`, which must be the server's own `/hooks/commands/` URL, also **ephemeral**. It is Markdown: the question, each claim with its citations as links (`` [`cite`](url) ``), uncited claims marked *Uncited:*, who to ask, the notice, the refused count and the trace id. Claim text is escaped, so it can't become a link, a mention or formatting.
 4. **Spaces.** A space's `channels` (sb-space(5)) list Mattermost channels by name as they do Slack's: a mapped channel asks in that space, and someone who isn't a member gets an ephemeral refusal, never a company-wide answer.
 
-There is no Share button. The bot account needs no permission beyond reading users' emails (the System Console's *Show Email Address* for it), since replies go through `response_url`.
+5. **Share** (SB-2105). The answer carries a *Share in channel* button, a message attachment action whose integration URL is the cell's `POST /chat/mattermost/actions` (sb-cell(5) `base_url`). Its context holds the trace id, the asker's Mattermost user id, the command's `response_url` and an HMAC-SHA256 over the three keyed with `command_token`; Mattermost doesn't sign action requests, so the cell checks that HMAC with the token read at the press, and anything else is HTTP 401. Only the asker can share: the pressing `user_id` must be the one in the context, mapped again to the one active directory user, and the trace is read again with that scope. The channel then gets, through the `response_url` as `in_channel`, the **citation links only, never the claim text**, exactly the Slack rule, so each reader opens the sources under their own access. Anyone else pressing it gets "Only the person who asked can share this answer." `response_url` lasts 30 minutes, so a later press says the answer can't be shared any more.
+
+The bot account needs to read users' emails (the System Console's *Show Email Address* for it) and to create direct channels for notifications (Notifications, above); replies and shares go through `response_url`.
 
 ## ERRORS
 

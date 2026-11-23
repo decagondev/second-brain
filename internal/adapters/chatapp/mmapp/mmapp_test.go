@@ -27,8 +27,10 @@ func (a *asker) Ask(_ context.Context, s tenancy.Scope, req ask.Request) (ask.Re
 		{Text: "Ask finance.", Uncited: true},
 	}}}, nil
 }
-func (*asker) Trace(context.Context, tenancy.Scope, string) (ask.Trace, error) {
-	return ask.Trace{}, nil
+func (a *asker) Trace(ctx context.Context, s tenancy.Scope, id string) (ask.Trace, error) {
+	r, _ := a.Ask(ctx, s, ask.Request{})
+	a.asked = a.asked[:len(a.asked)-1]
+	return ask.Trace{ID: id, User: "usr_ann", Response: r}, nil
 }
 
 // users is a directory: users by email.
@@ -167,5 +169,67 @@ func TestCommandIsVerified(t *testing.T) {
 	a.Token = func(context.Context) (string, error) { return "", nil }
 	if rec := send(mux, cmd(a, "u_ann", "q")); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("no token in the vault: %d", rec.Code)
+	}
+}
+
+func press(mux *http.ServeMux, user string, c ShareContext) *httptest.ResponseRecorder {
+	b, _ := json.Marshal(map[string]any{"user_id": user, "team_id": "team1", "context": c})
+	req := httptest.NewRequest("POST", "/chat/mattermost/actions", strings.NewReader(string(b)))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	return rec
+}
+
+// shareButton asks as ann and returns the Share button's context.
+func shareButton(t *testing.T, a *App, mux *http.ServeMux, posts *[]Message) ShareContext {
+	t.Helper()
+	a.ActionURL = "https://brain.acme.example/chat/mattermost/actions"
+	send(mux, cmd(a, "u_ann", "refund limit?"))
+	m := (*posts)[len(*posts)-1]
+	if len(m.Attachments) != 1 || len(m.Attachments[0].Actions) != 1 || m.Attachments[0].Actions[0].Integration.URL != a.ActionURL {
+		t.Fatalf("no Share button: %+v", m)
+	}
+	return m.Attachments[0].Actions[0].Integration.Context
+}
+
+// SB-2105, the Slack Share test against Mattermost: the channel gets the citation links
+// only, never the claim text.
+func TestShareCarriesNoClaimText(t *testing.T) {
+	a, _, posts, mux := app(t)
+	c := shareButton(t, a, mux, posts)
+	rec := press(mux, "u_ann", c)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), MsgShared) {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	m := (*posts)[len(*posts)-1]
+	if m.ResponseType != "in_channel" || strings.Contains(m.Text, "Refunds over 500") || strings.Contains(m.Text, "finance") {
+		t.Fatalf("share leaked claim text: %+v", m)
+	}
+	if !strings.Contains(m.Text, "[`docs:refunds@2`](https://drive.example/d/1)") {
+		t.Errorf("share lacks the citation links: %s", m.Text)
+	}
+}
+
+// Only the asker shares, and a forged or altered context is refused.
+func TestOnlyTheAskerShares(t *testing.T) {
+	a, _, posts, mux := app(t)
+	c := shareButton(t, a, mux, posts)
+	n := len(*posts)
+	if rec := press(mux, "u_eve", c); rec.Code != 200 || !strings.Contains(rec.Body.String(), MsgShareFail) {
+		t.Fatalf("someone else: %d %s", rec.Code, rec.Body)
+	}
+	forged := c
+	forged.User = "u_eve"
+	if rec := press(mux, "u_eve", forged); rec.Code != 401 {
+		t.Fatalf("a forged context: %d", rec.Code)
+	}
+	elsewhere := c
+	elsewhere.ResponseURL = "https://evil.example/hooks/commands/x"
+	elsewhere.Sig = sign("cmd-token", elsewhere)
+	if rec := press(mux, "u_ann", elsewhere); rec.Code != 401 {
+		t.Fatalf("a foreign response URL: %d", rec.Code)
+	}
+	if len(*posts) != n {
+		t.Fatalf("something was posted: %+v", (*posts)[n:])
 	}
 }

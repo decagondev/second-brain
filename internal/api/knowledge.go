@@ -27,6 +27,8 @@ type Knowledge struct {
 	Start func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error)
 	// Handover is the handover brief (SB-1707); nil doesn't mount it.
 	Handover func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error)
+	// People finds whom the caller may brief (SB-2106); nil doesn't mount it.
+	People func(ctx context.Context, s tenancy.Scope, q string) ([]ask.Briefable, error)
 	// Changes is what changed (SB-1708); nil doesn't mount it.
 	Changes func(ctx context.Context, s tenancy.Scope, days int) (ask.ChangesResponse, error)
 	Release string
@@ -44,6 +46,9 @@ func (h Knowledge) Register(mux *http.ServeMux) {
 	}
 	if h.Changes != nil {
 		mux.HandleFunc("GET /v1/changes", h.changes)
+	}
+	if h.People != nil {
+		mux.HandleFunc("GET /v1/handover/people", h.people)
 	}
 	if h.Questions.Store != nil {
 		mux.HandleFunc("POST /v1/saved", h.save)
@@ -140,6 +145,19 @@ func (h Knowledge) handover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.out().ok(w, resp.Trace, resp)
+}
+
+func (h Knowledge) people(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	items, err := h.People(r.Context(), s, r.URL.Query().Get("q"))
+	if err != nil {
+		h.out().fail(w, "", mapErr(err))
+		return
+	}
+	h.out().ok(w, "", map[string]any{"items": items})
 }
 
 func questionBody(r *http.Request) (string, bool) {

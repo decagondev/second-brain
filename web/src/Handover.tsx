@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, handover } from "./api";
-import type { ApiError, Claim, Fetch, HandoverBrief } from "./api";
+import { AskError, briefable, handover } from "./api";
+import type { ApiError, Briefable, Claim, Fetch, HandoverBrief } from "./api";
 import { ClaimView } from "./Answer";
 
 // The handover brief (sb-agents(7), Handover; SB-2002): a person's documents that the asker
@@ -11,20 +11,46 @@ export function HandoverView({ fetcher }: { fetcher?: Fetch }) {
   const [busy, setBusy] = useState(false);
   const [brief, setBrief] = useState<HandoverBrief>();
   const [error, setError] = useState<ApiError>();
+  const [choices, setChoices] = useState<Briefable[]>();
   const inputId = useId();
   const hintId = useId();
 
+  const fail = (err: unknown) =>
+    setError(err instanceof AskError ? err.error : { code: "EUNAVAIL", message: "Something went wrong.", trace: "", remedy: "Try again." });
+
+  async function brief1(id: string) {
+    setBusy(true);
+    setBrief(undefined);
+    setError(undefined);
+    setChoices(undefined);
+    try {
+      setBrief(await handover(id, fetcher));
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // A user id briefs at once; a name or an email finds the people you may brief (SB-2106).
   async function submit(e: FormEvent) {
     e.preventDefault();
     const p = person.trim();
     if (!p || busy) return;
+    if (/^usr_/.test(p)) return brief1(p);
     setBusy(true);
     setBrief(undefined);
     setError(undefined);
+    setChoices(undefined);
     try {
-      setBrief(await handover(p, fetcher));
+      const found = await briefable(p, fetcher);
+      if (found.length === 1) {
+        setBusy(false);
+        return brief1(found[0]!.id);
+      }
+      setChoices(found);
     } catch (err) {
-      setError(err instanceof AskError ? err.error : { code: "EUNAVAIL", message: "Something went wrong.", trace: "", remedy: "Try again." });
+      fail(err);
     } finally {
       setBusy(false);
     }
@@ -38,7 +64,7 @@ export function HandoverView({ fetcher }: { fetcher?: Fetch }) {
         <label htmlFor={inputId}>Person</label>
         <input id={inputId} aria-describedby={hintId} value={person} maxLength={80} onChange={(e) => setPerson(e.target.value)} />
         <p id={hintId} className="meta">
-          Their user id, usr_…. You can brief yourself, someone you manage, or a member of a space you steward.
+          Their name, email or user id. You can brief yourself, someone you manage, or a member of a space you steward.
         </p>
         <button type="submit" disabled={busy || person.trim() === ""}>
           {busy ? "Briefing…" : "Brief"}
@@ -50,6 +76,20 @@ export function HandoverView({ fetcher }: { fetcher?: Fetch }) {
           {error.remedy && error.remedy.toLowerCase() !== error.message.toLowerCase() && <p>{error.remedy}</p>}
           {error.trace && <p>Quote trace {error.trace} to support.</p>}
         </div>
+      )}
+      {choices && choices.length === 0 && <p className="notice">No one you may brief matches that.</p>}
+      {choices && choices.length > 0 && (
+        <ul className="saved-list" aria-label="People you may brief">
+          {choices.map((c) => (
+            <li key={c.id}>
+              <button type="button" onClick={() => brief1(c.id)}>
+                Brief {c.name}
+                {c.email !== c.name ? ` (${c.email})` : ""}
+                {c.title ? `, ${c.title}` : ""}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
       {brief && <BriefView brief={brief} />}
     </section>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/policy"
@@ -248,6 +249,62 @@ func (a Agent) Handover(ctx context.Context, s tenancy.Scope, person string, ema
 		Decisions: res.Decisions}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
 		return HandoverResponse{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
+	}
+	return out, nil
+}
+
+// Briefable is one person the asker may brief (SB-2106).
+type Briefable struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Title string `json:"title,omitempty"`
+}
+
+// MaxBriefable is how many people a search for someone to brief returns.
+const MaxBriefable = 20
+
+// HandoverPeople finds, among candidates (the asker, their reports, the members of spaces
+// they steward), the active people whose name or email contains q and whom the same
+// policy decision as Handover lets the asker brief now. No one else is ever listed.
+func (a Agent) HandoverPeople(ctx context.Context, s tenancy.Scope, q string, candidates func(ctx context.Context, s tenancy.Scope) ([]ports.User, error),
+	rel Relations, k policy.Kernel) ([]Briefable, error) {
+	if err := s.Check(); err != nil || s.Tenant() != a.Tenant {
+		return nil, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
+	}
+	q = strings.ToLower(strings.TrimSpace(q))
+	if n := utf8.RuneCountInString(q); n < 2 || n > 100 {
+		return nil, fmt.Errorf("%w: q is 2 to 100 characters", ErrInvalid)
+	}
+	us, err := candidates(ctx, s)
+	if err != nil {
+		return nil, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
+	}
+	seen := map[string]bool{}
+	out := []Briefable{}
+	for _, u := range us {
+		if seen[u.ID] || !u.Active || len(u.Emails) == 0 {
+			continue
+		}
+		seen[u.ID] = true
+		email := u.Emails[0]
+		if !strings.Contains(strings.ToLower(u.UserName), q) && !strings.Contains(strings.ToLower(email), q) {
+			continue
+		}
+		rels, err := rel(ctx, s, u.ID)
+		if err != nil {
+			return nil, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
+		}
+		if k.Authorise(ctx, s, "brief_handover", policy.Entity{Type: "User", ID: u.ID, Tenant: a.Tenant}, map[string]any{"relations": rels}).Decision != policy.Allow {
+			continue
+		}
+		out = append(out, Briefable{ID: u.ID, Name: u.UserName, Email: email, Title: u.Title})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Name < out[j].Name || out[i].Name == out[j].Name && out[i].ID < out[j].ID
+	})
+	if len(out) > MaxBriefable {
+		out = out[:MaxBriefable]
 	}
 	return out, nil
 }

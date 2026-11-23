@@ -26,8 +26,18 @@ func TestHandoverThroughARunningCell(t *testing.T) {
 		!strings.Contains(body, `"locations":{"docs:doc1@`) {
 		t.Fatalf("ann's own brief: %d %s", code, body)
 	}
+	// SB-2106: ann finds herself by name; bob, a colleague, doesn't find her at all.
+	if code, body := r.do(t, "GET", "/v1/handover/people?q=ANN", ""); code != 200 || !strings.Contains(body, `"id":"`+ann+`"`) {
+		t.Fatalf("ann's own search: %d %s", code, body)
+	}
+	if code, _ := r.do(t, "GET", "/v1/handover/people?q=a", ""); code != 400 {
+		t.Fatalf("a one-letter search: %d", code)
+	}
 	r.signIn(t, "bob")
 	if code, body := r.do(t, "POST", "/v1/handover", `{"person":"`+ann+`"}`); code != http.StatusForbidden || !strings.Contains(body, "their manager") {
 		t.Fatalf("a colleague got ann's brief: %d %s", code, body)
+	}
+	if code, body := r.do(t, "GET", "/v1/handover/people?q=ann", ""); code != 200 || strings.Contains(body, ann) || !strings.Contains(body, `"items":[]`) {
+		t.Fatalf("a colleague found ann: %d %s", code, body)
 	}
 }

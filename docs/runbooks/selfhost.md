@@ -59,6 +59,7 @@ To ask from the site's own Mattermost (sb-ask(3), The chat app (Mattermost)):
 1. In Mattermost, make a bot account whose email address it may read, and a personal access token for it. Under *Integrations*, add a **custom slash command**, e.g. `/brain`, with request URL `https://SB_HOST/chat/mattermost`, method POST. Note its token.
 2. On the box: `printf '%s' '{"command_token":"…","bot_token":"…"}' > build/selfhost/vault/api/vault/tenants/TENANT/mattermost && chmod 600 …`, and set `"mattermost": {"base": "https://chat.example", "team_id": "…"}` in the cell's configuration; restart `api`.
 3. Type `/brain What is our refund approval limit?` as a provisioned person. Someone the directory doesn't know, or who has been deprovisioned, is told their account can't be matched.
+4. Press **Share in channel** under the answer: the channel gets the citation links only. Mattermost must be allowed to reach `https://SB_HOST/chat/mattermost/actions` (System Console, *Developer*, *Allow untrusted internal connections* if the cell is on the same network). The same bot sends notifications as direct messages (sb-ask(3), Notifications), so it needs to be able to create direct channels.
 
 ## Check the laws
 

@@ -728,11 +728,11 @@ gantt
 
 **Exit gate**
 
-- [ ] A steward who left the group between question and send is told nothing
-- [ ] No notification carries question, answer, cite or document text
-- [ ] A digest never names a document the person can't open now
-- [ ] Mattermost Share passes the Slack Share test
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A steward who left the group between question and send is told nothing
+- [x] No notification carries question, answer, cite or document text
+- [x] A digest never names a document the person can't open now
+- [x] Mattermost Share passes the Slack Share test
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

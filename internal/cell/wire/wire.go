@@ -489,7 +489,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"),
 			Rules: &slackapp.App{Tenant: tenant, Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Spaces: c.Spaces,
 				Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client)},
-			Agent: agent}).Register(public)
+			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions"}).Register(public)
 	}
 	if cfg.Web != "" {
 		api.Web{Files: os.DirFS(cfg.Web)}.Register(public)
@@ -512,6 +512,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Changes: agent.Changes,
 		Handover: func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error) {
 			return agent.Handover(ctx, s, person, emails, c.relations(m), c.Policy)
+		},
+		People: func(ctx context.Context, s tenancy.Scope, q string) ([]ask.Briefable, error) {
+			return agent.HandoverPeople(ctx, s, q, c.briefable(m), c.relations(m), c.Policy)
 		},
 		Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now,
 			Watches: c.Traces, Sources: c.Sources}}.Register(mux)
@@ -762,6 +765,59 @@ func (c *Cell) noteReaders(m manifest.Tenant) func(ctx context.Context, space st
 
 // relations are how the asker stands to a person, for handover briefs (sb-policy(5),
 // Handover; SB-1707): self, their SCIM manager, or a steward of a space they're a member of.
+// briefable are the people a handover search looks among (SB-2106): the caller, the people
+// whose manager they are, and the members of the spaces they steward, read now.
+func (c *Cell) briefable(m manifest.Tenant) func(ctx context.Context, s tenancy.Scope) ([]ports.User, error) {
+	tenant := c.Config.Tenant
+	return func(ctx context.Context, s tenancy.Scope) ([]ports.User, error) {
+		ids := []string{s.User()}
+		all, err := c.Directory.ActiveUserIDs(ctx, tenant)
+		if err != nil {
+			return nil, err
+		}
+		for _, id := range all {
+			u, found, err := c.Directory.User(ctx, tenant, id)
+			if err != nil {
+				return nil, err
+			}
+			if found && u.Manager == s.User() {
+				ids = append(ids, id)
+			}
+		}
+		mine := map[string]bool{}
+		for _, g := range s.Groups() {
+			mine["group:"+g] = true
+		}
+		for _, sp := range m.Spaces {
+			steward := false
+			for _, g := range sp.Stewards {
+				steward = steward || mine[g]
+			}
+			if !steward {
+				continue
+			}
+			for _, g := range sp.Members {
+				ms, err := c.Directory.Members(ctx, tenant, strings.TrimPrefix(g, "group:"))
+				if err != nil {
+					continue // a group the directory doesn't know has no members
+				}
+				ids = append(ids, ms...)
+			}
+		}
+		var out []ports.User
+		for _, id := range ids {
+			u, found, err := c.Directory.User(ctx, tenant, id)
+			if err != nil {
+				return nil, err
+			}
+			if found {
+				out = append(out, u)
+			}
+		}
+		return out, nil
+	}
+}
+
 func (c *Cell) relations(m manifest.Tenant) ask.Relations {
 	tenant := c.Config.Tenant
 	return func(ctx context.Context, s tenancy.Scope, person string) ([]string, error) {

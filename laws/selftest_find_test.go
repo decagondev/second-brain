@@ -48,3 +48,7 @@ func TestSelfHandoverUnknownAsAllowIsCaught(t *testing.T) {
 func TestSelfChangesForgottenSeenIsCaught(t *testing.T) {
 	failsSomewhere(t, "a rebuild that forgets first-seen times", func(r *rand.Rand) error { return law13Changes(r, changeSystem{forgetSeen: true}) })
 }
+
+func TestSelfHandoverPeopleWithoutPolicyIsCaught(t *testing.T) {
+	failsSomewhere(t, "a people search that skips the policy", func(r *rand.Rand) error { return law01HandoverPeople(r, searchSystem{}, true) })
+}

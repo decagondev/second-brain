@@ -13,6 +13,7 @@ import (
 type ChatReply struct {
 	Docs      []string // documents cited in the reply
 	VisibleTo string   // "ephemeral:<slack user>" or "channel"
+	Shared    []string // documents cited in the channel after Share, where the system shares
 }
 
 // ChatAsk sends /ask as the world user's chat account and returns the final reply.

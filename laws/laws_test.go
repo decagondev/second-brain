@@ -496,6 +496,14 @@ func TestLAW01_MattermostAnswersCiteOnlyWhatTheAskerCanOpen(t *testing.T) {
 	Check(t, "LAW-01", 50, func(r *rand.Rand) error { w := Gen(r); return law01Chat(w, mmSystem{}.ask) })
 }
 
+func TestLAW01_MattermostSharesOnlyTheAskersCites(t *testing.T) {
+	Check(t, "LAW-01", 30, func(r *rand.Rand) error { return law01MattermostShare(Gen(r), false) })
+}
+
+func TestLAW01_HandoverSearchListsOnlyWhomTheAskerMayBrief(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01HandoverPeople(r, searchSystem{}, false) })
+}
+
 func TestLAW12_MattermostRefusesTheDeprovisioned(t *testing.T) {
 	Check(t, "LAW-12", 30, func(r *rand.Rand) error { return law12Mattermost(Gen(r), false) })
 }

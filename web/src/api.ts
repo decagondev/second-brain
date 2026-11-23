@@ -365,3 +365,16 @@ export function watchSaved(id: string, watch: boolean, f: Fetch = fetch): Promis
     f,
   );
 }
+
+// People the caller may brief, by name or email (SB-2106).
+export interface Briefable {
+  id: string;
+  name: string;
+  email: string;
+  title?: string;
+}
+
+export async function briefable(q: string, f: Fetch = fetch): Promise<Briefable[]> {
+  const data = await call<{ items?: Briefable[] }>(`/v1/handover/people?q=${encodeURIComponent(q)}`, {}, f);
+  return Array.isArray(data.items) ? data.items : [];
+}

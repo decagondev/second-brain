@@ -86,3 +86,56 @@ describe("the handover screen", () => {
     expect(await violations(container)).toEqual([]);
   });
 });
+
+// SB-2106
+describe("handover by name", () => {
+  it("finds the people the asker may brief and briefs the one picked", async () => {
+    const posts: unknown[] = [];
+    const queries: string[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      if (u.startsWith("/v1/handover/people")) {
+        queries.push(u);
+        return json({
+          items: [
+            { id: "usr_dana", name: "dana@acme.example", email: "dana@acme.example", title: "Support lead" },
+            { id: "usr_dan", name: "dan.r", email: "dan.r@acme.example" },
+          ],
+        });
+      }
+      if (u === "/v1/handover") {
+        posts.push(JSON.parse(String(init?.body)));
+        return json({ trace: "tr_h2", person: "usr_dan", dropped: 0, hidden: 0, answer: { claims: [] } });
+      }
+      return json({ spaces: [] });
+    };
+    const { container } = await openHandover(fetcher);
+    await brief("dan");
+    expect(queries).toEqual(["/v1/handover/people?q=dan"]);
+    expect(posts).toEqual([]);
+    expect(screen.getByRole("list", { name: "People you may brief" }).textContent).toContain("Support lead");
+    expect(await violations(container)).toEqual([]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Brief dan.r (dan.r@acme.example)" }));
+    });
+    expect(posts).toEqual([{ person: "usr_dan" }]);
+  });
+
+  it("briefs at once when one person matches, and says when no one does", async () => {
+    const posts: unknown[] = [];
+    let items: unknown[] = [{ id: "usr_dana", name: "dana", email: "dana@acme.example" }];
+    const fetcher: Fetch = async (u, init) => {
+      if (u.startsWith("/v1/handover/people")) return json({ items });
+      if (u === "/v1/handover") {
+        posts.push(JSON.parse(String(init?.body)));
+        return json({ trace: "tr_h3", person: "usr_dana", dropped: 0, hidden: 0, answer: { claims: [] } });
+      }
+      return json({ spaces: [] });
+    };
+    await openHandover(fetcher);
+    await brief("dana@acme.example");
+    expect(posts).toEqual([{ person: "usr_dana" }]);
+    items = [];
+    await brief("zed");
+    expect(screen.getByText("No one you may brief matches that.")).toBeTruthy();
+  });
+});

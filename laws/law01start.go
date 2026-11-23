@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/policy"
+	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -105,6 +107,54 @@ func law12Handover(r *rand.Rand, s searchSystem) error {
 		}
 		if h.Hidden != owned-allowed {
 			return fmt.Errorf("brief hides %d of %d owned documents, want %d", h.Hidden, owned, owned-allowed)
+		}
+	}
+	return nil
+}
+
+// law01HandoverPeople (SB-2106): the people search lists exactly the active candidates who
+// match and whom policy lets the asker brief now; a colleague with no relation is never
+// listed, whatever is typed. allowAll is a mutation that skips the policy decision.
+func law01HandoverPeople(r *rand.Rand, s searchSystem, allowAll bool) error {
+	w := Gen(r)
+	ctx := context.Background()
+	k := policy.Kernel{Engine: askPolicies, Recorder: okRecorder{}}
+	if allowAll {
+		k = policy.Kernel{Engine: allowEngine{}, Recorder: okRecorder{}}
+	}
+	for _, u := range w.Users {
+		a, err := s.agent(ctx, w, u.Tenant, lawOwners{})
+		if err != nil {
+			return err
+		}
+		scope, _ := scopeOf(u)
+		rels := map[string][]string{}
+		var cands []ports.User
+		want := map[string]bool{}
+		for i := 0; i < 2+r.Intn(8); i++ {
+			id := fmt.Sprintf("usr_p%d", i)
+			name := []string{"dana", "dan", "ann", "bob"}[r.Intn(4)] + fmt.Sprint(i)
+			active := r.Intn(4) > 0
+			rel := []string{"self", "manager", "steward", "colleague", "colleague"}[r.Intn(5)]
+			rels[id] = []string{rel}
+			cands = append(cands, ports.User{ID: id, Tenant: u.Tenant, UserName: name, Emails: []string{name + "@acme.example"}, Active: active})
+			if active && rel != "colleague" && strings.Contains(name, "dan") {
+				want[id] = true
+			}
+		}
+		got, err := a.HandoverPeople(ctx, scope, "DAN", func(context.Context, tenancy.Scope) ([]ports.User, error) { return cands, nil },
+			func(_ context.Context, _ tenancy.Scope, p string) ([]string, error) { return rels[p], nil }, k)
+		if err != nil {
+			return err
+		}
+		for _, p := range got {
+			if !want[p.ID] {
+				return fmt.Errorf("%s's search lists %s (%v), whom they may not brief or who doesn't match (LAW-01)", u.ID, p.ID, rels[p.ID])
+			}
+			delete(want, p.ID)
+		}
+		if len(want) > 0 {
+			return fmt.Errorf("%s's search left out people they may brief: %v", u.ID, want)
 		}
 	}
 	return nil

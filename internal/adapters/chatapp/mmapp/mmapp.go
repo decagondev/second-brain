@@ -9,6 +9,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,13 +42,51 @@ type App struct {
 	Post func(ctx context.Context, responseURL string, msg Message) error
 	// Go runs the answer after the acknowledgement; nil means a goroutine.
 	Go func(func())
+	// ActionURL is the cell's POST /chat/mattermost/actions, for the Share button
+	// (SB-2105); "" shows no button.
+	ActionURL string
 }
 
-// Message is a slash command response (Mattermost's response_type and text).
+// Message is a slash command response (Mattermost's response_type, text and attachments).
 type Message struct {
-	ResponseType string `json:"response_type"` // "ephemeral"
-	Text         string `json:"text"`
+	ResponseType string       `json:"response_type"` // "ephemeral" or "in_channel"
+	Text         string       `json:"text"`
+	Attachments  []Attachment `json:"attachments,omitempty"`
 }
+
+// Attachment is a message attachment with interactive buttons.
+type Attachment struct {
+	Actions []Action `json:"actions"`
+}
+
+// Action is one button: Mattermost posts its context to the integration's URL.
+type Action struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Integration Integration `json:"integration"`
+}
+
+// Integration is where a button's press goes, with what.
+type Integration struct {
+	URL     string       `json:"url"`
+	Context ShareContext `json:"context"`
+}
+
+// ShareContext is the Share button's context, signed with the command token, since
+// Mattermost doesn't sign action requests.
+type ShareContext struct {
+	Trace       string `json:"trace"`
+	User        string `json:"user"`
+	ResponseURL string `json:"response_url"`
+	Sig         string `json:"sig"`
+}
+
+// Messages for a press of Share.
+const (
+	MsgShareFail = "Only the person who asked can share this answer."
+	MsgShared    = "Shared in the channel."
+	MsgShareGone = "This answer can't be shared any more. Ask again to share it."
+)
 
 // MsgNoMatch is sent to someone the directory doesn't know as one active user.
 const MsgNoMatch = "I can't match your Mattermost account to your company sign-in, so I can't answer. Ask your admin to check your email in the directory."
@@ -54,6 +94,7 @@ const MsgNoMatch = "I can't match your Mattermost account to your company sign-i
 // Register mounts the endpoint on mux.
 func (a *App) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /chat/mattermost", a.command)
+	mux.HandleFunc("POST /chat/mattermost/actions", a.action)
 }
 
 // verify reads the command and checks its token and team.
@@ -101,25 +142,108 @@ func (a *App) command(w http.ResponseWriter, r *http.Request) {
 	a.run(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), slackapp.AnswerTimeout)
 		defer cancel()
-		_ = a.post(ctx, responseURL, a.answer(ctx, user, channel, question))
+		m := a.answer(ctx, user, channel, question)
+		if trace := m.trace; trace != "" && a.ActionURL != "" {
+			if tok, err := a.Token(ctx); err == nil && tok != "" {
+				c := ShareContext{Trace: trace, User: user, ResponseURL: responseURL}
+				c.Sig = sign(tok, c)
+				m.Attachments = []Attachment{{Actions: []Action{{ID: "share", Name: "Share in channel", Integration: Integration{URL: a.ActionURL, Context: c}}}}}
+			}
+		}
+		_ = a.post(ctx, responseURL, m.Message)
 	})
 }
 
+type answered struct {
+	Message
+	trace string // the answer's, when there is one to share
+}
+
 // answer maps the person and the channel's space, asks, and renders the reply.
-func (a *App) answer(ctx context.Context, user, channel, question string) Message {
+func (a *App) answer(ctx context.Context, user, channel, question string) answered {
 	s, err := a.Rules.Scope(ctx, user)
 	if err != nil {
-		return Message{ResponseType: "ephemeral", Text: MsgNoMatch}
+		return answered{Message: Message{ResponseType: "ephemeral", Text: MsgNoMatch}}
 	}
 	s, msg := a.Rules.InSpace(ctx, s, channel)
 	if msg != "" {
-		return Message{ResponseType: "ephemeral", Text: msg}
+		return answered{Message: Message{ResponseType: "ephemeral", Text: msg}}
 	}
 	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question})
 	if err != nil {
-		return Message{ResponseType: "ephemeral", Text: slackapp.ErrText(err)}
+		return answered{Message: Message{ResponseType: "ephemeral", Text: slackapp.ErrText(err)}}
 	}
-	return Render(question, resp)
+	return answered{Render(question, resp), resp.Trace}
+}
+
+func sign(token string, c ShareContext) string {
+	m := hmac.New(sha256.New, []byte(token))
+	_, _ = m.Write([]byte(c.Trace + "\n" + c.User + "\n" + c.ResponseURL))
+	return hex.EncodeToString(m.Sum(nil))
+}
+
+// action handles the Share button: only the asker, with their own scope read again, and
+// only the citation links reach the channel (SB-2105).
+func (a *App) action(w http.ResponseWriter, r *http.Request) {
+	var p struct {
+		UserID  string       `json:"user_id"`
+		TeamID  string       `json:"team_id"`
+		Context ShareContext `json:"context"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&p); err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	tok, err := a.Token(r.Context())
+	c := p.Context
+	if err != nil || tok == "" || c.Sig == "" || !hmac.Equal([]byte(sign(tok, c)), []byte(c.Sig)) ||
+		a.TeamID == "" || p.TeamID != a.TeamID || !a.ownURL(c.ResponseURL) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	done := func(text string) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"ephemeral_text": text})
+	}
+	if p.UserID != c.User {
+		done(MsgShareFail)
+		return
+	}
+	s, err := a.Rules.Scope(r.Context(), p.UserID)
+	if err != nil {
+		done(MsgNoMatch)
+		return
+	}
+	t, err := a.Agent.Trace(r.Context(), s, c.Trace)
+	if err != nil || t.User != s.User() {
+		done(MsgShareFail)
+		return
+	}
+	if err := a.post(r.Context(), c.ResponseURL, Shared(t)); err != nil {
+		done(MsgShareGone)
+		return
+	}
+	done(MsgShared)
+}
+
+// Shared is the in-channel message: the citation links only, never claim text, so each
+// reader opens the sources under their own access (the Slack rule, SB-308).
+func Shared(t ask.Trace) Message {
+	seen := map[string]bool{}
+	var cites []answer.Cite
+	for _, c := range t.Response.Answer.Claims {
+		for _, ci := range c.Cites {
+			if !seen[ci.Cite] {
+				seen[ci.Cite] = true
+				cites = append(cites, ci)
+			}
+		}
+	}
+	text := "Shared an answer (trace " + escape(t.ID) + "). Open the sources to read it with your own access."
+	if len(cites) > 0 {
+		text += "\nSources: " + links(cites)
+	}
+	return Message{ResponseType: "in_channel", Text: text}
 }
 
 // Render is the ephemeral answer in Mattermost's Markdown: claims with citation links,

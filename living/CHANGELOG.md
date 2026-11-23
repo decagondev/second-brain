@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Share a Mattermost answer to its channel as citation links only; find the person to hand over by name or email (SB-2105, SB-2106).
 - A weekly digest of what changed in a person's spaces, checked as them when it's sent, and watched saved questions that say when their sources change; sb-tenant(5) `digest` sets the time zone or turns the digest off (SB-2103, SB-2104).
 - Stewards are told of new questions and askers of replies by chat direct message, with a link and never the text; a person can turn each kind off (SB-2101, SB-2102).
 - Staff can ask from Mattermost with a custom slash command at `POST /chat/mattermost`: verified by its token from the vault, matched by email to the directory, answered privately (SB-2005).

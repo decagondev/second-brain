@@ -11,3 +11,13 @@ func TestSelf_MattermostDeprovisionedIsCaught(t *testing.T) {
 		t.Fatal("LAW-12: an answer to a deprovisioned Mattermost user was not caught")
 	}
 }
+
+// The Mattermost Share law passes on the real app and catches a share that carries claims.
+func TestSelf_MattermostShareLaw(t *testing.T) {
+	if violates(30, func(r *rand.Rand) error { return law01MattermostShare(Gen(r), false) }) {
+		t.Fatal("the real Mattermost Share breaks the law")
+	}
+	if !violates(30, func(r *rand.Rand) error { return law01MattermostShare(Gen(r), true) }) {
+		t.Fatal("a share carrying the claims was not caught")
+	}
+}
