@@ -66,7 +66,8 @@ The `sb-selfhost-update.timer` runs `tools/selfhost/update.sh` hourly. The updat
 
 - Check after an upgrade: `systemctl status sb-selfhost-update.service` succeeded; `/v1/verifier/attestation` names the new release.
 - To hold upgrades, `systemctl stop sb-selfhost-update.timer`; `start` resumes them ([pausing release pulls](pause-pulls.md)).
-- Air-gapped: copy the new release into the releases directory named by `SB_RELEASE_STORE`, load its images (`docker load -i`), then run `sudo /opt/second-brain/tools/selfhost/install.sh /etc/second-brain/install.env` again, which copies it in and applies it; secrets already made are kept.
+- Air-gapped: bring the factory's bundle (made with `SB_BUNDLE_RELEASES`) on removable media and run `sudo /opt/second-brain/tools/selfhost/update.sh --bundle FILE`. The installed `sb` checks the release's signature and every image against it **before** anything is loaded; a bundle that fails changes nothing. Never `docker load` a bundle's images by hand.
+- Something wrong after an upgrade: `sudo /opt/second-brain/tools/selfhost/update.sh --rollback` starts the release that ran before and holds upgrades. Fix or report, then `update.sh --resume`. Only one step back is kept.
 
 ## Backup
 
@@ -81,18 +82,14 @@ Check weekly: `install.sh --doctor` passes (the console's Box section shows the 
 
 ## Restore
 
+On the same machine (a bad change, a broken database): `sudo /opt/second-brain/tools/selfhost/restore.sh` restores the newest dump, or `--dump FILE`, and checks the audit chain afterwards. The monthly drill (`restore.sh --drill`, run by `sb-selfhost-drill.timer`) proves the newest dump restores; the doctor shows when it last passed.
+
 To a new machine, after losing the old one:
 
 1. Install as above with the same `install.env`, after putting the old `build/selfhost` back under `/opt/second-brain` so the same keys are used. Without it the cell gets new keys, and the audit chain's earlier anchors verify only against the old anchor key, which is in that directory.
-2. Stop the services that write: `tools/selfhost/compose.sh stop api ingest jobs`.
-3. Restore the newest database dump:
-
-   ```text
-   tools/selfhost/compose.sh exec -T postgres pg_restore --clean --if-exists -U sb -d sb < SB_OFFSITE/db/sb-DATE.dump
-   ```
-
-4. Start them again: `tools/selfhost/compose.sh up -d`. Check `sb audit verify` against the backup's copy of the audit log, and `sb tenant verify`.
-5. The index rebuilds from the sources on its own if the dump is older than the last sync ([LAW-13](../../manual/sb-laws.7.md#law-13)); nothing else is lost but what changed after the dump.
+2. Copy the newest dump and its record from `SB_OFFSITE/db/` into `build/selfhost/db-dumps/`, then restore it: `sudo tools/selfhost/restore.sh --dump build/selfhost/db-dumps/sb-DATE.dump`. It refuses a dump made under other keys, starts the services again, and checks the audit chain.
+3. Check `sb tenant verify`.
+4. The index rebuilds from the sources on its own if the dump is older than the last sync ([LAW-13](../../manual/sb-laws.7.md#law-13)); nothing else is lost but what changed after the dump.
 
 ## LAW-17 on one machine
 

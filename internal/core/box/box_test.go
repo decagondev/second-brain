@@ -19,7 +19,8 @@ func healthy() Facts {
 		At:       now.Add(-10 * time.Minute),
 		Services: svcs,
 		Timers: []Timer{{Name: "sb-selfhost-update.timer", Enabled: true, Result: "success"},
-			{Name: "sb-selfhost-dbdump.timer", Enabled: true, Result: "success"}},
+			{Name: "sb-selfhost-dbdump.timer", Enabled: true, Result: "success"},
+			{Name: "sb-selfhost-drill.timer", Enabled: true, Result: "success"}},
 		Disks:       []Disk{{Path: "/opt/second-brain", UsedPct: 40}},
 		CertExpires: tp(90 * 24 * time.Hour),
 		Offsite:     &Offsite{Path: "/mnt/nas", Mounted: true, Writable: true},
@@ -27,6 +28,8 @@ func healthy() Facts {
 		Encrypted:   bp(true),
 		LastDump:    tp(-3 * time.Hour),
 		LastOffsite: tp(-3 * time.Hour),
+		LastDrill:   tp(-10 * 24 * time.Hour),
+		DrillOK:     true,
 	}
 }
 
@@ -85,6 +88,11 @@ func TestEachCheckFails(t *testing.T) {
 		{"dump old", "database dump", Fail, func(f *Facts) { f.LastDump = tp(-60 * time.Hour) }},
 		{"no dump", "database dump", Unknown, func(f *Facts) { f.LastDump = nil }},
 		{"offsite copy old", "off-box copy", Fail, func(f *Facts) { f.LastOffsite = tp(-72 * time.Hour) }},
+		{"no drill", "restore drill", Unknown, func(f *Facts) { f.LastDrill = nil }},
+		{"drill failed", "restore drill", Fail, func(f *Facts) { f.DrillOK = false }},
+		{"drill late", "restore drill", Warn, func(f *Facts) { f.LastDrill = tp(-40 * 24 * time.Hour) }},
+		{"drill old", "restore drill", Fail, func(f *Facts) { f.LastDrill = tp(-70 * 24 * time.Hour) }},
+		{"held", "upgrades", Warn, func(f *Facts) { f.Held = "rel_2026-11-20_abcdef" }},
 		{"not ready", "readyz", Fail, func(f *Facts) { f.Ready = 503 }},
 		{"redirect", "readyz", Fail, func(f *Facts) { f.Ready = 302 }},
 		{"ready unknown", "readyz", Unknown, func(f *Facts) { f.Ready = 0 }},

@@ -81,12 +81,12 @@ fi
 SB_CONFIG=$CONFIG SKIP_IMAGES=1 bash tools/selfhost/selfhost.sh up
 bash tools/selfhost/update.sh
 
-# systemd: the cell at boot, upgrades hourly, the database dumped nightly.
+# systemd: the cell at boot, upgrades hourly, the database dumped nightly, a restore drill monthly.
 for u in deploy/selfhost/systemd/*.service deploy/selfhost/systemd/*.timer; do
   sed "s|/opt/second-brain|$HOME_DIR|g" "$u" >"/etc/systemd/system/$(basename "$u")"
 done
 systemctl daemon-reload
-systemctl enable --now sb-selfhost.service sb-selfhost-update.timer sb-selfhost-dbdump.timer >/dev/null
+systemctl enable --now sb-selfhost.service sb-selfhost-update.timer sb-selfhost-dbdump.timer sb-selfhost-drill.timer >/dev/null
 
 echo "install: $SB_TENANT is running at https://$SB_HOST$([ "${SB_PORT:-443}" = 443 ] || echo ":$SB_PORT")"
 if [ "${SB_IDP:-bundled}" = bundled ]; then

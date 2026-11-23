@@ -60,7 +60,7 @@ commands:
   release status|promote|rollback      release controller (maintainers)
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
-  selfhost doctor                      a self-hosted box's checks (sb-selfhost(7))
+  selfhost doctor|verify-bundle        a self-hosted box's checks and offline bundles (sb-selfhost(7))
   version                              print the version
 
 See sb(1). Exit codes are listed in sb-errors(7).
@@ -133,6 +133,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceDiff(rest[2:])
 	case "selfhost doctor":
 		return e.selfhostDoctor(rest[2:])
+	case "selfhost verify-bundle":
+		return e.selfhostVerifyBundle(rest[2:])
 	}
 	if t, ok := planned[name]; ok {
 		return e.fail("sb "+name, errs.New(errs.ENOTIMPL, "not built yet (%s)", t))
@@ -755,6 +757,9 @@ func (e *env) verifyExport(name string, b []byte, key string) int {
 	tenant := e.g.Tenant
 	if tenant == "" {
 		tenant = firstTenant(b)
+	}
+	if tenant == "" { // an anchor alone doesn't say whose it is (BUG-0027)
+		return e.fail(name, errs.New(errs.EUSAGE, "the log has no rows yet, so its tenant can't be read from it; pass --tenant"))
 	}
 	rep, err := audit.Verify(strings.NewReader(string(b)), tenant, key)
 	if err != nil {

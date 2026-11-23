@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S17.2 Upgrade and recover: restore, a monthly drill, verified offline upgrades and rollback (SB-1803 to SB-1805)
+
+**Wave/slice:** W17 / S17.2 · **Status:** Done.
+
+**What:** `tools/selfhost/restore.sh` (one-command restore, refusing a dump made under other keys, and `--drill` with `sb-selfhost-drill.timer`); a record beside each dump; `update.sh --bundle FILE` with `sb selfhost verify-bundle` and `release.VerifyImageTar`; `update.sh --rollback` and `--resume` with `previous.env` and a hold; the doctor's `restore drill` and `upgrades` checks; `SB_BUNDLE_RELEASES` for `make selfhost-bundle`; BUG-0027 fixed.
+
+**Why this way:** Each step that used to be a page of the runbook is now one command that refuses before it changes anything. An offline bundle is checked by the sb already on the box, never the bundle's own, against the key in the cell's own configuration, and an image archive is accepted only if every blob hashes to its name and the index names exactly the release's image, which is the same content-addressing Docker relies on, checked before Docker sees it. A rollback can only go to digests the cell attested before, one step back, and holds the timer so it stays put.
+
+**Learned:** This environment can run Docker, so every one of these ran against a live demo box: an upgrade from a bundle, the same bundle with ten bytes of a layer changed (refused, nothing loaded), a rollback, a held timer run, resume, a drill and a real restore. The restore found BUG-0027: a new cell's audit export is a start anchor with no rows, so the tenant couldn't be read from it. With Docker's containerd image store an image's id is its manifest digest, which is what a release records, so the archive's own index can be checked against the release directly.
+
+**Laws:** LAW-06 (an offline bundle loads only the admitted release's exact images: `TestLAW06_OfflineBundlesLoadOnlyTheReleasesImages`, with a self-test), LAW-08 (one step back, never two), LAW-11 (a restore verifies the chain), LAW-13 (the index rebuilds, never restored).
+
 ## 2026-11-23 S17.1 Know it's healthy: doctor and the box's health (SB-1801, SB-1802)
 
 **Wave/slice:** W17 / S17.1 · **Status:** Done.

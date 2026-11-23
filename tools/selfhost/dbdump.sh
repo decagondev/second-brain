@@ -21,8 +21,14 @@ DOCKER="$DOCKER" bash tools/selfhost/compose.sh exec -T postgres pg_dump -U sb -
 [ -s "$local_dir/$name.tmp" ] || { echo "dbdump: pg_dump wrote nothing" >&2; rm -f "$local_dir/$name.tmp"; exit 1; }
 mv "$local_dir/$name.tmp" "$local_dir/$name"
 chmod 600 "$local_dir/$name"
+# Whose dump it is (SB-1803): the tenant and a fingerprint of the cell's audit key, so a
+# restore refuses another cell's dump before it stops anything.
+tenant=$(sed -nE 's/^SB_TENANT=//p' "$ENV" | tr -d '\r')
+keys=$(sha256sum "$DIR/vault/api/vault/tenants/$tenant/audit/anchor-seed" | cut -c1-16)
+printf '{"tenant":"%s","keys":"%s"}\n' "$tenant" "$keys" >"$local_dir/$name.json"
 cp "$local_dir/$name" "$off/$name.tmp" && mv "$off/$name.tmp" "$off/$name"
+cp "$local_dir/$name.json" "$off/$name.json"
 for d in "$local_dir" "$off"; do
-  ls -1t "$d"/sb-*.dump 2>/dev/null | tail -n +15 | while read -r old; do rm -f "$old"; done
+  ls -1t "$d"/sb-*.dump 2>/dev/null | tail -n +15 | while read -r old; do rm -f "$old" "$old.json"; done
 done
 echo "dbdump: $name on this machine and off it"

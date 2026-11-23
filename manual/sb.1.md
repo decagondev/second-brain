@@ -26,6 +26,7 @@ sb release status|promote|rollback       (maintainers)
 sb factory status|handoff|access|detach|verify-export  (factory operators and tenant owners, sb-factory(1))
 sb eval    run|gate|diff
 sb selfhost doctor [--facts FILE]        (a self-hosted box, sb-selfhost(7))
+sb selfhost verify-bundle DIR --trusted ed25519:KEY|--cosign-identity ID [--channel stable]
 sb version
 ```
 

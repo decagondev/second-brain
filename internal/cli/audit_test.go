@@ -67,3 +67,22 @@ func TestAuditVerifyExport(t *testing.T) {
 		t.Fatalf("no cell and no file: %d %q", c, errOut)
 	}
 }
+
+// BUG-0027: a new cell's log is one start anchor and no rows. With no --tenant, the tenant
+// can't be read from it, and verify used to report a forged anchor; it says so instead,
+// and with the tenant the empty log verifies.
+func TestAuditVerifyEmptyLog(t *testing.T) {
+	s, _ := audit.NewSigner("acme-logistics", bytes.Repeat([]byte{9}, 32))
+	var b bytes.Buffer
+	if _, err := audit.Export(context.Background(), &rows{}, s, 1, time.Now(), &b); err != nil {
+		t.Fatal(err)
+	}
+	f := filepath.Join(t.TempDir(), "empty.ndjson")
+	_ = os.WriteFile(f, b.Bytes(), 0o600)
+	if c, _, errOut := run("audit", "verify", "--export", f, "--key", s.Key()); c != 2 || !strings.Contains(errOut, "pass --tenant") || strings.Contains(errOut, "ECHAIN") {
+		t.Fatalf("empty log, no tenant: %d %q", c, errOut)
+	}
+	if c, out, errOut := run("--tenant", "acme-logistics", "audit", "verify", "--export", f, "--key", s.Key()); c != 0 || !strings.Contains(out, "0 rows") {
+		t.Fatalf("empty log with its tenant: %d %q %q", c, out, errOut)
+	}
+}

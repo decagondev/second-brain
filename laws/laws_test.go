@@ -144,6 +144,10 @@ func TestLAW03_BoxNeverShowsAGapAsHealthy(t *testing.T) {
 	Check(t, "LAW-03", runs, func(r *rand.Rand) error { return law03Box(r, box.Check) })
 }
 
+func TestLAW06_OfflineBundlesLoadOnlyTheReleasesImages(t *testing.T) {
+	Check(t, "LAW-06", runs, func(r *rand.Rand) error { return law06Bundle(r, realImageCheck) })
+}
+
 func TestLAW03_FolderUnknownIsNeverAllow(t *testing.T) {
 	w := NewFolderWorld(t.TempDir())
 	Check(t, "LAW-03", 30, func(r *rand.Rand) error { return law03Connector(r, w) })

@@ -43,6 +43,11 @@ if [ -n "${SB_MODEL_GGUF:-}" ] && [ -n "${SB_EMBED_GGUF:-}" ]; then
     if command -v wslpath >/dev/null && [[ "$DOCKER" == *.exe ]]; then "$DOCKER" save -o "$(wslpath -w "$f")" "$img"; else "$DOCKER" save -o "$f" "$img"; fi
   fi
 fi
+# An offline upgrade's release (SB-1804): the release store's directory, from the factory.
+if [ -n "${SB_BUNDLE_RELEASES:-}" ]; then
+  [ -f "$SB_BUNDLE_RELEASES/channels/stable" ] || { echo "bundle: $SB_BUNDLE_RELEASES isn't a release store (no channels/stable)" >&2; exit 1; }
+  cp -a "$SB_BUNDLE_RELEASES" "$ROOT/releases"
+fi
 (cd "$ROOT/images" && sha256sum ./*.tar >SHA256SUMS)
 tar -C "$OUT" -czf "$OUT/second-brain-selfhost-$COMMIT.tar.gz" "second-brain-selfhost-$COMMIT"
 rm -rf "$ROOT"

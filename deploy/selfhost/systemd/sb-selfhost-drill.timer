@@ -1,0 +1,12 @@
+# A restore drill monthly (sb-selfhost(7), Restore; SB-1803): the newest dump restored into a
+# scratch database and checked, so a backup is known to restore before it is needed.
+[Unit]
+Description=Second Brain self-hosted cell: monthly restore drill
+
+[Timer]
+OnCalendar=*-*-01 03:30:00
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

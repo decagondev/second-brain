@@ -46,6 +46,8 @@ const (
 	BackupWarn  = 26 * time.Hour
 	BackupFail  = 50 * time.Hour
 	FactsMaxAge = 2 * time.Hour
+	DrillWarn   = 35 * 24 * time.Hour
+	DrillFail   = 62 * 24 * time.Hour
 )
 
 // Service is one compose service as `ps` reports it.
@@ -89,6 +91,11 @@ type Facts struct {
 	Encrypted   *bool      `json:"encrypted,omitempty"` // build/selfhost on an encrypted disk
 	LastDump    *time.Time `json:"last_dump,omitempty"`
 	LastOffsite *time.Time `json:"last_offsite,omitempty"`
+	// The last restore drill (SB-1803) and whether it passed.
+	LastDrill *time.Time `json:"last_drill,omitempty"`
+	DrillOK   bool       `json:"drill_ok,omitempty"`
+	// Held names the release upgrades are held at after a rollback (SB-1805).
+	Held string `json:"held,omitempty"`
 }
 
 // Parse reads facts and refuses anything it doesn't know, so a typo is never a silent pass.
@@ -117,7 +124,7 @@ type Line struct {
 var Services = []string{"proxy", "api", "ingest", "jobs", "worm", "postgres"}
 
 // Timers are the ones the install enables.
-var Timers = []string{"sb-selfhost-update.timer", "sb-selfhost-dbdump.timer"}
+var Timers = []string{"sb-selfhost-update.timer", "sb-selfhost-dbdump.timer", "sb-selfhost-drill.timer"}
 
 // Check decides every check. Facts older than FactsMaxAge make every line Unknown: an old
 // green is not a green.
@@ -130,7 +137,24 @@ func Check(f Facts, now time.Time) []Line {
 		out = append(out, Line{Check: check, Verdict: v, Detail: detail, Fix: fix})
 	}
 	stale := f.At.IsZero() || now.Sub(f.At) > FactsMaxAge || f.At.After(now.Add(5*time.Minute))
+	checkRuntime(f, add)
+	checkStorage(f, now, add)
+	checkRecovery(f, now, add)
+	checkEdge(f, now, add)
+	if stale {
+		for i := range out {
+			out[i].Verdict, out[i].Fix = Unknown, "check the hourly host step: systemctl status sb-selfhost-update.service"
+			out[i].Detail = "facts are older than two hours: " + out[i].Detail
+		}
+	}
+	sort.SliceStable(out, func(a, b int) bool { return rank(out[a].Verdict) > rank(out[b].Verdict) })
+	return out
+}
 
+type adder func(check string, v Verdict, detail, fix string)
+
+// checkRuntime judges the services and timers.
+func checkRuntime(f Facts, add adder) {
 	// Services.
 	got := map[string]string{}
 	for _, s := range f.Services {
@@ -171,6 +195,10 @@ func Check(f Facts, now time.Time) []Line {
 			add("timer "+name, Pass, "enabled", "")
 		}
 	}
+}
+
+// checkStorage judges the disks, the off-box directory and the backups' age.
+func checkStorage(f Facts, now time.Time, add adder) {
 	// Disks.
 	if len(f.Disks) == 0 {
 		add("disk", Unknown, "the host step couldn't read disk use", "df -h")
@@ -184,25 +212,6 @@ func Check(f Facts, now time.Time) []Line {
 			add("disk "+d.Path, Warn, detail, "free space on "+d.Path+" soon")
 		default:
 			add("disk "+d.Path, Pass, detail, "")
-		}
-	}
-	// Certificate.
-	switch {
-	case f.CertManaged:
-		add("certificate", Pass, "Caddy's own (acme or internal), renewed by Caddy", "")
-	case f.CertExpires == nil:
-		add("certificate", Unknown, "the certificate's expiry couldn't be read", "openssl x509 -enddate -noout -in $SB_TLS_CERT")
-	default:
-		left := f.CertExpires.Sub(now)
-		detail := fmt.Sprintf("expires %s (%d days)", f.CertExpires.UTC().Format("2006-01-02"), int(left.Hours()/24))
-		fix := "put the renewed certificate at SB_TLS_CERT and run install.sh again"
-		switch {
-		case left <= CertFail:
-			add("certificate", Fail, detail, fix)
-		case left <= CertWarn:
-			add("certificate", Warn, detail, fix)
-		default:
-			add("certificate", Pass, detail, "")
 		}
 	}
 	// Off-box directory.
@@ -235,6 +244,52 @@ func Check(f Facts, now time.Time) []Line {
 	}
 	age("database dump", f.LastDump, "systemctl start sb-selfhost-dbdump.service")
 	age("off-box copy", f.LastOffsite, "systemctl start sb-selfhost-dbdump.service; check the offsite line")
+}
+
+// checkRecovery judges the restore drill and whether upgrades are held.
+func checkRecovery(f Facts, now time.Time, add adder) {
+	// The restore drill: a dump nobody has restored is a hope, not a backup.
+	switch {
+	case f.LastDrill == nil:
+		add("restore drill", Unknown, "no drill has run", "tools/selfhost/restore.sh --drill")
+	case !f.DrillOK:
+		add("restore drill", Fail, "the last drill failed ("+f.LastDrill.UTC().Format("2006-01-02")+")", "tools/selfhost/restore.sh --drill")
+	case now.Sub(*f.LastDrill) > DrillFail:
+		add("restore drill", Fail, "the last drill passed "+f.LastDrill.UTC().Format("2006-01-02"), "tools/selfhost/restore.sh --drill")
+	case now.Sub(*f.LastDrill) > DrillWarn:
+		add("restore drill", Warn, "the last drill passed "+f.LastDrill.UTC().Format("2006-01-02"), "tools/selfhost/restore.sh --drill")
+	default:
+		add("restore drill", Pass, "passed "+f.LastDrill.UTC().Format("2006-01-02"), "")
+	}
+	// Upgrades held after a rollback.
+	if f.Held != "" {
+		add("upgrades", Warn, "held at "+f.Held+" after a rollback", "tools/selfhost/update.sh --resume")
+	} else {
+		add("upgrades", Pass, "not held", "")
+	}
+}
+
+// checkEdge judges the certificate, /readyz and disk encryption.
+func checkEdge(f Facts, now time.Time, add adder) {
+	// Certificate.
+	switch {
+	case f.CertManaged:
+		add("certificate", Pass, "Caddy's own (acme or internal), renewed by Caddy", "")
+	case f.CertExpires == nil:
+		add("certificate", Unknown, "the certificate's expiry couldn't be read", "openssl x509 -enddate -noout -in $SB_TLS_CERT")
+	default:
+		left := f.CertExpires.Sub(now)
+		detail := fmt.Sprintf("expires %s (%d days)", f.CertExpires.UTC().Format("2006-01-02"), int(left.Hours()/24))
+		fix := "put the renewed certificate at SB_TLS_CERT and run install.sh again"
+		switch {
+		case left <= CertFail:
+			add("certificate", Fail, detail, fix)
+		case left <= CertWarn:
+			add("certificate", Warn, detail, fix)
+		default:
+			add("certificate", Pass, detail, "")
+		}
+	}
 	// Ready.
 	switch {
 	case f.Ready == 0:
@@ -253,14 +308,6 @@ func Check(f Facts, now time.Time) []Line {
 	default:
 		add("encrypted disk", Pass, "build/selfhost is on an encrypted disk", "")
 	}
-	if stale {
-		for i := range out {
-			out[i].Verdict, out[i].Fix = Unknown, "check the hourly host step: systemctl status sb-selfhost-update.service"
-			out[i].Detail = "facts are older than two hours: " + out[i].Detail
-		}
-	}
-	sort.SliceStable(out, func(a, b int) bool { return rank(out[a].Verdict) > rank(out[b].Verdict) })
-	return out
 }
 
 // externalDB is a layout whose database is on another machine (SB-1807): the host step

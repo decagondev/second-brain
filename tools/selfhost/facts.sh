@@ -29,7 +29,7 @@ fi
 # Timers, where systemd runs them.
 if command -v systemctl >/dev/null && systemctl list-units >/dev/null 2>&1; then
   t=
-  for name in sb-selfhost-update.timer sb-selfhost-dbdump.timer; do
+  for name in sb-selfhost-update.timer sb-selfhost-dbdump.timer sb-selfhost-drill.timer; do
     en=false; systemctl is-enabled -q "$name" 2>/dev/null && en=true
     res=$(systemctl show -p Result --value "${name%.timer}.service" 2>/dev/null)
     t+="${t:+,}{\"name\":\"$name\",\"enabled\":$en,\"result\":\"${res:-}\"}"
@@ -65,6 +65,12 @@ if [ -n "$off" ] && [ -d "$off" ]; then
   o=$(newest "$off/db"); [ -n "$o" ] && parts+=("\"last_offsite\":\"$(iso "$o")\"")
 fi
 l=$(newest "$DIR/db-dumps"); [ -n "$l" ] && parts+=("\"last_dump\":\"$(iso "$l")\"")
+# The last restore drill (SB-1803) and a hold after a rollback (SB-1805).
+if [ -f "$DIR/drill.json" ]; then
+  da=$(sed -nE 's/.*"at":"([^"]+)".*/\1/p' "$DIR/drill.json"); dok=$(sed -nE 's/.*"ok":(true|false).*/\1/p' "$DIR/drill.json")
+  [ -n "$da" ] && parts+=("\"last_drill\":\"$da\"" "\"drill_ok\":${dok:-false}")
+fi
+[ -f "$DIR/held" ] && parts+=("\"held\":\"$(head -1 "$DIR/held" | tr -cd 'a-z0-9_-')\"")
 
 # /readyz through the proxy, as people reach it.
 host=$(val SB_HOST); port=$(val SB_PORT); bind=$(val SB_BIND)

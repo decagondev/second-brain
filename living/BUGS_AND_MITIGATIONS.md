@@ -408,3 +408,18 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** The UI is the router's catch-all `/` for every method and answers only GET and HEAD itself (405 otherwise); the more specific SCIM and `/v1` patterns still win.
 
 **Caught by now:** `TestCellWithWebUI` (tests/cell: the UI, SCIM and `/v1` side by side) and `make selfhost-smoke`, which serves the UI through the proxy.
+
+## BUG-0027 Verifying a new cell's audit log reported a forged anchor
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-23, the first one-command restore (SB-1803) | Low | SB-1507 | Fixed |
+
+**Symptom:** `sb audit verify --cell URL` on a cell with no audit rows yet failed with `ECHAIN: anchor signature does not verify for seq 0`, a message that says the log was tampered with.
+
+**Root cause:** Anchors are signed over the tenant's name. Without `--tenant`, the CLI read the tenant from the first row, and a new cell's export is one start anchor with no rows, so it verified the anchor as tenant "".
+
+**Fix:** With no `--tenant` and no row to read it from, `verify` refuses with `EUSAGE` and says to pass `--tenant`. `restore.sh` passes it.
+
+**Caught by now:** `TestAuditVerifyEmptyLog`. No law caught it because LAW-11's tests always write rows first; the empty log is now a case of its own.
+

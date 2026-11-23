@@ -1,0 +1,11 @@
+# The monthly restore drill (sb-selfhost(7), Restore; SB-1803). A dump that doesn't restore
+# fails the unit, and the doctor and the console's Box section show it.
+[Unit]
+Description=Second Brain self-hosted cell: restore the newest dump into a scratch database
+Requires=docker.service
+After=docker.service sb-selfhost.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/second-brain
+ExecStart=/bin/bash tools/selfhost/restore.sh --drill
