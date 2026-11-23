@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S22.3: Tokens and email
+
+**Wave/slice:** W22 / S22.3 (SB-2306, SB-2307) · **Status:** Done
+
+**What:** A person can make a read-only API token (`sbt_…`, at most 90 days) that asks and searches as them and nothing else, audited at each use. A cell with neither Mattermost nor Slack sends the W20 notifications by email through the company's mail server (sb-cell(5) `email`), over STARTTLS only.
+
+**Why this way:** A token is a session of its owner, stored as a hash, so every path that ends sessions (deprovisioning, sign out everywhere) ends tokens with no new code, and the token can do no more than its owner. A use that can't be audited is refused, never let through. Email carries exactly the chat's text and link, so a mailbox, a forward or a mail server's archive holds no more than a chat would; the subject names the kind only.
+
+**Learned:** Go's `net/smtp` refuses PLAIN sign-in outside TLS by itself, but nothing stops a client from carrying on in the clear when a server doesn't offer STARTTLS; the adapter checks the extension and stops. Header injection was the other risk: the message's text and the recipient never reach a header unchecked.
+
+**Laws:** LAW-12 (tokens: the generator signs in with tokens every other time; a deprovisioned owner's token stops within the bound), LAW-07 (`TestLAW07_EmailNotificationsSayNothingOfWhatWasAsked`, the real notify job through the SMTP adapter, the whole email checked, with a self-test). Every law test is still green.
+
 ## 2026-11-23 S22.2: Fast enough on a small box
 
 **Wave/slice:** W22 / S22.2 (SB-2304, SB-2305) · **Status:** Done

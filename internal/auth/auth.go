@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"example.com/second-brain/internal/adapters/oidc"
+	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/session"
 	"example.com/second-brain/internal/core/spaces"
@@ -44,6 +46,9 @@ type Cell struct {
 	// Spaces is the cell's space registry (SB-1002); nil is a cell with no spaces, where
 	// any ?space= other than company is ESPACE.
 	Spaces ports.SpaceStore
+	// Audit records each use of a read-only API token (SB-2306); nil refuses every token,
+	// so no use goes unaudited.
+	Audit session.Auditor
 
 	mu      sync.Mutex
 	pending map[string]started
@@ -126,15 +131,21 @@ func (c *Cell) callback(r *http.Request) (ports.Session, error) {
 	return s, nil
 }
 
-// Authenticate returns the request's live session, applying the session rules.
+// Authenticate returns the request's live session, applying the session rules: the
+// session cookie, or a read-only API token as a bearer (SB-2306), looked up by its hash.
 func (c *Cell) Authenticate(r *http.Request) (ports.Session, error) {
-	ck, err := r.Cookie(Cookie)
-	if err != nil || ck.Value == "" {
+	key, token := "", false
+	if b, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok && session.IsToken(b) {
+		key, token = session.TokenKey(b), true
+	} else if ck, err := r.Cookie(Cookie); err == nil {
+		key = ck.Value
+	}
+	if key == "" {
 		return ports.Session{}, ErrAuth
 	}
 	ctx := r.Context()
-	s, found, err := c.Sessions.Get(ctx, ck.Value)
-	if err != nil || !found || s.Tenant != c.Tenant {
+	s, found, err := c.Sessions.Get(ctx, key)
+	if err != nil || !found || s.Tenant != c.Tenant || token != (s.Token != "") {
 		return ports.Session{}, ErrAuth
 	}
 	s, changed, err := session.Check(ctx, c.Now(), s, c.Directory)
@@ -157,6 +168,9 @@ func (c *Cell) Middleware(next http.Handler) http.Handler {
 		s, err := c.Authenticate(r)
 		if err != nil {
 			refuse(w, errs.New(errs.EAUTH, "sign in again"))
+			return
+		}
+		if s.Token != "" && !c.tokenUse(w, r, s) {
 			return
 		}
 		groups, err := c.GroupsOf(r.Context(), s.Tenant, s.User)
@@ -197,6 +211,24 @@ func (c *Cell) Middleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r.WithContext(tenancy.WithScope(r.Context(), scope)))
 	})
+}
+
+// tokenUse lets a read-only API token through only to ask or search, and only once its
+// use is audited (SB-2306); otherwise it refuses and says false.
+func (c *Cell) tokenUse(w http.ResponseWriter, r *http.Request, s ports.Session) bool {
+	if !session.TokenRoute(r.Method, r.URL.Path) {
+		refuse(w, errs.New(errs.EPERM, "an API token can only ask and search"))
+		return false
+	}
+	if c.Audit == nil {
+		refuse(w, errs.New(errs.EUNAVAIL, "API tokens can't be audited here"))
+		return false
+	}
+	if _, err := c.Audit.Write(r.Context(), audit.Event{Actor: s.User, Kind: "access", Subject: "token:" + s.Token, State: "token_used", Reason: r.Method + " " + r.URL.Path}); err != nil {
+		refuse(w, errs.New(errs.EUNAVAIL, "the audit log is unavailable"))
+		return false
+	}
+	return true
 }
 
 // DirectoryAttributes reads a user's attributes from the directory (SB-1205).

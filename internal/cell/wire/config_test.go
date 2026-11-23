@@ -1,9 +1,14 @@
 package wire
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
+
+	"example.com/second-brain/internal/adapters/smtpmail"
 )
 
 const good = `{"tenant": "acme-logistics", "manifest": "/m.yaml", "state": "/s", "vault": "/v", "policies": "/p",
@@ -103,5 +108,55 @@ func TestParseS3Copy(t *testing.T) {
 		if _, err := Parse([]byte(with(b))); !errors.Is(err, ErrConfig) {
 			t.Errorf("%s: %v", name, err)
 		}
+	}
+}
+
+// SB-2307: email is none, or a server and one sender address; it is the notifier only
+// when the cell has no chat bot, and its sign-in is optional.
+func TestEmailConfigAndNotifier(t *testing.T) {
+	for _, e := range []struct{ server, from string }{{"mail.acme-logistics.example", "brain@acme-logistics.example"},
+		{"mail.acme-logistics.example:587", ""}, {"mail.acme-logistics.example:587", "Brain <brain@acme-logistics.example>"}, {"", "brain@acme-logistics.example"}} {
+		c := Config{}
+		c.Email.Server, c.Email.From = e.server, e.from
+		if err := c.checkMattermost(); !errors.Is(err, ErrConfig) {
+			t.Errorf("%+v: %v", e, err)
+		}
+	}
+	vault := map[string]string{}
+	cell := &Cell{Secret: func(path string) func(context.Context) (string, error) {
+		return func(context.Context) (string, error) {
+			v, ok := vault[path]
+			if !ok {
+				return "", fmt.Errorf("vault %s: %w", path, os.ErrNotExist)
+			}
+			return v, nil
+		}
+	}}
+	if cell.Notifier() != nil {
+		t.Fatal("a cell with nothing to send with has a notifier")
+	}
+	cell.Config.Email.Server, cell.Config.Email.From = "mail.acme-logistics.example:587", "brain@acme-logistics.example"
+	if err := cell.Config.checkMattermost(); err != nil {
+		t.Fatal(err)
+	}
+	m, ok := cell.Notifier().(smtpmail.Mail)
+	if !ok || m.Server != "mail.acme-logistics.example:587" {
+		t.Fatalf("notifier = %#v", cell.Notifier())
+	}
+	ctx := context.Background()
+	if u, _, err := m.Login(ctx); err != nil || u != "" {
+		t.Fatalf("no secret: %q %v", u, err)
+	}
+	vault["email"] = `{"username": "brain"}`
+	if _, _, err := m.Login(ctx); err == nil {
+		t.Fatal("a sign-in without a password was used")
+	}
+	vault["email"] = `{"username": "brain", "password": "pw"}`
+	if u, p, err := m.Login(ctx); err != nil || u != "brain" || p != "pw" {
+		t.Fatalf("%q %q %v", u, p, err)
+	}
+	cell.Config.Mattermost.Base = "https://chat.example"
+	if _, ok := cell.Notifier().(smtpmail.Mail); ok {
+		t.Fatal("email was chosen over the cell's chat bot")
 	}
 }

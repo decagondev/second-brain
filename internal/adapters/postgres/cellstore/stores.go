@@ -187,6 +187,14 @@ func (s Sessions) RevokeUser(ctx context.Context, tenant, user string) (int, err
 	return int(tag.RowsAffected()), err
 }
 
+// ListUser implements ports.Sessions.
+func (s Sessions) ListUser(ctx context.Context, tenant, user string) ([]ports.Session, error) {
+	if tenant != s.Tenant {
+		return nil, nil
+	}
+	return list[ports.Session](ctx, s.Pool, s.Tenant, "session", "usr = $3", "at", user)
+}
+
 // ---- Traces, conversations and feedback (ask.Store, FeedbackStore, SpaceTagger) ----
 
 // Traces keeps answers, conversations and feedback.

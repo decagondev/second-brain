@@ -27,7 +27,11 @@ var (
 // Check applies the rules at now. It returns the session (with Validated moved forward
 // if it was re-validated), whether it changed, or an error that ends the session.
 func Check(ctx context.Context, now time.Time, s ports.Session, dir ports.Directory) (ports.Session, bool, error) {
-	if !now.Before(s.SignedIn.Add(MaxAge)) {
+	end := s.SignedIn.Add(MaxAge)
+	if s.Token != "" {
+		end = s.Expires // an API token's own end, at most MaxTokenAge (SB-2306)
+	}
+	if !now.Before(end) {
 		return s, false, ErrExpired
 	}
 	if now.Sub(s.Validated) < Revalidate {

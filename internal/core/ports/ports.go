@@ -224,6 +224,11 @@ type Session struct {
 	ID, Tenant, User string
 	SignedIn         time.Time
 	Validated        time.Time // last directory re-validation
+	// Token is a read-only API token's public id (tok_…), with its name and end (SB-2306);
+	// "" is a browser session. A token's ID is the SHA-256 of the token, never the token.
+	Token   string    `json:",omitempty"`
+	Name    string    `json:",omitempty"`
+	Expires time.Time `json:",omitzero"`
 }
 
 // Sessions is a cell's own session store (SB-106).
@@ -232,6 +237,8 @@ type Sessions interface {
 	Get(ctx context.Context, id string) (s Session, found bool, err error)
 	Delete(ctx context.Context, id string) error
 	RevokeUser(ctx context.Context, tenant, user string) (n int, err error)
+	// ListUser is every session of one user, browser and token (SB-2306).
+	ListUser(ctx context.Context, tenant, user string) ([]Session, error)
 }
 
 // Directory answers whether a user is active, from SCIM-provisioned data (SB-107).

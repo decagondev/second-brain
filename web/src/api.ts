@@ -407,3 +407,26 @@ export async function briefable(q: string, f: Fetch = fetch): Promise<Briefable[
   const data = await call<{ items?: Briefable[] }>(`/v1/handover/people?q=${encodeURIComponent(q)}`, {}, f);
   return Array.isArray(data.items) ? data.items : [];
 }
+
+// ---- Read-only API tokens (sb-api(3), Read-only API tokens; SB-2306) ----
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  created: string;
+  expires: string;
+  token?: string; // once, when it is made
+}
+
+export async function listTokens(f: Fetch = fetch): Promise<ApiToken[]> {
+  const data = await call<{ items?: ApiToken[] }>("/v1/tokens", {}, f);
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+export function makeToken(name: string, days: number, f: Fetch = fetch): Promise<ApiToken> {
+  return call<ApiToken>("/v1/tokens", post({ name, days }), f);
+}
+
+export function revokeToken(id: string, f: Fetch = fetch): Promise<{ revoked: boolean }> {
+  return call(`/v1/tokens/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+}

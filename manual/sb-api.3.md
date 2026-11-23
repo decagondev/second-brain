@@ -25,7 +25,15 @@ Each tenant's cell serves its own API at its own hostname. There is no shared, m
 
 ### Authentication
 
-Session tokens come from the tenant's OIDC sign-in. The token's `tenant` claim must equal the cell's tenant, or the request fails with `ETENANT`. Sessions are re-validated against the directory every 60 seconds, so SCIM deactivation takes effect within 5 minutes (LAW-12). Service integrations (the chat-app bot) use workload identity, never static API keys.
+Session tokens come from the tenant's OIDC sign-in. The token's `tenant` claim must equal the cell's tenant, or the request fails with `ETENANT`. Sessions are re-validated against the directory every 60 seconds, so SCIM deactivation takes effect within 5 minutes (LAW-12). Service integrations (the chat-app bot) use workload identity, never static API keys. A person's script uses a read-only API token (below), which acts as that person and only asks and searches.
+
+**Read-only API tokens** (SB-2306). A script asks and searches as the person who made its token: `Authorization: Bearer sbt_…` on `POST /v1/ask` and `GET /v1/search`, and nothing else; any other path with a token is `EPERM`, so a token can't approve, act, administer, manage tokens or reach another cell. The person makes one in the web UI (**API tokens**, under the conversation) or with:
+
+- **`POST /v1/tokens`** `{ "name": "nightly report", "days": 30 }` (1 to 90; default 30) answers `{ "id": "tok_…", "token": "sbt_…", "name", "created", "expires" }`. The token is shown **once**: the cell keeps only its SHA-256, as the key it looks the token up by, never the token.
+- **`GET /v1/tokens`** lists the caller's tokens, `{ "items": [{ "id", "name", "created", "expires" }] }`, never a token.
+- **`DELETE /v1/tokens/{id}`** revokes one of the caller's tokens at once.
+
+These three take a browser session only. A token is a session of its own kind: every request reads it from the store, checks the directory every 60 seconds and the person's groups and attributes at every use, exactly as a browser session does, and ends at its expiry, which is never extended. Signing out everywhere (below) and a SCIM deactivate end every token with the sessions (LAW-12). Making, using and revoking a token each write a `kind: access` audit row (subject `token:tok_…`, states `token_created`, `token_used` with the method and path, `token_revoked`); a use whose row can't be written is refused with `EUNAVAIL`. A use is still an ask or a search like any other: the same permission checks (LAW-01), the same `asks_per_minute` (sb-tenant(5)) and the same traces.
 
 **`POST /v1/sessions/revoke`** (SB-1906) ends every session of the caller, the one making the request included, and clears the session cookie: `{ "revoked": 2, "audit": ["aud_…", "aud_…"] }`. It takes no body. The next request on any of those sessions is `EAUTH` (sb-identity(7), Signing out everywhere). If the audit row can't be written first, nothing is revoked and the answer is `EUNAVAIL`.
 

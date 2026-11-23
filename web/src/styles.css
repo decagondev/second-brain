@@ -98,3 +98,8 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .sources-first .meta {
   color: var(--muted);
 }
+
+/* API tokens (SB-2306): a new token is long and shown once. */
+.tokens code {
+  word-break: break-all;
+}

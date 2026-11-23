@@ -364,7 +364,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	}
 	c.Auth = auth.WithIssuer(&auth.Cell{Tenant: tenant, Provider: provider, Sessions: c.Sessions, Directory: c.Directory, Secret: secret("oidc"),
 		Redirect: strings.TrimRight(cfg.BaseURL, "/") + "/callback", Now: time.Now,
-		GroupsOf: c.Directory.GroupsOf, Spaces: c.Spaces, Attributes: auth.DirectoryAttributes(c.Directory)})
+		GroupsOf: c.Directory.GroupsOf, Spaces: c.Spaces, Attributes: auth.DirectoryAttributes(c.Directory), Audit: c.Audit})
 
 	p, err := c.assemble(m, sha(src))
 	if err != nil {
@@ -549,6 +549,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
+	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)

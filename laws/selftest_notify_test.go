@@ -83,3 +83,14 @@ func TestSelf_NotifyLaw(t *testing.T) {
 		}
 	}
 }
+
+// By email too (SB-2307): the law passes on the real job and the SMTP adapter, and catches
+// a message that previews the question.
+func TestSelf_NotifyLawByEmail(t *testing.T) {
+	if violates(30, func(r *rand.Rand) error { return law07NotifyEmail(r, RealNotify{}) }) {
+		t.Fatal("the real job by email breaks the notifications law")
+	}
+	if !violates(30, func(r *rand.Rand) error { return law07NotifyEmail(r, leakyNotify{}) }) {
+		t.Error("a question previewed by email was not caught")
+	}
+}

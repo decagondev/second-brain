@@ -13,6 +13,7 @@ import { SignOutEverywhere } from "./Session";
 import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
+import { ApiTokens } from "./Tokens";
 import { errorText, msg, t, tj } from "./i18n";
 
 interface Turn {
@@ -54,6 +55,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const base = useId();
   const nextTurn = useRef(0);
+  const [showTokens, setShowTokens] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -251,6 +253,10 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       <div role="tabpanel" id={`${base}-panel-handover`} aria-labelledby={`${base}-tab-handover`} hidden={tab !== "handover"}>
         {tab === "handover" && <HandoverView fetcher={fetcher} />}
       </div>
+      <button type="button" className="link" aria-expanded={showTokens} onClick={() => setShowTokens((x) => !x)}>
+        {t("API tokens")}
+      </button>
+      {showTokens && <ApiTokens fetcher={fetcher} />}
       <SignOutEverywhere fetcher={fetcher} />
     </main>
   );

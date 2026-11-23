@@ -28,12 +28,12 @@ Proposed 2026-11-23 after W19 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] No UI string outside the catalog; axe in each language
-- [ ] A fake SIEM gets every row in order across a restart
-- [ ] The restore drill passes from S3
-- [ ] A burst of ten asks gets six answers and four ERATEs
-- [ ] A token can only ask and search, and dies with its person
-- [ ] Every law test still green; no new store, service or Go module
+- [x] No UI string outside the catalog; axe in each language
+- [x] A fake SIEM gets every row in order across a restart
+- [x] The restore drill passes from S3 (against the S3 fake in `TestBackupToAnS3Bucket`; a company bucket waits with SB-1605's real VM)
+- [x] A burst of ten asks gets six answers and four ERATEs
+- [x] A token can only ask and search, and dies with its person
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

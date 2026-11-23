@@ -15,6 +15,7 @@ import (
 
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	dirmem "example.com/second-brain/internal/adapters/directory/memory"
+	"example.com/second-brain/internal/adapters/smtpmail"
 	tracemem "example.com/second-brain/internal/adapters/traces/memory"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/notify"
@@ -79,7 +80,64 @@ func (f *fakeSlack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// carrier is how notifications reach people in the law: a fake chat or a fake mail server,
+// with the real adapter in front of it.
+type carrier interface {
+	open() (notify.Sender, error)
+	posts() map[string][]string // email -> texts
+	close()
+}
+
+type slackCarrier struct {
+	fake *fakeSlack
+	srv  *httptest.Server
+}
+
+func (c *slackCarrier) open() (notify.Sender, error) {
+	c.fake = &fakeSlack{posts: map[string][]string{}}
+	c.srv = httptest.NewServer(c.fake)
+	return slackapp.DM{Base: c.srv.URL, Token: func(context.Context) (string, error) { return "xoxb-law", nil }, Client: c.srv.Client()}, nil
+}
+func (c *slackCarrier) posts() map[string][]string { return c.fake.posts }
+func (c *slackCarrier) close()                     { c.srv.Close() }
+
+// mailCarrier is the SMTP adapter (SB-2307) against a fake mail server: what each person
+// was sent is the whole email, headers and all, so nothing can hide outside the body.
+type mailCarrier struct{ fake *smtpmail.Fake }
+
+func (c *mailCarrier) open() (notify.Sender, error) {
+	f, err := smtpmail.NewFake()
+	if err != nil {
+		return nil, err
+	}
+	c.fake = f
+	return smtpmail.Mail{Server: f.Addr, From: "brain@acme-logistics.example", Roots: f.Roots}, nil
+}
+func (c *mailCarrier) posts() map[string][]string {
+	out := map[string][]string{}
+	for _, g := range c.fake.Messages() {
+		if !g.TLS {
+			out[g.To] = append(out[g.To], "SENT IN THE CLEAR")
+		}
+		head, _, _ := strings.Cut(g.Raw, "\r\n\r\n")
+		head = strings.ReplaceAll(head, "brain@acme-logistics.example", "the cell")
+		head = strings.ReplaceAll(head, "To: "+g.To, "To: them")
+		out[g.To] = append(out[g.To], head+"\n"+g.Text)
+	}
+	return out
+}
+func (c *mailCarrier) close() { c.fake.Close() }
+
 func law21Notify(r *rand.Rand, sys NotifySystem) error {
+	return law21NotifyVia(r, sys, &slackCarrier{})
+}
+
+// law07NotifyEmail is the same law with notifications sent by email (SB-2307).
+func law07NotifyEmail(r *rand.Rand, sys NotifySystem) error {
+	return law21NotifyVia(r, sys, &mailCarrier{})
+}
+
+func law21NotifyVia(r *rand.Rand, sys NotifySystem, via carrier) error {
 	ctx := context.Background()
 	const tenant = "acme-logistics"
 	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
@@ -106,10 +164,11 @@ func law21Notify(r *rand.Rand, sys NotifySystem) error {
 	facts := func(space string) ([]string, string, bool) {
 		return []string{"group:support-leads"}, "internal", space == "spc_support" || space == "company"
 	}
-	slack := &fakeSlack{posts: map[string][]string{}}
-	srv := httptest.NewServer(slack)
-	defer srv.Close()
-	send := slackapp.DM{Base: srv.URL, Token: func(context.Context) (string, error) { return "xoxb-law", nil }, Client: srv.Client()}
+	send, err := via.open()
+	if err != nil {
+		return err
+	}
+	defer via.close()
 	clock := now
 	job := sys.Job(store, dir, facts, send, func() time.Time { return clock })
 	// The first run reads nothing yet; questions and replies come after it.
@@ -156,7 +215,7 @@ func law21Notify(r *rand.Rand, sys NotifySystem) error {
 			want = append(want, n)
 		}
 	}
-	for email, texts := range slack.posts {
+	for email, texts := range via.posts() {
 		for _, t := range texts {
 			for _, bad := range []string{canary, "usr_", "@acme.example"} {
 				if strings.Contains(t, bad) {

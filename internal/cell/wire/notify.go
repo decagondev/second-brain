@@ -2,6 +2,7 @@ package wire
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"example.com/second-brain/internal/adapters/chatapp/mmapp"
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
+	"example.com/second-brain/internal/adapters/smtpmail"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/notify"
@@ -29,8 +31,8 @@ func stewardFacts(m manifest.Tenant) ask.SpaceFacts {
 	}
 }
 
-// Notifier is the chat bot notifications go through (sb-ask(3), Notifications): the
-// Mattermost bot when the cell has one, else the Slack bot, else none.
+// Notifier is what notifications go through (sb-ask(3), Notifications): the Mattermost
+// bot when the cell has one, else the Slack bot, else email (SB-2307), else none.
 func (c *Cell) Notifier() notify.Sender {
 	client := &http.Client{Timeout: 10 * time.Second}
 	if mm := c.Config.Mattermost; mm.Base != "" {
@@ -39,7 +41,29 @@ func (c *Cell) Notifier() notify.Sender {
 	if cc, ok := c.Config.Connectors["chat"]; ok {
 		return slackapp.DM{Base: cc.Base, Token: slackField(c.Secret("connectors/chat"), "bot_token"), Client: client}
 	}
+	if e := c.Config.Email; e.Server != "" {
+		return smtpmail.Mail{Server: e.Server, From: e.From, Login: c.mailLogin()}
+	}
 	return nil
+}
+
+// mailLogin reads the mail server's sign-in from vault://tenants/TENANT/email, as
+// {"username", "password"}; no such secret is no sign-in.
+func (c *Cell) mailLogin() func(context.Context) (string, string, error) {
+	return func(ctx context.Context) (string, string, error) {
+		raw, err := c.Secret("email")(ctx)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return "", "", nil
+			}
+			return "", "", err
+		}
+		var v struct{ Username, Password string }
+		if err := json.Unmarshal([]byte(raw), &v); err != nil || v.Username == "" || v.Password == "" {
+			return "", "", errors.New("wire: the email secret needs a username and a password")
+		}
+		return v.Username, v.Password, nil
+	}
 }
 
 // accessNote tells a document's owner that someone asked for access to it (SB-2205), by the

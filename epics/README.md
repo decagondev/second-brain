@@ -26,7 +26,7 @@ summary: Epics, waves, slices and tickets.
 | W19 Close the Loops | 5 | 0 | 0 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
 | W20 Keep People in the Loop | 6 | 0 | 0 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
 | W21 Keep Knowledge Owned | 7 | 0 | 0 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
-| W22 Fit the Site | 5 | 0 | 2 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
+| W22 Fit the Site | 7 | 0 | 0 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -467,5 +467,5 @@ flowchart LR
 | [SB-2303](E23-fit-the-site/SB-2303-offsite-s3.md) | S22.1 | E23 | Off-box copies to S3 | Done |
 | [SB-2304](E23-fit-the-site/SB-2304-sources-first.md) | S22.2 | E23 | Search results while the answer is written | Done |
 | [SB-2305](E23-fit-the-site/SB-2305-fair-share.md) | S22.2 | E23 | Fair share on a small box | Done |
-| [SB-2306](E23-fit-the-site/SB-2306-api-tokens.md) | S22.3 | E23 | Read-only API tokens | Open |
-| [SB-2307](E23-fit-the-site/SB-2307-smtp.md) | S22.3 | E23 | Notifications by email | Open |
+| [SB-2306](E23-fit-the-site/SB-2306-api-tokens.md) | S22.3 | E23 | Read-only API tokens | Done |
+| [SB-2307](E23-fit-the-site/SB-2307-smtp.md) | S22.3 | E23 | Notifications by email | Done |

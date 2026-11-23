@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Read-only API tokens, at most 90 days, audited at each use (SB-2306); notifications by email for sites with no chat, STARTTLS required (SB-2307).
 - Sources show while the answer is written (SB-2304); `asks_per_minute`, default 6, with `ERATE` and the seconds to wait, counted in the weekly report (SB-2305).
 - The UI in English, German and French (SB-2301); audit rows streamed to the SIEM over syslog TLS (SB-2302); a self-hosted box's off-box copies in the company's S3 bucket, always sealed (SB-2303).
 - Spreadsheets and CSV files on file shares are read; UK, US, Dutch and German national ID numbers are masked like IBANs and cards (SB-2206, SB-2207).

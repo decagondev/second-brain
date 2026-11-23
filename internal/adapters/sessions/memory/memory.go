@@ -5,6 +5,7 @@ package memory
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"example.com/second-brain/internal/core/ports"
@@ -52,4 +53,17 @@ func (s *Store) RevokeUser(_ context.Context, tenant, user string) (int, error) 
 		}
 	}
 	return n, nil
+}
+
+func (s *Store) ListUser(_ context.Context, tenant, user string) ([]ports.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []ports.Session
+	for _, x := range s.m {
+		if x.Tenant == tenant && x.User == user {
+			out = append(out, x)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].SignedIn.Before(out[j].SignedIn) })
+	return out, nil
 }

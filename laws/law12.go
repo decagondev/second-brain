@@ -2,6 +2,7 @@ package laws
 
 import (
 	"context"
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -14,6 +15,7 @@ import (
 	sessmem "example.com/second-brain/internal/adapters/sessions/memory"
 	"example.com/second-brain/internal/auth"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/session"
 	"example.com/second-brain/internal/scim"
 )
 
@@ -80,8 +82,17 @@ func (d *deprov) Provision(user string) error {
 	return nil
 }
 
+// SignIn signs in in a browser, or, every other time, makes a read-only API token (SB-2306),
+// which the law holds to the same bound.
 func (d *deprov) SignIn(user string) (string, error) {
 	d.n++
+	if d.n%2 == 0 {
+		tok, s, err := session.NewToken(crand.Reader, "acme-logistics", d.ids[user], "script", 90, d.now)
+		if err != nil {
+			return "", err
+		}
+		return "bearer:" + tok, d.store.Put(context.Background(), s)
+	}
 	s := ports.Session{ID: fmt.Sprintf("s%d", d.n), Tenant: "acme-logistics", User: d.ids[user], SignedIn: d.now, Validated: d.now}
 	return s.ID, d.store.Put(context.Background(), s)
 }
@@ -94,9 +105,13 @@ func (d *deprov) Deactivate(user string) error {
 	return nil
 }
 
-func (d *deprov) Request(session string) (bool, error) {
+func (d *deprov) Request(sess string) (bool, error) {
 	r := httptest.NewRequest("GET", "/v1/ask", nil)
-	r.AddCookie(&http.Cookie{Name: auth.Cookie, Value: session})
+	if tok, ok := strings.CutPrefix(sess, "bearer:"); ok {
+		r.Header.Set("Authorization", "Bearer "+tok)
+	} else {
+		r.AddCookie(&http.Cookie{Name: auth.Cookie, Value: sess})
+	}
 	_, err := d.cell.Authenticate(r)
 	return err == nil, nil
 }

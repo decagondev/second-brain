@@ -14,6 +14,7 @@ import (
 
 	"example.com/second-brain/internal/adapters/audit/syslogtls"
 	"example.com/second-brain/internal/adapters/backup/s3"
+	"example.com/second-brain/internal/adapters/smtpmail"
 	"example.com/second-brain/internal/core/offsite"
 )
 
@@ -61,6 +62,11 @@ type Config struct {
 		Base   string `json:"base"`
 		TeamID string `json:"team_id"`
 	} `json:"mattermost"`
+	// Email sends notifications by email on a cell with no chat bot (SB-2307). Empty is none.
+	Email struct {
+		Server string `json:"server"`
+		From   string `json:"from"`
+	} `json:"email"`
 	Alerts struct {
 		Webhook string `json:"webhook"`
 		// ReportWebhook is where the weekly report is posted; "" is Webhook (SB-1608).
@@ -294,8 +300,17 @@ func (r ReleaseConfig) check() error {
 }
 
 // checkModel checks the model and the embedder (sb-cell(5); SB-1710).
-// checkMattermost: none, or an https base (http on 127.0.0.1 only) and a team (SB-2005).
+// checkMattermost: none, or an https base (http on 127.0.0.1 only) and a team (SB-2005);
+// and email: none, or a server and one sender address (SB-2307).
 func (c Config) checkMattermost() error {
+	if e := c.Email; e.Server != "" || e.From != "" {
+		if smtpmail.Parse(e.Server) != nil {
+			return fmt.Errorf("%w: email.server must be HOST:PORT", ErrConfig)
+		}
+		if _, err := smtpmail.Address(e.From); err != nil {
+			return fmt.Errorf("%w: email.from must be one email address", ErrConfig)
+		}
+	}
 	mm := c.Mattermost
 	if mm.Base == "" && mm.TeamID == "" {
 		return nil

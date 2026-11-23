@@ -46,6 +46,7 @@ func TestSecretInMoreForms(t *testing.T) {
 		fake("pass", `word = "correct horse battery staple"`):                                                    "assigned-secret",
 		fake("tok", "en: 9f8e7d6c5b4a39281706f5e4d3c2b1a0"):                                                      "assigned-secret",
 		fake("glp", "at-abcdefghijklmnopqrstu"):                                                                  "gitlab-token",
+		fake("curl -H 'X: sb", "t_", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ'"):                             "sb-api-token",
 		fake("sk-pr", "oj-abcdefghijklmnopqrstuvwxyz012345"):                                                     "model-api-key",
 		fake("sk-an", "t-api03-abcdefghijklmnopqrstuvwxyz"):                                                      "model-api-key",
 		"The token: rotate it monthly.":                                                                          "",
