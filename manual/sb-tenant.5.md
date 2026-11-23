@@ -38,6 +38,7 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 | Reference | Holds |
 |---|---|
 | `vault://tenants/TENANT/connectors/KIND` | the credential for one connector kind |
+| `vault://tenants/TENANT/mattermost` | the Mattermost slash command's `command_token` and the bot's `bot_token`, as JSON, when sb-cell(5) sets `mattermost` (SB-2005) |
 | `vault://tenants/TENANT/oidc` | the cell's OIDC client secret |
 | `vault://tenants/TENANT/scim` | the IdP's SCIM bearer token |
 | `vault://tenants/TENANT/model` | the model gateway's API key (ADR-0019) |

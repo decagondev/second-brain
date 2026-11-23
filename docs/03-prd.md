@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run** (built), **W18 Protect the Data** and **W19 Close the Loops** add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)).
 
 ## Problem
 
@@ -706,11 +706,11 @@ gantt
 
 **Exit gate**
 
-- [ ] A barrier cell publishes a note, and still refuses one across the barrier
-- [ ] A manager reads a handover brief in the UI
-- [ ] A share of Word files answers with cites
-- [ ] A narrowed space lists its notes for review
-- [ ] Mattermost asks answer under the asker's access
+- [x] A barrier cell publishes a note, and still refuses one across the barrier
+- [x] A manager reads a handover brief in the UI
+- [x] A share of Word files answers with cites
+- [x] A narrowed space lists its notes for review
+- [x] Mattermost asks answer under the asker's access
 - [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |

@@ -172,25 +172,25 @@ func (a *App) command(w http.ResponseWriter, r *http.Request) {
 
 // answer maps the person and the channel's space, asks, and renders an ephemeral reply.
 func (a *App) answer(ctx context.Context, slackUser, channel, question string) Message {
-	s, err := a.scope(ctx, slackUser)
+	s, err := a.Scope(ctx, slackUser)
 	if err != nil {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: MsgNoMatch}
 	}
-	s, msg := a.inSpace(ctx, s, channel)
+	s, msg := a.InSpace(ctx, s, channel)
 	if msg != "" {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: msg}
 	}
 	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question})
 	if err != nil {
-		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: errText(err)}
+		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: ErrText(err)}
 	}
 	return Render(question, resp)
 }
 
-// inSpace puts the ask in the space whose channels list this channel (sb-ask(3), The chat
+// InSpace puts the ask in the space whose channels list this channel (sb-ask(3), The chat
 // app). An unmapped channel, or a direct message, stays company-wide; a mapped channel for
 // someone outside its space is refused, never asked company-wide instead.
-func (a *App) inSpace(ctx context.Context, s tenancy.Scope, channel string) (tenancy.Scope, string) {
+func (a *App) InSpace(ctx context.Context, s tenancy.Scope, channel string) (tenancy.Scope, string) {
 	if a.Spaces == nil || channel == "" || channel == "directmessage" || channel == "privategroup" {
 		return s, ""
 	}
@@ -220,9 +220,9 @@ func (a *App) inSpace(ctx context.Context, s tenancy.Scope, channel string) (ten
 	return s, ""
 }
 
-// scope maps a Slack user to exactly one active directory user and issues their scope.
+// Scope maps a chat user to exactly one active directory user and issues their scope.
 // It is checked on every request and never cached (sb-identity(7), Chat users).
-func (a *App) scope(ctx context.Context, slackUser string) (tenancy.Scope, error) {
+func (a *App) Scope(ctx context.Context, slackUser string) (tenancy.Scope, error) {
 	if slackUser == "" {
 		return tenancy.Scope{}, ErrNoMatch
 	}
@@ -326,7 +326,8 @@ func escapeURL(u string) string {
 	return strings.NewReplacer("|", "%7C", ">", "%3E", "<", "%3C").Replace(u)
 }
 
-func errText(err error) string {
+// ErrText is an ask error as a chat reply: its reason, never its detail.
+func ErrText(err error) string {
 	switch {
 	case errors.Is(err, ask.ErrInvalid):
 		return "That question can't be asked: " + strings.TrimPrefix(err.Error(), "ask: EINVAL: ")
@@ -366,7 +367,7 @@ func (a *App) interaction(w http.ResponseWriter, r *http.Request) {
 	a.run(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), AnswerTimeout)
 		defer cancel()
-		s, err := a.scope(ctx, p.User.ID)
+		s, err := a.Scope(ctx, p.User.ID)
 		if err != nil {
 			_ = a.post(ctx, p.ResponseURL, Message{ResponseType: "ephemeral", Text: MsgNoMatch})
 			return

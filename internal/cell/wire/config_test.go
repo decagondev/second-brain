@@ -70,3 +70,19 @@ func TestParseModelOnTheBox(t *testing.T) {
 		t.Fatal("the default embedder changed")
 	}
 }
+
+// SB-2005: mattermost is none, or an https base and a team.
+func TestMattermostConfig(t *testing.T) {
+	for _, mm := range []struct{ base, team string }{{"http://chat.example", "t"}, {"https://chat.example", ""}, {"", "t"}, {"https://u:p@chat.example", "t"}} {
+		c := Config{}
+		c.Mattermost.Base, c.Mattermost.TeamID = mm.base, mm.team
+		if err := c.checkMattermost(); !errors.Is(err, ErrConfig) {
+			t.Errorf("%+v: %v", mm, err)
+		}
+	}
+	c := Config{}
+	c.Mattermost.Base, c.Mattermost.TeamID = "https://chat.example", "t"
+	if err := c.checkMattermost(); err != nil {
+		t.Fatal(err)
+	}
+}

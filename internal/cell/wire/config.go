@@ -53,6 +53,12 @@ type Config struct {
 	Chat       struct {
 		TeamID string `json:"team_id"`
 	} `json:"chat"`
+	// Mattermost is the Mattermost slash command (SB-2005): the server and the team whose
+	// command reaches POST /chat/mattermost. Empty is none.
+	Mattermost struct {
+		Base   string `json:"base"`
+		TeamID string `json:"team_id"`
+	} `json:"mattermost"`
 	Alerts struct {
 		Webhook string `json:"webhook"`
 		// ReportWebhook is where the weekly report is posted; "" is Webhook (SB-1608).
@@ -173,6 +179,9 @@ func Parse(b []byte) (Config, error) {
 			return Config{}, fmt.Errorf("%w: %s must be an https URL", ErrConfig, field)
 		}
 	}
+	if err := c.checkMattermost(); err != nil {
+		return Config{}, err
+	}
 	if err := c.Release.check(); err != nil {
 		return Config{}, err
 	}
@@ -251,6 +260,20 @@ func (r ReleaseConfig) check() error {
 }
 
 // checkModel checks the model and the embedder (sb-cell(5); SB-1710).
+// checkMattermost: none, or an https base (http on 127.0.0.1 only) and a team (SB-2005).
+func (c Config) checkMattermost() error {
+	mm := c.Mattermost
+	if mm.Base == "" && mm.TeamID == "" {
+		return nil
+	}
+	u, err := url.Parse(mm.Base)
+	local := err == nil && u.Scheme == "http" && strings.HasPrefix(u.Host, "127.0.0.1:")
+	if err != nil || (u.Scheme != "https" && !local) || u.Host == "" || u.User != nil || mm.TeamID == "" {
+		return fmt.Errorf("%w: mattermost needs an https base and a team_id", ErrConfig)
+	}
+	return nil
+}
+
 func (c Config) checkModel() error {
 	if !Providers[c.Model.Provider] {
 		return fmt.Errorf("%w: model.provider %q is not one of extractive, openaicompat, anthropic, groq, openrouter", ErrConfig, c.Model.Provider)

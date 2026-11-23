@@ -27,12 +27,12 @@ Proposed 2026-11-22 after W16 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A barrier cell publishes a note, and still refuses one across the barrier
-- [ ] A manager reads a handover brief in the UI
-- [ ] A share of Word files answers with cites
-- [ ] A narrowed space lists its notes for review
-- [ ] Mattermost asks answer under the asker's access
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A barrier cell publishes a note, and still refuses one across the barrier
+- [x] A manager reads a handover brief in the UI
+- [x] A share of Word files answers with cites
+- [x] A narrowed space lists its notes for review
+- [x] Mattermost asks answer under the asker's access
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

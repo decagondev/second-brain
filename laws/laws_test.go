@@ -475,3 +475,11 @@ func TestLAW19_NotesStayAsNarrowAsTheirSpace(t *testing.T) {
 	dir := t.TempDir()
 	Check(t, "LAW-19", 60, func(r *rand.Rand) error { return law19Notes(r, dir, RealNoteNarrowing{}) })
 }
+
+func TestLAW01_MattermostAnswersCiteOnlyWhatTheAskerCanOpen(t *testing.T) {
+	Check(t, "LAW-01", 50, func(r *rand.Rand) error { w := Gen(r); return law01Chat(w, mmSystem{}.ask) })
+}
+
+func TestLAW12_MattermostRefusesTheDeprovisioned(t *testing.T) {
+	Check(t, "LAW-12", 30, func(r *rand.Rand) error { return law12Mattermost(Gen(r), false) })
+}

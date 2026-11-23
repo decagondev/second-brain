@@ -8,7 +8,7 @@ summary: Ask a question and get a cited answer.
 
 ## NAME
 
-sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`, `GET /v1/changes`
+sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`, `GET /v1/changes`, `POST /chat/mattermost`
 
 ## SYNOPSIS
 
@@ -228,6 +228,17 @@ Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `a
 5. **Share.** A *Share in channel* button posts the question and the **citation links only, never the claim text**, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.
 
 Errors are ephemeral replies with the error's `message` and trace id. Slack scopes added for the bot: `commands` only. The bot uses no Slack write scopes, because replies go through `response_url`.
+
+### The chat app (Mattermost)
+
+Sites that run their own Mattermost can ask from it with a slash command (SB-2005), for example `/brain <question>`. The command is a Mattermost **custom slash command** whose request URL is the cell's `POST /chat/mattermost`, method POST; the cell takes it when sb-cell(5) sets `mattermost.base` and `mattermost.team_id`. It follows the Slack app's rules, from the same code:
+
+1. **Verify.** The command's token (the form's `token`, or `Authorization: Token …`) must equal `command_token` in `vault://tenants/TENANT/mattermost`, read at every request, and `team_id` must be the tenant's team. Anything else is HTTP 401 and no reply.
+2. **Map the person.** The cell reads the Mattermost user's email with the bot's token (`bot_token` in the same secret; `GET /api/v4/users/ID`), and finds the **one active** directory user with that email. A deleted Mattermost user, a bot, a hidden email, no match, more than one, or a deprovisioned user (LAW-12) gets an ephemeral reply that the account can't be matched, and **no answer**.
+3. **Answer privately.** Mattermost gets an immediate ephemeral "Looking that up…", and the answer follows through the command's `response_url`, which must be the server's own `/hooks/commands/` URL, also **ephemeral**. It is Markdown: the question, each claim with its citations as links (`` [`cite`](url) ``), uncited claims marked *Uncited:*, who to ask, the notice, the refused count and the trace id. Claim text is escaped, so it can't become a link, a mention or formatting.
+4. **Spaces.** A space's `channels` (sb-space(5)) list Mattermost channels by name as they do Slack's: a mapped channel asks in that space, and someone who isn't a member gets an ephemeral refusal, never a company-wide answer.
+
+There is no Share button. The bot account needs no permission beyond reading users' emails (the System Console's *Show Email Address* for it), since replies go through `response_url`.
 
 ## ERRORS
 

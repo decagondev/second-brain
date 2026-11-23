@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S19.3: ask from Mattermost
+
+**Wave/slice:** W19 / S19.3 (SB-2005) · **Status:** Done
+
+**What:** A Mattermost custom slash command reaches the cell at `POST /chat/mattermost` (`internal/adapters/chatapp/mmapp`): it checks the command's token from `vault://tenants/TENANT/mattermost` and the tenant's team, maps the Mattermost user by email to one active directory user with the Slack app's own rules, and answers only the asker through the server's response URL, in escaped Markdown. sb-cell(5) `mattermost.base` and `mattermost.team_id` turn it on; the self-hosted runbook says how to set it up. **W19 built.**
+
+**Why this way:** The person mapping and the space-by-channel rule are the Slack app's own methods, exported rather than copied, so the two chat entry points can't drift apart on who gets an answer. Mattermost sends no email, so the cell reads it with a bot token at every request, never caching it, as the Slack path does. The response URL must be the configured server's own `/hooks/commands/`, so a forged command can't make the cell post an answer elsewhere.
+
+**Learned:** The vault accepts only known paths, so a new secret is a change to `secrets.ParseRef`'s list, not just a new file; the running-cell test found it.
+
+**Laws:** LAW-01 (`TestLAW01_MattermostAnswersCiteOnlyWhatTheAskerCanOpen`: the chat law over the real Mattermost app and ask agent), LAW-12 (`TestLAW12_MattermostRefusesTheDeprovisioned`, with a self-test that catches a mapping that answers the deprovisioned). LAW-07's masking is the ask path's, unchanged. Every law test is still green.
+
 ## 2026-11-23 S19.2: office files, and notes that stay as narrow as their space
 
 **Wave/slice:** W19 / S19.2 (SB-2003, SB-2004) · **Status:** Done

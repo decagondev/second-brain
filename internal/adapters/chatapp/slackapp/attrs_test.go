@@ -9,7 +9,7 @@ import (
 func TestChatScopeCarriesAttributes(t *testing.T) {
 	dir := users{{ID: "alice", Tenant: tenant, Emails: []string{"alice@acme.example"}, Active: true, Department: "Finance", CostCenter: "CC-100"}}
 	a, _ := newApp(dir, &agent{})
-	s, err := a.scope(context.Background(), "UALICE")
+	s, err := a.Scope(context.Background(), "UALICE")
 	if err != nil {
 		t.Fatal(err)
 	}

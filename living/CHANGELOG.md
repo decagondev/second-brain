@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Staff can ask from Mattermost with a custom slash command at `POST /chat/mattermost`: verified by its token from the vault, matched by email to the directory, answered privately (SB-2005).
 - The folder connector reads Word, PowerPoint, OpenDocument text and HTML files as text, skipping macros, embedded objects, scripts and oversized archives (SB-2003). Notes read wider than their space appear on the stewards' review list with a count, and can be republished to the members who can still read them (SB-2004).
 - Stewards can publish notes in cells with information barriers: a note is placed by its space before it is written, and one into a space across a barrier is refused (SB-2001). The web UI has a Handover tab: the cited brief grouped by location, the count of documents you can't open with advice to move access, and the policy's reason on a refusal; `POST /v1/handover` returns `locations` (SB-2002).
 - `install.sh --retire --yes-destroy` destroys a self-hosted box (units, containers, volumes, every key under `build/selfhost`) and leaves a signed statement naming what was destroyed and the last audit anchor (`sb selfhost retire-statement`, `sb selfhost verify-retirement`); the audit export stays off the box, sealed to the recovery kit (SB-1907).
