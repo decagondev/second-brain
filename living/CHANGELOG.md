@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Short conversations and Start fresh (SB-2901); at most 3 chunks of one document (SB-2902); sb space scope-report (SB-2903).
 - Unused glossary terms (SB-2805); owners' monthly note, kind owned (SB-2806); freshness on the steward screen and in the weekly report (SB-2807). W27 built.
 - Retire from answers and Bring back (SB-2801); same name, different text (SB-2802); never cited (SB-2803); notes whose sources moved (SB-2804).
 - Review-by and expires dates in documents (SB-2705); the newer version wins a ranking tie (SB-2706).

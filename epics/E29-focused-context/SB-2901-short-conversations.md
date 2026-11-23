@@ -13,7 +13,7 @@ summary: "A long conversation sends every earlier question to the model, however
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A long conversation sends every earlier question to the model, however far the t
 
 ## Acceptance criteria
 
-- [ ] A later turn sends at most the last 8 earlier questions; the response says `dropped` when some were left out
-- [ ] The UI offers Start fresh then; the stored conversation isn't changed
-- [ ] The ninth earlier question isn't in the prompt; Start fresh starts a new conversation
+- [x] A later turn sends at most the last 8 earlier questions; the response says `earlier_dropped` when some were left out
+- [x] The UI offers Start fresh then; the stored conversation isn't changed
+- [x] The ninth earlier question isn't in the prompt; Start fresh starts a new conversation
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Ask
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Ask
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S28.1; tested in internal/core/ask/focus_test.go, internal/core/route/report_test.go, internal/cli/scopereport_test.go, tests/cell/retire_test.go and web/src/focus.test.tsx.
 
 ## Definition of done
 

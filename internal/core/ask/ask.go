@@ -63,6 +63,9 @@ type Response struct {
 	// left out (sb-agents(7), Department agents); 0 for ask.
 	Agent   string `json:"agent"`
 	Dropped int    `json:"dropped"`
+	// EarlierDropped is how many earlier questions of the conversation the model didn't
+	// read: only the last MaxEarlier are sent (SB-2901).
+	EarlierDropped int `json:"earlier_dropped"`
 	// People is who to ask: the owners of the answer's cited documents (SB-1702).
 	People []PersonRef `json:"people"`
 	// Terms are the space's glossary entries the question used (SB-2203).
@@ -71,6 +74,22 @@ type Response struct {
 	// connector of a cite is behind on syncing (SB-2701, SB-2704).
 	NoticeStale *StaleNotice `json:"notice_stale,omitempty"`
 	NoticeSync  []SyncNotice `json:"notice_sync,omitempty"`
+}
+
+// MaxEarlier is the most earlier questions of a conversation the model reads (SB-2901), and
+// MaxPerDocument the most chunks of one document it reads for one answer (SB-2902).
+const (
+	MaxEarlier     = 8
+	MaxPerDocument = 3
+)
+
+// recent is the last MaxEarlier of a conversation's earlier questions, and how many before
+// them were left out.
+func recent(earlier []string) ([]string, int) {
+	if len(earlier) <= MaxEarlier {
+		return earlier, 0
+	}
+	return earlier[len(earlier)-MaxEarlier:], len(earlier) - MaxEarlier
 }
 
 // Trace is a stored answer with its decision list (GET /v1/traces/{id}).
@@ -245,7 +264,10 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 
 	trace := a.NewID("tr_")
-	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms}
+	turn := len(earlier)
+	sent, left := recent(earlier)
+	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left}
+	res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
 	if dept != nil {
 		resp.Agent = dept.Name
 	}
@@ -264,7 +286,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		if dept != nil {
 			prompt, lead = dept.Prompt, dept.Lead
 		}
-		claims, err := a.composeWith(withTerms(withUser(ctx, s.User()), terms), prompt, lead, trace, q, earlier, res.Context)
+		claims, err := a.composeWith(withTerms(withUser(ctx, s.User()), terms), prompt, lead, trace, q, sent, res.Context)
 		if err != nil {
 			return Response{}, err
 		}
@@ -305,7 +327,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 		}
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: len(earlier)}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
 		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
 	}

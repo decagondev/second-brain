@@ -13,7 +13,7 @@ summary: "One long document can fill most of what the model reads."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ One long document can fill most of what the model reads.
 
 ## Acceptance criteria
 
-- [ ] At most 3 chunks of one document go into what the model reads for one answer, after the checks and the one-copy rule
-- [ ] Search results are unchanged
-- [ ] A long document matching every chunk gives 3; the eval suite doesn't regress
+- [x] At most 3 chunks of one document go into what the model reads for one answer, after the checks and the one-copy rule
+- [x] Search results are unchanged
+- [x] A long document matching every chunk gives 3; the eval suite doesn't regress
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Retrieval
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Retrieval
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S28.1; tested in internal/core/ask/focus_test.go, internal/core/route/report_test.go, internal/cli/scopereport_test.go, tests/cell/retire_test.go and web/src/focus.test.tsx.
 
 ## Definition of done
 

@@ -54,7 +54,7 @@ const usage = `usage: sb [--json] [--tenant NAME] [--endpoint URL] [-q] COMMAND 
 commands:
   tenant  check|apply|verify FILE      validate, apply and verify a tenant manifest
   tenant  retention --plan [--days N]  what the retention job would delete
-  space   init|templates ...           start a department space from a template
+  space   init|templates|diff|scope-report ...   department spaces: start one, preview a reorg, check scopes
   kill    agent|connector|space|tenant ...   set a kill switch
   unkill  agent|connector|space|tenant ...   clear a kill switch
   audit   verify|tail|export           audit log tools
@@ -140,6 +140,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceTemplates(rest[2:])
 	case "space diff":
 		return e.spaceDiff(rest[2:])
+	case "space scope-report":
+		return e.spaceScopeReport(rest[2:])
 	}
 	if code, ok := e.boxCommand(name, rest[2:]); ok {
 		return code

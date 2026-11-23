@@ -176,3 +176,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-23 | LAW-09 | Tested (extended) | SB-2705: a document's own review-by date only makes it stale sooner; 2099 changes nothing (TestReviewByMakesStaleSooner, TestReviewByDatesAreKept) |
 | 2026-11-23 | LAW-09 | Tested (extended) | SB-2801: a retirement drops a document from its own space's answers only; company-wide only once every holding space retired it (TestRetireOnlyNarrowsItsSpace, TestRetireThroughARunningCell) |
 | 2026-11-23 | LAW-12 | Tested (extended) | SB-2806: an owner who is not one active user is told nothing, and the rest only of documents they can open (TestOwnedPastReview, TestOwnersHearMonthly) |
+| 2026-11-23 | LAW-16 | Tested (extended) | SB-2903: the scope report only counts; a typo and a too-wide pattern are named and nothing changes (TestScopeReport, TestRetireThroughARunningCell) |

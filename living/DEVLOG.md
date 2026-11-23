@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S28.1: Keep the context short
+
+**Wave/slice:** W28 / S28.1 (SB-2901 to SB-2903) · **Status:** Done
+
+**What:** A later turn of a conversation sends only the last 8 earlier questions to the model, and the response says how many it left out in earlier_dropped; the web UI then offers Start fresh. At most 3 chunks of one document go into what the model reads for an answer or a draft, after the checks and the one-copy rule; search is unchanged. `sb space scope-report` prints, from GET /v1/admin/index/scopes, how many documents each space's scope patterns match now, naming patterns that match nothing and patterns that match more than half of their connector's documents.
+
+**Why this way:** Long conversations and one long document crowded out what the question was about, and a scope typo or a `/**` went unnoticed until someone asked why an answer was missing or too broad. The caps only narrow what the model reads (LAW-01), the stored conversation keeps every question, and the scope report reads locations and counts only and changes nothing: a fix is still a manifest change (LAW-16).
+
+**Learned:** Response already had `dropped` for a department agent's uncited claims, so the conversation cap's count is a separate field, earlier_dropped, and the plan's wording was corrected to match.
+
+**Laws:** LAW-01 (the caps only narrow), LAW-07 (counts only), LAW-16 (the report changes nothing). Every law test is still green.
+
 ## 2026-11-23 S27.2: Keep upkeep shared
 
 **Wave/slice:** W27 / S27.2 (SB-2805 to SB-2807) · **Status:** Done

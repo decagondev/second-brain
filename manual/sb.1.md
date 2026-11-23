@@ -20,6 +20,7 @@ sb tenant  retention --plan [--days N] (--cell URL | --tenant T)
 sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
 sb space   templates
 sb space   diff FILE --idp-snapshot SNAPSHOT [--json]
+sb space   scope-report (--cell URL | --tenant T) [--json]
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export

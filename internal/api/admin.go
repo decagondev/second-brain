@@ -18,6 +18,7 @@ import (
 	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/retention"
+	"example.com/second-brain/internal/core/route"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
@@ -57,6 +58,13 @@ type Admin struct {
 	Sessions Revoker
 	// NotifyTest sends the test notification to a person by email (SB-2602); nil is EUNAVAIL.
 	NotifyTest NotifyTest
+	// Index reports on the cell's index (SB-2903); nil is EUNAVAIL.
+	Index IndexReports
+}
+
+// IndexReports are the operator's reports on the index: counts and locations only.
+type IndexReports interface {
+	ScopeReport(ctx context.Context) ([]route.PatternCount, error)
 }
 
 // Register mounts the endpoints.
@@ -72,6 +80,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
 	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
 	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
+	mux.HandleFunc("GET /v1/admin/index/scopes", h.guard(h.scopes))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
@@ -318,6 +327,23 @@ func (h Admin) plan(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	default:
 		h.ok(w, map[string]any{"days": days, "cutoff": rep.Cutoff, "would_delete": rep.Counts, "held": rep.Held})
 	}
+}
+
+// scopes counts what each space's scope patterns match now (SB-2903); it changes nothing.
+func (h Admin) scopes(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Index == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The index can't be read in this cell."))
+		return
+	}
+	rows, err := h.Index.ScopeReport(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The index can't be read."))
+		return
+	}
+	if rows == nil {
+		rows = []route.PatternCount{}
+	}
+	h.ok(w, map[string]any{"patterns": rows})
 }
 
 func (h Admin) switches(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {

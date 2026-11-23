@@ -16,6 +16,7 @@ sb-space — start a department space from the template catalogue
 sb space init FILE --template NAME --members GROUP[,GROUP…] [--name NAME] [--stewards GROUP[,GROUP…]]
 sb space templates
 sb space diff FILE --idp-snapshot SNAPSHOT [--json]
+sb space scope-report (--cell URL | --tenant T) [--json]
 ```
 
 ## DESCRIPTION
@@ -45,6 +46,8 @@ Unknown fields, a version other than 1, a person listed twice, an empty `user`, 
 
 People whose spaces don't change are counted, not listed. `diff` reads only its two files: it needs no cell, no network and no credentials, and it writes nothing and changes nothing (LAW-16: the change happens only when the IdP and the manifest change). `--json` prints `{"people": [{"user", "gains", "loses", "flags"}], "unchanged": N}`.
 
+**scope-report** (SB-2903) prints, for each space of the cell's applied manifest and each of its scope patterns, how many documents in the cell's index the pattern matches now, out of how many that connector kind has, from `GET /v1/admin/index/scopes` (sb-admin(3)). It names a pattern that matches **none**, which is usually a typo or a folder that moved, and one that matches **more than half** of its connector's documents, which is usually too wide (such as `/**`). It reads only document locations, never their text, and changes nothing: a fix is a manifest change (LAW-16). It exits 0 either way; `--json` prints `{"patterns": [{"space", "kind", "pattern", "matches", "of", "problem"}]}`, with `problem` `none`, `too_wide` or empty.
+
 The catalogue is data, `internal/core/manifest/catalogue.json`, and every release bundle pins its hash (sb-release(7)), so two cells on the same release read the same templates.
 
 ## OPTIONS
@@ -56,7 +59,8 @@ The catalogue is data, `internal/core/manifest/catalogue.json`, and every releas
 | `--name NAME` | The space's name; default the template's |
 | `--stewards GROUP,…` | The space's stewards; required for a restricted template |
 | `--idp-snapshot FILE` | diff: the reorg's people, with their groups before and after |
-| `--json` | diff: machine-readable output |
+| `--json` | diff, scope-report: machine-readable output |
+| `--cell URL`, `--tenant T` | scope-report: the cell to ask, by URL or by the tenant's registered endpoint |
 
 ## EXIT STATUS
 

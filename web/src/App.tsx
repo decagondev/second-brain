@@ -16,7 +16,7 @@ import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { AnswerTools } from "./Copy";
 import { forgetQuestions, recentQuestions, rememberQuestion } from "./recent";
-import { errorText, msg, t, tj } from "./i18n";
+import { errorText, msg, t, tj, tn } from "./i18n";
 
 interface Turn {
   id: number;
@@ -241,6 +241,24 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
                 </button>
               )}
               {x.answer && <AskStewards question={x.question} answer={x.answer} space={space || undefined} fetcher={fetcher} />}
+              {x.answer && (x.answer.earlier_dropped ?? 0) > 0 && x.id === turns[turns.length - 1]?.id && (
+                <p className="meta">
+                  {tn(
+                    x.answer.earlier_dropped!,
+                    "This conversation is long: the earliest question wasn't used for this answer.",
+                    "This conversation is long: the earliest {n} questions weren't used for this answer.",
+                  )}{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConversation(undefined);
+                      setTurns([]);
+                    }}
+                  >
+                    {t("Start fresh")}
+                  </button>
+                </p>
+              )}
               {x.error && x.error.code === "EAUTH" && (
                 <div className="error" role="alert">
                   <p>{tj("You're signed out. {link}, then ask again.", { link: <a href="/login">{t("Sign in")}</a> })}</p>

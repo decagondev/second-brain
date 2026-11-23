@@ -127,7 +127,7 @@ The goal: what the model reads stays short and on topic, and the operator can se
 
 ### S28.1 Keep the model's context short
 
-**SB-2901 Conversations stay short.** A later turn sends at most the last 8 earlier questions to the model (sb-ask(3), Conversations), not every one. The response says `"dropped": N` when some were left out, and the UI then offers **Start fresh** beside the ask box. The stored conversation isn't changed.
+**SB-2901 Conversations stay short.** A later turn sends at most the last 8 earlier questions to the model (sb-ask(3), Conversations), not every one. The response says `"earlier_dropped": N` when some were left out (`dropped` already counts a department agent's uncited claims), and the UI then offers **Start fresh** under the answer. The stored conversation isn't changed.
 *Laws:* LAW-07 (no more text is sent than before, only less). *Acceptance:* the ninth earlier question isn't in the prompt; **Start fresh** starts a new `cv_…`.
 
 **SB-2902 One document can't crowd out the rest.** At most 3 chunks of one document go into what the model reads for one answer, after the live checks and the one-copy rule (SB-2202). The rest of the context goes to other documents. Search results are unchanged.

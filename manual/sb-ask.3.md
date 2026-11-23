@@ -63,6 +63,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "conversation": "cv_01JD3QB9…",
   "agent": "ask",
   "dropped": 0,
+  "earlier_dropped": 0,
   "people": [{ "email": "ann@acme-logistics.example", "title": "Support lead", "cites": 1 }],
   "terms": [{ "term": "PO", "means": "purchase order" }],
   "notice_stale": { "stale": 2, "of": 3, "oldest_days": 412 },
@@ -83,6 +84,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `notice_stale` | (SB-2701) `{ "stale": N, "of": M, "oldest_days": D }` when more than half of the answer's cited documents (each counted once) are `stale`, below; `oldest_days` is the oldest of the stale ones. Only cites in the answer are counted, so a document the asker can't open changes nothing. Omitted otherwise |
 | `notice_sync` | (SB-2704) `[{ "kind": "docs", "last_success": "…" }]`, one per connector kind of the answer's cites whose last successful sync is older than the 15-minute freshness target (sb-ingest(7)); `last_success` is `null` when the cell has no record of one or can't read it, which is shown as unknown, never as fresh (LAW-03). It names a connector kind only, never a document. Omitted when every kind is fresh |
 | `claims[].cites[].reviewed` | (SB-2702) The date a steward of a space that holds the document marked it **Reviewed, still right** at this version (`YYYY-MM-DD`), the newest such mark. Omitted otherwise. The steward is not named |
+| `earlier_dropped` | (SB-2901) How many of the conversation's earlier questions were left out of what the model read: only the last 8 are sent. 0 otherwise. The conversation itself keeps every question |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner |
 
 ### How the `ask` agent runs, exactly
@@ -95,7 +97,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 5. **Notice:** `most_uncited` when more than half the claims are uncited; `notice_stale` and `notice_sync` as above, beside it.
 6. **Trace:** every answer gets a new trace id `tr_…`, returned in the body and in `X-SB-Trace`, and stored with the answer and its decision list for 30 days.
 
-**Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist.
+**Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist. **Short conversations** (SB-2901): a later turn sends at most the **last 8** earlier questions, oldest first; any before them are left out of the prompt, and the response says how many in `earlier_dropped`. Nothing is removed from the stored conversation, and the trace keeps the turn's place in it. The web UI then says the earliest questions weren't used and offers **Start fresh**, which starts a new conversation.
+
+**One document, three chunks** (SB-2902): of the chunks that pass every check and the one-copy rule (Copies, below), at most **3 of one document** go into what the model reads for an answer or a draft, its best-ranked ones, in rank order; the rest of the budget goes to other documents. Search results (`GET /v1/search`) are unchanged.
 
 ### Glossary, exactly (SB-2203)
 

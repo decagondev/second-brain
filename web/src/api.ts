@@ -68,6 +68,8 @@ export interface AskResponse {
   // Most cited documents stale, and connectors behind on syncing (SB-2701, SB-2704).
   notice_stale?: { stale: number; of: number; oldest_days: number };
   notice_sync?: { kind: string; last_success: string | null }[];
+  // How many earlier questions of the conversation the model didn't read (SB-2901).
+  earlier_dropped?: number;
 }
 
 // A space glossary entry the question used (SB-2203).

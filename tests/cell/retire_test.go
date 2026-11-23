@@ -89,4 +89,14 @@ func TestRetireThroughARunningCell(t *testing.T) {
 	if body := ask(); !strings.Contains(body, "wrong.md") {
 		t.Fatalf("a document brought back isn't cited again: %s", body)
 	}
+
+	// SB-2903: the scope report, for operators only, counts what each pattern matches.
+	if code, _ := r.do(t, "GET", "/v1/admin/index/scopes", ""); code != http.StatusForbidden {
+		t.Fatalf("a non-operator read the scope report: %d", code)
+	}
+	r.operator(t)
+	if code, body := r.do(t, "GET", "/v1/admin/index/scopes", ""); code != 200 ||
+		!strings.Contains(body, `{"space":"ops","kind":"docs","pattern":"/Ops/**","matches":2,"of":2,"problem":"too_wide"}`) {
+		t.Fatalf("scope report: %d %s", code, body)
+	}
 }

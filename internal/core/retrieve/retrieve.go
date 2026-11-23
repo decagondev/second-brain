@@ -233,6 +233,21 @@ func OneCopy(chunks []ports.Chunk) []ports.Chunk {
 	return out
 }
 
+// PerDocument keeps at most n chunks of each document, the first ones, in order
+// (sb-ask(3), One document, three chunks; SB-2902). Run it after OneCopy.
+func PerDocument(chunks []ports.Chunk, n int) []ports.Chunk {
+	seen := map[string]int{}
+	out := chunks[:0:0]
+	for _, c := range chunks {
+		k := docKey(c)
+		if seen[k] < n {
+			seen[k]++
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
 func newer(a, b ports.Chunk) bool {
 	if !a.Seen.Equal(b.Seen) {
 		return a.Seen.After(b.Seen)
