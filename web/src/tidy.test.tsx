@@ -111,3 +111,30 @@ describe("unused terms and freshness", () => {
     expect(await violations(container)).toEqual([]);
   });
 });
+
+// SB-2904, SB-2907
+describe("eval cases and start here to check", () => {
+  it("lists start here items with why, counts the hidden ones, and names cases to check", async () => {
+    const fetcher: Fetch = async (u) => {
+      if (u.endsWith("/retired")) return json({ items: [], hidden: 0 });
+      return json({
+        items: [],
+        hidden: [],
+        start_here: [
+          { item: "docs:Ops/rota.md", result: { cite: "docs:Ops/rota.md@3", title: "Rota", snippet: "", flags: [] }, why: ["stale", "unreadable"], members_without: 3, members: 4 },
+          { item: "docs:Ops/gone.md", why: ["gone"], members_without: 0, members: 4 },
+        ],
+        start_here_hidden: 1,
+        evals_to_check: [{ id: "ev_2", question: "When is the zebra cutoff?", check: "new_version" }],
+      });
+    };
+    const { container } = render(<ReviewList space="ops" fetcher={fetcher} />);
+    await act(async () => {});
+    const sec = screen.getByRole("region", { name: "Start here needs a look" });
+    expect(sec.textContent).toContain("Rota · stale, many members can't open it (3 of 4 members)");
+    expect(sec.textContent).toContain("docs:Ops/gone.md · gone from the index");
+    expect(sec.textContent).toContain("1 more item you can't open needs a look");
+    expect(screen.getByRole("region", { name: "Eval cases to check" }).textContent).toContain("the document it expects has a new version");
+    expect(await violations(container)).toEqual([]);
+  });
+});

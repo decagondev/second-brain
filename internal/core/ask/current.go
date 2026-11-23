@@ -176,18 +176,17 @@ type ReviewResponse struct {
 	SameName []SameName `json:"same_name,omitempty"`
 	// Freshness counts the space's answers resting mostly on stale cites (SB-2807).
 	Freshness Freshness `json:"freshness"`
+	// EvalsToCheck are the space's eval cases whose expected document changed (SB-2904).
+	EvalsToCheck []EvalCheck `json:"evals_to_check,omitempty"`
+	// StartHere are the space's start_here items gone stale, and StartHidden how many more
+	// the steward can't open (SB-2907).
+	StartHere   []StartItem `json:"start_here,omitempty"`
+	StartHidden int         `json:"start_here_hidden,omitempty"`
 }
 
-// Review lists the documents a space holds that answers lean on but that are older than
-// its review_after_days, and any marked as a wrong citation, for its stewards (SB-1709).
-func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src ReviewSource, after int) (ReviewResponse, error) {
-	if err := x.reviewer(ctx, s, name); err != nil {
-		return ReviewResponse{}, err
-	}
-	if after <= 0 {
-		after = DefaultReviewDays
-	}
-	now := x.Now().UTC()
+// reviewTraces reads the traces once: the review window's, and the space's stale-answer
+// counts this calendar month and last (SB-2807).
+func (x Stewards) reviewTraces(ctx context.Context, src ReviewSource, name string, now time.Time) ([]Trace, Freshness, error) {
 	last := MonthStart(MonthStart(now).Add(-time.Hour))
 	from := now.Add(-ReviewWindow)
 	if last.Before(from) {
@@ -195,7 +194,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	}
 	all, err := src.Between(ctx, x.Agent.Tenant, from, now)
 	if err != nil {
-		return ReviewResponse{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
+		return nil, Freshness{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 	}
 	var traces, thisMonth, lastMonth []Trace
 	for _, t := range all {
@@ -209,7 +208,23 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			lastMonth = append(lastMonth, t)
 		}
 	}
-	fresh := Freshness{ThisMonth: StaleShare(thisMonth, SpaceKey(name)), LastMonth: StaleShare(lastMonth, SpaceKey(name))}
+	return traces, Freshness{ThisMonth: StaleShare(thisMonth, SpaceKey(name)), LastMonth: StaleShare(lastMonth, SpaceKey(name))}, nil
+}
+
+// Review lists the documents a space holds that answers lean on but that are older than
+// its review_after_days, and any marked as a wrong citation, for its stewards (SB-1709).
+func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src ReviewSource, after int) (ReviewResponse, error) {
+	if err := x.reviewer(ctx, s, name); err != nil {
+		return ReviewResponse{}, err
+	}
+	if after <= 0 {
+		after = DefaultReviewDays
+	}
+	now := x.Now().UTC()
+	traces, fresh, err := x.reviewTraces(ctx, src, name, now)
+	if err != nil {
+		return ReviewResponse{}, err
+	}
 	fbs, err := src.FeedbackBetween(ctx, x.Agent.Tenant, now.Add(-ReviewWindow), now)
 	if err != nil {
 		return ReviewResponse{}, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
@@ -253,6 +268,12 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	}
 	notes = append(notes, moved...)
 	if out.SameName, err = x.sameName(ctx, s, held); err != nil {
+		return out, err
+	}
+	if out.EvalsToCheck, err = x.evalsToCheck(ctx, name); err != nil {
+		return out, err
+	}
+	if out.StartHere, out.StartHidden, err = x.startStale(ctx, s, lk, name); err != nil {
 		return out, err
 	}
 	if len(refs) == 0 && len(notes) == 0 && len(held) == 0 {

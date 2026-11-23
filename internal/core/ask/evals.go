@@ -24,14 +24,18 @@ const (
 // EvalCase is one of the tenant's own eval cases: a question, in a space, and the document
 // its answer should cite. No answer is ever kept.
 type EvalCase struct {
-	ID       string    `json:"id"`
-	Tenant   string    `json:"tenant"`
-	Space    string    `json:"space"` // spc_NAME
-	Question string    `json:"question"`
-	Expect   string    `json:"expect"` // KIND:ID
-	Wrong    string    `json:"wrong"`  // KIND:ID the reported answer cited wrongly
-	By       string    `json:"by"`     // the steward it runs as
-	At       time.Time `json:"at"`
+	ID       string `json:"id"`
+	Tenant   string `json:"tenant"`
+	Space    string `json:"space"` // spc_NAME
+	Question string `json:"question"`
+	Expect   string `json:"expect"` // KIND:ID
+	// ExpectVersion is the expected document's version when the case was added (SB-2904).
+	ExpectVersion int `json:"expect_version,omitempty"`
+	// Check is, when listed, "new_version" or "gone": the expected document changed since.
+	Check string    `json:"check,omitempty"`
+	Wrong string    `json:"wrong"` // KIND:ID the reported answer cited wrongly
+	By    string    `json:"by"`    // the steward it runs as
+	At    time.Time `json:"at"`
 	// The last run's release and result, and the last release it passed on.
 	LastRelease string `json:"last_release,omitempty"`
 	LastPassed  bool   `json:"last_passed"`
@@ -107,11 +111,12 @@ func (x Stewards) AddEvalCase(ctx context.Context, s tenancy.Scope, name, report
 	if !found || t.Turn >= len(qs) {
 		return EvalCase{}, fmt.Errorf("%w: the reported question is gone", ErrInvalid)
 	}
-	if err := x.heldAndOpen(ctx, s, name, wrong, expect); err != nil {
+	version, err := x.heldAndOpen(ctx, s, name, wrong, expect)
+	if err != nil {
 		return EvalCase{}, err
 	}
 	c := EvalCase{ID: x.NewID("ev_"), Tenant: x.Agent.Tenant, Space: SpaceKey(name), Question: qs[t.Turn], Expect: expect,
-		Wrong: wrong, By: s.User(), At: x.Now().UTC()}
+		ExpectVersion: version, Wrong: wrong, By: s.User(), At: x.Now().UTC()}
 	if err := x.Evals.PutEvalCase(ctx, c); err != nil {
 		return EvalCase{}, fmt.Errorf("%w: eval cases: %v", ErrUnavailable, err)
 	}
@@ -122,11 +127,12 @@ func (x Stewards) AddEvalCase(ctx context.Context, s tenancy.Scope, name, report
 }
 
 // heldAndOpen checks that the space holds the wrong document and the expected one, and that
-// the steward can open the expected one now, as a search checks it.
-func (x Stewards) heldAndOpen(ctx context.Context, s tenancy.Scope, name, wrong, expect string) error {
+// the steward can open the expected one now, as a search checks it; it returns the expected
+// document's version.
+func (x Stewards) heldAndOpen(ctx context.Context, s tenancy.Scope, name, wrong, expect string) (int, error) {
 	lk, ok := x.Agent.Index.(ports.DocLookup)
 	if !ok {
-		return fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+		return 0, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
 	}
 	var refs []ports.SourceRef
 	for _, k := range []string{wrong, expect} {
@@ -135,26 +141,65 @@ func (x Stewards) heldAndOpen(ctx context.Context, s tenancy.Scope, name, wrong,
 	}
 	cs, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Refs: refs})
 	if err != nil {
-		return fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+		return 0, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 	}
 	docs := firsts(latest(cs))
 	for _, k := range []string{wrong, expect} {
 		if c, ok := docs[k]; !ok || !contains(c.Spaces, SpaceKey(name)) {
-			return fmt.Errorf("%w: space %s doesn't hold %s", ErrInvalid, name, k)
+			return 0, fmt.Errorf("%w: space %s doesn't hold %s", ErrInvalid, name, k)
 		}
 	}
 	who, err := x.Agent.who(ctx, s)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	res, err := retrieve.Allowed(ctx, s, who, x.Agent.Auth, []ports.Chunk{docs[expect]}, 1)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrUnavailable, err)
+		return 0, fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}
 	if len(res.Context) == 0 {
-		return fmt.Errorf("%w: you can't open %s now", ErrInvalid, expect)
+		return 0, fmt.Errorf("%w: you can't open %s now", ErrInvalid, expect)
 	}
-	return nil
+	return docs[expect].Version, nil
+}
+
+// Checks of a case (SB-2904).
+const (
+	CheckNewVersion = "new_version"
+	CheckGone       = "gone"
+)
+
+// CaseChecks marks the cases whose expected document has a newer version than the one the
+// case was made against, or is gone from the index: by id, CheckNewVersion or CheckGone.
+func (a Agent) CaseChecks(ctx context.Context, cases []EvalCase) (map[string]string, error) {
+	out := map[string]string{}
+	if len(cases) == 0 {
+		return out, nil
+	}
+	lk, ok := a.Index.(ports.DocLookup)
+	if !ok {
+		return out, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+	}
+	var refs []ports.SourceRef
+	for _, c := range cases {
+		kind, id, _ := strings.Cut(c.Expect, ":")
+		refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
+	}
+	cs, err := lk.Docs(ctx, a.Tenant, ports.DocQuery{Refs: refs})
+	if err != nil {
+		return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	docs := firsts(latest(cs))
+	for _, c := range cases {
+		d, ok := docs[c.Expect]
+		switch {
+		case !ok:
+			out[c.ID] = CheckGone
+		case c.ExpectVersion > 0 && d.Version > c.ExpectVersion:
+			out[c.ID] = CheckNewVersion
+		}
+	}
+	return out, nil
 }
 
 // EvalCasesOf lists a space's cases for its stewards.
@@ -174,6 +219,13 @@ func (x Stewards) EvalCasesOf(ctx context.Context, s tenancy.Scope, name string)
 		if c.Space == SpaceKey(name) {
 			out = append(out, c)
 		}
+	}
+	checks, err := x.Agent.CaseChecks(ctx, out)
+	if err != nil {
+		return nil, err
+	}
+	for i := range out {
+		out[i].Check = checks[out[i].ID]
 	}
 	return out, nil
 }
@@ -249,7 +301,10 @@ func (h Hold) Instead(target string) string {
 // RunCases runs, on release, every case whose last run was on another release, and returns
 // the cases with their new results and the hold their regressions make, if any. A case
 // that never passed holds nothing.
-func RunCases(cases []EvalCase, release string, run func(EvalCase) (bool, error)) ([]EvalCase, *Hold, error) {
+//
+// A case in check (SB-2904), whose expected document changed since, that fails is not a
+// regression: it holds nothing.
+func RunCases(cases []EvalCase, release string, run func(EvalCase) (bool, error), check map[string]string) ([]EvalCase, *Hold, error) {
 	out := make([]EvalCase, 0, len(cases))
 	var hold *Hold
 	for _, c := range cases {
@@ -265,7 +320,7 @@ func RunCases(cases []EvalCase, release string, run func(EvalCase) (bool, error)
 		if err != nil {
 			return nil, nil, err
 		}
-		if !ok && c.PassedOn != "" && c.PassedOn != release {
+		if !ok && c.PassedOn != "" && c.PassedOn != release && check[c.ID] == "" {
 			if hold == nil {
 				hold = &Hold{Release: release, Back: c.PassedOn}
 			}

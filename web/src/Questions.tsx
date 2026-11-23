@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -626,6 +626,35 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
   );
 }
 
+const startWhy: Record<string, string> = {
+  gone: msg("gone from the index"),
+  stale: msg("stale"),
+  unreadable: msg("many members can't open it"),
+};
+
+// Start here items gone stale (SB-2907): each with why; ones the steward can't open counted.
+function StartHereStale({ items, hidden }: { items: StartItem[]; hidden: number }) {
+  if (items.length === 0 && hidden === 0) return null;
+  return (
+    <section aria-label={t("Start here needs a look")}>
+      <h3>{t("Start here needs a look")}</h3>
+      <ul className="saved-list">
+        {items.map((it) => (
+          <li key={it.item}>
+            {it.result ? <DocLink r={it.result} /> : <span>{it.item}</span>}
+            <span className="meta">
+              {" "}
+              · {it.why.map((w) => t(startWhy[w] ?? w)).join(", ")}
+              {it.why.includes("unreadable") ? ` (${t("{n} of {m} members", { n: it.members_without, m: it.members })})` : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {hidden > 0 && <p className="refused">{tn(hidden, "{n} more item you can't open needs a look", "{n} more items you can't open need a look")}</p>}
+    </section>
+  );
+}
+
 // The share of the month's cited answers resting mostly on stale cites (SB-2807).
 function FreshnessLine({ f }: { f: Freshness }) {
   const pct = (c: { answers: number; stale: number }) => (c.answers > 0 ? Math.round((100 * c.stale) / c.answers) : 0);
@@ -846,6 +875,23 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
             terms: list.glossary_flagged.join(", "),
           })}
         </p>
+      )}
+      <StartHereStale items={list.start_here ?? []} hidden={list.start_here_hidden ?? 0} />
+      {list.evals_to_check && list.evals_to_check.length > 0 && (
+        <section aria-label={t("Eval cases to check")}>
+          <h3>{t("Eval cases to check")}</h3>
+          <ul className="saved-list">
+            {list.evals_to_check.map((c) => (
+              <li key={c.id}>
+                {c.question}
+                <span className="meta">
+                  {" "}
+                  · {c.check === "gone" ? t("the document it expects is gone") : t("the document it expects has a new version")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       <SameNames groups={list.same_name ?? []} />
       <NeverCited space={space} fetcher={fetcher} onRetired={() => setBump((b) => b + 1)} />

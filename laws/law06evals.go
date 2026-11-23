@@ -74,7 +74,7 @@ func law06Evals(r *rand.Rand, w *runtimeWorld, sys HoldSystem) error {
 	if _, err := update(r1, nil); err != nil {
 		return err
 	}
-	cases, hold, err := ask.RunCases(cases, r1, runOn(r1))
+	cases, hold, err := ask.RunCases(cases, r1, runOn(r1), nil)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func law06Evals(r *rand.Rand, w *runtimeWorld, sys HoldSystem) error {
 	if _, err := update(r2, nil); err != nil { // the channel names r2; the cell runs it
 		return err
 	}
-	_, hold, err = ask.RunCases(cases, r2, runOn(r2))
+	_, hold, err = ask.RunCases(cases, r2, runOn(r2), nil)
 	if err != nil {
 		return err
 	}

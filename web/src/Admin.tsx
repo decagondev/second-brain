@@ -19,6 +19,9 @@ export interface Health {
   // The machine on a self-hosted cell (SB-1802); absent on a managed one.
   box?: { facts_at: string | null; verdict: string; checks: { check: string; verdict: string; detail: string; fix?: string }[] };
   notify?: { last_run: string | null; via: string; sent: number; skipped: number; failed: number; warning: boolean; reason?: string };
+  // The index's leftovers (SB-2905) and input tokens per model call (SB-2906).
+  index?: { at: string | null; gone: number; unheld: number; warning: boolean };
+  prompt?: { p95: number; p95_before: number; warning: boolean };
 }
 
 // One answer in the unhelpful-answer queue (SB-1609): counts, decisions and the asker's own
@@ -83,7 +86,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   async function loadHealth() {
     try {
       const h = (await call(fetcher, "GET", "/v1/admin/health")) as Partial<Health>;
-      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box, notify: h.notify });
+      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box, notify: h.notify, index: h.index, prompt: h.prompt });
       setHealthError(undefined);
     } catch (e) {
       setHealth(undefined);
@@ -238,6 +241,32 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                 </p>
               </>
             ) : null}
+            {health.index && (
+              <>
+                <h3>{t("Index")}</h3>
+                <p className={health.index.warning ? "attention" : undefined}>
+                  {health.index.at
+                    ? t("Counted {at}: {gone} documents their source no longer lists, {unheld} no space holds. sb index prune --dry-run lists them.", {
+                        at: when(health.index.at),
+                        gone: String(health.index.gone),
+                        unheld: String(health.index.unheld),
+                      })
+                    : t("The index's leftovers haven't been counted yet.")}
+                </p>
+              </>
+            )}
+            {health.prompt && (
+              <>
+                <h3>{t("Prompt size")}</h3>
+                <p className={health.prompt.warning ? "attention" : undefined}>
+                  {t("Input tokens per model call, 95th percentile: {now} this week, {before} the week before.", {
+                    now: String(health.prompt.p95),
+                    before: String(health.prompt.p95_before),
+                  })}
+                  {health.prompt.warning ? ` ${t("Growing: over half again last week's.")}` : ""}
+                </p>
+              </>
+            )}
             <h3>{t("Box")}</h3>
             {!health.box ? (
               <p>{t("Managed by the cloud: no machine to check.")}</p>

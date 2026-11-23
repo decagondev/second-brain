@@ -177,3 +177,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-23 | LAW-09 | Tested (extended) | SB-2801: a retirement drops a document from its own space's answers only; company-wide only once every holding space retired it (TestRetireOnlyNarrowsItsSpace, TestRetireThroughARunningCell) |
 | 2026-11-23 | LAW-12 | Tested (extended) | SB-2806: an owner who is not one active user is told nothing, and the rest only of documents they can open (TestOwnedPastReview, TestOwnersHearMonthly) |
 | 2026-11-23 | LAW-16 | Tested (extended) | SB-2903: the scope report only counts; a typo and a too-wide pattern are named and nothing changes (TestScopeReport, TestRetireThroughARunningCell) |
+| 2026-11-23 | LAW-13 | Tested (extended) | SB-2905: a missed tombstone is counted and pruned, and nothing a source still lists is touched (TestLeftovers, TestIndexLeftoversThroughARunningCell) |

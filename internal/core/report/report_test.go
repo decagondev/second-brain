@@ -30,6 +30,14 @@ func (src) Actions(context.Context, string, time.Time, time.Time) ([]approvals.A
 	return []approvals.Action{{State: approvals.Ran}, {State: approvals.Rejected}, {State: approvals.PendingApproval}}, nil
 }
 func (src) Seats(context.Context, string) (int, error) { return 10, nil }
+
+// InputTokens: this week's calls twice last week's (SB-2906).
+func (src) InputTokens(_ context.Context, _ string, from, _ time.Time) ([]int, error) {
+	if from.Format("2006-01-02") == "2027-03-08" {
+		return []int{4000, 4000, 4100}, nil
+	}
+	return []int{2000, 2000, 2050}, nil
+}
 func (src) Tokens(context.Context, string, time.Time, time.Time) (int, int, error) {
 	return 2_000_000, 500_000, nil
 }
@@ -50,7 +58,7 @@ func TestBuildAndMarkdown(t *testing.T) {
 		t.Fatalf("%+v", r)
 	}
 	md := r.Markdown()
-	for _, want := range []string{"3 of 10 (30%)", "| Cited-answer rate | 75% |", "no_access 1", "6 / 2 (3.0 to 1)", "$13.50", "| Searches | 1 |", "| Asks refused by the per-person limit | 2 |", "| Answers resting on stale sources | 1 of 3 cited answers (33%) |"} {
+	for _, want := range []string{"3 of 10 (30%)", "| Cited-answer rate | 75% |", "no_access 1", "6 / 2 (3.0 to 1)", "$13.50", "| Searches | 1 |", "| Asks refused by the per-person limit | 2 |", "| Answers resting on stale sources | 1 of 3 cited answers (33%) |", "| Input tokens per model call (95th percentile) | 4100 (last week 2050, growing) |"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("report lacks %q:\n%s", want, md)
 		}

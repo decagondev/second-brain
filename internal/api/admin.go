@@ -15,6 +15,7 @@ import (
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
+	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/retention"
@@ -65,6 +66,10 @@ type Admin struct {
 // IndexReports are the operator's reports on the index: counts and locations only.
 type IndexReports interface {
 	ScopeReport(ctx context.Context) ([]route.PatternCount, error)
+	// Leftovers are the documents their source no longer lists and the chunks no space
+	// holds; Prune removes the first, audited (SB-2905).
+	Leftovers(ctx context.Context) (gone, unheld []ports.Chunk, err error)
+	Prune(ctx context.Context, actor, reason string) (int, error)
 }
 
 // Register mounts the endpoints.
@@ -81,6 +86,8 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
 	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
 	mux.HandleFunc("GET /v1/admin/index/scopes", h.guard(h.scopes))
+	mux.HandleFunc("GET /v1/admin/index/leftovers", h.guard(h.leftovers))
+	mux.HandleFunc("POST /v1/admin/index/prune", h.guard(h.prune))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
@@ -344,6 +351,48 @@ func (h Admin) scopes(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 		rows = []route.PatternCount{}
 	}
 	h.ok(w, map[string]any{"patterns": rows})
+}
+
+// leftovers lists the index's leftovers by cite (SB-2905); it changes nothing.
+func (h Admin) leftovers(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Index == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The index can't be read in this cell."))
+		return
+	}
+	gone, unheld, err := h.Index.Leftovers(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "A source or the index can't be read, so nothing is called a leftover."))
+		return
+	}
+	cites := func(cs []ports.Chunk) []string {
+		out := []string{}
+		for _, c := range cs {
+			out = append(out, c.Cite)
+		}
+		return out
+	}
+	h.ok(w, map[string]any{"gone": cites(gone), "unheld": cites(unheld)})
+}
+
+// prune removes the documents their source no longer lists, with a reason (SB-2905).
+func (h Admin) prune(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&req); err != nil || strings.TrimSpace(req.Reason) == "" {
+		h.fail(w, errs.New(errs.EINVAL, "Say why: the body is {\"reason\": \"…\"}."))
+		return
+	}
+	if h.Index == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The index can't be read in this cell."))
+		return
+	}
+	n, err := h.Index.Prune(r.Context(), s.User(), strings.TrimSpace(req.Reason))
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The prune didn't finish; the audit log says how far it got."))
+		return
+	}
+	h.ok(w, map[string]any{"pruned": n})
 }
 
 func (h Admin) switches(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {

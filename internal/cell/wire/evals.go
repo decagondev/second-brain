@@ -77,7 +77,13 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 		}
 		return ec.Passes(resp), nil
 	}
-	updated, hold, err := ask.RunCases(cases, c.Release, run)
+	checks, err := agent.CaseChecks(ctx, cases)
+	if err != nil {
+		return nil, err
+	}
+	c.Metrics.Set("sb_eval_cases_to_check", "The tenant's eval cases whose expected document changed or is gone (sb-evals(7); SB-2904).",
+		map[string]string{"tenant": tenant}, float64(len(checks)))
+	updated, hold, err := ask.RunCases(cases, c.Release, run, checks)
 	if err != nil {
 		return nil, err
 	}

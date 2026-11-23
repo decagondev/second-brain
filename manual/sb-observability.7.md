@@ -117,6 +117,7 @@ Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report g
 | Actions | proposed, approved, rejected, expired, `Ran` with a receipt, `DidNotRun` |
 | Stale answers | (SB-2807) cited answers that carried `notice_stale` (most of their cites stale, sb-ask(3)) ÷ cited answers, for the cell, as a count and a share; never which documents, titles or questions |
 | Spend | model tokens and their cost at the release's price table |
+| Input tokens per model call | (SB-2906) the 95th percentile of the input tokens of each model call this week, and last week's, from the usage ledger; marked **growing** when it is over 1.5 times last week's. Counts only |
 | Notifications | (SB-2607) the notify job's last run: when, the channel, and its counts sent, skipped and failed; never who |
 
 The same numbers answer `GET /v1/admin/usage?week=2027-W10` (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat). Exactly (SB-1608): the `report` job writes it to `state/reports/WEEK.md` and posts it as JSON, `{ "kind": "weekly_report", "tenant", "week", "markdown" }`, to `alerts.report_webhook`, or to `alerts.webhook` when that is the only one set (sb-cell(5)). A delivery that fails after its retries fails the run, so its missed finish raises `job_missed`; with neither webhook set the file is the delivery.

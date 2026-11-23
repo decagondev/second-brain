@@ -71,7 +71,7 @@ Every timed job runs from **Cloud Scheduler**, which publishes to the cell's Pub
 |---|---|---|---|
 | `sync` | every minute (Cloud Scheduler's finest; the jitter is in the job) | incremental sync of every connector (sb-ingest(7), Sync) | LAW-13 |
 | `anchor` | hourly, at minute 5 | sign the latest audit hash and write it to the WORM bucket | LAW-11 |
-| `retention` | daily at 03:00 | the retention sweep (sb-tenant(5)) | |
+| `retention` | daily at 03:00 | the retention sweep (sb-tenant(5)), then counts the index's leftovers for health (sb-admin(3); SB-2905) | |
 | `backup` | daily at 02:00 | the 3-2-1 backup (sb-audit(7)) | LAW-11 |
 | `report` | Mondays at 07:00 | the weekly leadership report (sb-observability(7)) | |
 | `review` | the 1st of January, April, July and October at 05:00 | open the quarter's access review for each restricted space (sb-spaces(7), Access reviews) | LAW-16 |

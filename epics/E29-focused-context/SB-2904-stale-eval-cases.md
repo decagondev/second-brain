@@ -13,7 +13,7 @@ summary: "An eval case keeps expecting a document version that has moved on."
 | Manual | [`sb-evals(7)`](../../manual/sb-evals.7.md) |
 | Laws | — |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ An eval case keeps expecting a document version that has moved on.
 
 ## Acceptance criteria
 
-- [ ] A case from a wrong citation records the version it expects; a new version or a gone document marks it check this case on the steward screen
-- [ ] The nightly run reports it apart from failures; nothing is deleted on its own
-- [ ] A new version marks the case and it isn't a regression
+- [x] A case from a wrong citation records the version it expects; a new version or a gone document marks it check this case on the steward screen
+- [x] The nightly run reports it apart from failures; nothing is deleted on its own
+- [x] A new version marks the case and it isn't a regression
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Record
-- [ ] UI and job
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Record
+- [x] UI and job
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S28.2; tested in internal/core/ask/startstale_test.go, tests/spaces/leftovers_test.go, tests/cell/leftovers_test.go, internal/core/health/prompt_test.go, internal/core/report, internal/cli and web/src/tidy.test.tsx.
 
 ## Definition of done
 

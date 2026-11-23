@@ -227,6 +227,9 @@ func (u usage) Drafts(ctx context.Context, tenant string, from, to time.Time) (i
 func (u usage) Tokens(ctx context.Context, tenant string, from, to time.Time) (int, int, error) {
 	return u.ledger.Tokens(ctx, tenant, from, to)
 }
+func (u usage) InputTokens(ctx context.Context, tenant string, from, to time.Time) ([]int, error) {
+	return u.ledger.InputTokens(ctx, tenant, from, to)
+}
 func (u usage) Seats(ctx context.Context, tenant string) (int, error) {
 	return u.dir.ActiveUsers(ctx, tenant)
 }
@@ -528,7 +531,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 				}
 			}
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
-		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant}
+		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant,
+		StartItems: func(name string) []string { return m.Spaces[name].StartHere }, Members: c.noteReaders(m)}
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}

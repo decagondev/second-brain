@@ -32,7 +32,7 @@ summary: Epics, waves, slices and tickets.
 | W25 Easier to Operate | 5 | 2 | 0 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
 | W26 Fresh Answers | 6 | 0 | 0 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
 | W27 A Tidy Corpus | 7 | 0 | 0 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
-| W28 A Focused Context | 3 | 0 | 4 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
+| W28 A Focused Context | 7 | 0 | 0 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -559,7 +559,7 @@ flowchart LR
 | [SB-2901](E29-focused-context/SB-2901-short-conversations.md) | S28.1 | E29 | Conversations stay short | Done |
 | [SB-2902](E29-focused-context/SB-2902-per-document-cap.md) | S28.1 | E29 | One document can't crowd out the rest | Done |
 | [SB-2903](E29-focused-context/SB-2903-scope-report.md) | S28.1 | E29 | Scope report | Done |
-| [SB-2904](E29-focused-context/SB-2904-stale-eval-cases.md) | S28.2 | E29 | Eval cases that went stale | Open |
-| [SB-2905](E29-focused-context/SB-2905-index-leftovers.md) | S28.2 | E29 | Index leftovers | Open |
-| [SB-2906](E29-focused-context/SB-2906-prompt-growth.md) | S28.2 | E29 | Prompt growth watch | Open |
-| [SB-2907](E29-focused-context/SB-2907-start-here-stale.md) | S28.2 | E29 | Start here goes stale | Open |
+| [SB-2904](E29-focused-context/SB-2904-stale-eval-cases.md) | S28.2 | E29 | Eval cases that went stale | Done |
+| [SB-2905](E29-focused-context/SB-2905-index-leftovers.md) | S28.2 | E29 | Index leftovers | Done |
+| [SB-2906](E29-focused-context/SB-2906-prompt-growth.md) | S28.2 | E29 | Prompt growth watch | Done |
+| [SB-2907](E29-focused-context/SB-2907-start-here-stale.md) | S28.2 | E29 | Start here goes stale | Done |

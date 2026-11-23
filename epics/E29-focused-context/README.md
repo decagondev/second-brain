@@ -25,11 +25,11 @@ Proposed 2026-11-23 after W25 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A conversation sends at most the last 8 earlier questions
-- [ ] At most 3 chunks of one document reach the model, and the eval suite doesn't regress
-- [ ] A scope typo and a too-wide pattern are named
-- [ ] Index leftovers are counted in health and pruned without touching what a source still lists
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A conversation sends at most the last 8 earlier questions
+- [x] At most 3 chunks of one document reach the model, and the eval suite doesn't regress
+- [x] A scope typo and a too-wide pattern are named
+- [x] Index leftovers are counted in health and pruned without touching what a source still lists
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

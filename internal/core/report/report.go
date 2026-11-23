@@ -11,6 +11,7 @@ import (
 
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/health"
 	"example.com/second-brain/internal/core/notify"
 )
 
@@ -61,10 +62,13 @@ type Report struct {
 	DraftsDiscarded int            `json:"drafts_discarded"`
 	Actions         map[string]int `json:"actions"`
 	// Notify is the notify job's last run when the report was made (SB-2607); counts only.
-	Notify    *notify.RunRecord `json:"notify,omitempty"`
-	TokensIn  int               `json:"tokens_in"`
-	TokensOut int               `json:"tokens_out"`
-	SpendUSD  float64           `json:"spend_usd"`
+	Notify *notify.RunRecord `json:"notify,omitempty"`
+	// Prompt is the 95th percentile of input tokens per model call this week and the week
+	// before (SB-2906).
+	Prompt    *health.Prompt `json:"prompt,omitempty"`
+	TokensIn  int            `json:"tokens_in"`
+	TokensOut int            `json:"tokens_out"`
+	SpendUSD  float64        `json:"spend_usd"`
 }
 
 // WeekOf is the ISO week label and its Monday-to-Monday UTC bounds.
@@ -191,6 +195,17 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 			r.Notify = &rec
 		}
 	}
+	if ps, ok := src.(PromptSource); ok {
+		week, err := ps.InputTokens(ctx, tenant, from, to)
+		if err != nil {
+			return r, err
+		}
+		before, err := ps.InputTokens(ctx, tenant, from.AddDate(0, 0, -7), from)
+		if err != nil {
+			return r, err
+		}
+		r.Prompt = health.PromptFrom(week, before)
+	}
 	if r.TokensIn, r.TokensOut, err = src.Tokens(ctx, tenant, from, to); err != nil {
 		return r, err
 	}
@@ -260,6 +275,13 @@ func (r Report) Markdown() string {
 	fmt.Fprintf(&b, "| Actions | %d proposed, %d approved, %d rejected, %d expired, %d ran with a receipt, %d did not run |\n",
 		r.Actions["proposed"], r.Actions["approved"], r.Actions["rejected"], r.Actions["expired"], r.Actions["ran_with_receipt"], r.Actions["did_not_run"])
 	fmt.Fprintf(&b, "| Spend | $%.2f (%d input, %d output tokens) |\n", r.SpendUSD, r.TokensIn, r.TokensOut)
+	if p := r.Prompt; p != nil {
+		grew := ""
+		if p.Warning {
+			grew = ", growing"
+		}
+		fmt.Fprintf(&b, "| Input tokens per model call (95th percentile) | %d (last week %d%s) |\n", p.P95, p.P95Before, grew)
+	}
 	if n := r.Notify; n != nil {
 		state := ""
 		if n.Error || n.Failed > 0 {
@@ -268,6 +290,11 @@ func (r Report) Markdown() string {
 		fmt.Fprintf(&b, "| Notifications | last run %s by %s%s: %d sent, %d skipped, %d failed |\n", n.At.UTC().Format("2006-01-02 15:04 UTC"), n.Via, state, n.Sent, n.Skipped, n.Failed)
 	}
 	return b.String()
+}
+
+// PromptSource is a Source that keeps each model call's input tokens (SB-2906).
+type PromptSource interface {
+	InputTokens(ctx context.Context, tenant string, from, to time.Time) ([]int, error)
 }
 
 // NotifySource is a Source that keeps the notify job's last run (SB-2607).

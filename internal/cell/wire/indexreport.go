@@ -2,8 +2,16 @@ package wire
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"time"
 
+	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/route"
 )
@@ -56,4 +64,91 @@ func (x indexReports) ScopeReport(ctx context.Context) ([]route.PatternCount, er
 		}
 	}
 	return route.Report(spaces, locs), nil
+}
+
+// pipeline is the ingest pipeline's part that reads leftovers, for one connector kind.
+func (x indexReports) pipeline(kind string) ingest.Pipeline {
+	c := x.c
+	return ingest.Pipeline{Tenant: c.Config.Tenant, Connector: c.Parts().Connectors[kind], Index: c.Index, Kind: kind,
+		Spaces: func(ctx context.Context) ([]ports.Space, error) { return c.Spaces.Spaces(ctx, c.Config.Tenant) }}
+}
+
+// Leftovers lists, by cite, the index's documents their connector no longer lists and the
+// chunks no space holds (SB-2905). A connector that can't be listed fails it.
+func (x indexReports) Leftovers(ctx context.Context) (gone, unheld []ports.Chunk, err error) {
+	kinds := make([]string, 0, len(x.c.Parts().Connectors))
+	for k := range x.c.Parts().Connectors {
+		kinds = append(kinds, k)
+	}
+	sort.Strings(kinds)
+	for _, k := range kinds {
+		g, u, err := x.pipeline(k).Leftovers(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("wire: %s can't be listed: %w", k, err)
+		}
+		gone, unheld = append(gone, g...), append(unheld, u...)
+	}
+	return gone, unheld, nil
+}
+
+// Prune removes the documents their connector no longer lists, with an audit row before
+// and after; nothing a source still lists is touched (LAW-13: the index is derived).
+func (x indexReports) Prune(ctx context.Context, actor, reason string) (int, error) {
+	c := x.c
+	if _, err := c.Audit.Write(ctx, audit.Event{Actor: actor, Kind: "config", Subject: "index:prune", State: "requested", Reason: reason}); err != nil {
+		return 0, err
+	}
+	gone, _, err := x.Leftovers(ctx)
+	if err != nil {
+		return 0, err
+	}
+	for _, ch := range gone {
+		if err := c.Index.Delete(ctx, c.Config.Tenant, ports.SourceRef{Kind: ch.Kind, ID: ch.SourceID}); err != nil {
+			return 0, err
+		}
+	}
+	if _, err := c.Audit.Write(ctx, audit.Event{Actor: actor, Kind: "config", Subject: "index:prune", State: "pruned",
+		Reason: fmt.Sprintf("gone=%d", len(gone))}); err != nil {
+		return len(gone), err
+	}
+	return len(gone), nil
+}
+
+// leftoverCount is the nightly count health reads.
+type leftoverCount struct {
+	At     time.Time `json:"at"`
+	Gone   int       `json:"gone"`
+	Unheld int       `json:"unheld"`
+}
+
+func leftoverPath(state string) string { return filepath.Join(state, "index", "leftovers.json") }
+
+// CountLeftovers counts the index's leftovers for health (the nightly retention job).
+func (c *Cell) CountLeftovers(ctx context.Context, now time.Time) error {
+	gone, unheld, err := indexReports{c}.Leftovers(ctx)
+	if err != nil {
+		return err
+	}
+	b, _ := json.Marshal(leftoverCount{At: now.UTC(), Gone: len(gone), Unheld: len(unheld)})
+	p := leftoverPath(c.Config.State)
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	if err := os.WriteFile(p+".tmp", b, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(p+".tmp", p)
+}
+
+// lastLeftovers reads the last count; found is false when there is none or it can't be read.
+func lastLeftovers(state string) (leftoverCount, bool) {
+	b, err := os.ReadFile(leftoverPath(state))
+	if err != nil {
+		return leftoverCount{}, false
+	}
+	var l leftoverCount
+	if json.Unmarshal(b, &l) != nil || l.At.IsZero() {
+		return leftoverCount{}, false
+	}
+	return l, true
 }

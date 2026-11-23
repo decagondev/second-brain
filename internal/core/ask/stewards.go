@@ -105,6 +105,10 @@ type Stewards struct {
 	Marks    MarkStore
 	Claimant Claimant
 	Replies  TemplateStore
+	// StartItems is a space's start_here list by name, and Members the emails of its active
+	// members now (SB-2907); nil checks no start_here items.
+	StartItems func(name string) []string
+	Members    func(ctx context.Context, space string) ([]string, error)
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).

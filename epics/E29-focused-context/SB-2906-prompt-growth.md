@@ -13,7 +13,7 @@ summary: "Prompts can grow week by week and nobody sees it."
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-observability(7)`](../../manual/sb-observability.7.md) |
 | Laws | LAW-07 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Prompts can grow week by week and nobody sees it.
 
 ## Acceptance criteria
 
-- [ ] Health and the weekly report show the week's 95th percentile of input tokens per model call
-- [ ] A warning when it is over 1.5 times the week before; counts only
-- [ ] A doubled week warns; a flat one doesn't
+- [x] Health and the weekly report show the week's 95th percentile of input tokens per model call
+- [x] A warning when it is over 1.5 times the week before; counts only
+- [x] A doubled week warns; a flat one doesn't
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Counts
-- [ ] Health and report
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Counts
+- [x] Health and report
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S28.2; tested in internal/core/ask/startstale_test.go, tests/spaces/leftovers_test.go, tests/cell/leftovers_test.go, internal/core/health/prompt_test.go, internal/core/report, internal/cli and web/src/tidy.test.tsx.
 
 ## Definition of done
 

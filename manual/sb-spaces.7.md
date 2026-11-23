@@ -114,7 +114,9 @@ A proposal records the steward, the hash of the manifest it was based on and the
 
 **Retire from answers (SB-2801).** A steward can take a superseded document out of their own space's answers, with a reason and, optionally, the document that replaces it; it stays at the source and in every other space, and **Bring back** undoes it (sb-ask(3), Documents to review). A retirement only narrows its own space (LAW-19).
 
-**Unused glossary terms (SB-2805).** The never-cited section also names the space's glossary terms no question asked in the space used in 180 days, so a steward can propose removing them in the manifest. Counts from the traces only; nothing is removed by itself.
+**Start here gone stale (SB-2907).** The review list also names the space's `start_here` items that are gone, stale, or that more than a quarter of its members can't open, each with why, so a new member's reading list doesn't rot unseen. An item the steward can't open is only counted (sb-ask(3), Documents to review).
+
+**Unused glossary terms (SB-2805). The never-cited section also names the space's glossary terms no question asked in the space used in 180 days, so a steward can propose removing them in the manifest. Counts from the traces only; nothing is removed by itself.
 
 **Freshness (SB-2807).** The steward's screen shows, for the space, the share of this month's cited answers that rested mostly on stale cites, and last month's, so a steward sees whether answers are getting staler. The weekly report has the same share for the whole cell (sb-observability(7)).
 

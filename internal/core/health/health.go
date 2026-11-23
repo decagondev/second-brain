@@ -61,6 +61,60 @@ type Report struct {
 	Box *Box `json:"box,omitempty"`
 	// Notify is the notify job's last run (SB-2607); absent on a cell with no channel.
 	Notify *Notify `json:"notify,omitempty"`
+	// Index is the nightly count of the index's leftovers (SB-2905), and Prompt the input
+	// tokens per model call (SB-2906). Counts only.
+	Index  *Index  `json:"index,omitempty"`
+	Prompt *Prompt `json:"prompt,omitempty"`
+}
+
+// IndexStale is how old the nightly leftover count may be before it warns.
+const IndexStale = 48 * time.Hour
+
+// Index is the last count of chunks of documents their source no longer lists (Gone), and
+// chunks no space holds (Unheld).
+type Index struct {
+	At      *time.Time `json:"at"`
+	Gone    int        `json:"gone"`
+	Unheld  int        `json:"unheld"`
+	Warning bool       `json:"warning"`
+}
+
+// IndexFrom judges the last count: above zero, missing or older than IndexStale warns.
+func IndexFrom(at time.Time, gone, unheld int, found bool, now time.Time) *Index {
+	if !found {
+		return &Index{Warning: true}
+	}
+	t := at.UTC()
+	return &Index{At: &t, Gone: gone, Unheld: unheld, Warning: gone+unheld > 0 || now.Sub(at) > IndexStale}
+}
+
+// Prompt is the 95th percentile of input tokens per model call this week and the week
+// before; Warning is this week's over 1.5 times the week before's.
+type Prompt struct {
+	P95       int  `json:"p95"`
+	P95Before int  `json:"p95_before"`
+	Warning   bool `json:"warning"`
+}
+
+// P95 is the nearest-rank 95th percentile of xs; 0 for none.
+func P95(xs []int) int {
+	if len(xs) == 0 {
+		return 0
+	}
+	s := append([]int(nil), xs...)
+	sort.Ints(s)
+	rank := (95*len(s) + 99) / 100 // ceil(0.95 n)
+	return s[rank-1]
+}
+
+// Grew reports this week's p95 over 1.5 times the week before's.
+func Grew(now, before int) bool { return before > 0 && 2*now > 3*before }
+
+// PromptFrom is the prompt watch from the week's and the week before's input tokens.
+func PromptFrom(week, before []int) *Prompt {
+	p := &Prompt{P95: P95(week), P95Before: P95(before)}
+	p.Warning = Grew(p.P95, p.P95Before)
+	return p
 }
 
 // NotifyStale is how long the notify job, every five minutes, may go without a run.

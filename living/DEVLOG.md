@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S28.2: Watch for creep
+
+**Wave/slice:** W28 / S28.2 (SB-2904 to SB-2907) · **Status:** Done
+
+**What:** An eval case keeps the version of the document it expects; when that document has a newer version or is gone the case is to check, on the case list and the review list, and a failing case to check holds no release. The nightly retention job counts the index's leftovers (documents their source no longer lists, chunks no space holds) for health, GET /v1/admin/index/leftovers lists them by cite, and `sb index prune` removes the gone ones with a reason and two audit rows. Health and the weekly report show the 95th percentile of input tokens per model call this week and last, warning when it grows by half. The review list names start_here items that are gone, stale or that more than a quarter of the space's members can't open, each with why.
+
+**Why this way:** Creep is slow: an eval case quietly tests last year's document, a missed tombstone keeps a deleted file answerable, prompts grow a little each week, and a new member's reading list rots. Each check only counts or narrows: prune touches nothing a source still lists (LAW-13: the index is derived), a source that can't be listed is an error rather than everything gone, member access is the live ACL where Unknown is can't (LAW-01), and every number is a count (LAW-07).
+
+**Learned:** The plan said prune would remove chunks no space holds too, but its own acceptance says nothing a source still lists is touched, and a company-wide ask can still use such a chunk; prune removes only documents their source no longer lists, and lists the rest as a scope to fix.
+
+**Laws:** LAW-01, LAW-07, LAW-11 (prune is audited), LAW-13. Every law test is still green.
+
 ## 2026-11-23 S28.1: Keep the context short
 
 **Wave/slice:** W28 / S28.1 (SB-2901 to SB-2903) · **Status:** Done

@@ -55,6 +55,7 @@ commands:
   tenant  check|apply|verify FILE      validate, apply and verify a tenant manifest
   tenant  retention --plan [--days N]  what the retention job would delete
   space   init|templates|diff|scope-report ...   department spaces: start one, preview a reorg, check scopes
+  index   prune [--dry-run] [--reason TEXT]   the index's leftovers: list them, or remove what no source lists
   kill    agent|connector|space|tenant ...   set a kill switch
   unkill  agent|connector|space|tenant ...   clear a kill switch
   audit   verify|tail|export           audit log tools
@@ -140,8 +141,6 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceTemplates(rest[2:])
 	case "space diff":
 		return e.spaceDiff(rest[2:])
-	case "space scope-report":
-		return e.spaceScopeReport(rest[2:])
 	}
 	if code, ok := e.boxCommand(name, rest[2:]); ok {
 		return code
@@ -159,6 +158,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 // scanner; ok is false for any other name.
 func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 	switch name {
+	case "space scope-report":
+		return e.spaceScopeReport(args), true
+	case "index prune":
+		return e.indexPrune(args), true
 	case "selfhost doctor":
 		return e.selfhostDoctor(args), true
 	case "selfhost verify-bundle":
@@ -204,7 +207,7 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
+	if cmd == "tenant" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
 		return true
 	}
 	for k := range planned {

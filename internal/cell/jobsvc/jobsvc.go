@@ -223,6 +223,11 @@ func (s *Service) retention(ctx context.Context) error {
 	if err == nil && len(r.Failed) > 0 {
 		err = fmt.Errorf("jobs: retention failed for %s", strings.Join(r.Failed, ", "))
 	}
+	// The index's leftovers for health (SB-2905). A count that fails leaves the last one,
+	// which health calls stale after two days: never a clean index it didn't see.
+	if cerr := s.Cell.CountLeftovers(ctx, s.now()); cerr != nil {
+		s.Cell.Log.Error("index leftovers not counted", "error", cerr.Error())
+	}
 	return err
 }
 

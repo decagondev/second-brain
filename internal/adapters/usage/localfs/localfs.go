@@ -139,6 +139,17 @@ func (l *Ledger) Tokens(_ context.Context, tenant string, from, to time.Time) (i
 	return int(s["tokens_in"]), int(s["tokens_out"]), nil
 }
 
+// InputTokens are the input tokens of each model call in [from, to) (SB-2906).
+func (l *Ledger) InputTokens(_ context.Context, tenant string, from, to time.Time) ([]int, error) {
+	var out []int
+	err := l.each(tenant, func(e entry) {
+		if e.Kind == "tokens_in" && !e.At.Before(from) && e.At.Before(to) {
+			out = append(out, int(e.N))
+		}
+	})
+	return out, err
+}
+
 // Drafts implements report.Source's Drafts.
 func (l *Ledger) Drafts(_ context.Context, tenant string, from, to time.Time) (int, int, error) {
 	s, err := l.sums(tenant, from, to)

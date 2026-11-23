@@ -399,6 +399,18 @@ export interface ReviewData {
   glossary_flagged?: string[];
   same_name?: SameNameGroup[];
   freshness?: Freshness;
+  // Eval cases whose expected document changed (SB-2904), and start_here items gone stale (SB-2907).
+  evals_to_check?: { id: string; question: string; check: string }[];
+  start_here?: StartItem[];
+  start_here_hidden?: number;
+}
+
+export interface StartItem {
+  item: string;
+  result?: SearchResult;
+  why: string[];
+  members_without: number;
+  members: number;
 }
 
 // Documents with the same title and different text (SB-2802).
@@ -421,6 +433,9 @@ export async function reviewList(
       glossary_flagged?: string[];
       same_name?: SameNameGroup[];
       freshness?: Freshness;
+      evals_to_check?: { id: string; question: string; check: string }[];
+      start_here?: StartItem[];
+      start_here_hidden?: number;
     }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
@@ -432,6 +447,9 @@ export async function reviewList(
       personal_data: typeof d.personal_data === "number" ? d.personal_data : undefined,
       glossary_flagged: Array.isArray(d.glossary_flagged) ? d.glossary_flagged : undefined,
       same_name: Array.isArray(d.same_name) ? d.same_name.filter((g) => Array.isArray(g.items)) : undefined,
+      evals_to_check: Array.isArray(d.evals_to_check) ? d.evals_to_check : undefined,
+      start_here: Array.isArray(d.start_here) ? d.start_here.filter((x) => typeof x.item === "string" && Array.isArray(x.why)) : undefined,
+      start_here_hidden: typeof d.start_here_hidden === "number" ? d.start_here_hidden : undefined,
       freshness: d.freshness && typeof d.freshness.this_month?.answers === "number" && typeof d.freshness.last_month?.answers === "number" ? d.freshness : undefined,
     };
   } catch {

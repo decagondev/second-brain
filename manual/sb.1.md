@@ -21,6 +21,7 @@ sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
 sb space   templates
 sb space   diff FILE --idp-snapshot SNAPSHOT [--json]
 sb space   scope-report (--cell URL | --tenant T) [--json]
+sb index   prune [--dry-run] [--reason TEXT] (--cell URL | --tenant T)   (sb-admin(3), index leftovers)
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
@@ -60,6 +61,8 @@ Every command:
 - uses the stable exit codes below, so scripts and agents can branch on them;
 - writes nothing locally except `~/.config/sb/credentials` (an OIDC device-flow token);
 - is audited server-side when it changes anything.
+
+`sb index prune --dry-run` prints the index's leftovers by cite (`GET /v1/admin/index/leftovers`): documents their source no longer lists, and chunks no space holds. Without `--dry-run` it removes the documents their source no longer lists, which needs `--reason` and is audited (`POST /v1/admin/index/prune`; SB-2905). It never touches a document its source still lists, so chunks no space holds are only listed.
 
 During the build, every command in the SYNOPSIS exists. A command whose ticket hasn't landed yet exits 2 with `ENOTIMPL` and names the ticket, for example `sb tenant check: not built yet (SB-101)`. It never pretends to succeed.
 

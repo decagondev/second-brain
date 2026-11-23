@@ -225,6 +225,19 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 		}
 		r.Notify = health.NotifyFrom(rec, found, via, now)
 	}
+	l, found := lastLeftovers(c.Config.State)
+	r.Index = health.IndexFrom(l.At, l.Gone, l.Unheld, found, now)
+	if c.Usage != nil {
+		week, err := c.Usage.InputTokens(ctx, c.Config.Tenant, now.Add(-7*24*time.Hour), now)
+		if err != nil {
+			return r, err
+		}
+		before, err := c.Usage.InputTokens(ctx, c.Config.Tenant, now.Add(-14*24*time.Hour), now.Add(-7*24*time.Hour))
+		if err != nil {
+			return r, err
+		}
+		r.Prompt = health.PromptFrom(week, before)
+	}
 	return r, nil
 }
 
