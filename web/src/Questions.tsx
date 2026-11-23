@@ -115,6 +115,8 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
 const kinds: { id: string; name: string }[] = [
   { id: "replies", name: "Replies to my questions" },
   { id: "questions", name: "New questions for spaces I steward" },
+  { id: "digest", name: "What changed in my spaces, weekly" },
+  { id: "watch", name: "Changes to my watched questions' sources" },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).

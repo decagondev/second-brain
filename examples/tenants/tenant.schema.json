@@ -83,6 +83,10 @@
       },
       "type": "object"
     },
+    "digest": {
+      "description": "The weekly digest's IANA time zone, or off (SB-2103). Default UTC.",
+      "type": "string"
+    },
     "duties": {
       "additionalProperties": {
         "additionalProperties": false,

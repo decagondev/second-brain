@@ -108,3 +108,33 @@ func TestNotificationsThroughARunningCell(t *testing.T) {
 		t.Fatalf("a run told something twice: %v", err)
 	}
 }
+
+// SB-2104 through a running cell: a person watches their own saved question, and no one
+// else's.
+func TestWatchASavedQuestionThroughARunningCell(t *testing.T) {
+	share := t.TempDir()
+	r := startWith(t, func(idp *oidctest.IdP, base string) wire.Config {
+		cfg := celltest.FixtureFor(t, idp, base, notesManifest+"digest: Europe/Berlin\n", nil)
+		cfg.Connectors = map[string]wire.ConnectorConfig{"docs": {Base: "file://" + share}}
+		return cfg
+	})
+	r.signIn(t, "ann")
+	_, body := r.do(t, "POST", "/v1/saved", `{"question":"What is the refund limit?"}`)
+	var sq struct{ ID string }
+	_ = json.Unmarshal([]byte(body), &sq)
+	if code, body := r.do(t, "PUT", "/v1/saved/"+sq.ID+"/watch", `{"watch":true}`); code != 200 || !strings.Contains(body, `"watch":true`) {
+		t.Fatalf("watch: %d %s", code, body)
+	}
+	if code, body := r.do(t, "GET", "/v1/saved", ""); code != 200 || !strings.Contains(body, `"watch":true`) || strings.Contains(body, "sources") {
+		t.Fatalf("saved: %d %s", code, body)
+	}
+	if code, _ := r.do(t, "PUT", "/v1/saved/sq_nope/watch", `{"watch":true}`); code != 403 {
+		t.Fatalf("someone else's: %d", code)
+	}
+	if code, _ := r.do(t, "PUT", "/v1/saved/"+sq.ID+"/watch", `{}`); code != 400 {
+		t.Fatalf("no watch: %d", code)
+	}
+	if code, body := r.do(t, "PUT", "/v1/saved/"+sq.ID+"/watch", `{"watch":false}`); code != 200 || !strings.Contains(body, `"watch":false`) {
+		t.Fatalf("unwatch: %d %s", code, body)
+	}
+}

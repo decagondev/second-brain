@@ -24,7 +24,7 @@ summary: Epics, waves, slices and tickets.
 | W17 Easy to Run | 8 | 0 | 0 | Planned 2026-11-22 with the user (E18): doctor, host health, restore, offline upgrade, rollback, proxy, external Postgres, support bundle ([10-run-protect-close.md](../docs/10-run-protect-close.md)). **W17 built.** |
 | W18 Protect the Data | 7 | 0 | 0 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
 | W19 Close the Loops | 5 | 0 | 0 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
-| W20 Keep People in the Loop | 2 | 0 | 4 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
+| W20 Keep People in the Loop | 4 | 0 | 2 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
 | W21 Keep Knowledge Owned | 0 | 0 | 7 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
 | W22 Fit the Site | 0 | 0 | 7 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -441,8 +441,8 @@ flowchart LR
 |---|---|---|---|---|
 | [SB-2101](E21-keep-people-in-the-loop/SB-2101-stewards-notified.md) | S20.1 | E21 | Stewards hear about new questions | Done |
 | [SB-2102](E21-keep-people-in-the-loop/SB-2102-askers-notified.md) | S20.1 | E21 | Askers hear about replies | Done |
-| [SB-2103](E21-keep-people-in-the-loop/SB-2103-weekly-digest.md) | S20.2 | E21 | Weekly "what changed" digest | Open |
-| [SB-2104](E21-keep-people-in-the-loop/SB-2104-watch-saved.md) | S20.2 | E21 | Watch a saved question | Open |
+| [SB-2103](E21-keep-people-in-the-loop/SB-2103-weekly-digest.md) | S20.2 | E21 | Weekly "what changed" digest | Done |
+| [SB-2104](E21-keep-people-in-the-loop/SB-2104-watch-saved.md) | S20.2 | E21 | Watch a saved question | Done |
 | [SB-2105](E21-keep-people-in-the-loop/SB-2105-mattermost-share.md) | S20.3 | E21 | Share in Mattermost | Open |
 | [SB-2106](E21-keep-people-in-the-loop/SB-2106-handover-by-name.md) | S20.3 | E21 | Handover by name | Open |
 

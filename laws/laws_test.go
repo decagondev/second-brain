@@ -388,6 +388,14 @@ func TestLAW01_StewardRepliesShowOnlyWhatTheAskerCanOpen(t *testing.T) {
 	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01StewardCites(r, questionSystem{}) })
 }
 
+func TestLAW01_TheDigestNamesOnlyWhatThePersonCanOpenNow(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01Digest(r, RealDigest{}) })
+}
+
+func TestLAW13_ARebuildIsNeverInTheDigest(t *testing.T) {
+	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law01Digest(r, RealDigest{}) })
+}
+
 func TestLAW21_NotificationsGoToTheStewardsThereAreNow(t *testing.T) {
 	Check(t, "LAW-21", runs, func(r *rand.Rand) error { return law21Notify(r, RealNotify{}) })
 }

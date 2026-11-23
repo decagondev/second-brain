@@ -45,6 +45,9 @@ func Format(t Tenant) []byte {
 	if t.Notes {
 		line("notes", "true")
 	}
+	if t.Digest != "" {
+		line("digest", t.Digest)
+	}
 	if len(t.Exclude) > 0 {
 		keys := sorted(t.Exclude)
 		parts := make([]string, len(keys))

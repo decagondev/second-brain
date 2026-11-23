@@ -40,16 +40,16 @@ type RealNotify struct{}
 // Job implements NotifySystem.
 func (RealNotify) Job(store *tracemem.Store, dir *dirmem.Dir, facts ask.SpaceFacts, send notify.Sender, now func() time.Time) notify.Job {
 	return notify.Job{Tenant: "acme-logistics", Base: "https://brain.acme-logistics.example", Questions: store, Facts: facts,
-		Dir: dir, Prefs: store, Send: send, Clock: &memClock{}, Now: now}
+		Dir: dir, Prefs: store, Send: send, Clock: memClock{}, Now: now}
 }
 
-type memClock struct {
-	t     time.Time
-	found bool
-}
+type memClock map[string]time.Time
 
-func (c *memClock) Last(context.Context) (time.Time, bool, error) { return c.t, c.found, nil }
-func (c *memClock) Mark(_ context.Context, t time.Time) error     { c.t, c.found = t, true; return nil }
+func (c memClock) Last(_ context.Context, part string) (time.Time, bool, error) {
+	t, ok := c[part]
+	return t, ok, nil
+}
+func (c memClock) Mark(_ context.Context, part string, t time.Time) error { c[part] = t; return nil }
 
 // fakeSlack is Slack's Web API for direct messages: each email is a user, each post kept.
 type fakeSlack struct {

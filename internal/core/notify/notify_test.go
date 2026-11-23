@@ -55,12 +55,26 @@ func (d dir) User(_ context.Context, _, id string) (ports.User, bool, error) {
 }
 
 type clock struct {
-	t     time.Time
-	found bool
+	t      time.Time
+	found  bool
+	weekly map[string]time.Time
 }
 
-func (c *clock) Last(context.Context) (time.Time, bool, error) { return c.t, c.found, nil }
-func (c *clock) Mark(_ context.Context, t time.Time) error     { c.t, c.found = t, true; return nil }
+func (c *clock) Last(_ context.Context, part string) (time.Time, bool, error) {
+	if part == "weekly" {
+		t, ok := c.weekly[part]
+		return t, ok, nil
+	}
+	return c.t, c.found, nil
+}
+func (c *clock) Mark(_ context.Context, part string, t time.Time) error {
+	if part == "weekly" {
+		c.weekly[part] = t
+		return nil
+	}
+	c.t, c.found = t, true
+	return nil
+}
 
 type sent struct {
 	to  Person
@@ -108,7 +122,7 @@ func world(now time.Time) (Job, *sender, *clock) {
 		users: map[string]ports.User{"usr_ann": user("usr_ann", true), "usr_bob": user("usr_bob", true), "usr_cat": user("usr_cat", true),
 			"usr_sam": user("usr_sam", true), "usr_gone": user("usr_gone", false), "usr_hal": user("usr_hal", true)}}
 	s := &sender{}
-	c := &clock{t: now.Add(-5 * time.Minute), found: true}
+	c := &clock{t: now.Add(-5 * time.Minute), found: true, weekly: map[string]time.Time{}}
 	return Job{Tenant: "acme-logistics", Base: "https://brain.acme.example/", Questions: qs,
 		Facts: func(sp string) ([]string, string, bool) {
 			switch sp {
@@ -213,5 +227,126 @@ func TestPrefsCheck(t *testing.T) {
 	}
 	if p, _ := (Prefs{}).Check(); p.Off == nil {
 		t.Fatal("nil off")
+	}
+}
+
+func TestMonday(t *testing.T) {
+	berlin, _ := time.LoadLocation("Europe/Berlin")
+	for _, c := range []struct {
+		now  string
+		zone *time.Location
+		want string
+	}{
+		{"2026-11-23T08:00:00Z", nil, "2026-11-23T08:00:00Z"},    // a Monday, 08:00 UTC
+		{"2026-11-23T07:59:00Z", nil, "2026-11-16T08:00:00Z"},    // not yet this week's
+		{"2026-11-25T12:00:00Z", nil, "2026-11-23T08:00:00Z"},    // Wednesday
+		{"2026-11-23T07:00:00Z", berlin, "2026-11-23T07:00:00Z"}, // 08:00 in Berlin is 07:00 UTC
+		{"2026-11-23T06:59:00Z", berlin, "2026-11-16T07:00:00Z"},
+	} {
+		now, _ := time.Parse(time.RFC3339, c.now)
+		if got := Monday(now, c.zone).Format(time.RFC3339); got != c.want {
+			t.Errorf("Monday(%s) = %s; want %s", c.now, got, c.want)
+		}
+	}
+}
+
+type watches struct{ qs []ask.SavedQuestion }
+
+func (w *watches) UpdateSaved(_ context.Context, _, user, id string, f func(*ask.SavedQuestion)) (bool, error) {
+	for i := range w.qs {
+		if w.qs[i].ID == id && w.qs[i].User == user {
+			f(&w.qs[i])
+			return true, nil
+		}
+	}
+	return false, nil
+}
+func (w *watches) Watched(context.Context, string) ([]ask.SavedQuestion, error) {
+	var out []ask.SavedQuestion
+	for _, q := range w.qs {
+		if q.Watch {
+			out = append(out, q)
+		}
+	}
+	return out, nil
+}
+
+func TestWeeklyDigestAndWatches(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC) // a Monday
+	j, s, c := world(now)
+	j.Questions = questions{}
+	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
+	j.Digest, j.Zone = true, time.UTC
+	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) {
+		return []string{"usr_ann", "usr_bob", "usr_ann", "usr_gone", "usr_cat"}, nil
+	}
+	j.Changes = func(_ context.Context, u string) ([]string, int, error) {
+		switch u {
+		case "usr_ann":
+			return []string{"Refund policy", "Carrier contracts"}, 3, nil
+		case "usr_bob":
+			return nil, 0, nil // nothing changed for bob
+		}
+		return []string{"Should not be sent"}, 0, nil
+	}
+	w := &watches{[]ask.SavedQuestion{
+		{ID: "sq_1", User: "usr_cat", Question: "SECRETQUESTION a", Space: "spc_finance", Watch: true, Sources: "h1"},
+		{ID: "sq_2", User: "usr_cat", Question: "SECRETQUESTION b", Space: "company", Watch: true, Sources: "h2"},
+		{ID: "sq_3", User: "usr_bob", Question: "SECRETQUESTION c", Watch: true, Sources: "same"},
+		{ID: "sq_4", User: "usr_gone", Question: "SECRETQUESTION d", Watch: true, Sources: "h4"},
+		{ID: "sq_5", User: "usr_ann", Question: "SECRETQUESTION e", Watch: false, Sources: "h5"},
+	}}
+	j.Watches = w
+	j.Sources = func(_ context.Context, u, _, q string) (string, error) {
+		if u == "usr_bob" {
+			return "same", nil
+		}
+		return "new", nil
+	}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, m := range s.got {
+		got = append(got, m.msg.Kind+" "+m.to.ID+": "+m.msg.Text+" <"+m.msg.Link+">")
+	}
+	want := []string{
+		"digest usr_ann: 5 documents changed in your spaces this week: Refund policy; Carrier contracts and 3 more <https://brain.acme.example/?tab=documents>",
+		"digest usr_cat: 1 document changed in your spaces this week: Should not be sent <https://brain.acme.example/?tab=documents>",
+		"watch usr_cat: The sources of 2 of your saved questions changed <https://brain.acme.example/?tab=saved>",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("sent:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	if w.qs[0].Sources != "new" || w.qs[1].Sources != "new" || w.qs[3].Sources != "h4" || w.qs[4].Sources != "h5" {
+		t.Errorf("hashes %+v", w.qs)
+	}
+	// The same week again sends nothing weekly.
+	s.got = nil
+	j.Now = func() time.Time { return now.Add(time.Hour) }
+	if _, err := j.Run(context.Background()); err != nil || len(s.got) != 0 {
+		t.Fatalf("again: %v %v", s.got, err)
+	}
+	// Off: no digest, but watches are still checked.
+	j, s, c = world(now.AddDate(0, 0, 7))
+	j.Questions = questions{}
+	c.weekly["weekly"] = now
+	j.Digest, j.Askers, j.Changes = false, func(context.Context, time.Time, time.Time) ([]string, error) { return []string{"usr_ann"}, nil }, func(context.Context, string) ([]string, int, error) { return []string{"x"}, 0, nil }
+	w.qs[0].Sources = "old"
+	j.Watches, j.Sources = w, func(context.Context, string, string, string) (string, error) { return "new", nil }
+	if _, err := j.Run(context.Background()); err != nil || len(s.got) != 2 || s.got[0].msg.Kind != KindWatch || s.got[1].msg.Kind != KindWatch {
+		t.Fatalf("digest off: %+v %v", s.got, err)
+	}
+}
+
+func TestFirstWeekSendsNothing(t *testing.T) {
+	now := time.Date(2026, 11, 25, 9, 0, 0, 0, time.UTC)
+	j, s, c := world(now)
+	j.Questions = questions{}
+	j.Digest = true
+	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return []string{"usr_ann"}, nil }
+	j.Changes = func(context.Context, string) ([]string, int, error) { return []string{"x"}, 0, nil }
+	if _, err := j.Run(context.Background()); err != nil || len(s.got) != 0 || !c.weekly["weekly"].Equal(Monday(now, nil)) {
+		t.Fatalf("%v %v %v", s.got, err, c.weekly)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -31,6 +32,25 @@ type SavedQuestion struct {
 	Question string    `json:"question"`
 	Space    string    `json:"space"`
 	At       time.Time `json:"at"`
+	// Watch (SB-2104): the owner is told weekly when Sources, the SHA-256 of the
+	// question's search results as them, changes. No result is kept.
+	Watch   bool   `json:"watch"`
+	Sources string `json:"-"`
+}
+
+// WatchStore changes and lists watched saved questions (SB-2104).
+type WatchStore interface {
+	// UpdateSaved changes one of user's saved questions; found is false for anyone else's.
+	UpdateSaved(ctx context.Context, tenant, user, id string, f func(*SavedQuestion)) (found bool, err error)
+	Watched(ctx context.Context, tenant string) ([]SavedQuestion, error)
+}
+
+// SourcesHash is the SHA-256 of a search's cites (each carries its version), sorted.
+func SourcesHash(cites []string) string {
+	c := append([]string(nil), cites...)
+	sort.Strings(c)
+	h := sha256.Sum256([]byte(strings.Join(c, "\n")))
+	return hex.EncodeToString(h[:])
 }
 
 // Share is a question passed on by link. It holds no answer.
@@ -67,6 +87,10 @@ type Questions struct {
 	Now    func() time.Time
 	// Token makes a share id's random part; nil is 128 bits from crypto/rand.
 	Token func() (string, error)
+	// Watches and Sources watch saved questions (SB-2104): Sources is the hash of a
+	// question's search results as user, in space, now. Nil Watches can't watch.
+	Watches WatchStore
+	Sources func(ctx context.Context, user, space, question string) (string, error)
 }
 
 // ErrNoShare is an unknown, expired or other tenant's share, or someone else's saved question (EPERM).
@@ -133,6 +157,47 @@ func (x Questions) Unsave(ctx context.Context, s tenancy.Scope, id string) error
 		return ErrNoShare
 	}
 	return nil
+}
+
+// Watch starts or stops watching one of the scope's user's saved questions. Starting
+// takes the sources' hash now, so the first weekly check compares with today.
+func (x Questions) Watch(ctx context.Context, s tenancy.Scope, id string, on bool) (SavedQuestion, error) {
+	if err := s.Check(); err != nil || s.Tenant() != x.Tenant {
+		return SavedQuestion{}, ErrNoShare
+	}
+	if x.Watches == nil || x.Sources == nil {
+		return SavedQuestion{}, fmt.Errorf("%w: this cell can't watch questions", ErrUnavailable)
+	}
+	have, err := x.Store.SavedOf(ctx, x.Tenant, s.User())
+	if err != nil {
+		return SavedQuestion{}, fmt.Errorf("%w: saved: %v", ErrUnavailable, err)
+	}
+	var q *SavedQuestion
+	for i := range have {
+		if have[i].ID == id {
+			q = &have[i]
+		}
+	}
+	if q == nil {
+		return SavedQuestion{}, ErrNoShare
+	}
+	hash := ""
+	if on {
+		if hash, err = x.Sources(ctx, s.User(), q.Space, q.Question); err != nil {
+			return SavedQuestion{}, fmt.Errorf("%w: search: %v", ErrUnavailable, err)
+		}
+	}
+	found, err := x.Watches.UpdateSaved(ctx, x.Tenant, s.User(), id, func(sq *SavedQuestion) {
+		sq.Watch, sq.Sources = on, hash
+	})
+	if err != nil {
+		return SavedQuestion{}, fmt.Errorf("%w: saved: %v", ErrUnavailable, err)
+	}
+	if !found {
+		return SavedQuestion{}, ErrNoShare
+	}
+	q.Watch, q.Sources = on, hash
+	return *q, nil
 }
 
 // Share makes a link for a question. The audit row carries the question's hash only.

@@ -77,6 +77,9 @@ func Desired(t manifest.Tenant) []ports.Resource {
 	if t.Notes {
 		set("notes", "true")
 	}
+	if t.Digest != "" {
+		set("digest", t.Digest)
+	}
 	writes := map[string]bool{}
 	for _, w := range t.Workflows {
 		writes[manifest.Workflows[w]] = true

@@ -64,6 +64,7 @@ type TraceStore interface {
 	ask.QuestionStore
 	ask.StewardStore
 	notify.PrefStore
+	ask.WatchStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }

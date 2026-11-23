@@ -71,6 +71,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `questions_to` | string | no | none | `group:NAME`: who answers questions sent from company-wide asks that nothing answered (sb-ask(3), Questions to the stewards; SB-1704). Without it, only a space's questions reach anyone |
 | `notes` | bool | no | `false` | Stewards may publish replies as notes into `notes/` of the `docs: folder` share (sb-connector(3); SB-1705). Needs `connectors: { docs: folder }` |
+| `digest` | string | no | `UTC` | `off`, or an IANA time zone such as `Europe/Berlin`: the weekly digest and the watched saved questions run on Mondays at 08:00 there (sb-ask(3), Notifications; SB-2103, SB-2104). `off` sends no digest; watched questions are still checked, at 08:00 UTC |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
 | `groups` | map `group:NAME`→list of emails | no | none | Only with an `identity-platform://` idp: the steward-managed group list for a company without SCIM ([sb-identity(7)](sb-identity.7.md)). At most 200 groups and 2,000 members in all; each email at most once per group |
 | `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today |

@@ -185,3 +185,31 @@ describe("saved and shared questions", () => {
     expect(screen.getByRole("alert").textContent).toMatch(/expired/);
   });
 });
+
+// SB-2104
+describe("watching a saved question", () => {
+  it("watches and stops watching one of the person's saved questions", async () => {
+    const puts: [string, unknown][] = [];
+    let watch = false;
+    const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/spaces") return json({ spaces: [] });
+      if (init?.method === "PUT") {
+        puts.push([u, JSON.parse(String(init.body))]);
+        watch = JSON.parse(String(init.body)).watch;
+        return json({ id: "sq_1", watch });
+      }
+      if (u === "/v1/saved") return json({ items: [{ id: "sq_1", question: "refund limit?", space: "company", at: "2026-11-22T00:00:00Z", watch }] });
+      return json({ items: [] });
+    };
+    const { container } = render(<App fetcher={fetcher} tab="saved" />);
+    await act(async () => {});
+    const box = screen.getByLabelText("Watch: refund limit?") as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    expect(await violations(container)).toEqual([]);
+    await act(async () => {
+      fireEvent.click(box);
+    });
+    expect(puts).toEqual([["/v1/saved/sq_1/watch", { watch: true }]]);
+    expect((screen.getByLabelText("Watch: refund limit?") as HTMLInputElement).checked).toBe(true);
+  });
+});

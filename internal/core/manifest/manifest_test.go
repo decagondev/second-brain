@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 var update = flag.Bool("update", false, "rewrite examples/tenants/tenant.schema.json")
@@ -133,6 +134,8 @@ func TestEveryErrorMessage(t *testing.T) {
 		{"approval user", valid + "workflows: [ticket-update]\napproval: { ticket-update: user:ann }\n", `m.yaml:8:28: approval.ticket-update: "user:ann" must be a group (group:NAME), never a user`},
 		{"int", valid + "retention_days: \"365\"\n", `m.yaml:7:17: retention_days: "365" must be a whole number`},
 		{"range", valid + "retention_days: 10\n", "m.yaml:7:17: retention_days: 10 must be between 30 and 3650"},
+		{"digest zone", valid + "digest: Mars/Olympus\n", "m.yaml:7:9: digest: must be off or an IANA time zone such as Europe/Berlin"},
+		{"digest local", valid + "digest: Local\n", "m.yaml:7:9: digest: must be off or an IANA time zone such as Europe/Berlin"},
 		{"min", valid + "budget_usd_month: 0\n", "m.yaml:7:19: budget_usd_month: 0 must be at least 1"},
 		{"exclude type", valid + "exclude: [a]\n", `m.yaml:7:10: exclude: must be a map, e.g. { chat: ["#hr-*"] }`},
 		{"exclude kind", valid + "exclude: { wiki: [a] }\n", "m.yaml:7:12: exclude.wiki: unknown connector kind; use docs, chat, tickets, crm, code, hris or accounting"},
@@ -278,5 +281,21 @@ func TestIdentityPlatformAndGroups(t *testing.T) {
 	}
 	if _, ds := Check([]byte(b.String())); !strings.Contains(format("m.yaml", ds), "at most 200 groups") {
 		t.Errorf("201 groups accepted: %s", format("m.yaml", ds))
+	}
+}
+
+// SB-2103: the digest's zone.
+func TestDigestZone(t *testing.T) {
+	for _, v := range []string{"off", "UTC", "Europe/Berlin", "America/New_York"} {
+		m, diags := Check([]byte(valid + "digest: " + v + "\n"))
+		if len(diags) > 0 || m.Digest != v {
+			t.Errorf("%s: %v %q", v, diags, m.Digest)
+		}
+	}
+	if z, _ := DigestZone("off"); z != nil {
+		t.Error("off has a zone")
+	}
+	if z, _ := DigestZone(""); z != time.UTC {
+		t.Error("the default isn't UTC")
 	}
 }

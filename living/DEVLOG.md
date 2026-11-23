@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S20.2: what changed, for you
+
+**Wave/slice:** W20 / S20.2 (SB-2103, SB-2104) · **Status:** Done
+
+**What:** Once a week (the first notify run after Monday 08:00 in the manifest's new `digest` time zone, or never with `digest: off`) each person who asked anything in 90 days gets the titles of what changed in their spaces, as `GET /v1/changes` shows them at that moment. A saved question can be watched (`PUT /v1/saved/{id}/watch`, a checkbox in the Saved tab): the same weekly run searches it again as its owner and says when its sources changed.
+
+**Why this way:** Both run as the person at send time through `wire.Cell.ScopeAs`, which reads their groups from the directory then, so the digest is exactly what they'd see if they opened the page (LAW-01), and the change list already ignores rebuilds (LAW-13). Watching uses search rather than the model: what changed is the sources, and a weekly ask per watched question would load a CPU box; only a hash of the cites is kept. The time zone is the `digest` field itself, so the feature stays one setting.
+
+**Learned:** A fresh cell would otherwise send its first digest on whatever day it's installed; the first run now only marks the week.
+
+**Laws:** LAW-01 (`TestLAW01_TheDigestNamesOnlyWhatThePersonCanOpenNow`) and LAW-13 (`TestLAW13_ARebuildIsNeverInTheDigest`) over the real job, agent, pipeline and index, with documents that change, then drop the person, then a rebuild; the same law checks the watch message names no source and only a hash is kept (LAW-07). The self-test catches a digest that doesn't check as the person and one that lists everything. Every law test is still green.
+
 ## 2026-11-23 S20.1: stewards and askers are told
 
 **Wave/slice:** W20 / S20.1 (SB-2101, SB-2102) · **Status:** Done

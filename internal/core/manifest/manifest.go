@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+	_ "time/tzdata" // digest time zones on a machine without a zone database
 	"unicode"
 )
 
@@ -30,12 +32,14 @@ type Tenant struct {
 	PilotGroup     string            `json:"pilot_group"`
 	// QuestionsTo answers company-wide questions nothing answered (SB-1704); Notes lets
 	// stewards publish replies as notes into the docs: folder share (SB-1705).
-	QuestionsTo string              `json:"questions_to"`
-	Notes       bool                `json:"notes"`
-	Exclude     map[string][]string `json:"exclude"`
-	Groups      map[string][]string `json:"groups"`
-	Spaces      map[string]Space    `json:"spaces"`
-	Barriers    [][2]string         `json:"barriers"`
+	QuestionsTo string `json:"questions_to"`
+	Notes       bool   `json:"notes"`
+	// Digest is the weekly digest's time zone, "off", or "" for UTC (SB-2103).
+	Digest   string              `json:"digest"`
+	Exclude  map[string][]string `json:"exclude"`
+	Groups   map[string][]string `json:"groups"`
+	Spaces   map[string]Space    `json:"spaces"`
+	Barriers [][2]string         `json:"barriers"`
 }
 
 // Duty is a workflow's segregation of duties (sb-approvals(7); SB-1204): above Above (in
@@ -139,6 +143,15 @@ var fields = []field{
 			case "false":
 			default:
 				c.add(n, "notes", "must be true or false")
+			}
+		}
+	}},
+	{"digest", false, func(c *checker, n *node) {
+		if v, ok := c.scalar(n, "digest"); ok {
+			if _, err := DigestZone(v); err != nil {
+				c.add(n, "digest", "must be off or an IANA time zone such as Europe/Berlin")
+			} else {
+				c.t.Digest = v
 			}
 		}
 	}},
@@ -686,4 +699,18 @@ func orList(xs []string) string {
 		return xs[0]
 	}
 	return strings.Join(xs[:len(xs)-1], ", ") + " or " + xs[len(xs)-1]
+}
+
+// DigestZone is where the weekly digest runs (sb-tenant(5), digest): nil for off, UTC for
+// "". "Local" and anything else time can't load are errors.
+func DigestZone(v string) (*time.Location, error) {
+	switch v {
+	case "off":
+		return nil, nil
+	case "", "UTC":
+		return time.UTC, nil
+	case "Local":
+		return nil, fmt.Errorf("manifest: digest: Local is the machine's zone, not the company's")
+	}
+	return time.LoadLocation(v)
 }

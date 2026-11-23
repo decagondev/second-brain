@@ -461,3 +461,35 @@ func (s *Store) PutNotifyPrefs(_ context.Context, tenant, user string, p notify.
 	s.prefs[tenant+"/"+user] = prefRec{tenant, user, p}
 	return nil
 }
+
+var _ ask.WatchStore = (*Store)(nil)
+
+// UpdateSaved implements ask.WatchStore.
+func (s *Store) UpdateSaved(_ context.Context, tenant, user, id string, f func(*ask.SavedQuestion)) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	q, ok := s.saved[tenant+"/"+id]
+	if !ok || q.User != user {
+		return false, nil
+	}
+	f(&q)
+	q.Tenant, q.User, q.ID = tenant, user, id
+	s.saved[tenant+"/"+id] = q
+	return true, nil
+}
+
+// Watched implements ask.WatchStore: oldest first.
+func (s *Store) Watched(_ context.Context, tenant string) ([]ask.SavedQuestion, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []ask.SavedQuestion
+	for _, q := range s.saved {
+		if q.Tenant == tenant && q.Watch {
+			out = append(out, q)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At) || out[i].At.Equal(out[j].At) && out[i].ID < out[j].ID
+	})
+	return out, nil
+}

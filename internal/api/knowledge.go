@@ -49,6 +49,7 @@ func (h Knowledge) Register(mux *http.ServeMux) {
 		mux.HandleFunc("POST /v1/saved", h.save)
 		mux.HandleFunc("GET /v1/saved", h.saved)
 		mux.HandleFunc("DELETE /v1/saved/{id}", h.unsave)
+		mux.HandleFunc("PUT /v1/saved/{id}/watch", h.watch)
 		mux.HandleFunc("POST /v1/shares", h.share)
 		mux.HandleFunc("GET /v1/shares/{id}", h.openShare)
 	}
@@ -201,6 +202,26 @@ func (h Knowledge) unsave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.out().ok(w, "", map[string]bool{"removed": true})
+}
+
+func (h Knowledge) watch(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Watch *bool `json:"watch"`
+	}
+	if !readJSON(r, &body) || body.Watch == nil {
+		h.out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"watch": true}.`))
+		return
+	}
+	q, err := h.Questions.Watch(r.Context(), s, r.PathValue("id"), *body.Watch)
+	if err != nil {
+		h.qfail(w, err)
+		return
+	}
+	h.out().ok(w, "", map[string]any{"id": q.ID, "watch": q.Watch})
 }
 
 func (h Knowledge) share(w http.ResponseWriter, r *http.Request) {

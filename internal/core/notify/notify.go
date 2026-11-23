@@ -91,10 +91,11 @@ type PrefStore interface {
 	PutNotifyPrefs(ctx context.Context, tenant, user string, p Prefs) error
 }
 
-// Clock keeps when the job last read everything.
+// Clock keeps when the job last did each part: "last" (questions and replies) and
+// "weekly" (the digest and watched questions).
 type Clock interface {
-	Last(ctx context.Context) (t time.Time, found bool, err error)
-	Mark(ctx context.Context, t time.Time) error
+	Last(ctx context.Context, part string) (t time.Time, found bool, err error)
+	Mark(ctx context.Context, part string, t time.Time) error
 }
 
 // Directory is what the job reads about people, at send time.
@@ -119,7 +120,27 @@ type Job struct {
 	Lookback time.Duration
 	// Failed counts a send that failed, by kind; nil counts nothing.
 	Failed func(kind string)
+
+	// The weekly part (SB-2103, SB-2104) runs once a week, the first run after Monday
+	// 08:00 in Zone (nil is UTC). Digest false sends no digest.
+	Zone   *time.Location
+	Digest bool
+	// Askers are the people who asked anything in [from, to).
+	Askers func(ctx context.Context, from, to time.Time) ([]string, error)
+	// Changes are the titles of the documents that changed this week in user's spaces,
+	// as user, now (GET /v1/changes), at most MaxDigest, and how many more.
+	Changes func(ctx context.Context, user string) (titles []string, more int, err error)
+	// Watches and Sources check watched saved questions: Sources is the hash of the
+	// question's search results as user, in space, now.
+	Watches ask.WatchStore
+	Sources func(ctx context.Context, user, space, question string) (string, error)
 }
+
+// The digest's limits.
+const (
+	MaxDigest    = 10
+	DigestAskers = 90 * 24 * time.Hour // who asked in this long gets one
+)
 
 // FirstLookback is how far back the job reads on its first run.
 const FirstLookback = 10 * time.Minute
@@ -135,7 +156,7 @@ var ErrSend = errors.New("notify: some messages couldn't be sent")
 // Run tells what happened in [last run, now).
 func (j Job) Run(ctx context.Context) (Result, error) {
 	now := j.Now().UTC()
-	from, found, err := j.Clock.Last(ctx)
+	from, found, err := j.Clock.Last(ctx, "last")
 	if err != nil {
 		return Result{}, fmt.Errorf("notify: last run: %w", err)
 	}
@@ -147,6 +168,21 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		if out, err = j.plan(ctx, from, now); err != nil {
 			return Result{}, err
 		}
+	}
+	week, due, err := j.weeklyDue(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	var marks []func() error
+	if due {
+		more, mark, err := j.weekly(ctx, now)
+		if err != nil {
+			return Result{}, err
+		}
+		if j.Send != nil {
+			out = append(out, more...)
+		}
+		marks = append(marks, mark...)
 	}
 	var res Result
 	for _, o := range out {
@@ -166,8 +202,18 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		}
 		res.Sent++
 	}
-	if err := j.Clock.Mark(ctx, now); err != nil {
+	for _, m := range marks {
+		if err := m(); err != nil {
+			return res, fmt.Errorf("notify: watched questions: %w", err)
+		}
+	}
+	if err := j.Clock.Mark(ctx, "last", now); err != nil {
 		return res, fmt.Errorf("notify: mark: %w", err)
+	}
+	if due {
+		if err := j.Clock.Mark(ctx, "weekly", week); err != nil {
+			return res, fmt.Errorf("notify: mark: %w", err)
+		}
 	}
 	if res.Failed > 0 {
 		return res, fmt.Errorf("%w (%d)", ErrSend, res.Failed)
@@ -218,9 +264,7 @@ func plural(n int, one, many string) string {
 	return fmt.Sprintf("%d %s", n, many)
 }
 
-func (j Job) link() string {
-	return strings.TrimSuffix(j.Base, "/") + "/?tab=questions"
-}
+func (j Job) link() string { return j.tab("questions") }
 
 // stewardLink is the space's steward screen.
 func (j Job) stewardLink(space string) string {
@@ -342,4 +386,116 @@ func (j Job) askers(ctx context.Context, all []ask.StewardQuestion, from, now ti
 		return nil, err
 	}
 	return out, add(notes, "was published as a note", "were published as notes")
+}
+
+// Monday is the latest Monday 08:00 in zone at or before now.
+func Monday(now time.Time, zone *time.Location) time.Time {
+	if zone == nil {
+		zone = time.UTC
+	}
+	t := now.In(zone)
+	d := time.Date(t.Year(), t.Month(), t.Day(), 8, 0, 0, 0, zone)
+	for d.Weekday() != time.Monday || d.After(t) {
+		d = d.AddDate(0, 0, -1)
+	}
+	return d.UTC()
+}
+
+// weeklyDue reports whether this week's part hasn't run yet. On a cell's first run it
+// marks this week as done, so a new cell's first digest is next Monday's.
+func (j Job) weeklyDue(ctx context.Context, now time.Time) (time.Time, bool, error) {
+	week := Monday(now, j.Zone)
+	last, found, err := j.Clock.Last(ctx, "weekly")
+	if err != nil {
+		return week, false, fmt.Errorf("notify: last week: %w", err)
+	}
+	if !found {
+		return week, false, j.Clock.Mark(ctx, "weekly", week)
+	}
+	return week, last.Before(week), nil
+}
+
+// weekly plans the digest and the watched questions' messages; the marks save the new
+// hashes once the run has sent.
+func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	var out []outgoing
+	if j.Digest && j.Askers != nil && j.Changes != nil {
+		ids, err := j.Askers(ctx, now.Add(-DigestAskers), now)
+		if err != nil {
+			return nil, nil, fmt.Errorf("notify: askers: %w", err)
+		}
+		seen := map[string]bool{}
+		for _, id := range ids {
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			p, ok, err := j.person(ctx, id)
+			if err != nil {
+				return nil, nil, err
+			}
+			if !ok {
+				continue
+			}
+			titles, more, err := j.Changes(ctx, id)
+			if err != nil || len(titles) == 0 {
+				continue // nothing they can open changed, or it can't be read as them now
+			}
+			out = append(out, outgoing{p, Message{Kind: KindDigest, Text: digestText(titles, more), Link: j.tab("documents")}})
+		}
+	}
+	if j.Watches == nil || j.Sources == nil {
+		return out, nil, nil
+	}
+	qs, err := j.Watches.Watched(ctx, j.Tenant)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: watched: %w", err)
+	}
+	changed := map[string]int{}
+	var order []string
+	var marks []func() error
+	for _, q := range qs {
+		if _, ok, err := j.person(ctx, q.User); err != nil || !ok {
+			continue
+		}
+		h, err := j.Sources(ctx, q.User, q.Space, q.Question)
+		if err != nil || h == q.Sources {
+			continue
+		}
+		if changed[q.User] == 0 {
+			order = append(order, q.User)
+		}
+		changed[q.User]++
+		user, id := q.User, q.ID
+		marks = append(marks, func() error {
+			_, err := j.Watches.UpdateSaved(ctx, j.Tenant, user, id, func(sq *ask.SavedQuestion) { sq.Sources = h })
+			return err
+		})
+	}
+	for _, u := range order {
+		p, _, _ := j.person(ctx, u)
+		text := "The sources of 1 of your saved questions changed"
+		if n := changed[u]; n != 1 {
+			text = fmt.Sprintf("The sources of %d of your saved questions changed", n)
+		}
+		out = append(out, outgoing{p, Message{Kind: KindWatch, Text: text, Link: j.tab("saved")}})
+	}
+	return out, marks, nil
+}
+
+func (j Job) tab(name string) string {
+	return strings.TrimSuffix(j.Base, "/") + "/?tab=" + name
+}
+
+func digestText(titles []string, more int) string {
+	if len(titles) > MaxDigest {
+		more += len(titles) - MaxDigest
+		titles = titles[:MaxDigest]
+	}
+	n := len(titles) + more
+	text := plural(n, "document", "documents") + " changed in your spaces this week: " + strings.Join(titles, "; ")
+	if more > 0 {
+		text += fmt.Sprintf(" and %d more", more)
+	}
+	return text
 }

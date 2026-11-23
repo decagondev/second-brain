@@ -265,6 +265,36 @@ func TestNotifyPrefs(t *testing.T) {
 	}
 }
 
+// SB-2104: watching changes only the owner's saved question and keeps its hash.
+func TestWatchedQuestions(t *testing.T) {
+	d := open(t)
+	ctx := context.Background()
+	tr := Traces{d}
+	at := time.Now().UTC()
+	for _, q := range []ask.SavedQuestion{{ID: "sq_w1", Tenant: tenant, User: "usr_ann", Question: "a", Space: "company", At: at},
+		{ID: "sq_w2", Tenant: tenant, User: "usr_bo", Question: "b", Space: "company", At: at.Add(time.Second)}} {
+		if err := tr.PutSaved(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if found, err := tr.UpdateSaved(ctx, tenant, "usr_bo", "sq_w1", func(q *ask.SavedQuestion) { q.Watch = true }); found || err != nil {
+		t.Fatalf("someone else's: %v %v", found, err)
+	}
+	if found, err := tr.UpdateSaved(ctx, tenant, "usr_ann", "sq_w1", func(q *ask.SavedQuestion) { q.Watch, q.Sources = true, "h1" }); !found || err != nil {
+		t.Fatalf("own: %v %v", found, err)
+	}
+	ws, err := tr.Watched(ctx, tenant)
+	if err != nil || len(ws) != 1 || ws[0].ID != "sq_w1" || ws[0].Sources != "h1" || ws[0].User != "usr_ann" || ws[0].Question != "a" {
+		t.Fatalf("watched: %+v %v", ws, err)
+	}
+	if mine, _ := tr.SavedOf(ctx, tenant, "usr_ann"); len(mine) != 1 || !mine[0].Watch {
+		t.Fatalf("saved: %+v", mine)
+	}
+	if ws, _ := tr.Watched(ctx, "beta-freight"); len(ws) != 0 {
+		t.Fatal("LAW-02: another tenant's watches")
+	}
+}
+
 func TestActionsAndDecisions(t *testing.T) {
 	d := open(t)
 	ctx := context.Background()

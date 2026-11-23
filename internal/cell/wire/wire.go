@@ -513,7 +513,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Handover: func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error) {
 			return agent.Handover(ctx, s, person, emails, c.relations(m), c.Policy)
 		},
-		Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
+		Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now,
+			Watches: c.Traces, Sources: c.Sources}}.Register(mux)
 	admin := api.Admin{Tenant: tenant, Policy: c.Policy, Manifests: man, Kill: kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now},
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
 		Usage: c.Report,

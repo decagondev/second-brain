@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- A weekly digest of what changed in a person's spaces, checked as them when it's sent, and watched saved questions that say when their sources change; sb-tenant(5) `digest` sets the time zone or turns the digest off (SB-2103, SB-2104).
 - Stewards are told of new questions and askers of replies by chat direct message, with a link and never the text; a person can turn each kind off (SB-2101, SB-2102).
 - Staff can ask from Mattermost with a custom slash command at `POST /chat/mattermost`: verified by its token from the vault, matched by email to the directory, answered privately (SB-2005).
 - The folder connector reads Word, PowerPoint, OpenDocument text and HTML files as text, skipping macros, embedded objects, scripts and oversized archives (SB-2003). Notes read wider than their space appear on the stewards' review list with a count, and can be republished to the members who can still read them (SB-2004).

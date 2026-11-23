@@ -348,7 +348,7 @@ var _ ask.QuestionStore = Traces{}
 
 // PutSaved implements ask.QuestionStore (SB-1703).
 func (t Traces) PutSaved(ctx context.Context, q ask.SavedQuestion) error {
-	return put(ctx, t.Pool, q.Tenant, "saved", q.ID, meta{at: q.At, user: q.User, space: q.Space}, savedRec{q, q.Tenant, q.User}, true)
+	return put(ctx, t.Pool, q.Tenant, "saved", q.ID, meta{at: q.At, user: q.User, space: q.Space}, savedRec{q, q.Tenant, q.User, q.Sources}, true)
 }
 
 // SavedOf implements ask.QuestionStore: newest first.
@@ -383,12 +383,47 @@ type savedRec struct {
 	ask.SavedQuestion
 	T string `json:"tenant"`
 	U string `json:"user"`
+	H string `json:"sources,omitempty"` // the watch's hash (SB-2104)
 }
 
 func (r savedRec) full() ask.SavedQuestion {
 	q := r.SavedQuestion
-	q.Tenant, q.User = r.T, r.U
+	q.Tenant, q.User, q.Sources = r.T, r.U, r.H
 	return q
+}
+
+var _ ask.WatchStore = Traces{}
+
+// UpdateSaved implements ask.WatchStore, with the row locked.
+func (t Traces) UpdateSaved(ctx context.Context, tenant, user, id string, f func(*ask.SavedQuestion)) (bool, error) {
+	errNone := errors.New("saved: none")
+	_, err := update(ctx, t.Pool, tenant, "saved", id, errNone, func(r savedRec) meta {
+		return meta{at: r.At, user: r.U, space: r.Space}
+	}, func(r *savedRec) error {
+		if r.U != user {
+			return errNone
+		}
+		q := r.full()
+		f(&q)
+		*r = savedRec{q, tenant, user, q.Sources}
+		return nil
+	})
+	if errors.Is(err, errNone) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+// Watched implements ask.WatchStore: oldest first.
+func (t Traces) Watched(ctx context.Context, tenant string) ([]ask.SavedQuestion, error) {
+	rs, err := list[savedRec](ctx, t.Pool, tenant, "saved", "", "at, id")
+	var out []ask.SavedQuestion
+	for _, r := range rs {
+		if r.Watch {
+			out = append(out, r.full())
+		}
+	}
+	return out, err
 }
 
 type shareRec struct {

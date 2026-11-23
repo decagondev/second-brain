@@ -24,6 +24,7 @@ func JSONSchema() []byte {
 		"pilot_group":  str("If set, only this IdP group may sign in.", map[string]any{"pattern": groupRe}),
 		"questions_to": str("Who answers company-wide questions nothing answered (SB-1704).", map[string]any{"pattern": groupRe}),
 		"notes":        map[string]any{"type": "boolean", "default": false, "description": "Stewards may publish replies as notes into the docs: folder share (SB-1705)."},
+		"digest":       str("The weekly digest's IANA time zone, or off (SB-2103). Default UTC.", nil),
 		"connectors": map[string]any{
 			"type": "object", "description": "Connector kind to vendor. Read-only unless named in workflows.",
 			"minProperties": 1, "propertyNames": map[string]any{"enum": ConnectorKinds},

@@ -157,6 +157,7 @@ export interface SavedQuestion {
   question: string;
   space: string;
   at: string;
+  watch?: boolean;
 }
 
 export interface SharedQuestion {
@@ -354,4 +355,13 @@ export async function setNotifySettings(off: string[], f: Fetch = fetch): Promis
     f,
   );
   return Array.isArray(data.off) ? data.off : [];
+}
+
+// Watch a saved question (SB-2104): told weekly when its sources change.
+export function watchSaved(id: string, watch: boolean, f: Fetch = fetch): Promise<{ id: string; watch: boolean }> {
+  return call(
+    `/v1/saved/${encodeURIComponent(id)}/watch`,
+    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ watch }) },
+    f,
+  );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AskError, listSaved, removeSaved, saveQuestion, shareQuestion } from "./api";
+import { AskError, listSaved, removeSaved, saveQuestion, shareQuestion, watchSaved } from "./api";
 import type { Fetch, SavedQuestion } from "./api";
 
 // Save and Share on one answered turn (sb-ask(3), Saved and shared questions; SB-1703).
@@ -77,6 +77,15 @@ export function SavedView({ fetcher, onAsk }: { fetcher?: Fetch; onAsk: (questio
     }
   }
 
+  async function watch(id: string, on: boolean) {
+    try {
+      await watchSaved(id, on, fetcher);
+      await load();
+    } catch (e) {
+      setError(e instanceof AskError ? e.error.message : "The question couldn't be watched.");
+    }
+  }
+
   return (
     <section aria-label="Saved questions" className="saved">
       {error && (
@@ -95,7 +104,10 @@ export function SavedView({ fetcher, onAsk }: { fetcher?: Fetch; onAsk: (questio
               </button>{" "}
               <button type="button" onClick={() => remove(q.id)} aria-label={`Remove: ${q.question}`}>
                 Remove
-              </button>
+              </button>{" "}
+              <label>
+                <input type="checkbox" aria-label={`Watch: ${q.question}`} checked={!!q.watch} onChange={(e) => watch(q.id, e.target.checked)} /> Watch
+              </label>
             </li>
           ))}
         </ul>
