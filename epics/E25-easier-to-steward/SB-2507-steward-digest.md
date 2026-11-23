@@ -13,7 +13,7 @@ summary: "Stewards have no weekly view of their queue."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07, LAW-21 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ Stewards have no weekly view of their queue.
 
 ## Acceptance criteria
 
-- [ ] A steward's weekly digest adds one line per space they steward: answered, still open, the oldest's age; counts only
-- [ ] Only spaces they steward when the digest is sent
-- [ ] Someone removed as a steward gets no line for that space
+- [x] A steward's weekly digest adds one line per space they steward: answered, still open, the oldest's age; counts only
+- [x] Only spaces they steward when the digest is sent
+- [x] Someone removed as a steward gets no line for that space
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Digest line
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Digest line
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S24.2; see manual/sb-ask.3.md
 
 ## Definition of done
 

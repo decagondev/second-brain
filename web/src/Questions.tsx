@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, saveTemplate, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion, ReplyTemplate, ReviewItem } from "./api";
+import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, ReviewItem } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -128,31 +128,54 @@ const kinds: { id: string; name: string }[] = [
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
 export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
-  const [off, setOff] = useState<string[]>();
+  const [prefs, setPrefs] = useState<NotifyPrefs>();
+  const [days, setDays] = useState("7");
   const [status, setStatus] = useState<string>();
   const base = useId();
   useEffect(() => {
-    notifySettings(fetcher).then(setOff, () => setOff(undefined));
+    notifySettings(fetcher).then(setPrefs, () => setPrefs(undefined));
   }, [fetcher]);
-  if (!off) return null;
-  async function toggle(kind: string, on: boolean) {
-    const next = on ? off!.filter((k) => k !== kind) : [...off!, kind];
+  if (!prefs) return null;
+  const off = prefs.off;
+  async function save(next: string[], pauseDays?: number) {
     try {
-      setOff(await setNotifySettings(next, fetcher));
+      setPrefs(await setNotifySettings(next, fetcher, pauseDays));
       setStatus(t("Saved."));
     } catch (e) {
       setStatus(errMsg(e, t("Your settings couldn't be saved.")));
     }
   }
+  const paused = prefs.paused_until && new Date(prefs.paused_until) > new Date() ? new Date(prefs.paused_until) : undefined;
   return (
     <fieldset className="notify-settings">
       <legend>{t("Tell me in chat about")}</legend>
       {kinds.map((k) => (
         <div key={k.id}>
-          <input type="checkbox" id={`${base}-${k.id}`} checked={!off.includes(k.id)} onChange={(e) => toggle(k.id, e.target.checked)} />{" "}
+          <input
+            type="checkbox"
+            id={`${base}-${k.id}`}
+            checked={!off.includes(k.id)}
+            onChange={(e) => save(e.target.checked ? off.filter((x) => x !== k.id) : [...off, k.id])}
+          />{" "}
           <label htmlFor={`${base}-${k.id}`}>{t(k.name)}</label>
         </div>
       ))}
+      {paused ? (
+        <p>
+          {t("Paused until {date}: you're told nothing, and the other stewards still are.", { date: paused.toLocaleDateString() })}{" "}
+          <button type="button" onClick={() => save(off, 0)}>
+            {t("Resume")}
+          </button>
+        </p>
+      ) : (
+        <p>
+          <label htmlFor={`${base}-pause`}>{t("Pause for (days)")}</label>{" "}
+          <input id={`${base}-pause`} type="number" min={1} max={30} value={days} onChange={(e) => setDays(e.target.value)} />{" "}
+          <button type="button" disabled={!(Number(days) >= 1 && Number(days) <= 30)} onClick={() => save(off, Math.floor(Number(days)))}>
+            {t("Pause")}
+          </button>
+        </p>
+      )}
       {status && (
         <p className="feedback-status" role="status">
           {status}
@@ -161,6 +184,22 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
     </fieldset>
   );
 }
+
+// Count is a heading's count of what waits (SB-2504): a number to see, words to hear.
+function Count({ n }: { n: number }) {
+  return (
+    <>
+      {" "}
+      <span className="count" aria-hidden="true">
+        ({n})
+      </span>
+      <span className="visually-hidden">{tn(n, "{n} waiting", "{n} waiting")}</span>
+    </>
+  );
+}
+
+// Every five minutes, while the screen is open (SB-2504).
+const Refresh = 5 * 60 * 1000;
 
 // The steward's queue on their screen (sb-spaces(7); SB-1704, SB-1705).
 export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: Fetch }) {
@@ -186,6 +225,8 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   }
   useEffect(() => {
     void load();
+    const timer = window.setInterval(() => void load(), Refresh);
+    return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [space]);
 
@@ -233,7 +274,10 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
 
   return (
     <section aria-label={t("Questions")}>
-      <h2>{t("Questions")}</h2>
+      <h2>
+        {t("Questions")}
+        {steward && <Count n={items.filter((q) => q.state === "open").length} />}
+      </h2>
       {items.length === 0 ? (
         <p>{t("No questions for this space.")}</p>
       ) : (
@@ -481,14 +525,54 @@ function AddToEvals({ space, item, fetcher }: { space: string; item: ReviewItem;
   );
 }
 
+// csvCell quotes a cell, and makes one a spreadsheet would run as a formula plain text.
+export function csvCell(v: string | number | boolean): string {
+  let s = String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+type ReviewData = { items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[] };
+
+// reviewCSV is the review list exactly as shown (SB-2505): a row per document the steward
+// can open, and those they can't only as a count with their owners, never a title.
+export function reviewCSV(list: ReviewData): string {
+  const rows: (string | number | boolean)[][] = [["title", "cite", "cited_30_days", "age_days", "marked_wrong", "owner_gone", "owners"]];
+  for (const r of list.items) rows.push([r.title ?? r.cite, r.cite, r.cited, r.age_days ?? "", r.flagged, r.owner_gone === true, ""]);
+  if (list.hidden.length > 0) {
+    const owners = Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join("; ");
+    rows.push([tn(list.hidden.length, "{n} more document you can't open", "{n} more documents you can't open"), "", "", "", "", "", owners]);
+  }
+  return rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+}
+
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
   const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }>({ items: [], hidden: [] });
   useEffect(() => {
-    reviewList(space, fetcher).then(setList);
+    const load = () => void reviewList(space, fetcher).then(setList);
+    load();
+    const timer = window.setInterval(load, Refresh);
+    return () => window.clearInterval(timer);
   }, [space, fetcher]);
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([reviewCSV(list)], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `review-${space}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   return (
     <section aria-label={t("Documents to review")}>
-      <h2>{t("Documents to review")}</h2>
+      <h2>
+        {t("Documents to review")}
+        <Count n={list.items.length + list.hidden.length} />
+      </h2>
+      {(list.items.length > 0 || list.hidden.length > 0) && (
+        <button type="button" onClick={download}>
+          {t("Download CSV")}
+        </button>
+      )}
       {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Nothing to review: no relied-on document here is stale or marked wrong.")}</p>}
       {list.items.length > 0 && (
         <ul className="saved-list">

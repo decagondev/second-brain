@@ -82,6 +82,22 @@ func TestNotificationsThroughARunningCell(t *testing.T) {
 	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[]}`); code != 200 || !strings.Contains(body, `"off":[]`) {
 		t.Fatalf("settings: %d %s", code, body)
 	}
+	// A pause (SB-2506): 1 to 30 days, set from now only, kept by a body without one.
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"pause_days":31}`); code != 400 {
+		t.Fatalf("a 31-day pause: %d %s", code, body)
+	}
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"paused_until":"2099-01-01T00:00:00Z"}`); code != 200 || strings.Contains(body, "paused_until") {
+		t.Fatalf("a pause set by its end: %d %s", code, body)
+	}
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"pause_days":3}`); code != 200 || !strings.Contains(body, `"paused_until"`) {
+		t.Fatalf("pause: %d %s", code, body)
+	}
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":["watch"]}`); code != 200 || !strings.Contains(body, `"paused_until"`) {
+		t.Fatalf("a change of kinds ended the pause: %d %s", code, body)
+	}
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"pause_days":0}`); code != 200 || strings.Contains(body, "paused_until") {
+		t.Fatalf("resume: %d %s", code, body)
+	}
 
 	r.idp.User = sam
 	if code, _ := r.do(t, "GET", "/login", ""); code != 404 {

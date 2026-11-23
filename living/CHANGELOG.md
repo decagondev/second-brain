@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Counts on the steward screen (SB-2504); Download CSV for the review list (SB-2505); pause notifications for up to 30 days (SB-2506); the stewards' line in the weekly digest (SB-2507).
 - Reviewed, still right on Documents to review (SB-2501); soft one-hour claims on questions to the stewards (SB-2502); reply templates per space (SB-2503).
 - Search by file type and age (SB-2404); recent questions in the ask box, kept in the browser until sign-out (SB-2405); next steps instead of dead ends (SB-2406).
 - Copy an answer with its cites, as text or Markdown (SB-2401); print an answer with numbered footnotes (SB-2402); keyboard shortcuts and a skip link (SB-2403).

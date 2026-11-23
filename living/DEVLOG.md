@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S24.2: Know what waits
+
+**Wave/slice:** W24 / S24.2 (SB-2504, SB-2505, SB-2506, SB-2507) · **Status:** Done
+
+**What:** The steward screen's Questions and Documents to review headings say how many wait, read again every five minutes. Download CSV saves the review list as shown, made in the browser. A person can pause every notification for 1 to 30 days, and the pause ends by itself. A steward's weekly digest adds a line per space they steward: answered this week, still open, and the oldest one's age.
+
+**Why this way:** Counts come from the lists the screen already loads, so they can't say more than the lists do. The CSV is built from the loaded list, so it can't hold a row the screen doesn't, and a document the steward can't open stays a count with its owners (LAW-01); every cell is quoted and one that starts like a formula is prefixed so a spreadsheet never runs it. A pause is per person, so the job still tells the space's other stewards, and it is set only as days from now, so a body can't set an end date. The digest line is counts and a space's name only (LAW-07), to the stewards there are when it is sent (LAW-21).
+
+**Learned:** A steward with nothing changed in their spaces still needs the queue line, so the digest now goes to a steward with lines even when no document changed; it links to the Questions tab rather than one space, since a line can cover several.
+
+**Laws:** LAW-01 (the CSV has no hidden title), LAW-07 (the digest line is counts only; `TestDigestStewardLines` fails on any question or reply text), LAW-21 (a removed steward gets no line; a paused one is skipped while the others are told). Every law test is still green.
+
 ## 2026-11-23 S24.1: Clear the list
 
 **Wave/slice:** W24 / S24.1 (SB-2501, SB-2502, SB-2503) · **Status:** Done

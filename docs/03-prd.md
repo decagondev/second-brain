@@ -806,11 +806,11 @@ gantt
 
 **Exit gate**
 
-- [ ] A reviewed document leaves the list until a new version, and a rebuild doesn't bring it back
-- [ ] A removed steward's claims disappear at once
-- [ ] The CSV holds exactly the rows on screen and no hidden title
-- [ ] A paused steward gets nothing and the other stewards are still told
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A reviewed document leaves the list until a new version, and a rebuild doesn't bring it back
+- [x] A removed steward's claims disappear at once
+- [x] The CSV holds exactly the rows on screen and no hidden title
+- [x] A paused steward gets nothing and the other stewards are still told
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

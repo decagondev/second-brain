@@ -13,7 +13,7 @@ summary: "Someone on leave gets every message all the same."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | — |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ Someone on leave gets every message all the same.
 
 ## Acceptance criteria
 
-- [ ] Pause for N days (1 to 30) in notification settings sends that person nothing, and the digest skips them; the pause ends by itself
-- [ ] New questions still reach the space's other stewards
-- [ ] A paused steward gets nothing; the other stewards are still told; the pause ends on its day (fake clock)
+- [x] Pause for N days (1 to 30) in notification settings sends that person nothing, and the digest skips them; the pause ends by itself
+- [x] New questions still reach the space's other stewards
+- [x] A paused steward gets nothing; the other stewards are still told; the pause ends on its day (fake clock)
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S24.2; see manual/sb-ask.3.md
 
 ## Definition of done
 

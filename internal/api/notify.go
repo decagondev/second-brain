@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/errs"
@@ -13,6 +14,7 @@ type Notifications struct {
 	Prefs   notify.PrefStore
 	Release string
 	NewID   func(prefix string) string
+	Now     func() time.Time // nil is time.Now
 }
 
 // Register mounts the endpoints on mux.
@@ -44,15 +46,34 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var body notify.Prefs
+	var body struct {
+		Off       []string `json:"off"`
+		PauseDays *int     `json:"pause_days"`
+	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"off": ["digest"]}.`))
 		return
 	}
-	p, err := body.Check()
+	old, err := h.Prefs.NotifyPrefs(r.Context(), s.Tenant(), s.User())
+	if err != nil {
+		h.k().out().fail(w, "", errs.New(errs.EUNAVAIL, "Your notification settings can't be saved now. Try again shortly."))
+		return
+	}
+	// A pause is set only by pause_days, from now; one sent as paused_until is ignored (SB-2506).
+	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil}.Check()
 	if errors.Is(err, notify.ErrKind) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch or access."))
 		return
+	}
+	if body.PauseDays != nil {
+		now := time.Now
+		if h.Now != nil {
+			now = h.Now
+		}
+		if p, err = p.Pause(*body.PauseDays, now()); err != nil {
+			h.k().out().fail(w, "", errs.New(errs.EINVAL, "A pause is 0 to 30 days."))
+			return
+		}
 	}
 	if err := h.Prefs.PutNotifyPrefs(r.Context(), s.Tenant(), s.User(), p); err != nil {
 		h.k().out().fail(w, "", errs.New(errs.EUNAVAIL, "Your notification settings can't be saved now. Try again shortly."))

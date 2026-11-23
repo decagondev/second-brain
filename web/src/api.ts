@@ -405,18 +405,25 @@ export function handover(person: string, f: Fetch = fetch): Promise<HandoverBrie
 }
 
 // Notification settings (sb-ask(3), Notifications; SB-2101): the kinds turned off.
-export async function notifySettings(f: Fetch = fetch): Promise<string[]> {
-  const data = await call<{ off?: string[] }>("/v1/me/notifications", {}, f);
-  return Array.isArray(data.off) ? data.off : [];
+export interface NotifyPrefs {
+  off: string[];
+  // Until when everything is paused (SB-2506); none is not paused.
+  paused_until?: string;
 }
 
-export async function setNotifySettings(off: string[], f: Fetch = fetch): Promise<string[]> {
-  const data = await call<{ off?: string[] }>(
-    "/v1/me/notifications",
-    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ off }) },
-    f,
-  );
-  return Array.isArray(data.off) ? data.off : [];
+function prefsOf(d: { off?: string[]; paused_until?: string }): NotifyPrefs {
+  return { off: Array.isArray(d.off) ? d.off : [], ...(typeof d.paused_until === "string" ? { paused_until: d.paused_until } : {}) };
+}
+
+export async function notifySettings(f: Fetch = fetch): Promise<NotifyPrefs> {
+  return prefsOf(await call<{ off?: string[]; paused_until?: string }>("/v1/me/notifications", {}, f));
+}
+
+// setNotifySettings replaces the kinds turned off; pauseDays, when given, pauses for that
+// many days from now (0 resumes), and otherwise the pause stays as it is.
+export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number): Promise<NotifyPrefs> {
+  const body = pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
+  return prefsOf(await call("/v1/me/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, f));
 }
 
 // Watch a saved question (SB-2104): told weekly when its sources change.

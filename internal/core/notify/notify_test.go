@@ -350,3 +350,99 @@ func TestFirstWeekSendsNothing(t *testing.T) {
 		t.Fatalf("%v %v %v", s.got, err, c.weekly)
 	}
 }
+
+// SB-2506: a paused steward gets nothing, the other stewards are still told, and the pause
+// ends on its day.
+func TestPauseSkipsOnlyThePausedPerson(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	p, err := Prefs{}.Pause(3, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (Prefs{}).Pause(31, now); !errors.Is(err, ErrPause) {
+		t.Fatalf("a 31-day pause: %v", err)
+	}
+	j, s, _ := world(now)
+	j.Facts = func(sp string) ([]string, string, bool) {
+		return []string{"group:finance-leads", "group:helpdesk"}, "", sp == "spc_finance" || sp == "company"
+	}
+	j.Prefs = prefs{"usr_sam": p}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	hal := false
+	for _, m := range s.got {
+		if m.to.ID == "usr_sam" {
+			t.Fatal("a paused steward was told")
+		}
+		hal = hal || (m.to.ID == "usr_hal" && m.msg.Kind == KindQuestions)
+	}
+	if !hal {
+		t.Fatal("the other steward wasn't told")
+	}
+	if !p.Paused(now.Add(71*time.Hour)) || p.Paused(now.Add(72*time.Hour)) {
+		t.Fatal("the pause doesn't end on its day")
+	}
+	if q, _ := p.Pause(0, now); q.Paused(now) {
+		t.Fatal("a pause of 0 days doesn't end it")
+	}
+}
+
+// SB-2507: a steward's digest has a line per space they steward now, counts only.
+func TestDigestStewardLines(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC) // a Monday
+	j, s, c := world(now)
+	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
+	j.Questions = questions{[]ask.StewardQuestion{
+		{ID: "qs_1", Asker: "usr_ann", Question: "SECRETQUESTION", Space: "spc_finance", At: now.Add(-4 * 24 * time.Hour)},
+		{ID: "qs_2", Asker: "usr_ann", Question: "SECRETQUESTION", Space: "spc_finance", At: now.Add(-time.Hour)},
+		{ID: "qs_3", Asker: "usr_ann", Question: "SECRETQUESTION", Space: "spc_finance", At: now.Add(-9 * 24 * time.Hour),
+			Reply: &ask.StewardReply{Text: "SECRETREPLY", At: now.Add(-2 * 24 * time.Hour)}},
+		{ID: "qs_4", Asker: "usr_ann", Question: "SECRETQUESTION", Space: "company", At: now.Add(-20 * 24 * time.Hour),
+			Reply: &ask.StewardReply{Text: "SECRETREPLY", At: now.Add(-19 * 24 * time.Hour)}},
+		{ID: "qs_5", Asker: "usr_ann", Question: "SECRETQUESTION", Space: "spc_gone", At: now.Add(-time.Hour)},
+	}}
+	j.Clock.(*clock).t = now.Add(-time.Minute) // nothing new to tell in this run's window
+	j.Digest, j.Zone = true, time.UTC
+	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) {
+		return []string{"usr_sam", "usr_ann"}, nil
+	}
+	j.Changes = func(_ context.Context, u string) ([]string, int, error) {
+		if u == "usr_sam" {
+			return []string{"Refund policy"}, 0, nil
+		}
+		return nil, 0, nil
+	}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, m := range s.got {
+		if m.msg.Kind == KindDigest {
+			got = append(got, m.to.ID+": "+m.msg.Text)
+		}
+		if strings.Contains(m.msg.Text, "SECRET") {
+			t.Fatal("a question or reply in the digest")
+		}
+	}
+	want := []string{
+		"usr_sam: 1 document changed in your spaces this week: Refund policy\nfinance: 1 answered this week, 2 still open, the oldest 4 days old",
+	}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("digests %q, want %q", got, want)
+	}
+	// hal stewards company-wide questions, but none waits or was answered this week.
+	// Remove sam from the stewards: no line for them.
+	j, s, c = world(now)
+	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
+	j.Questions = questions{[]ask.StewardQuestion{{ID: "qs_1", Space: "spc_finance", At: now.Add(-2 * 24 * time.Hour)}}}
+	j.Clock.(*clock).t = now.Add(-time.Minute)
+	j.Digest, j.Askers, j.Changes = true, func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }, func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.Dir.(dir).groups["finance-leads"] = []string{"usr_hal"}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.got) != 1 || s.got[0].to.ID != "usr_hal" || s.got[0].msg.Text != "finance: 0 answered this week, 1 still open, the oldest 2 days old" {
+		t.Fatalf("after sam left: %+v", s.got)
+	}
+}

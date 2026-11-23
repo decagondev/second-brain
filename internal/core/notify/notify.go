@@ -50,9 +50,35 @@ type Sender interface {
 // ErrNoSuchPerson is a person the chat doesn't know by their email: skipped, not failed.
 var ErrNoSuchPerson = errors.New("notify: the chat knows no one by this email")
 
-// Prefs are a person's settings: the kinds they turned off.
+// Prefs are a person's settings: the kinds they turned off, and until when everything is
+// paused (SB-2506).
 type Prefs struct {
-	Off []string `json:"off"`
+	Off         []string   `json:"off"`
+	PausedUntil *time.Time `json:"paused_until,omitempty"`
+}
+
+// MaxPauseDays is the longest pause.
+const MaxPauseDays = 30
+
+// ErrPause is a pause outside 0 to MaxPauseDays days.
+var ErrPause = errors.New("notify: EINVAL a pause is 0 to 30 days")
+
+// Pause sets the pause to days from now; 0 ends it.
+func (p Prefs) Pause(days int, now time.Time) (Prefs, error) {
+	if days < 0 || days > MaxPauseDays {
+		return p, ErrPause
+	}
+	p.PausedUntil = nil
+	if days > 0 {
+		u := now.UTC().Add(time.Duration(days) * 24 * time.Hour)
+		p.PausedUntil = &u
+	}
+	return p, nil
+}
+
+// Paused reports whether everything is paused at now.
+func (p Prefs) Paused(now time.Time) bool {
+	return p.PausedUntil != nil && now.Before(*p.PausedUntil)
 }
 
 // Wants reports whether the person wants messages of kind.
@@ -71,7 +97,7 @@ var ErrKind = errors.New("notify: EINVAL not a notification kind")
 // Check validates settings and returns them sorted, each kind once.
 func (p Prefs) Check() (Prefs, error) {
 	seen := map[string]bool{}
-	out := Prefs{Off: []string{}}
+	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil}
 	for _, k := range p.Off {
 		if !Kinds[k] {
 			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access)", ErrKind, k)
@@ -186,7 +212,7 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 	}
 	var res Result
 	for _, o := range out {
-		if !j.wants(ctx, o.to.ID, o.msg.Kind) {
+		if !j.wants(ctx, o.to.ID, o.msg.Kind, now) {
 			res.Skipped++
 			continue
 		}
@@ -221,13 +247,14 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 	return res, nil
 }
 
-// wants reads the person's settings; settings that can't be read send nothing.
-func (j Job) wants(ctx context.Context, user, kind string) bool {
+// wants reads the person's settings; settings that can't be read send nothing, and a
+// paused person gets nothing until the pause ends.
+func (j Job) wants(ctx context.Context, user, kind string, now time.Time) bool {
 	if j.Prefs == nil {
 		return true
 	}
 	p, err := j.Prefs.NotifyPrefs(ctx, j.Tenant, user)
-	return err == nil && p.Wants(kind)
+	return err == nil && p.Wants(kind) && !p.Paused(now)
 }
 
 type outgoing struct {
@@ -443,6 +470,21 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 			}
 			out = append(out, outgoing{p, Message{Kind: KindDigest, Text: digestText(titles, more), Link: j.tab("documents")}})
 		}
+		lines, people, err := j.stewardLines(ctx, now)
+		if err != nil {
+			return nil, nil, err
+		}
+		for i := range out {
+			if ls := lines[out[i].to.ID]; len(ls) > 0 {
+				out[i].msg.Text += "\n" + strings.Join(ls, "\n")
+				delete(lines, out[i].to.ID)
+			}
+		}
+		for _, p := range people {
+			if ls := lines[p.ID]; len(ls) > 0 {
+				out = append(out, outgoing{p, Message{Kind: KindDigest, Text: strings.Join(ls, "\n"), Link: j.link()}})
+			}
+		}
 	}
 	if j.Watches == nil || j.Sources == nil {
 		return out, nil, nil
@@ -481,6 +523,79 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 		out = append(out, outgoing{p, Message{Kind: KindWatch, Text: text, Link: j.tab("saved")}})
 	}
 	return out, marks, nil
+}
+
+// stewardLines are the digest's lines for stewards (SB-2507): per space with questions,
+// answered this week, still open and the oldest open one's age, counts only, to each active
+// steward of the space now. people are the stewards, in order, each once.
+func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]string, []Person, error) {
+	back := j.Lookback
+	if back <= 0 {
+		back = 400 * 24 * time.Hour
+	}
+	qs, err := j.Questions.StewardQuestionsBetween(ctx, j.Tenant, now.Add(-back), now)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: questions: %w", err)
+	}
+	type tally struct {
+		answered, open int
+		oldest         time.Time
+	}
+	by := map[string]*tally{}
+	week := now.Add(-7 * 24 * time.Hour)
+	for _, q := range qs {
+		t := by[q.Space]
+		if t == nil {
+			t = &tally{}
+		}
+		switch {
+		case q.Reply == nil:
+			t.open++
+			if t.oldest.IsZero() || q.At.Before(t.oldest) {
+				t.oldest = q.At
+			}
+		case !q.Reply.At.Before(week):
+			t.answered++
+		default:
+			continue
+		}
+		by[q.Space] = t
+	}
+	spaces := make([]string, 0, len(by))
+	for sp := range by {
+		spaces = append(spaces, sp)
+	}
+	sort.Strings(spaces)
+	lines := map[string][]string{}
+	var people []Person
+	seen := map[string]bool{}
+	for _, sp := range spaces {
+		groups, _, ok := j.Facts(sp)
+		if !ok {
+			continue
+		}
+		t := by[sp]
+		name := strings.TrimPrefix(sp, "spc_")
+		if sp == "company" {
+			name = "Company-wide"
+		}
+		line := fmt.Sprintf("%s: %d answered this week, %d still open", name, t.answered, t.open)
+		if t.open > 0 {
+			line += ", the oldest " + plural(int(now.Sub(t.oldest).Hours()/24), "day", "days") + " old"
+		}
+		ps, err := j.members(ctx, groups)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, p := range ps {
+			lines[p.ID] = append(lines[p.ID], line)
+			if !seen[p.ID] {
+				seen[p.ID] = true
+				people = append(people, p)
+			}
+		}
+	}
+	return lines, people, nil
 }
 
 func (j Job) tab(name string) string {
