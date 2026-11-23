@@ -71,6 +71,10 @@ type Updater struct {
 	Deploy Deployer
 	// Services are the services to deploy; nil is Services (GCP).
 	Services []Service
+	// Hold names, for the release the channel names, the release to run instead while the
+	// tenant's eval cases hold it (sb-evals(7); SB-2204), or ""; nil holds nothing. An
+	// error deploys nothing.
+	Hold func(ctx context.Context, target string) (back string, err error)
 }
 
 func (u Updater) services() []Service {
@@ -89,6 +93,9 @@ func (u Updater) Image(svc Service, digest string) string {
 type Result struct {
 	Release  string   `json:"release"`
 	Deployed []string `json:"deployed"` // services moved to a new image
+	// Held is the release the channel named, when the tenant's eval cases hold it and
+	// Release is the one they last passed on (SB-2204).
+	Held string `json:"held,omitempty"`
 }
 
 // Run admits the target release and deploys every service at its digest. It changes
@@ -98,9 +105,19 @@ func (u Updater) Run(ctx context.Context) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	held := ""
+	if u.Hold != nil {
+		back, err := u.Hold(ctx, id)
+		if err != nil {
+			return Result{}, fmt.Errorf("runtime: the eval hold can't be read: %w", err)
+		}
+		if back != "" {
+			held, id = id, back // admitted with every check, like any release
+		}
+	}
 	m, _, err := release.Admit(ctx, u.Store, id, u.Verifier, nil)
 	if err != nil {
-		return Result{}, fmt.Errorf("%w: %v", ErrUnsigned, err)
+		return Result{Held: held}, fmt.Errorf("%w: %v", ErrUnsigned, err)
 	}
 	images := map[string]string{}
 	for _, s := range u.services() {
@@ -110,7 +127,7 @@ func (u Updater) Run(ctx context.Context) (Result, error) {
 		}
 		images[s.Name] = u.Image(s, d)
 	}
-	res := Result{Release: id}
+	res := Result{Release: id, Held: held}
 	for _, s := range u.services() {
 		cur, rel, err := u.Deploy.Running(ctx, s)
 		if err != nil {

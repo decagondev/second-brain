@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
-import { AskError, listQuestions, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { FormEvent } from "react";
+import { AskError, addEvalCase, listQuestions, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion, ReviewItem } from "./api";
 import { placeOf } from "./Answer";
 
@@ -307,8 +308,38 @@ function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fet
   );
 }
 
+// Add to evals (SB-2204): the steward names the document the reported answer should cite.
+function AddToEvals({ space, item, fetcher }: { space: string; item: ReviewItem; fetcher?: Fetch }) {
+  const id = useId();
+  const [expect, setExpect] = useState("");
+  const [done, setDone] = useState("");
+  const [error, setError] = useState("");
+  const report = item.reports?.[0] ?? "";
+  const add = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      const c = await addEvalCase(space, report, expect.trim(), fetcher);
+      setDone(`Added as eval case ${c.id}: every release now has to cite it for this question.`);
+    } catch (err) {
+      setError(err instanceof AskError ? err.error.message : "The case couldn't be added.");
+    }
+  };
+  if (done) return <p role="status">{done}</p>;
+  return (
+    <form onSubmit={add} className="add-eval">
+      <label htmlFor={id}>Should have cited (KIND:ID)</label>
+      <input id={id} value={expect} onChange={(e) => setExpect(e.target.value)} placeholder="docs:Ops/right.md" />
+      <button type="submit" disabled={expect.trim() === ""}>
+        Add to evals
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
-  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number }>({ items: [], hidden: [] });
+  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }>({ items: [], hidden: [] });
   useEffect(() => {
     reviewList(space, fetcher).then(setList);
   }, [space, fetcher]);
@@ -352,6 +383,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                 </span>
               )}
               {r.wider !== undefined && r.wider > 0 && r.question && <Narrow space={space} item={r} fetcher={fetcher} />}
+              {r.reports && r.reports.length > 0 && <AddToEvals space={space} item={r} fetcher={fetcher} />}
             </li>
           ))}
         </ul>
@@ -361,6 +393,12 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
           {list.hidden.length === 1 ? "1 more document you can't open needs" : `${list.hidden.length} more documents you can't open need`} review
           {list.hidden.some((h) => h.owner_gone) ? `, ${list.hidden.filter((h) => h.owner_gone).length} of them with no owner` : ""}
           {list.hidden.some((h) => h.owner) ? `; ask their owners: ${Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ")}` : ""}.
+        </p>
+      )}
+      {list.glossary_flagged && list.glossary_flagged.length > 0 && (
+        <p className="refused">
+          These glossary terms read like instructions to the model, so they aren't used: {list.glossary_flagged.join(", ")}. Propose a plain
+          meaning for each.
         </p>
       )}
       {list.personal_data !== undefined && list.personal_data > 0 && (

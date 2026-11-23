@@ -8,7 +8,7 @@ summary: Ask a question and get a cited answer.
 
 ## NAME
 
-sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`, `GET /v1/handover/people`, `GET /v1/changes`, `POST /chat/mattermost`, `POST /chat/mattermost/actions`
+sb-ask — `POST /v1/ask`, `GET /v1/search`, `GET /v1/traces/{id}`, `POST /v1/feedback`, `/v1/saved`, `/v1/shares`, `/v1/questions`, `GET /v1/start`, `POST /v1/handover`, `GET /v1/handover/people`, `GET /v1/changes`, `POST /chat/mattermost`, `POST /chat/mattermost/actions`, `/v1/spaces/NAME/evals`, `POST /v1/access-requests`
 
 ## SYNOPSIS
 
@@ -63,7 +63,8 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "conversation": "cv_01JD3QB9…",
   "agent": "ask",
   "dropped": 0,
-  "people": [{ "email": "ann@acme-logistics.example", "title": "Support lead", "cites": 1 }]
+  "people": [{ "email": "ann@acme-logistics.example", "title": "Support lead", "cites": 1 }],
+  "terms": [{ "term": "PO", "means": "purchase order" }]
 }
 ```
 
@@ -76,6 +77,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `conversation` | The conversation this turn belongs to, `cv_…` |
 | `claims[].cites[].title` | The cited document's title at the source, as indexed |
 | `claims[].cites[].owner` | The cited document's owner at the source: their `email` and job `title` from the directory, only when exactly one **active** directory user has that email. Omitted otherwise (SB-1702) |
+| `terms` | The space's glossary entries the question used (Glossary, below; SB-2203). Omitted when none |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner |
 
 ### How the `ask` agent runs, exactly
@@ -88,6 +90,10 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 6. **Trace:** every answer gets a new trace id `tr_…`, returned in the body and in `X-SB-Trace`, and stored with the answer and its decision list for 30 days.
 
 **Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist.
+
+### Glossary, exactly (SB-2203)
+
+In a space with a `glossary` (sb-space(5)), step 2 first **expands** the question: each term the question uses, as a whole word, adds its meaning to the text that is searched and embedded, so "PO" also finds documents that say "purchase order". A term with a capital letter matches only as written ("IT", never "it"); a term in lower case matches in any case. Only the space's own glossary is used, and only in an ask or search in that space: a company-wide ask, or another space, never expands one (LAW-19). An entry that reads like an instruction (the patterns of sb-ingest(7), Content is data) is never used. The terms used go to the model inside one data block, `<<data cite="glossary">>`, never as instructions (LAW-09), and the response lists them, `"terms": [{ "term": "PO", "means": "purchase order" }]`, which the web UI shows at the foot of the answer or results. The stewards' review list names the flagged entries, `"glossary_flagged": ["TERM"…]`, so they can fix them.
 
 ### Who to ask, exactly (SB-1702)
 
@@ -154,6 +160,8 @@ The link `/q/sh_…` opens the web UI on the shared question with an **Ask** but
 
 `GET /v1/spaces/NAME/review` is the stewards' list (the Cedar action `review_space`, as for access reviews): documents the space holds that answers cited at least 5 times in the last 30 days and whose version is older than the space's `review_after_days` (sb-space(5), default 365), and any document someone marked as a `wrong_citation` (POST /v1/feedback) in those 30 days. The counts come from the traces and feedback the cell already keeps. Each document is checked as a search checks it, now, as the steward: `{ "items": [{ …result, "cited": 7, "flagged": 1 }], "hidden": [{ "owner": "ann@…" }], "personal_data": 3 }`, where an item that is a note whose readers include people no longer members of the space carries `"wider": N`, their number (never who), and `"question": "qs_…"`, the note's question to republish it (SB-2004, listed first); where `personal_data` counts the documents the space holds with an IBAN or a card number in them (SB-1904), whether or not the steward can open them, and never says which; and where a document the steward can't open is only an entry in `hidden`, with its owner if there is one so they can ask the owner, never its title or cite.
 
+**Reports and eval cases (SB-2204).** An item marked as a wrong citation carries `"reports": ["tr_…"]`, the traces of the answers reported (at most 10, newest first), so its stewards can turn one into an eval case: `POST /v1/spaces/NAME/evals`, `GET /v1/spaces/NAME/evals` and `DELETE /v1/spaces/NAME/evals/{id}` (sb-evals(7), Cases from wrong citations), with the same `review_space` decision as the list.
+
 **Documents with no owner (SB-2201).** The list also holds documents the space holds whose owner at the source is no active user in the directory (someone who left, or was deprovisioned), each checked as the steward like the rest and carrying `"owner_gone": true`, with no `owner`: a deprovisioned owner is never shown as someone to ask, here or on any cite. A document with no owner at the source isn't listed for that alone. The directory is read when the list is asked for, so a deprovisioned owner's documents are on it at once, and in any case within the next sync. Those the steward can't open are entries in `hidden` with `"owner_gone": true` and nothing else. At most 50 are listed; a directory that can't answer is `EUNAVAIL`.
 
 **Copies (SB-2202).** Documents the space holds whose normalised text is the same (sb-ingest(7), Provenance) are listed once, as the newest copy the steward can open, with `"copies": [result…]`, the other copies they can open (title, cite and link; no snippet). Copies they can't open are entries in `hidden`. Answers, searches and drafts cite **one copy**: of documents with the same text that the asker can open, only the newest (the one the index saw last) is cited. Delete it, and the next answer cites the next newest.
@@ -178,6 +186,10 @@ When nothing the asker can open answers (`notice` `no_sources`, `no_access` or `
 
 A reply is shown to the asker with its cites **checked live for the asker** each time they look, exactly as a search checks them: a cite they can't open now is dropped and counted (`reply.dropped`), never named, so a steward can't widen what the asker reads by quoting it (LAW-01). `reply.cites` has the same shape as a search result without the snippet. Who is a steward is decided by policy (`answer_questions` on the space, sb-policy(5)) with the caller's groups at that request, so a steward who leaves the stewards group stops seeing the queue at their next request (LAW-21). Sending writes an `access` audit row (`state` `asked`, the question's SHA-256) before the question is stored, and a reply one (`state` `answered`, the reply's SHA-256) before it is stored (LAW-04); neither row holds text (LAW-07). Questions are cell records under the tenant's retention, or the space's shorter one, so an unanswered question ages out with it; they are held by legal holds on their space and erased with the asker. The weekly report counts questions asked and answered per space, never their text.
 
+### Asking for access, exactly (SB-2205)
+
+Where an answer or a search counts sources the asker can't open, `POST /v1/access-requests { "trace": "tr_…" }` asks their owners to share them. The trace must be the asker's own, from the last 7 days. Only sources **the source itself refused** (`source_denied` in the trace's decision list) are asked about: one refused by a space, label or barrier check isn't, since sharing it at the source wouldn't open it, and a request across a barrier would tell the other side what was asked (LAW-22). For each such document, at most 20, the cell finds its owner at the source as for who to ask (exactly one active directory user with the email, else nobody), and sends that owner one `access` notification (Notifications, below): the asker's email and the document's title, which the owner can open, and never the question or the answer (LAW-07). It sends **one request per asker, document and week**; asking again that week sends nothing more. The response is counts only: `{ "sent": 2, "already": 1, "no_owner": 1 }`, never which documents or who, so the asker learns nothing they didn't know (LAW-01); someone already named in the answer's `people` is still named there. An owner who has turned `access` off gets nothing, and the asker isn't told. A cell with no chat bot to send from is `EUNAVAIL`. The web UI shows **Ask the owners for access** under "N sources were not shown", and then the counts.
+
 ### Notifications, exactly (SB-2101, SB-2102)
 
 The cell tells people when something waits for them, and nothing it tells them says more than they could open. The `notify` job (sb-runtime(7), Schedules) runs every five minutes over what happened since its last run:
@@ -188,8 +200,9 @@ The cell tells people when something waits for them, and nothing it tells them s
 | `replies` | Each asker whose questions got a steward's reply, or whose reply was published as a note | "1 of your questions has a reply" (or "…was published as a note"), and a link to the Questions tab |
 | `digest` | Each active person who asked anything in the last 90 days, weekly: Mondays at 08:00 in the manifest's `digest` time zone (sb-tenant(5)) | "4 documents changed in your spaces this week: Refund policy; Carrier contracts; …" with up to 10 titles, then "and N more", and a link to the Documents tab. The documents are `GET /v1/changes?since=7d` company-wide **as that person when the digest is sent** (What changed, above): each checked live, so one whose ACL dropped them since it changed isn't named (LAW-01), and a version written by a rebuild is never a change (LAW-13). A week with nothing sends nothing |
 | `watch` | The owner of a watched saved question whose sources changed since the last weekly check (Saved and shared questions, above) | "The sources of 1 of your saved questions changed", and a link to the Saved tab, which asks it again live. Never the question, an answer or which source |
+| `access` | The owner of a document an asker couldn't open, when the asker asks for access (Asking for access, below) | "ann@… asked a question that your document Carrier contracts answers. Consider sharing it with them.", and a link to the document at its source. Never the question or the answer |
 
-A message holds a kind, a count, a space's name, for the digest the titles of documents the person can open when it is sent, and a link to the cell's own web UI (sb-cell(5), `base_url`), and **never** a question's text, a reply, a cite, a document's title or who asked (LAW-07); the person reads those on the page, where the cell checks again what they may see. Someone who is no longer a steward, or no longer active (LAW-12), when the job runs gets nothing. Each event is told once: the job keeps the time it last ran (`state/notify/last`) and only a run that read everything moves it.
+A message holds a kind, a count, a space's name, for the digest the titles of documents the person can open when it is sent, for an access request the asker's email and the title of the owner's own document, and a link to the cell's own web UI (sb-cell(5), `base_url`), and **never** a question's text, a reply, a cite, a document's title or who asked (LAW-07); the person reads those on the page, where the cell checks again what they may see. Someone who is no longer a steward, or no longer active (LAW-12), when the job runs gets nothing. Each event is told once: the job keeps the time it last ran (`state/notify/last`) and only a run that read everything moves it.
 
 Messages go as a **direct message from the chat bot** the cell already has: Mattermost's when sb-cell(5) sets `mattermost`, otherwise Slack's when the cell has a `chat` connector. The person is found by their directory email (Slack's `users.lookupByEmail`; Mattermost's `GET /api/v4/users/email/EMAIL`); someone the chat doesn't know by that email is skipped. A cell with neither sends nothing, and the job still runs and finishes. Slack's bot needs `chat:write`, `im:write` and `users:read.email` for this; Mattermost's bot needs to be able to create direct channels.
 

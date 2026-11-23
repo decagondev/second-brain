@@ -520,3 +520,30 @@ func TestLAW01_OwnerGoneNamesOnlyWhatTheStewardCanOpen(t *testing.T) {
 func TestLAW13_AnswersCiteTheNewestCopyBeforeAndAfterARebuild(t *testing.T) {
 	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law13Copies(r, ownedSystem{}) })
 }
+
+// SB-2203
+func TestLAW19_ASpacesGlossaryIsUsedOnlyInThatSpace(t *testing.T) {
+	Check(t, "LAW-19", runs, func(r *rand.Rand) error { return law19Glossary(r, RealGlossary{}) })
+}
+
+func TestLAW09_GlossaryEntriesAreDataNeverInstructions(t *testing.T) {
+	Check(t, "LAW-09", runs, func(r *rand.Rand) error { return law19Glossary(r, RealGlossary{}) })
+}
+
+// SB-2204
+func TestLAW06_AReleaseThatRegressesATenantCaseIsHeld(t *testing.T) {
+	Check(t, "LAW-06", 40, func(r *rand.Rand) error {
+		w, done := NewRuntimeWorld()
+		defer done()
+		return law06Evals(r, w.(*runtimeWorld), RealHold{})
+	})
+}
+
+// SB-2205
+func TestLAW01_AskingForAccessTellsTheAskerOnlyCounts(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01Access(r, RealAccess{}) })
+}
+
+func TestLAW07_AnAccessRequestNeverCarriesTheQuestion(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law01Access(r, RealAccess{}) })
+}

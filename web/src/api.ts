@@ -60,6 +60,13 @@ export interface AskResponse {
   notice: Notice;
   conversation: string;
   people?: PersonRef[];
+  terms?: Term[];
+}
+
+// A space glossary entry the question used (SB-2203).
+export interface Term {
+  term: string;
+  means: string;
 }
 
 export interface ApiError {
@@ -150,6 +157,7 @@ export interface SearchResponse {
   release: string;
   results: SearchResult[];
   refused: number;
+  terms?: Term[];
 }
 
 export interface SavedQuestion {
@@ -308,15 +316,17 @@ export interface ReviewItem extends SearchResult {
   // Its owner at the source is no active user (SB-2201); copies of its text you can open (SB-2202).
   owner_gone?: boolean;
   copies?: SearchResult[];
+  // Traces of the answers reported as citing it wrongly (SB-2204).
+  reports?: string[];
 }
 
 // personal_data is how many documents in the space hold an IBAN or a card number (SB-1904).
 export async function reviewList(
   space: string,
   f: Fetch = fetch,
-): Promise<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number }> {
+): Promise<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }> {
   try {
-    const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string }[]; personal_data?: number }>(
+    const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
       f,
@@ -325,6 +335,7 @@ export async function reviewList(
       items: Array.isArray(d.items) ? d.items : [],
       hidden: Array.isArray(d.hidden) ? d.hidden : [],
       personal_data: typeof d.personal_data === "number" ? d.personal_data : undefined,
+      glossary_flagged: Array.isArray(d.glossary_flagged) ? d.glossary_flagged : undefined,
     };
   } catch {
     return { items: [], hidden: [] };
@@ -365,6 +376,20 @@ export function watchSaved(id: string, watch: boolean, f: Fetch = fetch): Promis
   return call(
     `/v1/saved/${encodeURIComponent(id)}/watch`,
     { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ watch }) },
+    f,
+  );
+}
+
+// Ask the owners of sources an answer couldn't show to share them (SB-2205): counts only.
+export function requestAccess(trace: string, f: Fetch = fetch): Promise<{ sent: number; already: number; no_owner: number }> {
+  return call("/v1/access-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trace }) }, f);
+}
+
+// A wrong-citation report as an eval case (SB-2204): the document the answer should cite.
+export function addEvalCase(space: string, report: string, expect: string, f: Fetch = fetch): Promise<{ id: string; question: string }> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/evals`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ report, expect }) },
     f,
   );
 }

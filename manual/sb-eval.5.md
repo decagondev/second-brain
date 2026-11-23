@@ -93,6 +93,8 @@ A **space-redteam** case is the same shape, from the cross-space red team ([docs
 
 Each tenant keeps its own suites in `tenants/<tenant>/evals/*.yaml`, with a `world.yaml` beside them. They're named `tenant/<tenant>`, whatever their `suite` field says, and run with `sb eval run tenant/<tenant>` (or `python3 -m evals run --tenant-dir tenants/<tenant>`). A tenant suite may set its own `gate: { score_min: N }`, which can only be **stricter** than the shared `citation` threshold. A looser one is an error.
 
+A tenant's **cases from wrong citations** (SB-2204) aren't files: they are kept and run inside the cell, because their questions are the tenant's data (sb-evals(7), Cases from wrong citations). Each is one `ask` with `space`, as its steward, and `expect: { cites_any: [EXPECT], cites_none: [WRONG] }`.
+
 ### Gate file
 
 ```yaml

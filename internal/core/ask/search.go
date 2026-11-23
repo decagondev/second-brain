@@ -23,6 +23,8 @@ const (
 	SnippetLen = 300
 	// AgentSearch is the agent name a search's trace carries, so reports count it apart.
 	AgentSearch = "search"
+	// AgentEval is the agent name an eval case's run carries (SB-2204).
+	AgentEval = "eval"
 )
 
 // SearchRequest is GET /v1/search.
@@ -50,6 +52,8 @@ type SearchResponse struct {
 	Release string   `json:"release"`
 	Results []Result `json:"results"`
 	Refused int      `json:"refused"`
+	// Terms are the glossary entries the query used (SB-2203); never kept in the trace.
+	Terms []Term `json:"terms,omitempty"`
 }
 
 // Search finds documents for the scope's user.
@@ -69,12 +73,12 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	if a.Killed == nil || a.Killed(ctx) || spaceKilled(a.SpaceKilled, s) {
 		return SearchResponse{}, ErrKilled
 	}
-	res, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Candidates)
+	res, terms, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Candidates)
 	if err != nil {
 		return SearchResponse{}, err
 	}
 	trace := a.NewID("tr_")
-	out := SearchResponse{Trace: trace, Release: a.Release, Results: []Result{}, Refused: res.Refused}
+	out := SearchResponse{Trace: trace, Release: a.Release, Results: []Result{}, Refused: res.Refused, Terms: terms}
 	own := a.owners()
 	shown := map[string]bool{}
 	for _, c := range res.Context {
@@ -117,20 +121,24 @@ func (a Agent) result(ctx context.Context, own *owners, c ports.Chunk) Result {
 }
 
 // retrieve runs retrieval and the live check for one query, up to budget allowed chunks.
-func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources []string, budget int) (retrieve.Result, error) {
+func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources []string, budget int) (retrieve.Result, []Term, error) {
+	wide, terms := expand(q, a.glossaryOf(s)) // the space's own terms only (SB-2203)
 	var emails []string
 	if a.Emails != nil {
 		e, err := a.Emails(ctx, s.User())
 		if err != nil {
-			return retrieve.Result{}, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
+			return retrieve.Result{}, nil, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
 		}
 		emails = e
 	}
 	query := ports.Query{Text: q, Kinds: sources}
+	for _, t := range terms {
+		query.Also = append(query.Also, t.Means)
+	}
 	if a.Embedder != nil {
-		vs, err := a.Embedder.Embed(ctx, []string{q})
+		vs, err := a.Embedder.Embed(ctx, []string{wide})
 		if err != nil || len(vs) != 1 {
-			return retrieve.Result{}, fmt.Errorf("%w: embedder", ErrUnavailable)
+			return retrieve.Result{}, nil, fmt.Errorf("%w: embedder", ErrUnavailable)
 		}
 		query.Vector = vs[0]
 	}
@@ -140,9 +148,9 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 	}
 	res, err := retrieve.ContextUpTo(ctx, s, who, emails, a.Index, a.Auth, query, budget)
 	if err != nil {
-		return retrieve.Result{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+		return retrieve.Result{}, nil, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 	}
-	return res, nil
+	return res, terms, nil
 }
 
 // snippet is the first SnippetLen characters of a chunk, cut at a space when it can be.

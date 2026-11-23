@@ -102,7 +102,11 @@ func NewUpdater(cfg Config, alerter canary.Alerter, metrics *obs.Metrics) (*Upda
 	}
 	return &UpdaterJob{Tenant: cfg.Tenant, Alerter: alerter, Metrics: metrics,
 		Updater: runtime.Updater{Registry: cfg.Release.Registry, Store: store, Verifier: v, Deploy: dep, Services: services,
-			Target: func(ctx context.Context) (string, error) { return ch.Channel(ctx, channel) }}}, nil
+			Target: func(ctx context.Context) (string, error) { return ch.Channel(ctx, channel) },
+			Hold: func(_ context.Context, target string) (string, error) {
+				h, _, err := ReadHold(cfg.State)
+				return h.Instead(target), err
+			}}}, nil
 }
 
 // Run pulls, admits and deploys. A release that isn't admitted changes nothing and raises

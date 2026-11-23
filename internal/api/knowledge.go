@@ -31,6 +31,9 @@ type Knowledge struct {
 	People func(ctx context.Context, s tenancy.Scope, q string) ([]ask.Briefable, error)
 	// Changes is what changed (SB-1708); nil doesn't mount it.
 	Changes func(ctx context.Context, s tenancy.Scope, days int) (ask.ChangesResponse, error)
+	// Access asks the owners of sources an answer couldn't show for access (SB-2205); nil
+	// doesn't mount it.
+	Access  func(ctx context.Context, s tenancy.Scope, trace string) (ask.AccessResponse, error)
 	Release string
 	NewID   func(prefix string) string
 }
@@ -49,6 +52,9 @@ func (h Knowledge) Register(mux *http.ServeMux) {
 	}
 	if h.People != nil {
 		mux.HandleFunc("GET /v1/handover/people", h.people)
+	}
+	if h.Access != nil {
+		mux.HandleFunc("POST /v1/access-requests", h.access)
 	}
 	if h.Questions.Store != nil {
 		mux.HandleFunc("POST /v1/saved", h.save)
@@ -271,4 +277,24 @@ func (h Knowledge) openShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.out().ok(w, "", sh)
+}
+
+func (h Knowledge) access(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Trace string `json:"trace"`
+	}
+	if !readJSON(r, &req) || req.Trace == "" {
+		h.out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with trace, the answer's trace."))
+		return
+	}
+	res, err := h.Access(r.Context(), s, req.Trace)
+	if err != nil {
+		h.out().fail(w, "", mapErr(err))
+		return
+	}
+	h.out().ok(w, "", res)
 }

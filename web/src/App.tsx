@@ -162,7 +162,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
           {turns.map((t, i) => (
             <div className="turn" key={i}>
               <h2 className="question">{t.question}</h2>
-              {t.answer && <AnswerView answer={t.answer} />}
+              {t.answer && <AnswerView answer={t.answer} fetcher={fetcher} />}
               {t.answer && <FeedbackBar answer={t.answer} fetcher={fetcher} />}
               {t.answer && <TurnTools question={t.question} fetcher={fetcher} space={space || undefined} />}
               {t.answer && <AskStewards question={t.question} answer={t.answer} space={space || undefined} fetcher={fetcher} />}

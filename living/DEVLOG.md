@@ -7,6 +7,30 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S21.3: Ask for access
+
+**Wave/slice:** W21 / S21.3 (SB-2205) · **Status:** Done
+
+**What:** Under "N sources were not shown" on an answer or search, *Ask the owners for access* (`POST /v1/access-requests`) sends each owner of a document the source refused one `access` message naming their document and who asked. The asker sees only counts: sent, already asked this week, and with no owner to ask.
+
+**Why this way:** Only `source_denied` documents are asked about: a space, label or barrier refusal isn't fixed by sharing at the source, and a request across a barrier would tell the other side what was asked. Requests are remembered under a hash of asker, document and week, so the ledger names neither, and an owner who turned `access` off is skipped without the asker learning it.
+
+**Learned:** A document the asker can't open is never a search candidate unless the index's prefilter is stale, so the law test and the cell test both change the source's ACL after the sync, as happens between syncs in a real cell.
+
+**Laws:** LAW-01 (`TestLAW01_AskingForAccessTellsTheAskerOnlyCounts`), LAW-07 (`TestLAW07_AnAccessRequestNeverCarriesTheQuestion`), self-test catches a store that forgets requests. Every law test is still green.
+
+## 2026-11-23 S21.2: Space glossary and wrong citations as eval cases
+
+**Wave/slice:** W21 / S21.2 (SB-2203, SB-2204) · **Status:** Done
+
+**What:** A space keeps a `glossary` in the manifest (up to 200 terms, proposed like any space change). Asks and searches in that space match each term the question uses and also search for its meaning, send the terms to the model in one data block, and list them in `terms`; entries that read like instructions are never used and the stewards' review list names them. A wrong-citation report on the review list becomes an eval case (`/v1/spaces/NAME/evals`): the question and the document it should cite, never an answer. The new `evals` job runs the cases once per release, and a release that fails a case an earlier release passed is held for the tenant: the updater runs the release the cases last passed on instead.
+
+**Why this way:** The glossary lives in the manifest so it changes through the steward-proposal and operator-approval path that already exists, with no new store. Meanings are matched as extra phrases (`Query.Also`), not added to the query text, because Postgres ANDs plain query words. A tenant's questions can't leave the cell, so the factory gate can't run its cases: the cell runs them on the release it runs and holds a regressed one through the updater, which admits the fallback with the same four checks.
+
+**Learned:** The law test caught an entry the sanitiser missed: `system:` only flags at the start of a line, so a term and its meaning are now checked on their own as well as together.
+
+**Laws:** LAW-19 (`TestLAW19_ASpacesGlossaryIsUsedOnlyInThatSpace`, self-test catches a glossary used in every space), LAW-09 (`TestLAW09_GlossaryEntriesAreDataNeverInstructions`), LAW-06 (`TestLAW06_AReleaseThatRegressesATenantCaseIsHeld`, self-test catches an updater that ignores the hold). Every law test is still green.
+
 ## 2026-11-23 S21.1: Orphaned and duplicate documents
 
 **Wave/slice:** W21 / S21.1 (SB-2201, SB-2202) · **Status:** Done

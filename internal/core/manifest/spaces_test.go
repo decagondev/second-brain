@@ -134,3 +134,32 @@ func TestSpaceRules(t *testing.T) {
 }
 
 func itoa(i int) string { return string(rune('a'+i/26)) + string(rune('a'+i%26)) }
+
+// SB-2203: a space's glossary reads back as written, and its limits are errors.
+func TestGlossary(t *testing.T) {
+	src := strings.Replace(spacesValid, "    scope: { docs: [\"/People/**\"] }\n",
+		"    scope: { docs: [\"/People/**\"] }\n    glossary: { PO: purchase order, \"SLA\": \"service level agreement, \\\"signed\\\"\", HRIS: Personalsystem für Mitarbeiterdaten }\n", 1)
+	got, ds := Check([]byte(src))
+	if len(ds) > 0 {
+		t.Fatal(format("m.yaml", ds))
+	}
+	g := got.Spaces["people"].Glossary
+	if g["PO"] != "purchase order" || g["SLA"] != `service level agreement, "signed"` || g["HRIS"] != "Personalsystem für Mitarbeiterdaten" {
+		t.Fatalf("glossary %v", g)
+	}
+	back, ds := Check(Format(got))
+	if len(ds) > 0 || !reflect.DeepEqual(back.Spaces["people"].Glossary, g) {
+		t.Fatalf("format: %v %v\n%s", back.Spaces["people"].Glossary, ds, Format(got))
+	}
+	for _, tc := range []struct{ entry, want string }{
+		{"PO: a, po: b", "listed twice"},
+		{"\"" + strings.Repeat("x", MaxTerm+1) + "\": y", "a term is 1 to"},
+		{"PO: \"" + strings.Repeat("y", MaxMeaning+1) + "\"", "a meaning is at most"},
+		{"PO: [a]", "must be a single value"},
+	} {
+		bad := strings.Replace(spacesValid, "    scope: { docs: [\"/People/**\"] }\n", "    scope: { docs: [\"/People/**\"] }\n    glossary: { "+tc.entry+" }\n", 1)
+		if _, ds := Check([]byte(bad)); !strings.Contains(format("m.yaml", ds), tc.want) {
+			t.Errorf("%s: want %q, got %s", tc.entry, tc.want, format("m.yaml", ds))
+		}
+	}
+}

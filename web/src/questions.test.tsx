@@ -216,6 +216,27 @@ describe("keeping it current", () => {
     expect(await violations(container)).toEqual([]);
   });
 
+  // SB-2204
+  it("turns a wrong-citation report into an eval case", async () => {
+    const posts: unknown[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/spaces/support/evals") {
+        posts.push(JSON.parse(String(init?.body)));
+        return json({ id: "ev_1", question: "When is the cutoff?" });
+      }
+      return json({ items: [{ cite: "docs:old@1", title: "Old rota", flags: [], snippet: "", cited: 0, flagged: 1, reports: ["tr_9"] }], hidden: [] });
+    };
+    const { container } = render(<ReviewList space="support" fetcher={fetcher} />);
+    await act(async () => {});
+    fireEvent.change(screen.getByLabelText("Should have cited (KIND:ID)"), { target: { value: "docs:rota@2" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Add to evals" }));
+    });
+    expect(posts).toEqual([{ report: "tr_9", expect: "docs:rota@2" }]);
+    expect(screen.getByRole("status").textContent).toContain("ev_1");
+    expect(await violations(container)).toEqual([]);
+  });
+
   // SB-2004
   it("shows a note read wider than its space with a count, and republishes it narrowed after a confirm", async () => {
     const posts: unknown[] = [];

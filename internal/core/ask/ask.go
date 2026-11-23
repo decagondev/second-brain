@@ -65,6 +65,8 @@ type Response struct {
 	Dropped int    `json:"dropped"`
 	// People is who to ask: the owners of the answer's cited documents (SB-1702).
 	People []PersonRef `json:"people"`
+	// Terms are the space's glossary entries the question used (SB-2203).
+	Terms []Term `json:"terms,omitempty"`
 }
 
 // Trace is a stored answer with its decision list (GET /v1/traces/{id}).
@@ -74,8 +76,10 @@ type Trace struct {
 	At               time.Time
 	// QuerySHA256 is a search's query, hashed (SB-1701); a search keeps no text.
 	QuerySHA256 string `json:",omitempty"`
-	Response    Response
-	Decisions   []retrieve.Decision
+	// Turn is the answer's question's place in its conversation, from 0 (SB-2204).
+	Turn      int `json:",omitempty"`
+	Response  Response
+	Decisions []retrieve.Decision
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -142,6 +146,8 @@ type Agent struct {
 	// ReviewAfter is the shortest review_after_days of the spaces holding a document, by
 	// their ids (SB-1709); nil, or no spaces, is the default 365.
 	ReviewAfter func(spaces []string) int
+	// Glossary is a space's glossary by name (sb-space(5); SB-2203); nil is none.
+	Glossary func(space string) map[string]string
 }
 
 // Ask answers one question for the scope's user.
@@ -161,10 +167,11 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (resp Resp
 			a.Metrics.Add("sb_asks_total", "Answers by outcome.", map[string]string{"tenant": a.Tenant, "outcome": outcome}, 1)
 		}()
 	}
-	return a.ask(ctx, s, req)
+	return a.ask(ctx, s, req, false)
 }
 
-func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response, error) {
+// ask answers; probe is an eval case's run (SB-2204), which keeps no conversation.
+func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool) (Response, error) {
 	if err := s.Check(); err != nil || s.Tenant() != a.Tenant {
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
@@ -206,15 +213,18 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		conv = a.NewID("cv_")
 	}
 
-	res, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Budget)
+	res, terms, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Budget)
 	if err != nil {
 		return Response{}, err
 	}
 
 	trace := a.NewID("tr_")
-	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}}
+	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms}
 	if dept != nil {
 		resp.Agent = dept.Name
+	}
+	if probe {
+		resp.Agent, resp.Conversation = AgentEval, ""
 	}
 	if len(res.Context) == 0 {
 		n := NoticeNoSources
@@ -228,7 +238,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		if dept != nil {
 			prompt, lead = dept.Prompt, dept.Lead
 		}
-		claims, err := a.composeWith(withUser(ctx, s.User()), prompt, lead, trace, q, earlier, res.Context)
+		claims, err := a.composeWith(withTerms(withUser(ctx, s.User()), terms), prompt, lead, trace, q, earlier, res.Context)
 		if err != nil {
 			return Response{}, err
 		}
@@ -249,6 +259,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 		}
 	}
 
+	if probe {
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions}
+		if err := a.Store.PutTrace(ctx, t); err != nil {
+			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
+		}
+		return resp, nil
+	}
 	if err := a.Store.AppendQuestion(ctx, a.Tenant, s.User(), conv, q); err != nil {
 		return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 	}
@@ -257,7 +274,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request) (Response,
 			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 		}
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: len(earlier)}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
 		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
 	}
@@ -275,7 +292,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "user", Content: e})
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
-	msgs = append(msgs, ports.Message{Role: "user", Content: actx.Data() + "\n" + lead + q})
+	msgs = append(msgs, ports.Message{Role: "user", Content: glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
 	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text, Messages: msgs, JSON: true, User: a.user(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {

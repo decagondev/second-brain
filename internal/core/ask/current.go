@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ingest"
-	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retrieve"
 	"example.com/second-brain/internal/core/tenancy"
@@ -143,6 +142,9 @@ type ReviewItem struct {
 	// Copies are the other documents with the same text the steward can open (SB-2202).
 	OwnerGone bool     `json:"owner_gone,omitempty"`
 	Copies    []Result `json:"copies,omitempty"`
+	// Reports are the traces of the answers reported as citing it wrongly, newest first,
+	// for an eval case (SB-2204).
+	Reports []string `json:"reports,omitempty"`
 }
 
 // HiddenItem is a document to review the steward can't open: only its owner, if any and
@@ -162,25 +164,16 @@ type ReviewResponse struct {
 	// Personal is how many documents the space holds with personal data, an IBAN or a
 	// card number (SB-1904): a count, never which.
 	Personal int `json:"personal_data"`
+	// GlossaryFlagged are the space's glossary terms that read like an instruction, which
+	// are never used (SB-2203).
+	GlossaryFlagged []string `json:"glossary_flagged,omitempty"`
 }
 
 // Review lists the documents a space holds that answers lean on but that are older than
 // its review_after_days, and any marked as a wrong citation, for its stewards (SB-1709).
 func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src ReviewSource, after int) (ReviewResponse, error) {
-	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant || name == "company" {
-		return ReviewResponse{}, ErrNotSteward
-	}
-	stewards, _, ok := x.Facts(SpaceKey(name))
-	if !ok {
-		return ReviewResponse{}, ErrNotSteward
-	}
-	var groups []string
-	for _, g := range s.Groups() {
-		groups = append(groups, "group:"+g)
-	}
-	if x.Policy.Authorise(ctx, s, "review_space", policy.Entity{Type: "SpaceConfig", ID: name, Tenant: x.Agent.Tenant,
-		Attrs: map[string]any{"stewards": stewards}}, map[string]any{"groups": groups}).Decision != policy.Allow {
-		return ReviewResponse{}, ErrNotSteward
+	if err := x.reviewer(ctx, s, name); err != nil {
+		return ReviewResponse{}, err
 	}
 	if after <= 0 {
 		after = DefaultReviewDays
@@ -195,7 +188,11 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		return ReviewResponse{}, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
 	}
 	cited, flagged, refs := reviewCounts(traces, fbs)
+	reports := reportsOf(fbs)
 	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}}
+	if x.Agent.Glossary != nil {
+		_, out.GlossaryFlagged = usable(x.Agent.Glossary(name))
+	}
 	lk, ok := x.Agent.Index.(ports.DocLookup)
 	if !ok {
 		return out, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
@@ -268,7 +265,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			copies[n] = append(copies[n], r)
 			continue // listed once, under the newest copy
 		}
-		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Wider: widerBy[k], OwnerGone: gone[c.Owner]}
+		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Wider: widerBy[k], OwnerGone: gone[c.Owner], Reports: reports[k]}
 		if it.Wider > 0 {
 			it.Question = strings.TrimSuffix(path.Base(c.SourceID), ".md")
 		}
@@ -394,6 +391,19 @@ func newestCopies(allowed []ports.Chunk, copied map[string]bool) map[string]stri
 	out := map[string]string{}
 	for _, c := range retrieve.OneCopy(cs) {
 		out[c.TextSHA256] = c.Kind + ":" + c.SourceID
+	}
+	return out
+}
+
+// reportsOf is, by document, the traces of its wrong-citation reports, newest first.
+func reportsOf(fbs []Feedback) map[string][]string {
+	sorted := append([]Feedback(nil), fbs...)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].At.After(sorted[j].At) })
+	out := map[string][]string{}
+	for _, f := range sorted {
+		if k := docKey(f.WrongCitation); f.WrongCitation != "" && len(out[k]) < MaxReports {
+			out[k] = append(out[k], f.Trace)
+		}
 	}
 	return out
 }

@@ -43,6 +43,7 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 | `fields` | map kind → list of field names | no | `{}` | For a structured source (sb-connector(3), Fields): the sensitive fields this space lets ingest index, for example `{ hris: [salary_band] }`. A document with one of them is `restricted`. Non-sensitive declared fields need no listing. Every kind used must be in the space's `scope` |
 | `channels` | list of `#name` | no | `[]` | The chat-app channels whose `/ask` asks in this space (sb-ask(3), The chat app). A channel belongs to at most one space |
 | `review_after_days` | int | no | `365` | 30 to 3650. A document this space holds whose version is older than this, and that answers keep citing, goes on the stewards' review list (sb-ask(3), Documents to review; SB-1709), and its cites show their age |
+| `glossary` | map | no | `{}` | The space's terms and acronyms, `TERM: MEANING` (SB-2203): at most 200, each term 1 to 40 characters and each meaning 1 to 200, printable, no term twice (ignoring case). Search and answers **in this space** expand a term the question uses with its meaning (sb-ask(3), Glossary); a company-wide ask or another space never does. An entry that reads like an instruction to the model is kept but **flagged and not used**, and the stewards' review list names it. Changed like any field: a steward's proposal an operator approves (sb-spaces(7)) |
 | `start_here` | list | no | `[]` | A new member's reading list, in order (SB-1706): at most ten items, each a document `KIND:ID` (its newest version) or a folder `KIND:/Folder/` (ending in `/`: every document whose location is under it, by location). Each kind must be in the space's `scope`. Changed like any field: a steward's proposal an operator approves (sb-spaces(7)) |
 
 ### `barriers`
@@ -74,6 +75,7 @@ All of these are errors, reported with line and column like every manifest error
 13. A scope pattern that reaches into a **restricted** space's scope (one matches the other, such as `/**` or `/People/Cases/**` against `/People/**`) when this space has members the restricted space doesn't. Holding a restricted space's documents would make those members holders of them (SB-1208; the red team's PT-0003).
 14. `barriers` with no `spaces`. The barrier checks run with the space checks, so a cell without spaces couldn't enforce them (SB-1401).
 15. A `start_here` with more than ten items, an item listed twice, an item that isn't `KIND:ID` or `KIND:/Folder/`, or a kind outside the space's `scope`.
+16. A `glossary` with more than 200 terms, a term listed twice (ignoring case), a term over 40 or a meaning over 200 characters, or a character that isn't printable.
 
 A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always `ask`), and the retention (the template's, or else the tenant's, never more than the tenant's).
 

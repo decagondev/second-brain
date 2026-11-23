@@ -82,7 +82,10 @@ func JSONSchema() []byte {
 					"fields":            map[string]any{"type": "object", "additionalProperties": map[string]any{"type": "array", "items": map[string]any{"type": "string", "pattern": fieldName.String()}}},
 					"channels":          map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": channelName.String()}},
 					"review_after_days": map[string]any{"type": "integer", "minimum": MinRetentionDays, "maximum": MaxRetentionDays, "default": DefaultReviewAfterDays},
-					"start_here":        map[string]any{"type": "array", "maxItems": MaxStartHere, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": startItem.String()}},
+					"glossary": map[string]any{"type": "object", "maxProperties": MaxGlossary,
+						"propertyNames":        map[string]any{"minLength": 1, "maxLength": MaxTerm},
+						"additionalProperties": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxMeaning}},
+					"start_here": map[string]any{"type": "array", "maxItems": MaxStartHere, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": startItem.String()}},
 					"scope": map[string]any{
 						"type": "object", "minProperties": 1, "propertyNames": map[string]any{"enum": ConnectorKinds},
 						"additionalProperties": map[string]any{"type": "array", "minItems": 1, "items": map[string]any{"type": "string", "minLength": 1}},

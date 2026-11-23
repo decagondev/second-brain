@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Space is one department space after its template's defaults are filled in
@@ -29,7 +31,16 @@ type Space struct {
 	// ReviewAfterDays: a relied-on document older than this goes on the stewards' review
 	// list (SB-1709). 0 means the default.
 	ReviewAfterDays int `json:"review_after_days"`
+	// Glossary is the space's terms and their meanings (SB-2203); nil for none.
+	Glossary map[string]string `json:"glossary,omitempty"`
 }
+
+// MaxGlossary is the most terms a space keeps, and MaxTerm and MaxMeaning their lengths.
+const (
+	MaxGlossary = 200
+	MaxTerm     = 40
+	MaxMeaning  = 200
+)
 
 // DefaultReviewAfterDays is review_after_days when a space leaves it out.
 const DefaultReviewAfterDays = 365
@@ -118,7 +129,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -247,6 +258,8 @@ func (c *checker) space(name string, n *node, p string) {
 			}
 		case "start_here":
 			c.startHere(v, f, &s, &sn)
+		case "glossary":
+			s.Glossary = c.glossary(v, f)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -466,6 +479,13 @@ func SpaceAttrs(s Space) map[string]string {
 	if len(s.StartHere) > 0 {
 		a["start_here"] = strings.Join(s.StartHere, ",")
 	}
+	if len(s.Glossary) > 0 {
+		var gs []string
+		for _, k := range sorted(s.Glossary) {
+			gs = append(gs, k+": "+s.Glossary[k])
+		}
+		a["glossary"] = strings.Join(gs, "; ")
+	}
 	if s.ReviewAfterDays != 0 && s.ReviewAfterDays != DefaultReviewAfterDays {
 		a["review_after_days"] = strconv.Itoa(s.ReviewAfterDays)
 	}
@@ -509,6 +529,56 @@ func (c *checker) reachChecks(names []string) {
 func subset(a, b []string) bool {
 	for _, x := range a {
 		if !contains(b, x) {
+			return false
+		}
+	}
+	return true
+}
+
+// glossary reads a space's glossary, TERM: MEANING (SB-2203).
+func (c *checker) glossary(v *node, f string) map[string]string {
+	if !c.mapOf(v, f, `{ "PO": "purchase order" }`) {
+		return nil
+	}
+	if len(v.keys) > MaxGlossary {
+		c.add(v, f, "at most %d terms", MaxGlossary)
+	}
+	out := map[string]string{}
+	seen := map[string]bool{}
+	for j, k := range v.keys {
+		if c.skip[k] {
+			continue
+		}
+		fk := f + "." + k.value
+		term, ok := c.scalar(k, fk)
+		if !ok {
+			continue
+		}
+		means, ok := c.scalar(v.vals[j], fk)
+		switch {
+		case !ok:
+		case utf8.RuneCountInString(term) > MaxTerm || strings.TrimSpace(term) != term:
+			c.add(k, fk, "a term is 1 to %d characters, with no space around it", MaxTerm)
+		case utf8.RuneCountInString(means) > MaxMeaning:
+			c.add(v.vals[j], fk, "a meaning is at most %d characters", MaxMeaning)
+		case !printable(term) || !printable(means):
+			c.add(k, fk, "a term and its meaning are printable characters only")
+		case seen[strings.ToLower(term)]:
+			c.add(k, fk, "%q is listed twice (ignoring case)", term)
+		default:
+			seen[strings.ToLower(term)] = true
+			out[term] = means
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func printable(s string) bool {
+	for _, r := range s {
+		if !unicode.IsPrint(r) {
 			return false
 		}
 	}

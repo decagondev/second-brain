@@ -11,6 +11,8 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Ask the owners of sources you couldn't open to share them; they hear which document, you see counts (SB-2205).
+- Space glossaries that searches and answers use in their space; wrong-citation reports become tenant eval cases that hold a release which regresses them (SB-2203, SB-2204).
 - Stewards see documents whose owner has gone and copies of the same document once; answers cite one copy (SB-2201, SB-2202).
 - Share a Mattermost answer to its channel as citation links only; find the person to hand over by name or email (SB-2105, SB-2106).
 - A weekly digest of what changed in a person's spaces, checked as them when it's sent, and watched saved questions that say when their sources change; sb-tenant(5) `digest` sets the time zone or turns the digest off (SB-2103, SB-2104).

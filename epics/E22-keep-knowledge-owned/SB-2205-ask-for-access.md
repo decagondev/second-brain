@@ -13,7 +13,7 @@ summary: "'N sources you can't open' tells the asker to ask the owner, but not w
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-07 |
 | Depends on | SB-2101 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ summary: "'N sources you can't open' tells the asker to ask the owner, but not w
 
 ## Acceptance criteria
 
-- [ ] Where an answer counts hidden sources, a button sends each of their owners one request; the owner's message names the document, the asker's view is a count
-- [ ] The asker never learns which document or who, unless already named in `people`
-- [ ] One request per asker, document and week
+- [x] Where an answer counts hidden sources, a button sends each of their owners one request; the owner's message names the document, the asker's view is a count
+- [x] The asker never learns which document or who, unless already named in `people`
+- [x] One request per asker, document and week
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Request endpoint
-- [ ] Owner message
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Request endpoint
+- [x] Owner message
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-—
+2026-11-23: built in S21.3. `Agent.RequestAccess` over the trace's `source_denied` decisions, the `access` notification by the chat bot, a hashed weekly ledger. Law tests: `TestLAW01_AskingForAccessTellsTheAskerOnlyCounts`, `TestLAW07_AnAccessRequestNeverCarriesTheQuestion`, self-test.
 
 ## Definition of done
 

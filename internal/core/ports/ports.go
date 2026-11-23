@@ -376,6 +376,9 @@ type Query struct {
 	Vector []float32
 	Limit  int      // per ranking (vector, keyword); 0 means the default
 	Kinds  []string // connector kinds to keep; empty means all (sb-ask(3), sources)
+	// Also are phrases a chunk may match instead of Text: the meanings of the glossary
+	// terms the query used (SB-2203). Vector is the embedding of Text with them.
+	Also []string
 }
 
 // Candidate is a retrieved chunk with its rank in each ranking (0 = not ranked there).

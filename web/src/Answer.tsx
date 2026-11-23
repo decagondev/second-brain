@@ -1,5 +1,6 @@
-import type { AskResponse, Cite, Claim, Notice, Person } from "./api";
-import { isCited } from "./api";
+import { useState } from "react";
+import type { AskResponse, Cite, Claim, Fetch, Notice, Person, Term } from "./api";
+import { isCited, requestAccess } from "./api";
 
 const notices: Record<Exclude<Notice, null>, string> = {
   no_access: "Some sources you don't have access to may answer this. Ask their owner.",
@@ -92,7 +93,56 @@ export function PeopleView({ answer }: { answer: AskResponse }) {
   );
 }
 
-export function AnswerView({ answer }: { answer: AskResponse }) {
+// The space's glossary terms a question used (SB-2203), at the foot of an answer or results.
+export function TermsView({ terms }: { terms?: Term[] }) {
+  if (!terms || terms.length === 0) return null;
+  return (
+    <p className="terms">
+      Read with this space's glossary:{" "}
+      {terms.map((t, i) => (
+        <span key={t.term}>
+          {i > 0 && "; "}
+          <abbr title={t.means}>{t.term}</abbr> means {t.means}
+        </span>
+      ))}
+      .
+    </p>
+  );
+}
+
+// Ask the owners for access (SB-2205): the owners hear which document; the asker sees counts.
+export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fetch }) {
+  const [state, setState] = useState<"idle" | "busy" | "failed" | { sent: number; already: number; no_owner: number }>("idle");
+  if (typeof state === "object") {
+    const parts = [
+      state.sent > 0 ? `asked ${state.sent === 1 ? "1 owner" : `${state.sent} owners`}` : "",
+      state.already > 0 ? `${state.already} already asked this week` : "",
+      state.no_owner > 0 ? `${state.no_owner} with no owner to ask` : "",
+    ].filter((p) => p !== "");
+    return <span role="status">{parts.length > 0 ? `Done: ${parts.join(", ")}.` : "There was nobody to ask."}</span>;
+  }
+  return (
+    <>
+      <button
+        type="button"
+        disabled={state === "busy"}
+        onClick={async () => {
+          setState("busy");
+          try {
+            setState(await requestAccess(trace, fetcher));
+          } catch {
+            setState("failed");
+          }
+        }}
+      >
+        Ask the owners for access
+      </button>
+      {state === "failed" && <span role="alert"> The owners couldn't be asked just now.</span>}
+    </>
+  );
+}
+
+export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?: Fetch }) {
   return (
     <article className="answer" aria-label="Answer">
       {answer.notice && <p className="notice" role="note">{notices[answer.notice]}</p>}
@@ -102,9 +152,11 @@ export function AnswerView({ answer }: { answer: AskResponse }) {
         ))}
       </ul>
       <PeopleView answer={answer} />
+      <TermsView terms={answer.terms} />
       {answer.refused > 0 && (
         <p className="refused">
-          {answer.refused === 1 ? "1 source was" : `${answer.refused} sources were`} not shown because you can't open them.
+          {answer.refused === 1 ? "1 source was" : `${answer.refused} sources were`} not shown because you can't open them.{" "}
+          <AccessRequest trace={answer.trace} fetcher={fetcher} />
         </p>
       )}
       <p className="trace">Trace {answer.trace}</p>

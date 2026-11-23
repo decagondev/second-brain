@@ -33,6 +33,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 	if h.Reviews != nil {
 		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
 	}
+	mux.HandleFunc("POST /v1/spaces/{name}/evals", h.addEval)
+	mux.HandleFunc("GET /v1/spaces/{name}/evals", h.evals)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/evals/{id}", h.deleteEval)
 }
 
 func (h Questions) k() Knowledge { return Knowledge{Release: h.Release, NewID: h.NewID} }

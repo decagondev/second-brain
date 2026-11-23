@@ -25,6 +25,8 @@ type Store struct {
 	shares   map[string]ask.Share
 	stq      map[string]ask.StewardQuestion
 	prefs    map[string]prefRec // tenant/user
+	evals    map[string]ask.EvalCase
+	access   map[string]accessRec // tenant/key
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -39,7 +41,8 @@ type conv struct {
 // New returns an empty store.
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
-		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{}}
+		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}}
 }
 
 // PutTrace implements ask.Store.
@@ -154,7 +157,7 @@ func window[T any](m map[string]T, of func(T) (tenant string, at time.Time, key 
 // conversations and feedback (sb-tenant(5), Retention and deletion).
 func (s *Store) Retention() []retention.Store {
 	// Feedback first: it takes its space from its trace, which must still be there (SB-1401).
-	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}}
+	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}, view{s, "eval cases"}, view{s, "access requests"}}
 }
 
 // PrefsName is the notification settings' store name: erased with a person, never expired.
@@ -270,6 +273,18 @@ func (v view) drop(match matcher, held retention.Held, dry bool, got *[]json.Raw
 		for k, sh := range s.shares {
 			if try(sh.Tenant, sh.User, spaceOf(sh.Space), sh.At, sh) {
 				delete(s.shares, k)
+			}
+		}
+	case "access requests":
+		for k, a := range s.access {
+			if try(a.Tenant, a.User, "", a.At, a) {
+				delete(s.access, k)
+			}
+		}
+	case "eval cases":
+		for k, c := range s.evals {
+			if try(c.Tenant, c.By, spaceOf(c.Space), c.At, c) {
+				delete(s.evals, k)
 			}
 		}
 	case PrefsName:
@@ -459,6 +474,69 @@ func (s *Store) PutNotifyPrefs(_ context.Context, tenant, user string, p notify.
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.prefs[tenant+"/"+user] = prefRec{tenant, user, p}
+	return nil
+}
+
+// accessRec is one access request sent (SB-2205): a key, who asked, and when.
+type accessRec struct {
+	Tenant string    `json:"tenant"`
+	Key    string    `json:"key"`
+	User   string    `json:"user"`
+	At     time.Time `json:"at"`
+}
+
+var _ ask.AccessStore = (*Store)(nil)
+
+// AccessRequested implements ask.AccessStore.
+func (s *Store) AccessRequested(_ context.Context, tenant, key string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.access[tenant+"/"+key]
+	return ok, nil
+}
+
+// PutAccessRequest implements ask.AccessStore.
+func (s *Store) PutAccessRequest(_ context.Context, tenant, key, user string, at time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.access[tenant+"/"+key] = accessRec{tenant, key, user, at}
+	return nil
+}
+
+var _ ask.EvalStore = (*Store)(nil)
+
+// PutEvalCase implements ask.EvalStore (SB-2204).
+func (s *Store) PutEvalCase(_ context.Context, c ask.EvalCase) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.evals[c.Tenant+"/"+c.ID] = c
+	return nil
+}
+
+// EvalCases implements ask.EvalStore: oldest first.
+func (s *Store) EvalCases(_ context.Context, tenant string) ([]ask.EvalCase, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.EvalCase{}
+	for _, c := range s.evals {
+		if c.Tenant == tenant {
+			out = append(out, c)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].At.Equal(out[j].At) {
+			return out[i].At.Before(out[j].At)
+		}
+		return out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+// DeleteEvalCase implements ask.EvalStore.
+func (s *Store) DeleteEvalCase(_ context.Context, tenant, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.evals, tenant+"/"+id)
 	return nil
 }
 

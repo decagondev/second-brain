@@ -133,6 +133,9 @@ func (x *Index) Search(_ context.Context, s tenancy.Scope, tokens []string, q po
 		limit = 50
 	}
 	words := strings.Fields(strings.ToLower(q.Text))
+	for _, also := range q.Also {
+		words = append(words, strings.Fields(strings.ToLower(also))...)
+	}
 	type scored struct {
 		i int
 		s float64

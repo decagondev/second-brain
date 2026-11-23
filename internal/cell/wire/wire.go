@@ -55,6 +55,7 @@ import (
 	"example.com/second-brain/internal/core/holds"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
@@ -85,6 +86,9 @@ var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "slack": "ch
 type Cell struct {
 	Config  Config
 	Release string
+	// Send is where the API's own notifications go, such as access requests (SB-2205);
+	// nil is Notifier().
+	Send notify.Sender
 
 	Audit     *audit.Log
 	Kill      *kill.Checker
@@ -420,7 +424,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		},
 		Owner: ask.ActiveOwner(func(ctx context.Context, email string) ([]ports.User, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
-		})}
+		}),
+		Glossary: func(name string) map[string]string { return m.Spaces[name].Glossary }}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -510,7 +515,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 				}
 			}
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
-		}}
+		}, Evals: c.Traces, Feedback: c.Traces}
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}
@@ -521,6 +526,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return agent.StartHere(ctx, s, m.Spaces[strings.TrimPrefix(s.Space(), "spc_")].StartHere)
 		},
 		Changes: agent.Changes,
+		Access: func(ctx context.Context, s tenancy.Scope, trace string) (ask.AccessResponse, error) {
+			return agent.RequestAccess(ctx, s, trace, c.Traces, c.accessNote())
+		},
 		Handover: func(ctx context.Context, s tenancy.Scope, person string) (ask.HandoverResponse, error) {
 			return agent.Handover(ctx, s, person, emails, c.relations(m), c.Policy)
 		},

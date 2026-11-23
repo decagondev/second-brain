@@ -14,6 +14,7 @@ import (
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/notify"
+	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -39,6 +40,53 @@ func (c *Cell) Notifier() notify.Sender {
 		return slackapp.DM{Base: cc.Base, Token: slackField(c.Secret("connectors/chat"), "bot_token"), Client: client}
 	}
 	return nil
+}
+
+// accessNote tells a document's owner that someone asked for access to it (SB-2205), by the
+// cell's chat bot; nil when the cell has none.
+func (c *Cell) accessNote() ask.AccessNote {
+	return func(ctx context.Context, owner, asker string, doc ask.Result) error {
+		send := c.Send
+		if send == nil {
+			send = c.Notifier()
+		}
+		if send == nil {
+			return errors.New("wire: the cell has no chat bot to tell owners with")
+		}
+		us, err := c.Directory.UsersByEmail(ctx, c.Config.Tenant, owner)
+		if err != nil {
+			return err
+		}
+		var to []ports.User
+		for _, u := range us {
+			if u.Active {
+				to = append(to, u)
+			}
+		}
+		if len(to) != 1 {
+			return nil // nobody single to tell; the asker is told it was sent all the same
+		}
+		p, err := c.Traces.NotifyPrefs(ctx, c.Config.Tenant, to[0].ID)
+		if err != nil {
+			return err
+		}
+		if !p.Wants(notify.KindAccess) {
+			return nil
+		}
+		title, link := doc.Title, doc.URL
+		if title == "" {
+			title = doc.Cite
+		}
+		if link == "" {
+			link = strings.TrimRight(c.Config.BaseURL, "/") + "/"
+		}
+		err = send.Send(ctx, notify.Person{ID: to[0].ID, Email: owner}, notify.Message{Kind: notify.KindAccess,
+			Text: asker + " asked a question that your document " + title + " answers. Consider sharing it with them.", Link: link})
+		if errors.Is(err, notify.ErrNoSuchPerson) {
+			return nil
+		}
+		return err
+	}
 }
 
 // NotifyJob is the cell's notify job, with the applied manifest.

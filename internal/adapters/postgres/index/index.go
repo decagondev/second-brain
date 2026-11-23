@@ -296,8 +296,15 @@ func (x Index) Search(ctx context.Context, s tenancy.Scope, tokens []string, q p
 		}
 	}
 	if strings.TrimSpace(q.Text) != "" {
-		if err := collect(`SELECT `+cols+` FROM `+sc+`.chunks WHERE tenant = $1 AND acl && $2 AND tsv @@ plainto_tsquery('simple', $3)
-			ORDER BY ts_rank(tsv, plainto_tsquery('simple', $3)) DESC, id LIMIT $4`, []any{x.Tenant, tokens, q.Text, limit},
+		// The query, or any of its glossary meanings as a phrase (SB-2203); placeholders only.
+		tsq := "plainto_tsquery('simple', $3)"
+		args := []any{x.Tenant, tokens, q.Text, limit}
+		for _, also := range q.Also {
+			args = append(args, also)
+			tsq += " || phraseto_tsquery('simple', $" + strconv.Itoa(len(args)) + ")"
+		}
+		if err := collect(`SELECT `+cols+` FROM `+sc+`.chunks WHERE tenant = $1 AND acl && $2 AND tsv @@ (`+tsq+`)
+			ORDER BY ts_rank(tsv, (`+tsq+`)) DESC, id LIMIT $4`, args,
 			func(c *ports.Candidate, r int) { c.KeywordRank = r }); err != nil {
 			return nil, err
 		}

@@ -79,6 +79,7 @@ func (s *Service) Jobs() map[string]func(ctx context.Context) error {
 		"review":    s.review,
 		"drift":     s.drift,
 		"notify":    s.notify,
+		"evals":     s.evals,
 	}
 }
 
@@ -382,6 +383,13 @@ func (s *Service) notify(ctx context.Context) error {
 		send = s.Cell.Notifier()
 	}
 	_, err := s.Cell.NotifyJob(send).Run(ctx)
+	return err
+}
+
+// evals runs the tenant's cases from wrong citations on the release the cell runs, and
+// holds that release if it regresses one (sb-evals(7); SB-2204).
+func (s *Service) evals(ctx context.Context) error {
+	_, err := s.Cell.RunEvals(ctx)
 	return err
 }
 

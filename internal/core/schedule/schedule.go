@@ -28,6 +28,7 @@ var Jobs = []Job{
 	{Name: "review", Cron: "0 5 1 1,4,7,10 *", Interval: 92 * 24 * time.Hour, Law: "LAW-16"},
 	{Name: "drift", Cron: "35 * * * *", Interval: time.Hour, Law: "LAW-16"},
 	{Name: "notify", Cron: "*/5 * * * *", Interval: 5 * time.Minute},
+	{Name: "evals", Cron: "50 * * * *", Interval: time.Hour, Law: "LAW-06"},
 }
 
 // Grace is how late a job may be before it is overdue: twice its interval, but at most a

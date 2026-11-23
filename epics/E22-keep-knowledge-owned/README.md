@@ -31,9 +31,9 @@ Proposed 2026-11-23 after W19 and accepted by the user the same day, with every 
 
 - [x] A deprovisioned owner's documents reach the review list within a sync
 - [x] A copied file is cited once
-- [ ] "PO" finds "purchase order"; an instruction-like entry isn't used
-- [ ] A release that regresses a tenant case is held
-- [ ] An access request names the document only to its owner
+- [x] "PO" finds "purchase order"; an instruction-like entry isn't used
+- [x] A release that regresses a tenant case is held
+- [x] An access request names the document only to its owner
 - [ ] Every law test still green; no new store, service or Go module
 
 ## Tickets

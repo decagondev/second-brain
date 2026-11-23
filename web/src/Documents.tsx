@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, search } from "./api";
 import type { ApiError, Fetch, SearchResponse } from "./api";
-import { placeOf, PersonName } from "./Answer";
+import { AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
 
 // Documents: search without the model (sb-ask(3), Search; SB-1701). Every result is a
 // document the asker can open now, with a quote of the source and its cite.
@@ -95,8 +95,12 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
             })}
           </ol>
         )}
+        {res && <TermsView terms={res.terms} />}
         {res && res.refused > 0 && (
-          <p className="refused">{res.refused === 1 ? "1 document was" : `${res.refused} documents were`} not shown because you can't open them.</p>
+          <p className="refused">
+            {res.refused === 1 ? "1 document was" : `${res.refused} documents were`} not shown because you can't open them.{" "}
+            <AccessRequest trace={res.trace} fetcher={fetcher} />
+          </p>
         )}
       </div>
     </section>

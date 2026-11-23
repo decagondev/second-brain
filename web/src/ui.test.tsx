@@ -49,6 +49,21 @@ describe("citations", () => {
     expect(screen.getByRole("note").textContent).toMatch(/don't have access/);
     expect(screen.getByText(/2 sources were not shown/)).toBeTruthy();
   });
+
+  // SB-2205
+  it("asks the owners of hidden sources for access and shows only counts", async () => {
+    const sent: unknown[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      sent.push([u, JSON.parse(String(init?.body))]);
+      return new Response(JSON.stringify({ sent: 1, already: 0, no_owner: 1 }), { status: 200 });
+    };
+    render(<AnswerView answer={response([uncited], { notice: "no_access", refused: 2 })} fetcher={fetcher} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask the owners for access" }));
+    });
+    expect(sent).toEqual([["/v1/access-requests", { trace: "tr_1" }]]);
+    expect(screen.getByRole("status").textContent).toBe("Done: asked 1 owner, 1 with no owner to ask.");
+  });
 });
 
 // LAW-14 in the UI: whatever claims arrive, every rendered claim is either cited (at

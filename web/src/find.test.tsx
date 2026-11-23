@@ -213,3 +213,17 @@ describe("watching a saved question", () => {
     expect((screen.getByLabelText("Watch: refund limit?") as HTMLInputElement).checked).toBe(true);
   });
 });
+
+// SB-2203
+describe("glossary", () => {
+  it("shows the space's terms an answer used at its foot", async () => {
+    const { container } = render(<AnswerView answer={{ ...answer, terms: [{ term: "PO", means: "purchase order" }] }} />);
+    expect(container.querySelector(".terms")?.textContent).toBe("Read with this space's glossary: PO means purchase order.");
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("shows no glossary line when no term was used", () => {
+    const { container } = render(<AnswerView answer={answer} />);
+    expect(container.querySelector(".terms")).toBeNull();
+  });
+});

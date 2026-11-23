@@ -94,6 +94,10 @@ type Stewards struct {
 	// Gone says whether an owner's email is no active user in the directory now (SB-2201).
 	// nil is a cell that can't tell: its review list names no document for its owner.
 	Gone func(ctx context.Context, email string) (bool, error)
+	// Evals keeps the tenant's eval cases, and Feedback finds the report one is made from
+	// (SB-2204); nil keeps none.
+	Evals    EvalStore
+	Feedback FeedbackReader
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).

@@ -96,6 +96,13 @@ func Format(t Tenant) []byte {
 			if len(sp.StartHere) > 0 {
 				fmt.Fprintf(&b, "    start_here: %s%s", flowList(sp.StartHere, true), nl)
 			}
+			if len(sp.Glossary) > 0 {
+				gp := make([]string, 0, len(sp.Glossary))
+				for _, k := range sorted(sp.Glossary) {
+					gp = append(gp, strconv.Quote(k)+": "+strconv.Quote(sp.Glossary[k]))
+				}
+				fmt.Fprintf(&b, "    glossary: { %s }%s", strings.Join(gp, ", "), nl)
+			}
 			parts := make([]string, 0, len(sp.Scope))
 			for _, k := range sorted(sp.Scope) {
 				parts = append(parts, k+": "+flowList(sp.Scope[k], true))

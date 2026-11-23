@@ -288,7 +288,7 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}}
 }
 
 var _ notify.PrefStore = Traces{}
@@ -308,6 +308,43 @@ func (t Traces) NotifyPrefs(ctx context.Context, tenant, user string) (notify.Pr
 // PutNotifyPrefs implements notify.PrefStore.
 func (t Traces) PutNotifyPrefs(ctx context.Context, tenant, user string, p notify.Prefs) error {
 	return put(ctx, t.Pool, tenant, "pref", user, meta{at: time.Now().UTC(), user: user}, prefRec{tenant, user, p}, false)
+}
+
+var _ ask.AccessStore = Traces{}
+
+type accessRec struct {
+	Tenant string    `json:"tenant"`
+	Key    string    `json:"key"`
+	User   string    `json:"user"`
+	At     time.Time `json:"at"`
+}
+
+// AccessRequested implements ask.AccessStore (SB-2205).
+func (t Traces) AccessRequested(ctx context.Context, tenant, key string) (bool, error) {
+	_, found, err := get[accessRec](ctx, t.Pool, tenant, "accessreq", key, false)
+	return found, err
+}
+
+// PutAccessRequest implements ask.AccessStore.
+func (t Traces) PutAccessRequest(ctx context.Context, tenant, key, user string, at time.Time) error {
+	return put(ctx, t.Pool, tenant, "accessreq", key, meta{at: at, user: user}, accessRec{tenant, key, user, at}, false)
+}
+
+var _ ask.EvalStore = Traces{}
+
+// PutEvalCase implements ask.EvalStore (SB-2204).
+func (t Traces) PutEvalCase(ctx context.Context, c ask.EvalCase) error {
+	return put(ctx, t.Pool, c.Tenant, "evalcase", c.ID, meta{at: c.At, user: c.By, space: c.Space}, c, false)
+}
+
+// EvalCases implements ask.EvalStore: oldest first.
+func (t Traces) EvalCases(ctx context.Context, tenant string) ([]ask.EvalCase, error) {
+	return list[ask.EvalCase](ctx, t.Pool, tenant, "evalcase", "", "at, id")
+}
+
+// DeleteEvalCase implements ask.EvalStore.
+func (t Traces) DeleteEvalCase(ctx context.Context, tenant, id string) error {
+	return del(ctx, t.Pool, tenant, "evalcase", id)
 }
 
 var _ ask.StewardStore = Traces{}
@@ -445,7 +482,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one

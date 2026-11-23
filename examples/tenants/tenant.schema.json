@@ -224,6 +224,19 @@
             },
             "type": "object"
           },
+          "glossary": {
+            "additionalProperties": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxProperties": 200,
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object"
+          },
           "label": {
             "enum": [
               "public",

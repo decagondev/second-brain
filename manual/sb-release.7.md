@@ -58,7 +58,7 @@ A cell **pulls** bundles from the release store over HTTPS. The factory never co
 3. every artefact it will run, the SBOM included, has the digest listed in the bundle;
 4. `gate.json` is for this release id, says `passed`, and its signature verifies.
 
-A cell runs only what passed all four. There is no flag to skip one (LAW-06).
+A cell runs only what passed all four. There is no flag to skip one (LAW-06). A release can pass all four and still be **held** for one tenant: when it fails one of the tenant's own cases that an earlier release passed (sb-evals(7), Cases from wrong citations; SB-2204), that cell's updater runs the release the cases last passed on instead, admitted the same way, until its channel names another release.
 
 ### Cells in a tenant's account (SB-707)
 
