@@ -20,7 +20,9 @@ for img in sb-api:local sb-ingest:local sb-jobs:local sb-updater:local sb-idp:lo
   f=$ROOT/images/$(printf '%02d' $i)-$(printf '%s' "${img%%@*}" | tr '/:' '--').tar
   if command -v wslpath >/dev/null && [[ "$DOCKER" == *.exe ]]; then "$DOCKER" save -o "$(wslpath -w "$f")" "$img"; else "$DOCKER" save -o "$f" "$img"; fi
 done
-mkdir -p "$ROOT/tools" "$ROOT/deploy" "$ROOT/examples" "$ROOT/policy" "$ROOT/build/images"
+mkdir -p "$ROOT/tools" "$ROOT/deploy" "$ROOT/examples" "$ROOT/policy" "$ROOT/build/images" "$ROOT/bin"
+# The sb command for the host-side steps (doctor, bundle checks, sealing): static, no Go needed.
+CGO_ENABLED=0 go build -trimpath -o "$ROOT/bin/sb" ./cmd/sb
 cp -r tools/selfhost "$ROOT/tools/"
 rm -rf "$ROOT/tools/selfhost/devrelease" "$ROOT/tools/selfhost/wormsetup"
 cp -r deploy/selfhost "$ROOT/deploy/"

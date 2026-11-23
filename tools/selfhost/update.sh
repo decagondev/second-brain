@@ -3,6 +3,7 @@
 # cell, the way the systemd timer in deploy/selfhost/systemd runs it. No container holds
 # the Docker socket: the updater runs as a one-shot container that only verifies and
 # records (state/deploy/services), and this host step does the starting.
+#   0. Record the box's facts for the console (SB-1802).
 #   1. Run the updater. A release it doesn't admit changes nothing: stop here.
 #   2. Read what it recorded. Refuse a tag, an image the cell didn't attest, or an image
 #      this machine doesn't hold, before touching anything.
@@ -22,6 +23,11 @@ state() { "$DOCKER" run --rm -u 0 -v sb-selfhost_state:/s "$HELPER" sh -c "$1" |
 die() { echo "selfhost-update: $*; nothing changed" >&2; exit 1; }
 
 [ -f "$DIR/cell.json" ] && [ -f "$ENV" ] || die "no self-hosted cell here (make selfhost first)"
+# The box's facts for the console's Box section (SB-1802), first, so a refused release
+# still leaves them fresh. Failing to record them changes nothing else.
+bash tools/selfhost/facts.sh | "$DOCKER" run --rm -i -u 0 -v sb-selfhost_state:/s "$HELPER" sh -c \
+  'mkdir -p /s/host && cat >/s/host/facts.tmp && mv /s/host/facts.tmp /s/host/facts.json && chown -R 65532:65532 /s/host && chmod -R u=rwX,go= /s/host' \
+  || echo "selfhost-update: couldn't record the box's facts" >&2
 if ! out=$(compose --profile update run --rm updater 2>&1); then
   printf '%s\n' "$out" >&2
   die "the updater didn't admit the release"

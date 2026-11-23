@@ -109,6 +109,14 @@ describe("admin console: health and the unhelpful-answer queue", () => {
             ],
             connectors: [{ kind: "docs", last_success: "2027-03-10T11:00:00Z", last_failure: "2027-03-10T11:58:00Z", failures: 3, stale: true }],
             at: "2027-03-10T12:00:00Z",
+            box: {
+              facts_at: "2027-03-10T11:30:00Z",
+              verdict: "fail",
+              checks: [
+                { check: "disk /opt/second-brain", verdict: "fail", detail: "93% used", fix: "free space on /opt/second-brain" },
+                { check: "readyz", verdict: "pass", detail: "/readyz answered 200" },
+              ],
+            },
           }),
         );
       if (url === "/v1/admin/feedback?rating=down")
@@ -143,6 +151,9 @@ describe("admin console: health and the unhelpful-answer queue", () => {
     const health = screen.getByRole("region", { name: "Cell health" });
     expect(health.textContent).toMatch(/docs: stale/);
     expect(health.textContent).toMatch(/backup \(LAW-11\): overdue, last finished never/);
+    // The box's checks, worst first, each with its fix (SB-1802).
+    expect(health.textContent).toMatch(/Worst check: fail/);
+    expect(health.textContent).toMatch(/disk \/opt\/second-brain: fail, 93% used \(fix: free space on \/opt\/second-brain\)/);
     // Health and the queue come before everything else.
     const order = Array.from(container.querySelectorAll("h2")).map((h) => h.textContent);
     expect(order.slice(0, 2)).toEqual(["Cell health", "Unhelpful answers"]);

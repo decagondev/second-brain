@@ -16,6 +16,7 @@ sb-selfhost — a self-hosted cell on one machine, in containers
 make images                 # build one image per service
 make selfhost               # the demo: an example tenant's cell on this machine's Docker
 sudo tools/selfhost/install.sh [--install-docker] [--check] CONFIG   # an install on a Linux VM or server
+sudo tools/selfhost/install.sh --doctor   # check the running box and say how to fix each problem
 make selfhost-bundle        # an offline install bundle: every image and the install files
 make selfhost-update        # one upgrade: admit the channel's release, start it by digest
 make selfhost-smoke         # check the running cell from outside
@@ -63,6 +64,8 @@ A self-hosted cell is the whole cell on one machine: a VM or an on-prem server t
 
 `sudo tools/selfhost/install.sh CONFIG` does the rest on a Linux VM or server: it checks the machine (Docker Engine and the compose plugin, installed from the distribution with `--install-docker`; systemd; an off-box directory that isn't on the root disk), loads the images of an **install bundle** (`make selfhost-bundle`: every image the layout runs and the files the install reads, for a machine with no Go, no Node and no internet) or builds them where Go is present, runs `selfhost.sh` with the configuration, applies the first release, and installs and starts the systemd units: `sb-selfhost.service` (the layout at boot, on the admitted digests), `sb-selfhost-update.timer` (hourly upgrades) and `sb-selfhost-dbdump.timer` (the nightly database dump). `--check` checks the machine and the configuration and changes nothing.
 
+**Doctor and the box's health** (SB-1801, SB-1802). `install.sh --doctor` checks the running box: every service of the layout up (`proxy`, `api`, `ingest`, `jobs`, `worm`, `postgres`), both timers enabled with their last run successful, disk use of the install directory and of Docker's data root, the TLS certificate's expiry (`SB_TLS=files`; Caddy renews its own), `SB_OFFSITE` mounted from another machine and writable by uid 65532, the newest database dump and off-box copy, `/readyz` through the proxy, and whether the install directory, which holds the keys, is on an encrypted (LUKS) disk. `tools/selfhost/facts.sh` gathers the facts as one JSON document, reading state and never a secret, and `sb selfhost doctor` judges them (`internal/core/box`): each line is `pass`, `warn` or `fail`, with the command that fixes it, or `unknown` for a fact it couldn't gather, which is never shown as a pass. A disk warns at 80% and fails at 90%, a certificate at 21 and 7 days, a dump or off-box copy at 26 and 50 hours; a plain disk is a warning, never a refusal. It exits 1 if any line fails or is unknown and 0 otherwise (sb(1)), so a script can branch on it; `--json` gives the lines as JSON. The bundle carries `bin/sb`, so the box needs no Go (`tools/selfhost/sb.sh`). The hourly host step (`update.sh`) gathers the same facts first, before the updater runs, and leaves them in `state/host/facts.json`, where `GET /v1/admin/health` judges them with the same code for the console's **Box** section (sb-admin(3)); facts older than two hours are `unknown`. A failing check raises one Sev-2 `box_check` alert a day (sb-observability(7)).
+
 **Keys stay on the box.** Every secret and key is made on the machine by the install, once, and never leaves it: the database password, the OIDC client secret (or the company's, copied in), the SCIM token, the control plane's token, the anchor and attestation key seeds, the write-once store's key pair, and the bundled IdP's signing key. They sit in the per-service vaults under `build/selfhost/vault` (mode 0600) and in the volumes the install copies them into. Back that directory up with the machine's own encrypted backup or not at all; the release store and the factory never see any of it.
 
 **Sign-in.** With `SB_IDP=company` the cell signs in with the company's OIDC IdP, which must send the cell's tenant in a `tenant` claim and the user's directory id in `sub` (sb-identity(7)) and provision users over SCIM. With `SB_IDP=bundled` it uses sb-idp(1), behind the proxy at `https://HOST/idp`: passwords as PBKDF2 hashes, failed sign-ins limited, and users added with `sb-idp user add`, which provisions them in the cell over SCIM so the directory and the IdP agree. The development IdP is refused by the install outright, and by `selfhost.sh` anywhere but loopback. When the proxy's certificate comes from Caddy's own CA or a company CA, `selfhost.sh` gives the services that CA's certificate (only the certificate) at `/etc/sb/ca`, so the cell can reach its own sign-in.
@@ -94,6 +97,12 @@ $ sudo tools/selfhost/install.sh --check /etc/second-brain/install.env
 install: the machine and /etc/second-brain/install.env look right; nothing changed
 $ sudo tools/selfhost/install.sh /etc/second-brain/install.env
 install: acme-logistics is running at https://brain.acme.example
+$ sudo tools/selfhost/install.sh --doctor
+warn    disk /opt/second-brain               84% used
+        fix: free space on /opt/second-brain soon
+pass    service api                          running
+…
+doctor: warn
 ```
 
 ## SEE ALSO

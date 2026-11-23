@@ -60,6 +60,7 @@ commands:
   release status|promote|rollback      release controller (maintainers)
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
+  selfhost doctor                      a self-hosted box's checks (sb-selfhost(7))
   version                              print the version
 
 See sb(1). Exit codes are listed in sb-errors(7).
@@ -130,6 +131,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceTemplates(rest[2:])
 	case "space diff":
 		return e.spaceDiff(rest[2:])
+	case "selfhost doctor":
+		return e.selfhostDoctor(rest[2:])
 	}
 	if t, ok := planned[name]; ok {
 		return e.fail("sb "+name, errs.New(errs.ENOTIMPL, "not built yet (%s)", t))
@@ -141,7 +144,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "space" {
+	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" {
 		return true
 	}
 	for k := range planned {

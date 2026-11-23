@@ -27,8 +27,8 @@ Proposed 2026-11-22 after W16 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] `--doctor` is green on a running box, and each check has a test that makes it fail
-- [ ] The console shows the box's disk, certificate and backup ages, unknown when it can't read them
+- [x] `--doctor` is green on a running box, and each check has a test that makes it fail
+- [x] The console shows the box's disk, certificate and backup ages, unknown when it can't read them
 - [ ] A restore is one command, and the monthly drill proves the newest dump restores
 - [ ] A tampered or unsigned offline bundle loads nothing; a rollback starts only admitted digests
 - [ ] A proxy, an external Postgres and a support bundle work, and the bundle carries no secret

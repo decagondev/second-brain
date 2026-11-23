@@ -35,7 +35,7 @@ A self-hosted cell is a whole cell on one Linux VM or on-prem server that the co
    ```
 
    It makes every key and secret on this machine, brings the layout up, makes and proves the write-once bucket, applies the first release, and enables `sb-selfhost.service`, `sb-selfhost-update.timer` and `sb-selfhost-dbdump.timer`.
-5. Check: `https://HOST/readyz` answers `200`; `systemctl list-timers 'sb-selfhost*'` shows both timers; `tools/selfhost/compose.sh ps` shows every service up.
+5. Check: `sudo /opt/second-brain/tools/selfhost/install.sh --doctor` prints `doctor: pass` (or only warnings you accept). It checks every service, both timers, disk, the certificate, the off-box directory, the backups and `/readyz`, and gives the command that fixes each problem. The first dump and off-box copy are `unknown` until the first night.
 
 ## People
 
@@ -77,7 +77,7 @@ Three copies, two kinds of media, one off the box ([sb-audit(7)](../../manual/sb
 - Anchors go hourly to the write-once store, locked for seven years.
 - Back up `/etc/second-brain` and `/opt/second-brain/build/selfhost` with the machine's own encrypted backup: they hold the keys, and nothing else does.
 
-Check weekly: today's files in `SB_OFFSITE/TENANT/DATE/` and `SB_OFFSITE/db/`; `sb audit verify --tenant TENANT` is green.
+Check weekly: `install.sh --doctor` passes (the console's Box section shows the same checks, hourly, and a failing one raises a `box_check` alert once a day); today's files in `SB_OFFSITE/TENANT/DATE/` and `SB_OFFSITE/db/`; `sb audit verify --tenant TENANT` is green.
 
 ## Restore
 

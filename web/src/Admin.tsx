@@ -15,6 +15,8 @@ export interface Health {
   jobs: { name: string; law?: string; last_finish: string | null; overdue: boolean; unreadable?: boolean }[];
   connectors: { kind: string; last_success: string | null; last_failure: string | null; failures: number; stale: boolean }[];
   at: string;
+  // The machine on a self-hosted cell (SB-1802); absent on a managed one.
+  box?: { facts_at: string | null; verdict: string; checks: { check: string; verdict: string; detail: string; fix?: string }[] };
 }
 
 // One answer in the unhelpful-answer queue (SB-1609): counts, decisions and the asker's own
@@ -74,7 +76,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   async function loadHealth() {
     try {
       const h = (await call(fetcher, "GET", "/v1/admin/health")) as Partial<Health>;
-      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "" });
+      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box });
       setHealthError(undefined);
     } catch (e) {
       setHealth(undefined);
@@ -209,6 +211,29 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                 </li>
               ))}
             </ul>
+            <h3>Box</h3>
+            {!health.box ? (
+              <p>Managed by the cloud: no machine to check.</p>
+            ) : (
+              <>
+                <p>
+                  {health.box.verdict === "pass" ? "Every check passes" : `Worst check: ${health.box.verdict}`}, from facts gathered {when(health.box.facts_at)}.
+                </p>
+                <ul>
+                  {health.box.checks.map((c) => (
+                    <li key={c.check} className={c.verdict === "pass" ? undefined : "attention"}>
+                      <strong>{c.check}</strong>: {c.verdict}, {c.detail}
+                      {c.fix ? (
+                        <>
+                          {" "}
+                          (fix: <code>{c.fix}</code>)
+                        </>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         )}
       </section>

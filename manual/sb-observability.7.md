@@ -35,6 +35,7 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 | Unknown ratio | > 1% for 30 min on a connector | Sev-3 |
 | Budget pace | > 120% | Sev-3 |
 | Budget warning | this month's spend passes 80% of `budget_usd_month`, once a month (`budget_warning`, SB-1608) | Sev-3, to the tenant operator |
+| Box check | a self-hosted machine's check fails: a disk over 90%, a certificate within 7 days, no dump for 50 hours, a service down (`box_check`, `where` the check, `ref` the day; SB-1802) | Sev-2, to the tenant operator, once a day per check |
 | An access review is overdue | `sb_access_review_overdue{space}` is 1: a review open 14 days (sb-spaces(7), Access reviews) | Sev-2, to the tenant operator |
 | A scheduled job missed its run | `sb_job_overdue{job}` is 1 | Sev-1 for `anchor`, `backup`, `access`, `review`; Sev-2 otherwise (sb-runtime(7), Schedules) |
 

@@ -11,6 +11,7 @@ import (
 	"sort"
 	"time"
 
+	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/schedule"
 )
@@ -55,6 +56,32 @@ type Report struct {
 	Jobs       []Job       `json:"jobs"`
 	Connectors []Connector `json:"connectors"`
 	At         time.Time   `json:"at"`
+	// Box is the machine's health on a self-hosted cell (SB-1802); absent on a managed one.
+	Box *Box `json:"box,omitempty"`
+}
+
+// Box is a self-hosted machine's checks, judged from the host step's facts.
+type Box struct {
+	FactsAt *time.Time  `json:"facts_at"`
+	Verdict box.Verdict `json:"verdict"`
+	Checks  []box.Line  `json:"checks"`
+}
+
+// BoxFrom judges the host step's facts: no facts, or facts that don't parse, are one
+// Unknown line, never an empty and healthy-looking section.
+func BoxFrom(raw []byte, found bool, now time.Time) *Box {
+	if !found {
+		return &Box{Verdict: box.Unknown, Checks: []box.Line{{Check: "host step", Verdict: box.Unknown,
+			Detail: "no facts from the hourly host step yet", Fix: "systemctl status sb-selfhost-update.timer"}}}
+	}
+	f, err := box.Parse(raw)
+	if err != nil {
+		return &Box{Verdict: box.Unknown, Checks: []box.Line{{Check: "host step", Verdict: box.Unknown,
+			Detail: "the host step's facts can't be read", Fix: "systemctl status sb-selfhost-update.service"}}}
+	}
+	lines := box.Check(f, now)
+	at := f.At.UTC()
+	return &Box{FactsAt: &at, Verdict: box.Worst(lines), Checks: lines}
 }
 
 // ErrUnavailable is a store that can't be read: the report would claim health it can't see.

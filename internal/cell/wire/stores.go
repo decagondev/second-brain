@@ -3,8 +3,11 @@ package wire
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -186,7 +189,26 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 		kinds = append(kinds, k)
 	}
 	sort.Strings(kinds)
-	return health.Build(ctx, c.Runs, c.Syncs, kinds, now)
+	r, err := health.Build(ctx, c.Runs, c.Syncs, kinds, now)
+	if err != nil {
+		return r, err
+	}
+	r.Box = c.box(now)
+	return r, nil
+}
+
+// box judges the host step's facts on a self-hosted cell, whose host step keeps them under
+// the state's host/ directory (SB-1802); a cell with no such directory has no box.
+func (c *Cell) box(now time.Time) *health.Box {
+	dir := filepath.Join(c.Config.State, "host")
+	if st, err := os.Stat(dir); err != nil || !st.IsDir() {
+		return nil
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "facts.json"))
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return health.BoxFrom(nil, true, now) // there, but unreadable: Unknown
+	}
+	return health.BoxFrom(b, err == nil, now)
 }
 
 // embedderFor is the configured embedder (sb-cell(5), embed; SB-1710).

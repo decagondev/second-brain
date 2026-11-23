@@ -108,6 +108,75 @@ func TestHealthFromTheCellsRecords(t *testing.T) {
 	}
 }
 
+// SB-1802: on a self-hosted cell the hourly host step leaves the box's facts under the
+// state's host/ directory, and health judges them. A managed cell (no host/) has no box;
+// a box with no facts, or with old ones, is unknown, never green; alerts go once a day.
+func TestHealthJudgesTheBox(t *testing.T) {
+	r, _ := docsCell(t)
+	r.operator(t)
+	type rep struct {
+		Box *struct {
+			Verdict string
+			Checks  []struct{ Check, Verdict string }
+		}
+	}
+	read := func() rep {
+		t.Helper()
+		code, body := r.do(t, "GET", "/v1/admin/health", "")
+		if code != 200 {
+			t.Fatalf("health: %d %s", code, body)
+		}
+		var x rep
+		if err := json.Unmarshal([]byte(body), &x); err != nil {
+			t.Fatal(err)
+		}
+		return x
+	}
+	if h := read(); h.Box != nil {
+		t.Fatalf("a cell with no host step has a box: %+v", h.Box)
+	}
+	dir := filepath.Join(r.cell.Config.State, "host")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if h := read(); h.Box == nil || h.Box.Verdict != "unknown" {
+		t.Fatalf("a box with no facts: %+v", h.Box)
+	}
+	facts := `{"at":"` + time.Now().UTC().Format(time.RFC3339) + `","disks":[{"path":"/opt/second-brain","used_pct":93}],"ready":200}`
+	if err := os.WriteFile(filepath.Join(dir, "facts.json"), []byte(facts), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h := read()
+	if h.Box == nil || h.Box.Verdict != "fail" || h.Box.Checks[0].Check != "disk /opt/second-brain" {
+		t.Fatalf("a full disk: %+v", h.Box)
+	}
+	// The drift job alerts once a day for each failing check.
+	a := &alerts{}
+	svc := &jobsvc.Service{Cell: r.cell}
+	r.cell.Alerter = a
+	for i := 0; i < 2; i++ {
+		if err := svc.Run(context.Background(), "drift"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n := 0
+	for _, x := range a.got {
+		if x.Kind == "box_check" && x.Where == "disk /opt/second-brain" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("box alerts for the disk: %d, want 1 a day", n)
+	}
+	old := `{"at":"2026-01-01T00:00:00Z","ready":200}`
+	if err := os.WriteFile(filepath.Join(dir, "facts.json"), []byte(old), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if h := read(); h.Box.Verdict != "unknown" {
+		t.Fatalf("old facts: %+v", h.Box)
+	}
+}
+
 // SB-1609: the queue of answers marked unhelpful: counts, decisions by verdict and reason,
 // and the asker's comment; never the question, the answer or a cite. Reviewing writes an
 // audit row first, and a later feedback puts the item back.

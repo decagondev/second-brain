@@ -28,6 +28,7 @@ import (
 	"example.com/second-brain/internal/core/access"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/backup"
+	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/canary"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/reviews"
@@ -373,5 +374,27 @@ func (s *Service) drift(ctx context.Context) error {
 	for _, f := range fs {
 		_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev2", Kind: "manifest_drift", Tenant: c.Config.Tenant, Where: f.Key(), Ref: f.Message()})
 	}
+	s.boxAlerts(ctx)
 	return nil
+}
+
+// boxAlerts raises one Sev-2 a day for each failing check of a self-hosted box (SB-1802),
+// from the same report the console shows. Warnings and unknowns show in the console only.
+func (s *Service) boxAlerts(ctx context.Context) {
+	c := s.Cell
+	r, err := c.Health(ctx, s.now())
+	if err != nil || r.Box == nil {
+		return
+	}
+	day := s.now().Format("2006-01-02")
+	for _, l := range r.Box.Checks {
+		if l.Verdict != box.Fail {
+			continue
+		}
+		sum := sha256.Sum256([]byte(l.Check))
+		if first, err := c.Usage.First(ctx, "box-"+day+"-"+hex.EncodeToString(sum[:6])); err != nil || !first {
+			continue
+		}
+		_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev2", Kind: "box_check", Tenant: c.Config.Tenant, Where: l.Check, Ref: day})
+	}
 }

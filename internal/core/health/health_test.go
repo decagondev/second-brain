@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"example.com/second-brain/internal/core/box"
 )
 
 type runs map[string]time.Time
@@ -65,5 +67,22 @@ func TestOverdueAndStaleFirst(t *testing.T) {
 	}
 	if _, err := Build(context.Background(), r, s, []string{"broken"}, now); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("an unreadable connector record: %v, want EUNAVAIL, never healthy", err)
+	}
+}
+
+func TestBoxFromNoFactsIsUnknown(t *testing.T) {
+	now := time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC)
+	for name, b := range map[string]*Box{
+		"missing": BoxFrom(nil, false, now),
+		"garbage": BoxFrom([]byte("{not json"), true, now),
+		"old":     BoxFrom([]byte(`{"at":"2026-11-20T12:00:00Z","ready":200}`), true, now),
+	} {
+		if b.Verdict != box.Unknown || len(b.Checks) == 0 {
+			t.Fatalf("%s: %+v", name, b)
+		}
+	}
+	b := BoxFrom([]byte(`{"at":"2026-11-23T11:30:00Z","ready":503}`), true, now)
+	if b.Verdict != box.Fail || b.FactsAt == nil {
+		t.Fatalf("%+v", b)
 	}
 }

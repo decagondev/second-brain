@@ -1,6 +1,7 @@
 package laws
 
 import (
+	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/verify"
 	"math/rand"
 	"os"
@@ -137,6 +138,10 @@ func TestLAW13_RebuildDrill(t *testing.T) {
 
 func TestLAW03_HealthNeverShowsAnUnreadableRecordAsHealthy(t *testing.T) {
 	Check(t, "LAW-03", runs, law03Health)
+}
+
+func TestLAW03_BoxNeverShowsAGapAsHealthy(t *testing.T) {
+	Check(t, "LAW-03", runs, func(r *rand.Rand) error { return law03Box(r, box.Check) })
 }
 
 func TestLAW03_FolderUnknownIsNeverAllow(t *testing.T) {

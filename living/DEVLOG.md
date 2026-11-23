@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S17.1 Know it's healthy: doctor and the box's health (SB-1801, SB-1802)
+
+**Wave/slice:** W17 / S17.1 · **Status:** Done.
+
+**What:** `tools/selfhost/facts.sh` gathers a self-hosted box's facts (services, timers, disks, certificate expiry, the off-box directory, backup times, `/readyz`, disk encryption) as one JSON document; `internal/core/box` judges them; `sb selfhost doctor` and `install.sh --doctor` print each check with its fix; the hourly host step leaves the facts in `state/host/facts.json`; `GET /v1/admin/health` adds `box`; the drift job raises a `box_check` Sev-2 once a day per failing check; the console's health panel gains a Box section; the bundle carries `bin/sb`.
+
+**Why this way:** The script gathers and Go judges, so every threshold has a test that makes it fail and the doctor and the console can never disagree. Facts are a file in the cell's own state, written by the host step that already runs hourly, so the cell gets the machine's view without a socket, an agent or a new service. A missing or old fact is Unknown, and the doctor exits 1 on it, because a check that couldn't run is the one most likely to be hiding the problem.
+
+**Learned:** Run against the demo box in this environment, the first draft failed `/readyz` because it answers 204, not 200, and correctly flagged the demo's stand-in off-box directory as on the root disk. A once-key in the usage ledger must be lower-case letters, digits and dashes, so the check's name is hashed into it.
+
+**Laws:** LAW-03 (a fact the host step couldn't gather, or facts over two hours old, are never healthy: `TestLAW03_BoxNeverShowsAGapAsHealthy`, with a self-test), LAW-07 (the facts hold no secret).
+
 ## 2026-11-22 W17 to W19 plan accepted: run it, protect it, close the loops
 
 **Wave/slice:** W17 to W19 (planning) · **Status:** Accepted by the user, with every recommended decision.

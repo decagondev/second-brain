@@ -21,7 +21,7 @@ summary: Epics, waves, slices and tickets.
 | W14 Cell Runtime | 8 | 1 | 0 | Planned 2026-11-20 with the user (E15): the cell's services, apply against a running cell, and a whole cell end to end |
 | W15 Self-hosted Cell | 8 | 1 | 0 | Planned 2026-11-21 with the user (E16): a self-hosted cell in containers that mirror GCP, a folder connector, and four easy wins. **W15 built.** Open: SB-1605 (a run on a real VM) |
 | W16 Team Knowledge | 10 | 0 | 0 | Planned 2026-11-22 with the user (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)). **W16 built**, SB-1710 run with real weights 2026-11-22 |
-| W17 Easy to Run | 0 | 0 | 8 | Planned 2026-11-22 with the user (E18): doctor, host health, restore, offline upgrade, rollback, proxy, external Postgres, support bundle ([10-run-protect-close.md](../docs/10-run-protect-close.md)) |
+| W17 Easy to Run | 2 | 0 | 6 | Planned 2026-11-22 with the user (E18): doctor, host health, restore, offline upgrade, rollback, proxy, external Postgres, support bundle ([10-run-protect-close.md](../docs/10-run-protect-close.md)) |
 | W18 Protect the Data | 0 | 0 | 7 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
 | W19 Close the Loops | 0 | 0 | 5 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -392,8 +392,8 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-1801](E18-easy-to-run/SB-1801-doctor.md) | S17.1 | E18 | `install.sh --doctor`: check the running box | Open |
-| [SB-1802](E18-easy-to-run/SB-1802-host-health.md) | S17.1 | E18 | Host health in the console | Open |
+| [SB-1801](E18-easy-to-run/SB-1801-doctor.md) | S17.1 | E18 | `install.sh --doctor`: check the running box | Done |
+| [SB-1802](E18-easy-to-run/SB-1802-host-health.md) | S17.1 | E18 | Host health in the console | Done |
 | [SB-1803](E18-easy-to-run/SB-1803-restore.md) | S17.2 | E18 | One-command restore and a monthly restore drill | Open |
 | [SB-1804](E18-easy-to-run/SB-1804-offline-upgrade.md) | S17.2 | E18 | Offline upgrade, verified before it's loaded | Open |
 | [SB-1805](E18-easy-to-run/SB-1805-rollback.md) | S17.2 | E18 | Roll back the box in one command | Open |

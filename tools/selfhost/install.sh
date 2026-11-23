@@ -3,10 +3,12 @@
 # on-prem server, from a checkout or an install bundle (make selfhost-bundle).
 #
 #   sudo tools/selfhost/install.sh [--install-docker] [--check] CONFIG
+#   sudo tools/selfhost/install.sh --doctor
 #
 #   --install-docker   install Docker Engine and the compose plugin from the distribution
 #                      (Debian or Ubuntu) when they are missing; otherwise they must be there
 #   --check            check the machine and CONFIG, change nothing
+#   --doctor           check the running box and say how to fix each problem (SB-1801)
 #
 # It loads the bundle's images (or builds them, in a checkout with Go), runs selfhost.sh
 # with CONFIG, applies the first release, installs the systemd units (the cell at boot,
@@ -16,15 +18,22 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 HOME_DIR=$(pwd)
 die() { echo "install: $*" >&2; exit 1; }
-INSTALL_DOCKER= CHECK= CONFIG=
+INSTALL_DOCKER= CHECK= CONFIG= DOCTOR=
 for a in "$@"; do
   case "$a" in
   --install-docker) INSTALL_DOCKER=1 ;;
   --check) CHECK=1 ;;
+  --doctor) DOCTOR=1 ;;
   -*) die "unknown option $a" ;;
   *) CONFIG=$a ;;
   esac
 done
+# The running box, judged by sb selfhost doctor (internal/core/box) over facts.sh's facts.
+if [ -n "$DOCTOR" ]; then
+  [ -f build/selfhost/compose.env ] || die "no self-hosted cell here to check"
+  bash tools/selfhost/facts.sh | bash tools/selfhost/sb.sh selfhost doctor
+  exit $?
+fi
 [ -n "$CONFIG" ] || die "usage: install.sh [--install-docker] [--check] CONFIG (see deploy/selfhost/install.env.example)"
 [ -f "$CONFIG" ] || die "no configuration at $CONFIG"
 CONFIG=$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")
