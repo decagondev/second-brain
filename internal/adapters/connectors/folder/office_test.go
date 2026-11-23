@@ -189,3 +189,19 @@ func FuzzOfficeText(f *testing.F) {
 		}
 	})
 }
+
+// SB-2705: a .docx's custom review-by property is read from docProps/custom.xml only.
+func TestOfficeReviewBy(t *testing.T) {
+	custom := `<?xml version="1.0"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">` +
+		`<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="Expires"><vt:lpwstr>2028-01-01</vt:lpwstr></property>` +
+		`<property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="3" name="review-by"><vt:filetime>2027-03-01T00:00:00Z</vt:filetime></property></Properties>`
+	if got := OfficeReviewBy(archive(t, "word/document.xml", "<w:document/>", "docProps/custom.xml", custom)); got != "2027-03-01T00:00:00Z" {
+		t.Fatalf("%q", got)
+	}
+	if got := OfficeReviewBy(archive(t, "word/document.xml", "<w:document/>")); got != "" {
+		t.Fatalf("no custom part: %q", got)
+	}
+	if got := OfficeReviewBy([]byte("not a zip")); got != "" {
+		t.Fatalf("%q", got)
+	}
+}

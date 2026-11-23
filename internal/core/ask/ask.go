@@ -347,6 +347,9 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 				res.Claims[i].Cites[j].Reviewed = m.At.UTC().Format("2006-01-02")
 				res.Claims[i].Cites[j].Stale = a.Now().Sub(m.At) > time.Duration(a.reviewAfter(ch.Spaces))*24*time.Hour
 			}
+			if pastReviewBy(ch, a.Now()) {
+				res.Claims[i].Cites[j].Stale = true // the document's own date; a mark doesn't lift it (SB-2705)
+			}
 		}
 	}
 	for _, l := range res.Spoofs {

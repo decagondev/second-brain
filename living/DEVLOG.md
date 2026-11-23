@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S26.2: Trust the dates
+
+**Wave/slice:** W26 / S26.2 (SB-2705, SB-2706) · **Status:** Done
+
+**What:** Ingest reads a document's own review-by or expires date from Markdown front matter, or from a .docx or .pptx file's custom review-by property, and keeps it on every chunk (review_by in the index). A cite is stale from that date or from its age, whichever comes first, and a review mark doesn't lift it; the review list holds such a document once answers cite it. Of two candidates with the same fused rank score, the newer version now comes first.
+
+**Why this way:** A date written in a document is data, so it can only make the document stale sooner, never fresher (LAW-09): a document can't keep itself off the review list with a date in 2099. A value that isn't a date is ignored and counted by connector only. The tie-break changes order and nothing else, so what passes the checks, and the eval scores, stay as they were.
+
+**Learned:** Rounding the fused score to find ties would have lumped neighbouring ranks together (1/61 and 1/62 agree to three places), so the tie is the exact score; the plan's wording was corrected to match.
+
+**Laws:** LAW-09 (a document's date only narrows), LAW-13 (the date is read from the source again on a rebuild). Every law test is still green.
+
 ## 2026-11-23 S26.1: Say when it's old
 
 **Wave/slice:** W26 / S26.1 (SB-2701, SB-2702, SB-2703, SB-2704) · **Status:** Done

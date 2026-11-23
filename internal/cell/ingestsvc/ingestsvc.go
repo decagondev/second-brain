@@ -73,6 +73,9 @@ func (s *Service) Pipeline(kind string) ingest.Pipeline {
 				m.Add("sb_ingest_fields_dropped_total", "Structured fields dropped at ingest, by name (SB-1106).", map[string]string{"connector": k, "field": n}, 1)
 			}
 		},
+		BadReviewBy: func(k string) {
+			m.Add("sb_ingest_review_by_ignored_total", "Review-by dates ingest couldn't read and ignored (SB-2705).", map[string]string{"connector": k}, 1)
+		},
 		RerouteDropped: func(k string) {
 			m.Add("sb_ingest_reroute_dropped_total", "Documents Reroute took out because they couldn't be fetched.", map[string]string{"connector": k}, 1)
 		}}

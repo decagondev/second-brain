@@ -221,6 +221,9 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 		doc.Text = PDFText(b)
 	case ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv":
 		doc.Text = OfficeText(ref.ID, b)
+		if e := strings.ToLower(path.Ext(ref.ID)); e == ".docx" || e == ".pptx" {
+			doc.ReviewBy = OfficeReviewBy(b)
+		}
 	default:
 		if utf8.Valid(b) {
 			doc.Text = string(b)

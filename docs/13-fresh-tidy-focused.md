@@ -89,7 +89,7 @@ The goal: an asker can tell at a glance when an answer rests on old sources, and
 **SB-2705 Review-by dates in the document.** Ingest reads one date from a document's own metadata: `review-by:` or `expires:` in Markdown front matter, or a custom `review-by` property in an Office file. The index keeps it on the chunk as `review_by`. A cite is `stale` from that date, or from `review_after_days`, whichever comes first. A date can only make a document stale sooner, never fresher, so a document can't keep itself off the review list.
 *Laws:* LAW-09 (the date is data: it only narrows), LAW-13 (it is read again on a rebuild). *Acceptance:* a past date makes a new document stale; a date in 2099 changes nothing; a malformed date is ignored and counted in the ingest report.
 
-**SB-2706 Newer wins a tie.** When two chunks have the same fused rank score (to three decimal places), the one from the newer version comes first. Nothing else about ranking changes, so eval scores stay where they are.
+**SB-2706 Newer wins a tie.** When two chunks have the same fused rank score, the one from the newer version (the one the index saw last) comes first. Nothing else about ranking changes, so eval scores stay where they are.
 *Laws:* LAW-01 (ordering runs after the check). *Acceptance:* a tie goes to the newer document; the eval suite's scores don't move.
 
 ## W27 A tidy corpus (epic E28, SB-2801 to SB-2807)

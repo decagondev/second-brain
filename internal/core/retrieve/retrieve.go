@@ -50,7 +50,8 @@ func Tokens(s tenancy.Scope, emails []string) []string {
 	return append(out, BroadTokens...)
 }
 
-// Fuse ranks candidates by reciprocal-rank fusion of their vector and keyword ranks.
+// Fuse ranks candidates by reciprocal-rank fusion of their vector and keyword ranks; of two
+// with the same score, the version the index saw last comes first.
 func Fuse(cs []ports.Candidate) []ports.Candidate {
 	score := func(c ports.Candidate) float64 {
 		var s float64
@@ -67,6 +68,9 @@ func Fuse(cs []ports.Candidate) []ports.Candidate {
 		si, sj := score(out[i]), score(out[j])
 		if si != sj {
 			return si > sj
+		}
+		if a, b := out[i].Chunk.Seen, out[j].Chunk.Seen; !a.Equal(b) {
+			return a.After(b) // the same score: the newer version first (SB-2706)
 		}
 		return out[i].Chunk.ID < out[j].Chunk.ID
 	})

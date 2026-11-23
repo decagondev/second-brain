@@ -116,6 +116,9 @@ type Pipeline struct {
 	// SecretDropped counts a chunk dropped for holding a secret (sb_ingest_secrets_dropped_total,
 	// by connector kind and pattern name); nil counts nothing, and the chunk is dropped anyway.
 	SecretDropped func(kind, pattern string)
+	// BadReviewBy counts a document whose review-by date can't be read, which is ignored
+	// (sb_ingest_review_by_ignored_total; SB-2705). nil counts nothing.
+	BadReviewBy func(kind string)
 	// FieldsDropped reports a structured document's dropped fields by name, never value
 	// (sb_ingest_fields_dropped_total); "(undeclared)" is a source that can't declare them.
 	FieldsDropped func(kind string, names []string)
@@ -185,6 +188,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			holders = narrowed   // only the spaces that allow it (SB-1401)
 		}
 	}
+	reviewBy := p.reviewBy(ref.Kind, doc)
 	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
 	text := Normalise(clean)
 	spans := Chunks(text)
@@ -236,7 +240,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(merge(docFlags, p.Sanitiser.Flag(t)), personal(pii, sp)),
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
-			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash})
+			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)
@@ -251,6 +255,22 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		}
 	}
 	return p.Index.Replace(ctx, p.Tenant, ref, doc.Version, chunks)
+}
+
+// reviewBy is the document's own review-by date: the source's, or its front matter's.
+func (p Pipeline) reviewBy(kind string, doc ports.Document) time.Time {
+	raw := doc.ReviewBy
+	if raw == "" {
+		raw = FrontMatterDate(doc.Text)
+	}
+	if raw == "" {
+		return time.Time{}
+	}
+	t, ok := ParseReviewBy(raw)
+	if !ok && p.BadReviewBy != nil {
+		p.BadReviewBy(kind)
+	}
+	return t
 }
 
 // MaxTitle is the longest indexed title, in characters.

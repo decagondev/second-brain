@@ -231,18 +231,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 		}
 	}
-	id := SpaceKey(name)
-	var cand []ports.Chunk
-	in := map[string]bool{}
-	for k, c := range firsts(latest(chunks)) {
-		age, known := ageDays(c.Seen, now)
-		stale := known && age > after && cited[k] >= ReviewCites
-		m, marked := marks[k]
-		if contains(c.Spaces, id) && (stale || flagged[k] > 0 || outdated[k] > 0) && !covers(m, marked, c, flaggedAt[k], after, now) {
-			cand = append(cand, c)
-			in[k] = true
-		}
-	}
+	cand, in := dueFor(SpaceKey(name), chunks, reviewFacts{cited: cited, flagged: flagged, outdated: outdated, flaggedAt: flaggedAt, marks: marks}, after, now)
 	for _, c := range notes {
 		if k := c.Kind + ":" + c.SourceID; !in[k] {
 			cand = append(cand, c)
@@ -421,6 +410,31 @@ func reportsOf(fbs []Feedback) map[string][]string {
 		}
 	}
 	return out
+}
+
+// reviewFacts are what puts a document on the review list, by document.
+type reviewFacts struct {
+	cited, flagged, outdated map[string]int
+	flaggedAt                map[string]time.Time
+	marks                    map[string]ReviewMark
+}
+
+// dueFor picks the documents space id holds that are due for review: cited often and old
+// or past their own review-by date, or reported, and not covered by a mark.
+func dueFor(id string, chunks []ports.Chunk, f reviewFacts, after int, now time.Time) ([]ports.Chunk, map[string]bool) {
+	var cand []ports.Chunk
+	in := map[string]bool{}
+	for k, c := range firsts(latest(chunks)) {
+		age, known := ageDays(c.Seen, now)
+		due := pastReviewBy(c, now) // the document's own date, which a mark doesn't lift (SB-2705)
+		stale := (known && age > after || due) && f.cited[k] >= ReviewCites
+		m, marked := f.marks[k]
+		if contains(c.Spaces, id) && (stale || f.flagged[k] > 0 || f.outdated[k] > 0) && (due || !covers(m, marked, c, f.flaggedAt[k], after, now)) {
+			cand = append(cand, c)
+			in[k] = true
+		}
+	}
+	return cand, in
 }
 
 // outdatedOf counts, by document, the reports that it is out of date (SB-2703).

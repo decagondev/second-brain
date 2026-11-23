@@ -117,3 +117,26 @@ func TestSyncLagNotice(t *testing.T) {
 		t.Fatalf("an unreadable record: %+v", resp.NoticeSync)
 	}
 }
+
+// SB-2705: a past review-by date makes a new document stale, a mark or not; 2099 changes nothing.
+func TestReviewByMakesStaleSooner(t *testing.T) {
+	a := freshAgent(t, `{"claims":[{"text":"x","cites":["C1"]}]}`)
+	ix := a.Index.(index)
+	c := ix[2] // "c", seen an hour ago
+	c.ReviewBy = time.Now().Add(-time.Hour)
+	far := ix[2]
+	far.ID, far.SourceID, far.Cite, far.ReviewBy = "chk_far", "far", "docs:far@3", time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)
+	a.Index = index{c, far}
+	a.Auth.Connectors["docs"].(source)["far|alice"] = ports.VerdictAllow
+	a.Marks = marks{{Space: "spc_ops", Doc: "docs:c", Version: 3, At: time.Now()}}
+	for q, want := range map[string]bool{"refund c": true, "refund far": false} {
+		a.Index = index{map[bool]ports.Chunk{true: c, false: far}[want]}
+		resp, err := a.Ask(context.Background(), scope(t, "alice"), ask.Request{Question: q})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := resp.Answer.Claims[0].Cites[0].Stale; got != want {
+			t.Errorf("%s: stale %v, want %v", q, got, want)
+		}
+	}
+}

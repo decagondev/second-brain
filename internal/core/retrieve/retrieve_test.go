@@ -132,3 +132,16 @@ func TestTokensAndFuse(t *testing.T) {
 		t.Fatalf("both rankings should win: %v", f)
 	}
 }
+
+// SB-2706: of two candidates with the same score, the newer version comes first.
+func TestNewerWinsATie(t *testing.T) {
+	old, now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	f := Fuse([]ports.Candidate{
+		{Chunk: ports.Chunk{ID: "a", Seen: old}, VectorRank: 1, KeywordRank: 2},
+		{Chunk: ports.Chunk{ID: "b", Seen: now}, VectorRank: 2, KeywordRank: 1},
+		{Chunk: ports.Chunk{ID: "c", Seen: now}, VectorRank: 3},
+	})
+	if f[0].Chunk.ID != "b" || f[1].Chunk.ID != "a" || f[2].Chunk.ID != "c" {
+		t.Fatalf("%v", f)
+	}
+}

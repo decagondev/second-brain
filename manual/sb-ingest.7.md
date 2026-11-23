@@ -89,6 +89,10 @@ Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flag
 
 Every chunk also carries the **text hash** of its document (SB-2202): the SHA-256 of the document's normalised text, without its title, the same on every chunk of the version and empty for a document with no text. Two documents with the same text, in two places or under two names, have the same hash, which is how the stewards' review list finds copies and how answers cite one copy (sb-ask(3)). Like every field of a chunk it depends only on the source, so a rebuild gives every document the same hash again (LAW-13). The hash is of the text, never the text itself, and never logged.
 
+### Review-by dates (SB-2705)
+
+A document can say when it should be reviewed or when it expires. Ingest reads one date: `review-by:` (or `review_by:`), else `expires:`, from a Markdown document's front matter (the lines between a first line `---` and the next `---`, in its first 4 KiB), or the custom property `review-by` (else `expires`) of a `.docx` or `.pptx` file, read from `docProps/custom.xml` only. The date is `YYYY-MM-DD` or RFC 3339, in UTC. Every chunk of the version keeps it as `review_by`, and a rebuild reads it from the source again (LAW-13). A cite is `stale` from that date, or from its age past `review_after_days`, whichever comes first (sb-ask(3), Documents to review), and a **Reviewed, still right** mark doesn't lift it: the document itself says it is due, so its owner updates it. The date is data, so it can only make a document stale **sooner**, never fresher (LAW-09): a date in 2099 changes nothing. A value that isn't a date is ignored and counted in `sb_ingest_review_by_ignored_total{connector}`, never the value.
+
 ### Chunks
 
 A document becomes chunks in a fixed order: normalise (line endings, trailing space), split into paragraphs, then pack paragraphs into chunks of at most 1,200 characters. A paragraph longer than that is cut at the last space before the limit. Boundaries depend only on the text, so the same text always gives the same chunks, and an edit to one paragraph changes only the chunks that contain it.

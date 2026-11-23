@@ -25,12 +25,12 @@ Proposed 2026-11-23 after W25 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] An answer resting mostly on stale cites warns, and a hidden stale document changes nothing
-- [ ] A reviewed cite isn't stale until its review lapses
-- [ ] An outdated report lists the document, and a mark clears it
-- [ ] A connector past its freshness target is named on the answer; an unknown sync time is never shown as fresh
-- [ ] A date in a document only makes it stale sooner
-- [ ] Every law test still green; no new store, service or Go module
+- [x] An answer resting mostly on stale cites warns, and a hidden stale document changes nothing
+- [x] A reviewed cite isn't stale until its review lapses
+- [x] An outdated report lists the document, and a mark clears it
+- [x] A connector past its freshness target is named on the answer; an unknown sync time is never shown as fresh
+- [x] A date in a document only makes it stale sooner
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

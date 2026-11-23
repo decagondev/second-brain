@@ -47,6 +47,9 @@ type Document struct {
 	// Fields are a structured document's data by field name (SB-1106); ingest builds the
 	// text from the allowed ones. nil for a document that is text.
 	Fields map[string]string
+	// ReviewBy is a review or expiry date the source keeps apart from the text, as written
+	// (an Office file's custom review-by property; SB-2705); ingest checks it. "" for none.
+	ReviewBy string
 }
 
 // Field is one field a structured connector can return (sb-connector(3), Fields).
@@ -327,6 +330,9 @@ type Chunk struct {
 	// TextSHA256 is the SHA-256 of the document's normalised text, without its title, the
 	// same on every chunk of the version, "" for no text: copies share it (SB-2202).
 	TextSHA256 string
+	// ReviewBy is the document's own review-by or expires date (SB-2705); zero for none.
+	// A cite is stale from it, if that is sooner than its age makes it.
+	ReviewBy time.Time
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.

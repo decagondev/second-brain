@@ -30,7 +30,7 @@ summary: Epics, waves, slices and tickets.
 | W23 Easier to Ask | 6 | 0 | 0 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
 | W24 Easier to Steward | 7 | 0 | 0 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
 | W25 Easier to Operate | 5 | 2 | 0 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
-| W26 Fresh Answers | 4 | 0 | 2 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
+| W26 Fresh Answers | 6 | 0 | 0 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
 | W27 A Tidy Corpus | 0 | 0 | 7 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
 | W28 A Focused Context | 0 | 0 | 7 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -537,8 +537,8 @@ flowchart LR
 | [SB-2702](E27-fresh-answers/SB-2702-reviewed-on-cite.md) | S26.1 | E27 | Reviewed shows on the cite | Done |
 | [SB-2703](E27-fresh-answers/SB-2703-report-outdated.md) | S26.1 | E27 | Report as outdated | Done |
 | [SB-2704](E27-fresh-answers/SB-2704-sync-lag-notice.md) | S26.1 | E27 | Sync lag notice | Done |
-| [SB-2705](E27-fresh-answers/SB-2705-review-by-dates.md) | S26.2 | E27 | Review-by dates in the document | Open |
-| [SB-2706](E27-fresh-answers/SB-2706-newer-wins-tie.md) | S26.2 | E27 | Newer wins a tie | Open |
+| [SB-2705](E27-fresh-answers/SB-2705-review-by-dates.md) | S26.2 | E27 | Review-by dates in the document | Done |
+| [SB-2706](E27-fresh-answers/SB-2706-newer-wins-tie.md) | S26.2 | E27 | Newer wins a tie | Done |
 
 ### W27 A Tidy Corpus
 

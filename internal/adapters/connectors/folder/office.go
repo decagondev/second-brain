@@ -292,3 +292,47 @@ func tagName(t []byte) string {
 	}
 	return strings.ToLower(string(t[:n]))
 }
+
+// maxCustomProps is the most an Office file's custom properties part is read to.
+const maxCustomProps = 64 << 10
+
+// OfficeReviewBy is the value of a .docx or .pptx file's custom property named review-by
+// (or expires), as written, or "" (SB-2705). Only docProps/custom.xml is opened.
+func OfficeReviewBy(b []byte) string {
+	z, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil || len(z.File) > MaxOfficeEntries {
+		return ""
+	}
+	for _, f := range z.File {
+		if f.Name != "docProps/custom.xml" || f.UncompressedSize64 > maxCustomProps {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return ""
+		}
+		defer func() { _ = rc.Close() }()
+		var props struct {
+			Property []struct {
+				Name  string `xml:"name,attr"`
+				Inner struct {
+					Text string `xml:",chardata"`
+				} `xml:",any"`
+			} `xml:"property"`
+		}
+		if xml.NewDecoder(io.LimitReader(rc, maxCustomProps)).Decode(&props) != nil {
+			return ""
+		}
+		var expires string
+		for _, p := range props.Property {
+			switch strings.ToLower(p.Name) {
+			case "review-by", "review_by":
+				return strings.TrimSpace(p.Inner.Text)
+			case "expires":
+				expires = strings.TrimSpace(p.Inner.Text)
+			}
+		}
+		return expires
+	}
+	return ""
+}

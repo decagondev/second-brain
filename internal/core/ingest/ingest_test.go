@@ -50,3 +50,22 @@ func TestIDsAreDerived(t *testing.T) {
 		t.Fatal("chunk ids must be derived from tenant, cite and span")
 	}
 }
+
+func TestFrontMatterDate(t *testing.T) {
+	for in, want := range map[string]string{
+		"---\nreview-by: 2027-01-02\nexpires: 2026-01-01\n---\nx": "2027-01-02",
+		"---\r\nExpires: 2026-01-01\r\n---\r\nx":                  "2026-01-01",
+		"x\n---\nreview-by: 2027-01-02\n---":                      "",
+		"---\nreview-by: 2027-01-02\n":                            "",
+	} {
+		if got := FrontMatterDate(in); got != want {
+			t.Errorf("%q: %q, want %q", in, got, want)
+		}
+	}
+	if _, ok := ParseReviewBy("2027-02-30"); ok {
+		t.Error("an impossible date parsed")
+	}
+	if d, ok := ParseReviewBy("2027-02-03T10:00:00+01:00"); !ok || d.Hour() != 9 {
+		t.Errorf("RFC 3339: %v %v", d, ok)
+	}
+}

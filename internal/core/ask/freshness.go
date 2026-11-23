@@ -39,8 +39,15 @@ func staleNotice(claims []answer.Claim) *StaleNotice {
 		for _, ci := range c.Cites {
 			k := docKey(ci.Cite)
 			all[k] = true
-			if ci.Stale && ci.AgeDays != nil && *ci.AgeDays >= stale[k] {
-				stale[k] = *ci.AgeDays
+			if !ci.Stale {
+				continue
+			}
+			d := 0
+			if ci.AgeDays != nil {
+				d = *ci.AgeDays
+			}
+			if have, ok := stale[k]; !ok || d > have {
+				stale[k] = d
 			}
 		}
 	}
@@ -83,6 +90,11 @@ func (a Agent) syncNotices(ctx context.Context, claims []answer.Claim) []SyncNot
 		}
 	}
 	return out
+}
+
+// pastReviewBy reports whether the document's own review-by date has come (SB-2705).
+func pastReviewBy(c ports.Chunk, now time.Time) bool {
+	return !c.ReviewBy.IsZero() && !now.Before(c.ReviewBy)
 }
 
 // marksCache reads each space's review marks once per answer.
