@@ -41,6 +41,8 @@ type StewardReply struct {
 	Cites []string  `json:"cites"`
 	At    time.Time `json:"at"`
 	Note  string    `json:"note,omitempty"` // the note's receipt, once published (SB-1705)
+	// NoteTitle is the note's title, so it can be republished to fewer readers (SB-2004).
+	NoteTitle string `json:"note_title,omitempty"`
 }
 
 // StewardQuestion is one question sent to the people who know.
@@ -412,10 +414,13 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if q.Reply == nil {
 		return NoteResult{}, fmt.Errorf("%w: reply first; a note is a reply", ErrInvalid)
 	}
-	if q.Reply.Note != "" {
-		return NoteResult{}, fmt.Errorf("%w: this reply is already a note", ErrInvalid)
-	}
+	// A reply that is a note already is republished: the same text to fewer readers, the
+	// note's readers now that are still members, or fewer (SB-2004). Never wider.
+	republish := q.Reply.Note != ""
 	title := strings.TrimSpace(req.Title)
+	if republish && title == "" {
+		title = q.Reply.NoteTitle
+	}
 	if title == "" || utf8.RuneCountInString(title) > MaxNoteTitle || strings.ContainsAny(title, "\n\r") {
 		return NoteResult{}, fmt.Errorf("%w: a note needs a one-line title of 1 to %d characters", ErrInvalid, MaxNoteTitle)
 	}
@@ -423,11 +428,19 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if err != nil {
 		return NoteResult{}, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
 	}
+	path := "notes/" + name + "/" + id + ".md"
+	var was ports.Chunk
+	if republish {
+		if was, err = x.noteNow(ctx, path); err != nil {
+			return NoteResult{}, err
+		}
+		all = still(all, was)
+	}
 	readers, err := narrowed(all, req.Readers)
 	if err != nil {
 		return NoteResult{}, err
 	}
-	p := NotePreview{Path: "notes/" + name + "/" + id + ".md", Readers: len(readers)}
+	p := NotePreview{Path: path, Readers: len(readers)}
 	if p.Narrower, err = x.narrower(ctx, q.Reply.Cites, readers); err != nil {
 		return NoteResult{}, err
 	}
@@ -441,7 +454,11 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if err != nil || who.Email == "" {
 		return NoteResult{}, fmt.Errorf("%w: the steward has no email to own the note", ErrUnavailable)
 	}
-	payload, _ := json.Marshal(NotePayload{Markdown: noteText(title, q.Reply), Readers: readers, Owner: strings.ToLower(who.Email), Label: label})
+	owner := strings.ToLower(who.Email)
+	if republish && was.Owner != "" { // the same note: its owner stays, whoever republishes it
+		owner = strings.ToLower(was.Owner)
+	}
+	payload, _ := json.Marshal(NotePayload{Markdown: noteText(title, q.Reply), Readers: readers, Owner: owner, Label: label})
 	var groups []string
 	for _, g := range s.Groups() {
 		groups = append(groups, "group:"+g)
@@ -454,13 +471,59 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	out := NoteResult{NotePreview: p, Action: a.ID, State: string(a.State), Receipt: a.Receipt}
 	if a.State == approvals.Ran && a.Receipt != "" {
 		if _, err := x.Store.UpdateStewardQuestion(ctx, x.Agent.Tenant, id, func(q *StewardQuestion) error {
-			q.Reply.Note = a.Receipt
+			q.Reply.Note, q.Reply.NoteTitle = a.Receipt, title
 			return nil
 		}); err != nil {
 			return out, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 		}
 	}
 	return out, nil
+}
+
+// noteKind is the connector kind notes are written to and indexed from.
+const noteKind = "docs"
+
+// noteNow is a published note as the index holds it now: its readers and owner.
+func (x Stewards) noteNow(ctx context.Context, path string) (ports.Chunk, error) {
+	lk, ok := x.Agent.Index.(ports.DocLookup)
+	if !ok {
+		return ports.Chunk{}, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+	}
+	cs, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Refs: []ports.SourceRef{{Kind: noteKind, ID: path}}})
+	if err != nil {
+		return ports.Chunk{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	for _, c := range firsts(latest(cs)) {
+		return c, nil
+	}
+	return ports.Chunk{}, fmt.Errorf("%w: the note isn't indexed yet; republish it after the next sync", ErrUnavailable)
+}
+
+// still is the members who can read the note now: never anyone it wasn't published to.
+func still(members []string, note ports.Chunk) []string {
+	had := map[string]bool{}
+	for _, r := range note.ACLPrefilter {
+		had[strings.ToLower(r)] = true
+	}
+	var out []string
+	for _, m := range members {
+		if had[strings.ToLower(m)] {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// wider is how many of a note's readers aren't members of its space now (SB-2004): its
+// owner aside, who is the steward that published it.
+func wider(note ports.Chunk, members map[string]bool) int {
+	n := 0
+	for _, r := range note.ACLPrefilter {
+		if r = strings.ToLower(r); r != strings.ToLower(note.Owner) && !members[r] {
+			n++
+		}
+	}
+	return n
 }
 
 // narrowed is the note's readers: the default, or a subset of it. Never wider.

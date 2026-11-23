@@ -72,3 +72,47 @@ func TestNotes(t *testing.T) {
 		t.Fatalf("bob on ann's note: %v", vs)
 	}
 }
+
+// SB-2004: the same note republished to fewer readers narrows its ACL file; never wider,
+// never another owner or label.
+func TestNoteNarrows(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	c, err := Open(dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close() }()
+	if err := c.EnableNotes(dir); err != nil {
+		t.Fatal(err)
+	}
+	pay := func(md, owner string, readers ...string) []byte {
+		return []byte(`{"markdown":"` + md + `","readers":["` + strings.Join(readers, `","`) + `"],"owner":"` + owner + `","label":"internal"}`)
+	}
+	target := "notes/support/qs_2.md"
+	if _, err := c.Act(ctx, ports.Action{Target: target, Payload: pay("# R", "sam@acme.example", "ann@acme.example", "bob@acme.example")}, "k1"); err != nil {
+		t.Fatal(err)
+	}
+	for name, p := range map[string][]byte{
+		"wider":         pay("# R", "sam@acme.example", "ann@acme.example", "bob@acme.example", "eve@acme.example"),
+		"swapped":       pay("# R", "sam@acme.example", "eve@acme.example"),
+		"another owner": pay("# R", "ann@acme.example", "bob@acme.example"),
+		"other text":    pay("# S", "sam@acme.example", "ann@acme.example"),
+	} {
+		if _, err := c.Act(ctx, ports.Action{Target: target, Payload: p}, ports.IdempotencyKey("k-"+name)); err == nil {
+			t.Errorf("%s was written", name)
+		}
+	}
+	rc, err := c.Act(ctx, ports.Action{Target: target, Payload: pay("# R", "sam@acme.example", "ann@acme.example")}, "k2")
+	if err != nil || !strings.HasPrefix(rc.TargetID, target+"@sha256:") {
+		t.Fatalf("narrowed: %+v %v", rc, err)
+	}
+	acl, _ := os.ReadFile(filepath.Join(dir, "notes", "support", "qs_2.md.acl"))
+	if string(acl) != "owner sam@acme.example\nread ann@acme.example\nlabel internal\n" {
+		t.Fatalf("acl %q", acl)
+	}
+	vs, _ := c.ACL(ctx, ports.UserRef{Email: "bob@acme.example"}, []ports.SourceRef{{Kind: "docs", ID: target}})
+	if vs[0] != ports.VerdictDeny {
+		t.Fatalf("bob after narrowing: %v", vs)
+	}
+}

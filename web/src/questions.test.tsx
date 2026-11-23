@@ -187,4 +187,34 @@ describe("keeping it current", () => {
     expect(sec.textContent).toContain("3 documents in this space hold personal data");
     expect(await violations(container)).toEqual([]);
   });
+
+  // SB-2004
+  it("shows a note read wider than its space with a count, and republishes it narrowed after a confirm", async () => {
+    const posts: unknown[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/spaces/support/questions/qs_7/note") {
+        const b = JSON.parse(String(init?.body));
+        posts.push(b);
+        return json(b.confirm === undefined ? { path: "notes/support/qs_7.md", readers: 4, narrower: 0 } : { path: "notes/support/qs_7.md", readers: 4, narrower: 0, state: "Ran" });
+      }
+      return json({
+        items: [{ cite: "docs:notes/support/qs_7.md@1", title: "qs_7", flags: [], snippet: "", cited: 0, flagged: 0, wider: 2, question: "qs_7" }],
+        hidden: [],
+      });
+    };
+    const { container } = render(<ReviewList space="support" fetcher={fetcher} />);
+    await act(async () => {});
+    expect(screen.getByRole("region", { name: "Documents to review" }).textContent).toContain("2 of this note's readers are no longer a member");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Republish to members only" }));
+    });
+    expect(posts).toEqual([{ title: "" }]);
+    expect(container.textContent).toContain("Republish to 4 readers.");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Confirm republish" }));
+    });
+    expect(posts[1]).toEqual({ title: "", confirm: 0 });
+    expect(screen.getByRole("status").textContent).toContain("Republished");
+    expect(await violations(container)).toEqual([]);
+  });
 });

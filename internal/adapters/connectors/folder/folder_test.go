@@ -293,4 +293,9 @@ func TestExampleShare(t *testing.T) {
 	if err != nil || !strings.Contains(d.Text, "tyre pressure") {
 		t.Fatalf("the PDF's text: %q %v", d.Text, err)
 	}
+	for id, want := range map[string]string{"operations/fuel-cards.docx": "blocked within the hour", "operations/night-shift.html": "seal number goes on the manifest"} {
+		if d, err := c.Fetch(ctx, ports.SourceRef{Kind: "docs", ID: id}); err != nil || !strings.Contains(d.Text, want) {
+			t.Errorf("%s: %q %v", id, d.Text, err)
+		}
+	}
 }

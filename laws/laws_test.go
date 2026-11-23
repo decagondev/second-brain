@@ -461,3 +461,17 @@ func TestLAW22_NotesPublishOnTheirSideOfABarrier(t *testing.T) {
 	dir := t.TempDir()
 	Check(t, "LAW-22", 60, func(r *rand.Rand) error { return law22Notes(r, dir, RealNotePlacer) })
 }
+
+func TestLAW09_OfficeFilesAreData(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-09", 60, func(r *rand.Rand) error { return law09Office(r, dir, EncodeOffice) })
+}
+
+func TestLAW13_OfficeIndexIsDerived(t *testing.T) {
+	Check(t, "LAW-13", 20, func(r *rand.Rand) error { return law13(r, NewOfficeIngestWorld(t.TempDir())) })
+}
+
+func TestLAW19_NotesStayAsNarrowAsTheirSpace(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-19", 60, func(r *rand.Rand) error { return law19Notes(r, dir, RealNoteNarrowing{}) })
+}

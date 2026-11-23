@@ -83,7 +83,9 @@ func (c *Connector) Act(_ context.Context, a ports.Action, _ ports.IdempotencyKe
 		return ports.Receipt{}, err
 	}
 	if err := c.create(rel+".acl", []byte(acl)); err != nil {
-		return ports.Receipt{}, err
+		if err = c.narrow(rel+".acl", acl); err != nil {
+			return ports.Receipt{}, err
+		}
 	}
 	back, err := c.readNote(rel)
 	if err != nil || !bytes.Equal(back, []byte(p.Markdown)) {
@@ -111,6 +113,45 @@ func (c *Connector) create(rel string, b []byte) error {
 		return fmt.Errorf("folder: notes: %w", err)
 	}
 	if _, err := f.Write(b); err != nil {
+		_ = f.Close()
+		return fmt.Errorf("folder: notes: %w", err)
+	}
+	return f.Close()
+}
+
+// narrow replaces a note's ACL file with one that has the same owner and label and fewer
+// readers (SB-2004): the same note republished to the space's members now. Never wider.
+// The file is rewritten in place; every state it passes through is a prefix of the new
+// one, so a reader sees fewer readers or an ACL that doesn't parse (Unknown), never more.
+func (c *Connector) narrow(rel, next string) error {
+	have, err := c.readNote(rel)
+	if err != nil {
+		return fmt.Errorf("folder: notes: %w", err)
+	}
+	old, err := parseACL(have)
+	if err != nil {
+		return fmt.Errorf("folder: %s doesn't parse; it isn't narrowed", rel)
+	}
+	nw, err := parseACL([]byte(next))
+	if err != nil {
+		return err
+	}
+	was := map[string]bool{}
+	for _, r := range old.readers {
+		was[r] = true
+	}
+	wider := nw.owner != old.owner || nw.label != old.label || len(nw.readers) >= len(old.readers)
+	for _, r := range nw.readers {
+		wider = wider || !was[r]
+	}
+	if wider {
+		return fmt.Errorf("folder: %s is already a different note; a note is republished only to fewer readers", rel)
+	}
+	f, err := c.notes.OpenFile(rel, os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return fmt.Errorf("folder: notes: %w", err)
+	}
+	if _, err := f.Write([]byte(next)); err != nil {
 		_ = f.Close()
 		return fmt.Errorf("folder: notes: %w", err)
 	}

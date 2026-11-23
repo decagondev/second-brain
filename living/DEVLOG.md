@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S19.2: office files, and notes that stay as narrow as their space
+
+**Wave/slice:** W19 / S19.2 (SB-2003, SB-2004) · **Status:** Done
+
+**What:** The folder connector reads `.docx`, `.pptx`, `.odt` and `.html` files as text, with the standard library only (`folder.OfficeText`): only the parts that hold the document's text are opened, an archive too large or too long is skipped whole, and a fuzz target guards the reader. The stewards' review list now shows notes whose readers include people who left the space, as a count, and **Republish to members only** narrows the note's ACL file to the readers who are still members; the connector rewrites a note's ACL only to fewer readers.
+
+**Why this way:** Opening only `word/document.xml`, the slides and `content.xml` means macros, embedded objects and media are never read rather than read and filtered, which is the only way to be sure. Skipping an oversized archive whole, rather than reading its first 16 MiB, keeps the index from holding half a document that answers would treat as all of it. Pages are scanned, not parsed as XML: `encoding/xml` refused unquoted attributes, which real pages are full of. A note can't follow its space by itself because its ACL is a file; republishing to the intersection of its readers and the members now can only remove people, so the connector can enforce "never wider" without knowing the directory.
+
+**Learned:** The index doesn't keep a document's label when the cell has no spaces routing, so a republish takes the label from the space as the first publish did, and the connector refuses it if the label changed. Share directories made per law run must be unique; reusing one let one run's file leak into the next.
+
+**Laws:** LAW-09 (`TestLAW09_OfficeFilesAreData`: the ingest law over office files, with a canary in every hidden part never reaching the index; a self-test catches a reader that indexes them), LAW-13 (`TestLAW13_OfficeIndexIsDerived`), LAW-19 and LAW-21 (`TestLAW19_NotesStayAsNarrowAsTheirSpace`: the count names no one, republishing takes the note off the list and leaves it readable by exactly the members who could read it and still can; self-tests catch stale members and a republish that writes nothing). Every law test is still green.
+
 ## 2026-11-23 S19.1: notes across barriers, and the handover screen
 
 **Wave/slice:** W19 / S19.1 (SB-2001, SB-2002) · **Status:** Done

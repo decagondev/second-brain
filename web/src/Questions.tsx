@@ -212,6 +212,57 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
 
 // Documents to review on the steward's screen (SB-1709): relied-on documents gone stale, or
 // marked as wrong citations, each one the steward can open; the rest counted with an owner.
+// A note whose readers are wider than its space now (SB-2004): the count, never who, and a
+// republish to the members who can still read it, confirmed like any note.
+function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fetcher?: Fetch }) {
+  const [preview, setPreview] = useState<NoteResult>();
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const id = item.question!;
+  async function step(confirm?: number) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const r = await publishNote(space, id, "", confirm, fetcher);
+      if (confirm === undefined) setPreview(r);
+      else setDone(true);
+    } catch (e) {
+      setError(msg(e, "The note wasn't republished. Try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
+  const n = item.wider!;
+  return (
+    <div className="narrow">
+      <p className="refused">
+        {n === 1 ? "1 of this note's readers is" : `${n} of this note's readers are`} no longer a member of the space.
+      </p>
+      {done ? (
+        <p role="status">Republished. It leaves this list once the share is next read.</p>
+      ) : preview ? (
+        <p>
+          Republish to {preview.readers === 1 ? "1 reader" : `${preview.readers} readers`}
+          {preview.narrower > 0 ? `; ${preview.narrower} of its sources some of them can't open` : ""}.{" "}
+          <button type="button" disabled={busy} onClick={() => step(preview.narrower)}>
+            Confirm republish
+          </button>
+        </p>
+      ) : (
+        <button type="button" disabled={busy} onClick={() => step()}>
+          Republish to members only
+        </button>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
   const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string }[]; personal_data?: number }>({ items: [], hidden: [] });
   useEffect(() => {
@@ -237,6 +288,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                 · cited {r.cited} times in 30 days{r.age_days !== undefined ? ` · ${r.age_days} days old` : ""}
                 {r.flagged > 0 ? ` · marked wrong ${r.flagged} times` : ""}
               </span>
+              {r.wider !== undefined && r.wider > 0 && r.question && <Narrow space={space} item={r} fetcher={fetcher} />}
             </li>
           ))}
         </ul>

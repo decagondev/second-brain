@@ -3,6 +3,7 @@ package ask
 import (
 	"context"
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -134,6 +135,10 @@ type ReviewItem struct {
 	Result
 	Cited   int `json:"cited"`
 	Flagged int `json:"flagged"`
+	// Wider is, for a note, how many of its readers are no longer members of the space
+	// (SB-2004): a count, never who. Question is the note's question, to republish it.
+	Wider    int    `json:"wider,omitempty"`
+	Question string `json:"question,omitempty"`
 }
 
 // HiddenItem is a document to review the steward can't open: only its owner, if any.
@@ -180,67 +185,41 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	if err != nil {
 		return ReviewResponse{}, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
 	}
-	cited, flagged := map[string]int{}, map[string]int{}
-	for _, t := range traces {
-		seen := map[string]bool{}
-		for _, c := range t.Response.Answer.Claims {
-			for _, ci := range c.Cites {
-				if k := docKey(ci.Cite); !seen[k] {
-					seen[k] = true
-					cited[k]++
-				}
-			}
-		}
-	}
-	for _, f := range fbs {
-		if f.WrongCitation != "" {
-			flagged[docKey(f.WrongCitation)]++
-		}
-	}
-	var refs []ports.SourceRef
-	for k := range cited {
-		kind, id, _ := strings.Cut(k, ":")
-		refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
-	}
-	for k := range flagged {
-		if cited[k] == 0 {
-			kind, id, _ := strings.Cut(k, ":")
-			refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
-		}
-	}
+	cited, flagged, refs := reviewCounts(traces, fbs)
 	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}}
 	lk, ok := x.Agent.Index.(ports.DocLookup)
 	if !ok {
 		return out, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
 	}
-	personal, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Flag: ingest.FlagPersonal})
+	if out.Personal, err = x.personalIn(ctx, lk, name); err != nil {
+		return out, err
+	}
+	widerBy, notes, err := x.widerNotes(ctx, lk, name)
 	if err != nil {
-		return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+		return out, err
 	}
-	var withPII []ports.Chunk
-	for _, c := range personal {
-		if contains(c.Flags, ingest.FlagPersonal) {
-			withPII = append(withPII, c)
-		}
-	}
-	for _, c := range firsts(withPII) {
-		if contains(c.Spaces, SpaceKey(name)) {
-			out.Personal++
-		}
-	}
-	if len(refs) == 0 {
+	if len(refs) == 0 && len(notes) == 0 {
 		return out, nil
 	}
-	chunks, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Refs: refs})
-	if err != nil {
-		return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	var chunks []ports.Chunk
+	if len(refs) > 0 {
+		if chunks, err = lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Refs: refs}); err != nil {
+			return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+		}
 	}
 	id := SpaceKey(name)
 	var cand []ports.Chunk
+	in := map[string]bool{}
 	for k, c := range firsts(latest(chunks)) {
 		age, known := ageDays(c.Seen, now)
 		stale := known && age > after && cited[k] >= ReviewCites
 		if contains(c.Spaces, id) && (stale || flagged[k] > 0) {
+			cand = append(cand, c)
+			in[k] = true
+		}
+	}
+	for _, c := range notes {
+		if !in[c.Kind+":"+c.SourceID] {
 			cand = append(cand, c)
 		}
 	}
@@ -260,7 +239,11 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		allowed[k] = true
 		r := x.Agent.result(ctx, own, c)
 		r.Snippet = ""
-		out.Items = append(out.Items, ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k]})
+		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Wider: widerBy[k]}
+		if it.Wider > 0 {
+			it.Question = strings.TrimSuffix(path.Base(c.SourceID), ".md")
+		}
+		out.Items = append(out.Items, it)
 	}
 	for _, c := range cand {
 		if !allowed[c.Kind+":"+c.SourceID] {
@@ -268,9 +251,99 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		}
 	}
 	sort.SliceStable(out.Items, func(i, j int) bool {
-		return out.Items[i].Flagged+out.Items[i].Cited > out.Items[j].Flagged+out.Items[j].Cited
+		a, b := out.Items[i], out.Items[j]
+		if (a.Wider > 0) != (b.Wider > 0) {
+			return a.Wider > 0 // a note read wider than its space comes first
+		}
+		return a.Flagged+a.Cited > b.Flagged+b.Cited
 	})
 	return out, nil
+}
+
+// reviewCounts counts, by document, the answers that cited it and the wrong-citation
+// marks on it, and lists every document either names.
+func reviewCounts(traces []Trace, fbs []Feedback) (cited, flagged map[string]int, refs []ports.SourceRef) {
+	cited, flagged = map[string]int{}, map[string]int{}
+	for _, t := range traces {
+		seen := map[string]bool{}
+		for _, c := range t.Response.Answer.Claims {
+			for _, ci := range c.Cites {
+				if k := docKey(ci.Cite); !seen[k] {
+					seen[k] = true
+					cited[k]++
+				}
+			}
+		}
+	}
+	for _, f := range fbs {
+		if f.WrongCitation != "" {
+			flagged[docKey(f.WrongCitation)]++
+		}
+	}
+	for k := range cited {
+		kind, id, _ := strings.Cut(k, ":")
+		refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
+	}
+	for k := range flagged {
+		if cited[k] == 0 {
+			kind, id, _ := strings.Cut(k, ":")
+			refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
+		}
+	}
+	return cited, flagged, refs
+}
+
+// personalIn counts the documents the space holds with personal data (SB-1904).
+func (x Stewards) personalIn(ctx context.Context, lk ports.DocLookup, name string) (int, error) {
+	personal, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Flag: ingest.FlagPersonal})
+	if err != nil {
+		return 0, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	var withPII []ports.Chunk
+	for _, c := range personal {
+		if contains(c.Flags, ingest.FlagPersonal) {
+			withPII = append(withPII, c)
+		}
+	}
+	n := 0
+	for _, c := range firsts(withPII) {
+		if contains(c.Spaces, SpaceKey(name)) {
+			n++
+		}
+	}
+	return n, nil
+}
+
+// widerNotes are the space's notes whose readers are wider than the space is now
+// (SB-2004), with how many readers each has to lose.
+func (x Stewards) widerNotes(ctx context.Context, lk ports.DocLookup, name string) (map[string]int, []ports.Chunk, error) {
+	by := map[string]int{}
+	if x.Readers == nil {
+		return by, nil, nil
+	}
+	ncs, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Under: []ports.SourceRef{{Kind: noteKind, ID: "/notes/" + name + "/"}}})
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	if len(ncs) == 0 {
+		return by, nil, nil
+	}
+	ms, err := x.Readers(ctx, SpaceKey(name))
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
+	}
+	members := map[string]bool{}
+	for _, m := range ms {
+		members[strings.ToLower(m)] = true
+	}
+	var notes []ports.Chunk
+	for k, c := range firsts(latest(ncs)) {
+		if n := wider(c, members); n > 0 {
+			by[k] = n
+			notes = append(notes, c)
+		}
+	}
+	return by, notes, nil
 }
 
 func docKey(cite string) string {

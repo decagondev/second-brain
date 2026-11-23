@@ -23,7 +23,7 @@ summary: Epics, waves, slices and tickets.
 | W16 Team Knowledge | 10 | 0 | 0 | Planned 2026-11-22 with the user (E17): find, ask a person, capture, onboard, hand over, keep current, a local model ([09-team-knowledge.md](../docs/09-team-knowledge.md)). **W16 built**, SB-1710 run with real weights 2026-11-22 |
 | W17 Easy to Run | 8 | 0 | 0 | Planned 2026-11-22 with the user (E18): doctor, host health, restore, offline upgrade, rollback, proxy, external Postgres, support bundle ([10-run-protect-close.md](../docs/10-run-protect-close.md)). **W17 built.** |
 | W18 Protect the Data | 7 | 0 | 0 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
-| W19 Close the Loops | 2 | 0 | 3 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
+| W19 Close the Loops | 4 | 0 | 1 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -419,6 +419,6 @@ flowchart LR
 |---|---|---|---|---|
 | [SB-2001](E20-close-the-loops/SB-2001-notes-with-barriers.md) | S19.1 | E20 | Notes in cells with information barriers | Done |
 | [SB-2002](E20-close-the-loops/SB-2002-handover-ui.md) | S19.1 | E20 | Handover brief in the UI | Done |
-| [SB-2003](E20-close-the-loops/SB-2003-office-documents.md) | S19.2 | E20 | Word, OpenDocument and HTML on file shares | Open |
-| [SB-2004](E20-close-the-loops/SB-2004-notes-stay-narrow.md) | S19.2 | E20 | Notes stay narrow | Open |
+| [SB-2003](E20-close-the-loops/SB-2003-office-documents.md) | S19.2 | E20 | Word, OpenDocument and HTML on file shares | Done |
+| [SB-2004](E20-close-the-loops/SB-2004-notes-stay-narrow.md) | S19.2 | E20 | Notes stay narrow | Done |
 | [SB-2005](E20-close-the-loops/SB-2005-mattermost.md) | S19.3 | E20 | Mattermost entry point | Open |

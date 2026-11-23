@@ -301,6 +301,9 @@ export async function changes(days: number, f: Fetch = fetch, space?: string): P
 export interface ReviewItem extends SearchResult {
   cited: number;
   flagged: number;
+  // A note read wider than its space now (SB-2004): how many readers to remove, and its question.
+  wider?: number;
+  question?: string;
 }
 
 // personal_data is how many documents in the space hold an IBAN or a card number (SB-1904).
