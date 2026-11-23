@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -197,4 +198,64 @@ func (q *qstore) PutShare(_ context.Context, sh ask.Share) error { q.shares[sh.I
 func (q *qstore) GetShare(_ context.Context, tenant, id string) (ask.Share, bool, error) {
 	sh, ok := q.shares[id]
 	return sh, ok && sh.Tenant == tenant, nil
+}
+
+// SB-2404: type and since narrow the documents that passed every check, and never show
+// a hidden one, whatever the filters.
+func TestSearchFilters(t *testing.T) {
+	a, _ := setup(t, &model{})
+	now := time.Now()
+	ix := a.Index.(index)
+	ix[0].SourceID, ix[0].Seen = "policies/refunds.pdf", now.Add(-10*24*time.Hour)
+	ix[1].SourceID, ix[1].Seen = "hr/salaries.pdf", now.Add(-time.Hour) // denied to alice
+	ix = append(ix,
+		ports.Chunk{ID: "chk_sheet", Tenant: tenant, Kind: "docs", SourceID: "finance/refunds-2026", Title: "Refund log.xlsx", Version: 1, Cite: "docs:sheet@1", Text: "refund rows", Seen: now.Add(-200 * 24 * time.Hour)},
+		ports.Chunk{ID: "chk_old", Tenant: tenant, Kind: "docs", SourceID: "refund-notes", Version: 1, Cite: "docs:old@1", Text: "refund notes"})
+	a.Index = ix
+	a.Auth.Connectors["docs"] = source{"policies/refunds.pdf|alice": ports.VerdictAllow, "hr/salaries.pdf|alice": ports.VerdictDeny,
+		"finance/refunds-2026|alice": ports.VerdictAllow, "refund-notes|alice": ports.VerdictAllow}
+	ctx := context.Background()
+	cites := func(req ask.SearchRequest) []string {
+		t.Helper()
+		req.Query = "refund"
+		res, err := a.Search(ctx, scope(t, "alice"), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.Refused != 1 {
+			t.Fatalf("%+v: refused %d, want the same 1 as without filters", req, res.Refused)
+		}
+		var out []string
+		for _, r := range res.Results {
+			if r.Cite == "docs:salaries@2" {
+				t.Fatalf("%+v showed a hidden document", req)
+			}
+			out = append(out, r.Cite)
+		}
+		sort.Strings(out)
+		return out
+	}
+	for _, c := range []struct {
+		req  ask.SearchRequest
+		want string
+	}{
+		{ask.SearchRequest{}, "docs:old@1 docs:refunds@2 docs:sheet@1"},
+		{ask.SearchRequest{Types: []string{"pdf"}}, "docs:refunds@2"},
+		{ask.SearchRequest{Types: []string{"sheet", "other"}}, "docs:old@1 docs:sheet@1"},
+		{ask.SearchRequest{SinceDays: 30}, "docs:refunds@2"},
+		{ask.SearchRequest{SinceDays: 365, Types: []string{"sheet"}}, "docs:sheet@1"},
+		{ask.SearchRequest{SinceDays: 1, Types: []string{"pdf"}}, ""},
+	} {
+		if got := strings.Join(cites(c.req), " "); got != c.want {
+			t.Errorf("%+v: %q, want %q", c.req, got, c.want)
+		}
+	}
+	for _, bad := range []ask.SearchRequest{{Query: "x", Types: []string{"exe"}}, {Query: "x", SinceDays: 366}, {Query: "x", SinceDays: -1}} {
+		if _, err := a.Search(ctx, scope(t, "alice"), bad); !errors.Is(err, ask.ErrInvalid) {
+			t.Errorf("%+v: %v", bad, err)
+		}
+	}
+	if ask.TypeOf(ports.Chunk{SourceID: "C1234", Title: "Q3 plan.PPTX"}) != "slides" || ask.TypeOf(ports.Chunk{SourceID: "a/b.md"}) != "text" {
+		t.Fatal("TypeOf")
+	}
 }

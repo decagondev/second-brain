@@ -13,7 +13,7 @@ summary: "No results, or a refusal, leaves the asker with nothing to do next."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01 |
 | Depends on | SB-2404 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ No results, or a refusal, leaves the asker with nothing to do next.
 
 ## Acceptance criteria
 
-- [ ] No results or a refusal for lack of sources suggests: ask the whole company, clear filters, matching glossary terms of the space, ask the stewards
-- [ ] Suggestions come from the question, the filters and the space's glossary, never from documents
-- [ ] A test with a hidden matching document shows the same suggestions as with no document
+- [x] No results or a refusal for lack of sources suggests: ask the whole company, clear filters, matching glossary terms of the space, ask the stewards
+- [x] Suggestions come from the question, the filters and the space's glossary, never from documents
+- [x] A test with a hidden matching document shows the same suggestions as with no document
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Suggestions
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Suggestions
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Done 2026-11-23 (S23.2). Documents with no results shows "You could try:" with **Search the whole company** (from a space), **Clear filters** (when a filter was set) and **Ask it as a question** (fills the ask box); an answer in a space with `no_sources` or `no_access` offers **Ask the whole company**. Which appear depends only on what the person typed and chose (`NextSteps` in `Documents.tsx`). Glossary terms stay where they were, under results and answers. Test: an empty search with three hidden documents shows exactly the same steps as one with none.
 
 ## Definition of done
 

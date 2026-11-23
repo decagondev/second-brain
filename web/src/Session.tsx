@@ -4,7 +4,7 @@ import { tj, tn, t } from "./i18n";
 
 // Sign out everywhere (sb-identity(7), Signing out everywhere; SB-1906): every session
 // of the person ends, this one included.
-export function SignOutEverywhere({ fetcher = fetch }: { fetcher?: Fetch }) {
+export function SignOutEverywhere({ fetcher = fetch, onSignedOut }: { fetcher?: Fetch; onSignedOut?: () => void }) {
   const [state, setState] = useState<"idle" | "busy" | "done" | "failed">("idle");
   const [count, setCount] = useState(0);
 
@@ -16,6 +16,7 @@ export function SignOutEverywhere({ fetcher = fetch }: { fetcher?: Fetch }) {
       const data = (await res.json()) as { revoked?: number };
       setCount(typeof data.revoked === "number" ? data.revoked : 0);
       setState("done");
+      onSignedOut?.();
     } catch {
       setState("failed");
     }

@@ -15,6 +15,7 @@ import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { AnswerTools } from "./Copy";
+import { forgetQuestions, recentQuestions, rememberQuestion } from "./recent";
 import { errorText, msg, t, tj } from "./i18n";
 
 interface Turn {
@@ -58,6 +59,11 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const nextTurn = useRef(0);
   const [showTokens, setShowTokens] = useState(false);
   const tokensButton = useRef<HTMLButtonElement>(null);
+  const [recent, setRecent] = useState<string[]>(() => recentQuestions());
+  function forget() {
+    forgetQuestions();
+    setRecent([]);
+  }
   const askBox = useRef<HTMLTextAreaElement>(null);
 
   // Keyboard first (SB-2403): "/" goes to the ask box and Esc closes the API tokens panel,
@@ -101,8 +107,10 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
     return spaces.some((s) => s.name === name) ? name : "";
   }
 
-  async function run(q: string, inSpace: string, conv: string | undefined) {
+  // remember is false for a shared question asked from its link (SB-2405).
+  async function run(q: string, inSpace: string, conv: string | undefined, remember = true) {
     setBusy(true);
+    if (remember) setRecent(rememberQuestion(q));
     const id = nextTurn.current++;
     const settle = (x: Turn) => setTurns((ts) => ts.map((y) => (y.id === id ? x : y)));
     setTurns((ts) => [...ts, { id, question: q, pending: true }]);
@@ -119,6 +127,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       setQuestion("");
     } catch (err) {
       const error = err instanceof AskError ? err.error : { code: "EUNAVAIL", message: t("Something went wrong."), trace: "", remedy: t("Try again.") };
+      if (error.code === "EAUTH") forget(); // signed out: this browser forgets their questions
       settle({ id, question: q, error });
     } finally {
       setBusy(false);
@@ -133,13 +142,28 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   }
 
   // Asking a saved or shared question again starts a new conversation, live.
-  async function askAgain(q: string, recordSpace: string) {
+  async function askAgain(q: string, recordSpace: string, remember = true) {
     const sp = spaceFor(recordSpace);
     setSpace(sp);
     setConversation(undefined);
     setTurns([]);
     setTab("answer");
-    await run(q, sp, undefined);
+    await run(q, sp, undefined, remember);
+  }
+
+  // No dead ends (SB-2406): the same question, company-wide, in a new conversation.
+  async function askWholeCompany(q: string) {
+    setSpace("");
+    setConversation(undefined);
+    setTurns([]);
+    await run(q, "", undefined);
+  }
+
+  // From Documents: the text goes into the ask box, to be asked when the person chooses.
+  function askInstead(q: string) {
+    setQuestion(q);
+    setTab("answer");
+    setTimeout(() => askBox.current?.focus(), 0);
   }
 
   function searchInstead(q: string) {
@@ -168,7 +192,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
             <>
               <p>{t("A colleague shared this question. Asking it shows only what you can open.")}</p>
               <p className="question">{shared.question}</p>
-              <button type="button" disabled={busy} onClick={() => askAgain(shared.question, shared.space)}>
+              <button type="button" disabled={busy} onClick={() => askAgain(shared.question, shared.space, false)}>
                 {t("Ask this question")}
               </button>
             </>
@@ -211,6 +235,11 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
+              {x.answer && space && (x.answer.notice === "no_sources" || x.answer.notice === "no_access") && (
+                <button type="button" disabled={busy} onClick={() => askWholeCompany(x.question)}>
+                  {t("Ask the whole company")}
+                </button>
+              )}
               {x.answer && <AskStewards question={x.question} answer={x.answer} space={space || undefined} fetcher={fetcher} />}
               {x.error && x.error.code === "EAUTH" && (
                 <div className="error" role="alert">
@@ -267,6 +296,30 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
           <p className="keys" id={`${inputId}-keys`}>
             {t("Keyboard: / goes to the ask box, Ctrl+Enter (Cmd+Enter on a Mac) asks, Esc closes a panel.")}
           </p>
+          {recent.length > 0 && (
+            <details className="recent">
+              <summary>{t("Recent questions")}</summary>
+              <ul>
+                {recent.map((r) => (
+                  <li key={r}>
+                    <button
+                      type="button"
+                      className="link"
+                      onClick={() => {
+                        setQuestion(r);
+                        askBox.current?.focus();
+                      }}
+                    >
+                      {r}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button type="button" onClick={forget}>
+                {t("Clear the list")}
+              </button>
+            </details>
+          )}
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}
           </button>
@@ -285,7 +338,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         <DraftPanel fetcher={fetcher} />
       </div>
       <div role="tabpanel" id={`${base}-panel-documents`} aria-labelledby={`${base}-tab-documents`} hidden={tab !== "documents"}>
-        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} />
+        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} onAsk={askInstead} />
       </div>
       <div role="tabpanel" id={`${base}-panel-saved`} aria-labelledby={`${base}-tab-saved`} hidden={tab !== "saved"}>
         {tab === "saved" && <SavedView fetcher={fetcher} onAsk={askAgain} />}
@@ -300,7 +353,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         {t("API tokens")}
       </button>
       {showTokens && <ApiTokens fetcher={fetcher} />}
-      <SignOutEverywhere fetcher={fetcher} />
+      <SignOutEverywhere fetcher={fetcher} onSignedOut={forget} />
     </main>
   );
 }

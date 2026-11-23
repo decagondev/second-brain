@@ -86,6 +86,17 @@ func (h Knowledge) search(w http.ResponseWriter, r *http.Request) {
 	if src := r.URL.Query().Get("sources"); src != "" {
 		req.Sources = strings.Split(src, ",")
 	}
+	if ty := r.URL.Query().Get("type"); ty != "" {
+		req.Types = strings.Split(ty, ",")
+	}
+	if v := r.URL.Query().Get("since"); v != "" {
+		n, err := strconv.Atoi(strings.TrimSuffix(v, "d"))
+		if err != nil || !strings.HasSuffix(v, "d") || n < 1 || n > ask.MaxSinceDays {
+			h.out().fail(w, "", errs.New(errs.EINVAL, "since is a number of days from 1 to 365, such as 30d."))
+			return
+		}
+		req.SinceDays = n
+	}
 	resp, err := h.Search.Search(r.Context(), s, req)
 	if err != nil {
 		h.out().fail(w, "", mapErr(err))

@@ -120,3 +120,9 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
   .footnotes { margin-top: 1rem; border-top: 1px solid #000000; font-size: 0.9rem; }
   a { color: #000000; }
 }
+
+/* Recent questions and next steps (SB-2405, SB-2406). */
+.recent ul { list-style: none; padding-left: 0; margin: 0.25rem 0; }
+.recent button.link { text-align: left; min-height: 32px; padding: 0.25rem 0; }
+.next-steps { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.next-steps p { margin: 0; flex-basis: 100%; }

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"path"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -31,6 +32,56 @@ const (
 type SearchRequest struct {
 	Query   string
 	Sources []string
+	// Types and SinceDays narrow the results after every check (SB-2404); none is all.
+	Types     []string
+	SinceDays int
+}
+
+// Types are the document types search filters by (SB-2404), from a file's extension.
+var Types = map[string][]string{
+	"pdf": {".pdf"}, "doc": {".docx", ".doc", ".odt", ".rtf"}, "sheet": {".xlsx", ".xls", ".ods", ".csv"},
+	"slides": {".pptx", ".ppt", ".odp"}, "web": {".html", ".htm"}, "text": {".txt", ".md"}, "other": nil,
+}
+
+// MaxSinceDays bounds since=.
+const MaxSinceDays = 365
+
+// TypeOf is a document's type: by the extension on its source id, else on its title.
+func TypeOf(c ports.Chunk) string {
+	for _, name := range []string{c.SourceID, c.Title} {
+		ext := strings.ToLower(path.Ext(name))
+		if ext == "" {
+			continue
+		}
+		for t, exts := range Types {
+			for _, e := range exts {
+				if e == ext {
+					return t
+				}
+			}
+		}
+	}
+	return "other"
+}
+
+// keep reports whether a chunk that passed every check passes the filters too.
+func (r SearchRequest) keep(c ports.Chunk, now time.Time) bool {
+	if len(r.Types) > 0 {
+		want := TypeOf(c)
+		found := false
+		for _, t := range r.Types {
+			found = found || t == want
+		}
+		if !found {
+			return false
+		}
+	}
+	if r.SinceDays > 0 {
+		if c.Seen.IsZero() || now.Sub(c.Seen) > time.Duration(r.SinceDays)*24*time.Hour {
+			return false
+		}
+	}
+	return true
 }
 
 // Result is one document a search found, which the asker may open now.
@@ -70,6 +121,14 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 			return SearchResponse{}, fmt.Errorf("%w: unknown source kind %q", ErrInvalid, k)
 		}
 	}
+	for _, t := range req.Types {
+		if _, ok := Types[t]; !ok {
+			return SearchResponse{}, fmt.Errorf("%w: unknown type %q (pdf, doc, sheet, slides, web, text, other)", ErrInvalid, t)
+		}
+	}
+	if req.SinceDays < 0 || req.SinceDays > MaxSinceDays {
+		return SearchResponse{}, fmt.Errorf("%w: since is 1 to %d days", ErrInvalid, MaxSinceDays)
+	}
 	if a.Killed == nil || a.Killed(ctx) || spaceKilled(a.SpaceKilled, s) {
 		return SearchResponse{}, ErrKilled
 	}
@@ -81,9 +140,10 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	out := SearchResponse{Trace: trace, Release: a.Release, Results: []Result{}, Refused: res.Refused, Terms: terms}
 	own := a.owners()
 	shown := map[string]bool{}
+	now := a.Now()
 	for _, c := range res.Context {
 		k := c.Kind + ":" + c.SourceID
-		if shown[k] || len(out.Results) == MaxResults {
+		if shown[k] || len(out.Results) == MaxResults || !req.keep(c, now) {
 			continue
 		}
 		shown[k] = true

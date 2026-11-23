@@ -142,3 +142,17 @@ func TestSavedAndShareEndpoints(t *testing.T) {
 		t.Fatalf("empty question: %d", code)
 	}
 }
+
+// SB-2404: type and since reach the search; a bad since is EINVAL.
+func TestSearchFiltersEndpoint(t *testing.T) {
+	f := &fakeSearch{}
+	h, _ := knowledge(f)
+	if code, _ := kcall(t, h, "GET", "/v1/search?q=x&type=pdf,sheet&since=30d", "", "alice"); code != 200 || strings.Join(f.got.Types, ",") != "pdf,sheet" || f.got.SinceDays != 30 {
+		t.Fatalf("%d %+v", code, f.got)
+	}
+	for _, bad := range []string{"30", "0d", "366d", "xd"} {
+		if code, _ := kcall(t, h, "GET", "/v1/search?q=x&since="+bad, "", "alice"); code != 400 {
+			t.Errorf("since=%s: %d", bad, code)
+		}
+	}
+}

@@ -1,26 +1,65 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, search } from "./api";
-import type { ApiError, Fetch, SearchResponse } from "./api";
+import type { ApiError, Fetch, Filters, SearchResponse } from "./api";
 import { AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
-import { errorText, t, tj, tn } from "./i18n";
+import { errorText, msg, t, tj, tn } from "./i18n";
+
+// The filters (SB-2404), as the API names them.
+const types: { id: string; name: string }[] = [
+  { id: "", name: msg("Any type") },
+  { id: "pdf", name: msg("PDF") },
+  { id: "doc", name: msg("Word documents") },
+  { id: "sheet", name: msg("Spreadsheets") },
+  { id: "slides", name: msg("Slides") },
+  { id: "web", name: msg("Web pages") },
+  { id: "text", name: msg("Text files") },
+  { id: "other", name: msg("Everything else") },
+];
+const ages: { days: number; name: string }[] = [
+  { days: 0, name: msg("Any time") },
+  { days: 7, name: msg("The last 7 days") },
+  { days: 30, name: msg("The last 30 days") },
+  { days: 90, name: msg("The last 90 days") },
+  { days: 365, name: msg("The last year") },
+];
 
 // Documents: search without the model (sb-ask(3), Search; SB-1701). Every result is a
 // document the asker can open now, with a quote of the source and its cite.
-export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; space?: string; query?: { text: string; n: number } }) {
+export function DocumentsView({
+  fetcher,
+  space,
+  query,
+  onAsk,
+}: {
+  fetcher?: Fetch;
+  space?: string;
+  query?: { text: string; n: number };
+  onAsk?: (q: string) => void;
+}) {
   const [q, setQ] = useState("");
+  const [type, setType] = useState("");
+  const [since, setSince] = useState(0);
+  const [wide, setWide] = useState(false); // searching the whole company from a space (SB-2406)
+  const [ran, setRan] = useState<{ text: string; filtered: boolean; inSpace: boolean }>();
+  const typeId = useId();
+  const sinceId = useId();
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<SearchResponse>();
   const [error, setError] = useState<ApiError>();
   const id = useId();
 
-  async function run(text: string) {
+  useEffect(() => setWide(false), [space]);
+
+  async function run(text: string, filters: Filters = { type, since }, whole = wide) {
     const want = text.trim();
     if (!want || busy) return;
     setBusy(true);
     setError(undefined);
+    const where = whole ? undefined : space;
+    setRan({ text: want, filtered: !!filters.type || !!filters.since, inSpace: !!where });
     try {
-      setRes(await search(want, fetcher, space));
+      setRes(await search(want, fetcher, where, filters));
     } catch (e) {
       setRes(undefined);
       setError(e instanceof AskError ? e.error : { code: "EUNAVAIL", message: t("Search is unavailable right now."), trace: "", remedy: "" });
@@ -48,6 +87,22 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
       <form onSubmit={submit} className="ask" role="search">
         <label htmlFor={id}>{t("Search documents")}</label>
         <input id={id} type="search" value={q} maxLength={4000} onChange={(e) => setQ(e.target.value)} />
+        <label htmlFor={typeId}>{t("File type")}</label>
+        <select id={typeId} value={type} onChange={(e) => setType(e.target.value)}>
+          {types.map((x) => (
+            <option key={x.id} value={x.id}>
+              {t(x.name)}
+            </option>
+          ))}
+        </select>
+        <label htmlFor={sinceId}>{t("Changed in")}</label>
+        <select id={sinceId} value={since} onChange={(e) => setSince(Number(e.target.value))}>
+          {ages.map((x) => (
+            <option key={x.days} value={x.days}>
+              {t(x.name)}
+            </option>
+          ))}
+        </select>
         <button type="submit" disabled={busy || q.trim() === ""}>
           {busy ? t("Searching…") : t("Search")}
         </button>
@@ -59,7 +114,27 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
             {error.trace && <p>{t("Quote trace {trace} to support.", { trace: error.trace })}</p>}
           </div>
         )}
-        {res && res.results.length === 0 && <p className="notice">{t("Nothing you can open matches this.")}</p>}
+        {res && res.results.length === 0 && (
+          <>
+            <p className="notice">{t("Nothing you can open matches this.")}</p>
+            {ran && (
+              <NextSteps
+                inSpace={ran.inSpace}
+                filtered={ran.filtered}
+                onWide={() => {
+                  setWide(true);
+                  void run(ran.text, { type, since }, true);
+                }}
+                onClear={() => {
+                  setType("");
+                  setSince(0);
+                  void run(ran.text, {});
+                }}
+                onAsk={onAsk ? () => onAsk(ran.text) : undefined}
+              />
+            )}
+          </>
+        )}
         {res && res.results.length > 0 && (
           <ol className="results">
             {res.results.map((r) => {
@@ -105,5 +180,30 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
         )}
       </div>
     </section>
+  );
+}
+
+// No dead ends (SB-2406): what to try next, from what the person typed and chose only, never
+// from the index, so a document they can't open changes nothing here.
+export function NextSteps({ inSpace, filtered, onWide, onClear, onAsk }: { inSpace: boolean; filtered: boolean; onWide: () => void; onClear: () => void; onAsk?: () => void }) {
+  return (
+    <div className="next-steps">
+      <p>{t("You could try:")}</p>
+      {inSpace && (
+        <button type="button" onClick={onWide}>
+          {t("Search the whole company")}
+        </button>
+      )}
+      {filtered && (
+        <button type="button" onClick={onClear}>
+          {t("Clear filters")}
+        </button>
+      )}
+      {onAsk && (
+        <button type="button" onClick={onAsk}>
+          {t("Ask it as a question")}
+        </button>
+      )}
+    </div>
   );
 }

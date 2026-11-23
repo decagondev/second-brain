@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S23.2: Find it faster
+
+**Wave/slice:** W23 / S23.2 (SB-2404, SB-2405, SB-2406) · **Status:** Done
+
+**What:** Search filters by file type and age, on the API and the Documents tab. The ask box offers the person's last 20 questions from their own browser. A search with no results, or an answer with nothing in a space, offers what to try next: the whole company, clearing filters, asking it as a question.
+
+**Why this way:** Filters run after the live checks, on documents the person may already open, so they can only narrow and the hidden count stays the same. Recent questions never reach the cell, so the cell keeps no more question text than it did (LAW-07); they go when the person signs out or the session ends, which matters on a shared computer. Next steps depend only on what the person typed and chose, so a document they can't open can't be inferred from which buttons appear (LAW-01).
+
+**Learned:** The glossary suggestion in the plan would have meant matching the space's terms against the question a second time; the terms the question used are already shown under results and answers, so no second path was added.
+
+**Laws:** LAW-01 (`TestSearchFilters`: a denied document never appears under any filter and `refused` is unchanged; next steps the same with or without hidden documents), LAW-07 (recent questions stay in the browser). Every law test is still green.
+
 ## 2026-11-23 S23.1: Take the answer with you
 
 **Wave/slice:** W23 / S23.1 (SB-2401, SB-2402, SB-2403) · **Status:** Done

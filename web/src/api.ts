@@ -200,8 +200,17 @@ function inSpace(path: string, space?: string): string {
   return `${path}${path.includes("?") ? "&" : "?"}space=${encodeURIComponent(space)}`;
 }
 
-export function search(q: string, f: Fetch = fetch, space?: string): Promise<SearchResponse> {
-  return call<SearchResponse>(inSpace(`/v1/search?q=${encodeURIComponent(q)}`, space), {}, f);
+// Filters narrow a search after every check (SB-2404): a type and a number of days.
+export interface Filters {
+  type?: string;
+  since?: number;
+}
+
+export function search(q: string, f: Fetch = fetch, space?: string, filters: Filters = {}): Promise<SearchResponse> {
+  let path = `/v1/search?q=${encodeURIComponent(q)}`;
+  if (filters.type) path += `&type=${encodeURIComponent(filters.type)}`;
+  if (filters.since) path += `&since=${filters.since}d`;
+  return call<SearchResponse>(inSpace(path, space), {}, f);
 }
 
 export function saveQuestion(question: string, f: Fetch = fetch, space?: string): Promise<{ id: string }> {

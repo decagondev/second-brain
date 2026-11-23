@@ -167,3 +167,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-23 | LAW-01, LAW-14, LAW-16 | Tested (extended) | SB-2304, SB-2305: search's allowed sources show first and never as claims; asks_per_minute reads back from the manifest (sources test with a slow model, LAW-16 generator) |
 | 2026-11-23 | LAW-07, LAW-12 | Tested (extended) | SB-2306, SB-2307: API tokens end with their owner's sessions; email notifications carry only counts and links (LAW-12 generator with tokens, LAW-07 by email) |
 | 2026-11-23 | LAW-14, LAW-01 | Tested (extended) | SB-2401 to SB-2403: copy and print keep every cite and the uncited mark; keyboard-only use with axe in each language (copy.test.tsx) |
+| 2026-11-23 | LAW-01, LAW-07 | Tested (extended) | SB-2404 to SB-2406: filters only narrow after every check; recent questions never leave the browser; next steps ignore the index (TestSearchFilters, findfaster.test.tsx) |

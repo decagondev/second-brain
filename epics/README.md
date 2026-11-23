@@ -27,7 +27,7 @@ summary: Epics, waves, slices and tickets.
 | W20 Keep People in the Loop | 6 | 0 | 0 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
 | W21 Keep Knowledge Owned | 7 | 0 | 0 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
 | W22 Fit the Site | 7 | 0 | 0 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
-| W23 Easier to Ask | 3 | 0 | 3 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
+| W23 Easier to Ask | 6 | 0 | 0 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
 | W24 Easier to Steward | 0 | 0 | 7 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
 | W25 Easier to Operate | 0 | 0 | 7 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -489,9 +489,9 @@ flowchart LR
 | [SB-2401](E24-easier-to-ask/SB-2401-copy-answer.md) | S23.1 | E24 | Copy an answer with its cites | Done |
 | [SB-2402](E24-easier-to-ask/SB-2402-print-answer.md) | S23.1 | E24 | Print an answer | Done |
 | [SB-2403](E24-easier-to-ask/SB-2403-keyboard-first.md) | S23.1 | E24 | Keyboard first | Done |
-| [SB-2404](E24-easier-to-ask/SB-2404-search-filters.md) | S23.2 | E24 | Search filters | Open |
-| [SB-2405](E24-easier-to-ask/SB-2405-recent-questions.md) | S23.2 | E24 | Recent questions | Open |
-| [SB-2406](E24-easier-to-ask/SB-2406-no-dead-ends.md) | S23.2 | E24 | No dead ends | Open |
+| [SB-2404](E24-easier-to-ask/SB-2404-search-filters.md) | S23.2 | E24 | Search filters | Done |
+| [SB-2405](E24-easier-to-ask/SB-2405-recent-questions.md) | S23.2 | E24 | Recent questions | Done |
+| [SB-2406](E24-easier-to-ask/SB-2406-no-dead-ends.md) | S23.2 | E24 | No dead ends | Done |
 
 ### W24 Easier to Steward
 

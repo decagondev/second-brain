@@ -788,12 +788,12 @@ gantt
 
 **Exit gate**
 
-- [ ] Copy and print keep every cite and the uncited mark
-- [ ] Ask, follow up, save and switch tabs with the keyboard alone; axe in each language
-- [ ] Filters only narrow; a hidden document never appears whatever the filters
-- [ ] Recent questions never leave the browser and are gone after sign-out
-- [ ] A hidden matching document changes no suggestion
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Copy and print keep every cite and the uncited mark
+- [x] Ask, follow up, save and switch tabs with the keyboard alone; axe in each language
+- [x] Filters only narrow; a hidden document never appears whatever the filters
+- [x] Recent questions never leave the browser and are gone after sign-out
+- [x] A hidden matching document changes no suggestion
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

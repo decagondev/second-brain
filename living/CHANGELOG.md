@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Search by file type and age (SB-2404); recent questions in the ask box, kept in the browser until sign-out (SB-2405); next steps instead of dead ends (SB-2406).
 - Copy an answer with its cites, as text or Markdown (SB-2401); print an answer with numbered footnotes (SB-2402); keyboard shortcuts and a skip link (SB-2403).
 - Read-only API tokens, at most 90 days, audited at each use (SB-2306); notifications by email for sites with no chat, STARTTLS required (SB-2307).
 - Sources show while the answer is written (SB-2304); `asks_per_minute`, default 6, with `ERATE` and the seconds to wait, counted in the weekly report (SB-2305).
