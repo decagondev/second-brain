@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)).
 
 ## Problem
 
@@ -319,6 +319,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W20 | Keep People in the Loop | — | People hear when a question, a reply or a source needs them, and nothing they hear says more than they could open. |
 | W21 | Keep Knowledge Owned | — | Documents keep an owner, copies cite once, the brain learns from wrong citations, and a hidden source can be asked for. |
 | W22 | Fit the Site | — | The UI in English, German and French, audit to the SIEM, off-box copies to S3, fair on small boxes, tokens and email. |
+| W23 | Easier to Ask | — | An answer is easy to take away, and no screen leaves the asker without a next step. |
+| W24 | Easier to Steward | — | A steward clears their list in minutes and doesn't repeat work, and nobody is pinged while they are away. |
+| W25 | Easier to Operate | — | Whoever runs the box sets everything from one file, checks each channel first, and is told how to fix what is wrong. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -778,6 +781,59 @@ gantt
 | S22.1 | Language and logs | English, German and French, the SIEM stream, S3 off-box copies | [SB-2301](../epics/E23-fit-the-site/SB-2301-i18n.md), [SB-2302](../epics/E23-fit-the-site/SB-2302-siem-stream.md), [SB-2303](../epics/E23-fit-the-site/SB-2303-offsite-s3.md) |
 | S22.2 | Small boxes | Sources first, asks per minute | [SB-2304](../epics/E23-fit-the-site/SB-2304-sources-first.md), [SB-2305](../epics/E23-fit-the-site/SB-2305-fair-share.md) |
 | S22.3 | Integrations | Read-only API tokens, SMTP notifications | [SB-2306](../epics/E23-fit-the-site/SB-2306-api-tokens.md), [SB-2307](../epics/E23-fit-the-site/SB-2307-smtp.md) |
+
+#### W23 Easier to Ask
+
+*An answer is easy to take away, and no screen leaves the asker without a next step. Accepted 2026-11-23 ([12-ask-steward-operate.md](12-ask-steward-operate.md)).*
+
+**Exit gate**
+
+- [ ] Copy and print keep every cite and the uncited mark
+- [ ] Ask, follow up, save and switch tabs with the keyboard alone; axe in each language
+- [ ] Filters only narrow; a hidden document never appears whatever the filters
+- [ ] Recent questions never leave the browser and are gone after sign-out
+- [ ] A hidden matching document changes no suggestion
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S23.1 | Take the answer with you | Copy with cites, print, keyboard first | [SB-2401](../epics/E24-easier-to-ask/SB-2401-copy-answer.md), [SB-2402](../epics/E24-easier-to-ask/SB-2402-print-answer.md), [SB-2403](../epics/E24-easier-to-ask/SB-2403-keyboard-first.md) |
+| S23.2 | Find it faster | Search filters, recent questions, no dead ends | [SB-2404](../epics/E24-easier-to-ask/SB-2404-search-filters.md), [SB-2405](../epics/E24-easier-to-ask/SB-2405-recent-questions.md), [SB-2406](../epics/E24-easier-to-ask/SB-2406-no-dead-ends.md) |
+
+#### W24 Easier to Steward
+
+*A steward clears their list in minutes and doesn't repeat work, and nobody is pinged while they are away. Accepted 2026-11-23 ([12-ask-steward-operate.md](12-ask-steward-operate.md)).*
+
+**Exit gate**
+
+- [ ] A reviewed document leaves the list until a new version, and a rebuild doesn't bring it back
+- [ ] A removed steward's claims disappear at once
+- [ ] The CSV holds exactly the rows on screen and no hidden title
+- [ ] A paused steward gets nothing and the other stewards are still told
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S24.1 | Clear the list | Reviewed marks, claims, reply templates | [SB-2501](../epics/E25-easier-to-steward/SB-2501-reviewed-mark.md), [SB-2502](../epics/E25-easier-to-steward/SB-2502-claim-question.md), [SB-2503](../epics/E25-easier-to-steward/SB-2503-reply-templates.md) |
+| S24.2 | See what waits | Tab counts, CSV, pause, stewards' digest line | [SB-2504](../epics/E25-easier-to-steward/SB-2504-tab-counts.md), [SB-2505](../epics/E25-easier-to-steward/SB-2505-review-csv.md), [SB-2506](../epics/E25-easier-to-steward/SB-2506-pause-notifications.md), [SB-2507](../epics/E25-easier-to-steward/SB-2507-steward-digest.md) |
+
+#### W25 Easier to Operate
+
+*Whoever runs the box sets everything from one file, can check each channel before people depend on it, and is told how to fix what is wrong. Accepted 2026-11-23 ([12-ask-steward-operate.md](12-ask-steward-operate.md)).*
+
+**Exit gate**
+
+- [ ] The email login never leaves the vault
+- [ ] Each channel's fake receives exactly the test text
+- [ ] A missing scope or permission is named
+- [ ] A config typo or missing secret stops an update before any restart
+- [ ] Every non-OK doctor verdict names a fix
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S25.1 | Set it up once | Email in the installer, send me a test, check the chat bot, check the config | [SB-2601](../epics/E26-easier-to-operate/SB-2601-install-email.md), [SB-2602](../epics/E26-easier-to-operate/SB-2602-test-notification.md), [SB-2603](../epics/E26-easier-to-operate/SB-2603-check-chat.md), [SB-2604](../epics/E26-easier-to-operate/SB-2604-check-config.md) |
+| S25.2 | Know it's working | Fix hints, token expiry warning, notifications in health | [SB-2605](../epics/E26-easier-to-operate/SB-2605-doctor-fix.md), [SB-2606](../epics/E26-easier-to-operate/SB-2606-token-expiry.md), [SB-2607](../epics/E26-easier-to-operate/SB-2607-notify-health.md) |
 
 #### Parked: Portfolio Department Grants
 

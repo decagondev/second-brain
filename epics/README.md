@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-24 epics, 91 user stories and 211 tickets across 23 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+27 epics, 97 user stories and 231 tickets across 26 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -27,6 +27,9 @@ summary: Epics, waves, slices and tickets.
 | W20 Keep People in the Loop | 6 | 0 | 0 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
 | W21 Keep Knowledge Owned | 7 | 0 | 0 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
 | W22 Fit the Site | 7 | 0 | 0 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
+| W23 Easier to Ask | 0 | 0 | 6 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
+| W24 Easier to Steward | 0 | 0 | 7 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
+| W25 Easier to Operate | 0 | 0 | 7 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -106,6 +109,12 @@ flowchart LR
   E20 --> E21
   E21 --> E22
   E19 --> E23
+  E24["E24 Easier to Ask"]
+  E25["E25 Easier to Steward"]
+  E26["E26 Easier to Operate"]
+  E23 --> E24
+  E21 --> E25
+  E23 --> E26
 ```
 
 ## Epics
@@ -136,6 +145,9 @@ flowchart LR
 | [E21 Keep People in the Loop](E21-keep-people-in-the-loop/README.md) | People hear when a question, a reply or a source needs them, and nothing they hear says more than they could open. | W20 | 6 |
 | [E22 Keep Knowledge Owned](E22-keep-knowledge-owned/README.md) | Documents keep an owner, copies cite once, the brain learns from wrong citations, and a hidden source can be asked for. | W21 | 7 |
 | [E23 Fit the Site](E23-fit-the-site/README.md) | The UI in English, German and French, audit to the SIEM, off-box copies to S3, fair on small boxes, tokens and email. | W22 | 7 |
+| [E24 Easier to Ask](E24-easier-to-ask/README.md) | An answer is easy to take away, and no screen leaves the asker without a next step. | W23 | 6 |
+| [E25 Easier to Steward](E25-easier-to-steward/README.md) | A steward clears their list in minutes and doesn't repeat work, and nobody is pinged while they are away. | W24 | 7 |
+| [E26 Easier to Operate](E26-easier-to-operate/README.md) | Whoever runs the box sets everything from one file, checks each channel first, and is told how to fix what is wrong. | W25 | 7 |
 
 ## All tickets by wave
 
@@ -469,3 +481,38 @@ flowchart LR
 | [SB-2305](E23-fit-the-site/SB-2305-fair-share.md) | S22.2 | E23 | Fair share on a small box | Done |
 | [SB-2306](E23-fit-the-site/SB-2306-api-tokens.md) | S22.3 | E23 | Read-only API tokens | Done |
 | [SB-2307](E23-fit-the-site/SB-2307-smtp.md) | S22.3 | E23 | Notifications by email | Done |
+
+### W23 Easier to Ask
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2401](E24-easier-to-ask/SB-2401-copy-answer.md) | S23.1 | E24 | Copy an answer with its cites | Open |
+| [SB-2402](E24-easier-to-ask/SB-2402-print-answer.md) | S23.1 | E24 | Print an answer | Open |
+| [SB-2403](E24-easier-to-ask/SB-2403-keyboard-first.md) | S23.1 | E24 | Keyboard first | Open |
+| [SB-2404](E24-easier-to-ask/SB-2404-search-filters.md) | S23.2 | E24 | Search filters | Open |
+| [SB-2405](E24-easier-to-ask/SB-2405-recent-questions.md) | S23.2 | E24 | Recent questions | Open |
+| [SB-2406](E24-easier-to-ask/SB-2406-no-dead-ends.md) | S23.2 | E24 | No dead ends | Open |
+
+### W24 Easier to Steward
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2501](E25-easier-to-steward/SB-2501-reviewed-mark.md) | S24.1 | E25 | Reviewed, still right | Open |
+| [SB-2502](E25-easier-to-steward/SB-2502-claim-question.md) | S24.1 | E25 | Claim a question | Open |
+| [SB-2503](E25-easier-to-steward/SB-2503-reply-templates.md) | S24.1 | E25 | Reply templates | Open |
+| [SB-2504](E25-easier-to-steward/SB-2504-tab-counts.md) | S24.2 | E25 | Counts on the tabs | Open |
+| [SB-2505](E25-easier-to-steward/SB-2505-review-csv.md) | S24.2 | E25 | Review list as CSV | Open |
+| [SB-2506](E25-easier-to-steward/SB-2506-pause-notifications.md) | S24.2 | E25 | Pause notifications | Open |
+| [SB-2507](E25-easier-to-steward/SB-2507-steward-digest.md) | S24.2 | E25 | Stewards' line in the digest | Open |
+
+### W25 Easier to Operate
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2601](E26-easier-to-operate/SB-2601-install-email.md) | S25.1 | E26 | Email in the installer | Open |
+| [SB-2602](E26-easier-to-operate/SB-2602-test-notification.md) | S25.1 | E26 | Send me a test | Open |
+| [SB-2603](E26-easier-to-operate/SB-2603-check-chat.md) | S25.1 | E26 | Check the chat bot | Open |
+| [SB-2604](E26-easier-to-operate/SB-2604-check-config.md) | S25.1 | E26 | Check the config first | Open |
+| [SB-2605](E26-easier-to-operate/SB-2605-doctor-fix.md) | S25.2 | E26 | Doctor says how to fix it | Open |
+| [SB-2606](E26-easier-to-operate/SB-2606-token-expiry.md) | S25.2 | E26 | Token expiry warning | Open |
+| [SB-2607](E26-easier-to-operate/SB-2607-notify-health.md) | S25.2 | E26 | Notifications in health | Open |

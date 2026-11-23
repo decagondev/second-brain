@@ -21,6 +21,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 09 | [Team knowledge](09-team-knowledge.md) | What blocks knowledge transfer in a team, and ten small features for it on one sovereign machine (W16) |
 | 10 | [Run it, protect it, close the loops](10-run-protect-close.md) | Twenty small features for running a sovereign cell, protecting its data, and W16's gaps (W17 to W19) |
 | 11 | [Keep people in the loop, keep knowledge owned, fit the site](11-loop-own-fit.md) | Twenty small features: notifications, owned and right documents, and the site's languages, logs and storage (W20 to W22) |
+| 12 | [Easier to ask, easier to steward, easier to operate](12-ask-steward-operate.md) | Twenty small quality-of-life features for askers, stewards and operators (W23 to W25) |
 
 ## Architecture
 
