@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Stewards can publish notes in cells with information barriers: a note is placed by its space before it is written, and one into a space across a barrier is refused (SB-2001). The web UI has a Handover tab: the cited brief grouped by location, the count of documents you can't open with advice to move access, and the policy's reason on a refusal; `POST /v1/handover` returns `locations` (SB-2002).
 - `install.sh --retire --yes-destroy` destroys a self-hosted box (units, containers, volumes, every key under `build/selfhost`) and leaves a signed statement naming what was destroyed and the last audit anchor (`sb selfhost retire-statement`, `sb selfhost verify-retirement`); the audit export stays off the box, sealed to the recovery kit (SB-1907).
 - A person's data (`POST /v1/admin/subjects/export`), the retention plan (`GET /v1/admin/retention/plan`, `sb tenant retention --plan`), sign out everywhere (`POST /v1/sessions/revoke`, `POST /v1/admin/sessions/revoke`, a link in the web UI), and IBAN and card number flags at ingest, masked to the last four characters wherever they're shown (SB-1903 to SB-1906).
 - Off-box copies of a self-hosted box are sealed to a recovery key (`SB_SEAL`, on by default; `sb backup keygen|seal|open`), and `install.sh --recovery-kit` puts the box's keys into five printed shares, any three of which rebuild them on a new machine (`restore.sh --from-kit`; `sb recovery split|join`) (SB-1901, SB-1902).

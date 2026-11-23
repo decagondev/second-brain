@@ -159,6 +159,9 @@ type HandoverResponse struct {
 	Answer  Answer `json:"answer"`
 	Dropped int    `json:"dropped"`
 	Hidden  int    `json:"hidden"`
+	// Locations is where each briefed document lives, by cite (SB-2002), so the brief can
+	// be shown grouped by location; only documents the asker can open are in it.
+	Locations map[string]string `json:"locations"`
 }
 
 // Relations says how the asker stands to the person: self, manager, steward (sb-policy(5)).
@@ -224,6 +227,10 @@ func (a Agent) Handover(ctx context.Context, s tenancy.Scope, person string, ema
 		ok2 = ok2[:HandoverDocs]
 	}
 	sort.SliceStable(ok2, func(i, j int) bool { return ok2[i].Location < ok2[j].Location })
+	out.Locations = map[string]string{}
+	for _, c := range ok2 {
+		out.Locations[c.Cite] = c.Location
+	}
 	trace := a.NewID("tr_")
 	out.Trace = trace
 	if len(ok2) == 0 {

@@ -155,7 +155,7 @@ Every cite in an answer also carries `age_days` (whole days since the index firs
 
 ### Start here and handover (SB-1706, SB-1707)
 
-`GET /v1/start?space=NAME` is the space's reading list for a member (sb-spaces(7), Start here): `{ "items": [...], "hidden": 1 }`, each item a search result without the snippet. `POST /v1/handover` `{ "person": "usr_…" }` is the handover brief (sb-agents(7), Handover): `{ "trace", "person", "answer": { "claims": [...] }, "dropped", "hidden" }`, every claim cited.
+`GET /v1/start?space=NAME` is the space's reading list for a member (sb-spaces(7), Start here): `{ "items": [...], "hidden": 1 }`, each item a search result without the snippet. `POST /v1/handover` `{ "person": "usr_…" }` is the handover brief (sb-agents(7), Handover): `{ "trace", "person", "answer": { "claims": [...] }, "dropped", "hidden", "locations": { CITE: LOCATION } }`, every claim cited; `locations` gives where each briefed document lives, for documents the asker can open only (SB-2002). A refusal is `EPERM` with the policy's reason: only the person, their manager or a steward of a space they are in can have the brief, and an unknown person gets the same answer. In the web UI the **Handover** tab takes the person's user id, shows the brief grouped by location, and shows `hidden` as a count with the advice to have access moved to whoever takes the work over before the person leaves, since deprovisioning revokes their access (LAW-12).
 
 ### Questions to the stewards, exactly (SB-1704)
 

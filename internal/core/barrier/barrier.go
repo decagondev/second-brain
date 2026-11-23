@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"example.com/second-brain/internal/core/ports"
@@ -79,6 +80,13 @@ type Cell struct {
 	Locate func(ctx context.Context, ref ports.SourceRef) (ports.Document, error)
 }
 
+// NoteTarget is a steward's note before it is written (sb-connector(3), Notes): the path
+// the folder connector writes, notes/SPACE/qs_ID.md, SPACE a space's name or company.
+var NoteTarget = regexp.MustCompile(`^notes/([a-z][a-z0-9-]{1,30}|company)/qs_[A-Za-z0-9_]{1,40}\.md$`)
+
+// NoteKind is the connector kind notes are written to and indexed from.
+const NoteKind = "docs"
+
 // ErrUnplaced is a target or person the cell can't place now: it refuses.
 var ErrUnplaced = errors.New("barrier: can't be placed now")
 
@@ -100,18 +108,27 @@ func (c Cell) Target(ctx context.Context, s tenancy.Scope, target string) (map[s
 	if err != nil || !on {
 		return nil, err
 	}
-	kind, id, ok := strings.Cut(target, ":")
-	if !ok || c.Locate == nil {
-		return nil, fmt.Errorf("%w: target %q", ErrUnplaced, target)
-	}
-	doc, err := c.Locate(ctx, ports.SourceRef{Kind: kind, ID: id})
-	if err != nil {
-		return nil, fmt.Errorf("%w: target %q: %v", ErrUnplaced, target, err)
-	}
-	holders, _ := route.Route(all, kind, doc.Location, doc.Label)
-	owners, ok := Owners(ctx, c.Owners, strings.ToLower(strings.TrimSpace(doc.Owner)))
-	if !ok {
-		return nil, fmt.Errorf("%w: the owner of %q", ErrUnplaced, target)
+	var holders []string
+	var owners []string
+	if m := NoteTarget.FindStringSubmatch(target); m != nil {
+		// A note doesn't exist until it is written, but its place does (SB-2001): the docs
+		// share's notes/SPACE/ folder, held by the spaces whose scope holds it, and owned
+		// by the steward publishing it.
+		holders, _ = route.Route(all, NoteKind, "/"+strings.TrimSuffix(target, ".md"), "")
+		owners = spaces.GroupSet(s.Groups())
+	} else {
+		kind, id, ok := strings.Cut(target, ":")
+		if !ok || c.Locate == nil {
+			return nil, fmt.Errorf("%w: target %q", ErrUnplaced, target)
+		}
+		doc, err := c.Locate(ctx, ports.SourceRef{Kind: kind, ID: id})
+		if err != nil {
+			return nil, fmt.Errorf("%w: target %q: %v", ErrUnplaced, target, err)
+		}
+		holders, _ = route.Route(all, kind, doc.Location, doc.Label)
+		if owners, ok = Owners(ctx, c.Owners, strings.ToLower(strings.TrimSpace(doc.Owner))); !ok {
+			return nil, fmt.Errorf("%w: the owner of %q", ErrUnplaced, target)
+		}
 	}
 	rc := spaces.ReadContext(all, bs, s.Groups(), spaces.Company)
 	return map[string]any{"barred_spaces": rc["barred_spaces"], "barred_groups": spaces.BarredGroups(bs, s.Groups()),

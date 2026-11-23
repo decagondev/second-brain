@@ -131,7 +131,7 @@ func (h Knowledge) handover(w http.ResponseWriter, r *http.Request) {
 	}
 	resp, err := h.Handover(r.Context(), s, body.Person)
 	if errors.Is(err, ask.ErrNoPerson) {
-		h.out().fail(w, "", errs.New(errs.EPERM, "You can't have a handover brief of that person."))
+		h.out().fail(w, "", errs.New(errs.EPERM, "Only the person, their manager or a steward of a space they are in can have their handover brief, and only of someone in the directory."))
 		return
 	}
 	if err != nil {

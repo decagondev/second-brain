@@ -10,6 +10,7 @@ import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged } from "./Start";
 import { SignOutEverywhere } from "./Session";
+import { HandoverView } from "./Handover";
 
 interface Turn {
   question: string;
@@ -17,12 +18,13 @@ interface Turn {
   error?: ApiError;
 }
 
-type Tab = "answer" | "documents" | "saved" | "questions";
+type Tab = "answer" | "documents" | "saved" | "questions" | "handover";
 const tabs: { id: Tab; name: string }[] = [
   { id: "answer", name: "Answer" },
   { id: "documents", name: "Documents" },
   { id: "saved", name: "Saved" },
   { id: "questions", name: "Questions" },
+  { id: "handover", name: "Handover" },
 ];
 
 // Errors after which the same text can still be searched: search needs no model (SB-1701).
@@ -235,6 +237,9 @@ export function App({ fetcher, share }: { fetcher?: Fetch; share?: string }) {
       </div>
       <div role="tabpanel" id={`${base}-panel-questions`} aria-labelledby={`${base}-tab-questions`} hidden={tab !== "questions"}>
         {tab === "questions" && <QuestionsView fetcher={fetcher} />}
+      </div>
+      <div role="tabpanel" id={`${base}-panel-handover`} aria-labelledby={`${base}-tab-handover`} hidden={tab !== "handover"}>
+        {tab === "handover" && <HandoverView fetcher={fetcher} />}
       </div>
       <SignOutEverywhere fetcher={fetcher} />
     </main>

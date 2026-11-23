@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S19.1: notes across barriers, and the handover screen
+
+**Wave/slice:** W19 / S19.1 (SB-2001, SB-2002) · **Status:** Done
+
+**What:** In a cell with information barriers, a steward's note is placed by its path before it is written (`barrier.Cell.Target`, `barrier.NoteTarget`): `notes/SPACE/qs_ID.md` is held by the spaces whose scope holds it and owned by the steward, so a steward publishes on their own side of a barrier and a note into a space across it is refused. The web UI gains a **Handover** tab (`web/src/Handover.tsx`): a person's user id in, the cited brief out, grouped by location (the response's new `locations`), with the documents the asker can't open as a count and the advice to have access moved before the person leaves; a refusal shows the policy's reason.
+
+**Why this way:** A note's place is known before it exists, because its path names its space, so it can take the same barrier check as any target instead of being refused in every barrier cell. Placement by path, not by the steward's say-so, means a steward who names another space's notes folder is checked against that space. The brief's grouping comes from the cell, which already sorts by location, rather than from parsing the model's text; `locations` covers only documents the asker can open, so it names nothing the brief couldn't already cite.
+
+**Learned:** The W16 refusal wasn't a special case anywhere: it fell out of `Locate` failing for a file that didn't exist yet, so the fix was a placement for notes, and no refusal had to be removed.
+
+**Laws:** LAW-22 and LAW-04 (`TestLAW22_NotesPublishOnTheirSideOfABarrier`: the real bus, Cedar, barrier placement and folder connector; a note in the steward's own space runs with an `Executing` row, one across the barrier is refused and not written, an unreadable registry refuses; self-tests catch a cell that refuses every note, places a note in no space, or ignores an unreadable registry). LAW-14 on the handover screen through the shared `ClaimView`. Every law test is still green.
+
 ## 2026-11-23 S18.3: retire a box with proof
 
 **Wave/slice:** W18 / S18.3 (SB-1907) · **Status:** Done

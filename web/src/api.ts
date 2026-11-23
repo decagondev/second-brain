@@ -323,3 +323,17 @@ export async function reviewList(
     return { items: [], hidden: [] };
   }
 }
+
+// The handover brief (SB-1707, SB-2002): the person's documents the asker can open now.
+export interface HandoverBrief {
+  trace: string;
+  person: string;
+  answer: { claims: Claim[] };
+  dropped: number;
+  hidden: number;
+  locations?: Record<string, string>;
+}
+
+export function handover(person: string, f: Fetch = fetch): Promise<HandoverBrief> {
+  return call<HandoverBrief>("/v1/handover", post({ person }), f);
+}

@@ -22,11 +22,12 @@ func TestHandoverThroughARunningCell(t *testing.T) {
 		t.Fatal(fails)
 	}
 	code, body := r.do(t, "POST", "/v1/handover", `{"person":"`+ann+`"}`)
-	if code != 200 || !strings.Contains(body, "docs:doc1@") || !strings.Contains(body, `"hidden":0`) {
+	if code != 200 || !strings.Contains(body, "docs:doc1@") || !strings.Contains(body, `"hidden":0`) ||
+		!strings.Contains(body, `"locations":{"docs:doc1@`) {
 		t.Fatalf("ann's own brief: %d %s", code, body)
 	}
 	r.signIn(t, "bob")
-	if code, body := r.do(t, "POST", "/v1/handover", `{"person":"`+ann+`"}`); code != http.StatusForbidden {
+	if code, body := r.do(t, "POST", "/v1/handover", `{"person":"`+ann+`"}`); code != http.StatusForbidden || !strings.Contains(body, "their manager") {
 		t.Fatalf("a colleague got ann's brief: %d %s", code, body)
 	}
 }

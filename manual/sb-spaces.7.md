@@ -61,7 +61,7 @@ A label from the source wins where the source has one (for example a Drive label
 
 ### Information barriers
 
-A **barrier** separates two groups, so that neither side's people can use content held only by the other side, in either direction (LAW-22). Barriers are for ethical walls: a deal team and everyone else, or two competing client teams. A barrier holds even where membership and labels would allow a read. It is checked on the asker's groups against the groups of every space that holds the document, and against the groups of the document's owner at the source, so a deal team's file shared with everyone still stays on the deal team's side (SB-1203). It holds for drafts, actions and approvals as well as answers (sb-permissions(7), Barriers beyond reads).
+A **barrier** separates two groups, so that neither side's people can use content held only by the other side, in either direction (LAW-22). Barriers are for ethical walls: a deal team and everyone else, or two competing client teams. A barrier holds even where membership and labels would allow a read. It is checked on the asker's groups against the groups of every space that holds the document, and against the groups of the document's owner at the source, so a deal team's file shared with everyone still stays on the deal team's side (SB-1203). It holds for drafts, actions and approvals as well as answers (sb-permissions(7), Barriers beyond reads). A steward's note is placed before it is written, by its path (SB-2001): `notes/SPACE/qs_ID.md` belongs to the spaces whose scope holds it and is owned by the steward, so a steward publishes notes on their own side of a barrier and never into a space across it.
 
 ### Company-wide asks
 

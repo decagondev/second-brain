@@ -110,3 +110,39 @@ func TestCellFacts(t *testing.T) {
 		t.Fatal("an owner with no directory must be unknown")
 	}
 }
+
+// SB-2001: a note is placed by its path before it exists, owned by the steward; Locate is
+// never asked, and a path that isn't a note's still has to be located.
+func TestNoteTargetIsPlacedByItsPath(t *testing.T) {
+	ctx := context.Background()
+	all := []ports.Space{
+		{ID: "spc_deals", Name: "deals", Members: []string{"group:deal-team"}, Scope: map[string][]string{"docs": {"/Deals/**", "/notes/deals/**"}}},
+		{ID: "spc_eng", Name: "eng", Members: []string{"group:eng"}, Scope: map[string][]string{"docs": {"/Eng/**", "/notes/eng/**"}}},
+	}
+	bars := [][2]string{{"group:deal-team", "group:eng"}}
+	located := false
+	c := Cell{Spaces: func(context.Context) ([]ports.Space, [][2]string, error) { return all, bars, nil },
+		Locate: func(context.Context, ports.SourceRef) (ports.Document, error) {
+			located = true
+			return ports.Document{}, errors.New("not written yet")
+		}}
+	f, err := c.Target(ctx, scope(t, "usr_eve", "eng"), "notes/eng/qs_1.md")
+	if err != nil || located {
+		t.Fatalf("own space's note: %v located=%v", err, located)
+	}
+	if ts, _ := f["target_spaces"].([]string); len(ts) != 1 || ts[0] != "spc_eng" {
+		t.Fatalf("target spaces %v", f["target_spaces"])
+	}
+	f, err = c.Target(ctx, scope(t, "usr_eve", "eng"), "notes/deals/qs_1.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ts, _ := f["target_spaces"].([]string); len(ts) != 1 || ts[0] != "spc_deals" {
+		t.Fatalf("a note across the barrier is held by %v", f["target_spaces"])
+	}
+	for _, target := range []string{"notes/eng/qs_1.txt", "notes/../Deals/qs_1.md", "notes/eng/x/qs_1.md"} {
+		if _, err := c.Target(ctx, scope(t, "usr_eve", "eng"), target); !errors.Is(err, ErrUnplaced) {
+			t.Errorf("%s: %v", target, err)
+		}
+	}
+}

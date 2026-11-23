@@ -456,3 +456,8 @@ func TestLAW07_PersonalDataIsMasked(t *testing.T) {
 func TestLAW18_ARetiredBoxLeavesASignedStatement(t *testing.T) {
 	Check(t, "LAW-18", runs, func(r *rand.Rand) error { return law18Retire(r, RealRetirer) })
 }
+
+func TestLAW22_NotesPublishOnTheirSideOfABarrier(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-22", 60, func(r *rand.Rand) error { return law22Notes(r, dir, RealNotePlacer) })
+}
