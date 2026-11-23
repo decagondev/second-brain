@@ -54,6 +54,8 @@ type Report struct {
 	// Changed documents this week by space, never rebuilt versions (SB-1708).
 	Changed         map[string]int `json:"changed,omitempty"`
 	CitedAnswerRate float64        `json:"cited_answer_rate"`
+	// Stale counts the cited answers that rested mostly on stale cites (SB-2807).
+	Stale           ask.StaleCount `json:"stale_answers"`
 	Gaps            map[string]int `json:"gaps"`
 	DraftsUsed      int            `json:"drafts_used"`
 	DraftsDiscarded int            `json:"drafts_discarded"`
@@ -126,6 +128,7 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 			r.Gaps[*t.Response.Notice]++
 		}
 	}
+	r.Stale = ask.StaleShare(traces, "")
 	if r.Asks > 0 {
 		r.CitedAnswerRate = float64(cited) / float64(r.Asks)
 	}
@@ -205,6 +208,11 @@ func (r Report) Markdown() string {
 	fmt.Fprintf(&b, "| Searches | %d |\n", r.Searches)
 	fmt.Fprintf(&b, "| Asks refused by the per-person limit | %d |\n", r.Limited)
 	fmt.Fprintf(&b, "| Cited-answer rate | %.0f%% |\n", 100*r.CitedAnswerRate)
+	share := 0.0
+	if r.Stale.Answers > 0 {
+		share = 100 * float64(r.Stale.Stale) / float64(r.Stale.Answers)
+	}
+	fmt.Fprintf(&b, "| Answers resting on stale sources | %d of %d cited answers (%.0f%%) |\n", r.Stale.Stale, r.Stale.Answers, share)
 	kinds := make([]string, 0, len(r.Gaps))
 	for k := range r.Gaps {
 		kinds = append(kinds, k)

@@ -31,7 +31,7 @@ summary: Epics, waves, slices and tickets.
 | W24 Easier to Steward | 7 | 0 | 0 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
 | W25 Easier to Operate | 5 | 2 | 0 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
 | W26 Fresh Answers | 6 | 0 | 0 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
-| W27 A Tidy Corpus | 4 | 0 | 3 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
+| W27 A Tidy Corpus | 7 | 0 | 0 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
 | W28 A Focused Context | 0 | 0 | 7 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -548,9 +548,9 @@ flowchart LR
 | [SB-2802](E28-tidy-corpus/SB-2802-same-name-different-text.md) | S27.1 | E28 | Same name, different text | Done |
 | [SB-2803](E28-tidy-corpus/SB-2803-never-cited.md) | S27.1 | E28 | Never cited | Done |
 | [SB-2804](E28-tidy-corpus/SB-2804-notes-sources-moved.md) | S27.1 | E28 | Notes whose sources moved | Done |
-| [SB-2805](E28-tidy-corpus/SB-2805-unused-terms.md) | S27.2 | E28 | Unused glossary terms | Open |
-| [SB-2806](E28-tidy-corpus/SB-2806-owner-nudges.md) | S27.2 | E28 | Owners hear about their own old documents | Open |
-| [SB-2807](E28-tidy-corpus/SB-2807-freshness-report.md) | S27.2 | E28 | Freshness in the report | Open |
+| [SB-2805](E28-tidy-corpus/SB-2805-unused-terms.md) | S27.2 | E28 | Unused glossary terms | Done |
+| [SB-2806](E28-tidy-corpus/SB-2806-owner-nudges.md) | S27.2 | E28 | Owners hear about their own old documents | Done |
+| [SB-2807](E28-tidy-corpus/SB-2807-freshness-report.md) | S27.2 | E28 | Freshness in the report | Done |
 
 ### W28 A Focused Context
 

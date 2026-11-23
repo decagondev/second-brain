@@ -115,6 +115,7 @@ Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report g
 | Gaps | answers by notice, `no_sources`, `no_access` and `most_uncited`, each as a count. These are the places where people asked and the platform had nothing to show them. They are counted by kind, never by question |
 | Drafts | `used` and `discarded`, and the ratio of the two |
 | Actions | proposed, approved, rejected, expired, `Ran` with a receipt, `DidNotRun` |
+| Stale answers | (SB-2807) cited answers that carried `notice_stale` (most of their cites stale, sb-ask(3)) ÷ cited answers, for the cell, as a count and a share; never which documents, titles or questions |
 | Spend | model tokens and their cost at the release's price table |
 | Notifications | (SB-2607) the notify job's last run: when, the channel, and its counts sent, skipped and failed; never who |
 

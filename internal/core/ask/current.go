@@ -174,6 +174,8 @@ type ReviewResponse struct {
 	GlossaryFlagged []string `json:"glossary_flagged,omitempty"`
 	// SameName are the space's documents with the same title and different text (SB-2802).
 	SameName []SameName `json:"same_name,omitempty"`
+	// Freshness counts the space's answers resting mostly on stale cites (SB-2807).
+	Freshness Freshness `json:"freshness"`
 }
 
 // Review lists the documents a space holds that answers lean on but that are older than
@@ -186,10 +188,28 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		after = DefaultReviewDays
 	}
 	now := x.Now().UTC()
-	traces, err := src.Between(ctx, x.Agent.Tenant, now.Add(-ReviewWindow), now)
+	last := MonthStart(MonthStart(now).Add(-time.Hour))
+	from := now.Add(-ReviewWindow)
+	if last.Before(from) {
+		from = last
+	}
+	all, err := src.Between(ctx, x.Agent.Tenant, from, now)
 	if err != nil {
 		return ReviewResponse{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 	}
+	var traces, thisMonth, lastMonth []Trace
+	for _, t := range all {
+		if !t.At.Before(now.Add(-ReviewWindow)) {
+			traces = append(traces, t)
+		}
+		switch {
+		case !t.At.Before(MonthStart(now)):
+			thisMonth = append(thisMonth, t)
+		case !t.At.Before(last):
+			lastMonth = append(lastMonth, t)
+		}
+	}
+	fresh := Freshness{ThisMonth: StaleShare(thisMonth, SpaceKey(name)), LastMonth: StaleShare(lastMonth, SpaceKey(name))}
 	fbs, err := src.FeedbackBetween(ctx, x.Agent.Tenant, now.Add(-ReviewWindow), now)
 	if err != nil {
 		return ReviewResponse{}, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
@@ -208,7 +228,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		return ReviewResponse{}, err
 	}
 	flaggedAt := lastFlags(fbs)
-	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}}
+	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh}
 	if x.Agent.Glossary != nil {
 		_, out.GlossaryFlagged = usable(x.Agent.Glossary(name))
 	}

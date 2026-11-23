@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Retired, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -125,6 +125,7 @@ const kinds: { id: string; name: string }[] = [
   { id: "digest", name: msg("What changed in my spaces, weekly") },
   { id: "watch", name: msg("Changes to my watched questions' sources") },
   { id: "tokens", name: msg("My API tokens about to expire") },
+  { id: "owned", name: msg("My often-cited documents past review, monthly") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
@@ -577,7 +578,7 @@ function SameNames({ groups }: { groups: SameNameGroup[] }) {
 
 // Never cited (SB-2803): loaded only when the steward asks.
 function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fetch; onRetired: () => void }) {
-  const [list, setList] = useState<{ items: SearchResult[]; hidden: { owner?: string }[] }>();
+  const [list, setList] = useState<{ items: SearchResult[]; hidden: { owner?: string }[]; unused_terms?: string[] }>();
   if (!list)
     return (
       <button type="button" onClick={() => void uncitedList(space, fetcher).then(setList)}>
@@ -618,7 +619,26 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
           .
         </p>
       )}
+      {list.unused_terms && list.unused_terms.length > 0 && (
+        <p>{t("No question here used these glossary terms in 180 days: {terms}. Propose removing them if nobody needs them.", { terms: list.unused_terms.join(", ") })}</p>
+      )}
     </section>
+  );
+}
+
+// The share of the month's cited answers resting mostly on stale cites (SB-2807).
+function FreshnessLine({ f }: { f: Freshness }) {
+  const pct = (c: { answers: number; stale: number }) => (c.answers > 0 ? Math.round((100 * c.stale) / c.answers) : 0);
+  if (f.this_month.answers === 0 && f.last_month.answers === 0) return null;
+  return (
+    <p className="meta">
+      {t("Answers resting on stale sources: {now}% this month ({stale} of {answers}), {last}% last month.", {
+        now: pct(f.this_month),
+        stale: f.this_month.stale,
+        answers: f.this_month.answers,
+        last: pct(f.last_month),
+      })}
+    </p>
   );
 }
 
@@ -715,11 +735,10 @@ export function csvCell(v: string | number | boolean): string {
   return `"${s.replace(/"/g, '""')}"`;
 }
 
-type ReviewData = { items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[] };
 
 // reviewCSV is the review list exactly as shown (SB-2505): a row per document the steward
 // can open, and those they can't only as a count with their owners, never a title.
-export function reviewCSV(list: ReviewData): string {
+export function reviewCSV(list: Pick<ReviewData, "items" | "hidden">): string {
   const rows: (string | number | boolean)[][] = [["title", "cite", "cited_30_days", "age_days", "marked_wrong", "reported_outdated", "owner_gone", "owners"]];
   for (const r of list.items) rows.push([r.title ?? r.cite, r.cite, r.cited, r.age_days ?? "", r.flagged, r.outdated ?? 0, r.owner_gone === true, ""]);
   if (list.hidden.length > 0) {
@@ -730,13 +749,7 @@ export function reviewCSV(list: ReviewData): string {
 }
 
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
-  const [list, setList] = useState<{
-    items: ReviewItem[];
-    hidden: { owner?: string; owner_gone?: boolean }[];
-    personal_data?: number;
-    glossary_flagged?: string[];
-    same_name?: SameNameGroup[];
-  }>({ items: [], hidden: [] });
+  const [list, setList] = useState<ReviewData>({ items: [], hidden: [] });
   const [bump, setBump] = useState(0);
   const retired = (cite: string) => {
     setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== cite) }));
@@ -767,6 +780,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
           {t("Download CSV")}
         </button>
       )}
+      {list.freshness && <FreshnessLine f={list.freshness} />}
       {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Nothing to review: no relied-on document here is stale or marked wrong.")}</p>}
       {list.items.length > 0 && (
         <ul className="saved-list">

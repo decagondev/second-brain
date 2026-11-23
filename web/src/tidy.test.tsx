@@ -92,3 +92,22 @@ describe("retire and tidy", () => {
     expect(screen.getByRole("link").getAttribute("aria-label")).toContain("Replaces Old rota");
   });
 });
+
+// SB-2805, SB-2807
+describe("unused terms and freshness", () => {
+  it("shows the month's stale share and the terms nobody used", async () => {
+    const fetcher: Fetch = async (u) => {
+      if (u.includes("section=uncited")) return json({ items: [], hidden: [], unused_terms: ["ETA", "POD"] });
+      if (u.endsWith("/retired")) return json({ items: [], hidden: 0 });
+      return json({ items: [], hidden: [], freshness: { this_month: { answers: 8, stale: 2 }, last_month: { answers: 10, stale: 1 } } });
+    };
+    const { container } = render(<ReviewList space="ops" fetcher={fetcher} />);
+    await act(async () => {});
+    expect(container.textContent).toContain("Answers resting on stale sources: 25% this month (2 of 8), 10% last month.");
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Show never cited" }));
+    });
+    expect(screen.getByRole("region", { name: "Never cited" }).textContent).toContain("glossary terms in 180 days: ETA, POD.");
+    expect(await violations(container)).toEqual([]);
+  });
+});

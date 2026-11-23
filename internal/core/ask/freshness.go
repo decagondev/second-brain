@@ -97,6 +97,34 @@ func pastReviewBy(c ports.Chunk, now time.Time) bool {
 	return !c.ReviewBy.IsZero() && !now.Before(c.ReviewBy)
 }
 
+// fresh is how a chunk reads now: its age, the day a steward marked it reviewed, and
+// whether it is stale.
+type fresh struct {
+	age      *int
+	reviewed string
+	stale    bool
+}
+
+// freshness judges a chunk now: stale past its spaces' review_after_days from its last
+// change, or from a review mark at its version, and always from its own review-by date,
+// which a mark doesn't lift (SB-2702, SB-2705).
+func (a Agent) freshness(ctx context.Context, marks *marksCache, ch ports.Chunk) fresh {
+	var f fresh
+	now := a.Now()
+	if d, ok := ageDays(ch.Seen, now); ok {
+		f.age = &d
+		f.stale = d > a.reviewAfter(ch.Spaces)
+	}
+	if m, ok := marks.reviewed(ctx, a.Tenant, ch); ok {
+		f.reviewed = m.At.UTC().Format("2006-01-02")
+		f.stale = now.Sub(m.At) > time.Duration(a.reviewAfter(ch.Spaces))*24*time.Hour
+	}
+	if pastReviewBy(ch, now) {
+		f.stale = true
+	}
+	return f
+}
+
 // marksCache reads each space's review marks once per answer.
 type marksCache struct {
 	store MarkStore

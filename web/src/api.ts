@@ -380,6 +380,25 @@ export interface ReviewItem extends SearchResult {
   sources_moved?: number;
 }
 
+// Of the answers that cite anything, how many rested mostly on stale cites (SB-2807).
+export interface StaleCount {
+  answers: number;
+  stale: number;
+}
+export interface Freshness {
+  this_month: StaleCount;
+  last_month: StaleCount;
+}
+
+export interface ReviewData {
+  items: ReviewItem[];
+  hidden: { owner?: string; owner_gone?: boolean }[];
+  personal_data?: number;
+  glossary_flagged?: string[];
+  same_name?: SameNameGroup[];
+  freshness?: Freshness;
+}
+
 // Documents with the same title and different text (SB-2802).
 export interface SameNameGroup {
   title: string;
@@ -391,7 +410,7 @@ export interface SameNameGroup {
 export async function reviewList(
   space: string,
   f: Fetch = fetch,
-): Promise<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[]; same_name?: SameNameGroup[] }> {
+): Promise<ReviewData> {
   try {
     const d = await call<{
       items?: ReviewItem[];
@@ -399,6 +418,7 @@ export async function reviewList(
       personal_data?: number;
       glossary_flagged?: string[];
       same_name?: SameNameGroup[];
+      freshness?: Freshness;
     }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
@@ -410,6 +430,7 @@ export async function reviewList(
       personal_data: typeof d.personal_data === "number" ? d.personal_data : undefined,
       glossary_flagged: Array.isArray(d.glossary_flagged) ? d.glossary_flagged : undefined,
       same_name: Array.isArray(d.same_name) ? d.same_name.filter((g) => Array.isArray(g.items)) : undefined,
+      freshness: d.freshness && typeof d.freshness.this_month?.answers === "number" && typeof d.freshness.last_month?.answers === "number" ? d.freshness : undefined,
     };
   } catch {
     return { items: [], hidden: [] };
@@ -445,10 +466,15 @@ export function restoreDocument(space: string, document: string, f: Fetch = fetc
 }
 
 // Never cited (SB-2803): documents older than 90 days no answer cited in 180 days.
-export async function uncitedList(space: string, f: Fetch = fetch): Promise<{ items: SearchResult[]; hidden: { owner?: string }[] }> {
+// unused_terms are the space's glossary terms no question used in 180 days (SB-2805).
+export async function uncitedList(space: string, f: Fetch = fetch): Promise<{ items: SearchResult[]; hidden: { owner?: string }[]; unused_terms?: string[] }> {
   try {
-    const d = await call<{ items?: SearchResult[]; hidden?: { owner?: string }[] }>(`${sp(space)}/review?section=uncited`, {}, f);
-    return { items: Array.isArray(d.items) ? d.items : [], hidden: Array.isArray(d.hidden) ? d.hidden : [] };
+    const d = await call<{ items?: SearchResult[]; hidden?: { owner?: string }[]; unused_terms?: string[] }>(`${sp(space)}/review?section=uncited`, {}, f);
+    return {
+      items: Array.isArray(d.items) ? d.items : [],
+      hidden: Array.isArray(d.hidden) ? d.hidden : [],
+      unused_terms: Array.isArray(d.unused_terms) ? d.unused_terms : undefined,
+    };
   } catch {
     return { items: [], hidden: [] };
   }

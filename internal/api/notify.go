@@ -65,7 +65,7 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 	// A pause is set only by pause_days, from now; one sent as paused_until is ignored (SB-2506).
 	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil}.Check()
 	if errors.Is(err, notify.ErrKind) {
-		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access or tokens."))
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access, tokens or owned."))
 		return
 	}
 	if body.PauseDays != nil {

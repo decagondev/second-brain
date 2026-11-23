@@ -36,6 +36,8 @@ type SameName struct {
 type UncitedList struct {
 	Items  []Result     `json:"items"`
 	Hidden []HiddenItem `json:"hidden"`
+	// UnusedTerms are the space's glossary terms no question used in the window (SB-2805).
+	UnusedTerms []string `json:"unused_terms,omitempty"`
 }
 
 // normTitle is a title with case and spacing ignored.
@@ -129,6 +131,10 @@ func (x Stewards) Uncited(ctx context.Context, s tenancy.Scope, name string, src
 		return out, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 	}
 	cited, _, _ := reviewCounts(traces, nil)
+	if x.Agent.Glossary != nil {
+		ok, _ := usable(x.Agent.Glossary(name))
+		out.UnusedTerms = unusedTerms(ok, traces, SpaceKey(name))
+	}
 	held, err := x.heldBy(ctx, lk, name)
 	if err != nil {
 		return out, err

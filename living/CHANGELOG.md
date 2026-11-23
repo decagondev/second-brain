@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Unused glossary terms (SB-2805); owners' monthly note, kind owned (SB-2806); freshness on the steward screen and in the weekly report (SB-2807). W27 built.
 - Retire from answers and Bring back (SB-2801); same name, different text (SB-2802); never cited (SB-2803); notes whose sources moved (SB-2804).
 - Review-by and expires dates in documents (SB-2705); the newer version wins a ranking tie (SB-2706).
 - Old-source warning (SB-2701); reviewed shows on the cite (SB-2702); report a cite as outdated (SB-2703); sync lag notice on answers (SB-2704).

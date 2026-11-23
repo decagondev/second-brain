@@ -25,6 +25,7 @@ const (
 	KindWatch     = "watch"     // a watched saved question's sources changed (SB-2104)
 	KindAccess    = "access"    // someone asked for access to a document (SB-2205)
 	KindTokens    = "tokens"    // a read-only API token expires in TokenWarn (SB-2606)
+	KindOwned     = "owned"     // an owner's often-cited documents are past review, monthly (SB-2806)
 )
 
 // TokenWarn is how long before a token expires its owner is told.
@@ -44,7 +45,7 @@ const KindTest = "test"
 const TestText = "This is a test from Second Brain. Its notifications reach you here."
 
 // Kinds are every kind, for validating a person's settings.
-var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true}
+var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true}
 
 // Person is one recipient: a directory user and the email the chat finds them by.
 type Person struct {
@@ -117,7 +118,7 @@ func (p Prefs) Check() (Prefs, error) {
 	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil}
 	for _, k := range p.Off {
 		if !Kinds[k] {
-			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens)", ErrKind, k)
+			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned)", ErrKind, k)
 		}
 		if !seen[k] {
 			seen[k] = true
@@ -180,6 +181,9 @@ type Job struct {
 	// Tokens are the read-only API tokens that expire in [from, to), revoked ones gone
 	// (SB-2606); nil tells no one.
 	Tokens func(ctx context.Context, from, to time.Time) ([]Expiring, error)
+	// Owned is, by user id, how many documents each active owner owns, can open now, and
+	// answers often cite while past review (SB-2806); nil tells no one.
+	Owned func(ctx context.Context, now time.Time) (map[string]int, error)
 }
 
 // The digest's limits.
@@ -548,6 +552,11 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 			}
 		}
 	}
+	owned, err := j.owned(ctx, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	out = append(out, owned...)
 	if j.Watches == nil || j.Sources == nil {
 		return out, nil, nil
 	}
@@ -585,6 +594,49 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 		out = append(out, outgoing{p, Message{Kind: KindWatch, Text: text, Link: j.tab("saved")}})
 	}
 	return out, marks, nil
+}
+
+// FirstMonday reports whether the week starting at Monday 08:00 in zone is the month's first.
+func FirstMonday(now time.Time, zone *time.Location) bool {
+	if zone == nil {
+		zone = time.UTC
+	}
+	return Monday(now, zone).In(zone).Day() <= 7
+}
+
+// owned tells each owner, on the month's first weekly run, how many of their often-cited
+// documents are past review (SB-2806): a count, to people still active, once a month.
+func (j Job) owned(ctx context.Context, now time.Time) ([]outgoing, error) {
+	if j.Owned == nil || !FirstMonday(now, j.Zone) {
+		return nil, nil
+	}
+	by, err := j.Owned(ctx, now)
+	if err != nil {
+		return nil, fmt.Errorf("notify: owned documents: %w", err)
+	}
+	ids := make([]string, 0, len(by))
+	for id, n := range by {
+		if n > 0 {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	var out []outgoing
+	for _, id := range ids {
+		p, ok, err := j.person(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		text := "1 of your documents that answers often cite is past review"
+		if n := by[id]; n != 1 {
+			text = fmt.Sprintf("%d of your documents that answers often cite are past review", n)
+		}
+		out = append(out, outgoing{p, Message{Kind: KindOwned, Text: text, Link: j.tab("documents")}})
+	}
+	return out, nil
 }
 
 // stewardLines are the digest's lines for stewards (SB-2507): per space with questions,

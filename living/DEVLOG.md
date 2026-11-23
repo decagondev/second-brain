@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S27.2: Keep upkeep shared
+
+**Wave/slice:** W27 / S27.2 (SB-2805 to SB-2807) · **Status:** Done
+
+**What:** The never-cited section names the space's glossary terms no question used in 180 days. On the month's first weekly run the notify job tells each active owner how many of their own often-cited documents are past review, a new kind `owned` that is on by default and can be turned off. The steward's screen shows the share of this month's and last month's cited answers that rested mostly on stale cites, and the weekly report adds the same share for the whole cell.
+
+**Why this way:** Upkeep fell on stewards alone, and nobody could see whether answers were getting staler. Every new number is a count from the traces the cell already keeps: no question, title or term leaves the steward's screen, and an owner is told only of documents they can open now, checked as them (LAW-01, LAW-07, LAW-12).
+
+**Learned:** The first Monday of a month is the week whose Monday falls on days 1 to 7, so a month that starts on a Tuesday waits for the following Monday; the test pins that rather than treating the 1st as special. Extracting the cite freshness rule into one helper let the owner note and the answer use the same judgement.
+
+**Laws:** LAW-01 (owners told only of what they can open), LAW-07 (counts only), LAW-12 (a deprovisioned owner is told nothing). Every law test is still green.
+
 ## 2026-11-23 S27.1: Take it out of answers
 
 **Wave/slice:** W27 / S27.1 (SB-2801 to SB-2804) · **Status:** Done

@@ -18,8 +18,10 @@ func notice(s string) *string { return &s }
 
 func (src) Traces(context.Context, string, time.Time, time.Time) ([]ask.Trace, error) {
 	cited := ask.Response{Answer: ask.Answer{Claims: []answer.Claim{{Text: "SECRET-CONTENT", Cites: []answer.Cite{{Cite: "docs:a@1"}}}}}}
+	stale := cited
+	stale.NoticeStale = &ask.StaleNotice{Stale: 1, Of: 1, OldestDays: 400} // SB-2807
 	none := ask.Response{Notice: notice("no_access"), Answer: ask.Answer{Claims: []answer.Claim{{Text: "nothing", Uncited: true}}}}
-	return []ask.Trace{{User: "u1", Response: cited}, {User: "u1", Response: cited}, {User: "u2", Response: none}, {User: "u3", Response: cited},
+	return []ask.Trace{{User: "u1", Response: cited}, {User: "u1", Response: cited}, {User: "u2", Response: none}, {User: "u3", Response: stale},
 		{User: "u3", Response: ask.Response{Agent: ask.AgentSearch}},                                                                      // a search counts apart (SB-1701)
 		{User: "u4", Response: ask.Response{Agent: ask.AgentLimited}}, {User: "u4", Response: ask.Response{Agent: ask.AgentLimited}}}, nil // refusals too (SB-2305)
 }
@@ -48,7 +50,7 @@ func TestBuildAndMarkdown(t *testing.T) {
 		t.Fatalf("%+v", r)
 	}
 	md := r.Markdown()
-	for _, want := range []string{"3 of 10 (30%)", "| Cited-answer rate | 75% |", "no_access 1", "6 / 2 (3.0 to 1)", "$13.50", "| Searches | 1 |", "| Asks refused by the per-person limit | 2 |"} {
+	for _, want := range []string{"3 of 10 (30%)", "| Cited-answer rate | 75% |", "no_access 1", "6 / 2 (3.0 to 1)", "$13.50", "| Searches | 1 |", "| Asks refused by the per-person limit | 2 |", "| Answers resting on stale sources | 1 of 3 cited answers (33%) |"} {
 		if !strings.Contains(md, want) {
 			t.Errorf("report lacks %q:\n%s", want, md)
 		}

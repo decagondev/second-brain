@@ -13,7 +13,7 @@ summary: "Nobody sees whether answers are getting staler."
 | Manual | [`sb-spaces(7)`](../../manual/sb-spaces.7.md), [`sb-observability(7)`](../../manual/sb-observability.7.md) |
 | Laws | LAW-07 |
 | Depends on | SB-2701 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Nobody sees whether answers are getting staler.
 
 ## Acceptance criteria
 
-- [ ] The steward screen shows per space the share of the month's cited answers resting mostly on stale cites, and last month's
-- [ ] The weekly report adds one line for the cell; counts only
-- [ ] The share matches the traces; the line carries no title or question
+- [x] The steward screen shows per space the share of the month's cited answers resting mostly on stale cites, and last month's
+- [x] The weekly report adds one line for the cell; counts only
+- [x] The share matches the traces; the line carries no title or question
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Counts
-- [ ] UI and report
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Counts
+- [x] UI and report
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S27.2; tested in internal/core/ask/owned_test.go, internal/core/notify/owned_test.go, internal/core/report and web/src/tidy.test.tsx.
 
 ## Definition of done
 

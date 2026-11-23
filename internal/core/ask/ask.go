@@ -345,17 +345,8 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 				res.Claims[i].Cites[j].URL = a.Link(ch)
 			}
 			res.Claims[i].Cites[j].Owner = own.of(ctx, ch) // only allowed chunks are ever cited
-			if d, ok := ageDays(ch.Seen, a.Now()); ok {
-				res.Claims[i].Cites[j].AgeDays = &d
-				res.Claims[i].Cites[j].Stale = d > a.reviewAfter(ch.Spaces)
-			}
-			if m, ok := marks.reviewed(ctx, a.Tenant, ch); ok {
-				res.Claims[i].Cites[j].Reviewed = m.At.UTC().Format("2006-01-02")
-				res.Claims[i].Cites[j].Stale = a.Now().Sub(m.At) > time.Duration(a.reviewAfter(ch.Spaces))*24*time.Hour
-			}
-			if pastReviewBy(ch, a.Now()) {
-				res.Claims[i].Cites[j].Stale = true // the document's own date; a mark doesn't lift it (SB-2705)
-			}
+			f := a.freshness(ctx, marks, ch)
+			res.Claims[i].Cites[j].AgeDays, res.Claims[i].Cites[j].Reviewed, res.Claims[i].Cites[j].Stale = f.age, f.reviewed, f.stale
 		}
 	}
 	for _, l := range res.Spoofs {

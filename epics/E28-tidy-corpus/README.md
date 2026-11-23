@@ -25,10 +25,10 @@ Proposed 2026-11-23 after W25 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A retired document is never cited in its space, still is in another, and a rebuild keeps it out
-- [ ] Every list counts what the steward can't open and names nothing in it
-- [ ] An owner is told only of their own documents, once a month
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A retired document is never cited in its space, still is in another, and a rebuild keeps it out
+- [x] Every list counts what the steward can't open and names nothing in it
+- [x] An owner is told only of their own documents, once a month
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 
