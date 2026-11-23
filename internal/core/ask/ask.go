@@ -148,6 +148,10 @@ type Agent struct {
 	ReviewAfter func(spaces []string) int
 	// Glossary is a space's glossary by name (sb-space(5); SB-2203); nil is none.
 	Glossary func(space string) map[string]string
+	// Rate counts each person's asks; AsksPerMinute is the manifest's limit, 0 or nil
+	// for DefaultAsksPerMinute (SB-2305). A nil Rate limits nothing (tests and evals).
+	Rate          *Rate
+	AsksPerMinute func() int
 }
 
 // Ask answers one question for the scope's user.
@@ -157,6 +161,8 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (resp Resp
 		defer func() {
 			outcome := "ok"
 			switch {
+			case errors.Is(err, ErrRate):
+				outcome = "limited"
 			case err != nil:
 				outcome = "error"
 			case resp.Notice != nil && (*resp.Notice == NoticeNoAccess || *resp.Notice == NoticeNoSources):
@@ -189,6 +195,15 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	if spaceKilled(a.SpaceKilled, s) {
 		return Response{}, ErrKilled
+	}
+	if !probe && a.Rate != nil {
+		limit := DefaultAsksPerMinute
+		if a.AsksPerMinute != nil && a.AsksPerMinute() > 0 {
+			limit = a.AsksPerMinute()
+		}
+		if wait, ok := a.Rate.Take(s.User(), limit, a.Now()); !ok {
+			return Response{}, a.limited(ctx, s.User(), s.Space(), wait)
+		}
 	}
 	var dept *Department
 	if req.Agent != "" && req.Agent != "ask" {

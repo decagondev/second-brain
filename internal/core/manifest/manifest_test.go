@@ -39,7 +39,7 @@ func TestValidMinimal(t *testing.T) {
 	want := Tenant{
 		Tenant: "acme-logistics", Channel: "stable", IdP: "oidc://login.acme.example", Region: "eu",
 		Connectors: map[string]string{"docs": "sharepoint", "tickets": "jira"}, Agents: []string{"ask"},
-		RetentionDays: DefaultRetentionDays, BudgetUSDMonth: DefaultBudgetUSD,
+		RetentionDays: DefaultRetentionDays, BudgetUSDMonth: DefaultBudgetUSD, AsksPerMinute: DefaultAsksPerMinute,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v\nwant %+v", got, want)
@@ -314,6 +314,23 @@ func TestLanguage(t *testing.T) {
 	for _, v := range []string{"es", "EN", "german"} {
 		if _, diags := Check([]byte(valid + "language: " + v + "\n")); !strings.Contains(format("m.yaml", diags), "must be one of en, de, fr") {
 			t.Errorf("language %s accepted: %s", v, format("m.yaml", diags))
+		}
+	}
+}
+
+// SB-2305: asks_per_minute is 6 unless the manifest says, from 1 to 600, and reads back.
+func TestAsksPerMinute(t *testing.T) {
+	m, diags := Check([]byte(valid))
+	if len(diags) > 0 || m.AsksPerMinute != DefaultAsksPerMinute {
+		t.Fatalf("default: %v %d", diags, m.AsksPerMinute)
+	}
+	m, diags = Check([]byte(valid + "asks_per_minute: 20\n"))
+	if again, ds := Check(Format(m)); len(diags) > 0 || len(ds) > 0 || again.AsksPerMinute != 20 {
+		t.Fatalf("20: %v %v %d", diags, ds, again.AsksPerMinute)
+	}
+	for _, v := range []string{"0", "601", "six", `"6"`} {
+		if _, diags := Check([]byte(valid + "asks_per_minute: " + v + "\n")); len(diags) == 0 {
+			t.Errorf("asks_per_minute %s accepted", v)
 		}
 	}
 }

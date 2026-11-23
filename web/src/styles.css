@@ -86,3 +86,15 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
   margin: 0.5rem auto 0;
   padding: 0 1rem;
 }
+
+/* Sources first (SB-2304): the documents search allowed, while the answer is written. */
+.sources-first .sources {
+  list-style: none;
+  padding-left: 0;
+}
+.sources-first .sources li {
+  margin: 0.25rem 0;
+}
+.sources-first .meta {
+  color: var(--muted);
+}

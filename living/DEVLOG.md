@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S22.2: Fast enough on a small box
+
+**Wave/slice:** W22 / S22.2 (SB-2304, SB-2305) · **Status:** Done
+
+**What:** Asking in the web UI shows the documents the asker can open (title, owner, age) at once, while the answer is written, then replaces them with the cited answer. Each person may ask `asks_per_minute` questions in any minute (default 6); one more gets `ERATE` with the seconds to wait, and the weekly report counts these refusals.
+
+**Why this way:** On a CPU box an answer takes 7 to 32 seconds, and search needs no model, so its results can come first; they are search's own results, checked live as the asker, and shown without their text so nothing there reads as a claim. One person asking twenty questions shouldn't hold up everyone on a one-CPU box; the count lives in the cell's memory, so a restart can only let a few more through, never refuse more, and a refusal is traced with no question so the report can count it.
+
+**Learned:** `sb tenant verify` asks through the cell's own agent as sampled users, so a per-person limit would have failed verification on any real tenant; its agent is a copy with no limit.
+
+**Laws:** LAW-14 (the sources never render as claims, axe before and after the answer), LAW-01 (the sources are search's live-checked results), LAW-16 (`TestLAW16_TheManifestIsTheTruth` now generates `asks_per_minute`). Every law test is still green.
+
 ## 2026-11-23 S22.1: Language and logs
 
 **Wave/slice:** W22 / S22.1 (SB-2301, SB-2302, SB-2303) · **Status:** Done

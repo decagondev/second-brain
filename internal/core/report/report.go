@@ -45,6 +45,8 @@ type Report struct {
 	ActivePerSeat float64   `json:"active_per_seat"`
 	Asks          int       `json:"asks"`
 	Searches      int       `json:"searches"` // searches without the model (SB-1701)
+	// Limited is asks refused for asks_per_minute (SB-2305), never counted as asks.
+	Limited int `json:"limited"`
 	// Questions to stewards asked and answered this week, by space (SB-1704), never their text.
 	QuestionsAsked    map[string]int `json:"questions_asked,omitempty"`
 	QuestionsAnswered map[string]int `json:"questions_answered,omitempty"`
@@ -100,6 +102,10 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 		if t.Response.Agent == ask.AgentSearch {
 			r.Searches++
 			active[t.User] = true
+			continue
+		}
+		if t.Response.Agent == ask.AgentLimited {
+			r.Limited++
 			continue
 		}
 		r.Asks++
@@ -185,6 +191,7 @@ func (r Report) Markdown() string {
 	fmt.Fprintf(&b, "| Weekly active users per seat | %d of %d (%.0f%%) |\n", r.ActiveUsers, r.Seats, 100*r.ActivePerSeat)
 	fmt.Fprintf(&b, "| Asks | %d |\n", r.Asks)
 	fmt.Fprintf(&b, "| Searches | %d |\n", r.Searches)
+	fmt.Fprintf(&b, "| Asks refused by the per-person limit | %d |\n", r.Limited)
 	fmt.Fprintf(&b, "| Cited-answer rate | %.0f%% |\n", 100*r.CitedAnswerRate)
 	kinds := make([]string, 0, len(r.Gaps))
 	for k := range r.Gaps {

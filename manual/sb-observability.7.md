@@ -109,6 +109,8 @@ Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report g
 |---|---|
 | Weekly active users ÷ seats | distinct users who asked or drafted at least once, divided by the directory's active users |
 | Asks | answers given (traces) |
+| Searches | searches without the model (SB-1701), counted apart from asks |
+| Asks refused by the per-person limit | asks refused with `ERATE` for `asks_per_minute` (SB-2305; sb-tenant(5)), counted apart from asks, never by person or question |
 | Cited-answer rate | answers with at least one cited claim ÷ answers |
 | Gaps | answers by notice, `no_sources`, `no_access` and `most_uncited`, each as a count. These are the places where people asked and the platform had nothing to show them. They are counted by kind, never by question |
 | Drafts | `used` and `discarded`, and the ratio of the two |

@@ -86,6 +86,9 @@ var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "slack": "ch
 type Cell struct {
 	Config  Config
 	Release string
+	// asks counts each person's asks for asks_per_minute (SB-2305), kept across a
+	// manifest apply.
+	asks ask.Rate
 	// Send is where the API's own notifications go, such as access requests (SB-2205);
 	// nil is Notifier().
 	Send notify.Sender
@@ -425,7 +428,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Owner: ask.ActiveOwner(func(ctx context.Context, email string) ([]ports.User, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		}),
-		Glossary: func(name string) map[string]string { return m.Spaces[name].Glossary }}
+		Glossary: func(name string) map[string]string { return m.Spaces[name].Glossary },
+		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute }}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)

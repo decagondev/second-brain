@@ -256,3 +256,10 @@ func TestWebEmail(t *testing.T) {
 		}
 	}
 }
+
+// SB-2305: over asks_per_minute the chat reply says how long to wait.
+func TestErrTextLimited(t *testing.T) {
+	if got := ErrText(&ask.RateError{Wait: 41500 * time.Millisecond}); !strings.Contains(got, "Wait 42 seconds") {
+		t.Fatalf("%q", got)
+	}
+}

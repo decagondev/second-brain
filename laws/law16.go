@@ -75,6 +75,7 @@ func genTenant(r *rand.Rand) manifest.Tenant {
 		Agents:         []string{"ask"},
 		RetentionDays:  manifest.DefaultRetentionDays,
 		BudgetUSDMonth: manifest.DefaultBudgetUSD,
+		AsksPerMinute:  manifest.DefaultAsksPerMinute,
 	}
 	vendors := map[string][]string{"docs": {"sharepoint", "confluence"}, "chat": {"slack", "teams"},
 		"tickets": {"jira", "zendesk"}, "crm": {"salesforce", "hubspot"}, "code": {"github"}, "hris": {"bamboohr"}, "accounting": {"quickbooks-online"}}
@@ -99,6 +100,9 @@ func genTenant(r *rand.Rand) manifest.Tenant {
 	}
 	if r.Intn(2) == 0 {
 		t.BudgetUSDMonth = 1 + r.Intn(100000)
+	}
+	if r.Intn(2) == 0 {
+		t.AsksPerMinute = 1 + r.Intn(manifest.MaxAsksPerMinute)
 	}
 	if r.Intn(2) == 0 {
 		t.PilotGroup = "group:sb-pilot"
@@ -187,6 +191,9 @@ func renderTenant(r *rand.Rand, t manifest.Tenant) []string {
 	}
 	if t.BudgetUSDMonth != manifest.DefaultBudgetUSD || r.Intn(2) == 0 {
 		es = append(es, fmt.Sprintf("budget_usd_month: %d\n", t.BudgetUSDMonth))
+	}
+	if t.AsksPerMinute != manifest.DefaultAsksPerMinute || r.Intn(2) == 0 {
+		es = append(es, fmt.Sprintf("asks_per_minute: %d\n", t.AsksPerMinute))
 	}
 	if t.PilotGroup != "" {
 		es = append(es, scalar("pilot_group", t.PilotGroup))

@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/ask"
@@ -241,5 +242,24 @@ func TestDraftEndpoints(t *testing.T) {
 	}
 	if w := post(fakeDrafter{}, "/v1/drafts/tr_d/outcome", `{"outcome":"used"}`); w.Code != 200 {
 		t.Errorf("outcome: %d", w.Code)
+	}
+}
+
+// SB-2305: over asks_per_minute, 429 ERATE with the whole seconds to wait in both places.
+func TestAskLimited(t *testing.T) {
+	f := &fakeAgent{err: &ask.RateError{Wait: 41*time.Second + 200*time.Millisecond, Trace: "tr_lim"}}
+	w := serve(t, f, "POST", "/v1/ask", `{"question":"q"}`, true)
+	var body struct {
+		Error struct {
+			Code       string `json:"code"`
+			Trace      string `json:"trace"`
+			RetryAfter int    `json:"retry_after"`
+			Remedy     string `json:"remedy"`
+		} `json:"error"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &body)
+	if w.Code != 429 || w.Header().Get("Retry-After") != "42" || body.Error.Code != "ERATE" || body.Error.RetryAfter != 42 ||
+		body.Error.Trace != "tr_lim" || !strings.Contains(body.Error.Remedy, "42 seconds") {
+		t.Fatalf("%d %v %s", w.Code, w.Header(), w.Body)
 	}
 }

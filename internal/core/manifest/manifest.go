@@ -29,7 +29,9 @@ type Tenant struct {
 	Duties         map[string]Duty   `json:"duties"`
 	RetentionDays  int               `json:"retention_days"`
 	BudgetUSDMonth int               `json:"budget_usd_month"`
-	PilotGroup     string            `json:"pilot_group"`
+	// AsksPerMinute is how many questions one person may ask in a minute (SB-2305).
+	AsksPerMinute int    `json:"asks_per_minute"`
+	PilotGroup    string `json:"pilot_group"`
 	// QuestionsTo answers company-wide questions nothing answered (SB-1704); Notes lets
 	// stewards publish replies as notes into the docs: folder share (SB-1705).
 	QuestionsTo string `json:"questions_to"`
@@ -90,6 +92,8 @@ const (
 	DefaultRetentionDays = 365
 	MinBudgetUSDMonth    = 1
 	DefaultBudgetUSD     = 1000
+	DefaultAsksPerMinute = 6
+	MaxAsksPerMinute     = 600
 	MaxWorkflows         = 1
 	MaxGroups            = 200
 	MaxGroupMembers      = 2000
@@ -136,6 +140,9 @@ var fields = []field{
 	}},
 	{"budget_usd_month", false, func(c *checker, n *node) {
 		c.t.BudgetUSDMonth = c.intIn(n, "budget_usd_month", MinBudgetUSDMonth, 0)
+	}},
+	{"asks_per_minute", false, func(c *checker, n *node) {
+		c.t.AsksPerMinute = c.intIn(n, "asks_per_minute", 1, MaxAsksPerMinute)
 	}},
 	{"pilot_group", false, func(c *checker, n *node) { c.t.PilotGroup = c.group(n, "pilot_group") }},
 	{"questions_to", false, func(c *checker, n *node) { c.t.QuestionsTo = c.group(n, "questions_to") }},
@@ -232,7 +239,7 @@ func Check(src []byte) (Tenant, []Diag) {
 		return Tenant{}, []Diag{{root.line, root.col, "syntax", "the top level must be fields (`field: value`)"}}
 	}
 	c := &checker{skip: map[*node]bool{}, seen: map[string]*node{}}
-	c.t.RetentionDays, c.t.BudgetUSDMonth = DefaultRetentionDays, DefaultBudgetUSD
+	c.t.RetentionDays, c.t.BudgetUSDMonth, c.t.AsksPerMinute = DefaultRetentionDays, DefaultBudgetUSD, DefaultAsksPerMinute
 	c.names(root, "")
 	known := map[string]field{}
 	for _, f := range fields {

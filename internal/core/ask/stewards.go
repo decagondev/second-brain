@@ -159,7 +159,7 @@ func (x Stewards) Send(ctx context.Context, s tenancy.Scope, text, trace string)
 		return StewardQuestion{}, err
 	}
 	t, err := x.Agent.Trace(ctx, s, trace)
-	if err != nil || t.User != s.User() || t.Space != s.Space() || t.Response.Agent == AgentSearch ||
+	if err != nil || t.User != s.User() || t.Space != s.Space() || t.Response.Agent == AgentSearch || t.Response.Agent == AgentLimited ||
 		t.Response.Notice == nil || !Askable[*t.Response.Notice] {
 		return StewardQuestion{}, fmt.Errorf("%w: send a question from your own answer that nothing answered, in the same space", ErrInvalid)
 	}

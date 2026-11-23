@@ -54,7 +54,9 @@ func (s switchable) ACL(ctx context.Context, u ports.UserRef, refs []ports.Sourc
 // control plane's other-tenant document ids (ids only).
 func (c *Cell) VerifyTarget(foreign []string) verify.Target {
 	p := c.Parts()
-	t := &cellTarget{c: c, foreign: foreign, agent: p.Agent, down: map[string]*atomic.Bool{}}
+	agent := p.Agent
+	agent.Rate = nil // the verifier's sampled asks aren't a person's, and asks_per_minute doesn't count them (SB-2305)
+	t := &cellTarget{c: c, foreign: foreign, agent: agent, down: map[string]*atomic.Bool{}}
 	conns := map[string]ports.Connector{}
 	for k, conn := range p.Connectors {
 		t.down[k] = &atomic.Bool{}

@@ -7,8 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
+	"strconv"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/tenancy"
@@ -83,6 +86,11 @@ func (h Ask) ask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp, err := h.Agent.Ask(r.Context(), s, req)
+	var over *ask.RateError
+	if errors.As(err, &over) {
+		h.limited(w, over)
+		return
+	}
 	if err != nil {
 		h.fail(w, "", mapErr(err))
 		return
@@ -152,4 +160,19 @@ func (h Ask) fail(w http.ResponseWriter, trace string, e *errs.Error) {
 	w.WriteHeader(errs.HTTP(e.Code))
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{
 		"code": string(e.Code), "message": e.Msg, "trace": trace, "remedy": errs.Remedy(e.Code)}})
+}
+
+// limited answers an ask over asks_per_minute (SB-2305): 429 ERATE with the whole seconds
+// to wait, at least 1, in Retry-After and retry_after.
+func (h Ask) limited(w http.ResponseWriter, e *ask.RateError) {
+	secs := int(math.Ceil(e.Wait.Seconds()))
+	if secs < 1 {
+		secs = 1
+	}
+	h.headers(w, e.Trace)
+	w.Header().Set("Retry-After", strconv.Itoa(secs))
+	w.WriteHeader(errs.HTTP(errs.ERATE))
+	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{
+		"code": string(errs.ERATE), "message": "You've asked a lot in the last minute.", "trace": e.Trace,
+		"remedy": fmt.Sprintf("Wait %d seconds, then ask again.", secs), "retry_after": secs}})
 }

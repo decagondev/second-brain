@@ -161,6 +161,7 @@ describe("saved and shared questions", () => {
       if (u === "/v1/spaces") return json({ spaces: [] });
       if (u.startsWith("/v1/shares/")) return json({ id: "sh_1", question: "who approves refunds?", space: "spc_support", expires: "2026-12-22T00:00:00Z" });
       if (u.startsWith("/v1/changes")) return json({ items: [] });
+      if (u.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304
       asked.push(`${u} ${String(init?.body)}`);
       return json(answer);
     };

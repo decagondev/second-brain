@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { ask, AskError, listSpaces, openShare, spaceName } from "./api";
-import type { ApiError, AskResponse, Fetch, SharedQuestion, Space } from "./api";
+import { ask, AskError, listSpaces, openShare, search, spaceName } from "./api";
+import type { ApiError, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
 import { DraftPanel } from "./Draft";
@@ -12,12 +12,17 @@ import { StartHere, WhatChanged } from "./Start";
 import { SignOutEverywhere } from "./Session";
 import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
+import { SourcesFirst } from "./Sources";
 import { errorText, msg, t, tj } from "./i18n";
 
 interface Turn {
+  id: number;
   question: string;
   answer?: AskResponse;
   error?: ApiError;
+  // While the answer is written: search's allowed documents, shown first (SB-2304).
+  pending?: boolean;
+  sources?: SearchResult[];
 }
 
 type Tab = "answer" | "documents" | "saved" | "questions" | "handover";
@@ -48,6 +53,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const spaceId = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const base = useId();
+  const nextTurn = useRef(0);
 
   useEffect(() => {
     let live = true;
@@ -73,14 +79,23 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
 
   async function run(q: string, inSpace: string, conv: string | undefined) {
     setBusy(true);
+    const id = nextTurn.current++;
+    const settle = (x: Turn) => setTurns((ts) => ts.map((y) => (y.id === id ? x : y)));
+    setTurns((ts) => [...ts, { id, question: q, pending: true }]);
+    // Sources first (SB-2304): search needs no model, so the documents it allows show while
+    // the answer is written. A failed search changes nothing; a late one is ignored.
+    search(q, fetcher, inSpace || undefined).then(
+      (s) => setTurns((ts) => ts.map((y) => (y.id === id && y.pending ? { ...y, sources: s.results } : y))),
+      () => undefined,
+    );
     try {
       const a = await ask(q, conv, fetcher, inSpace || undefined);
       setConversation(a.conversation);
-      setTurns((ts) => [...ts, { question: q, answer: a }]);
+      settle({ id, question: q, answer: a });
       setQuestion("");
     } catch (err) {
       const error = err instanceof AskError ? err.error : { code: "EUNAVAIL", message: t("Something went wrong."), trace: "", remedy: t("Try again.") };
-      setTurns((ts) => [...ts, { question: q, error }]);
+      settle({ id, question: q, error });
     } finally {
       setBusy(false);
     }
@@ -161,9 +176,10 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
         <section aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
-          {turns.map((x, i) => (
-            <div className="turn" key={i}>
+          {turns.map((x) => (
+            <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
+              {x.pending && <SourcesFirst sources={x.sources} />}
               {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}

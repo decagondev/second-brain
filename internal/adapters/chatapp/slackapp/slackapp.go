@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -328,11 +329,14 @@ func escapeURL(u string) string {
 
 // ErrText is an ask error as a chat reply: its reason, never its detail.
 func ErrText(err error) string {
+	var over *ask.RateError
 	switch {
 	case errors.Is(err, ask.ErrInvalid):
 		return "That question can't be asked: " + strings.TrimPrefix(err.Error(), "ask: EINVAL: ")
 	case errors.Is(err, ask.ErrKilled):
 		return "Answers are switched off for now."
+	case errors.As(err, &over):
+		return fmt.Sprintf("You've asked a lot in the last minute. Wait %d seconds, then ask again.", int(math.Ceil(max(over.Wait.Seconds(), 1))))
 	default:
 		return "Answers are unavailable right now. Try again in a minute."
 	}

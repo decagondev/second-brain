@@ -46,6 +46,7 @@ describe.each(["en", "de", "fr"] as Lang[])("the UI in %s", (l) => {
     const fetcher: Fetch = async (url) => {
       if (url === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       if (url.startsWith("/v1/changes")) return new Response(JSON.stringify({ items: [] }), { status: 200 });
+      if (url.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304
       n++;
       if (n === 1) return new Response(JSON.stringify(answer), { status: 200 });
       return new Response(JSON.stringify({ error: { code: "EKILLED", message: "Answers are switched off for now.", trace: "tr_9", remedy: "Wait for the operator." } }), { status: 503 });

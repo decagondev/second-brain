@@ -36,6 +36,9 @@ func Format(t Tenant) []byte {
 	}
 	line("retention_days", strconv.Itoa(t.RetentionDays))
 	line("budget_usd_month", strconv.Itoa(t.BudgetUSDMonth))
+	if t.AsksPerMinute != 0 && t.AsksPerMinute != DefaultAsksPerMinute {
+		line("asks_per_minute", strconv.Itoa(t.AsksPerMinute))
+	}
 	if t.PilotGroup != "" {
 		line("pilot_group", t.PilotGroup)
 	}

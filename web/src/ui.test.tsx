@@ -114,6 +114,7 @@ describe("accessibility (axe, WCAG 2.2 A and AA rules that jsdom can check)", ()
     const fetcher: Fetch = async (url) => {
       if (url === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       if (url.startsWith("/v1/changes")) return new Response(JSON.stringify({ items: [] }), { status: 200 }); // SB-1708
+      if (url.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304
       n++;
       if (n === 1) return new Response(JSON.stringify(response([cited, uncited])), { status: 200 });
       return new Response(JSON.stringify({ error: { code: "EKILLED", message: "Answers are switched off for now.", trace: "tr_9", remedy: "Wait for the operator." } }), { status: 503 });
@@ -138,6 +139,7 @@ describe("conversation", () => {
     const fetcher: Fetch = async (u, init) => {
       if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       if (u.startsWith("/v1/changes")) return new Response(JSON.stringify({ items: [] }), { status: 200 }); // SB-1708
+      if (u.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304
       bodies.push(String(init?.body));
       return new Response(JSON.stringify(response([cited])), { status: 200 });
     };

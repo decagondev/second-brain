@@ -25,6 +25,7 @@ const (
 	ENORECEIPT  Code = "ENORECEIPT"
 	EUNAVAIL    Code = "EUNAVAIL"
 	EBUDGET     Code = "EBUDGET"
+	ERATE       Code = "ERATE"
 	EUNSIGNED   Code = "EUNSIGNED"
 )
 
@@ -50,5 +51,6 @@ var registry = map[Code]entry{
 	ENORECEIPT:  {http: 502, exit: 6, meaning: "Target returned no receipt; action did not run", remedy: "Check the target; re-propose if needed"},
 	EUNAVAIL:    {http: 503, exit: 7, meaning: "A dependency is unavailable or timed out", remedy: "Retry later"},
 	EBUDGET:     {http: 429, exit: 8, meaning: "Budget or rate limit reached", remedy: "Wait for reset, or raise budget_usd_month"},
+	ERATE:       {http: 429, exit: 8, meaning: "One person asked more than asks_per_minute in a minute", remedy: "Wait retry_after seconds, then ask again"},
 	EUNSIGNED:   {http: 0, exit: 1, meaning: "Image or bundle signature didn't verify", remedy: "Sev-1: the release is blocked from starting"},
 }

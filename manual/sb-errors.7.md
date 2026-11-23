@@ -45,6 +45,7 @@ There is one list of errors. `internal/errs/codes.go` is generated from the tabl
 | `ENORECEIPT` | 502 | 6 | Target returned no receipt; action **did not run** | Check the target; re-propose if needed |
 | `EUNAVAIL` | 503 | 7 | A dependency is unavailable or timed out | Retry later |
 | `EBUDGET` | 429 | 8 | Budget or rate limit reached | Wait for reset, or raise `budget_usd_month` |
+| `ERATE` | 429 | 8 | One person asked more than `asks_per_minute` in a minute | Wait `retry_after` seconds, then ask again |
 | `EUNSIGNED` | — | 1 | Image or bundle signature didn't verify | Sev-1: the release is blocked from starting |
 
 ## NOTES
@@ -52,6 +53,7 @@ There is one list of errors. `internal/errs/codes.go` is generated from the tabl
 - `EPERM` deliberately covers deny **and** unknown. Telling a user "unknown" invites retry games, and telling them "deny" may leak that a document exists. Operators see the breakdown in `/v1/admin/refusals`.
 - `ELABEL` and `EBARRIER` follow the same rule as `EPERM`: they are reasons in traces and refusal counts, and a user is never told which chunk a label or barrier refused (sb-permissions(7), Spaces, labels and barriers).
 - The web UI shows an error by its code, in the person's language (SB-2301; sb-tenant(5) `language`): in English the cell's own `message` and `remedy`, which say the most, and in German or French the code's message and remedy from the UI's catalog. A code the UI doesn't know is shown as "Something went wrong" with its trace. The code, never the message, is what the UI acts on.
+- `ERATE` carries `retry_after`, whole seconds, in the error body and as `Retry-After` (SB-2305); the UI says how long to wait in the person's language.
 - A refused source inside an answer is not an error; it's reported through `refused` and `notice` ([sb-ask(3)](sb-ask.3.md)).
 
 ## SEE ALSO

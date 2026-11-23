@@ -34,6 +34,13 @@
       },
       "type": "object"
     },
+    "asks_per_minute": {
+      "default": 6,
+      "description": "Questions one person may ask in any minute; one more is ERATE (SB-2305).",
+      "maximum": 600,
+      "minimum": 1,
+      "type": "integer"
+    },
     "barriers": {
       "description": "Information barriers: pairs of groups that never meet (sb-space(5)).",
       "items": {
