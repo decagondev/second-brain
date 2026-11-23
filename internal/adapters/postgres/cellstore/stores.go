@@ -304,7 +304,7 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}, view{t, "retirement"}}
 }
 
 var _ notify.PrefStore = Traces{}
@@ -529,7 +529,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates", "retirement": "retirements"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one
@@ -869,4 +869,25 @@ func (d Directory) ActiveUserIDs(ctx context.Context, tenant string) ([]string, 
 		}
 	}
 	return out, err
+}
+
+var _ ask.RetireStore = Traces{}
+
+// PutRetirement implements ask.RetireStore (SB-2801): one per space and document.
+func (t Traces) PutRetirement(ctx context.Context, r ask.Retirement) error {
+	return put(ctx, t.Pool, r.Tenant, "retirement", r.Space+"|"+r.Doc, meta{at: r.At, user: r.By, space: r.Space}, r, false)
+}
+
+// Retirements implements ask.RetireStore.
+func (t Traces) Retirements(ctx context.Context, tenant, space string) ([]ask.Retirement, error) {
+	return list[ask.Retirement](ctx, t.Pool, tenant, "retirement", "space = $3", "id", space)
+}
+
+// DeleteRetirement implements ask.RetireStore.
+func (t Traces) DeleteRetirement(ctx context.Context, tenant, space, doc string) (bool, error) {
+	_, found, err := get[ask.Retirement](ctx, t.Pool, tenant, "retirement", space+"|"+doc, false)
+	if err != nil || !found {
+		return false, err
+	}
+	return true, del(ctx, t.Pool, tenant, "retirement", space+"|"+doc)
 }

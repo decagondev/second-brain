@@ -32,6 +32,9 @@ type Cite struct {
 	Stale   bool `json:"stale,omitempty"`
 	// Reviewed is the date of a steward's review mark at this version (SB-2702), YYYY-MM-DD.
 	Reviewed string `json:"reviewed,omitempty"`
+	// Replaces is the title of a document a steward retired in favour of this one, shown
+	// only when the asker can open it too (SB-2801).
+	Replaces string `json:"replaces,omitempty"`
 }
 
 // Person is a document owner as an asker sees them: their email and job title, nothing else.

@@ -16,6 +16,8 @@ export interface Cite {
   stale?: boolean;
   // A steward's review mark at this version, YYYY-MM-DD (SB-2702).
   reviewed?: string;
+  // The title of the document a steward retired for this one, when the asker can open it (SB-2801).
+  replaces?: string;
 }
 
 export interface Person {
@@ -374,15 +376,30 @@ export interface ReviewItem extends SearchResult {
   copies?: SearchResult[];
   // Traces of the answers reported as citing it wrongly (SB-2204).
   reports?: string[];
+  // A note: how many of its sources have a newer version or are gone (SB-2804).
+  sources_moved?: number;
+}
+
+// Documents with the same title and different text (SB-2802).
+export interface SameNameGroup {
+  title: string;
+  items: SearchResult[];
+  hidden: number;
 }
 
 // personal_data is how many documents in the space hold an IBAN or a card number (SB-1904).
 export async function reviewList(
   space: string,
   f: Fetch = fetch,
-): Promise<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }> {
+): Promise<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[]; same_name?: SameNameGroup[] }> {
   try {
-    const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }>(
+    const d = await call<{
+      items?: ReviewItem[];
+      hidden?: { owner?: string; owner_gone?: boolean }[];
+      personal_data?: number;
+      glossary_flagged?: string[];
+      same_name?: SameNameGroup[];
+    }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
       f,
@@ -392,7 +409,46 @@ export async function reviewList(
       hidden: Array.isArray(d.hidden) ? d.hidden : [],
       personal_data: typeof d.personal_data === "number" ? d.personal_data : undefined,
       glossary_flagged: Array.isArray(d.glossary_flagged) ? d.glossary_flagged : undefined,
+      same_name: Array.isArray(d.same_name) ? d.same_name.filter((g) => Array.isArray(g.items)) : undefined,
     };
+  } catch {
+    return { items: [], hidden: [] };
+  }
+}
+
+// Retire from answers (sb-ask(3); SB-2801): only in the steward's own space, undone with restore.
+export interface Retired {
+  document: string;
+  title?: string;
+  reason: string;
+  replaced_by?: string;
+  by: string;
+  at: string;
+}
+
+export function retireDocument(space: string, cite: string, reason: string, replacedBy: string, f: Fetch = fetch): Promise<Retired> {
+  return call(`${sp(space)}/retired`, post({ cite, reason, replaced_by: replacedBy }), f);
+}
+
+export async function retiredList(space: string, f: Fetch = fetch): Promise<{ items: Retired[]; hidden: number }> {
+  try {
+    const d = await call<{ items?: Retired[]; hidden?: number }>(`${sp(space)}/retired`, {}, f);
+    const items = Array.isArray(d.items) ? d.items.filter((x) => typeof x.document === "string" && typeof x.reason === "string" && typeof x.at === "string") : [];
+    return { items, hidden: typeof d.hidden === "number" ? d.hidden : 0 };
+  } catch {
+    return { items: [], hidden: 0 };
+  }
+}
+
+export function restoreDocument(space: string, document: string, f: Fetch = fetch): Promise<{ document: string; restored: boolean }> {
+  return call(`${sp(space)}/retired/restore`, post({ document }), f);
+}
+
+// Never cited (SB-2803): documents older than 90 days no answer cited in 180 days.
+export async function uncitedList(space: string, f: Fetch = fetch): Promise<{ items: SearchResult[]; hidden: { owner?: string }[] }> {
+  try {
+    const d = await call<{ items?: SearchResult[]; hidden?: { owner?: string }[] }>(`${sp(space)}/review?section=uncited`, {}, f);
+    return { items: Array.isArray(d.items) ? d.items : [], hidden: Array.isArray(d.hidden) ? d.hidden : [] };
   } catch {
     return { items: [], hidden: [] };
   }

@@ -24,11 +24,13 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
     : cite.stale && cite.age_days !== undefined
       ? tn(cite.age_days, "{n} day old", "{n} days old")
       : "";
+  const replaces = cite.replaces ? t("Replaces {title}", { title: cite.replaces }) : "";
   const label = [
     t("Source {cite}", { cite: cite.cite }),
     cite.title ?? "",
     place,
     age,
+    replaces,
     flagged ? t("flagged") : "",
     cite.url ? t("opens in a new tab") : t("shows the answer's trace"),
   ]
@@ -40,6 +42,7 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
       <span>{cite.title ?? cite.cite}</span>
       {place && <span className="place">{place}</span>}
       {age && <span className="place">{age}</span>}
+      {replaces && <span className="place">{replaces}</span>}
       {flagged && <span className="flag">{t("Flagged")}</span>}
     </a>
   );

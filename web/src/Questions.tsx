@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, ReviewItem } from "./api";
+import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Retired, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -453,6 +453,175 @@ function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: R
   );
 }
 
+// Retire from answers (SB-2801): a reason, and the document that replaces it if any.
+function Retire({ space, cite, name, onDone, fetcher }: { space: string; cite: string; name: string; onDone: () => void; fetcher?: Fetch }) {
+  const reasonId = useId();
+  const byId = useId();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [by, setBy] = useState("");
+  const [error, setError] = useState("");
+  if (!open)
+    return (
+      <>
+        {" "}
+        <button type="button" aria-label={t("Retire from answers: {name}", { name })} onClick={() => setOpen(true)}>
+          {t("Retire from answers")}
+        </button>
+      </>
+    );
+  const send = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      await retireDocument(space, cite, reason.trim(), by.trim(), fetcher);
+      onDone();
+    } catch (err) {
+      setError(errMsg(err, t("The document couldn't be retired.")));
+    }
+  };
+  return (
+    <form onSubmit={send} className="retire">
+      <label htmlFor={reasonId}>{t("Why it should leave this space's answers")}</label>
+      <input id={reasonId} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
+      <label htmlFor={byId}>{t("Replaced by ({form}, optional)", { form: "KIND:ID" })}</label>
+      <input id={byId} value={by} onChange={(e) => setBy(e.target.value)} placeholder="docs:Ops/right.md" />
+      <button type="submit" disabled={reason.trim() === ""}>
+        {t("Retire")}
+      </button>
+      <button type="button" onClick={() => setOpen(false)}>
+        {t("Cancel")}
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+
+// The space's retired documents (SB-2801), each one brought back with a click.
+function RetiredDocs({ space, fetcher, bump }: { space: string; fetcher?: Fetch; bump: number }) {
+  const [list, setList] = useState<{ items: Retired[]; hidden: number }>({ items: [], hidden: 0 });
+  const [error, setError] = useState("");
+  useEffect(() => {
+    void retiredList(space, fetcher).then(setList);
+  }, [space, fetcher, bump]);
+  if (list.items.length === 0 && list.hidden === 0) return null;
+  const restore = async (doc: string) => {
+    setError("");
+    try {
+      await restoreDocument(space, doc, fetcher);
+      setList((l) => ({ ...l, items: l.items.filter((x) => x.document !== doc) }));
+    } catch (err) {
+      setError(errMsg(err, t("The document couldn't be brought back.")));
+    }
+  };
+  return (
+    <section aria-label={t("Retired from answers")}>
+      <h3>
+        {t("Retired from answers")}
+        <Count n={list.items.length + list.hidden} />
+      </h3>
+      <ul className="saved-list">
+        {list.items.map((r) => (
+          <li key={r.document}>
+            <span>{r.title ?? r.document}</span>
+            <span className="meta">
+              {" "}
+              · {r.reason}
+              {r.replaced_by ? ` · ${t("replaced by {cite}", { cite: r.replaced_by })}` : ""} · {r.by} · {r.at.slice(0, 10)}
+            </span>{" "}
+            <button type="button" aria-label={t("Bring back: {name}", { name: r.title ?? r.document })} onClick={() => void restore(r.document)}>
+              {t("Bring back")}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {list.hidden > 0 && <p className="refused">{tn(list.hidden, "{n} more retired document you can't open", "{n} more retired documents you can't open")}</p>}
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
+function DocLink({ r }: { r: SearchResult }) {
+  return r.url ? (
+    <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: r.title ?? r.cite, cite: r.cite })}>
+      {r.title ?? r.cite}
+    </a>
+  ) : (
+    <span>{r.title ?? r.cite}</span>
+  );
+}
+
+// Same name, different text (SB-2802): one group per title, each text once.
+function SameNames({ groups }: { groups: SameNameGroup[] }) {
+  if (groups.length === 0) return null;
+  return (
+    <section aria-label={t("Same name, different text")}>
+      <h3>{t("Same name, different text")}</h3>
+      <ul className="saved-list">
+        {groups.map((g) => (
+          <li key={g.title}>
+            <strong>{g.title}</strong>:{" "}
+            {g.items.map((r, i) => (
+              <span key={r.cite}>
+                {i > 0 ? ", " : ""}
+                <DocLink r={r} />
+              </span>
+            ))}
+            {g.hidden > 0 ? ` · ${tn(g.hidden, "{n} more you can't open", "{n} more you can't open")}` : ""}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// Never cited (SB-2803): loaded only when the steward asks.
+function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fetch; onRetired: () => void }) {
+  const [list, setList] = useState<{ items: SearchResult[]; hidden: { owner?: string }[] }>();
+  if (!list)
+    return (
+      <button type="button" onClick={() => void uncitedList(space, fetcher).then(setList)}>
+        {t("Show never cited")}
+      </button>
+    );
+  return (
+    <section aria-label={t("Never cited")}>
+      <h3>
+        {t("Never cited")}
+        <Count n={list.items.length + list.hidden.length} />
+      </h3>
+      {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Every document here older than 90 days was cited in the last 180 days.")}</p>}
+      <ul className="saved-list">
+        {list.items.map((r) => (
+          <li key={r.cite}>
+            <DocLink r={r} />
+            {r.age_days !== undefined ? <span className="meta"> · {tn(r.age_days, "{n} day old", "{n} days old")}</span> : null}
+            <Retire
+              space={space}
+              cite={r.cite}
+              name={r.title ?? r.cite}
+              fetcher={fetcher}
+              onDone={() => {
+                setList((l) => l && { ...l, items: l.items.filter((x) => x.cite !== r.cite) });
+                onRetired();
+              }}
+            />
+          </li>
+        ))}
+      </ul>
+      {list.hidden.length > 0 && (
+        <p className="refused">
+          {tn(list.hidden.length, "{n} more document you can't open was never cited", "{n} more documents you can't open were never cited")}
+          {list.hidden.some((h) => h.owner)
+            ? `; ${t("ask their owners: {owners}", { owners: Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ") })}`
+            : ""}
+          .
+        </p>
+      )}
+    </section>
+  );
+}
+
 // Documents to review on the steward's screen (SB-1709): relied-on documents gone stale, or
 // marked as wrong citations, each one the steward can open; the rest counted with an owner.
 // A note whose readers are wider than its space now (SB-2004): the count, never who, and a
@@ -561,7 +730,18 @@ export function reviewCSV(list: ReviewData): string {
 }
 
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
-  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number; glossary_flagged?: string[] }>({ items: [], hidden: [] });
+  const [list, setList] = useState<{
+    items: ReviewItem[];
+    hidden: { owner?: string; owner_gone?: boolean }[];
+    personal_data?: number;
+    glossary_flagged?: string[];
+    same_name?: SameNameGroup[];
+  }>({ items: [], hidden: [] });
+  const [bump, setBump] = useState(0);
+  const retired = (cite: string) => {
+    setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== cite) }));
+    setBump((b) => b + 1);
+  };
   useEffect(() => {
     const load = () => void reviewList(space, fetcher).then(setList);
     load();
@@ -606,6 +786,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                 {r.flagged > 0 ? ` · ${tn(r.flagged, "marked wrong {n} time", "marked wrong {n} times")}` : ""}
                 {r.outdated ? ` · ${tn(r.outdated, "reported out of date {n} time", "reported out of date {n} times")}` : ""}
                 {r.owner_gone ? ` · ${t("owner gone: find it a new owner")}` : ""}
+                {r.sources_moved ? ` · ${tn(r.sources_moved, "{n} of its sources changed or is gone", "{n} of its sources changed or are gone")}` : ""}
               </span>
               {r.copies && r.copies.length > 0 && (
                 <span className="meta">
@@ -629,6 +810,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
               {!r.owner_gone && !(r.wider !== undefined && r.wider > 0) && !(r.copies && r.copies.length > 0) && (
                 <MarkReviewed space={space} item={r} fetcher={fetcher} onDone={() => setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== r.cite) }))} />
               )}
+              {!r.question && <Retire space={space} cite={r.cite} name={r.title ?? r.cite} fetcher={fetcher} onDone={() => retired(r.cite)} />}
               {r.reports && r.reports.length > 0 && <AddToEvals space={space} item={r} fetcher={fetcher} />}
             </li>
           ))}
@@ -651,6 +833,9 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
           })}
         </p>
       )}
+      <SameNames groups={list.same_name ?? []} />
+      <NeverCited space={space} fetcher={fetcher} onRetired={() => setBump((b) => b + 1)} />
+      <RetiredDocs space={space} fetcher={fetcher} bump={bump} />
       {list.personal_data !== undefined && list.personal_data > 0 && (
         <p className="personal">
           {tn(

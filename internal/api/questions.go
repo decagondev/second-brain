@@ -34,6 +34,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
 	}
 	mux.HandleFunc("POST /v1/spaces/{name}/review/marks", h.mark)
+	mux.HandleFunc("POST /v1/spaces/{name}/retired", h.retire)
+	mux.HandleFunc("GET /v1/spaces/{name}/retired", h.retired)
+	mux.HandleFunc("POST /v1/spaces/{name}/retired/restore", h.restore)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/claim", h.claim)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/questions/{id}/claim", h.claim)
 	mux.HandleFunc("GET /v1/spaces/{name}/templates", h.templates)
@@ -143,6 +146,15 @@ func (h Questions) review(w http.ResponseWriter, r *http.Request) {
 	after := 0
 	if h.ReviewAfter != nil {
 		after = h.ReviewAfter(name)
+	}
+	if r.URL.Query().Get("section") == "uncited" { // SB-2803
+		res, err := h.Service.Uncited(r.Context(), s, name, h.Reviews)
+		if err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", res)
+		return
 	}
 	res, err := h.Service.Review(r.Context(), s, name, h.Reviews, after)
 	if err != nil {
@@ -260,4 +272,61 @@ func (h Questions) deleteTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "deleted": true})
+}
+
+// retire takes a document out of the space's answers (SB-2801).
+func (h Questions) retire(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Cite       string `json:"cite"`
+		Reason     string `json:"reason"`
+		ReplacedBy string `json:"replaced_by"`
+	}
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite and a reason."))
+		return
+	}
+	ret, err := h.Service.Retire(r.Context(), s, r.PathValue("name"), body.Cite, body.Reason, body.ReplacedBy)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"document": ret.Doc, "reason": ret.Reason, "replaced_by": ret.ReplacedBy, "at": ret.At})
+}
+
+// retired lists the space's retirements (SB-2801).
+func (h Questions) retired(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	res, err := h.Service.RetiredOf(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", res)
+}
+
+// restore brings a retired document back (SB-2801).
+func (h Questions) restore(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Document string `json:"document"`
+	}
+	if !readJSON(r, &body) || body.Document == "" {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document."))
+		return
+	}
+	if err := h.Service.Restore(r.Context(), s, r.PathValue("name"), body.Document); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"document": body.Document, "restored": true})
 }

@@ -13,7 +13,7 @@ summary: "Nothing takes a superseded document out of answers short of deleting i
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-19, LAW-11, LAW-13 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ Nothing takes a superseded document out of answers short of deleting it at the s
 
 ## Acceptance criteria
 
-- [ ] A steward retires a document from their space's answers, with a reason and an optional replacement; answers, searches and drafts in that space skip it
-- [ ] Bring back undoes it; each is a record and an audit row; the replacement's cite says what it replaces if the asker can open the old one
-- [ ] A retired document is never cited in that space and still is in another; a rebuild keeps it out
+- [x] A steward retires a document from their space's answers, with a reason and an optional replacement; answers, searches and drafts in that space skip it
+- [x] Bring back undoes it; each is a record and an audit row; the replacement's cite says what it replaces if the asker can open the old one
+- [x] A retired document is never cited in that space and still is in another; a rebuild keeps it out
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API and record
-- [ ] Retrieval
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API and record
+- [x] Retrieval
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S27.1; tested in internal/core/ask/tidy_test.go, tests/cell/retire_test.go and web/src/tidy.test.tsx.
 
 ## Definition of done
 

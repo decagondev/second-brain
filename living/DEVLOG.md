@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S27.1: Take it out of answers
+
+**Wave/slice:** W27 / S27.1 (SB-2801 to SB-2804) · **Status:** Done
+
+**What:** A steward can retire a document from their own space's answers with a reason and, optionally, the document that replaces it; answers, searches and drafts in that space skip it, and a company-wide ask skips it only when every space holding it did. Retired lists them with Bring back, both audited. A replacement's cite says Replaces OLD TITLE when the asker can open the old one. The review list now groups documents with the same title and different text, counts a note's sources that changed or are gone, and shows documents no answer cited in 180 days on request.
+
+**Why this way:** Old documents that are still at the source keep coming back in answers, and stewards had no way to say so short of asking the owner to delete them. A retirement only narrows what one space's answers use (LAW-09), it is on the document's id so a rebuild keeps it out (LAW-13), and every list checks each document live as the steward and only counts the rest.
+
+**Learned:** The web test fakes answered every URL with the review list, so a new list read on the same screen needed its items checked for shape rather than trusted; the request-count tests now count only the requests they are about.
+
+**Laws:** LAW-09 (a retirement only narrows, and only in its space), LAW-13 (kept across a rebuild). Every law test is still green.
+
 ## 2026-11-23 S26.2: Trust the dates
 
 **Wave/slice:** W26 / S26.2 (SB-2705, SB-2706) · **Status:** Done

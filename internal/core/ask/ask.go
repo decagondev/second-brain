@@ -160,6 +160,9 @@ type Agent struct {
 	Marks MarkStore
 	// SyncLag names the connectors of an answer's cites that are behind (SB-2704); nil is none.
 	SyncLag SyncLag
+	// Retired keeps the documents stewards took out of their spaces' answers (SB-2801);
+	// nil is none.
+	Retired RetireStore
 }
 
 // Ask answers one question for the scope's user.
@@ -279,6 +282,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		if uncited*2 > len(claims) {
 			n := NoticeMostUncited
 			resp.Notice = &n
+		}
+		if err := a.markReplaces(ctx, s, claims, res.Context); err != nil {
+			return Response{}, err
 		}
 		resp.NoticeStale = staleNotice(claims)
 		resp.NoticeSync = a.syncNotices(ctx, claims)

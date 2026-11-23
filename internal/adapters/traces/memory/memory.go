@@ -28,6 +28,7 @@ type Store struct {
 	evals    map[string]ask.EvalCase
 	access   map[string]accessRec         // tenant/key
 	marks    map[string]ask.ReviewMark    // tenant/space/doc
+	retired  map[string]ask.Retirement    // tenant/space/doc
 	tmpls    map[string]ask.ReplyTemplate // tenant/space/id
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
@@ -44,7 +45,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, tmpls: map[string]ask.ReplyTemplate{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}}
 }
 
 // PutTrace implements ask.Store.
@@ -642,5 +643,39 @@ func (s *Store) DeleteTemplate(_ context.Context, tenant, space, id string) (boo
 	k := tenant + "/" + space + "/" + id
 	_, ok := s.tmpls[k]
 	delete(s.tmpls, k)
+	return ok, nil
+}
+
+var _ ask.RetireStore = (*Store)(nil)
+
+// PutRetirement implements ask.RetireStore (SB-2801): one per space and document.
+func (s *Store) PutRetirement(_ context.Context, r ask.Retirement) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.retired[r.Tenant+"/"+r.Space+"/"+r.Doc] = r
+	return nil
+}
+
+// Retirements implements ask.RetireStore.
+func (s *Store) Retirements(_ context.Context, tenant, space string) ([]ask.Retirement, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.Retirement{}
+	for _, r := range s.retired {
+		if r.Tenant == tenant && r.Space == space {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Doc < out[j].Doc })
+	return out, nil
+}
+
+// DeleteRetirement implements ask.RetireStore.
+func (s *Store) DeleteRetirement(_ context.Context, tenant, space, doc string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	k := tenant + "/" + space + "/" + doc
+	_, ok := s.retired[k]
+	delete(s.retired, k)
 	return ok, nil
 }

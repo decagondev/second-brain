@@ -174,3 +174,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-23 | LAW-07 | Tested (extended) | SB-2606, SB-2607: the token warning and the notify run record carry no content and no other person (TestTokenExpiryToldOnce, TestNotifyRunIsKept, TestNotifyFrom) |
 | 2026-11-23 | LAW-03 | Tested (extended) | SB-2704: an unreadable sync record is shown as unknown on the answer, never as fresh (TestSyncLagNotice) |
 | 2026-11-23 | LAW-09 | Tested (extended) | SB-2705: a document's own review-by date only makes it stale sooner; 2099 changes nothing (TestReviewByMakesStaleSooner, TestReviewByDatesAreKept) |
+| 2026-11-23 | LAW-09 | Tested (extended) | SB-2801: a retirement drops a document from its own space's answers only; company-wide only once every holding space retired it (TestRetireOnlyNarrowsItsSpace, TestRetireThroughARunningCell) |

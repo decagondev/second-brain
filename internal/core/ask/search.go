@@ -210,6 +210,9 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 	if err != nil {
 		return retrieve.Result{}, nil, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 	}
+	if res.Context, err = a.dropRetired(ctx, s, res.Context); err != nil { // SB-2801
+		return retrieve.Result{}, nil, err
+	}
 	return res, terms, nil
 }
 

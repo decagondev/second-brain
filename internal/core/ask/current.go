@@ -144,6 +144,9 @@ type ReviewItem struct {
 	// Copies are the other documents with the same text the steward can open (SB-2202).
 	OwnerGone bool     `json:"owner_gone,omitempty"`
 	Copies    []Result `json:"copies,omitempty"`
+	// SourcesMoved is, for a note, how many of its cites have a newer version or are gone
+	// (SB-2804).
+	SourcesMoved int `json:"sources_moved,omitempty"`
 	// Reports are the traces of the answers reported as citing it wrongly, newest first,
 	// for an eval case (SB-2204).
 	Reports []string `json:"reports,omitempty"`
@@ -169,6 +172,8 @@ type ReviewResponse struct {
 	// GlossaryFlagged are the space's glossary terms that read like an instruction, which
 	// are never used (SB-2203).
 	GlossaryFlagged []string `json:"glossary_flagged,omitempty"`
+	// SameName are the space's documents with the same title and different text (SB-2802).
+	SameName []SameName `json:"same_name,omitempty"`
 }
 
 // Review lists the documents a space holds that answers lean on but that are older than
@@ -222,6 +227,14 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	if err != nil {
 		return out, err
 	}
+	movedBy, moved, err := x.movedNotes(ctx, lk, name, marks)
+	if err != nil {
+		return out, err
+	}
+	notes = append(notes, moved...)
+	if out.SameName, err = x.sameName(ctx, s, held); err != nil {
+		return out, err
+	}
 	if len(refs) == 0 && len(notes) == 0 && len(held) == 0 {
 		return out, nil
 	}
@@ -269,7 +282,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			copies[n] = append(copies[n], r)
 			continue // listed once, under the newest copy
 		}
-		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Outdated: outdated[k], Wider: widerBy[k], OwnerGone: gone[c.Owner], Reports: reports[k]}
+		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Outdated: outdated[k], Wider: widerBy[k], OwnerGone: gone[c.Owner], Reports: reports[k], SourcesMoved: movedBy[k]}
 		if it.Wider > 0 {
 			it.Question = strings.TrimSuffix(path.Base(c.SourceID), ".md")
 		}

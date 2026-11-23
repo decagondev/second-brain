@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Retire from answers and Bring back (SB-2801); same name, different text (SB-2802); never cited (SB-2803); notes whose sources moved (SB-2804).
 - Review-by and expires dates in documents (SB-2705); the newer version wins a ranking tie (SB-2706).
 - Old-source warning (SB-2701); reviewed shows on the cite (SB-2702); report a cite as outdated (SB-2703); sync lag notice on answers (SB-2704).
 - Doctor fixes name runbook sections, checked by a test (SB-2605); token days left and an expiry warning (SB-2606); the notify job's last run in health, the console and the weekly report (SB-2607).

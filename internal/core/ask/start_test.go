@@ -21,6 +21,9 @@ func (ix index) Docs(_ context.Context, _ string, q ports.DocQuery) ([]ports.Chu
 		for _, o := range q.Owners {
 			hit = hit || c.Owner == o
 		}
+		for _, sp := range c.Spaces {
+			hit = hit || (q.Space != "" && sp == q.Space)
+		}
 		if hit {
 			out = append(out, c)
 		}

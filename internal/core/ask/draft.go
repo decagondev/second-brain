@@ -127,6 +127,9 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 	if err != nil {
 		return DraftResponse{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 	}
+	if res.Context, err = a.dropRetired(ctx, s, res.Context); err != nil { // SB-2801
+		return DraftResponse{}, err
+	}
 	chunks := []ports.Chunk{item}
 	for _, c := range res.Context {
 		if c.Kind == kind && c.SourceID == id {

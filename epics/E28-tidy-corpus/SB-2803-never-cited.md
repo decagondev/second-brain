@@ -13,7 +13,7 @@ summary: "Nobody sees which documents answers never use."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-07 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Nobody sees which documents answers never use.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/spaces/NAME/review?section=uncited` lists documents no answer cited in 180 days and older than 90 days, at most 100, oldest first
-- [ ] Titles only for documents the steward can open; never question text
-- [ ] A document cited once in the window isn't listed; a hidden one is a count only
+- [x] `GET /v1/spaces/NAME/review?section=uncited` lists documents no answer cited in 180 days and older than 90 days, at most 100, oldest first
+- [x] Titles only for documents the steward can open; never question text
+- [x] A document cited once in the window isn't listed; a hidden one is a count only
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S27.1; tested in internal/core/ask/tidy_test.go, tests/cell/retire_test.go and web/src/tidy.test.tsx.
 
 ## Definition of done
 
