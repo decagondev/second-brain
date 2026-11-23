@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S25.2: Know it's working
+
+**Wave/slice:** W25 / S25.2 (SB-2605, SB-2606, SB-2607) · **Status:** Done
+
+**What:** Every doctor line that isn't a pass names its fix, and the fixes that need more than one command point to the section of docs/runbooks/selfhost.md that explains it. The web UI shows each API token's days left, and the notify job tells a token's owner once, seven days before it expires, by the token's name (a new tokens kind they can turn off). The notify job keeps its last run, when, the channel and counts only, and GET /v1/admin/health, the console's Notifications line and the weekly report show it, with a warning when the last run failed or none ran in the last hour.
+
+**Why this way:** Operators learn of a stopped notify job from the health page, not from people who weren't told. The run record holds counts, never who was told or what about (LAW-07), and stays in the cell's state owner-only, so it adds no store. A token warning names only the person's own token, to that person.
+
+**Learned:** The fixes already covered every non-pass line; what was missing was a test that would keep it so, and a check that a runbook section a fix names exists, so a renamed heading fails the build instead of sending an operator nowhere.
+
+**Laws:** LAW-07 (the run record and the token warning carry counts and the owner's own token name only), LAW-12 (tokens are still the owner's own, read-only). Every law test is still green.
+
 ## 2026-11-23 S25.1: Set it up right the first time
 
 **Wave/slice:** W25 / S25.1 (SB-2601, SB-2602, SB-2603, SB-2604) · **Status:** Done

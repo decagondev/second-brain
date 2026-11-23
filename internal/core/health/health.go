@@ -13,6 +13,7 @@ import (
 
 	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/ingest"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/schedule"
 )
 
@@ -58,6 +59,42 @@ type Report struct {
 	At         time.Time   `json:"at"`
 	// Box is the machine's health on a self-hosted cell (SB-1802); absent on a managed one.
 	Box *Box `json:"box,omitempty"`
+	// Notify is the notify job's last run (SB-2607); absent on a cell with no channel.
+	Notify *Notify `json:"notify,omitempty"`
+}
+
+// NotifyStale is how long the notify job, every five minutes, may go without a run.
+const NotifyStale = time.Hour
+
+// Notify is the notify job's last run, counts only.
+type Notify struct {
+	LastRun *time.Time `json:"last_run"`
+	Via     string     `json:"via"`
+	Sent    int        `json:"sent"`
+	Skipped int        `json:"skipped"`
+	Failed  int        `json:"failed"`
+	Warning bool       `json:"warning"`
+	Reason  string     `json:"reason,omitempty"`
+}
+
+// NotifyFrom judges the last run's record for a cell sending through via ("" is none).
+func NotifyFrom(rec notify.RunRecord, found bool, via string, now time.Time) *Notify {
+	if via == "" {
+		return nil
+	}
+	n := &Notify{Via: via}
+	switch {
+	case !found:
+		n.Warning, n.Reason = true, "the notify job hasn't run"
+		return n
+	case rec.Error || rec.Failed > 0:
+		n.Warning, n.Reason = true, "the last run failed"
+	case now.Sub(rec.At) > NotifyStale:
+		n.Warning, n.Reason = true, "no run in the last hour"
+	}
+	at := rec.At.UTC()
+	n.LastRun, n.Sent, n.Skipped, n.Failed = &at, rec.Sent, rec.Skipped, rec.Failed
+	return n
 }
 
 // Box is a self-hosted machine's checks, judged from the host step's facts.

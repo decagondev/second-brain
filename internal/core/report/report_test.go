@@ -9,6 +9,7 @@ import (
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/notify"
 )
 
 type src struct{}
@@ -60,5 +61,27 @@ func TestBuildAndMarkdown(t *testing.T) {
 	}
 	if _, _, err := ParseWeek("2027-10"); err == nil {
 		t.Error("a bad week was accepted")
+	}
+}
+
+type withNotify struct{ src }
+
+func (withNotify) LastNotify(context.Context) (notify.RunRecord, bool, error) {
+	return notify.RunRecord{At: time.Date(2027, 3, 14, 9, 5, 0, 0, time.UTC), Via: "email", Sent: 4, Skipped: 1, Failed: 2, Error: true}, true, nil
+}
+
+// SB-2607: the report says how the notify job last ran, counts only; a source without it has no line.
+func TestNotifyLine(t *testing.T) {
+	from, to, _ := ParseWeek("2027-W10")
+	r, err := Build(context.Background(), withNotify{}, "acme-logistics", from, to, Price{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "| Notifications | last run 2027-03-14 09:05 UTC by email, failed: 4 sent, 1 skipped, 2 failed |"; !strings.Contains(r.Markdown(), want) {
+		t.Fatalf("lacks %q:\n%s", want, r.Markdown())
+	}
+	r, _ = Build(context.Background(), src{}, "acme-logistics", from, to, Price{})
+	if strings.Contains(r.Markdown(), "Notifications") {
+		t.Fatal("a cell that keeps no notify runs has a notifications line")
 	}
 }

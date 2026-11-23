@@ -13,7 +13,7 @@ summary: "Nobody sees that notifications stopped going out."
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-observability(7)`](../../manual/sb-observability.7.md) |
 | Laws | LAW-07 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Nobody sees that notifications stopped going out.
 
 ## Acceptance criteria
 
-- [ ] The notify job keeps its last run's counts (sent, skipped, failed) per channel, shown in `GET /v1/admin/health` and one line of the weekly report
-- [ ] A warning when the last run failed or hasn't run for an hour; counts never name anyone
-- [ ] A failing fake channel turns health to warning
+- [x] The notify job keeps its last run's counts (sent, skipped, failed) per channel, shown in `GET /v1/admin/health` and one line of the weekly report
+- [x] A warning when the last run failed or hasn't run for an hour; counts never name anyone
+- [x] A failing fake channel turns health to warning
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Counts
-- [ ] Health and report
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Counts
+- [x] Health and report
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S25.2; tests green.
 
 ## Definition of done
 

@@ -217,6 +217,13 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 		return r, err
 	}
 	r.Box = c.box(now)
+	if via := c.channel(); via != "" {
+		rec, found, err := lastNotify(c.Config.State)
+		if err != nil {
+			found = false // unreadable: as if it hadn't run, a warning
+		}
+		r.Notify = health.NotifyFrom(rec, found, via, now)
+	}
 	return r, nil
 }
 

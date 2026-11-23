@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -149,7 +150,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	}
 	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
-		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour,
+		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens,
 		Failed: func(kind string) {
 			c.Metrics.Add("sb_notify_failed_total", "Notifications that couldn't be sent, by kind (sb-ask(3)).", map[string]string{"kind": kind}, 1)
 		}}
@@ -315,4 +316,66 @@ func (c *Cell) testEmail(ctx context.Context, email string) (bool, string, error
 		return false, "", api.ErrNoPerson
 	}
 	return c.testTo(ctx, notify.Person{ID: active[0].ID, Email: email})
+}
+
+// expiringTokens are the tenant's read-only API tokens that expire in [from, to) (SB-2606):
+// their owner, name and end, from the session store, where a revoked token is gone.
+func (c *Cell) expiringTokens(ctx context.Context, from, to time.Time) ([]notify.Expiring, error) {
+	lt, ok := c.Sessions.(interface {
+		ListTokens(ctx context.Context, tenant string) ([]ports.Session, error)
+	})
+	if !ok {
+		return nil, nil
+	}
+	ss, err := lt.ListTokens(ctx, c.Config.Tenant)
+	if err != nil {
+		return nil, err
+	}
+	var out []notify.Expiring
+	for _, s := range ss {
+		if s.Token != "" && !s.Expires.Before(from) && s.Expires.Before(to) {
+			out = append(out, notify.Expiring{Owner: s.User, Name: s.Name, Expires: s.Expires})
+		}
+	}
+	return out, nil
+}
+
+// notifyRun is where the notify job's last run is kept: counts only, never who (SB-2607).
+func notifyRun(state string) string { return filepath.Join(state, "notify", "run.json") }
+
+// RecordNotify keeps the notify job's last run for health and the weekly report.
+func (c *Cell) RecordNotify(res notify.Result, runErr error, now time.Time) error {
+	rec := notify.RunRecord{At: now.UTC(), Via: c.channel(), Sent: res.Sent, Skipped: res.Skipped, Failed: res.Failed, Error: runErr != nil}
+	b, err := json.Marshal(rec)
+	if err != nil {
+		return err
+	}
+	path := notifyRun(c.Config.State)
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
+// lastNotify reads the notify job's last run; found is false when it hasn't run.
+func lastNotify(state string) (notify.RunRecord, bool, error) {
+	var rec notify.RunRecord
+	if state == "" {
+		return rec, false, nil
+	}
+	b, err := os.ReadFile(notifyRun(state))
+	if errors.Is(err, fs.ErrNotExist) {
+		return rec, false, nil
+	}
+	if err != nil {
+		return rec, false, err
+	}
+	if err := json.Unmarshal(b, &rec); err != nil {
+		return rec, false, err
+	}
+	return rec, true, nil
 }

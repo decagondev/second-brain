@@ -24,7 +24,18 @@ const (
 	KindDigest    = "digest"    // the weekly digest (SB-2103)
 	KindWatch     = "watch"     // a watched saved question's sources changed (SB-2104)
 	KindAccess    = "access"    // someone asked for access to a document (SB-2205)
+	KindTokens    = "tokens"    // a read-only API token expires in TokenWarn (SB-2606)
 )
+
+// TokenWarn is how long before a token expires its owner is told.
+const TokenWarn = 7 * 24 * time.Hour
+
+// Expiring is a read-only API token: its owner, its name and its end. Never the token.
+type Expiring struct {
+	Owner   string
+	Name    string
+	Expires time.Time
+}
 
 // KindTest is a test a person or an operator asks for (SB-2602): always sent, never off.
 const KindTest = "test"
@@ -33,7 +44,7 @@ const KindTest = "test"
 const TestText = "This is a test from Second Brain. Its notifications reach you here."
 
 // Kinds are every kind, for validating a person's settings.
-var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true}
+var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true}
 
 // Person is one recipient: a directory user and the email the chat finds them by.
 type Person struct {
@@ -106,7 +117,7 @@ func (p Prefs) Check() (Prefs, error) {
 	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil}
 	for _, k := range p.Off {
 		if !Kinds[k] {
-			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access)", ErrKind, k)
+			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens)", ErrKind, k)
 		}
 		if !seen[k] {
 			seen[k] = true
@@ -166,6 +177,9 @@ type Job struct {
 	// question's search results as user, in space, now.
 	Watches ask.WatchStore
 	Sources func(ctx context.Context, user, space, question string) (string, error)
+	// Tokens are the read-only API tokens that expire in [from, to), revoked ones gone
+	// (SB-2606); nil tells no one.
+	Tokens func(ctx context.Context, from, to time.Time) ([]Expiring, error)
 }
 
 // The digest's limits.
@@ -180,6 +194,17 @@ const FirstLookback = 10 * time.Minute
 // Result is what one run did.
 type Result struct {
 	Sent, Skipped, Failed int
+}
+
+// RunRecord is the last run as the cell keeps it for health and the weekly report
+// (SB-2607): when, the channel, and counts only, never who.
+type RunRecord struct {
+	At      time.Time `json:"at"`
+	Via     string    `json:"via"`
+	Sent    int       `json:"sent"`
+	Skipped int       `json:"skipped"`
+	Failed  int       `json:"failed"`
+	Error   bool      `json:"error"` // the run stopped or some sends failed
 }
 
 // ErrSend is a run in which some sends failed; the events are not sent again.
@@ -287,7 +312,38 @@ func (j Job) plan(ctx context.Context, from, now time.Time) ([]outgoing, error) 
 		return nil, err
 	}
 	more, err := j.askers(ctx, all, from, now)
-	return append(out, more...), err
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, more...)
+	toks, err := j.tokens(ctx, from, now)
+	return append(out, toks...), err
+}
+
+// tokens tells each token's owner once, TokenWarn before it expires: the tokens whose
+// warning time falls in this run's window, to owners still active.
+func (j Job) tokens(ctx context.Context, from, now time.Time) ([]outgoing, error) {
+	if j.Tokens == nil {
+		return nil, nil
+	}
+	ts, err := j.Tokens(ctx, from.Add(TokenWarn), now.Add(TokenWarn))
+	if err != nil {
+		return nil, fmt.Errorf("notify: tokens: %w", err)
+	}
+	sort.Slice(ts, func(a, b int) bool { return ts[a].Expires.Before(ts[b].Expires) })
+	var out []outgoing
+	for _, t := range ts {
+		p, ok, err := j.person(ctx, t.Owner)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		days := int((t.Expires.Sub(now) + 12*time.Hour) / (24 * time.Hour))
+		out = append(out, outgoing{p, Message{Kind: KindTokens, Text: fmt.Sprintf("Your API token %s expires in %s", t.Name, plural(days, "day", "days")), Link: j.tab("answer")}})
+	}
+	return out, nil
 }
 
 func plural(n int, one, many string) string {

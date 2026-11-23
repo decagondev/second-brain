@@ -195,6 +195,14 @@ func (s Sessions) ListUser(ctx context.Context, tenant, user string) ([]ports.Se
 	return list[ports.Session](ctx, s.Pool, s.Tenant, "session", "usr = $3", "at", user)
 }
 
+// ListTokens is every read-only API token of tenant (SB-2606), for the expiry warning.
+func (s Sessions) ListTokens(ctx context.Context, tenant string) ([]ports.Session, error) {
+	if tenant != s.Tenant {
+		return nil, nil
+	}
+	return list[ports.Session](ctx, s.Pool, s.Tenant, "session", "COALESCE(body->>'Token', '') <> ''", "at")
+}
+
 // ---- Traces, conversations and feedback (ask.Store, FeedbackStore, SpaceTagger) ----
 
 // Traces keeps answers, conversations and feedback.

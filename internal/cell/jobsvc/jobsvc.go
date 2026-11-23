@@ -391,7 +391,10 @@ func (s *Service) notify(ctx context.Context) error {
 	if send == nil {
 		send = s.Cell.Notifier()
 	}
-	_, err := s.Cell.NotifyJob(send).Run(ctx)
+	res, err := s.Cell.NotifyJob(send).Run(ctx)
+	if rerr := s.Cell.RecordNotify(res, err, s.now()); rerr != nil && err == nil {
+		err = fmt.Errorf("jobs: the notify run can't be kept: %w", rerr)
+	}
 	return err
 }
 

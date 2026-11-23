@@ -117,6 +117,7 @@ describe("admin console: health and the unhelpful-answer queue", () => {
                 { check: "readyz", verdict: "pass", detail: "/readyz answered 200" },
               ],
             },
+            notify: { last_run: "2027-03-10T11:55:00Z", via: "email", sent: 4, skipped: 1, failed: 2, warning: true, reason: "the last run failed" },
           }),
         );
       if (url === "/v1/admin/feedback?rating=down")
@@ -154,6 +155,8 @@ describe("admin console: health and the unhelpful-answer queue", () => {
     // The box's checks, worst first, each with its fix (SB-1802).
     expect(health.textContent).toMatch(/Worst check: fail/);
     expect(health.textContent).toMatch(/disk \/opt\/second-brain: fail, 93% used \(fix: free space on \/opt\/second-brain\)/);
+    // The notify job's last run, counts only, with its warning (SB-2607).
+    expect(health.textContent).toMatch(/by email: 4 sent, 1 skipped, 2 failed\. Warning: the last run failed\./);
     // Health and the queue come before everything else.
     const order = Array.from(container.querySelectorAll("h2")).map((h) => h.textContent);
     expect(order.slice(0, 2)).toEqual(["Cell health", "Unhelpful answers"]);

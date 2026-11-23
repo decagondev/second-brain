@@ -46,3 +46,17 @@ describe("API tokens", () => {
     expect(container.textContent).not.toContain("sbt_");
   });
 });
+
+// SB-2606: each token shows its days left, and a week or less is marked.
+describe("days left", () => {
+  it("counts whole days and marks the last week", async () => {
+    const { DaysLeft } = await import("./Tokens");
+    const now = Date.parse("2027-03-10T12:00:00Z");
+    const { container, rerender } = render(<DaysLeft expires="2027-03-30T12:00:00Z" now={now} />);
+    expect(container.textContent).toBe("(20 days left)");
+    expect(container.querySelector(".attention")).toBeNull();
+    rerender(<DaysLeft expires="2027-03-11T06:00:00Z" now={now} />);
+    expect(container.textContent).toBe("(1 day left)");
+    expect(container.querySelector(".attention")).not.toBeNull();
+  });
+});

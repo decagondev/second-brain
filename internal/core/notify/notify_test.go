@@ -446,3 +446,53 @@ func TestDigestStewardLines(t *testing.T) {
 		t.Fatalf("after sam left: %+v", s.got)
 	}
 }
+
+// SB-2606: a token's owner is told once, seven days before it expires, by its name only;
+// never a deprovisioned owner.
+func TestTokenExpiryToldOnce(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	toks := []Expiring{
+		{Owner: "usr_ann", Name: "nightly report", Expires: now.Add(TokenWarn - time.Minute)},
+		{Owner: "usr_gone", Name: "old script", Expires: now.Add(TokenWarn - 2*time.Minute)},
+		{Owner: "usr_bob", Name: "later", Expires: now.Add(TokenWarn + 3*time.Minute)},
+	}
+	j, s, c := world(now)
+	j.Questions = questions{}
+	j.Tokens = func(_ context.Context, from, to time.Time) ([]Expiring, error) {
+		var out []Expiring
+		for _, x := range toks {
+			if !x.Expires.Before(from) && x.Expires.Before(to) {
+				out = append(out, x)
+			}
+		}
+		return out, nil
+	}
+	tell := func(at time.Time) []string {
+		t.Helper()
+		j.Now = func() time.Time { return at }
+		s.got = nil
+		if _, err := j.Run(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		var got []string
+		for _, m := range s.got {
+			got = append(got, m.to.ID+": "+m.msg.Kind+" "+m.msg.Text)
+		}
+		return got
+	}
+	if got := tell(now); strings.Join(got, "|") != "usr_ann: tokens Your API token nightly report expires in 7 days" {
+		t.Fatalf("first run: %q", got)
+	}
+	if got := tell(now.Add(time.Minute)); len(got) != 0 {
+		t.Fatalf("told twice: %q", got)
+	}
+	if got := tell(now.Add(5 * time.Minute)); strings.Join(got, "|") != "usr_bob: tokens Your API token later expires in 7 days" {
+		t.Fatalf("bob's: %q", got)
+	}
+	_ = c
+	j.Prefs = prefs{"usr_bob": {Off: []string{KindTokens}}}
+	c.t = now.Add(4 * time.Minute)
+	if got := tell(now.Add(5 * time.Minute)); len(got) != 0 {
+		t.Fatalf("a person who turned tokens off was told: %q", got)
+	}
+}

@@ -176,11 +176,18 @@ type usage struct {
 	actions ActionStore
 	dir     DirectoryStore
 	index   IndexStore
+	state   string
 }
 
 func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
 	return u.traces.Between(ctx, tenant, from, to)
 }
+
+// LastNotify is the notify job's last run (report.NotifySource; SB-2607).
+func (u usage) LastNotify(context.Context) (notify.RunRecord, bool, error) {
+	return lastNotify(u.state)
+}
+
 func (u usage) StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error) {
 	return u.traces.StewardQuestionsBetween(ctx, tenant, from, to)
 }
@@ -240,6 +247,7 @@ func (u usage) Actions(ctx context.Context, tenant string, from, to time.Time) (
 }
 
 var _ report.Source = usage{}
+var _ report.NotifySource = usage{}
 
 // Options are what a test may change about how a cell reaches the outside: the zero value
 // is what the services run with.
@@ -333,7 +341,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	}
 	c.inbox, c.receipts, c.Actions, c.Proposals, c.Reviews = st.inbox, st.receipts, st.actions, st.proposals, st.reviews
 	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
-	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index}
+	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index, state: c.Config.State}
 	c.model = func(m manifest.Tenant) (ports.Model, error) {
 		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
 			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}, Once: c.Usage,

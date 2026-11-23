@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { AskError, listTokens, makeToken, revokeToken } from "./api";
 import type { ApiToken, Fetch } from "./api";
 import { ErrorBox } from "./ErrorBox";
-import { t } from "./i18n";
+import { t, tn } from "./i18n";
 
 // Read-only API tokens (sb-api(3); SB-2306): a person's own tokens for scripts, which ask
 // and search as them and nothing else. A new token is shown once.
@@ -66,7 +66,7 @@ export function ApiTokens({ fetcher = fetch }: { fetcher?: Fetch }) {
         <ul>
           {tokens.map((x) => (
             <li key={x.id}>
-              <span>{x.name}</span> <span className="meta">{t("expires {date}", { date: x.expires.slice(0, 10) })}</span>{" "}
+              <span>{x.name}</span> <span className="meta">{t("expires {date}", { date: x.expires.slice(0, 10) })}</span> <DaysLeft expires={x.expires} />{" "}
               <button type="button" onClick={() => revoke(x.id)} aria-label={t("Revoke {name}", { name: x.name })}>
                 {t("Revoke")}
               </button>
@@ -92,4 +92,10 @@ export function ApiTokens({ fetcher = fetch }: { fetcher?: Fetch }) {
       {error && <ErrorBox error={error.error} />}
     </section>
   );
+}
+
+// DaysLeft is how long a token has (SB-2606); a week or less is marked for attention.
+export function DaysLeft({ expires, now = Date.now() }: { expires: string; now?: number }) {
+  const days = Math.max(0, Math.ceil((Date.parse(expires) - now) / 86_400_000));
+  return <span className={days <= 7 ? "meta attention" : "meta"}>{tn(days, "({n} day left)", "({n} days left)")}</span>;
 }

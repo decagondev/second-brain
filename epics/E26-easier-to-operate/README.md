@@ -25,12 +25,12 @@ Proposed 2026-11-23 after W22 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] The email login never leaves the vault
-- [ ] Each channel's fake receives exactly the test text
-- [ ] A missing scope or permission is named
-- [ ] A config typo or missing secret stops an update before any restart
-- [ ] Every non-OK doctor verdict names a fix
-- [ ] Every law test still green; no new store, service or Go module
+- [x] The email login never leaves the vault
+- [x] Each channel's fake receives exactly the test text
+- [x] A missing scope or permission is named
+- [x] A config typo or missing secret stops an update before any restart
+- [x] Every non-OK doctor verdict names a fix
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

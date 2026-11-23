@@ -11,6 +11,7 @@ import (
 
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/notify"
 )
 
 // Source reads one week of a cell's records.
@@ -57,9 +58,11 @@ type Report struct {
 	DraftsUsed      int            `json:"drafts_used"`
 	DraftsDiscarded int            `json:"drafts_discarded"`
 	Actions         map[string]int `json:"actions"`
-	TokensIn        int            `json:"tokens_in"`
-	TokensOut       int            `json:"tokens_out"`
-	SpendUSD        float64        `json:"spend_usd"`
+	// Notify is the notify job's last run when the report was made (SB-2607); counts only.
+	Notify    *notify.RunRecord `json:"notify,omitempty"`
+	TokensIn  int               `json:"tokens_in"`
+	TokensOut int               `json:"tokens_out"`
+	SpendUSD  float64           `json:"spend_usd"`
 }
 
 // WeekOf is the ISO week label and its Monday-to-Monday UTC bounds.
@@ -176,6 +179,15 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 	if r.Seats > 0 {
 		r.ActivePerSeat = float64(r.ActiveUsers) / float64(r.Seats)
 	}
+	if ns, ok := src.(NotifySource); ok {
+		rec, found, err := ns.LastNotify(ctx)
+		if err != nil {
+			return r, err
+		}
+		if found {
+			r.Notify = &rec
+		}
+	}
 	if r.TokensIn, r.TokensOut, err = src.Tokens(ctx, tenant, from, to); err != nil {
 		return r, err
 	}
@@ -240,7 +252,19 @@ func (r Report) Markdown() string {
 	fmt.Fprintf(&b, "| Actions | %d proposed, %d approved, %d rejected, %d expired, %d ran with a receipt, %d did not run |\n",
 		r.Actions["proposed"], r.Actions["approved"], r.Actions["rejected"], r.Actions["expired"], r.Actions["ran_with_receipt"], r.Actions["did_not_run"])
 	fmt.Fprintf(&b, "| Spend | $%.2f (%d input, %d output tokens) |\n", r.SpendUSD, r.TokensIn, r.TokensOut)
+	if n := r.Notify; n != nil {
+		state := ""
+		if n.Error || n.Failed > 0 {
+			state = ", failed"
+		}
+		fmt.Fprintf(&b, "| Notifications | last run %s by %s%s: %d sent, %d skipped, %d failed |\n", n.At.UTC().Format("2006-01-02 15:04 UTC"), n.Via, state, n.Sent, n.Skipped, n.Failed)
+	}
 	return b.String()
+}
+
+// NotifySource is a Source that keeps the notify job's last run (SB-2607).
+type NotifySource interface {
+	LastNotify(ctx context.Context) (notify.RunRecord, bool, error)
 }
 
 // Weekly builds last week's report and delivers it (Monday 07:00 UTC, to the approver

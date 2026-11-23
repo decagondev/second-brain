@@ -73,6 +73,7 @@ var Subjects = map[string]string{
 	notify.KindWatch:     "your saved questions",
 	notify.KindAccess:    "a request for access",
 	notify.KindTest:      "a test",
+	notify.KindTokens:    "an API token expires soon",
 }
 
 // Send implements notify.Sender.

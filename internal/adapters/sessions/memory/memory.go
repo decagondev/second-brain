@@ -67,3 +67,17 @@ func (s *Store) ListUser(_ context.Context, tenant, user string) ([]ports.Sessio
 	sort.Slice(out, func(i, j int) bool { return out[i].SignedIn.Before(out[j].SignedIn) })
 	return out, nil
 }
+
+// ListTokens is every read-only API token of tenant (SB-2606), for the expiry warning.
+func (s *Store) ListTokens(_ context.Context, tenant string) ([]ports.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []ports.Session
+	for _, x := range s.m {
+		if x.Tenant == tenant && x.Token != "" {
+			out = append(out, x)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Expires.Before(out[j].Expires) })
+	return out, nil
+}

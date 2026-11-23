@@ -162,6 +162,12 @@ func Check(f Facts, now time.Time) []Line {
 	return out
 }
 
+// Runbook is the operator's runbook that a fix may point to (SB-2605).
+const Runbook = "docs/runbooks/selfhost.md"
+
+// see names a section of the runbook after a fix's command.
+func see(section string) string { return " (see " + Runbook + "#" + section + ")" }
+
 type adder func(check string, v Verdict, detail, fix string)
 
 // checkRuntime judges the services and timers.
@@ -236,7 +242,7 @@ func checkStorage(f Facts, now time.Time, add adder) {
 	case o.S3:
 		add("offsite", Unknown, o.Path+" couldn't be reached", "sb backup check --to "+o.Path+" --keys build/selfhost/vault/jobs/vault/tenants/TENANT/offsite")
 	case !o.Mounted || o.OnRoot:
-		add("offsite", Fail, o.Path+" is on this machine's root disk, not another machine", "mount the other machine's directory at "+o.Path)
+		add("offsite", Fail, o.Path+" is on this machine's root disk, not another machine", "mount the other machine's directory at "+o.Path+see("backup"))
 	case !o.Writable:
 		add("offsite", Fail, o.Path+" isn't writable by uid 65532", "chown 65532:65532 "+o.Path)
 	default:
@@ -268,20 +274,20 @@ func checkRecovery(f Facts, now time.Time, add adder) {
 	// The restore drill: a dump nobody has restored is a hope, not a backup.
 	switch {
 	case f.LastDrill == nil:
-		add("restore drill", Unknown, "no drill has run", "tools/selfhost/restore.sh --drill")
+		add("restore drill", Unknown, "no drill has run", "tools/selfhost/restore.sh --drill"+see("restore"))
 	case !f.DrillOK:
-		add("restore drill", Fail, "the last drill failed ("+f.LastDrill.UTC().Format("2006-01-02")+")", "tools/selfhost/restore.sh --drill")
+		add("restore drill", Fail, "the last drill failed ("+f.LastDrill.UTC().Format("2006-01-02")+")", "tools/selfhost/restore.sh --drill"+see("restore"))
 	case now.Sub(*f.LastDrill) > DrillFail:
-		add("restore drill", Fail, "the last drill passed "+f.LastDrill.UTC().Format("2006-01-02"), "tools/selfhost/restore.sh --drill")
+		add("restore drill", Fail, "the last drill passed "+f.LastDrill.UTC().Format("2006-01-02"), "tools/selfhost/restore.sh --drill"+see("restore"))
 	case now.Sub(*f.LastDrill) > DrillWarn:
-		add("restore drill", Warn, "the last drill passed "+f.LastDrill.UTC().Format("2006-01-02"), "tools/selfhost/restore.sh --drill")
+		add("restore drill", Warn, "the last drill passed "+f.LastDrill.UTC().Format("2006-01-02"), "tools/selfhost/restore.sh --drill"+see("restore"))
 	default:
 		add("restore drill", Pass, "passed "+f.LastDrill.UTC().Format("2006-01-02"), "")
 	}
 	checkKit(f, add)
 	// Upgrades held after a rollback.
 	if f.Held != "" {
-		add("upgrades", Warn, "held at "+f.Held+" after a rollback", "tools/selfhost/update.sh --resume")
+		add("upgrades", Warn, "held at "+f.Held+" after a rollback", "tools/selfhost/update.sh --resume"+see("upgrades"))
 	} else {
 		add("upgrades", Pass, "not held", "")
 	}
@@ -303,9 +309,9 @@ func checkKit(f Facts, add adder) {
 	case f.Recovery == "":
 		add("recovery kit", Unknown, "couldn't tell where the recovery key is", "ls build/selfhost/kit")
 	case f.Recovery == "pending":
-		add("recovery kit", Warn, "the recovery key's private half is still on this box, so the box's loss loses the off-box copies' key and a thief gets both", "tools/selfhost/install.sh --recovery-kit")
+		add("recovery kit", Warn, "the recovery key's private half is still on this box, so the box's loss loses the off-box copies' key and a thief gets both", "tools/selfhost/install.sh --recovery-kit"+see("backup"))
 	case f.Recovery == "none":
-		add("recovery kit", Fail, "no recovery kit and no recovery key: the sealed off-box copies can't be opened", "tools/selfhost/install.sh --recovery-kit --new-key")
+		add("recovery kit", Fail, "no recovery kit and no recovery key: the sealed off-box copies can't be opened", "tools/selfhost/install.sh --recovery-kit --new-key"+see("backup"))
 	case f.SharesOnBox > 0:
 		add("recovery kit", Warn, fmt.Sprintf("%d share page(s) are still on this box", f.SharesOnBox), "print them for their custodians, then delete build/selfhost/kit/*-share-*.txt")
 	default:

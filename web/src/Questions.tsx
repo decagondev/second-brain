@@ -124,6 +124,7 @@ const kinds: { id: string; name: string }[] = [
   { id: "questions", name: msg("New questions for spaces I steward") },
   { id: "digest", name: msg("What changed in my spaces, weekly") },
   { id: "watch", name: msg("Changes to my watched questions' sources") },
+  { id: "tokens", name: msg("My API tokens about to expire") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).

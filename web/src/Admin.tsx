@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { Fetch } from "./api";
 import type { Review } from "./Steward";
-import { t, tj, tn } from "./i18n";
+import { t, tj, tn, msg } from "./i18n";
 
 interface Proposal {
   id: string;
@@ -18,6 +18,7 @@ export interface Health {
   at: string;
   // The machine on a self-hosted cell (SB-1802); absent on a managed one.
   box?: { facts_at: string | null; verdict: string; checks: { check: string; verdict: string; detail: string; fix?: string }[] };
+  notify?: { last_run: string | null; via: string; sent: number; skipped: number; failed: number; warning: boolean; reason?: string };
 }
 
 // One answer in the unhelpful-answer queue (SB-1609): counts, decisions and the asker's own
@@ -35,6 +36,11 @@ export interface QueueItem {
   decisions: { verdict: string; reason: string; count: number }[];
   reviewed?: { by: string; at: string };
 }
+
+// The notify job's warnings as the cell words them (health.NotifyFrom; SB-2607).
+msg("the notify job hasn't run");
+msg("the last run failed");
+msg("no run in the last hour");
 
 function when(at: string | null): string {
   return at ? new Date(at).toISOString().replace("T", " ").slice(0, 16) + " UTC" : t("never");
@@ -77,7 +83,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   async function loadHealth() {
     try {
       const h = (await call(fetcher, "GET", "/v1/admin/health")) as Partial<Health>;
-      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box });
+      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box, notify: h.notify });
       setHealthError(undefined);
     } catch (e) {
       setHealth(undefined);
@@ -215,6 +221,23 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                 </li>
               ))}
             </ul>
+            {health.notify ? (
+              <>
+                <h3>{t("Notifications")}</h3>
+                <p className={health.notify.warning ? "attention" : undefined}>
+                  {health.notify.last_run
+                    ? t("Last run {at} by {via}: {sent} sent, {skipped} skipped, {failed} failed.", {
+                        at: when(health.notify.last_run),
+                        via: health.notify.via,
+                        sent: String(health.notify.sent),
+                        skipped: String(health.notify.skipped),
+                        failed: String(health.notify.failed),
+                      })
+                    : t("The notify job hasn't run yet.")}
+                  {health.notify.warning && health.notify.reason ? ` ${t("Warning: {reason}.", { reason: t(health.notify.reason) })}` : ""}
+                </p>
+              </>
+            ) : null}
             <h3>{t("Box")}</h3>
             {!health.box ? (
               <p>{t("Managed by the cloud: no machine to check.")}</p>

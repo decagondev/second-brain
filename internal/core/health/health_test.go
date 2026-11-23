@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/box"
+	"example.com/second-brain/internal/core/notify"
 )
 
 type runs map[string]time.Time
@@ -84,5 +85,31 @@ func TestBoxFromNoFactsIsUnknown(t *testing.T) {
 	b := BoxFrom([]byte(`{"at":"2026-11-23T11:30:00Z","ready":503}`), true, now)
 	if b.Verdict != box.Fail || b.FactsAt == nil {
 		t.Fatalf("%+v", b)
+	}
+}
+
+// SB-2607: the notify line warns on a failed run, a missing one or one over an hour old,
+// and a cell with no channel has none.
+func TestNotifyFrom(t *testing.T) {
+	now := time.Date(2027, 3, 14, 12, 0, 0, 0, time.UTC)
+	ok := notify.RunRecord{At: now.Add(-5 * time.Minute), Via: "slack", Sent: 3}
+	if n := NotifyFrom(ok, true, "slack", now); n == nil || n.Warning || n.Sent != 3 || n.LastRun == nil {
+		t.Fatalf("a good run: %+v", n)
+	}
+	for name, c := range map[string]struct {
+		rec   notify.RunRecord
+		found bool
+	}{
+		"failed sends":  {notify.RunRecord{At: ok.At, Failed: 1}, true},
+		"a stopped run": {notify.RunRecord{At: ok.At, Error: true}, true},
+		"stale":         {notify.RunRecord{At: now.Add(-NotifyStale - time.Minute)}, true},
+		"never ran":     {notify.RunRecord{}, false},
+	} {
+		if n := NotifyFrom(c.rec, c.found, "slack", now); n == nil || !n.Warning || n.Reason == "" {
+			t.Errorf("%s: %+v", name, n)
+		}
+	}
+	if n := NotifyFrom(ok, true, "", now); n != nil {
+		t.Fatalf("no channel: %+v", n)
 	}
 }
