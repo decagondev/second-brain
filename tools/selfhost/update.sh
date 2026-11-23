@@ -28,6 +28,13 @@ SERVICES=(api ingest jobs updater)
 compose() { DOCKER="$DOCKER" bash tools/selfhost/compose.sh "$@"; }
 state() { "$DOCKER" run --rm -u 0 -v sb-selfhost_state:/s "$HELPER" sh -c "$1" | tr -d '\r'; }
 die() { echo "selfhost-update: $*; nothing changed" >&2; exit 1; }
+# The configuration and its secrets, checked before any restart (SB-2604): a typo, a missing
+# secret or one others can read stops here. Files an older install wrote are made owner-only once.
+checkconfig() {
+  if [ ! -f "$DIR/.vault-private" ]; then chmod -R go= "$DIR/vault" 2>/dev/null || true; : >"$DIR/.vault-private"; fi
+  bash tools/selfhost/sb.sh cell check-config "$DIR/cell.json" --vault "$DIR/vault/api" >/dev/null ||
+    die "the configuration or its secrets are wrong (above)"
+}
 MODE=update BUNDLE=
 case "${1:-}" in
 "") ;;
@@ -38,6 +45,7 @@ case "${1:-}" in
 esac
 
 [ -f "$DIR/cell.json" ] && [ -f "$ENV" ] || die "no self-hosted cell here (make selfhost first)"
+checkconfig
 # The box's facts for the console's Box section (SB-1802), first, so a refused release
 # still leaves them fresh. Failing to record them changes nothing else.
 bash tools/selfhost/facts.sh | "$DOCKER" run --rm -i -u 0 -v sb-selfhost_state:/s "$HELPER" sh -c \

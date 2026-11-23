@@ -62,3 +62,23 @@ func (d Dir) Put(raw, value string) error {
 	}
 	return os.WriteFile(p, []byte(value), 0o600)
 }
+
+// Check reports whether a secret is there with owner-only permissions, without reading it
+// (SB-2604): os.ErrNotExist when it is missing, ErrExposed when others can read it.
+func (d Dir) Check(raw string) error {
+	p, err := d.path(raw)
+	if err != nil {
+		return err
+	}
+	st, err := os.Stat(p)
+	if err != nil {
+		return fmt.Errorf("localvault: %s: %w", raw, err)
+	}
+	if !st.Mode().IsRegular() {
+		return fmt.Errorf("localvault: %s: %w", raw, os.ErrNotExist)
+	}
+	if st.Mode().Perm()&0o077 != 0 {
+		return ErrExposed
+	}
+	return nil
+}

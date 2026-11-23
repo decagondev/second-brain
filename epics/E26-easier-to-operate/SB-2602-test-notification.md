@@ -13,7 +13,7 @@ summary: "Nobody can check a notification arrives until one silently doesn't."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md), [`sb(1)`](../../manual/sb.1.md) |
 | Laws | LAW-07 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Nobody can check a notification arrives until one silently doesn't.
 
 ## Acceptance criteria
 
-- [ ] Send me a test in notification settings, and `sb selfhost check-notify --to EMAIL`, send one fixed message through the cell's real channel
-- [ ] At most once a minute per person; the result says whether the channel took it
-- [ ] The fake Slack, Mattermost and SMTP servers each receive exactly the fixed text
+- [x] Send me a test in notification settings, and `sb selfhost check-notify --to EMAIL`, send one fixed message through the cell's real channel
+- [x] At most once a minute per person; the result says whether the channel took it
+- [x] The fake Slack, Mattermost and SMTP servers each receive exactly the fixed text
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API and CLI
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API and CLI
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S25.1: POST /v1/me/notifications/test, POST /v1/admin/notifications/test, sb selfhost check-notify, Send me a test
 
 ## Definition of done
 

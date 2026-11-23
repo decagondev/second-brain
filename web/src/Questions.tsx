@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, saveTemplate, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, ReviewItem } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
@@ -145,6 +145,14 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
       setStatus(errMsg(e, t("Your settings couldn't be saved.")));
     }
   }
+  async function test() {
+    try {
+      const r = await testNotification(fetcher);
+      setStatus(r.sent ? t("Sent by {via}. If nothing arrives, tell your administrator.", { via: r.via }) : t("{via} doesn't know you by your email. Tell your administrator.", { via: r.via }));
+    } catch (e) {
+      setStatus(errMsg(e, t("The test couldn't be sent.")));
+    }
+  }
   const paused = prefs.paused_until && new Date(prefs.paused_until) > new Date() ? new Date(prefs.paused_until) : undefined;
   return (
     <fieldset className="notify-settings">
@@ -176,6 +184,11 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
           </button>
         </p>
       )}
+      <p>
+        <button type="button" onClick={test}>
+          {t("Send me a test")}
+        </button>
+      </p>
       {status && (
         <p className="feedback-status" role="status">
           {status}

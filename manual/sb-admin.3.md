@@ -28,6 +28,7 @@ POST /v1/admin/subjects/erase
 POST /v1/admin/subjects/export
 GET  /v1/admin/retention/plan?days=N
 POST /v1/admin/sessions/revoke
+POST /v1/admin/notifications/test
 POST /v1/spaces/NAME/proposals                 (stewards)
 GET  /v1/admin/proposals
 POST /v1/admin/proposals/ID/approve
@@ -71,6 +72,8 @@ The console (`/?admin`) is a client of this API and has no other powers. It open
 **`GET /v1/admin/retention/plan?days=N`** (SB-1905) is what the nightly retention job (sb-tenant(5), Retention and deletion) would delete if it ran `N` days from now (default 0, at most 3650), deleting nothing: `{ "days", "cutoff", "would_delete": { "traces": 120, "conversations": 40, … }, "held": 7 }`. It runs the job's own selection in each store, the tenant's cutoff and then each shorter space's, so the counts are what that run deletes if nothing new arrives; records a legal hold keeps are counted apart in `held`, not in `would_delete`. A store that can't be read is `EUNAVAIL` and names it. `days` outside 0 to 3650 is `EINVAL`. It writes no audit row: it changes nothing and returns only counts. `sb tenant retention --plan` prints it (sb-tenant(1)).
 
 **`POST /v1/admin/sessions/revoke`** (SB-1906) takes `{ "user": "usr_…", "reason": "…" }` and ends every session of that person: `{ "user", "revoked": 2, "audit": ["aud_…", "aud_…"] }`. It writes a `kind: access` audit row (subject `sessions:USER`, state `revoke_requested`, the reason) before any session ends, and a second (`revoked`, `sessions=N`) after; if the first can't be written nothing is revoked (`EUNAVAIL`). A person with no session succeeds with `revoked: 0`. A missing reason, or a user that isn't `usr_…`, is `EINVAL`. It doesn't deactivate the person: they can sign in again (sb-identity(7), Signing out everywhere).
+
+**`POST /v1/admin/notifications/test`** (SB-2602) takes `{ "to": "ann@…" }` and sends that person the fixed test notification through the cell's real channel, as `POST /v1/me/notifications/test` does for oneself (sb-ask(3), Notifications): `{ "sent": true, "via": "mattermost" }`, with `sent: false` when the channel doesn't know them. The address must be one active directory user's (`EINVAL` otherwise), and an address can be tested once a minute (`ERATE`). `sb selfhost check-notify --to EMAIL` calls it (sb-selfhost(7), Checking the settings).
 
 **`GET /v1/admin/costs?month=2027-03`** returns the month's cost statement (sb-tenant(5), Model billing and cost statements): `{ "tenant", "month", "partial", "lines": [{ "provider", "model", "tokens_in", "tokens_out", "price_in_per_m", "price_out_per_m", "cost_usd" }], "total_usd", "budget_usd_month" }`. With `&format=csv` it is `text/csv` with the same columns, one row per line. A month that isn't `YYYY-MM` is `EINVAL`. Operators and approvers may read it.
 

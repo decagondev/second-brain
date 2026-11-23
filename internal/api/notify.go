@@ -15,12 +15,15 @@ type Notifications struct {
 	Release string
 	NewID   func(prefix string) string
 	Now     func() time.Time // nil is time.Now
+	// Test sends the caller the test notification (SB-2602); nil is EUNAVAIL.
+	Test NotifyTest
 }
 
 // Register mounts the endpoints on mux.
 func (h Notifications) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/notifications", h.get)
 	mux.HandleFunc("PUT /v1/me/notifications", h.put)
+	mux.HandleFunc("POST /v1/me/notifications/test", h.test)
 }
 
 func (h Notifications) k() Knowledge { return Knowledge{Release: h.Release, NewID: h.NewID} }

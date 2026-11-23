@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/pem"
 	"io"
 	"math/big"
 	"mime/quotedprintable"
@@ -25,6 +26,7 @@ import (
 type Fake struct {
 	Addr    string
 	Roots   *x509.CertPool
+	CertPEM []byte // the certificate Roots trusts, as PEM
 	NoTLS   bool
 	User    string
 	Pass    string
@@ -69,7 +71,7 @@ func NewFake() (*Fake, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := &Fake{Addr: ln.Addr().String(), Roots: roots, Unknown: map[string]bool{}, ln: ln,
+	f := &Fake{Addr: ln.Addr().String(), Roots: roots, CertPEM: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}), Unknown: map[string]bool{}, ln: ln,
 		cert: tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key, Leaf: leaf}}
 	go f.serve()
 	return f, nil

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S25.1: Set it up right the first time
+
+**Wave/slice:** W25 / S25.1 (SB-2601, SB-2602, SB-2603, SB-2604) · **Status:** Done
+
+**What:** A box sends notifications by email from install.env (SB_EMAIL_SERVER, SB_EMAIL_FROM, a root-only SB_EMAIL_LOGIN_FILE), checked by sb selfhost check-email at install, with --check and by the doctor. People press Send me a test, and operators run sb selfhost check-notify, to send one fixed message through the cell's real channel. sb selfhost check-chat asks Slack or Mattermost what the bot may do and names each missing scope or permission with where it is granted. sb cell check-config checks a configuration and that its secrets are in the vault owner-only, and update.sh runs it before any restart.
+
+**Why this way:** Each check names the fault and where it is fixed, and none prints a secret: check-config reads a secret file's mode, never its content, and check-chat never prints the token. The test message is a fixed text, so a test can't carry anything else (LAW-07), at most once a minute per person. The sign-in for the mail server goes to the two services that send and nowhere else, as the other secrets do.
+
+**Learned:** The install wrote vault files with the default umask, so the host copies were readable by others even though the volumes weren't; the install now writes them owner-only, and update.sh fixes an older install's files once before its first check, so the new check doesn't stop every box that upgrades. The proxy's file isn't a vault reference, so check-config leaves it to check-proxy.
+
+**Laws:** LAW-07 (the test is a fixed text), no secret in any check's output (tests fail on the token, the password or a secret file's content). Every law test is still green.
+
 ## 2026-11-23 S24.2: Know what waits
 
 **Wave/slice:** W24 / S24.2 (SB-2504, SB-2505, SB-2506, SB-2507) · **Status:** Done

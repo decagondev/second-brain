@@ -13,6 +13,7 @@ import (
 	"example.com/second-brain/internal/adapters/chatapp/mmapp"
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/adapters/smtpmail"
+	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/notify"
@@ -257,4 +258,61 @@ func (c *Cell) Sources(ctx context.Context, user, space, question string) (strin
 		cites = append(cites, r.Cite)
 	}
 	return ask.SourcesHash(cites), nil
+}
+
+// channel names what Notifier sends through.
+func (c *Cell) channel() string {
+	_, chat := c.Config.Connectors["chat"]
+	switch {
+	case c.Config.Mattermost.Base != "":
+		return "mattermost"
+	case chat:
+		return "slack"
+	case c.Config.Email.Server != "":
+		return "email"
+	}
+	return ""
+}
+
+// testTo sends the fixed test notification to p through the cell's real channel (SB-2602).
+func (c *Cell) testTo(ctx context.Context, p notify.Person) (bool, string, error) {
+	send := c.Notifier()
+	if send == nil {
+		return false, "", api.ErrNoChannel
+	}
+	err := send.Send(ctx, p, notify.Message{Kind: notify.KindTest, Text: notify.TestText, Link: strings.TrimSuffix(c.Config.BaseURL, "/") + "/?tab=questions"})
+	if errors.Is(err, notify.ErrNoSuchPerson) {
+		return false, c.channel(), nil
+	}
+	return err == nil, c.channel(), err
+}
+
+// testSelf is the caller's own test: their directory user, if active with an email.
+func (c *Cell) testSelf(ctx context.Context, user string) (bool, string, error) {
+	u, found, err := c.Directory.User(ctx, c.Config.Tenant, user)
+	if err != nil {
+		return false, "", err
+	}
+	if !found || !u.Active || len(u.Emails) == 0 || u.Emails[0] == "" {
+		return false, "", api.ErrNoPerson
+	}
+	return c.testTo(ctx, notify.Person{ID: u.ID, Email: u.Emails[0]})
+}
+
+// testEmail is an operator's test to the one active directory user with email.
+func (c *Cell) testEmail(ctx context.Context, email string) (bool, string, error) {
+	us, err := c.Directory.UsersByEmail(ctx, c.Config.Tenant, email)
+	if err != nil {
+		return false, "", err
+	}
+	var active []ports.User
+	for _, u := range us {
+		if u.Active {
+			active = append(active, u)
+		}
+	}
+	if len(active) != 1 {
+		return false, "", api.ErrNoPerson
+	}
+	return c.testTo(ctx, notify.Person{ID: active[0].ID, Email: email})
 }

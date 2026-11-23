@@ -72,6 +72,7 @@ var Subjects = map[string]string{
 	notify.KindDigest:    "what changed this week",
 	notify.KindWatch:     "your saved questions",
 	notify.KindAccess:    "a request for access",
+	notify.KindTest:      "a test",
 }
 
 // Send implements notify.Sender.
@@ -90,32 +91,11 @@ func (m Mail) Send(ctx context.Context, to notify.Person, msg notify.Message) er
 	}
 	ctx, cancel := context.WithTimeout(ctx, Timeout)
 	defer cancel()
-	host, _, err := net.SplitHostPort(m.Server)
+	c, host, err := open(ctx, m.Server, m.Roots)
 	if err != nil {
-		return err
-	}
-	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", m.Server)
-	if err != nil {
-		return err
-	}
-	if dl, ok := ctx.Deadline(); ok {
-		_ = conn.SetDeadline(dl)
-	}
-	c, err := smtp.NewClient(conn, host)
-	if err != nil {
-		_ = conn.Close()
 		return err
 	}
 	defer func() { _ = c.Close() }()
-	if err := c.Hello("second-brain"); err != nil {
-		return err
-	}
-	if ok, _ := c.Extension("STARTTLS"); !ok {
-		return ErrNoTLS
-	}
-	if err := c.StartTLS(&tls.Config{ServerName: host, RootCAs: m.Roots, MinVersion: tls.VersionTLS12}); err != nil {
-		return fmt.Errorf("smtpmail: STARTTLS: %w", err)
-	}
 	if m.Login != nil {
 		user, pass, err := m.Login(ctx)
 		if err != nil {
@@ -147,6 +127,55 @@ func (m Mail) Send(ctx context.Context, to notify.Person, msg notify.Message) er
 	if err := w.Close(); err != nil {
 		return err
 	}
+	return c.Quit()
+}
+
+// open connects to server and says STARTTLS, verifying the server's certificate.
+func open(ctx context.Context, server string, roots *x509.CertPool) (*smtp.Client, string, error) {
+	host, _, err := net.SplitHostPort(server)
+	if err != nil {
+		return nil, "", err
+	}
+	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", server)
+	if err != nil {
+		return nil, "", err
+	}
+	if dl, ok := ctx.Deadline(); ok {
+		_ = conn.SetDeadline(dl)
+	}
+	c, err := smtp.NewClient(conn, host)
+	if err != nil {
+		_ = conn.Close()
+		return nil, "", err
+	}
+	if err := c.Hello("second-brain"); err != nil {
+		_ = c.Close()
+		return nil, "", err
+	}
+	if ok, _ := c.Extension("STARTTLS"); !ok {
+		_ = c.Close()
+		return nil, "", ErrNoTLS
+	}
+	if err := c.StartTLS(&tls.Config{ServerName: host, RootCAs: roots, MinVersion: tls.VersionTLS12}); err != nil {
+		_ = c.Close()
+		return nil, "", fmt.Errorf("smtpmail: STARTTLS: %w", err)
+	}
+	return c, host, nil
+}
+
+// Probe checks that server answers, offers STARTTLS and shows a certificate roots trust
+// for its name (SB-2601); it sends nothing and signs in to nothing.
+func Probe(ctx context.Context, server string, roots *x509.CertPool) error {
+	if err := Parse(server); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, Timeout)
+	defer cancel()
+	c, _, err := open(ctx, server, roots)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = c.Close() }()
 	return c.Quit()
 }
 

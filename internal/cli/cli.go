@@ -61,8 +61,9 @@ commands:
   release status|promote|rollback      release controller (maintainers)
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
-  selfhost doctor|verify-bundle|check-proxy|check-dsn|retire-statement|verify-retirement
+  selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|retire-statement|verify-retirement
                                        a self-hosted box's checks, bundles, settings and retirement (sb-selfhost(7))
+  cell    check-config FILE [--vault DIR]   a cell's configuration and its secrets, before a restart
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
   backup  keygen|seal|open             seal off-box copies to the recovery key
   backup  push|pull|list|check         sealed copies to and from an off-box S3 bucket
@@ -168,6 +169,14 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.selfhostVerifyRetirement(args), true
 	case "selfhost check-dsn":
 		return e.selfhostCheckDSN(args), true
+	case "selfhost check-email":
+		return e.selfhostCheckEmail(args), true
+	case "selfhost check-notify":
+		return e.selfhostCheckNotify(args), true
+	case "selfhost check-chat":
+		return e.selfhostCheckChat(args), true
+	case "cell check-config":
+		return e.cellCheckConfig(args), true
 	case "secrets scan":
 		return e.secretsScan(args), true
 	case "backup keygen":
@@ -193,7 +202,7 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
+	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
 		return true
 	}
 	for k := range planned {

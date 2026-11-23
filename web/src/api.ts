@@ -421,6 +421,11 @@ export async function notifySettings(f: Fetch = fetch): Promise<NotifyPrefs> {
 
 // setNotifySettings replaces the kinds turned off; pauseDays, when given, pauses for that
 // many days from now (0 resumes), and otherwise the pause stays as it is.
+// Send me a test (SB-2602): the fixed test text through the cell's real channel.
+export function testNotification(f: Fetch = fetch): Promise<{ sent: boolean; via: string }> {
+  return call("/v1/me/notifications/test", post({}), f);
+}
+
 export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number): Promise<NotifyPrefs> {
   const body = pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
   return prefsOf(await call("/v1/me/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, f));

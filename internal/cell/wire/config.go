@@ -162,7 +162,7 @@ func Parse(b []byte) (Config, error) {
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.DisallowUnknownFields()
 	if err := d.Decode(&c); err != nil {
-		return Config{}, fmt.Errorf("%w: %v", ErrConfig, err)
+		return Config{}, fmt.Errorf("%w: %w", ErrConfig, err)
 	}
 	if d.More() {
 		return Config{}, fmt.Errorf("%w: more than one JSON value", ErrConfig)
@@ -346,4 +346,22 @@ func (c Config) checkModel() error {
 		return fmt.Errorf("%w: model.provider %s needs model.price, or the budget can't be kept", ErrConfig, c.Model.Provider)
 	}
 	return nil
+}
+
+// Secrets are the vault paths (under vault://tenants/TENANT/) the api service reads with
+// this configuration (SB-2604): required ones must be there; optional ones are checked
+// only when present. Connectors' own secrets depend on the manifest and are left out.
+func (c Config) Secrets() (required, optional []string) {
+	required = []string{"oidc", "scim", "control-plane", "audit/anchor-seed", "attest-seed"}
+	if p, ok := strings.CutPrefix(c.Database, "vault://tenants/"+c.Tenant+"/"); ok {
+		required = append(required, p)
+	}
+	if c.Mattermost.Base != "" {
+		required = append(required, "mattermost")
+	}
+	if c.Worm.Endpoint != "" {
+		required = append(required, "worm")
+	}
+	optional = []string{"email"}
+	return required, optional
 }

@@ -13,7 +13,7 @@ summary: "Email notifications are set by editing the cell's config by hand."
 | Manual | [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md) |
 | Laws | LAW-07 |
 | Depends on | — |
-| Status | Open |
+| Status | In review |
 
 ## Why
 
@@ -21,22 +21,22 @@ Email notifications are set by editing the cell's config by hand.
 
 ## Acceptance criteria
 
-- [ ] `SB_EMAIL_SERVER`, `SB_EMAIL_FROM` and an optional root-only `SB_EMAIL_LOGIN_FILE` in `install.env`, written to sb-cell(5) `email` and the vault
-- [ ] `--doctor` checks the server answers and offers STARTTLS
-- [ ] The install test writes the config; `sb secrets scan` finds no password outside the vault
+- [x] `SB_EMAIL_SERVER`, `SB_EMAIL_FROM` and an optional root-only `SB_EMAIL_LOGIN_FILE` in `install.env`, written to sb-cell(5) `email` and the vault
+- [x] `--doctor` checks the server answers and offers STARTTLS
+- [x] The install test writes the config; `sb secrets scan` finds no password outside the vault
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] install.sh and selfhost.sh
-- [ ] Doctor
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] install.sh and selfhost.sh
+- [x] Doctor
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S25.1: SB_EMAIL_* in install.env, sb selfhost check-email, the login in the api and jobs vaults. The install itself waits for a run on a real VM, like SB-1605
 
 ## Definition of done
 

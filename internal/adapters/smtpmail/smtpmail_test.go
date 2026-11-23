@@ -177,3 +177,34 @@ func TestParse(t *testing.T) {
 		}
 	}
 }
+
+// SB-2601, SB-2602: the probe checks STARTTLS and the certificate and sends nothing; the
+// test notification is exactly its fixed text.
+func TestProbeAndTheTestMessage(t *testing.T) {
+	f := fake(t)
+	ctx := context.Background()
+	if err := Probe(ctx, f.Addr, f.Roots); err != nil {
+		t.Fatal(err)
+	}
+	if err := Probe(ctx, f.Addr, nil); err == nil {
+		t.Fatal("a certificate the system doesn't trust passed the probe")
+	}
+	if err := Probe(ctx, "no-port", f.Roots); err == nil {
+		t.Fatal("a server without a port passed")
+	}
+	plain := fake(t)
+	plain.NoTLS = true
+	if err := Probe(ctx, plain.Addr, plain.Roots); !errors.Is(err, ErrNoTLS) {
+		t.Fatalf("a server without STARTTLS: %v", err)
+	}
+	if len(f.Messages()) != 0 || len(plain.Messages()) != 0 {
+		t.Fatal("the probe sent something")
+	}
+	m := notify.Message{Kind: notify.KindTest, Text: notify.TestText, Link: "https://brain.acme-logistics.example/?tab=questions"}
+	if err := sender(f).Send(ctx, notify.Person{Email: "ann@acme-logistics.example"}, m); err != nil {
+		t.Fatal(err)
+	}
+	if got := f.Messages(); len(got) != 1 || got[0].Subject != "Second Brain: a test" || !strings.HasPrefix(got[0].Text, notify.TestText+"\r\n") {
+		t.Fatalf("%+v", got)
+	}
+}

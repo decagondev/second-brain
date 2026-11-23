@@ -127,7 +127,8 @@ V=$DIR/vault
 # The vaults and cell.json as they were, so a change to either recreates the services below.
 confsum() { [ -d "$V" ] && { find "$V" -type f -exec sha256sum {} +; sha256sum "$DIR/cell.json" 2>/dev/null; } | sort | sha256sum; }
 CONF_BEFORE=$(confsum || true)
-put() { mkdir -p "$(dirname "$V/$1/vault/tenants/$SB_TENANT/$2")"; printf '%s' "$3" >"$V/$1/vault/tenants/$SB_TENANT/$2"; }
+# Every vault file owner-only (SB-2604): sb cell check-config refuses one others can read.
+put() { (umask 077; mkdir -p "$(dirname "$V/$1/vault/tenants/$SB_TENANT/$2")"; printf '%s' "$3" >"$V/$1/vault/tenants/$SB_TENANT/$2"); }
 mkdir -p "$DIR/policy/platform" "$DIR/tls" "$DIR/ca" "$DIR/releases" "$DIR/iam" "$V/updater/vault/tenants/$SB_TENANT"
 if [ ! -f "$DIR/db-password" ]; then
   dbpw=$(rand)
@@ -169,6 +170,11 @@ if [ ! -f "$DIR/worm-secret" ]; then
   printf '%s' "$wormsecret" >"$DIR/worm-secret"
   put jobs worm "$(printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret")"
 fi
+
+# The mail server's sign-in (SB-2601): the services that send, api and jobs, only.
+for svc in api jobs; do rm -f "$V/$svc/vault/tenants/$SB_TENANT/email"; done
+if [ -n "${SB_EMAIL_LOGIN_FILE:-}" ]; then for svc in api jobs; do put $svc email "$(tr -d '\r' <"$SB_EMAIL_LOGIN_FILE")"; done; fi
+[ ! -d "$V" ] || chmod -R go= "$V"
 
 # The bucket's key pair (SB-2303): the jobs service's vault only, read by sb on the host.
 rm -f "$V/jobs/vault/tenants/$SB_TENANT/offsite"
@@ -254,6 +260,9 @@ if [ -n "$OFFSITE_S3" ]; then
 else
   OFFSITE_COPY="{ \"dir\": \"/srv/backup-offsite\", \"media\": \"disk\", \"offsite\": true${SEAL:+, \"seal\": \"$SEAL\"} }"
 fi
+EMAIL=
+if [ -n "${SB_EMAIL_SERVER:-}" ]; then EMAIL="
+  \"email\": { \"server\": \"$SB_EMAIL_SERVER\", \"from\": \"$SB_EMAIL_FROM\" },"; fi
 cat >"$DIR/cell.json" <<JSON
 {
   "tenant": "$SB_TENANT",
@@ -269,7 +278,7 @@ cat >"$DIR/cell.json" <<JSON
   "embed": $EMBED,
   "database": "vault://tenants/$SB_TENANT/database",
   "connectors": $CONNECTORS,
-  "worm": { "endpoint": "http://worm:7070", "bucket": "sb-worm" },
+  "worm": { "endpoint": "http://worm:7070", "bucket": "sb-worm" },$EMAIL
   "backups": [
     { "dir": "/var/lib/sb/state/backups", "media": "disk" },
     { "worm": true },
@@ -320,6 +329,7 @@ profiles=$SB_IDP
   [ -z "$PROXY_FILE_IN" ] || echo "SB_PROXY_FILE=$PROXY_FILE_IN"
   [ -z "$NO_PROXY_LIST" ] || echo "SB_NO_PROXY_LIST=$NO_PROXY_LIST"
   [ -z "$MODEL_IMAGE" ] || echo "SB_MODEL_IMAGE=$MODEL_IMAGE"
+  [ -z "${SB_EMAIL_SERVER:-}" ] || echo "SB_EMAIL_SERVER=$SB_EMAIL_SERVER"
   if [ -f "$DIR/compose.env" ]; then grep -E '^SB_[A-Z]+_IMAGE=' "$DIR/compose.env" || true; fi
 } >"$DIR/compose.env.new"
 mv "$DIR/compose.env.new" "$DIR/compose.env"

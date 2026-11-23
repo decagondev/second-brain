@@ -126,3 +126,21 @@ describe("pause notifications", () => {
     expect(screen.queryByText(/Paused until/)).toBeNull();
   });
 });
+
+// SB-2602
+describe("send me a test", () => {
+  it("sends the test and says through which channel", async () => {
+    const calls: string[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      calls.push(`${init?.method ?? "GET"} ${u}`);
+      return u.endsWith("/test") ? json({ sent: true, via: "mattermost" }) : json({ off: [] });
+    };
+    render(<NotifySettings fetcher={fetcher} />);
+    await act(async () => {});
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Send me a test" }));
+    });
+    expect(calls).toContain("POST /v1/me/notifications/test");
+    expect(screen.getByRole("status").textContent).toBe("Sent by mattermost. If nothing arrives, tell your administrator.");
+  });
+});

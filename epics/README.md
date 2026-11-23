@@ -29,7 +29,7 @@ summary: Epics, waves, slices and tickets.
 | W22 Fit the Site | 7 | 0 | 0 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | W23 Easier to Ask | 6 | 0 | 0 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
 | W24 Easier to Steward | 7 | 0 | 0 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
-| W25 Easier to Operate | 0 | 0 | 7 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
+| W25 Easier to Operate | 2 | 2 | 3 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -509,10 +509,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-2601](E26-easier-to-operate/SB-2601-install-email.md) | S25.1 | E26 | Email in the installer | Open |
-| [SB-2602](E26-easier-to-operate/SB-2602-test-notification.md) | S25.1 | E26 | Send me a test | Open |
-| [SB-2603](E26-easier-to-operate/SB-2603-check-chat.md) | S25.1 | E26 | Check the chat bot | Open |
-| [SB-2604](E26-easier-to-operate/SB-2604-check-config.md) | S25.1 | E26 | Check the config first | Open |
+| [SB-2601](E26-easier-to-operate/SB-2601-install-email.md) | S25.1 | E26 | Email in the installer | In review |
+| [SB-2602](E26-easier-to-operate/SB-2602-test-notification.md) | S25.1 | E26 | Send me a test | Done |
+| [SB-2603](E26-easier-to-operate/SB-2603-check-chat.md) | S25.1 | E26 | Check the chat bot | In review |
+| [SB-2604](E26-easier-to-operate/SB-2604-check-config.md) | S25.1 | E26 | Check the config first | Done |
 | [SB-2605](E26-easier-to-operate/SB-2605-doctor-fix.md) | S25.2 | E26 | Doctor says how to fix it | Open |
 | [SB-2606](E26-easier-to-operate/SB-2606-token-expiry.md) | S25.2 | E26 | Token expiry warning | Open |
 | [SB-2607](E26-easier-to-operate/SB-2607-notify-health.md) | S25.2 | E26 | Notifications in health | Open |

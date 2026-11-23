@@ -55,6 +55,8 @@ type Admin struct {
 	}
 	// Sessions ends a person's sessions (SB-1906); nil means EUNAVAIL.
 	Sessions Revoker
+	// NotifyTest sends the test notification to a person by email (SB-2602); nil is EUNAVAIL.
+	NotifyTest NotifyTest
 }
 
 // Register mounts the endpoints.
@@ -71,6 +73,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
 	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
+	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
 		h.fail(w, errs.New(errs.ENOTIMPL, "refusal reports arrive with SB-607"))
 	}))

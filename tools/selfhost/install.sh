@@ -42,8 +42,15 @@ done
 # The running box, judged by sb selfhost doctor (internal/core/box) over facts.sh's facts.
 if [ -n "$DOCTOR" ]; then
   [ -f build/selfhost/compose.env ] || die "no self-hosted cell here to check"
-  bash tools/selfhost/facts.sh | bash tools/selfhost/sb.sh selfhost doctor
-  exit $?
+  rc=0
+  bash tools/selfhost/facts.sh | bash tools/selfhost/sb.sh selfhost doctor || rc=$?
+  # The mail server (SB-2601), when the box sends notifications by email.
+  srv=$(sed -nE 's/^SB_EMAIL_SERVER=//p' build/selfhost/compose.env | tr -d '\r')
+  if [ -n "$srv" ]; then
+    ca=; [ ! -f build/selfhost/ca/company-ca.crt ] || ca=build/selfhost/ca/company-ca.crt
+    bash tools/selfhost/sb.sh selfhost check-email "$srv" ${ca:+--ca "$ca"} || rc=1
+  fi
+  exit $rc
 fi
 if [ -n "$SUPPORT" ]; then exec bash tools/selfhost/support.sh; fi
 [ -n "$CONFIG" ] || die "usage: install.sh [--install-docker] [--check] CONFIG (see deploy/selfhost/install.env.example)"
@@ -91,6 +98,17 @@ elif [ -n "${SB_HTTPS_PROXY_FILE:-}" ]; then
 else
   proxy="none: api, ingest, jobs and the updater reach the internet directly"
 fi
+# Notifications by email (SB-2601): the server answers with STARTTLS, and the sign-in is root's alone.
+email="none"
+if [ -n "${SB_EMAIL_SERVER:-}" ]; then
+  [ -n "${SB_EMAIL_FROM:-}" ] || die "SB_EMAIL_SERVER needs SB_EMAIL_FROM, the sender address"
+  if [ -n "${SB_EMAIL_LOGIN_FILE:-}" ]; then
+    [ -f "$SB_EMAIL_LOGIN_FILE" ] || die "no SB_EMAIL_LOGIN_FILE at $SB_EMAIL_LOGIN_FILE"
+    case "$(stat -c '%u %a' "$SB_EMAIL_LOGIN_FILE")" in "0 600" | "0 400") ;; *) die "SB_EMAIL_LOGIN_FILE must be owned by root with mode 0600" ;; esac
+  fi
+  e=$(bash tools/selfhost/sb.sh selfhost check-email "$SB_EMAIL_SERVER" ${SB_TLS_CA:+--ca "$SB_TLS_CA"}) || die "SB_EMAIL_SERVER is refused (above)"
+  email="$SB_EMAIL_SERVER from $SB_EMAIL_FROM${SB_EMAIL_LOGIN_FILE:+, signing in with $SB_EMAIL_LOGIN_FILE}"
+fi
 if [ "${SB_DATABASE:-bundled}" = external ]; then
   [ -f "${SB_DATABASE_DSN_FILE:-}" ] || die "SB_DATABASE=external needs SB_DATABASE_DSN_FILE"
   d=$(bash tools/selfhost/sb.sh selfhost check-dsn "$SB_DATABASE_DSN_FILE") || die "SB_DATABASE_DSN_FILE is refused (above)"
@@ -101,6 +119,7 @@ fi
 if [ -n "$CHECK" ]; then
   echo "install: outbound proxy: $proxy"
   echo "install: database: $database"
+  echo "install: email: $email"
   echo "install: off-box copies: $offsite"
   echo "install: the machine and $CONFIG look right; nothing changed"; exit 0
 fi

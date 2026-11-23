@@ -26,6 +26,12 @@ const (
 	KindAccess    = "access"    // someone asked for access to a document (SB-2205)
 )
 
+// KindTest is a test a person or an operator asks for (SB-2602): always sent, never off.
+const KindTest = "test"
+
+// TestText is the test's whole text, fixed, so a test says nothing else.
+const TestText = "This is a test from Second Brain. Its notifications reach you here."
+
 // Kinds are every kind, for validating a person's settings.
 var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true}
 
