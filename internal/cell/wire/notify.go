@@ -47,6 +47,31 @@ func (c *Cell) Notifier() notify.Sender {
 	return nil
 }
 
+// claimant says whether a claim's holder is an active member of the stewards now, by the
+// directory as it is now (SB-2502, LAW-21), with the email to show.
+func (c *Cell) claimant(ctx context.Context, user string, stewards []string) (string, bool, error) {
+	u, found, err := c.Directory.User(ctx, c.Config.Tenant, user)
+	if err != nil || !found || !u.Active || len(u.Emails) == 0 {
+		return "", false, err
+	}
+	for _, g := range stewards {
+		name, ok := strings.CutPrefix(g, "group:")
+		if !ok {
+			continue
+		}
+		ids, err := c.Directory.Members(ctx, c.Config.Tenant, name)
+		if err != nil {
+			return "", false, err
+		}
+		for _, id := range ids {
+			if id == user {
+				return u.Emails[0], true, nil
+			}
+		}
+	}
+	return "", false, nil
+}
+
 // mailLogin reads the mail server's sign-in from vault://tenants/TENANT/email, as
 // {"username", "password"}; no such secret is no sign-in.
 func (c *Cell) mailLogin() func(context.Context) (string, string, error) {

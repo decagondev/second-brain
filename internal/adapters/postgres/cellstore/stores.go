@@ -296,7 +296,7 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}}
 }
 
 var _ notify.PrefStore = Traces{}
@@ -353,6 +353,37 @@ func (t Traces) EvalCases(ctx context.Context, tenant string) ([]ask.EvalCase, e
 // DeleteEvalCase implements ask.EvalStore.
 func (t Traces) DeleteEvalCase(ctx context.Context, tenant, id string) error {
 	return del(ctx, t.Pool, tenant, "evalcase", id)
+}
+
+var (
+	_ ask.MarkStore     = Traces{}
+	_ ask.TemplateStore = Traces{}
+)
+
+// PutReviewMark implements ask.MarkStore (SB-2501): one per space and document.
+func (t Traces) PutReviewMark(ctx context.Context, m ask.ReviewMark) error {
+	return put(ctx, t.Pool, m.Tenant, "reviewmark", m.Space+"|"+m.Doc, meta{at: m.At, user: m.By, space: m.Space}, m, false)
+}
+
+// ReviewMarks implements ask.MarkStore.
+func (t Traces) ReviewMarks(ctx context.Context, tenant, space string) ([]ask.ReviewMark, error) {
+	return list[ask.ReviewMark](ctx, t.Pool, tenant, "reviewmark", "space = $3", "id", space)
+}
+
+// PutTemplate implements ask.TemplateStore (SB-2503).
+func (t Traces) PutTemplate(ctx context.Context, rt ask.ReplyTemplate) error {
+	return put(ctx, t.Pool, rt.Tenant, "replytemplate", rt.ID, meta{at: rt.At, user: rt.By, space: rt.Space}, rt, false)
+}
+
+// Templates implements ask.TemplateStore: by name.
+func (t Traces) Templates(ctx context.Context, tenant, space string) ([]ask.ReplyTemplate, error) {
+	return list[ask.ReplyTemplate](ctx, t.Pool, tenant, "replytemplate", "space = $3", "body->>'name', id", space)
+}
+
+// DeleteTemplate implements ask.TemplateStore.
+func (t Traces) DeleteTemplate(ctx context.Context, tenant, space, id string) (bool, error) {
+	tag, err := t.Pool.Exec(ctx, `DELETE FROM cell_docs WHERE tenant = $1 AND kind = 'replytemplate' AND id = $2 AND space = $3`, tenant, id, space)
+	return err == nil && tag.RowsAffected() > 0, err
 }
 
 var _ ask.StewardStore = Traces{}
@@ -490,7 +521,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one

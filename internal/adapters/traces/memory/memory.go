@@ -26,7 +26,9 @@ type Store struct {
 	stq      map[string]ask.StewardQuestion
 	prefs    map[string]prefRec // tenant/user
 	evals    map[string]ask.EvalCase
-	access   map[string]accessRec // tenant/key
+	access   map[string]accessRec         // tenant/key
+	marks    map[string]ask.ReviewMark    // tenant/space/doc
+	tmpls    map[string]ask.ReplyTemplate // tenant/space/id
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -42,7 +44,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, tmpls: map[string]ask.ReplyTemplate{}}
 }
 
 // PutTrace implements ask.Store.
@@ -157,7 +159,7 @@ func window[T any](m map[string]T, of func(T) (tenant string, at time.Time, key 
 // conversations and feedback (sb-tenant(5), Retention and deletion).
 func (s *Store) Retention() []retention.Store {
 	// Feedback first: it takes its space from its trace, which must still be there (SB-1401).
-	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}, view{s, "eval cases"}, view{s, "access requests"}}
+	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}, view{s, "eval cases"}, view{s, "access requests"}, view{s, "review marks"}, view{s, "reply templates"}}
 }
 
 // PrefsName is the notification settings' store name: erased with a person, never expired.
@@ -285,6 +287,18 @@ func (v view) drop(match matcher, held retention.Held, dry bool, got *[]json.Raw
 		for k, c := range s.evals {
 			if try(c.Tenant, c.By, spaceOf(c.Space), c.At, c) {
 				delete(s.evals, k)
+			}
+		}
+	case "review marks":
+		for k, m := range s.marks {
+			if try(m.Tenant, m.By, spaceOf(m.Space), m.At, m) {
+				delete(s.marks, k)
+			}
+		}
+	case "reply templates":
+		for k, t := range s.tmpls {
+			if try(t.Tenant, t.By, spaceOf(t.Space), t.At, t) {
+				delete(s.tmpls, k)
 			}
 		}
 	case PrefsName:
@@ -570,4 +584,63 @@ func (s *Store) Watched(_ context.Context, tenant string) ([]ask.SavedQuestion, 
 		return out[i].At.Before(out[j].At) || out[i].At.Equal(out[j].At) && out[i].ID < out[j].ID
 	})
 	return out, nil
+}
+
+var (
+	_ ask.MarkStore     = (*Store)(nil)
+	_ ask.TemplateStore = (*Store)(nil)
+)
+
+// PutReviewMark implements ask.MarkStore (SB-2501): one per space and document.
+func (s *Store) PutReviewMark(_ context.Context, m ask.ReviewMark) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.marks[m.Tenant+"/"+m.Space+"/"+m.Doc] = m
+	return nil
+}
+
+// ReviewMarks implements ask.MarkStore.
+func (s *Store) ReviewMarks(_ context.Context, tenant, space string) ([]ask.ReviewMark, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.ReviewMark{}
+	for _, m := range s.marks {
+		if m.Tenant == tenant && m.Space == space {
+			out = append(out, m)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Doc < out[j].Doc })
+	return out, nil
+}
+
+// PutTemplate implements ask.TemplateStore (SB-2503).
+func (s *Store) PutTemplate(_ context.Context, t ask.ReplyTemplate) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.tmpls[t.Tenant+"/"+t.Space+"/"+t.ID] = t
+	return nil
+}
+
+// Templates implements ask.TemplateStore: by name.
+func (s *Store) Templates(_ context.Context, tenant, space string) ([]ask.ReplyTemplate, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.ReplyTemplate{}
+	for _, t := range s.tmpls {
+		if t.Tenant == tenant && t.Space == space {
+			out = append(out, t)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name+out[i].ID < out[j].Name+out[j].ID })
+	return out, nil
+}
+
+// DeleteTemplate implements ask.TemplateStore.
+func (s *Store) DeleteTemplate(_ context.Context, tenant, space, id string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	k := tenant + "/" + space + "/" + id
+	_, ok := s.tmpls[k]
+	delete(s.tmpls, k)
+	return ok, nil
 }

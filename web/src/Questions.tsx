@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, listQuestions, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion, ReviewItem } from "./api";
+import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, saveTemplate, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion, ReplyTemplate, ReviewItem } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -170,12 +170,17 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   const [cites, setCites] = useState<Record<string, string>>({});
   const [title, setTitle] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<Record<string, NoteResult>>({});
+  const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
+  const [steward, setSteward] = useState(false);
   const ids = useId();
 
   async function load() {
+    setTemplates(await replyTemplates(space, fetcher));
     try {
       setItems(await stewardQueue(space, fetcher));
+      setSteward(true);
     } catch {
+      setSteward(false);
       setItems([]); // not a steward here, or an older cell: the section stays empty
     }
   }
@@ -192,6 +197,16 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
       await load();
     } catch (e) {
       setStatus(errMsg(e, t("The reply couldn't be sent.")));
+    }
+  }
+
+  async function claim(id: string, release: boolean) {
+    try {
+      const c = await claimQuestion(space, id, release, fetcher);
+      setItems((xs) => xs.map((q) => (q.id === id ? { ...q, claim: c ?? undefined } : q)));
+      if (c && !c.mine) setStatus(t("{who} is already answering this.", { who: c.by }));
+    } catch (e) {
+      setStatus(errMsg(e, t("The question couldn't be claimed.")));
     }
   }
 
@@ -228,6 +243,44 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
               <p className="question">{q.question}</p>
               {q.state === "open" ? (
                 <div className="decide">
+                  <p className="meta">
+                    {q.claim && !q.claim.mine
+                      ? t("{who} is answering this, until {time}.", { who: q.claim.by, time: new Date(q.claim.until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })
+                      : q.claim?.mine
+                        ? t("You said you'd answer this.")
+                        : ""}{" "}
+                    {q.claim?.mine ? (
+                      <button type="button" onClick={() => claim(q.id, true)}>
+                        {t("Let it go")}
+                      </button>
+                    ) : (
+                      !q.claim && (
+                        <button type="button" onClick={() => claim(q.id, false)}>
+                          {t("I'll answer this")}
+                        </button>
+                      )
+                    )}
+                  </p>
+                  {templates.length > 0 && (
+                    <>
+                      <label htmlFor={`${ids}-u${i}`}>{t("Use a template")}</label>
+                      <select
+                        id={`${ids}-u${i}`}
+                        value=""
+                        onChange={(e) => {
+                          const tm = templates.find((x) => x.id === e.target.value);
+                          if (tm) setText((x) => ({ ...x, [q.id]: tm.text }));
+                        }}
+                      >
+                        <option value="">{t("Choose one")}</option>
+                        {templates.map((tm) => (
+                          <option key={tm.id} value={tm.id}>
+                            {tm.name}
+                          </option>
+                        ))}
+                      </select>
+                    </>
+                  )}
                   <label htmlFor={`${ids}-r${i}`}>{t("Reply to: {question}", { question: q.question })}</label>
                   <textarea id={`${ids}-r${i}`} rows={3} maxLength={4000} value={text[q.id] ?? ""} onChange={(e) => setText((x) => ({ ...x, [q.id]: e.target.value }))} />
                   <label htmlFor={`${ids}-c${i}`}>{t("Cites, from your own search (optional)")}</label>
@@ -256,8 +309,89 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
           ))}
         </ul>
       )}
+      {steward && <Templates space={space} items={templates} onChange={setTemplates} fetcher={fetcher} />}
       {status && <p role="status">{status}</p>}
     </section>
+  );
+}
+
+// A space's reply templates (SB-2503): add, edit and delete, for its stewards only.
+function Templates({ space, items, onChange, fetcher }: { space: string; items: ReplyTemplate[]; onChange: (ts: ReplyTemplate[]) => void; fetcher?: Fetch }) {
+  const ids = useId();
+  const [editing, setEditing] = useState<ReplyTemplate>({ id: "", name: "", text: "" });
+  const [error, setError] = useState("");
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      await saveTemplate(space, editing.id, editing.name, editing.text, fetcher);
+      onChange(await replyTemplates(space, fetcher));
+      setEditing({ id: "", name: "", text: "" });
+    } catch (err) {
+      setError(errMsg(err, t("The template couldn't be saved.")));
+    }
+  }
+  async function remove(id: string) {
+    setError("");
+    try {
+      await deleteTemplate(space, id, fetcher);
+      onChange(items.filter((x) => x.id !== id));
+    } catch (err) {
+      setError(errMsg(err, t("The template couldn't be deleted.")));
+    }
+  }
+  return (
+    <details className="templates">
+      <summary>{t("Reply templates")}</summary>
+      {items.length > 0 && (
+        <ul>
+          {items.map((tm) => (
+            <li key={tm.id}>
+              <span>{tm.name}</span>{" "}
+              <button type="button" aria-label={t("Edit {name}", { name: tm.name })} onClick={() => setEditing(tm)}>
+                {t("Edit")}
+              </button>{" "}
+              <button type="button" aria-label={t("Delete {name}", { name: tm.name })} onClick={() => remove(tm.id)}>
+                {t("Delete")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={save}>
+        <label htmlFor={`${ids}-n`}>{t("Template name")}</label>
+        <input id={`${ids}-n`} maxLength={60} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+        <label htmlFor={`${ids}-x`}>{t("Template text")}</label>
+        <textarea id={`${ids}-x`} rows={3} maxLength={2000} value={editing.text} onChange={(e) => setEditing({ ...editing, text: e.target.value })} />
+        <button type="submit" disabled={editing.name.trim() === "" || editing.text.trim() === ""}>
+          {editing.id ? t("Save template") : t("Add template")}
+        </button>
+      </form>
+      {error && <p role="alert">{error}</p>}
+    </details>
+  );
+}
+
+// Reviewed, still right (SB-2501): off the list until a new version, its age or a new report.
+function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: ReviewItem; onDone: () => void; fetcher?: Fetch }) {
+  const [error, setError] = useState("");
+  async function mark() {
+    setError("");
+    try {
+      await markReviewed(space, item.cite, fetcher);
+      onDone();
+    } catch (err) {
+      setError(errMsg(err, t("The document couldn't be marked.")));
+    }
+  }
+  return (
+    <>
+      {" "}
+      <button type="button" aria-label={t("Reviewed, still right: {name}", { name: item.title ?? item.cite })} onClick={mark}>
+        {t("Reviewed, still right")}
+      </button>
+      {error && <span role="alert"> {error}</span>}
+    </>
   );
 }
 
@@ -393,6 +527,9 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                 </span>
               )}
               {r.wider !== undefined && r.wider > 0 && r.question && <Narrow space={space} item={r} fetcher={fetcher} />}
+              {!r.owner_gone && !(r.wider !== undefined && r.wider > 0) && !(r.copies && r.copies.length > 0) && (
+                <MarkReviewed space={space} item={r} fetcher={fetcher} onDone={() => setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== r.cite) }))} />
+              )}
               {r.reports && r.reports.length > 0 && <AddToEvals space={space} item={r} fetcher={fetcher} />}
             </li>
           ))}

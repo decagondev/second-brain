@@ -57,6 +57,8 @@ type StewardQuestion struct {
 	Trace    string        `json:"trace"`
 	At       time.Time     `json:"at"`
 	Reply    *StewardReply `json:"reply,omitempty"`
+	// Claim is a steward's "I'll answer this" (SB-2502); a reply ends it.
+	Claim *StewardClaim `json:"claim,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -98,6 +100,11 @@ type Stewards struct {
 	// (SB-2204); nil keeps none.
 	Evals    EvalStore
 	Feedback FeedbackReader
+	// Marks keeps review marks, Claimant says whether a claim's holder is a steward now, and
+	// Replies keeps reply templates (SB-2501 to SB-2503); nil keeps or shows none.
+	Marks    MarkStore
+	Claimant Claimant
+	Replies  TemplateStore
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -129,6 +136,7 @@ type StewardItem struct {
 	At       time.Time     `json:"at"`
 	State    string        `json:"state"`
 	Reply    *StewardReply `json:"reply,omitempty"`
+	Claim    *ClaimView    `json:"claim,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -226,7 +234,8 @@ func (x Stewards) steward(ctx context.Context, s tenancy.Scope, name string) ([]
 
 // Queue is the space's questions for its stewards: open ones first, then newest.
 func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]StewardItem, error) {
-	if _, _, err := x.steward(ctx, s, name); err != nil {
+	stewards, _, err := x.steward(ctx, s, name)
+	if err != nil {
 		return nil, err
 	}
 	qs, err := x.Store.StewardQueue(ctx, x.Agent.Tenant, SpaceKey(name))
@@ -234,10 +243,13 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 	}
 	out := []StewardItem{}
+	now := x.Now().UTC()
 	for _, q := range qs {
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply}
 		if q.Reply != nil {
 			it.State = "answered"
+		} else if it.Claim, err = x.claimView(ctx, s, q.Claim, stewards, now); err != nil {
+			return nil, err
 		}
 		out = append(out, it)
 	}
@@ -302,6 +314,7 @@ func (x Stewards) Reply(ctx context.Context, s tenancy.Scope, name, id, text str
 			return fmt.Errorf("%w: this question already has a reply", ErrInvalid)
 		}
 		q.Reply = r
+		q.Claim = nil
 		return nil
 	})
 }

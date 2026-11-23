@@ -264,6 +264,8 @@ export interface QueueQuestion {
   at: string;
   state: "open" | "answered";
   reply?: { by: string; text: string; cites: string[]; at: string; note?: string };
+  // A steward's live claim (SB-2502): who, whether it is the caller's, and until when.
+  claim?: { by: string; mine: boolean; until: string };
 }
 
 export interface NoteResult {
@@ -295,6 +297,42 @@ export function replyToQuestion(space: string, id: string, text: string, cites: 
 
 export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch): Promise<NoteResult> {
   return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title } : { title, confirm }), f);
+}
+
+// Stewards' tools (sb-ask(3); SB-2501 to SB-2503).
+const sp = (space: string) => `/v1/spaces/${encodeURIComponent(space)}`;
+
+export function markReviewed(space: string, cite: string, f: Fetch = fetch): Promise<{ document: string; version: number }> {
+  return call(`${sp(space)}/review/marks`, post({ cite }), f);
+}
+
+export async function claimQuestion(space: string, id: string, release: boolean, f: Fetch = fetch): Promise<QueueQuestion["claim"] | null> {
+  const d = await call<{ claim?: QueueQuestion["claim"] | null }>(`${sp(space)}/questions/${encodeURIComponent(id)}/claim`, release ? { method: "DELETE" } : post({}), f);
+  return d.claim ?? null;
+}
+
+export interface ReplyTemplate {
+  id: string;
+  name: string;
+  text: string;
+}
+
+export async function replyTemplates(space: string, f: Fetch = fetch): Promise<ReplyTemplate[]> {
+  try {
+    const d = await call<{ items?: ReplyTemplate[] }>(`${sp(space)}/templates`, {}, f);
+    return Array.isArray(d.items) ? d.items.filter((x) => typeof x.name === "string" && typeof x.text === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveTemplate(space: string, id: string, name: string, text: string, f: Fetch = fetch): Promise<ReplyTemplate> {
+  const body = post({ name, text });
+  return id === "" ? call(`${sp(space)}/templates`, body, f) : call(`${sp(space)}/templates/${encodeURIComponent(id)}`, { ...body, method: "PUT" }, f);
+}
+
+export function deleteTemplate(space: string, id: string, f: Fetch = fetch): Promise<unknown> {
+  return call(`${sp(space)}/templates/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
 }
 
 // A space's start list for a member (sb-spaces(7), Start here; SB-1706). Any failure shows none.

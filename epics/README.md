@@ -28,7 +28,7 @@ summary: Epics, waves, slices and tickets.
 | W21 Keep Knowledge Owned | 7 | 0 | 0 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
 | W22 Fit the Site | 7 | 0 | 0 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | W23 Easier to Ask | 6 | 0 | 0 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
-| W24 Easier to Steward | 0 | 0 | 7 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
+| W24 Easier to Steward | 3 | 0 | 4 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
 | W25 Easier to Operate | 0 | 0 | 7 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -497,9 +497,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-2501](E25-easier-to-steward/SB-2501-reviewed-mark.md) | S24.1 | E25 | Reviewed, still right | Open |
-| [SB-2502](E25-easier-to-steward/SB-2502-claim-question.md) | S24.1 | E25 | Claim a question | Open |
-| [SB-2503](E25-easier-to-steward/SB-2503-reply-templates.md) | S24.1 | E25 | Reply templates | Open |
+| [SB-2501](E25-easier-to-steward/SB-2501-reviewed-mark.md) | S24.1 | E25 | Reviewed, still right | Done |
+| [SB-2502](E25-easier-to-steward/SB-2502-claim-question.md) | S24.1 | E25 | Claim a question | Done |
+| [SB-2503](E25-easier-to-steward/SB-2503-reply-templates.md) | S24.1 | E25 | Reply templates | Done |
 | [SB-2504](E25-easier-to-steward/SB-2504-tab-counts.md) | S24.2 | E25 | Counts on the tabs | Open |
 | [SB-2505](E25-easier-to-steward/SB-2505-review-csv.md) | S24.2 | E25 | Review list as CSV | Open |
 | [SB-2506](E25-easier-to-steward/SB-2506-pause-notifications.md) | S24.2 | E25 | Pause notifications | Open |

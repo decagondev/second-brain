@@ -519,7 +519,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 				}
 			}
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
-		}, Evals: c.Traces, Feedback: c.Traces}
+		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant}
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}

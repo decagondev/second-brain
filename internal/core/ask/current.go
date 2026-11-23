@@ -189,6 +189,11 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	}
 	cited, flagged, refs := reviewCounts(traces, fbs)
 	reports := reportsOf(fbs)
+	marks, err := x.marked(ctx, name)
+	if err != nil {
+		return ReviewResponse{}, err
+	}
+	flaggedAt := lastFlags(fbs)
 	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}}
 	if x.Agent.Glossary != nil {
 		_, out.GlossaryFlagged = usable(x.Agent.Glossary(name))
@@ -223,7 +228,8 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	for k, c := range firsts(latest(chunks)) {
 		age, known := ageDays(c.Seen, now)
 		stale := known && age > after && cited[k] >= ReviewCites
-		if contains(c.Spaces, id) && (stale || flagged[k] > 0) {
+		m, marked := marks[k]
+		if contains(c.Spaces, id) && (stale || flagged[k] > 0) && !covers(m, marked, c, flaggedAt[k], after, now) {
 			cand = append(cand, c)
 			in[k] = true
 		}

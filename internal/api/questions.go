@@ -33,6 +33,13 @@ func (h Questions) Register(mux *http.ServeMux) {
 	if h.Reviews != nil {
 		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
 	}
+	mux.HandleFunc("POST /v1/spaces/{name}/review/marks", h.mark)
+	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/claim", h.claim)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/questions/{id}/claim", h.claim)
+	mux.HandleFunc("GET /v1/spaces/{name}/templates", h.templates)
+	mux.HandleFunc("POST /v1/spaces/{name}/templates", h.saveTemplate)
+	mux.HandleFunc("PUT /v1/spaces/{name}/templates/{id}", h.saveTemplate)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/templates/{id}", h.deleteTemplate)
 	mux.HandleFunc("POST /v1/spaces/{name}/evals", h.addEval)
 	mux.HandleFunc("GET /v1/spaces/{name}/evals", h.evals)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/evals/{id}", h.deleteEval)
@@ -161,4 +168,96 @@ func (h Questions) note(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", res)
+}
+
+// mark is Reviewed, still right (SB-2501).
+func (h Questions) mark(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Cite string `json:"cite"`
+	}
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite."))
+		return
+	}
+	m, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), body.Cite)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"document": m.Doc, "version": m.Version})
+}
+
+// claim is I'll answer this, and DELETE lets it go (SB-2502).
+func (h Questions) claim(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	c, err := h.Service.Claim(r.Context(), s, r.PathValue("name"), r.PathValue("id"), r.Method == http.MethodDelete)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"claim": c})
+}
+
+type templateView struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Text string `json:"text"`
+}
+
+// templates are the space's reply templates (SB-2503).
+func (h Questions) templates(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	ts, err := h.Service.Templates(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	out := []templateView{}
+	for _, t := range ts {
+		out = append(out, templateView{t.ID, t.Name, t.Text})
+	}
+	h.k().out().ok(w, "", map[string]any{"items": out})
+}
+
+func (h Questions) saveTemplate(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Name string `json:"name"`
+		Text string `json:"text"`
+	}
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a name and a text."))
+		return
+	}
+	t, err := h.Service.SaveTemplate(r.Context(), s, r.PathValue("name"), r.PathValue("id"), body.Name, body.Text)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", templateView{t.ID, t.Name, t.Text})
+}
+
+func (h Questions) deleteTemplate(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	if err := h.Service.DeleteTemplate(r.Context(), s, r.PathValue("name"), r.PathValue("id")); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "deleted": true})
 }

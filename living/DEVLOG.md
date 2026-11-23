@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S24.1: Clear the list
+
+**Wave/slice:** W24 / S24.1 (SB-2501, SB-2502, SB-2503) · **Status:** Done
+
+**What:** A steward can mark a document on Documents to review as reviewed, still right, at its current version; it leaves the list until a new version, the mark's age or a new wrong-citation report. A steward can claim an open question for an hour, so the others see who is answering; the claim never blocks a reply. Each space keeps up to 20 reply templates its stewards add, edit, delete and use to fill a reply.
+
+**Why this way:** The list only helps if a steward can clear it without changing the document. The mark is kept against the document's own version, so an index rebuild neither clears nor renews it (LAW-13), and it is written to the audit log. A claim is shown only while its holder is still a steward, checked against the directory each time, so a person who leaves keeps no visible hold on the queue. Templates are the space's, so another space's template looks like none (EPERM), the same as one that doesn't exist.
+
+**Learned:** The audit log already has a config kind for steward actions, so marking reviewed uses it (state reviewed) rather than a new kind. Notes read wider than the space, documents with no owner and copies stay listed whatever the mark, since a mark says the text is right, not that its readers or owner are.
+
+**Laws:** LAW-01 (a mark or a template of another space looks like none; a claim shows only an active steward's email), LAW-13 (marks key on the document version). Every law test is still green.
+
 ## 2026-11-23 S23.2: Find it faster
 
 **Wave/slice:** W23 / S23.2 (SB-2404, SB-2405, SB-2406) · **Status:** Done
