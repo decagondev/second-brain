@@ -13,7 +13,7 @@ import (
 )
 
 // LAW-07 and LAW-13 for personal data (SB-1904): ingest flags every chunk that holds a
-// valid IBAN or card number, the same flags again after a rebuild, and nothing any
+// valid IBAN, card number or national identity number (SB-2207), the same flags again after a rebuild, and nothing any
 // reader is shown, the model's context, a snippet, or an answer that echoes the number,
 // holds the whole number: at most its last four characters.
 
@@ -36,13 +36,16 @@ var RealPIIMasker = PIIMasker{
 	},
 }
 
-// Numbers that are valid: IBANs (mod-97) and cards (Luhn, an issuer prefix).
+// Numbers that are valid: IBANs (mod-97), cards (Luhn, an issuer prefix) and national
+// identity numbers (their format rules and check digits).
 var piiNumbers = []string{
 	"DE89 3704 0044 0532 0130 00", "GB82WEST12345698765432", "FR14 2004 1010 0505 0001 3M02 606", "NL91ABNA0417164300",
 	"4111 1111 1111 1111", "5555-5555-5555-4444", "378282246310005", "6011 1111 1111 1117", "4012888888881881",
+	// National identity numbers (SB-2207): UK NINO, US SSN, Dutch BSN, German Steuer-IdNr.
+	"AB123456C", "JG 10 37 59 A", "123-45-6789", "078 05 1121", "123456782", "1234.56.782", "86095742719", "86 095 742 719",
 }
 
-func compact(s string) string { return strings.NewReplacer(" ", "", "-", "").Replace(s) }
+func compact(s string) string { return strings.NewReplacer(" ", "", "-", "", ".", "").Replace(s) }
 
 func law07PII(r *rand.Rand, m PIIMasker) error {
 	w := NewIngestWorld().(*ingestWorld)

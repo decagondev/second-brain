@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S21.4: Spreadsheets and national ID numbers
+
+**Wave/slice:** W21 / S21.4 (SB-2206, SB-2207) · **Status:** Done
+
+**What:** The folder connector reads `.xlsx`, `.ods` and `.csv` files: each sheet becomes `Sheet: NAME` and one tab-separated line a row, up to 5,000 rows a sheet and 16 MiB a file. The personal-data scanner also finds UK National Insurance numbers, US Social Security numbers, Dutch BSNs and German tax ids, flags them `personal_data` and masks them but the last four.
+
+**Why this way:** A spreadsheet is read as its saved values, never evaluated, and only the parts that hold them are opened, so a formula, a macro or a comment can't make ingest compute or read anything else. Each national number has to keep its format's rules and check digits, and SSNs need separators, so phone and order numbers are mostly left alone; a nine-digit number that passes the BSN 11-check is masked, since the scanner errs towards masking.
+
+**Learned:** LibreOffice ends every sheet with a row repeated about a million times and every row with a cell repeated a thousand times; expanding repeats only for rows and cells that hold a value keeps an `.ods` cheap to read without a separate bound.
+
+**Laws:** LAW-09 and LAW-13 (`TestLAW09_OfficeFilesAreData`, `TestLAW13_OfficeIndexIsDerived`, now over spreadsheets too, with a canary in formulas, comments, macros and scripts), LAW-07 (`TestLAW07_PersonalDataIsMasked` over national ids; a self-test catches a masker that misses them). Every law test is still green.
+
 ## 2026-11-23 S21.3: Ask for access
 
 **Wave/slice:** W21 / S21.3 (SB-2205) · **Status:** Done

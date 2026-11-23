@@ -8,8 +8,8 @@ import (
 )
 
 // FlagPersonal is a chunk that holds personal data: an IBAN whose check digits are right,
-// or a payment card number that passes the Luhn check (sb-ingest(7), Personal data;
-// SB-1904). The chunk is indexed and can be cited; its snippets and the text the model
+// a payment card number that passes the Luhn check (sb-ingest(7), Personal data;
+// SB-1904), or a national identity number (SB-2207, nationalIDs). The chunk is indexed and can be cited; its snippets and the text the model
 // reads are masked (Mask), so an answer quotes only the last four characters.
 const FlagPersonal = "personal_data"
 
@@ -24,10 +24,10 @@ var (
 // PIISpan is one number found, in runes.
 type PIISpan struct {
 	Start, End int
-	Kind       string // iban or card
+	Kind       string // iban, card, nino, ssn, bsn or steuer_id
 }
 
-// PIISpans finds the IBANs and card numbers in text.
+// PIISpans finds the IBANs, card numbers and national identity numbers in text.
 func PIISpans(text string) []PIISpan {
 	var out []PIISpan
 	add := func(kind string, m []int, ok func(string) (int, bool)) {
@@ -44,11 +44,12 @@ func PIISpans(text string) []PIISpan {
 		}
 		out = append(out, cardsIn(text, m[0], m[1])...)
 	}
+	out = append(out, nationalIDs(text)...)
 	sort.Slice(out, func(i, j int) bool { return out[i].Start < out[j].Start })
 	return out
 }
 
-// HasPII reports whether text holds an IBAN or a card number.
+// HasPII reports whether text holds personal data PIISpans finds.
 func HasPII(text string) bool { return len(PIISpans(text)) > 0 }
 
 func isAlnum(b byte) bool {
@@ -175,11 +176,11 @@ func luhn(d string) bool {
 // edgeRun is a run of an IBAN's or a card's characters at the start or end of a chunk: the
 // rest of a number a chunk boundary cut (Mask masks it in a flagged chunk).
 var (
-	leadRun  = regexp.MustCompile(`^[A-Z0-9](?:[ -]?[A-Z0-9])*`)
-	trailRun = regexp.MustCompile(`[A-Z0-9](?:[ -]?[A-Z0-9])*$`)
+	leadRun  = regexp.MustCompile(`^[A-Z0-9](?:[ .-]?[A-Z0-9])*`)
+	trailRun = regexp.MustCompile(`[A-Z0-9](?:[ .-]?[A-Z0-9])*$`)
 )
 
-// MaskPII masks every IBAN and card number in text but its last four characters,
+// MaskPII masks every number PIISpans finds in text but its last four characters,
 // keeping separators and the text's length in runes. With edges, a run of number
 // characters at either end holding four or more digits is masked the same way: in a
 // chunk flagged personal_data, that is a number the chunk boundary cut.

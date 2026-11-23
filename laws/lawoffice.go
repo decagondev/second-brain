@@ -19,13 +19,15 @@ import (
 )
 
 // LAW-09 and LAW-13 over office documents and web pages (SB-2003): the folder connector
-// reads .docx, .pptx, .odt and .html files, and the same laws hold as for text. Every file
+// reads .docx, .pptx, .odt and .html files, and .xlsx, .ods and .csv (SB-2206), and the
+// same laws hold as for text. Every file
 // also carries a canary in the parts that must never be read (a macro, an embedded object,
 // speaker notes, a script, a style): data that isn't the document's text never reaches the
 // index, and text addressed to an AI in the body is flagged as in any other document.
 
-// OfficeFormats are the formats written, by extension.
-var OfficeFormats = []string{".docx", ".pptx", ".odt", ".html"}
+// OfficeFormats are the formats written, by extension: from SB-2206 spreadsheets too, each
+// line of the text a row, with a canary in a formula, a comment, a macro or a script.
+var OfficeFormats = []string{".docx", ".pptx", ".odt", ".html", ".xlsx", ".ods", ".csv"}
 
 // OfficeEncoder writes a document's text in a format, with canary in its hidden parts.
 type OfficeEncoder func(ext, text, canary string) []byte
@@ -96,6 +98,8 @@ func encodeOffice(ext, text, canary string) []byte {
 				`</office:script></office:scripts><office:body><office:text>`+body.String()+`<draw:frame><draw:object><text:p>`+canary+
 				`</text:p></draw:object></draw:frame></office:text></office:body></office:document-content>`,
 			"Basic/Standard/Module1.xml", canary)
+	case ".xlsx", ".ods", ".csv":
+		return encodeSheet(ext, text, canary, zipOf)
 	default: // .html
 		var body strings.Builder
 		for _, p := range paras {
@@ -103,6 +107,48 @@ func encodeOffice(ext, text, canary string) []byte {
 		}
 		return []byte(`<!DOCTYPE html><html><head><title>` + canary + `</title><style>/* ` + canary + ` */</style><script>var a = 1 < 2; "` + canary +
 			`"</script></head><body>` + body.String() + `<noscript>` + canary + `</noscript><object data=x>` + canary + `</object></body></html>`)
+	}
+}
+
+// encodeSheet writes each line of the text as a row of one cell. In an .xlsx the canary is
+// a formula's text, a comment and a macro; in an .ods a formula, an annotation and a
+// script. A .csv has no hidden part.
+func encodeSheet(ext, text, canary string, zipOf func(...string) []byte) []byte {
+	var lines []string
+	for _, l := range strings.Split(text, "\n") {
+		if strings.TrimSpace(l) != "" {
+			lines = append(lines, l)
+		}
+	}
+	switch ext {
+	case ".xlsx":
+		var rows strings.Builder
+		for i, l := range lines {
+			fmt.Fprintf(&rows, `<row r="%d"><c r="A%d" t="inlineStr"><is><t xml:space="preserve">%s</t></is></c></row>`, i+1, i+1, xmlEsc(l))
+		}
+		fmt.Fprintf(&rows, `<row r="%d"><c r="B%d"><f>%s</f><v>0</v></c></row>`, len(lines)+1, len(lines)+1, canary)
+		return zipOf("xl/workbook.xml", `<workbook xmlns:r="r"><sheets><sheet name="Notes" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+			"xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>`,
+			"xl/worksheets/sheet1.xml", `<worksheet><sheetData>`+rows.String()+`</sheetData></worksheet>`,
+			"xl/comments1.xml", `<comments><commentList><comment ref="A1"><text><t>`+canary+`</t></text></comment></commentList></comments>`,
+			"xl/vbaProject.bin", "Sub Auto_Open() "+canary+" End Sub")
+	case ".ods":
+		var rows strings.Builder
+		for _, l := range lines {
+			fmt.Fprintf(&rows, `<table:table-row><table:table-cell><text:p>%s</text:p></table:table-cell></table:table-row>`, xmlEsc(l))
+		}
+		return zipOf("mimetype", "application/vnd.oasis.opendocument.spreadsheet",
+			"content.xml", `<office:document-content xmlns:office="o" xmlns:table="t" xmlns:text="x"><office:scripts><office:script>`+canary+
+				`</office:script></office:scripts><office:body><office:spreadsheet><table:table table:name="Notes">`+rows.String()+
+				`<table:table-row><table:table-cell table:formula="of:=`+canary+`()" office:value="0"><text:p>0</text:p><office:annotation><text:p>`+canary+
+				`</text:p></office:annotation></table:table-cell></table:table-row></table:table></office:spreadsheet></office:body></office:document-content>`,
+			"Basic/Standard/Module1.xml", canary)
+	default: // .csv
+		var b strings.Builder
+		for _, l := range lines {
+			b.WriteString(`"` + strings.ReplaceAll(l, `"`, `""`) + "\"\r\n")
+		}
+		return []byte(b.String())
 	}
 }
 

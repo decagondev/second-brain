@@ -34,6 +34,8 @@ fuzz:                  ## each fuzz target for FUZZTIME (default 30s); make chec
 	$(GO) test -run=^$$ -fuzz=^FuzzMatch$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/route
 	$(GO) test -run=^$$ -fuzz=^FuzzUsers$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/scim
 	$(GO) test -run=^$$ -fuzz=^FuzzOfficeText$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/adapters/connectors/folder
+	$(GO) test -run=^$$ -fuzz=^FuzzSheetText$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/adapters/connectors/folder
+	$(GO) test -run=^$$ -fuzz=^FuzzMaskPII$$ -fuzztime=$(or $(FUZZTIME),30s) ./internal/core/ingest
 lint:                  ## gofmt + golangci-lint (includes depguard, SB-008)
 	@test -z "$$(gofmt -l .)" || { gofmt -l .; echo "gofmt: files above need formatting"; exit 1; }
 	golangci-lint run ./...

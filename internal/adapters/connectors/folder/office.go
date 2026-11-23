@@ -45,6 +45,8 @@ func OfficeText(name string, b []byte) string {
 		s, err = fromZip(b, func(n string) bool { return n == "content.xml" }, odt)
 	case ".html", ".htm":
 		s, err = htmlText(b)
+	case ".xlsx", ".ods", ".csv":
+		return SheetText(name, b)
 	default:
 		return ""
 	}

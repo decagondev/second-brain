@@ -34,7 +34,7 @@ Proposed 2026-11-23 after W19 and accepted by the user the same day, with every 
 - [x] "PO" finds "purchase order"; an instruction-like entry isn't used
 - [x] A release that regresses a tenant case is held
 - [x] An access request names the document only to its owner
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

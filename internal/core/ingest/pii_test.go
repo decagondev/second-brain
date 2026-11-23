@@ -55,7 +55,7 @@ func TestMaskKeepsTheLastFour(t *testing.T) {
 }
 
 func FuzzMaskPII(f *testing.F) {
-	for _, s := range []string{"DE89 3704 0044 0532 0130 00", "4111111111111111", "GB82WEST12345698765432 x", "", "ü 4111 1111 1111 1111"} {
+	for _, s := range []string{"DE89 3704 0044 0532 0130 00", "4111111111111111", "GB82WEST12345698765432 x", "", "ü 4111 1111 1111 1111", "AB 12 34 56 C", "123-45-6789", "1234.56.782", "86 095 742 719"} {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, s string) {

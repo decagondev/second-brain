@@ -25,7 +25,7 @@ summary: Epics, waves, slices and tickets.
 | W18 Protect the Data | 7 | 0 | 0 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
 | W19 Close the Loops | 5 | 0 | 0 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
 | W20 Keep People in the Loop | 6 | 0 | 0 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
-| W21 Keep Knowledge Owned | 5 | 0 | 2 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
+| W21 Keep Knowledge Owned | 7 | 0 | 0 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
 | W22 Fit the Site | 0 | 0 | 7 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -455,8 +455,8 @@ flowchart LR
 | [SB-2203](E22-keep-knowledge-owned/SB-2203-glossary.md) | S21.2 | E22 | Space glossary | Done |
 | [SB-2204](E22-keep-knowledge-owned/SB-2204-citation-evals.md) | S21.2 | E22 | Wrong citations become eval cases | Done |
 | [SB-2205](E22-keep-knowledge-owned/SB-2205-ask-for-access.md) | S21.3 | E22 | Ask for access | Done |
-| [SB-2206](E22-keep-knowledge-owned/SB-2206-spreadsheets.md) | S21.4 | E22 | Spreadsheets and CSV on file shares | Open |
-| [SB-2207](E22-keep-knowledge-owned/SB-2207-national-ids.md) | S21.4 | E22 | National ID numbers as personal data | Open |
+| [SB-2206](E22-keep-knowledge-owned/SB-2206-spreadsheets.md) | S21.4 | E22 | Spreadsheets and CSV on file shares | Done |
+| [SB-2207](E22-keep-knowledge-owned/SB-2207-national-ids.md) | S21.4 | E22 | National ID numbers as personal data | Done |
 
 ### W22 Fit the Site
 

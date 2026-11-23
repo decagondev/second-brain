@@ -145,6 +145,18 @@ func TestSelf_LAW07PIIMutationsAreCaught(t *testing.T) {
 		return strings.ReplaceAll(ingest.Shown(text, flags), "••••", "4111")
 	}
 	failsSomewhere(t, "a mask that keeps more than the last four", func(r *rand.Rand) error { return law07PII(r, firstFour) })
+	// A masker that knows only IBANs and cards (SB-1904), not national identity numbers.
+	cardsOnly := RealPIIMasker
+	cardsOnly.Shown = func(text string, flags []string) string {
+		shown, orig := []rune(ingest.Shown(text, flags)), []rune(text)
+		for _, sp := range ingest.PIISpans(text) {
+			if sp.Kind != "iban" && sp.Kind != "card" {
+				copy(shown[sp.Start:sp.End], orig[sp.Start:sp.End])
+			}
+		}
+		return string(shown)
+	}
+	failsSomewhere(t, "a mask that misses national identity numbers", func(r *rand.Rand) error { return law07PII(r, cardsOnly) })
 }
 
 func TestSelf_LAW18RetireMutationsAreCaught(t *testing.T) {

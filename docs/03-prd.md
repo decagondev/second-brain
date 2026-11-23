@@ -751,7 +751,7 @@ gantt
 - [x] "PO" finds "purchase order"; an instruction-like entry isn't used
 - [x] A release that regresses a tenant case is held
 - [x] An access request names the document only to its owner
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

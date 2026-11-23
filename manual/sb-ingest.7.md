@@ -52,6 +52,8 @@ The rules, in order (`internal/core/ingest`, `Sanitise`):
 | Flag | Text addressed to an AI: overrides ("ignore previous instructions", "disregard the above"), new roles ("you are now", "act as"), chat-role markers (`system:`, `assistant:`, `<|im_start|>`), tool-call syntax (`{"tool": …}`, function-call JSON), requests to hide things from the user, and links that carry data in their query string to a domain outside the tenant | flag `instruction_like` |
 | Wrap | At prompt time each chunk becomes `<<data cite="…" flags="…">>` … `<</data>>`. Any `<<` or `>>` inside the text is escaped first, so content can't close its own block | — |
 
+A spreadsheet's cells are content like any other (SB-2206): a cell that reads like an instruction is flagged, and a formula is never evaluated, only the value the file last saved is read, so a cell can't make ingest compute, fetch or run anything (sb-connector(3), `docs: folder`).
+
 Flags are per chunk and appear on its citation. A flagged chunk is still indexed and can be cited; it just can't steer the agent. The corpus in `evals/corpus/injection.json` (visible, hidden and benign look-alike cases) runs in `make check`. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).
 
 ### Fields (SB-1106)
@@ -70,7 +72,16 @@ Every chunk of every connector passes a secret scanner before it's embedded or w
 
 ### Personal data (SB-1904)
 
-Ingest also looks for two kinds of personal data in every document: an **IBAN** whose check digits are right (ISO 13616, mod-97 = 1; 15 to 34 characters, grouped in fours or not) and a **payment card number** (13 to 19 digits, spaces or dashes between groups allowed) that passes the Luhn check and starts with a prefix a card network issues (Visa, Mastercard, American Express, Discover, JCB, Diners). A number with wrong check digits, or one inside a longer word or number, isn't one. Each chunk that holds a number, or part of one a chunk boundary cut, is flagged `personal_data`. Unlike a secret, it is indexed and can be cited: a payroll sheet is still a document people need. But nobody reads the whole number through Second Brain: a flagged chunk's search snippet, and the text the model is given to answer from, show each number masked but its last four characters, with separators kept (`•••• •••• •••• •••• ••30 00`), and every answer's text is masked the same way before it is returned or stored. The flag is derived from the text, so a rebuild gives the same flags (LAW-13). The space's stewards see how many documents in the space carry it (sb-ask(3), the review list), as a count, never which. The detectors have a fuzz target (`FuzzMaskPII`): a masked text never still holds a number, and keeps its length.
+Ingest also looks for personal data in every document: an **IBAN** whose check digits are right (ISO 13616, mod-97 = 1; 15 to 34 characters, grouped in fours or not) and a **payment card number** (13 to 19 digits, spaces or dashes between groups allowed) that passes the Luhn check and starts with a prefix a card network issues (Visa, Mastercard, American Express, Discover, JCB, Diners). From SB-2207 it also finds four national identity numbers:
+
+| Number | Written as | Valid when |
+|---|---|---|
+| UK National Insurance number | `AB123456C` or `AB 12 34 56 C`, capitals | Two prefix letters (the first not D, F, I, Q, U or V; the second not D, F, I, O, Q, U or V; never BG, GB, KN, NK, NT, TN or ZZ), six digits, and a suffix A to D |
+| US Social Security number | `123-45-6789` or `123 45 6789` | The area is not 000, 666 or 900 to 999, the group not 00 and the serial not 0000. Nine digits with no separators aren't read as one |
+| Dutch citizen service number (BSN) | `123456782` or `1234.56.782` | Nine digits that pass the 11-check (9·d1 + 8·d2 + … + 2·d8 − d9 is a multiple of 11, and not all zero) |
+| German tax id (Steuer-IdNr) | `86095742719` or `86 095 742 719` | Eleven digits, the first not 0; in the first ten one digit appears two or three times (three never in a row) and every other at most once; the last is the ISO 7064 MOD 11,10 check digit |
+
+A number with wrong check digits, one that breaks its format's rules, or one inside a longer word or number, isn't one. A nine-digit number that happens to pass the 11-check, about one in eleven, is read as a BSN and masked: the scanner errs towards masking. Each chunk that holds a number, or part of one a chunk boundary cut, is flagged `personal_data`. Unlike a secret, it is indexed and can be cited: a payroll sheet is still a document people need. But nobody reads the whole number through Second Brain: a flagged chunk's search snippet, and the text the model is given to answer from, show each number masked but its last four characters, with separators kept (`•••• •••• •••• •••• ••30 00`), and every answer's text is masked the same way before it is returned or stored. The flag is derived from the text, so a rebuild gives the same flags (LAW-13). The space's stewards see how many documents in the space carry it (sb-ask(3), the review list), as a count, never which. The detectors have a fuzz target (`FuzzMaskPII`): a masked text never still holds a number, and keeps its length.
 
 ### Provenance
 

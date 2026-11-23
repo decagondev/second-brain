@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Spreadsheets and CSV files on file shares are read; UK, US, Dutch and German national ID numbers are masked like IBANs and cards (SB-2206, SB-2207).
 - Ask the owners of sources you couldn't open to share them; they hear which document, you see counts (SB-2205).
 - Space glossaries that searches and answers use in their space; wrong-citation reports become tenant eval cases that hold a release which regresses them (SB-2203, SB-2204).
 - Stewards see documents whose owner has gone and copies of the same document once; answers cite one copy (SB-2201, SB-2202).
