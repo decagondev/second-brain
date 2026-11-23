@@ -91,6 +91,9 @@ type Stewards struct {
 	// (every active user for company). A nil Bus is a cell without notes.
 	Bus     NoteBus
 	Readers func(ctx context.Context, space string) ([]string, error)
+	// Gone says whether an owner's email is no active user in the directory now (SB-2201).
+	// nil is a cell that can't tell: its review list names no document for its owner.
+	Gone func(ctx context.Context, email string) (bool, error)
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).

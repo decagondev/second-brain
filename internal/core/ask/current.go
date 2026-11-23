@@ -139,12 +139,21 @@ type ReviewItem struct {
 	// (SB-2004): a count, never who. Question is the note's question, to republish it.
 	Wider    int    `json:"wider,omitempty"`
 	Question string `json:"question,omitempty"`
+	// OwnerGone marks a document whose owner at the source is no active user (SB-2201);
+	// Copies are the other documents with the same text the steward can open (SB-2202).
+	OwnerGone bool     `json:"owner_gone,omitempty"`
+	Copies    []Result `json:"copies,omitempty"`
 }
 
-// HiddenItem is a document to review the steward can't open: only its owner, if any.
+// HiddenItem is a document to review the steward can't open: only its owner, if any and
+// still an active user, or that its owner has gone.
 type HiddenItem struct {
-	Owner string `json:"owner,omitempty"`
+	Owner     string `json:"owner,omitempty"`
+	OwnerGone bool   `json:"owner_gone,omitempty"`
 }
+
+// MaxOwnerGone is the most documents with no owner the review list names (SB-2201).
+const MaxOwnerGone = 50
 
 // ReviewResponse is the stewards' review list.
 type ReviewResponse struct {
@@ -198,7 +207,11 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	if err != nil {
 		return out, err
 	}
-	if len(refs) == 0 && len(notes) == 0 {
+	held, err := x.heldBy(ctx, lk, name)
+	if err != nil {
+		return out, err
+	}
+	if len(refs) == 0 && len(notes) == 0 && len(held) == 0 {
 		return out, nil
 	}
 	var chunks []ports.Chunk
@@ -219,10 +232,17 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		}
 	}
 	for _, c := range notes {
-		if !in[c.Kind+":"+c.SourceID] {
+		if k := c.Kind + ":" + c.SourceID; !in[k] {
 			cand = append(cand, c)
+			in[k] = true
 		}
 	}
+	gone, err := x.ownersGone(ctx, append(append([]ports.Chunk(nil), cand...), held...))
+	if err != nil {
+		return out, err
+	}
+	copied := copiesIn(held)
+	cand = withHeld(cand, in, held, gone, copied)
 	sort.Slice(cand, func(i, j int) bool { return cand[i].ID < cand[j].ID })
 	who, err := x.Agent.who(ctx, s)
 	if err != nil {
@@ -234,22 +254,30 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	}
 	allowed := map[string]bool{}
 	own := x.Agent.owners()
+	newest := newestCopies(res.Context, copied)
+	copies := map[string][]Result{}
 	for _, c := range res.Context {
 		k := c.Kind + ":" + c.SourceID
 		allowed[k] = true
 		r := x.Agent.result(ctx, own, c)
 		r.Snippet = ""
-		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Wider: widerBy[k]}
+		if gone[c.Owner] {
+			r.Owner = nil // never someone to ask
+		}
+		if n, ok := newest[c.TextSHA256]; ok && copied[k] && n != k {
+			copies[n] = append(copies[n], r)
+			continue // listed once, under the newest copy
+		}
+		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Wider: widerBy[k], OwnerGone: gone[c.Owner]}
 		if it.Wider > 0 {
 			it.Question = strings.TrimSuffix(path.Base(c.SourceID), ".md")
 		}
 		out.Items = append(out.Items, it)
 	}
-	for _, c := range cand {
-		if !allowed[c.Kind+":"+c.SourceID] {
-			out.Hidden = append(out.Hidden, HiddenItem{Owner: c.Owner}) // never its title or cite
-		}
+	for i, it := range out.Items {
+		out.Items[i].Copies = copies[docKey(it.Cite)]
 	}
+	out.Hidden = hiddenOf(cand, allowed, gone)
 	sort.SliceStable(out.Items, func(i, j int) bool {
 		a, b := out.Items[i], out.Items[j]
 		if (a.Wider > 0) != (b.Wider > 0) {
@@ -258,6 +286,116 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		return a.Flagged+a.Cited > b.Flagged+b.Cited
 	})
 	return out, nil
+}
+
+// hiddenOf is an entry for each candidate the steward can't open: never its title or cite,
+// and its owner only while they are an active user.
+func hiddenOf(cand []ports.Chunk, allowed, gone map[string]bool) []HiddenItem {
+	out := []HiddenItem{}
+	for _, c := range cand {
+		if !allowed[c.Kind+":"+c.SourceID] {
+			h := HiddenItem{Owner: c.Owner, OwnerGone: gone[c.Owner]}
+			if h.OwnerGone {
+				h.Owner = ""
+			}
+			out = append(out, h)
+		}
+	}
+	return out
+}
+
+// withHeld adds to cand the held documents whose owner has gone (at most MaxOwnerGone) and
+// those with copies, each once.
+func withHeld(cand []ports.Chunk, in map[string]bool, held []ports.Chunk, gone, copied map[string]bool) []ports.Chunk {
+	orphans := 0
+	for _, c := range held {
+		k := c.Kind + ":" + c.SourceID
+		if in[k] {
+			continue
+		}
+		if gone[c.Owner] && orphans < MaxOwnerGone {
+			orphans++
+		} else if !copied[k] {
+			continue
+		}
+		cand = append(cand, c)
+		in[k] = true
+	}
+	return cand
+}
+
+// heldBy is the first chunk of the newest version of every document the space holds.
+func (x Stewards) heldBy(ctx context.Context, lk ports.DocLookup, name string) ([]ports.Chunk, error) {
+	cs, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Space: SpaceKey(name)})
+	if err != nil {
+		return nil, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	var out []ports.Chunk
+	for _, c := range firsts(latest(cs)) {
+		if contains(c.Spaces, SpaceKey(name)) {
+			out = append(out, c)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+// ownersGone is, of the chunks' owners, those who are no active user in the directory now
+// (SB-2201). A directory that can't answer is an error: an owner is never guessed gone.
+func (x Stewards) ownersGone(ctx context.Context, chunks []ports.Chunk) (map[string]bool, error) {
+	out := map[string]bool{}
+	if x.Gone == nil {
+		return out, nil
+	}
+	asked := map[string]bool{}
+	for _, c := range chunks {
+		if c.Owner == "" || asked[c.Owner] {
+			continue
+		}
+		asked[c.Owner] = true
+		g, err := x.Gone(ctx, c.Owner)
+		if err != nil {
+			return nil, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
+		}
+		if g {
+			out[c.Owner] = true
+		}
+	}
+	return out, nil
+}
+
+// copiesIn marks the documents that share their text with another one (SB-2202).
+func copiesIn(held []ports.Chunk) map[string]bool {
+	by := map[string][]string{}
+	for _, c := range held {
+		if c.TextSHA256 != "" {
+			by[c.TextSHA256] = append(by[c.TextSHA256], c.Kind+":"+c.SourceID)
+		}
+	}
+	out := map[string]bool{}
+	for _, ks := range by {
+		if len(ks) > 1 {
+			for _, k := range ks {
+				out[k] = true
+			}
+		}
+	}
+	return out
+}
+
+// newestCopies is, for each text hash among the allowed copies, the newest one's document.
+func newestCopies(allowed []ports.Chunk, copied map[string]bool) map[string]string {
+	var cs []ports.Chunk
+	for _, c := range allowed {
+		if copied[c.Kind+":"+c.SourceID] {
+			cs = append(cs, c)
+		}
+	}
+	out := map[string]string{}
+	for _, c := range retrieve.OneCopy(cs) {
+		out[c.TextSHA256] = c.Kind + ":" + c.SourceID
+	}
+	return out
 }
 
 // reviewCounts counts, by document, the answers that cited it and the wrong-citation

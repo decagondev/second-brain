@@ -507,3 +507,16 @@ func TestLAW01_HandoverSearchListsOnlyWhomTheAskerMayBrief(t *testing.T) {
 func TestLAW12_MattermostRefusesTheDeprovisioned(t *testing.T) {
 	Check(t, "LAW-12", 30, func(r *rand.Rand) error { return law12Mattermost(Gen(r), false) })
 }
+
+// SB-2201, SB-2202
+func TestLAW12_ADeprovisionedOwnersDocumentsAreOnTheReviewList(t *testing.T) {
+	Check(t, "LAW-12", runs, func(r *rand.Rand) error { return law12Orphans(r, ownedSystem{}) })
+}
+
+func TestLAW01_OwnerGoneNamesOnlyWhatTheStewardCanOpen(t *testing.T) {
+	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law12Orphans(r, ownedSystem{}) })
+}
+
+func TestLAW13_AnswersCiteTheNewestCopyBeforeAndAfterARebuild(t *testing.T) {
+	Check(t, "LAW-13", runs, func(r *rand.Rand) error { return law13Copies(r, ownedSystem{}) })
+}

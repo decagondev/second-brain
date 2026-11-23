@@ -247,6 +247,13 @@ func matchDoc(c ports.Chunk, q ports.DocQuery) bool {
 			return true
 		}
 	}
+	if q.Space != "" {
+		for _, sp := range c.Spaces {
+			if sp == q.Space {
+				return true
+			}
+		}
+	}
 	if q.Flag != "" {
 		for _, f := range c.Flags {
 			if f == q.Flag {

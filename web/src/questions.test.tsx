@@ -188,6 +188,34 @@ describe("keeping it current", () => {
     expect(await violations(container)).toEqual([]);
   });
 
+  // SB-2201, SB-2202
+  it("marks a document whose owner has gone and lists its copies once", async () => {
+    const fetcher: Fetch = async () =>
+      json({
+        items: [
+          {
+            cite: "docs:faq@3",
+            title: "FAQ",
+            flags: [],
+            snippet: "",
+            cited: 0,
+            flagged: 0,
+            owner_gone: true,
+            copies: [{ cite: "docs:old-faq@1", title: "FAQ (copy)", flags: [], snippet: "", url: "https://docs.example/old-faq" }],
+          },
+        ],
+        hidden: [{ owner_gone: true }],
+      });
+    const { container } = render(<ReviewList space="support" fetcher={fetcher} />);
+    await act(async () => {});
+    const sec = screen.getByRole("region", { name: "Documents to review" });
+    expect(sec.textContent).toContain("owner gone: find it a new owner");
+    expect(sec.textContent).toContain("1 of them with no owner");
+    expect(screen.getByRole("link", { name: "Copy: FAQ (copy), source docs:old-faq@1, opens in a new tab" })).toBeTruthy();
+    expect(sec.textContent).not.toContain("ask their owners");
+    expect(await violations(container)).toEqual([]);
+  });
+
   // SB-2004
   it("shows a note read wider than its space with a count, and republishes it narrowed after a confirm", async () => {
     const posts: unknown[] = [];

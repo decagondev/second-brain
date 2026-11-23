@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S21.1: Orphaned and duplicate documents
+
+**Wave/slice:** W21 / S21.1 (SB-2201, SB-2202) · **Status:** Done
+
+**What:** The stewards' review list gains documents whose owner at the source is no active directory user, marked `owner_gone` with no owner shown, and lists copies of the same text once, as the newest copy, with the others under `copies`. Ingest keeps a hash of each document's normalised text (`text_sha256`, a new index column), and answers, searches and drafts cite only the newest copy the asker can open.
+
+**Why this way:** The owner check reads the directory when the list is asked for, so a deprovisioned owner's documents are on it at once with no new job; a directory that can't answer is `EUNAVAIL`, never a guess. Copies are dropped after the live check, so the copy kept is one the asker can open, and the hash leaves out the title, so a renamed copy still matches. The hash comes from the source text alone, so a rebuild gives it again.
+
+**Learned:** Dropping copies before trimming to the budget keeps a full context: the live check now runs over every candidate, as it already did in one batch.
+
+**Laws:** LAW-12 (`TestLAW12_ADeprovisionedOwnersDocumentsAreOnTheReviewList`, self-test catches a check that never finds an owner gone), LAW-01 (`TestLAW01_OwnerGoneNamesOnlyWhatTheStewardCanOpen`), LAW-13 (`TestLAW13_AnswersCiteTheNewestCopyBeforeAndAfterARebuild`, self-test catches an index with no text hash). Every law test is still green.
+
 ## 2026-11-23 S20.3: Share in Mattermost and handover by name
 
 **Wave/slice:** W20 / S20.3 (SB-2105, SB-2106) · **Status:** Done

@@ -25,7 +25,7 @@ summary: Epics, waves, slices and tickets.
 | W18 Protect the Data | 7 | 0 | 0 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
 | W19 Close the Loops | 5 | 0 | 0 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
 | W20 Keep People in the Loop | 6 | 0 | 0 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
-| W21 Keep Knowledge Owned | 0 | 0 | 7 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
+| W21 Keep Knowledge Owned | 2 | 0 | 5 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
 | W22 Fit the Site | 0 | 0 | 7 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -450,8 +450,8 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-2201](E22-keep-knowledge-owned/SB-2201-orphaned-documents.md) | S21.1 | E22 | Orphaned documents | Open |
-| [SB-2202](E22-keep-knowledge-owned/SB-2202-duplicates.md) | S21.1 | E22 | Duplicate documents | Open |
+| [SB-2201](E22-keep-knowledge-owned/SB-2201-orphaned-documents.md) | S21.1 | E22 | Orphaned documents | Done |
+| [SB-2202](E22-keep-knowledge-owned/SB-2202-duplicates.md) | S21.1 | E22 | Duplicate documents | Done |
 | [SB-2203](E22-keep-knowledge-owned/SB-2203-glossary.md) | S21.2 | E22 | Space glossary | Open |
 | [SB-2204](E22-keep-knowledge-owned/SB-2204-citation-evals.md) | S21.2 | E22 | Wrong citations become eval cases | Open |
 | [SB-2205](E22-keep-knowledge-owned/SB-2205-ask-for-access.md) | S21.3 | E22 | Ask for access | Open |

@@ -308,7 +308,7 @@ function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fet
 }
 
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
-  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string }[]; personal_data?: number }>({ items: [], hidden: [] });
+  const [list, setList] = useState<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number }>({ items: [], hidden: [] });
   useEffect(() => {
     reviewList(space, fetcher).then(setList);
   }, [space, fetcher]);
@@ -331,7 +331,26 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                 {" "}
                 · cited {r.cited} times in 30 days{r.age_days !== undefined ? ` · ${r.age_days} days old` : ""}
                 {r.flagged > 0 ? ` · marked wrong ${r.flagged} times` : ""}
+                {r.owner_gone ? " · owner gone: find it a new owner" : ""}
               </span>
+              {r.copies && r.copies.length > 0 && (
+                <span className="meta">
+                  {" "}
+                  · the same text is also at:{" "}
+                  {r.copies.map((c, i) => (
+                    <span key={c.cite}>
+                      {i > 0 ? ", " : ""}
+                      {c.url ? (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" aria-label={`Copy: ${c.title ?? c.cite}, source ${c.cite}, opens in a new tab`}>
+                          {c.title ?? c.cite}
+                        </a>
+                      ) : (
+                        <span>{c.title ?? c.cite}</span>
+                      )}
+                    </span>
+                  ))}
+                </span>
+              )}
               {r.wider !== undefined && r.wider > 0 && r.question && <Narrow space={space} item={r} fetcher={fetcher} />}
             </li>
           ))}
@@ -340,6 +359,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
       {list.hidden.length > 0 && (
         <p className="refused">
           {list.hidden.length === 1 ? "1 more document you can't open needs" : `${list.hidden.length} more documents you can't open need`} review
+          {list.hidden.some((h) => h.owner_gone) ? `, ${list.hidden.filter((h) => h.owner_gone).length} of them with no owner` : ""}
           {list.hidden.some((h) => h.owner) ? `; ask their owners: ${Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ")}` : ""}.
         </p>
       )}

@@ -317,6 +317,9 @@ type Chunk struct {
 	// Rebuilt marks a version a rebuild first saw, whose Seen is the rebuild's time, not
 	// when it changed: "what changed" never lists one (SB-1708).
 	Rebuilt bool
+	// TextSHA256 is the SHA-256 of the document's normalised text, without its title, the
+	// same on every chunk of the version, "" for no text: copies share it (SB-2202).
+	TextSHA256 string
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.
@@ -350,6 +353,8 @@ type DocQuery struct {
 	SeenSince time.Time
 	// Flag picks chunks carrying the flag, e.g. personal_data (SB-1904).
 	Flag string
+	// Space picks chunks a space holds, by id (spc_NAME) (SB-2201, SB-2202).
+	Space string
 }
 
 // DocLookup is an index that finds chunks by DocQuery (SB-1706, SB-1707); found chunks

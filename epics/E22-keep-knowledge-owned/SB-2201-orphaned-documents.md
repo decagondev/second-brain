@@ -13,7 +13,7 @@ summary: "When someone leaves, their documents keep answering with no owner to a
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-12, LAW-01 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ When someone leaves, their documents keep answering with no owner to ask.
 
 ## Acceptance criteria
 
-- [ ] The stewards' review list gains documents whose source owner is no active directory user, each checked live as the steward and shown as "owner gone"; those the steward can't open are counted
-- [ ] A deprovisioned owner is never shown as someone to ask
-- [ ] Deprovision an owner, and their document moves to the list within the next sync
+- [x] The stewards' review list gains documents whose source owner is no active directory user, each checked live as the steward and shown as "owner gone"; those the steward can't open are counted
+- [x] A deprovisioned owner is never shown as someone to ask
+- [x] Deprovision an owner, and their document moves to the list within the next sync
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Owner check
-- [ ] Review list kind
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Owner check
+- [x] Review list kind
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-—
+2026-11-23: built in S21.1. Owner check against the directory at read time (`Stewards.Gone`), `owner_gone` on items and hidden entries, at most 50. Law tests: `TestLAW12_ADeprovisionedOwnersDocumentsAreOnTheReviewList`, `TestLAW01_OwnerGoneNamesOnlyWhatTheStewardCanOpen`.
 
 ## Definition of done
 

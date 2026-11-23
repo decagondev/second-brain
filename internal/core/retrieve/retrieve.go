@@ -194,7 +194,49 @@ func ContextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, email
 			chunks = append(chunks, c.Chunk)
 		}
 	}
-	return Allowed(ctx, s, user, a, chunks, budget)
+	res, err := Allowed(ctx, s, user, a, chunks, len(chunks))
+	if err != nil {
+		return Result{}, err
+	}
+	res.Context = OneCopy(res.Context)
+	if len(res.Context) > budget {
+		res.Context = res.Context[:budget]
+	}
+	return res, nil
+}
+
+// OneCopy keeps, of documents with the same text (ports.Chunk.TextSHA256), only the newest
+// one's chunks, in order (sb-ask(3), Copies; SB-2202). Run it on allowed chunks only, so the
+// copy kept is the newest the person can open. Newest is the version the index saw last,
+// then the higher version, then the greater cite, so the choice never depends on rank.
+func OneCopy(chunks []ports.Chunk) []ports.Chunk {
+	keep := map[string]ports.Chunk{} // text hash -> a chunk of the newest copy
+	for _, c := range chunks {
+		if c.TextSHA256 == "" {
+			continue
+		}
+		if k, ok := keep[c.TextSHA256]; !ok || newer(c, k) {
+			keep[c.TextSHA256] = c
+		}
+	}
+	out := chunks[:0:0]
+	for _, c := range chunks {
+		if k, ok := keep[c.TextSHA256]; ok && docKey(k) != docKey(c) {
+			continue // a copy of a newer document
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+func newer(a, b ports.Chunk) bool {
+	if !a.Seen.Equal(b.Seen) {
+		return a.Seen.After(b.Seen)
+	}
+	if a.Version != b.Version {
+		return a.Version > b.Version
+	}
+	return docKey(a) > docKey(b)
 }
 
 // Allowed runs the space, label and barrier checks and the live ACL batch over chunks, in

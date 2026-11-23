@@ -746,8 +746,8 @@ gantt
 
 **Exit gate**
 
-- [ ] A deprovisioned owner's documents reach the review list within a sync
-- [ ] A copied file is cited once
+- [x] A deprovisioned owner's documents reach the review list within a sync
+- [x] A copied file is cited once
 - [ ] "PO" finds "purchase order"; an instruction-like entry isn't used
 - [ ] A release that regresses a tenant case is held
 - [ ] An access request names the document only to its owner

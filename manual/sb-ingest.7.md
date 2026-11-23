@@ -76,6 +76,8 @@ Ingest also looks for two kinds of personal data in every document: an **IBAN** 
 
 Every chunk records tenant, `cite` (`kind:id@version`), span, content hash, flags and the release that ingested it, and, from SB-1701 to SB-1708, the document's title and location and when the index **first saw this version** (`seen`). Ingesting the same version again keeps the first `seen`; a new version gets the time it was first ingested. That time is what search shows as a document's age, what "what changed" lists (sb-ask(3)) and what the stewards' review list measures staleness by.
 
+Every chunk also carries the **text hash** of its document (SB-2202): the SHA-256 of the document's normalised text, without its title, the same on every chunk of the version and empty for a document with no text. Two documents with the same text, in two places or under two names, have the same hash, which is how the stewards' review list finds copies and how answers cite one copy (sb-ask(3)). Like every field of a chunk it depends only on the source, so a rebuild gives every document the same hash again (LAW-13). The hash is of the text, never the text itself, and never logged.
+
 ### Chunks
 
 A document becomes chunks in a fixed order: normalise (line endings, trailing space), split into paragraphs, then pack paragraphs into chunks of at most 1,200 characters. A paragraph longer than that is cut at the last space before the limit. Boundaries depend only on the text, so the same text always gives the same chunks, and an edit to one paragraph changes only the chunks that contain it.

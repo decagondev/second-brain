@@ -305,13 +305,16 @@ export interface ReviewItem extends SearchResult {
   // A note read wider than its space now (SB-2004): how many readers to remove, and its question.
   wider?: number;
   question?: string;
+  // Its owner at the source is no active user (SB-2201); copies of its text you can open (SB-2202).
+  owner_gone?: boolean;
+  copies?: SearchResult[];
 }
 
 // personal_data is how many documents in the space hold an IBAN or a card number (SB-1904).
 export async function reviewList(
   space: string,
   f: Fetch = fetch,
-): Promise<{ items: ReviewItem[]; hidden: { owner?: string }[]; personal_data?: number }> {
+): Promise<{ items: ReviewItem[]; hidden: { owner?: string; owner_gone?: boolean }[]; personal_data?: number }> {
   try {
     const d = await call<{ items?: ReviewItem[]; hidden?: { owner?: string }[]; personal_data?: number }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
