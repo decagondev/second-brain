@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)).
 
 ## Problem
 
@@ -322,6 +322,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W23 | Easier to Ask | — | An answer is easy to take away, and no screen leaves the asker without a next step. |
 | W24 | Easier to Steward | — | A steward clears their list in minutes and doesn't repeat work, and nobody is pinged while they are away. |
 | W25 | Easier to Operate | — | Whoever runs the box sets everything from one file, checks each channel first, and is told how to fix what is wrong. |
+| W26 | Fresh Answers | — | An asker can tell at a glance when an answer rests on old sources, and the brain prefers the newer of two equal ones. |
+| W27 | A Tidy Corpus | — | Stewards and owners can see what has gone stale or unused, and take it out of answers without waiting on the source. |
+| W28 | A Focused Context | — | What the model reads stays short and on topic, and the operator can see when the index, the scopes, the eval cases or the prompts start to creep. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -834,6 +837,57 @@ gantt
 |---|---|---|---|
 | S25.1 | Set it up once | Email in the installer, send me a test, check the chat bot, check the config | [SB-2601](../epics/E26-easier-to-operate/SB-2601-install-email.md), [SB-2602](../epics/E26-easier-to-operate/SB-2602-test-notification.md), [SB-2603](../epics/E26-easier-to-operate/SB-2603-check-chat.md), [SB-2604](../epics/E26-easier-to-operate/SB-2604-check-config.md) |
 | S25.2 | Know it's working | Fix hints, token expiry warning, notifications in health | [SB-2605](../epics/E26-easier-to-operate/SB-2605-doctor-fix.md), [SB-2606](../epics/E26-easier-to-operate/SB-2606-token-expiry.md), [SB-2607](../epics/E26-easier-to-operate/SB-2607-notify-health.md) |
+
+#### W26 Fresh Answers
+
+*An asker can tell at a glance when an answer rests on old sources, and the brain prefers the newer of two equal ones. Accepted 2026-11-23 ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)).*
+
+**Exit gate**
+
+- [ ] An answer resting mostly on stale cites warns, and a hidden stale document changes nothing
+- [ ] A reviewed cite isn't stale until its review lapses
+- [ ] An outdated report lists the document, and a mark clears it
+- [ ] A connector past its freshness target is named on the answer; an unknown sync time is never shown as fresh
+- [ ] A date in a document only makes it stale sooner
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S26.1 | Say when it's old | Old-source warning, reviewed on the cite, report as outdated, sync lag notice | [SB-2701](../epics/E27-fresh-answers/SB-2701-old-source-warning.md), [SB-2702](../epics/E27-fresh-answers/SB-2702-reviewed-on-cite.md), [SB-2703](../epics/E27-fresh-answers/SB-2703-report-outdated.md), [SB-2704](../epics/E27-fresh-answers/SB-2704-sync-lag-notice.md) |
+| S26.2 | Trust the dates | Review-by dates in the document, newer wins a tie | [SB-2705](../epics/E27-fresh-answers/SB-2705-review-by-dates.md), [SB-2706](../epics/E27-fresh-answers/SB-2706-newer-wins-tie.md) |
+
+#### W27 A Tidy Corpus
+
+*Stewards and owners can see what has gone stale or unused, and take it out of answers without waiting on the source. Accepted 2026-11-23 ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)).*
+
+**Exit gate**
+
+- [ ] A retired document is never cited in its space, still is in another, and a rebuild keeps it out
+- [ ] Every list counts what the steward can't open and names nothing in it
+- [ ] An owner is told only of their own documents, once a month
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S27.1 | Take it out of answers | Retire from answers, same name different text, never cited, notes whose sources moved | [SB-2801](../epics/E28-tidy-corpus/SB-2801-retire-from-answers.md), [SB-2802](../epics/E28-tidy-corpus/SB-2802-same-name-different-text.md), [SB-2803](../epics/E28-tidy-corpus/SB-2803-never-cited.md), [SB-2804](../epics/E28-tidy-corpus/SB-2804-notes-sources-moved.md) |
+| S27.2 | Keep upkeep shared | Unused glossary terms, owners' monthly note, freshness in the report | [SB-2805](../epics/E28-tidy-corpus/SB-2805-unused-terms.md), [SB-2806](../epics/E28-tidy-corpus/SB-2806-owner-nudges.md), [SB-2807](../epics/E28-tidy-corpus/SB-2807-freshness-report.md) |
+
+#### W28 A Focused Context
+
+*What the model reads stays short and on topic, and the operator can see when the index, the scopes, the eval cases or the prompts start to creep. Accepted 2026-11-23 ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)).*
+
+**Exit gate**
+
+- [ ] A conversation sends at most the last 8 earlier questions
+- [ ] At most 3 chunks of one document reach the model, and the eval suite doesn't regress
+- [ ] A scope typo and a too-wide pattern are named
+- [ ] Index leftovers are counted in health and pruned without touching what a source still lists
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S28.1 | Keep the model's context short | Conversations stay short, one document can't crowd out the rest, scope report | [SB-2901](../epics/E29-focused-context/SB-2901-short-conversations.md), [SB-2902](../epics/E29-focused-context/SB-2902-per-document-cap.md), [SB-2903](../epics/E29-focused-context/SB-2903-scope-report.md) |
+| S28.2 | Watch for creep | Eval cases that went stale, index leftovers, prompt growth, start here goes stale | [SB-2904](../epics/E29-focused-context/SB-2904-stale-eval-cases.md), [SB-2905](../epics/E29-focused-context/SB-2905-index-leftovers.md), [SB-2906](../epics/E29-focused-context/SB-2906-prompt-growth.md), [SB-2907](../epics/E29-focused-context/SB-2907-start-here-stale.md) |
 
 #### Parked: Portfolio Department Grants
 

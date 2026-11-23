@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-27 epics, 97 user stories and 231 tickets across 26 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+30 epics, 103 user stories and 251 tickets across 29 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -30,6 +30,9 @@ summary: Epics, waves, slices and tickets.
 | W23 Easier to Ask | 6 | 0 | 0 | Planned 2026-11-23 with the user (E24): copy and print answers, keyboard first, search filters, recent questions, no dead ends ([12-ask-steward-operate.md](../docs/12-ask-steward-operate.md)) |
 | W24 Easier to Steward | 7 | 0 | 0 | Planned 2026-11-23 with the user (E25): reviewed marks, claims, reply templates, tab counts, review CSV, pause, stewards' digest line |
 | W25 Easier to Operate | 5 | 2 | 0 | Planned 2026-11-23 with the user (E26): email in the installer, send me a test, check the chat bot, check the config, doctor fixes, token expiry, notifications in health |
+| W26 Fresh Answers | 0 | 0 | 6 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
+| W27 A Tidy Corpus | 0 | 0 | 7 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
+| W28 A Focused Context | 0 | 0 | 7 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -115,6 +118,12 @@ flowchart LR
   E23 --> E24
   E21 --> E25
   E23 --> E26
+  E27["E27 Fresh Answers"]
+  E28["E28 A Tidy Corpus"]
+  E29["E29 A Focused Context"]
+  E25 --> E27
+  E25 --> E28
+  E26 --> E29
 ```
 
 ## Epics
@@ -148,6 +157,9 @@ flowchart LR
 | [E24 Easier to Ask](E24-easier-to-ask/README.md) | An answer is easy to take away, and no screen leaves the asker without a next step. | W23 | 6 |
 | [E25 Easier to Steward](E25-easier-to-steward/README.md) | A steward clears their list in minutes and doesn't repeat work, and nobody is pinged while they are away. | W24 | 7 |
 | [E26 Easier to Operate](E26-easier-to-operate/README.md) | Whoever runs the box sets everything from one file, checks each channel first, and is told how to fix what is wrong. | W25 | 7 |
+| [E27 Fresh Answers](E27-fresh-answers/README.md) | An asker can tell at a glance when an answer rests on old sources, and the brain prefers the newer of two equal ones. | W26 | 6 |
+| [E28 A Tidy Corpus](E28-tidy-corpus/README.md) | Stewards and owners can see what has gone stale or unused, and take it out of answers without waiting on the source. | W27 | 7 |
+| [E29 A Focused Context](E29-focused-context/README.md) | What the model reads stays short and on topic, and the operator can see when the index, the scopes, the eval cases or the prompts start to creep. | W28 | 7 |
 
 ## All tickets by wave
 
@@ -516,3 +528,38 @@ flowchart LR
 | [SB-2605](E26-easier-to-operate/SB-2605-doctor-fix.md) | S25.2 | E26 | Doctor says how to fix it | Done |
 | [SB-2606](E26-easier-to-operate/SB-2606-token-expiry.md) | S25.2 | E26 | Token expiry warning | Done |
 | [SB-2607](E26-easier-to-operate/SB-2607-notify-health.md) | S25.2 | E26 | Notifications in health | Done |
+
+### W26 Fresh Answers
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2701](E27-fresh-answers/SB-2701-old-source-warning.md) | S26.1 | E27 | Old-source warning | Open |
+| [SB-2702](E27-fresh-answers/SB-2702-reviewed-on-cite.md) | S26.1 | E27 | Reviewed shows on the cite | Open |
+| [SB-2703](E27-fresh-answers/SB-2703-report-outdated.md) | S26.1 | E27 | Report as outdated | Open |
+| [SB-2704](E27-fresh-answers/SB-2704-sync-lag-notice.md) | S26.1 | E27 | Sync lag notice | Open |
+| [SB-2705](E27-fresh-answers/SB-2705-review-by-dates.md) | S26.2 | E27 | Review-by dates in the document | Open |
+| [SB-2706](E27-fresh-answers/SB-2706-newer-wins-tie.md) | S26.2 | E27 | Newer wins a tie | Open |
+
+### W27 A Tidy Corpus
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2801](E28-tidy-corpus/SB-2801-retire-from-answers.md) | S27.1 | E28 | Retire from answers | Open |
+| [SB-2802](E28-tidy-corpus/SB-2802-same-name-different-text.md) | S27.1 | E28 | Same name, different text | Open |
+| [SB-2803](E28-tidy-corpus/SB-2803-never-cited.md) | S27.1 | E28 | Never cited | Open |
+| [SB-2804](E28-tidy-corpus/SB-2804-notes-sources-moved.md) | S27.1 | E28 | Notes whose sources moved | Open |
+| [SB-2805](E28-tidy-corpus/SB-2805-unused-terms.md) | S27.2 | E28 | Unused glossary terms | Open |
+| [SB-2806](E28-tidy-corpus/SB-2806-owner-nudges.md) | S27.2 | E28 | Owners hear about their own old documents | Open |
+| [SB-2807](E28-tidy-corpus/SB-2807-freshness-report.md) | S27.2 | E28 | Freshness in the report | Open |
+
+### W28 A Focused Context
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2901](E29-focused-context/SB-2901-short-conversations.md) | S28.1 | E29 | Conversations stay short | Open |
+| [SB-2902](E29-focused-context/SB-2902-per-document-cap.md) | S28.1 | E29 | One document can't crowd out the rest | Open |
+| [SB-2903](E29-focused-context/SB-2903-scope-report.md) | S28.1 | E29 | Scope report | Open |
+| [SB-2904](E29-focused-context/SB-2904-stale-eval-cases.md) | S28.2 | E29 | Eval cases that went stale | Open |
+| [SB-2905](E29-focused-context/SB-2905-index-leftovers.md) | S28.2 | E29 | Index leftovers | Open |
+| [SB-2906](E29-focused-context/SB-2906-prompt-growth.md) | S28.2 | E29 | Prompt growth watch | Open |
+| [SB-2907](E29-focused-context/SB-2907-start-here-stale.md) | S28.2 | E29 | Start here goes stale | Open |
