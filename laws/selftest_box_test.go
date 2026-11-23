@@ -48,3 +48,32 @@ func TestSelfBundleIndexOnlyIsCaught(t *testing.T) {
 	}
 	failsSomewhere(t, "index-only check", func(r *rand.Rand) error { return law06Bundle(r, indexOnly) })
 }
+
+func TestSelfSupportWholeValuesOnlyIsCaught(t *testing.T) {
+	wholeOnly := func(stored []string, text string) map[int]bool {
+		out := map[int]bool{}
+		for i, line := range strings.Split(text, "\n") {
+			for _, v := range stored {
+				if strings.Contains(line, v) {
+					out[i+1] = true
+				}
+			}
+		}
+		return out
+	}
+	failsSomewhere(t, "whole-value scan", func(r *rand.Rand) error { return law07Support(r, wholeOnly) })
+}
+
+func TestSelfProxyCredentialsAcceptedIsCaught(t *testing.T) {
+	failsSomewhere(t, "credentials accepted", func(r *rand.Rand) error { return law07Proxy(r, box.CheckProxyFile) })
+}
+
+func TestSelfDSNRequireAcceptedIsCaught(t *testing.T) {
+	lax := func(dsn string) error {
+		if strings.Contains(dsn, "require") {
+			return nil
+		}
+		return box.CheckDSN(dsn)
+	}
+	failsSomewhere(t, "sslmode=require accepted", func(r *rand.Rand) error { return law02DSN(r, lax) })
+}

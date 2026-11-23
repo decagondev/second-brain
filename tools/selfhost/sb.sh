@@ -5,8 +5,11 @@
 #   sb.sh ARGS...
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-if [ ! -x bin/sb ]; then
-  command -v go >/dev/null || { echo "sb.sh: no bin/sb (run from an install bundle, or install Go)" >&2; exit 2; }
+# In a checkout with Go, built fresh each time (the build cache makes it quick), so it never
+# lags the scripts; an install bundle carries its own.
+if [ -d cmd/sb ] && command -v go >/dev/null; then
   go build -o bin/sb ./cmd/sb
+elif [ ! -x bin/sb ]; then
+  echo "sb.sh: no bin/sb (run from an install bundle, or install Go)" >&2; exit 2
 fi
 exec bin/sb "$@"

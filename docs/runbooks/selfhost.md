@@ -28,6 +28,8 @@ A self-hosted cell is a whole cell on one Linux VM or on-prem server that the co
    ```
 
    Fix anything it reports. A warning that `SB_OFFSITE` is on the root disk means the off-box copy isn't off the box: mount the other machine's directory first.
+
+   It also prints the outbound proxy and the database it will use. Behind a proxy, set `SB_HTTPS_PROXY=http://HOST:PORT`, or, when the proxy needs a user and password, put the whole URL in a root-only file and set `SB_HTTPS_PROXY_FILE` to it; a URL with credentials in `install.env` itself is refused. Add the company's own hosts the cell talks to (an internal IdP, the share's server) to `SB_NO_PROXY`. To use the company's Postgres on another machine, set `SB_DATABASE=external` and put its connection string, with `sslmode=verify-full`, in a root-only file named by `SB_DATABASE_DSN_FILE` (and the server's CA in `SB_DATABASE_CA` if it isn't a public one); the database must be Postgres 17 with the `vector` extension available to the cell's user.
 4. Install:
 
    ```text
@@ -94,3 +96,9 @@ To a new machine, after losing the old one:
 ## LAW-17 on one machine
 
 There is no IAM to enumerate, so the cell keeps its own list of what the factory can reach (`state/iam/TENANT.json`): at most the release store's read-only pull token. The monthly `access` job checks it and leaves a signed statement in `state/access/statement-DATE.json`, whose hash is in the audit log and so in the next anchor. An unlisted path is a Sev-1 `access_path` ([LAW-17](LAW-17.md)). To show an auditor: the statement, `sb audit verify`, and the anchor covering the statement's audit row.
+
+## When something breaks
+
+1. Run `sudo /opt/second-brain/tools/selfhost/install.sh --doctor` and follow the fixes it prints.
+2. If you need help, run `sudo /opt/second-brain/tools/selfhost/install.sh --support`. It writes `build/selfhost/support-TIME.tar.gz`: versions, digests, the layout's settings, the doctor's verdicts, `ps` and the last 1,000 log lines per service. It has no documents, questions or answers in it, and it is scanned for every secret the box stores before it is written; if the scan finds one it writes nothing and names the file and line, so tell the maintainers what it named rather than sending the logs some other way.
+3. Send that one file. Nothing else from the box needs to leave it.

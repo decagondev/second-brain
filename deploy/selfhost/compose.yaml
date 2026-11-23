@@ -17,8 +17,15 @@ x-cell: &cell
     # The system's roots, plus the CA of a proxy certificate the cell must trust to reach
     # its own sign-in (Caddy's local CA, or a company CA), copied in by selfhost.sh.
     SSL_CERT_DIR: /etc/ssl/certs:/etc/sb/ca
+    # The company's outbound proxy (SB-1806), for these four services only: postgres, the
+    # model and the write-once store have no route out. A proxy with credentials comes
+    # from a file in the service's own vault (SB_PROXY_FILE), never from the environment.
+    HTTPS_PROXY: ${SB_HTTPS_PROXY:-}
+    NO_PROXY: ${SB_NO_PROXY_LIST:-}
+    SB_HTTPS_PROXY_FILE: ${SB_PROXY_FILE:-}
   depends_on:
-    postgres: { condition: service_healthy }
+    # The bundled database (profile db); SB_DATABASE=external leaves it out (SB-1807).
+    postgres: { condition: service_healthy, required: false }
     worm: { condition: service_started }
 
 x-hardened: &hardened
@@ -124,6 +131,7 @@ services:
 
   postgres:         # Cloud SQL, private IP: on the internal network only
     image: pgvector/pgvector@sha256:b513c48566e4777cd3370451400000c78eda6a08131d68f4c31d4a76f27bd8fd
+    profiles: [db]  # compose.sh adds it unless SB_DATABASE=external
     restart: unless-stopped
     environment:
       POSTGRES_USER: sb

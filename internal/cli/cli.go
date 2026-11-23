@@ -60,7 +60,8 @@ commands:
   release status|promote|rollback      release controller (maintainers)
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
-  selfhost doctor|verify-bundle        a self-hosted box's checks and offline bundles (sb-selfhost(7))
+  selfhost doctor|verify-bundle|check-proxy|check-dsn   a self-hosted box's checks, bundles and settings (sb-selfhost(7))
+  secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
   version                              print the version
 
 See sb(1). Exit codes are listed in sb-errors(7).
@@ -131,10 +132,9 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceTemplates(rest[2:])
 	case "space diff":
 		return e.spaceDiff(rest[2:])
-	case "selfhost doctor":
-		return e.selfhostDoctor(rest[2:])
-	case "selfhost verify-bundle":
-		return e.selfhostVerifyBundle(rest[2:])
+	}
+	if code, ok := e.boxCommand(name, rest[2:]); ok {
+		return code
 	}
 	if t, ok := planned[name]; ok {
 		return e.fail("sb "+name, errs.New(errs.ENOTIMPL, "not built yet (%s)", t))
@@ -145,8 +145,26 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	return e.fail("sb", errs.New(errs.EUSAGE, "unknown command %q; see sb --help", cmd))
 }
 
+// boxCommand runs the commands for a self-hosted box (sb-selfhost(7)) and the secret
+// scanner; ok is false for any other name.
+func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
+	switch name {
+	case "selfhost doctor":
+		return e.selfhostDoctor(args), true
+	case "selfhost verify-bundle":
+		return e.selfhostVerifyBundle(args), true
+	case "selfhost check-proxy":
+		return e.selfhostCheckProxy(args), true
+	case "selfhost check-dsn":
+		return e.selfhostCheckDSN(args), true
+	case "secrets scan":
+		return e.secretsScan(args), true
+	}
+	return 0, false
+}
+
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" {
+	if cmd == "tenant" || cmd == "space" || cmd == "selfhost" || cmd == "secrets" {
 		return true
 	}
 	for k := range planned {

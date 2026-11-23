@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S17.3: a proxy, the company's Postgres, and a support bundle with no secret
+
+**Wave/slice:** W17 / S17.3 (SB-1806 to SB-1808) · **Status:** Done
+
+**What:** The four services with a route out take the company's proxy (`SB_HTTPS_PROXY`, or `SB_HTTPS_PROXY_FILE` for one with credentials, read by each service's `main` from its own vault before any HTTP client); `SB_DATABASE=external` moves the cell onto the company's Postgres over `sslmode=verify-full` and takes the bundled one out of the layout; `install.sh --support` writes a tar of versions, settings, the doctor, `ps` and logs that `sb secrets scan` has checked against every stored secret. `sb selfhost check-proxy` and `check-dsn` check the settings in Go. `dbdump.sh` and `restore.sh` share `pg.sh`, and the drill now restores into a container with no network for both layouts. W17 is built.
+
+**Why this way:** Credentials never go into `install.env` or a container's environment, because both are read by more people and tools than the vault is: the proxy's URL goes from a file into the vault, and the database password reaches `pg_dump` through a `pg_service.conf`, not its arguments, which any local user can read in `/proc`. The bundled database is a compose profile the wrapper adds by default, so a box installed before this change keeps its Postgres without being reinstalled. The support bundle is scanned for the values the box really stores, not only for patterns, because a stored secret has no shape; it learns a JSON credential's secret field on its own, since a log line would carry the secret, not the object.
+
+**Learned:** A vault change reaches a running container only when it starts again, so an install that changes one now recreates the services; before, moving back from an external database left the services on the old string. libpq's channel binding can't use an Ed25519 server certificate (`could not find digest for NID UNDEF`), so the runbook's database certificate should be RSA or ECDSA. The smoke test had two bugs that only Docker Desktop hid (BUG-0028).
+
+**Laws:** LAW-07 (a support bundle carries no stored secret, whole or in part: `TestLAW07_SupportBundlesCarryNoSecret`; a proxy's credentials never sit in a setting that isn't secret nor in the error that refuses them: `TestLAW07_ProxyCredentialsStayInAFile`), LAW-02 (a database on another machine only over TLS that checks its name: `TestLAW02_ExternalDatabaseIsVerified`), each with a self-test.
+
 ## 2026-11-23 S17.2 Upgrade and recover: restore, a monthly drill, verified offline upgrades and rollback (SB-1803 to SB-1805)
 
 **Wave/slice:** W17 / S17.2 · **Status:** Done.

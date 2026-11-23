@@ -416,3 +416,15 @@ func TestLAW13_ARebuildIsNeverAWeekOfChanges(t *testing.T) {
 func TestLAW01_TheReviewListNamesOnlyWhatTheStewardCanOpen(t *testing.T) {
 	Check(t, "LAW-01", 100, law01Review)
 }
+
+func TestLAW07_SupportBundlesCarryNoSecret(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Support(r, realSupportScan) })
+}
+
+func TestLAW07_ProxyCredentialsStayInAFile(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Proxy(r, realProxyCheck) })
+}
+
+func TestLAW02_ExternalDatabaseIsVerified(t *testing.T) {
+	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02DSN(r, realDSNCheck) })
+}

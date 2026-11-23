@@ -3,6 +3,7 @@
 # cell's Postgres, kept on this machine and copied off it, fourteen nights of each. The
 # backup job's write-once copies cover the audit log and approvals (sb-audit(7)); this
 # covers every other record, and the index, which can also be rebuilt from the sources.
+# With SB_DATABASE=external it dumps the company's database the same way (SB-1807).
 #   dbdump.sh            run by sb-selfhost-dbdump.timer
 set -euo pipefail
 cd "$(dirname "$0")/../.."
@@ -10,6 +11,8 @@ DOCKER=${DOCKER:-docker}
 DIR=build/selfhost
 ENV=$DIR/compose.env
 [ -f "$ENV" ] || { echo "dbdump: no self-hosted cell here" >&2; exit 1; }
+# shellcheck source=tools/selfhost/pg.sh
+. tools/selfhost/pg.sh
 local_dir=$DIR/db-dumps
 off=$(sed -nE 's/^SB_OFFSITE=//p' "$ENV" | tr -d '\r')
 if [[ "$DOCKER" == *.exe ]] && command -v wslpath >/dev/null; then off=$(wslpath -u "$off"); fi # Docker Desktop's host path
@@ -17,7 +20,7 @@ off=$off/db
 mkdir -p "$local_dir" "$off"
 chmod 700 "$local_dir"
 name=sb-$(date -u +%Y-%m-%dT%H%M%SZ).dump
-DOCKER="$DOCKER" bash tools/selfhost/compose.sh exec -T postgres pg_dump -U sb -d sb -Fc >"$local_dir/$name.tmp"
+pg pg_dump -Fc >"$local_dir/$name.tmp"
 [ -s "$local_dir/$name.tmp" ] || { echo "dbdump: pg_dump wrote nothing" >&2; rm -f "$local_dir/$name.tmp"; exit 1; }
 mv "$local_dir/$name.tmp" "$local_dir/$name"
 chmod 600 "$local_dir/$name"

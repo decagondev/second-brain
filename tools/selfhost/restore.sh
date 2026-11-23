@@ -7,10 +7,13 @@
 #                              another cell is refused before anything stops. Then the
 #                              writers stop, the database is restored, they start again,
 #                              and the audit chain is verified.
-#   restore.sh --drill         restore the newest dump into a scratch database, check every
-#                              table of the live database is there, drop it, and record the
-#                              result in build/selfhost/drill.json (sb-selfhost-drill.timer,
-#                              monthly). The cell keeps running.
+#   restore.sh --drill         restore the newest dump into a scratch database (a container
+#                              with no network, removed after), check every table of the
+#                              live database is there, and record the result in
+#                              build/selfhost/drill.json (sb-selfhost-drill.timer, monthly).
+#                              The cell keeps running, and the live database is only read.
+#
+# With SB_DATABASE=external both work against the company's database (SB-1807).
 #
 # DOCKER names the Docker command.
 set -euo pipefail
@@ -23,6 +26,8 @@ die() { echo "restore: $*" >&2; exit 1; }
 compose() { DOCKER="$DOCKER" bash tools/selfhost/compose.sh "$@"; }
 val() { sed -nE "s/^$1=//p" "$ENV" | tr -d '\r' | tail -1; }
 [ -f "$ENV" ] || die "no self-hosted cell here"
+# shellcheck source=tools/selfhost/pg.sh
+. tools/selfhost/pg.sh
 TENANT=$(val SB_TENANT)
 keys() { sha256sum "$DIR/vault/api/vault/tenants/$TENANT/audit/anchor-seed" 2>/dev/null | cut -c1-16; }
 
@@ -53,13 +58,12 @@ if [ "$MODE" = drill ]; then
     printf '{"at":"%s","dump":"%s","ok":%s,"tables":%s%s}\n' "$at" "$(basename "$DUMP")" "$ok" "$tables" \
       "${missing:+,\"missing\":\"$missing\"}" >"$DIR/drill.json.tmp" && mv "$DIR/drill.json.tmp" "$DIR/drill.json"
   }
-  trap record EXIT
-  psql() { compose exec -T postgres psql -U sb -v ON_ERROR_STOP=1 -Atq "$@"; }
+  trap 'pg_scratch_stop; record' EXIT
   q="select table_schema||'.'||table_name from information_schema.tables where table_type='BASE TABLE' and table_schema not in ('pg_catalog','information_schema') order by 1"
-  psql -d sb -c "drop database if exists sb_drill" -c "create database sb_drill" >/dev/null
-  compose exec -T postgres pg_restore --no-owner -U sb -d sb_drill <"$DUMP" || { psql -d sb -c "drop database if exists sb_drill" >/dev/null; die "the dump $DUMP doesn't restore"; }
-  live=$(psql -d sb -c "$q"); got=$(psql -d sb_drill -c "$q")
-  psql -d sb -c "drop database sb_drill" >/dev/null
+  pg_scratch_start sb-selfhost-drill || die "the scratch database didn't start"
+  pg_scratch pg_restore --no-owner --no-privileges --exit-on-error <"$DUMP" || die "the dump $DUMP doesn't restore"
+  live=$(pg psql -v ON_ERROR_STOP=1 -Atq -c "$q"); got=$(pg_scratch psql -v ON_ERROR_STOP=1 -Atq -c "$q")
+  [ -n "$live" ] || die "the live database's tables couldn't be listed"
   missing=$(comm -23 <(printf '%s\n' "$live") <(printf '%s\n' "$got") | tr '\n' ' ' | sed 's/ $//')
   tables=$(printf '%s\n' "$got" | grep -c . || true)
   [ -z "$missing" ] || die "the restored dump lacks tables the live database has: $missing"
@@ -71,7 +75,7 @@ fi
 
 echo "restore: restoring $(basename "$DUMP") into $TENANT's database; the writers stop meanwhile"
 compose stop api ingest jobs >/dev/null
-compose exec -T postgres pg_restore --clean --if-exists --no-owner -U sb -d sb <"$DUMP" || {
+pg pg_restore --clean --if-exists --no-owner <"$DUMP" || {
   compose up -d >/dev/null; die "pg_restore failed; the services are started again on what the database holds"
 }
 compose up -d >/dev/null

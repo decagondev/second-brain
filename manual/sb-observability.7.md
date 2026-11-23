@@ -97,6 +97,8 @@ Each cell plants **canary secrets** (SB-411): random values that look like crede
 
 The scanner looks for every canary, and for every value resolved from the vault, in three places: each log line as it is written, each model request before it leaves the gateway, and each audit row and export. A finding names the place and the canary's id, **never the value**. It is a **Sev-1** alert (`kind: secret_leak`), sent through the alert webhook. In CI, `tests/canary` runs the ask path, the tool bus and the audit export with canaries planted and fails on any finding. The same test also shows that a path that leaks on purpose is found.
 
+`sb secrets scan [--known PATH]... PATH...` runs the same scanner over files (SB-1808): it learns every value stored under each `--known` path (a vault directory, or a file of one secret), whole and in part (each line of a multi-line value such as a PEM key, and the secret-named fields of a JSON value, such as `secret_key` but not `access_key`), then reads every regular file under each `PATH` and reports each line holding a known value or the shape of a secret (a private key's header, a URL with a password, a bearer token), as `FILE:LINE ID`, never the value. A file over 64 MiB is a finding, not a skip. Any finding exits 1 with `ELAW`; `--json` gives `{files, known, findings}`. A self-hosted box's support bundle is scanned with it before it is written (sb-selfhost(7), Support bundle).
+
 ### Weekly leadership report
 
 Weekly active users ÷ seats, asks, cited-answer rate, top uncited topics (as counts, never content), drafts and their approve-to-reject ratio, approved actions and receipts, spend. Delivered automatically to the tenant's approver group.

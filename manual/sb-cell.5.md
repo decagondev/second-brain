@@ -73,7 +73,7 @@ It never starts with a part switched off.
 | `release.registry` | string | with `release` | Where the bundle's images live |
 | `release.trusted`, `release.cosign_identity` | string | exactly one, with `release` | The one release identity the cell trusts: an Ed25519 key (`ed25519:BASE64`), or the release workflow's cosign identity |
 | `release.deploy.kind`, `.project`, `.location` | string | with `release` | `local`, or `gcp` with the cell's project and region |
-| `database` | DSN | for `durable` | The cell's own Postgres (with `pgvector`), e.g. `postgres:///sb_acme?host=/var/run/postgresql`, or `vault://tenants/TENANT/database` to read that DSN, password and all, from the vault at start (sb-selfhost(7)): every record store, the index, the spaces registry and the audit log live there, and each service creates its tables at start, one at a time (SB-1508) |
+| `database` | DSN | for `durable` | The cell's own Postgres (with `pgvector`), e.g. `postgres:///sb_acme?host=/var/run/postgresql`, or `vault://tenants/TENANT/database` to read that DSN, password and all, from the vault at start (sb-selfhost(7)): every record store, the index, the spaces registry and the audit log live there, and each service creates its tables at start, one at a time (SB-1508). A database on another machine is reached with `sslmode=verify-full`, checked against the system's roots and `/etc/sb/ca` (sb-selfhost(7), A database on another machine; SB-1807) |
 | `durable` | bool | no, `false` | `true` refuses to start without a `database`, so no store is in memory |
 
 ### Stores
@@ -90,6 +90,14 @@ Each kind in the manifest's `connectors` is served by the vendor's adapter: `doc
 ### One process or several
 
 `sb-ingest` and `sb-jobs` share the cell's stores with `sb-api`. While any store is in memory there is nothing to share, so they refuse to start on their own and run inside the api instead: `sb-api --config FILE --with ingest,jobs` (or `--with ingest`, `--with jobs`). With durable stores (SB-1508) each runs as its own service, as on GCP.
+
+### Environment
+
+| Variable | Meaning |
+|---|---|
+| `HTTPS_PROXY`, `NO_PROXY` | The outbound proxy for `https://` calls (connectors, the model gateway, the release store, the company's IdP) and the hosts that skip it, read by Go's HTTP clients; plain `http://` calls inside the layout never use one |
+| `SB_HTTPS_PROXY_FILE` | A file holding the proxy's URL, credentials and all (SB-1806): read once at start, before any HTTP client, and used as `HTTPS_PROXY`, so the credentials are never in the process's environment as given. It must be an `http://` or `https://` host and port; setting it with `HTTPS_PROXY` stops the service from starting |
+| `SSL_CERT_DIR` | The roots the cell trusts for TLS, the proxy's CA and a private database CA among them on a self-hosted cell |
 
 ## EXIT STATUS
 

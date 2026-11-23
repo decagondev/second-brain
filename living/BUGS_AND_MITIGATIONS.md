@@ -423,3 +423,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 
 **Caught by now:** `TestAuditVerifyEmptyLog`. No law caught it because LAW-11's tests always write rows first; the empty log is now a case of its own.
 
+
+## BUG-0028 The self-hosted smoke test failed on Linux, and left a rogue release behind
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-23, running `make selfhost-smoke` on a Linux Docker host (SB-1807) | Low | SB-1602 | Fixed |
+
+**Symptom:** On Linux, `make selfhost-smoke` failed its three mount checks, and after its rogue-release check the release store still held the release signed with the other key, so the next hourly upgrade failed until the demo release was published again.
+
+**Root cause:** Two things that only Docker Desktop on Windows hid. The step that puts the demo release back passed Docker a relative path (`build/selfhost/releases`), which Docker reads as a volume name; on Windows `wslpath -w` had always made it absolute. And the mount check sorted with the shell's locale, which on some systems sorts `/srv/share/notes=` before `/srv/share=`.
+
+**Fix:** The path is absolute (`$(pwd)/build/selfhost/releases`) and the sort is `LC_ALL=C`.
+
+**Caught by now:** Running the smoke test on a Linux host, which the cloud checkout now does for each self-hosted slice. No law was involved: the release that stayed behind was still refused by the updater (LAW-06), which is how it showed.

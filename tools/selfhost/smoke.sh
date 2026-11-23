@@ -67,7 +67,7 @@ check "a file with no ACL file is never cited" "! ask 'what is the example share
 for svc in api ingest jobs; do
   want=false; [ "$svc" = api ] && want=true
   check "$svc mounts the share read-only and notes/ writable=$want (SB-1705)" \
-    "[ \"\$(\"$DOCKER\" inspect -f '{{range .Mounts}}{{.Destination}}={{.RW}} {{end}}' sb-selfhost-$svc-1 | tr ' ' '\n' | grep -E '^/srv/share(/notes)?=' | sort | tr '\n' ' ' | tr -d '\r')\" = '/srv/share=false /srv/share/notes=$want ' ]"
+    "[ \"\$(\"$DOCKER\" inspect -f '{{range .Mounts}}{{.Destination}}={{.RW}} {{end}}' sb-selfhost-$svc-1 | tr ' ' '\n' | grep -E '^/srv/share(/notes)?=' | LC_ALL=C sort | tr '\n' ' ' | tr -d '\r')\" = '/srv/share=false /srv/share/notes=$want ' ]"
 done
 # S16.5: with the model profile, both model servers sit on the data network alone, publish
 # nothing, run as the service user on a read-only root, and the cell answers through them.
@@ -142,7 +142,7 @@ if [ -f build/selfhost/release-key ] && command -v go >/dev/null; then
     check "a release signed with another key is refused" "! DOCKER=\"$DOCKER\" bash tools/selfhost/update.sh"
     check "and nothing changed" "cmp -s '$rogue/before' '$ENVF'"
     GOTOOLCHAIN=local go run ./tools/selfhost/devrelease --bundle build/selfhost/bundle.json --store build/selfhost/releases --key-file build/selfhost/release-key --gate-results build/selfhost/gate-results.txt >/dev/null
-    rp=build/selfhost/releases
+    rp=$(pwd)/build/selfhost/releases
     if [[ "$DOCKER" == *.exe ]] && command -v wslpath >/dev/null; then rp=$(wslpath -w "$rp"); fi
     "$DOCKER" run --rm -u 0 -v sb-selfhost_releases:/dst -v "$rp:/src:ro" $HELPER sh -c 'cp -a /src/. /dst/ && chown -R 65532:65532 /dst' >/dev/null
   else

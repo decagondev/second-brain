@@ -26,6 +26,11 @@ import (
 const Grace = 25 * time.Second
 
 func main() {
+	// An outbound proxy with credentials, from a file (SB-1806), before any HTTP client.
+	if err := wire.ProxyFromFile(os.Getenv, os.Setenv); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "sb-api:", err)
+		os.Exit(1)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	code := run(ctx, os.Args[1:], os.Stderr, nil)
 	stop()

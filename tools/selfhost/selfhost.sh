@@ -56,6 +56,10 @@ SB_TLS=${SB_TLS:-internal}
 SB_IDP=${SB_IDP:-bundled}
 SB_OFFSITE=${SB_OFFSITE:-}
 SB_SHARE=${SB_SHARE:-}
+SB_DATABASE=${SB_DATABASE:-bundled}
+SB_HTTPS_PROXY=${SB_HTTPS_PROXY:-}
+SB_HTTPS_PROXY_FILE=${SB_HTTPS_PROXY_FILE:-}
+sbcli() { bash tools/selfhost/sb.sh "$@"; }
 [[ "$SB_TENANT" =~ ^[a-z0-9][a-z0-9-]{1,62}$ ]] || die "SB_TENANT must be lower-case letters, digits and dashes"
 [[ "$SB_HOST" =~ ^[a-z0-9.-]+$ ]] || die "SB_HOST must be a host name"
 if [ "$SB_PORT" = 443 ]; then BASE=https://$SB_HOST; else BASE=https://$SB_HOST:$SB_PORT; fi
@@ -85,6 +89,21 @@ else
   [ -n "$SB_OFFSITE" ] && [ -d "$SB_OFFSITE" ] || die "SB_OFFSITE must name a directory on another machine, mounted here (the off-box backup copy)"
   [ -n "${SB_RELEASE_STORE:-}" ] && [ -n "${SB_RELEASE_TRUSTED:-}" ] || die "SB_RELEASE_STORE and SB_RELEASE_TRUSTED name where releases come from and who signs them"
 fi
+# The outbound proxy (SB-1806): a URL without credentials, or a file holding one with them.
+[ -z "$SB_HTTPS_PROXY" ] || [ -z "$SB_HTTPS_PROXY_FILE" ] || die "set SB_HTTPS_PROXY or SB_HTTPS_PROXY_FILE, not both"
+if [ -n "$SB_HTTPS_PROXY" ]; then sbcli selfhost check-proxy "$SB_HTTPS_PROXY" >/dev/null || die "SB_HTTPS_PROXY is refused (above)"; fi
+if [ -n "$SB_HTTPS_PROXY_FILE" ]; then
+  [ -f "$SB_HTTPS_PROXY_FILE" ] || die "SB_HTTPS_PROXY_FILE ($SB_HTTPS_PROXY_FILE) isn't a file"
+  sbcli selfhost check-proxy --file "$SB_HTTPS_PROXY_FILE" >/dev/null || die "SB_HTTPS_PROXY_FILE is refused (above)"
+fi
+# The database (SB-1807): the bundled one, or the company's on another machine.
+case "$SB_DATABASE" in
+bundled) ;;
+external)
+  [ -f "${SB_DATABASE_DSN_FILE:-}" ] || die "SB_DATABASE=external needs SB_DATABASE_DSN_FILE, a file holding the connection string"
+  sbcli selfhost check-dsn "$SB_DATABASE_DSN_FILE" >/dev/null || die "SB_DATABASE_DSN_FILE is refused (above)" ;;
+*) die "SB_DATABASE is bundled or external" ;;
+esac
 abs() { mkdir -p "$1" && (cd "$1" && pwd); }
 
 rand() { head -c 32 /dev/urandom | base64 | tr -d '\n/+=' | head -c 40; }
@@ -93,6 +112,8 @@ rand() { head -c 32 /dev/urandom | base64 | tr -d '\n/+=' | head -c 40; }
 
 # --- Secrets and keys: made on this machine, once, and never anywhere else.
 V=$DIR/vault
+vaultsum() { [ -d "$V" ] && find "$V" -type f -exec sha256sum {} + | sort | sha256sum; }
+VAULT_BEFORE=$(vaultsum || true)
 put() { mkdir -p "$(dirname "$V/$1/vault/tenants/$SB_TENANT/$2")"; printf '%s' "$3" >"$V/$1/vault/tenants/$SB_TENANT/$2"; }
 mkdir -p "$DIR/policy/platform" "$DIR/tls" "$DIR/ca" "$DIR/releases" "$DIR/iam" "$V/updater/vault/tenants/$SB_TENANT"
 if [ ! -f "$DIR/db-password" ]; then
@@ -107,6 +128,27 @@ if [ ! -f "$DIR/db-password" ]; then
   for f in "audit/anchor-seed $anchor" "database $dsn"; do put jobs ${f%% *} "${f#* }"; done
 fi
 if [ "$SB_IDP" = company ]; then put api oidc "$(cat "$SB_OIDC_SECRET_FILE")"; fi
+# The database each service reads: the company's (SB-1807), or the bundled one, written
+# every run so that moving back from external to bundled takes effect too.
+rm -f "$DIR/ca/database-ca.crt"
+if [ "$SB_DATABASE" = external ]; then
+  dsn=$(tr -d '\r\n' <"$SB_DATABASE_DSN_FILE")
+  if [ -n "${SB_DATABASE_CA:-}" ]; then cp "$SB_DATABASE_CA" "$DIR/ca/database-ca.crt"; fi
+else
+  dsn="postgres://sb:$(cat "$DIR/db-password")@postgres:5432/sb?sslmode=disable"
+fi
+for svc in api ingest jobs; do put $svc database "$dsn"; done
+PROXY_FILE_IN=
+for svc in api ingest jobs updater; do rm -f "$V/$svc/vault/tenants/$SB_TENANT/https-proxy"; done
+if [ -n "$SB_HTTPS_PROXY_FILE" ]; then
+  for svc in api ingest jobs updater; do put $svc https-proxy "$(tr -d '\r\n' <"$SB_HTTPS_PROXY_FILE")"; done
+  PROXY_FILE_IN=/var/lib/sb/vault/vault/tenants/$SB_TENANT/https-proxy
+fi
+NO_PROXY_LIST=
+if [ -n "$SB_HTTPS_PROXY$SB_HTTPS_PROXY_FILE" ]; then
+  # The cell's own names never go through the proxy: its sign-in, its services, loopback.
+  NO_PROXY_LIST=$SB_HOST,localhost,127.0.0.1,::1,api,idp,worm,model,model-embed${SB_NO_PROXY:+,$SB_NO_PROXY}
+fi
 if [ -n "${SB_RELEASE_PULL_TOKEN_FILE:-}" ]; then put updater release-pull "$(cat "$SB_RELEASE_PULL_TOKEN_FILE")"; fi
 # The write-once store's key (SB-1603): the store reads the secret, the jobs service the pair.
 if [ ! -f "$DIR/worm-secret" ]; then
@@ -114,6 +156,12 @@ if [ ! -f "$DIR/worm-secret" ]; then
   printf '%s' "$wormsecret" >"$DIR/worm-secret"
   put jobs worm "$(printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret")"
 fi
+
+# A changed vault (another database, a proxy set or cleared) reaches running services only
+# when they start again; they are recreated after the layout is up.
+VAULT_AFTER=$(vaultsum || true)
+RECREATE=
+[ -z "$VAULT_BEFORE" ] || [ "$VAULT_BEFORE" = "$VAULT_AFTER" ] || RECREATE=1
 
 # --- Policies and the manifest.
 cp policy/platform/*.cedar "$DIR/policy/platform/"
@@ -237,6 +285,10 @@ profiles=$SB_IDP
   echo "SB_SHARE=$(hostpath "$(abs "${SB_SHARE:-$DIR/empty-share}")")"; echo "SB_OFFSITE=$(hostpath "$(abs "$SB_OFFSITE")")"
   [ -z "${SB_NOTES:-}" ] || echo "SB_NOTES=$(hostpath "$(abs "$SB_NOTES")")"
   echo "SB_PROFILES=$profiles"
+  echo "SB_DATABASE=$SB_DATABASE"
+  [ -z "$SB_HTTPS_PROXY" ] || echo "SB_HTTPS_PROXY=$SB_HTTPS_PROXY"
+  [ -z "$PROXY_FILE_IN" ] || echo "SB_PROXY_FILE=$PROXY_FILE_IN"
+  [ -z "$NO_PROXY_LIST" ] || echo "SB_NO_PROXY_LIST=$NO_PROXY_LIST"
   [ -z "$MODEL_IMAGE" ] || echo "SB_MODEL_IMAGE=$MODEL_IMAGE"
   if [ -f "$DIR/compose.env" ]; then grep -E '^SB_[A-Z]+_IMAGE=' "$DIR/compose.env" || true; fi
 } >"$DIR/compose.env.new"
@@ -272,6 +324,9 @@ if [ "$SB_TLS" = internal ]; then
   [ -s "$DIR/ca/caddy-root.crt" ] || die "the proxy made no local CA; 'tools/selfhost/compose.sh logs proxy' says why"
 fi
 compose up -d >/dev/null 2>&1 || compose up -d
+if [ -n "$RECREATE" ]; then compose up -d --force-recreate api ingest jobs >/dev/null 2>&1 || compose up -d --force-recreate api ingest jobs; fi
+# A database on another machine (SB-1807): the bundled one stops; its volume stays.
+if [ "$SB_DATABASE" = external ]; then compose --profile db rm -sf postgres >/dev/null 2>&1 || true; fi
 # The write-once bucket: created once, locked for seven years, and proved by a probe.
 compose --profile setup run --rm wormsetup >/dev/null 2>&1 || compose --profile setup run --rm wormsetup
 ok=

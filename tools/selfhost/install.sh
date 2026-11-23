@@ -4,11 +4,13 @@
 #
 #   sudo tools/selfhost/install.sh [--install-docker] [--check] CONFIG
 #   sudo tools/selfhost/install.sh --doctor
+#   sudo tools/selfhost/install.sh --support
 #
 #   --install-docker   install Docker Engine and the compose plugin from the distribution
 #                      (Debian or Ubuntu) when they are missing; otherwise they must be there
 #   --check            check the machine and CONFIG, change nothing
 #   --doctor           check the running box and say how to fix each problem (SB-1801)
+#   --support          write a support bundle with no content and no secret (SB-1808)
 #
 # It loads the bundle's images (or builds them, in a checkout with Go), runs selfhost.sh
 # with CONFIG, applies the first release, installs the systemd units (the cell at boot,
@@ -18,12 +20,13 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 HOME_DIR=$(pwd)
 die() { echo "install: $*" >&2; exit 1; }
-INSTALL_DOCKER= CHECK= CONFIG= DOCTOR=
+INSTALL_DOCKER= CHECK= CONFIG= DOCTOR= SUPPORT=
 for a in "$@"; do
   case "$a" in
   --install-docker) INSTALL_DOCKER=1 ;;
   --check) CHECK=1 ;;
   --doctor) DOCTOR=1 ;;
+  --support) SUPPORT=1 ;;
   -*) die "unknown option $a" ;;
   *) CONFIG=$a ;;
   esac
@@ -34,6 +37,7 @@ if [ -n "$DOCTOR" ]; then
   bash tools/selfhost/facts.sh | bash tools/selfhost/sb.sh selfhost doctor
   exit $?
 fi
+if [ -n "$SUPPORT" ]; then exec bash tools/selfhost/support.sh; fi
 [ -n "$CONFIG" ] || die "usage: install.sh [--install-docker] [--check] CONFIG (see deploy/selfhost/install.env.example)"
 [ -f "$CONFIG" ] || die "no configuration at $CONFIG"
 CONFIG=$(cd "$(dirname "$CONFIG")" && pwd)/$(basename "$CONFIG")
@@ -60,7 +64,29 @@ set -a; . "$CONFIG"; set +a
 if [ "$(findmnt -n -o TARGET -T "$SB_OFFSITE" 2>/dev/null || echo /)" = / ]; then
   echo "install: SB_OFFSITE ($SB_OFFSITE) is on this machine's root disk; the off-box copy must be on another machine" >&2
 fi
-if [ -n "$CHECK" ]; then echo "install: the machine and $CONFIG look right; nothing changed"; exit 0; fi
+# The outbound proxy (SB-1806) and the database (SB-1807), checked and reported.
+[ -z "${SB_HTTPS_PROXY:-}" ] || [ -z "${SB_HTTPS_PROXY_FILE:-}" ] || die "set SB_HTTPS_PROXY or SB_HTTPS_PROXY_FILE, not both"
+if [ -n "${SB_HTTPS_PROXY:-}" ]; then
+  p=$(bash tools/selfhost/sb.sh selfhost check-proxy "$SB_HTTPS_PROXY") || die "SB_HTTPS_PROXY is refused (above)"
+  proxy="${p#proxy: }, no_proxy: ${SB_NO_PROXY:-the cell's own names only}"
+elif [ -n "${SB_HTTPS_PROXY_FILE:-}" ]; then
+  p=$(bash tools/selfhost/sb.sh selfhost check-proxy --file "$SB_HTTPS_PROXY_FILE") || die "SB_HTTPS_PROXY_FILE is refused (above)"
+  proxy="${p#proxy: } (credentials from $SB_HTTPS_PROXY_FILE), no_proxy: ${SB_NO_PROXY:-the cell's own names only}"
+else
+  proxy="none: api, ingest, jobs and the updater reach the internet directly"
+fi
+if [ "${SB_DATABASE:-bundled}" = external ]; then
+  [ -f "${SB_DATABASE_DSN_FILE:-}" ] || die "SB_DATABASE=external needs SB_DATABASE_DSN_FILE"
+  d=$(bash tools/selfhost/sb.sh selfhost check-dsn "$SB_DATABASE_DSN_FILE") || die "SB_DATABASE_DSN_FILE is refused (above)"
+  database="external, ${d#database: }"
+else
+  database="bundled (the postgres container on this machine)"
+fi
+if [ -n "$CHECK" ]; then
+  echo "install: outbound proxy: $proxy"
+  echo "install: database: $database"
+  echo "install: the machine and $CONFIG look right; nothing changed"; exit 0
+fi
 if [ -n "${SB_SHARE:-}" ]; then # stewards' notes (SB-1705): the share's notes/ folder, the only one api writes
   SB_NOTES=${SB_NOTES:-$SB_SHARE/notes}; mkdir -p "$SB_NOTES"
   chown 65532:65532 "$SB_NOTES" 2>/dev/null || echo "install: couldn't give $SB_NOTES to uid 65532; stewards can't publish notes" >&2

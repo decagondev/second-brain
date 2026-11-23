@@ -27,6 +27,9 @@ sb factory status|handoff|access|detach|verify-export  (factory operators and te
 sb eval    run|gate|diff
 sb selfhost doctor [--facts FILE]        (a self-hosted box, sb-selfhost(7))
 sb selfhost verify-bundle DIR --trusted ed25519:KEY|--cosign-identity ID [--channel stable]
+sb selfhost check-proxy URL | --file FILE
+sb selfhost check-dsn FILE [--service OUT]
+sb secrets scan [--known PATH]... PATH...   (sb-observability(7))
 sb version
 ```
 
