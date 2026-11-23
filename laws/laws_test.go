@@ -388,6 +388,14 @@ func TestLAW01_StewardRepliesShowOnlyWhatTheAskerCanOpen(t *testing.T) {
 	Check(t, "LAW-01", runs, func(r *rand.Rand) error { return law01StewardCites(r, questionSystem{}) })
 }
 
+func TestLAW21_NotificationsGoToTheStewardsThereAreNow(t *testing.T) {
+	Check(t, "LAW-21", runs, func(r *rand.Rand) error { return law21Notify(r, RealNotify{}) })
+}
+
+func TestLAW07_NotificationsSayNothingOfWhatWasAsked(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law21Notify(r, RealNotify{}) })
+}
+
 func TestLAW21_AMovedStewardLosesTheQueue(t *testing.T) {
 	Check(t, "LAW-21", runs, func(r *rand.Rand) error { return law21StewardQueue(r, questionSystem{}) })
 }

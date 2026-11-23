@@ -14,6 +14,7 @@ import (
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/holds"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
 	"example.com/second-brain/internal/core/retention"
@@ -287,7 +288,26 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}}
+}
+
+var _ notify.PrefStore = Traces{}
+
+type prefRec struct {
+	Tenant string `json:"tenant"`
+	User   string `json:"user"`
+	notify.Prefs
+}
+
+// NotifyPrefs implements notify.PrefStore (SB-2101): none is every kind on.
+func (t Traces) NotifyPrefs(ctx context.Context, tenant, user string) (notify.Prefs, error) {
+	r, _, err := get[prefRec](ctx, t.Pool, tenant, "pref", user, false)
+	return r.Prefs, err
+}
+
+// PutNotifyPrefs implements notify.PrefStore.
+func (t Traces) PutNotifyPrefs(ctx context.Context, tenant, user string, p notify.Prefs) error {
+	return put(ctx, t.Pool, tenant, "pref", user, meta{at: time.Now().UTC(), user: user}, prefRec{tenant, user, p}, false)
 }
 
 var _ ask.StewardStore = Traces{}
@@ -390,7 +410,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one
@@ -438,6 +458,9 @@ func (v view) records(ctx context.Context, tenant string, before *time.Time, use
 
 // Expire implements retention.Store: records older than before, except held ones.
 func (v view) Expire(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	if v.kind == "pref" { // settings are kept until changed or erased
+		return 0, 0, nil
+	}
 	rs, err := v.records(ctx, tenant, &before, "")
 	if err != nil {
 		return 0, 0, err
@@ -458,6 +481,9 @@ func (v view) Expire(ctx context.Context, tenant string, before time.Time, held 
 
 // Plan implements retention.Store: Expire's selection, deleting nothing.
 func (v view) Plan(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	if v.kind == "pref" {
+		return 0, 0, nil
+	}
 	rs, err := v.records(ctx, tenant, &before, "")
 	if err != nil {
 		return 0, 0, err

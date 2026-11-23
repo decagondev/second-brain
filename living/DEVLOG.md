@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S20.1: stewards and askers are told
+
+**Wave/slice:** W20 / S20.1 (SB-2101, SB-2102) · **Status:** Done
+
+**What:** A `notify` job in `sb-jobs` (every five minutes) tells each space's stewards how many new questions it has, and each asker that their question has a reply or became a note, as a direct message from the Mattermost or Slack bot the cell already has (`internal/core/notify`, `slackapp.DM`, `mmapp.DM`). Messages are a count, a space's name and a link to the cell's page. `GET|PUT /v1/me/notifications` and checkboxes in the Questions tab turn kinds off; `/?tab=questions` opens the app where the link points.
+
+**Why this way:** Who is told is read from the directory when the job sends, not from the question, so a steward who left the group or was deprovisioned hears nothing (LAW-21, LAW-12), and the message never carries text, so the person reads the question where the cell checks again what they may see (LAW-07). The job decides every message before sending any and keeps only its last run time, so a failed send is counted and alerted but nothing is told twice. Settings are a `pref` cell record, erased with the person and never expired, so an opt-out doesn't quietly lapse after the retention period.
+
+**Learned:** Space labels in `SpaceFacts` are sensitivity labels, not display names, so messages name the space by its manifest name.
+
+**Laws:** LAW-21 (`TestLAW21_NotificationsGoToTheStewardsThereAreNow`) and LAW-07 (`TestLAW07_NotificationsSayNothingOfWhatWasAsked`) over the real job, store, directory and Slack DM adapter against a fake Slack; the self-test catches stewards read once, the deprovisioned told, and a message that previews the question. Every law test is still green.
+
 ## 2026-11-23 S19.3: ask from Mattermost
 
 **Wave/slice:** W19 / S19.3 (SB-2005) · **Status:** Done

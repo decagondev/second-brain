@@ -340,3 +340,18 @@ export interface HandoverBrief {
 export function handover(person: string, f: Fetch = fetch): Promise<HandoverBrief> {
   return call<HandoverBrief>("/v1/handover", post({ person }), f);
 }
+
+// Notification settings (sb-ask(3), Notifications; SB-2101): the kinds turned off.
+export async function notifySettings(f: Fetch = fetch): Promise<string[]> {
+  const data = await call<{ off?: string[] }>("/v1/me/notifications", {}, f);
+  return Array.isArray(data.off) ? data.off : [];
+}
+
+export async function setNotifySettings(off: string[], f: Fetch = fetch): Promise<string[]> {
+  const data = await call<{ off?: string[] }>(
+    "/v1/me/notifications",
+    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ off }) },
+    f,
+  );
+  return Array.isArray(data.off) ? data.off : [];
+}

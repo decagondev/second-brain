@@ -16,7 +16,7 @@ const share = /^\/q\/(sh_[0-9a-f]{32})$/.exec(window.location.pathname)?.[1];
 if (root) {
   createRoot(root).render(
     <StrictMode>
-      {action ? <ApproverView id={action} /> : admin ? <AdminConsole /> : steward ? <StewardView space={steward} /> : <App share={share} />}
+      {action ? <ApproverView id={action} /> : admin ? <AdminConsole /> : steward ? <StewardView space={steward} /> : <App share={share} tab={params.get("tab") ?? undefined} />}
     </StrictMode>,
   );
 }

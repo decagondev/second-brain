@@ -43,6 +43,8 @@ type StewardReply struct {
 	Note  string    `json:"note,omitempty"` // the note's receipt, once published (SB-1705)
 	// NoteTitle is the note's title, so it can be republished to fewer readers (SB-2004).
 	NoteTitle string `json:"note_title,omitempty"`
+	// NoteAt is when it was first published as a note, so the asker is told once (SB-2102).
+	NoteAt time.Time `json:"note_at,omitzero"`
 }
 
 // StewardQuestion is one question sent to the people who know.
@@ -471,6 +473,9 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	out := NoteResult{NotePreview: p, Action: a.ID, State: string(a.State), Receipt: a.Receipt}
 	if a.State == approvals.Ran && a.Receipt != "" {
 		if _, err := x.Store.UpdateStewardQuestion(ctx, x.Agent.Tenant, id, func(q *StewardQuestion) error {
+			if q.Reply.Note == "" {
+				q.Reply.NoteAt = x.Now().UTC()
+			}
 			q.Reply.Note, q.Reply.NoteTitle = a.Receipt, title
 			return nil
 		}); err != nil {

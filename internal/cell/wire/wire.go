@@ -499,13 +499,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
 	stewards := ask.Stewards{Agent: agent, Store: c.Traces, Audit: c.Audit, Policy: c.Policy, NewID: newID, Now: time.Now,
-		Facts: func(space string) ([]string, string, bool) {
-			if space == "company" {
-				return []string{m.QuestionsTo}, "", m.QuestionsTo != ""
-			}
-			sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
-			return sp.Stewards, sp.Label, ok && len(sp.Stewards) > 0
-		}}
+		Facts: stewardFacts(m)}
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}
@@ -528,6 +522,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
+	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now}.Register(mux)

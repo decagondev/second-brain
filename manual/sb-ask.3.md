@@ -171,6 +171,26 @@ When nothing the asker can open answers (`notice` `no_sources`, `no_access` or `
 
 A reply is shown to the asker with its cites **checked live for the asker** each time they look, exactly as a search checks them: a cite they can't open now is dropped and counted (`reply.dropped`), never named, so a steward can't widen what the asker reads by quoting it (LAW-01). `reply.cites` has the same shape as a search result without the snippet. Who is a steward is decided by policy (`answer_questions` on the space, sb-policy(5)) with the caller's groups at that request, so a steward who leaves the stewards group stops seeing the queue at their next request (LAW-21). Sending writes an `access` audit row (`state` `asked`, the question's SHA-256) before the question is stored, and a reply one (`state` `answered`, the reply's SHA-256) before it is stored (LAW-04); neither row holds text (LAW-07). Questions are cell records under the tenant's retention, or the space's shorter one, so an unanswered question ages out with it; they are held by legal holds on their space and erased with the asker. The weekly report counts questions asked and answered per space, never their text.
 
+### Notifications, exactly (SB-2101, SB-2102)
+
+The cell tells people when something waits for them, and nothing it tells them says more than they could open. The `notify` job (sb-runtime(7), Schedules) runs every five minutes over what happened since its last run:
+
+| Kind | To | Says |
+|---|---|---|
+| `questions` | Each steward of a space that got new questions: the active members, **at the time of sending**, of the space's `stewards` groups, or of `questions_to` for company-wide questions (LAW-21) | "2 new questions for the finance space" (or "sent company-wide"), and a link to that space's steward screen (`/?steward=finance`, or `company`) |
+| `replies` | Each asker whose questions got a steward's reply, or whose reply was published as a note | "1 of your questions has a reply" (or "…was published as a note"), and a link to the Questions tab |
+
+A message holds a kind, a count, a space's name and a link to the cell's own web UI (sb-cell(5), `base_url`), and **never** a question's text, a reply, a cite, a document's title or who asked (LAW-07); the person reads those on the page, where the cell checks again what they may see. Someone who is no longer a steward, or no longer active (LAW-12), when the job runs gets nothing. Each event is told once: the job keeps the time it last ran (`state/notify/last`) and only a run that read everything moves it.
+
+Messages go as a **direct message from the chat bot** the cell already has: Mattermost's when sb-cell(5) sets `mattermost`, otherwise Slack's when the cell has a `chat` connector. The person is found by their directory email (Slack's `users.lookupByEmail`; Mattermost's `GET /api/v4/users/email/EMAIL`); someone the chat doesn't know by that email is skipped. A cell with neither sends nothing, and the job still runs and finishes. Slack's bot needs `chat:write`, `im:write` and `users:read.email` for this; Mattermost's bot needs to be able to create direct channels.
+
+| Endpoint | Does |
+|---|---|
+| `GET /v1/me/notifications` | The caller's settings: `{ "off": ["replies"] }`, the kinds they've turned off; none is every kind on |
+| `PUT /v1/me/notifications` `{ "off": [KIND…] }` | Replaces them. A kind that isn't one of `questions`, `replies`, `digest`, `watch` or `access` is `EINVAL`. Kept until the person changes them or is erased; never expired by retention |
+
+A send that fails is counted (`sb_notify_failed_total{kind}`) and the job returns an error, so the watchdog sees it, but the job doesn't send the same event twice.
+
 `GET /v1/traces/{id}` returns the same answer plus the decision list (`cite`, `verdict`, `reason`, one per candidate document), for the user who asked and for auditors. Anyone else gets `EPERM`, the same as an unknown id. `reason` is one of `allowed`, `source_denied`, `source_unknown` or `policy_denied`, and in a cell with spaces `space_denied` (not held by the space asked in), `label_denied` (a `confidential` or `restricted` chunk held only by spaces the asker isn't in) or `barrier_denied`. The policy kernel makes every one of these decisions; the reason only explains it, and a refused document is never named in the answer.
 
 `POST /v1/feedback` takes `{ "trace": "tr_…", "rating": "up"|"down", "wrong_citation": "docs:…@17"?, "comment": "…"? }` (SB-310):
@@ -207,6 +227,7 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | Who to ask | Under an answer with `people`: "Ask ann@acme-logistics.example (Support lead), owner of *Refund policy*" for each person, naming only documents cited in that answer |
 | Ask the stewards | Under an answer with `no_sources`, `no_access` or `most_uncited`: "Ask the stewards of Finance" (or "Ask the people who answer company-wide questions"). It shows exactly the text that will be sent, the question, and sends it only when the asker confirms |
 | Questions | A fourth tab lists the asker's questions to stewards with each reply, its cites as chips and how many were dropped because the asker can't open them |
+| Notifications | The Questions tab ends with "Tell me in chat about": a checkbox each for replies to the person's questions and new questions for spaces they steward, saved with `PUT /v1/me/notifications`. `/?tab=questions`, the link replies are told with, opens the app on that tab |
 | Save and share | Each answered turn has **Save** and **Share**. Share shows the `/q/sh_…` link to copy. The Saved tab lists saved questions; opening one asks it again |
 
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
@@ -227,7 +248,7 @@ Staff can also ask from Slack with `/ask <question>` (SB-308). It is the same `a
 4. **Spaces.** In a cell with spaces, the channel the command was typed in picks the space: a space's `channels` in the manifest (sb-space(5)) list the channels that ask in it. A mapped channel asks in that space, and someone who isn't a member gets an ephemeral reply saying so and **no answer**, never a company-wide one. An unmapped channel, or a direct message, asks company-wide.
 5. **Share.** A *Share in channel* button posts the question and the **citation links only, never the claim text**, so each reader opens the sources under their own access. Only the asker can share, and the trace is read again with the asker's own scope.
 
-Errors are ephemeral replies with the error's `message` and trace id. Slack scopes added for the bot: `commands` only. The bot uses no Slack write scopes, because replies go through `response_url`.
+Errors are ephemeral replies with the error's `message` and trace id. Slack scopes for the bot: `commands` for `/ask`, which answers through `response_url`, and `chat:write`, `im:write` and `users:read.email` for notifications (Notifications, above), which are direct messages that never carry an answer.
 
 ### The chat app (Mattermost)
 

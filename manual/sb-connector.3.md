@@ -126,7 +126,7 @@ Read-only. Name it as `connectors: { chat: slack }`; `exclude: { chat: ["#hr-*"]
 
 | Concern | Behaviour |
 |---|---|
-| Credentials | A Slack app's bot token and signing secret at `vault://tenants/TENANT/connectors/chat` (JSON `{"bot_token", "signing_secret"}`). Scopes: `channels:history`, `groups:history`, `channels:read`, `groups:read`, `users:read`, `users:read.email`. No write scopes, and no `im:` or `mpim:` scopes. The chat app (`/ask`, sb-ask(3)) adds only `commands` |
+| Credentials | A Slack app's bot token and signing secret at `vault://tenants/TENANT/connectors/chat` (JSON `{"bot_token", "signing_secret"}`). Scopes: `channels:history`, `groups:history`, `channels:read`, `groups:read`, `users:read`, `users:read.email`. The connector reads no direct messages: no `im:history` or `mpim:` scopes. The chat app (`/ask`, sb-ask(3)) adds `commands`, and notifications (sb-ask(3), Notifications; SB-2101) add `chat:write` and `im:write` to send direct messages, which never carry an answer or a document |
 | Documents | One document per message: id `CHANNEL/TS`, title `#channel`, text the message. Thread replies are their own documents. Version is the edit time, or else the post time, in microseconds, so edits always raise it |
 | Direct messages | Never fetched: DMs and group DMs are excluded by default, and the app has no scope to read them |
 | Location and label | Location is the channel, `#name`. A message in a **private** channel is labelled `confidential`; a public channel's messages carry no label |

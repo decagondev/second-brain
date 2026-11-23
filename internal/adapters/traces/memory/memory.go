@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/retention"
 )
 
@@ -23,6 +24,7 @@ type Store struct {
 	saved    map[string]ask.SavedQuestion
 	shares   map[string]ask.Share
 	stq      map[string]ask.StewardQuestion
+	prefs    map[string]prefRec // tenant/user
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -37,7 +39,7 @@ type conv struct {
 // New returns an empty store.
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
-		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}}
+		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{}}
 }
 
 // PutTrace implements ask.Store.
@@ -152,8 +154,11 @@ func window[T any](m map[string]T, of func(T) (tenant string, at time.Time, key 
 // conversations and feedback (sb-tenant(5), Retention and deletion).
 func (s *Store) Retention() []retention.Store {
 	// Feedback first: it takes its space from its trace, which must still be there (SB-1401).
-	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}}
+	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}}
 }
+
+// PrefsName is the notification settings' store name: erased with a person, never expired.
+const PrefsName = "notification settings"
 
 type view struct {
 	s    *Store
@@ -166,12 +171,18 @@ func (v view) Name() string { return v.name }
 // a conversation carries the space it was asked in, and one asked in several, or not yet
 // tagged, is kept by any hold that could cover it.
 func (v view) Expire(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	if v.name == PrefsName {
+		return 0, 0, nil
+	}
 	n, k := v.drop(aged(tenant, before), held, false, nil)
 	return n, k, nil
 }
 
 // Plan implements retention.Store: Expire's selection, deleting nothing.
 func (v view) Plan(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
+	if v.name == PrefsName {
+		return 0, 0, nil
+	}
 	n, k := v.drop(aged(tenant, before), held, true, nil)
 	return n, k, nil
 }
@@ -259,6 +270,12 @@ func (v view) drop(match matcher, held retention.Held, dry bool, got *[]json.Raw
 		for k, sh := range s.shares {
 			if try(sh.Tenant, sh.User, spaceOf(sh.Space), sh.At, sh) {
 				delete(s.shares, k)
+			}
+		}
+	case PrefsName:
+		for k, p := range s.prefs {
+			if try(p.Tenant, p.User, "", time.Time{}, p) {
+				delete(s.prefs, k)
 			}
 		}
 	case "feedback":
@@ -419,4 +436,28 @@ func (s *Store) Between(_ context.Context, tenant string, from, to time.Time) ([
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return window(s.traces, func(t ask.Trace) (string, time.Time, string) { return t.Tenant, t.At, t.ID }, tenant, from, to), nil
+}
+
+// prefRec is a person's notification settings as an export shows them.
+type prefRec struct {
+	Tenant string `json:"tenant"`
+	User   string `json:"user"`
+	notify.Prefs
+}
+
+var _ notify.PrefStore = (*Store)(nil)
+
+// NotifyPrefs implements notify.PrefStore.
+func (s *Store) NotifyPrefs(_ context.Context, tenant, user string) (notify.Prefs, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.prefs[tenant+"/"+user].Prefs, nil
+}
+
+// PutNotifyPrefs implements notify.PrefStore.
+func (s *Store) PutNotifyPrefs(_ context.Context, tenant, user string, p notify.Prefs) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.prefs[tenant+"/"+user] = prefRec{tenant, user, p}
+	return nil
 }

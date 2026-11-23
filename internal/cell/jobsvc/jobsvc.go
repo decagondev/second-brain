@@ -30,6 +30,7 @@ import (
 	"example.com/second-brain/internal/core/backup"
 	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/canary"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/offsite"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/reviews"
@@ -55,6 +56,8 @@ type Service struct {
 	// HTTP posts the weekly report; nil is a client with a 30-second timeout (tests set a
 	// TLS test server's).
 	HTTP *http.Client
+	// Send is where notifications go; nil is the cell's chat bot (wire.Cell.Notifier).
+	Send notify.Sender
 }
 
 func (s *Service) now() time.Time {
@@ -75,6 +78,7 @@ func (s *Service) Jobs() map[string]func(ctx context.Context) error {
 		"access":    s.access,
 		"review":    s.review,
 		"drift":     s.drift,
+		"notify":    s.notify,
 	}
 }
 
@@ -367,6 +371,17 @@ func (s *Service) review(ctx context.Context) error {
 		return fmt.Errorf("jobs: the audit log can't be read: %w", err)
 	}
 	_, err = reviews.Run(ctx, c.Manifest(), s.now(), roster{c}, reviews.FromAudit(rows), c.Reviews, c.NewID)
+	return err
+}
+
+// notify tells stewards about new questions and askers about replies (sb-ask(3),
+// Notifications; SB-2101, SB-2102).
+func (s *Service) notify(ctx context.Context) error {
+	send := s.Send
+	if send == nil {
+		send = s.Cell.Notifier()
+	}
+	_, err := s.Cell.NotifyJob(send).Run(ctx)
 	return err
 }
 

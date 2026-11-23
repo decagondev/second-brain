@@ -30,14 +30,15 @@ const tabs: { id: Tab; name: string }[] = [
 // Errors after which the same text can still be searched: search needs no model (SB-1701).
 const searchable = new Set(["EUNAVAIL", "EBUDGET"]);
 
-export function App({ fetcher, share }: { fetcher?: Fetch; share?: string }) {
+// tab opens the app on a tab, from a notification's link (?tab=questions; SB-2102).
+export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: string; tab?: string }) {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [space, setSpace] = useState(""); // "" is the whole company
-  const [tab, setTab] = useState<Tab>("answer");
+  const [tab, setTab] = useState<Tab>(tabs.find((t) => t.id === first)?.id ?? "answer");
   const [searchFor, setSearchFor] = useState<{ text: string; n: number }>();
   const [shared, setShared] = useState<SharedQuestion>();
   const [sharedError, setSharedError] = useState<string>();

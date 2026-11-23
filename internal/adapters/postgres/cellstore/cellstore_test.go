@@ -15,8 +15,10 @@ import (
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/holds"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
+	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/reviews"
 )
 
@@ -224,6 +226,42 @@ func TestTracesAndRetention(t *testing.T) {
 	}
 	if n != 4 { // feedback, conversation, tr_1, tr_3
 		t.Fatalf("erased %d", n)
+	}
+}
+
+// SB-2101: settings are kept past retention, erased with the person, and per tenant.
+func TestNotifyPrefs(t *testing.T) {
+	d := open(t)
+	ctx := context.Background()
+	tr := Traces{d}
+	if p, err := tr.NotifyPrefs(ctx, tenant, "usr_ann"); err != nil || len(p.Off) != 0 {
+		t.Fatalf("none: %+v %v", p, err)
+	}
+	for _, off := range [][]string{{"digest"}, {"replies", "watch"}} {
+		if err := tr.PutNotifyPrefs(ctx, tenant, "usr_ann", notify.Prefs{Off: off}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if p, _ := tr.NotifyPrefs(ctx, tenant, "usr_ann"); len(p.Off) != 2 || p.Wants("replies") {
+		t.Fatalf("replaced: %+v", p)
+	}
+	if p, _ := tr.NotifyPrefs(ctx, "beta-freight", "usr_ann"); len(p.Off) != 0 {
+		t.Fatal("LAW-02: another tenant's settings")
+	}
+	var pref retention.Store
+	for _, v := range tr.Retention() {
+		if v.Name() == "notification settings" {
+			pref = v
+		}
+	}
+	if n, _, err := pref.Expire(ctx, tenant, time.Now().Add(time.Hour), nil); n != 0 || err != nil {
+		t.Fatalf("settings expired: %d %v", n, err)
+	}
+	if rows, _ := pref.Export(ctx, tenant, "usr_ann"); len(rows) != 1 {
+		t.Fatalf("export: %d", len(rows))
+	}
+	if n, err := pref.Erase(ctx, tenant, "usr_ann"); n != 1 || err != nil {
+		t.Fatalf("erase: %d %v", n, err)
 	}
 }
 

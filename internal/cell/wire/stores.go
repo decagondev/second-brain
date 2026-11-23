@@ -35,6 +35,7 @@ import (
 	"example.com/second-brain/internal/core/backup"
 	"example.com/second-brain/internal/core/health"
 	"example.com/second-brain/internal/core/holds"
+	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
 	"example.com/second-brain/internal/core/retention"
@@ -62,6 +63,7 @@ type TraceStore interface {
 	ask.SpaceTagger
 	ask.QuestionStore
 	ask.StewardStore
+	notify.PrefStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }

@@ -218,3 +218,37 @@ describe("keeping it current", () => {
     expect(await violations(container)).toEqual([]);
   });
 });
+
+// SB-2101, SB-2102
+describe("notifications", () => {
+  it("opens on the tab a notification links to, and turns a kind off", async () => {
+    const puts: unknown[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/spaces") return json({ spaces: [] });
+      if (u === "/v1/questions") return json({ items: [] });
+      if (u === "/v1/me/notifications" && init?.method === "PUT") {
+        const body = JSON.parse(String(init.body));
+        puts.push(body);
+        return json(body);
+      }
+      if (u === "/v1/me/notifications") return json({ off: [] });
+      return json(nothing);
+    };
+    const { container } = render(<App fetcher={fetcher} tab="questions" />);
+    await act(async () => {});
+    expect(screen.getByRole("tab", { name: "Questions" }).getAttribute("aria-selected")).toBe("true");
+    const box = screen.getByLabelText("Replies to my questions") as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    expect(await violations(container)).toEqual([]);
+    await act(async () => {
+      fireEvent.click(box);
+    });
+    expect(puts).toEqual([{ off: ["replies"] }]);
+    expect((screen.getByLabelText("Replies to my questions") as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("ignores a tab it doesn't have", () => {
+    render(<App fetcher={async () => json({ spaces: [] })} tab="admin" />);
+    expect(screen.getByRole("tab", { name: "Answer" }).getAttribute("aria-selected")).toBe("true");
+  });
+});

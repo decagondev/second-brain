@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { AskError, listQuestions, publishNote, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import { AskError, listQuestions, notifySettings, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, Fetch, MyQuestion, NoteResult, QueueQuestion, ReviewItem } from "./api";
 import { placeOf } from "./Answer";
 
@@ -107,7 +107,49 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
           ))}
         </ul>
       )}
+      <NotifySettings fetcher={fetcher} />
     </section>
+  );
+}
+
+const kinds: { id: string; name: string }[] = [
+  { id: "replies", name: "Replies to my questions" },
+  { id: "questions", name: "New questions for spaces I steward" },
+];
+
+// What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
+export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
+  const [off, setOff] = useState<string[]>();
+  const [status, setStatus] = useState<string>();
+  const base = useId();
+  useEffect(() => {
+    notifySettings(fetcher).then(setOff, () => setOff(undefined));
+  }, [fetcher]);
+  if (!off) return null;
+  async function toggle(kind: string, on: boolean) {
+    const next = on ? off!.filter((k) => k !== kind) : [...off!, kind];
+    try {
+      setOff(await setNotifySettings(next, fetcher));
+      setStatus("Saved.");
+    } catch (e) {
+      setStatus(msg(e, "Your settings couldn't be saved."));
+    }
+  }
+  return (
+    <fieldset className="notify-settings">
+      <legend>Tell me in chat about</legend>
+      {kinds.map((k) => (
+        <div key={k.id}>
+          <input type="checkbox" id={`${base}-${k.id}`} checked={!off.includes(k.id)} onChange={(e) => toggle(k.id, e.target.checked)} />{" "}
+          <label htmlFor={`${base}-${k.id}`}>{k.name}</label>
+        </div>
+      ))}
+      {status && (
+        <p className="feedback-status" role="status">
+          {status}
+        </p>
+      )}
+    </fieldset>
   );
 }
 
