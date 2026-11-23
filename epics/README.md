@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-21 epics, 80 user stories and 191 tickets across 20 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+24 epics, 91 user stories and 211 tickets across 23 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -24,6 +24,9 @@ summary: Epics, waves, slices and tickets.
 | W17 Easy to Run | 8 | 0 | 0 | Planned 2026-11-22 with the user (E18): doctor, host health, restore, offline upgrade, rollback, proxy, external Postgres, support bundle ([10-run-protect-close.md](../docs/10-run-protect-close.md)). **W17 built.** |
 | W18 Protect the Data | 7 | 0 | 0 | Planned 2026-11-22 with the user (E19): sealed off-box copies, recovery kit, subject export, personal data flags, retention preview, sign out everywhere, retire |
 | W19 Close the Loops | 5 | 0 | 0 | Planned 2026-11-22 with the user (E20): notes with barriers, handover UI, office documents, notes stay narrow, Mattermost |
+| W20 Keep People in the Loop | 0 | 0 | 6 | Planned 2026-11-23 with the user (E21): stewards and askers notified, weekly digest, watched questions, Share in Mattermost, handover by name ([11-loop-own-fit.md](../docs/11-loop-own-fit.md)) |
+| W21 Keep Knowledge Owned | 0 | 0 | 7 | Planned 2026-11-23 with the user (E22): orphaned documents, duplicates, glossary, citation evals, ask for access, spreadsheets, national IDs |
+| W22 Fit the Site | 0 | 0 | 7 | Planned 2026-11-23 with the user (E23): en, de and fr, SIEM stream, S3 off-box copies, sources first, asks per minute, read-only tokens, email |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -97,6 +100,12 @@ flowchart LR
   E16 --> E18
   E18 --> E19
   E17 --> E20
+  E21["E21 Keep People in the Loop"]
+  E22["E22 Keep Knowledge Owned"]
+  E23["E23 Fit the Site"]
+  E20 --> E21
+  E21 --> E22
+  E19 --> E23
 ```
 
 ## Epics
@@ -124,6 +133,9 @@ flowchart LR
 | [E18 Easy to Run](E18-easy-to-run/README.md) | IT runs, upgrades, restores and gets help for a cell with one command each, on one machine or two VMs. | W17 | 8 |
 | [E19 Protect the Data](E19-protect-the-data/README.md) | Nothing readable leaves the box, the keys survive the box, and data-protection duties are met from the console. | W18 | 7 |
 | [E20 Close the Loops](E20-close-the-loops/README.md) | W16's features work everywhere, and the brain reads Word files and answers in Mattermost. | W19 | 5 |
+| [E21 Keep People in the Loop](E21-keep-people-in-the-loop/README.md) | People hear when a question, a reply or a source needs them, and nothing they hear says more than they could open. | W20 | 6 |
+| [E22 Keep Knowledge Owned](E22-keep-knowledge-owned/README.md) | Documents keep an owner, copies cite once, the brain learns from wrong citations, and a hidden source can be asked for. | W21 | 7 |
+| [E23 Fit the Site](E23-fit-the-site/README.md) | The UI in English, German and French, audit to the SIEM, off-box copies to S3, fair on small boxes, tokens and email. | W22 | 7 |
 
 ## All tickets by wave
 
@@ -422,3 +434,38 @@ flowchart LR
 | [SB-2003](E20-close-the-loops/SB-2003-office-documents.md) | S19.2 | E20 | Word, OpenDocument and HTML on file shares | Done |
 | [SB-2004](E20-close-the-loops/SB-2004-notes-stay-narrow.md) | S19.2 | E20 | Notes stay narrow | Done |
 | [SB-2005](E20-close-the-loops/SB-2005-mattermost.md) | S19.3 | E20 | Mattermost entry point | Done |
+
+### W20 Keep People in the Loop
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2101](E21-keep-people-in-the-loop/SB-2101-stewards-notified.md) | S20.1 | E21 | Stewards hear about new questions | Open |
+| [SB-2102](E21-keep-people-in-the-loop/SB-2102-askers-notified.md) | S20.1 | E21 | Askers hear about replies | Open |
+| [SB-2103](E21-keep-people-in-the-loop/SB-2103-weekly-digest.md) | S20.2 | E21 | Weekly "what changed" digest | Open |
+| [SB-2104](E21-keep-people-in-the-loop/SB-2104-watch-saved.md) | S20.2 | E21 | Watch a saved question | Open |
+| [SB-2105](E21-keep-people-in-the-loop/SB-2105-mattermost-share.md) | S20.3 | E21 | Share in Mattermost | Open |
+| [SB-2106](E21-keep-people-in-the-loop/SB-2106-handover-by-name.md) | S20.3 | E21 | Handover by name | Open |
+
+### W21 Keep Knowledge Owned
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2201](E22-keep-knowledge-owned/SB-2201-orphaned-documents.md) | S21.1 | E22 | Orphaned documents | Open |
+| [SB-2202](E22-keep-knowledge-owned/SB-2202-duplicates.md) | S21.1 | E22 | Duplicate documents | Open |
+| [SB-2203](E22-keep-knowledge-owned/SB-2203-glossary.md) | S21.2 | E22 | Space glossary | Open |
+| [SB-2204](E22-keep-knowledge-owned/SB-2204-citation-evals.md) | S21.2 | E22 | Wrong citations become eval cases | Open |
+| [SB-2205](E22-keep-knowledge-owned/SB-2205-ask-for-access.md) | S21.3 | E22 | Ask for access | Open |
+| [SB-2206](E22-keep-knowledge-owned/SB-2206-spreadsheets.md) | S21.4 | E22 | Spreadsheets and CSV on file shares | Open |
+| [SB-2207](E22-keep-knowledge-owned/SB-2207-national-ids.md) | S21.4 | E22 | National ID numbers as personal data | Open |
+
+### W22 Fit the Site
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-2301](E23-fit-the-site/SB-2301-i18n.md) | S22.1 | E23 | The UI in the company's language | Open |
+| [SB-2302](E23-fit-the-site/SB-2302-siem-stream.md) | S22.1 | E23 | Audit stream to the SIEM | Open |
+| [SB-2303](E23-fit-the-site/SB-2303-offsite-s3.md) | S22.1 | E23 | Off-box copies to S3 | Open |
+| [SB-2304](E23-fit-the-site/SB-2304-sources-first.md) | S22.2 | E23 | Search results while the answer is written | Open |
+| [SB-2305](E23-fit-the-site/SB-2305-fair-share.md) | S22.2 | E23 | Fair share on a small box | Open |
+| [SB-2306](E23-fit-the-site/SB-2306-api-tokens.md) | S22.3 | E23 | Read-only API tokens | Open |
+| [SB-2307](E23-fit-the-site/SB-2307-smtp.md) | S22.3 | E23 | Notifications by email | Open |

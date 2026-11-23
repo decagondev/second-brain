@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)).
 
 ## Problem
 
@@ -316,6 +316,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W17 | Easy to Run | — | IT runs, upgrades, restores and gets help for a cell with one command each, on one machine or two VMs. |
 | W18 | Protect the Data | — | Nothing readable leaves the box, the keys survive the box, and data-protection duties are met from the console. |
 | W19 | Close the Loops | — | W16's features work everywhere, and the brain reads Word files and answers in Mattermost. |
+| W20 | Keep People in the Loop | — | People hear when a question, a reply or a source needs them, and nothing they hear says more than they could open. |
+| W21 | Keep Knowledge Owned | — | Documents keep an owner, copies cite once, the brain learns from wrong citations, and a hidden source can be asked for. |
+| W22 | Fit the Site | — | The UI in English, German and French, audit to the SIEM, off-box copies to S3, fair on small boxes, tokens and email. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -718,6 +721,63 @@ gantt
 | S19.1 | Finish W16 | Notes with barriers, the handover brief in the UI | [SB-2001](../epics/E20-close-the-loops/SB-2001-notes-with-barriers.md), [SB-2002](../epics/E20-close-the-loops/SB-2002-handover-ui.md) |
 | S19.2 | Read more, leak less | Office documents and HTML, notes that stay narrow | [SB-2003](../epics/E20-close-the-loops/SB-2003-office-documents.md), [SB-2004](../epics/E20-close-the-loops/SB-2004-notes-stay-narrow.md) |
 | S19.3 | Our own chat | A Mattermost entry point | [SB-2005](../epics/E20-close-the-loops/SB-2005-mattermost.md) |
+
+#### W20 Keep People in the Loop
+
+*When something needs a person, they hear about it, and nothing they hear tells them more than they could open. Accepted 2026-11-23 ([11-loop-own-fit.md](11-loop-own-fit.md)).*
+
+**Exit gate**
+
+- [ ] A steward who left the group between question and send is told nothing
+- [ ] No notification carries question, answer, cite or document text
+- [ ] A digest never names a document the person can't open now
+- [ ] Mattermost Share passes the Slack Share test
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S20.1 | Questions and replies | Stewards and askers notified | [SB-2101](../epics/E21-keep-people-in-the-loop/SB-2101-stewards-notified.md), [SB-2102](../epics/E21-keep-people-in-the-loop/SB-2102-askers-notified.md) |
+| S20.2 | What changed, for you | Weekly digest, watched saved questions | [SB-2103](../epics/E21-keep-people-in-the-loop/SB-2103-weekly-digest.md), [SB-2104](../epics/E21-keep-people-in-the-loop/SB-2104-watch-saved.md) |
+| S20.3 | Chat and handover parity | Share in Mattermost, handover by name | [SB-2105](../epics/E21-keep-people-in-the-loop/SB-2105-mattermost-share.md), [SB-2106](../epics/E21-keep-people-in-the-loop/SB-2106-handover-by-name.md) |
+
+#### W21 Keep Knowledge Owned
+
+*Documents keep an owner after people move, the brain stops repeating the same mistake, and an asker who hits a wall can ask to get through it. Accepted 2026-11-23 ([11-loop-own-fit.md](11-loop-own-fit.md)).*
+
+**Exit gate**
+
+- [ ] A deprovisioned owner's documents reach the review list within a sync
+- [ ] A copied file is cited once
+- [ ] "PO" finds "purchase order"; an instruction-like entry isn't used
+- [ ] A release that regresses a tenant case is held
+- [ ] An access request names the document only to its owner
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S21.1 | Owned | Orphaned documents, duplicates | [SB-2201](../epics/E22-keep-knowledge-owned/SB-2201-orphaned-documents.md), [SB-2202](../epics/E22-keep-knowledge-owned/SB-2202-duplicates.md) |
+| S21.2 | Right | Glossary, wrong citations as eval cases | [SB-2203](../epics/E22-keep-knowledge-owned/SB-2203-glossary.md), [SB-2204](../epics/E22-keep-knowledge-owned/SB-2204-citation-evals.md) |
+| S21.3 | Through the wall | Ask for access | [SB-2205](../epics/E22-keep-knowledge-owned/SB-2205-ask-for-access.md) |
+| S21.4 | Read more, flag more | Spreadsheets and CSV, national IDs | [SB-2206](../epics/E22-keep-knowledge-owned/SB-2206-spreadsheets.md), [SB-2207](../epics/E22-keep-knowledge-owned/SB-2207-national-ids.md) |
+
+#### W22 Fit the Site
+
+*The cell speaks the company's language, logs where the company logs, stores where it stores, and stays fair on small hardware. Accepted 2026-11-23 ([11-loop-own-fit.md](11-loop-own-fit.md)).*
+
+**Exit gate**
+
+- [ ] No UI string outside the catalog; axe in each language
+- [ ] A fake SIEM gets every row in order across a restart
+- [ ] The restore drill passes from S3
+- [ ] A burst of ten asks gets six answers and four ERATEs
+- [ ] A token can only ask and search, and dies with its person
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S22.1 | Language and logs | English, German and French, the SIEM stream, S3 off-box copies | [SB-2301](../epics/E23-fit-the-site/SB-2301-i18n.md), [SB-2302](../epics/E23-fit-the-site/SB-2302-siem-stream.md), [SB-2303](../epics/E23-fit-the-site/SB-2303-offsite-s3.md) |
+| S22.2 | Small boxes | Sources first, asks per minute | [SB-2304](../epics/E23-fit-the-site/SB-2304-sources-first.md), [SB-2305](../epics/E23-fit-the-site/SB-2305-fair-share.md) |
+| S22.3 | Integrations | Read-only API tokens, SMTP notifications | [SB-2306](../epics/E23-fit-the-site/SB-2306-api-tokens.md), [SB-2307](../epics/E23-fit-the-site/SB-2307-smtp.md) |
 
 #### Parked: Portfolio Department Grants
 
