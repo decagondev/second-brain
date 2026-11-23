@@ -86,3 +86,22 @@ func TestMattermostConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// SB-2303: an s3 copy is its own kind, always sealed, at a well-formed s3:// address.
+func TestParseS3Copy(t *testing.T) {
+	const seal = "sb-recovery-pub:"
+	with := func(b string) string {
+		return strings.Replace(good, `"model"`, `"backups": [`+b+`], "model"`, 1)
+	}
+	if _, err := Parse([]byte(with(`{"s3": "s3://acme-backups/sb", "offsite": true}`))); !errors.Is(err, ErrConfig) || !strings.Contains(err.Error(), "needs seal") {
+		t.Fatalf("an unsealed s3 copy: %v", err)
+	}
+	for name, b := range map[string]string{
+		"bad address": `{"s3": "https://acme-backups/sb", "offsite": true, "seal": "` + seal + `x"}`,
+		"with a dir":  `{"s3": "s3://acme-backups/sb", "dir": "/b", "media": "disk", "seal": "` + seal + `x"}`,
+	} {
+		if _, err := Parse([]byte(with(b))); !errors.Is(err, ErrConfig) {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+}

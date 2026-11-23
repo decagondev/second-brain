@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import type { ApiError, AskResponse, Fetch } from "./api";
 import { AskError } from "./api";
 import { AnswerView } from "./Answer";
+import { errorText, t } from "./i18n";
 
 interface DraftResponse extends AskResponse {
   context: string;
@@ -12,11 +13,11 @@ async function post<T>(f: Fetch, url: string, body: unknown): Promise<T> {
   try {
     res = await f(url, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   } catch {
-    throw new AskError({ code: "EUNAVAIL", message: "Drafts are unavailable right now.", trace: "", remedy: "Try again in a minute." });
+    throw new AskError({ code: "EUNAVAIL", message: t("Drafts are unavailable right now."), trace: "", remedy: t("Try again in a minute.") });
   }
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new AskError((data as { error?: ApiError } | null)?.error ?? { code: "EUNAVAIL", message: "Drafts are unavailable right now.", trace: "", remedy: "Try again in a minute." });
+    throw new AskError((data as { error?: ApiError } | null)?.error ?? { code: "EUNAVAIL", message: t("Drafts are unavailable right now."), trace: "", remedy: t("Try again in a minute.") });
   }
   return data as T;
 }
@@ -30,7 +31,7 @@ export function DraftPanel({ fetcher = fetch, copy }: { fetcher?: Fetch; copy?: 
   const [status, setStatus] = useState<string>();
   const [busy, setBusy] = useState(false);
   const ids = { ctx: useId(), instr: useId() };
-  const write = copy ?? ((t: string) => navigator.clipboard.writeText(t));
+  const write = copy ?? ((text: string) => navigator.clipboard.writeText(text));
 
   async function make() {
     if (busy) return;
@@ -40,7 +41,10 @@ export function DraftPanel({ fetcher = fetch, copy }: { fetcher?: Fetch; copy?: 
       setDraft(await post<DraftResponse>(fetcher, "/v1/drafts", { context: context.trim(), instruction: instruction.trim() }));
     } catch (e) {
       setDraft(undefined);
-      setStatus(e instanceof AskError ? `${e.error.message} ${e.error.remedy}` : "That didn't work.");
+      if (e instanceof AskError) {
+        const x = errorText(e.error);
+        setStatus(`${x.message} ${x.remedy}`.trim());
+      } else setStatus(t("That didn't work."));
     } finally {
       setBusy(false);
     }
@@ -52,29 +56,29 @@ export function DraftPanel({ fetcher = fetch, copy }: { fetcher?: Fetch; copy?: 
       await write(draft.answer.claims.map((c) => c.text).join(" "));
     }
     await post(fetcher, `/v1/drafts/${encodeURIComponent(draft.trace)}/outcome`, { outcome }).catch(() => undefined);
-    setStatus(outcome === "used" ? "Copied. Paste it into the ticket or thread and send it there." : "Draft discarded.");
+    setStatus(outcome === "used" ? t("Copied. Paste it into the ticket or thread and send it there.") : t("Draft discarded."));
     if (outcome === "discarded") setDraft(undefined);
   }
 
   return (
-    <section aria-label="Draft a reply" className="draft">
-      <h2>Draft a reply</h2>
-      <label htmlFor={ids.ctx}>Ticket or thread (for example tickets:OPS-1182)</label>
+    <section aria-label={t("Draft a reply")} className="draft">
+      <h2>{t("Draft a reply")}</h2>
+      <label htmlFor={ids.ctx}>{t("Ticket or thread (for example {example})", { example: "tickets:OPS-1182" })}</label>
       <input id={ids.ctx} type="text" value={context} onChange={(e) => setContext(e.target.value)} />
-      <label htmlFor={ids.instr}>What should the reply say?</label>
+      <label htmlFor={ids.instr}>{t("What should the reply say?")}</label>
       <textarea id={ids.instr} value={instruction} maxLength={2000} rows={2} onChange={(e) => setInstruction(e.target.value)} />
       <button type="button" disabled={busy || !context.trim() || !instruction.trim()} onClick={make}>
-        {busy ? "Drafting…" : "Draft"}
+        {busy ? t("Drafting…") : t("Draft")}
       </button>
       {draft && (
         <>
-          <p>Draft for {draft.context}. Nothing is sent until you send it yourself.</p>
+          <p>{t("Draft for {context}. Nothing is sent until you send it yourself.", { context: draft.context })}</p>
           <AnswerView answer={draft} />
           <button type="button" onClick={() => finish("used")}>
-            Copy draft
+            {t("Copy draft")}
           </button>
           <button type="button" onClick={() => finish("discarded")}>
-            Discard
+            {t("Discard")}
           </button>
         </>
       )}

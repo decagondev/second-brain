@@ -299,3 +299,21 @@ func TestDigestZone(t *testing.T) {
 		t.Error("the default isn't UTC")
 	}
 }
+
+// SB-2301: the web UI's default language.
+func TestLanguage(t *testing.T) {
+	for _, v := range Languages {
+		m, diags := Check([]byte(valid + "language: " + v + "\n"))
+		if len(diags) > 0 || m.Language != v {
+			t.Errorf("%s: %v %q", v, diags, m.Language)
+		}
+		if again, ds := Check(Format(m)); len(ds) > 0 || again.Language != v {
+			t.Errorf("%s doesn't read back after Format: %v", v, ds)
+		}
+	}
+	for _, v := range []string{"es", "EN", "german"} {
+		if _, diags := Check([]byte(valid + "language: " + v + "\n")); !strings.Contains(format("m.yaml", diags), "must be one of en, de, fr") {
+			t.Errorf("language %s accepted: %s", v, format("m.yaml", diags))
+		}
+	}
+}

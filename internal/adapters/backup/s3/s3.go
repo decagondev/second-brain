@@ -45,6 +45,13 @@ type Bucket struct {
 	Label string // name in drill reports
 	Away  bool   // off-site
 	Now   func() time.Time
+	// Prefix puts every object under PREFIX/ (an off-box copy, SB-2303); List gives names
+	// without it.
+	Prefix string
+	// Plain is a company's ordinary bucket, with no object lock: objects are still written
+	// once, but carry no retention, and Check asks only that the bucket answers. Only for
+	// copies that are sealed first (the off-box copy, SB-2303), never the write-once store.
+	Plain bool
 }
 
 var _ backup.Target = Bucket{}
@@ -52,10 +59,11 @@ var _ backup.Target = Bucket{}
 // Errors.
 var (
 	ErrExists    = errors.New("s3: object exists; copies are write-once")
+	ErrRefused   = errors.New("s3: the store refused the key pair or has no such bucket")
 	ErrNotLocked = errors.New("s3: the bucket has no compliance-mode object lock of at least seven years; refused")
 )
 
-var nameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*(/[a-z0-9][a-z0-9._-]*)*$`)
+var nameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$`)
 
 // Name implements backup.Target.
 func (b Bucket) Name() string { return b.Label }
@@ -65,13 +73,6 @@ func (b Bucket) Medium() string { return "object-store" }
 
 // Offsite implements backup.Target.
 func (b Bucket) Offsite() bool { return b.Away }
-
-func (b Bucket) region() string {
-	if b.Region == "" {
-		return "us-east-1"
-	}
-	return b.Region
-}
 
 func (b Bucket) now() time.Time {
 	if b.Now != nil {
@@ -83,6 +84,31 @@ func (b Bucket) now() time.Time {
 type creds struct {
 	Access string `json:"access_key"`
 	Secret string `json:"secret_key"`
+	// Endpoint and Region, in an off-box copy's key file (SB-2303), name the store when
+	// the Bucket doesn't: AWS in us-east-1 by default.
+	Endpoint string `json:"endpoint"`
+	Region   string `json:"region"`
+}
+
+// URL reads s3://BUCKET[/PREFIX] (SB_OFFSITE, backups[].s3): the bucket and the prefix,
+// without slashes at either end.
+func URL(raw string) (bucket, prefix string, err error) {
+	rest, ok := strings.CutPrefix(raw, "s3://")
+	bucket, prefix, _ = strings.Cut(rest, "/")
+	prefix = strings.Trim(prefix, "/")
+	if !ok || !bucketRe.MatchString(bucket) || (prefix != "" && !nameRe.MatchString(prefix)) {
+		return "", "", fmt.Errorf("s3: %q is not s3://BUCKET/PREFIX", raw)
+	}
+	return bucket, prefix, nil
+}
+
+var bucketRe = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
+
+func (b Bucket) key(name string) string {
+	if b.Prefix == "" {
+		return name
+	}
+	return b.Prefix + "/" + name
 }
 
 // do signs and sends one request; a non-2xx answer is an error with its code.
@@ -99,7 +125,20 @@ func (b Bucket) do(ctx context.Context, method, key string, query url.Values, hd
 	if key != "" {
 		path += "/" + key
 	}
-	u := strings.TrimRight(b.Endpoint, "/") + path
+	region, end := b.Region, b.Endpoint
+	if end == "" {
+		region = c.Region
+		if region == "" {
+			region = "us-east-1"
+		}
+		end = c.Endpoint
+		if end == "" {
+			end = "https://s3." + region + ".amazonaws.com"
+		}
+	} else if region == "" {
+		region = "us-east-1"
+	}
+	u := strings.TrimRight(end, "/") + path
 	if q := query.Encode(); q != "" {
 		u += "?" + q
 	}
@@ -110,7 +149,7 @@ func (b Bucket) do(ctx context.Context, method, key string, query url.Values, hd
 	for k, vs := range hdr {
 		req.Header[k] = vs
 	}
-	Sign(req, body, c.Access, c.Secret, b.region(), b.now())
+	Sign(req, body, c.Access, c.Secret, region, b.now())
 	hc := b.HTTP
 	if hc == nil {
 		hc = &http.Client{Timeout: time.Minute}
@@ -122,12 +161,19 @@ func failed(resp *http.Response, what string) error {
 	b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	var e struct{ Code, Message string }
 	_ = xml.Unmarshal(b, &e)
+	if c := resp.StatusCode; c == http.StatusUnauthorized || c == http.StatusForbidden || (c == http.StatusNotFound && e.Code == "NoSuchBucket") {
+		return fmt.Errorf("%w: %s: HTTP %d %s", ErrRefused, what, c, e.Code)
+	}
 	return fmt.Errorf("s3: %s: HTTP %d %s", what, resp.StatusCode, e.Code)
 }
 
 // Check refuses a bucket without object lock in compliance mode for at least seven years,
 // as the GCP adapter refuses an unlocked bucket.
 func (b Bucket) Check(ctx context.Context) error {
+	if b.Plain {
+		_, err := b.list(ctx, b.key(""), 1)
+		return err
+	}
 	resp, err := b.do(ctx, http.MethodGet, "", url.Values{"object-lock": {""}}, nil, nil)
 	if err != nil {
 		return err
@@ -168,9 +214,11 @@ func (b Bucket) Put(ctx context.Context, name string, data []byte, until time.Ti
 	h := http.Header{}
 	h.Set("Content-MD5", base64.StdEncoding.EncodeToString(sum[:]))
 	h.Set("If-None-Match", "*")
-	h.Set("X-Amz-Object-Lock-Mode", "COMPLIANCE")
-	h.Set("X-Amz-Object-Lock-Retain-Until-Date", until.UTC().Format(time.RFC3339))
-	resp, err := b.do(ctx, http.MethodPut, name, nil, h, data)
+	if !b.Plain {
+		h.Set("X-Amz-Object-Lock-Mode", "COMPLIANCE")
+		h.Set("X-Amz-Object-Lock-Retain-Until-Date", until.UTC().Format(time.RFC3339))
+	}
+	resp, err := b.do(ctx, http.MethodPut, b.key(name), nil, h, data)
 	if err != nil {
 		return err
 	}
@@ -189,7 +237,7 @@ func (b Bucket) Get(ctx context.Context, name string) ([]byte, error) {
 	if !nameRe.MatchString(name) {
 		return nil, fmt.Errorf("s3: bad object name %q", name)
 	}
-	resp, err := b.do(ctx, http.MethodGet, name, nil, nil, nil)
+	resp, err := b.do(ctx, http.MethodGet, b.key(name), nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -200,12 +248,31 @@ func (b Bucket) Get(ctx context.Context, name string) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(resp.Body, 1<<30))
 }
 
-// List implements backup.Target: every object under prefix, sorted.
+// List implements backup.Target: every object under prefix, sorted, named without the
+// Bucket's Prefix.
 func (b Bucket) List(ctx context.Context, prefix string) ([]string, error) {
+	keys, err := b.list(ctx, b.key(prefix), 0)
+	if b.Prefix == "" || err != nil {
+		return keys, err
+	}
+	out := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if n, ok := strings.CutPrefix(k, b.Prefix+"/"); ok {
+			out = append(out, n)
+		}
+	}
+	return out, nil
+}
+
+// list is every key under prefix, or the first max of them when max > 0.
+func (b Bucket) list(ctx context.Context, prefix string, max int) ([]string, error) {
 	var out []string
 	token := ""
 	for page := 0; page < 10000; page++ {
 		q := url.Values{"list-type": {"2"}, "prefix": {prefix}}
+		if max > 0 {
+			q.Set("max-keys", fmt.Sprint(max))
+		}
 		if token != "" {
 			q.Set("continuation-token", token)
 		}
@@ -233,7 +300,7 @@ func (b Bucket) List(ctx context.Context, prefix string) ([]string, error) {
 		for _, c := range r.Contents {
 			out = append(out, c.Key)
 		}
-		if !r.Truncated || r.Next == "" {
+		if !r.Truncated || r.Next == "" || (max > 0 && len(out) >= max) {
 			sort.Strings(out)
 			return out, nil
 		}

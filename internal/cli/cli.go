@@ -65,6 +65,7 @@ commands:
                                        a self-hosted box's checks, bundles, settings and retirement (sb-selfhost(7))
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
   backup  keygen|seal|open             seal off-box copies to the recovery key
+  backup  push|pull|list|check         sealed copies to and from an off-box S3 bucket
   recovery split|join                  the 3-of-5 recovery kit
   version                              print the version
 
@@ -175,6 +176,14 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.backupSeal(args), true
 	case "backup open":
 		return e.backupOpen(args), true
+	case "backup push":
+		return e.backupPush(args), true
+	case "backup pull":
+		return e.backupPull(args), true
+	case "backup list":
+		return e.backupList(args), true
+	case "backup check":
+		return e.backupCheck(args), true
 	case "recovery split":
 		return e.recoverySplit(args), true
 	case "recovery join":

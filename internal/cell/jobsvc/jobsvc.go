@@ -139,8 +139,10 @@ func (s *Service) Tick(ctx context.Context, t time.Time) map[string]error {
 	return out
 }
 
-// Loop ticks once a minute, at the start of each minute, until ctx ends.
+// Loop ticks once a minute, at the start of each minute, until ctx ends. The audit stream,
+// when one is set, runs beside it.
 func (s *Service) Loop(ctx context.Context) {
+	go s.Stream(ctx)
 	for {
 		now := time.Now()
 		next := now.Truncate(time.Minute).Add(time.Minute)
@@ -240,6 +242,13 @@ func (s *Service) backup(ctx context.Context) error {
 			continue
 		}
 		var t backup.Target = backupfs.Dir{Root: b.Dir, Label: b.Dir, Media: b.Media, Away: b.Offsite}
+		if b.S3 != "" {
+			bk, err := c.OffsiteBucket(ctx, b)
+			if err != nil {
+				return fmt.Errorf("jobs: the off-box bucket: %w", err)
+			}
+			t = bk
+		}
 		if b.Seal != "" {
 			pub, err := offsite.ParsePublic(b.Seal)
 			if err != nil {

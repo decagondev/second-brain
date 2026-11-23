@@ -2,7 +2,9 @@
 # restore.sh (sb-selfhost(7), Restore; SB-1803): the database back from a nightly dump, in
 # one command, or a drill that proves the newest dump restores.
 #
-#   restore.sh [--dump FILE]   restore FILE (default: the newest dump on this box). The
+#   restore.sh [--dump FILE|s3:NAME]
+#                              restore FILE (default: the newest dump on this box), or
+#                              NAME from the off-box bucket (SB-2303; sb backup list). The
 #                              dump must have been made by this cell's keys: a dump from
 #                              another cell is refused before anything stops. Then the
 #                              writers stop, the database is restored, they start again,
@@ -62,10 +64,21 @@ while [ $# -gt 0 ]; do
   --dump) DUMP=${2:-}; shift ;;
   --key) KEY=${2:-}; shift ;;
   --drill) MODE=drill ;;
-  *) die "usage: restore.sh [--dump FILE [--key FILE]] | --drill | --from-kit KIT.sealed SHARE…" ;;
+  *) die "usage: restore.sh [--dump FILE|s3:NAME [--key FILE]] | --drill | --from-kit KIT.sealed SHARE…" ;;
   esac
   shift
 done
+# From the company's bucket (SB-2303): the sealed dump and its record, pulled to this box.
+if [[ "$DUMP" == s3:* ]]; then
+  # shellcheck source=tools/selfhost/offsite.sh
+  . tools/selfhost/offsite.sh
+  name=${DUMP#s3:}
+  [ -n "$(off_url)" ] || die "SB_OFFSITE isn't a bucket here; --dump s3:NAME reads from one"
+  [[ "$name" == *.sealed ]] || die "$name: only sealed copies are in the bucket (NAME.dump.sealed)"
+  mkdir -p "$DIR/db-dumps/offsite" && chmod 700 "$DIR/db-dumps" "$DIR/db-dumps/offsite"
+  off_get "$name" "${name%.sealed}.json" "$DIR/db-dumps/offsite" || die "$name couldn't be pulled from $(off_url) (above)"
+  DUMP=$DIR/db-dumps/offsite/$(basename "$name")
+fi
 [ -n "$DUMP" ] || DUMP=$(ls -1t "$DIR"/db-dumps/sb-*.dump 2>/dev/null | head -1 || true)
 [ -n "$DUMP" ] && [ -f "$DUMP" ] || die "no dump to restore (systemctl start sb-selfhost-dbdump.service makes one)"
 # A sealed copy from off the box opens with the recovery key, into this box's dumps.

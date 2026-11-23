@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import type { AskResponse, Fetch } from "./api";
 import { AskError, sendFeedback } from "./api";
+import { errorText, t } from "./i18n";
 
 // Feedback on one answer (sb-ask(3), POST /v1/feedback): a rating, optionally the citation
 // that was wrong, and a short comment. Stored against the answer's trace.
@@ -16,25 +17,25 @@ export function FeedbackBar({ answer, fetcher }: { answer: AskResponse; fetcher?
     setRating(r);
     try {
       await sendFeedback({ trace: answer.trace, rating: r, ...(wrong ? { wrong_citation: wrong } : {}), ...(comment.trim() ? { comment: comment.trim() } : {}) }, fetcher);
-      setStatus("Thanks, your feedback was saved.");
+      setStatus(t("Thanks, your feedback was saved."));
     } catch (e) {
-      setStatus(e instanceof AskError ? e.error.message : "Feedback couldn't be sent.");
+      setStatus(e instanceof AskError ? errorText(e.error).message : t("Feedback couldn't be sent."));
     }
   }
 
   return (
-    <div className="feedback" role="group" aria-label="Feedback on this answer">
+    <div className="feedback" role="group" aria-label={t("Feedback on this answer")}>
       <button type="button" aria-pressed={rating === "up"} onClick={() => send("up")}>
-        Helpful
+        {t("Helpful")}
       </button>
       <button type="button" aria-pressed={rating === "down"} onClick={() => send("down")}>
-        Not helpful
+        {t("Not helpful")}
       </button>
       {cites.length > 0 && (
         <>
-          <label htmlFor={ids.wrong}>Wrong citation</label>
+          <label htmlFor={ids.wrong}>{t("Wrong citation")}</label>
           <select id={ids.wrong} value={wrong} onChange={(e) => setWrong(e.target.value)}>
-            <option value="">None</option>
+            <option value="">{t("None")}</option>
             {cites.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -43,7 +44,7 @@ export function FeedbackBar({ answer, fetcher }: { answer: AskResponse; fetcher?
           </select>
         </>
       )}
-      <label htmlFor={ids.comment}>Comment</label>
+      <label htmlFor={ids.comment}>{t("Comment")}</label>
       <input id={ids.comment} type="text" maxLength={2000} value={comment} onChange={(e) => setComment(e.target.value)} />
       {status && (
         <p className="feedback-status" role="status">

@@ -35,7 +35,9 @@ type Tenant struct {
 	QuestionsTo string `json:"questions_to"`
 	Notes       bool   `json:"notes"`
 	// Digest is the weekly digest's time zone, "off", or "" for UTC (SB-2103).
-	Digest   string              `json:"digest"`
+	Digest string `json:"digest"`
+	// Language is the web UI's default language, "" for English (SB-2301).
+	Language string              `json:"language"`
 	Exclude  map[string][]string `json:"exclude"`
 	Groups   map[string][]string `json:"groups"`
 	Spaces   map[string]Space    `json:"spaces"`
@@ -75,7 +77,9 @@ var (
 	Channels       = []string{"stable", "testing"}
 	Regions        = []string{"eu", "us"}
 	ConnectorKinds = []string{"docs", "chat", "tickets", "crm", "code", "hris", "accounting"}
-	Agents         = []string{"ask", "draft-reply", "incident-summary", "spec-digest", "close-checklist", "runbook-answer"}
+	// Languages are the web UI's languages (sb-tenant(5) language; SB-2301).
+	Languages = []string{"en", "de", "fr"}
+	Agents    = []string{"ask", "draft-reply", "incident-summary", "spec-digest", "close-checklist", "runbook-answer"}
 	// Workflows maps each known workflow to the connector kind it writes to.
 	Workflows = map[string]string{"ticket-update": "tickets"}
 )
@@ -152,6 +156,15 @@ var fields = []field{
 				c.add(n, "digest", "must be off or an IANA time zone such as Europe/Berlin")
 			} else {
 				c.t.Digest = v
+			}
+		}
+	}},
+	{"language", false, func(c *checker, n *node) {
+		if v, ok := c.scalar(n, "language"); ok {
+			if !contains(Languages, v) {
+				c.add(n, "language", "must be one of %s", strings.Join(Languages, ", "))
+			} else {
+				c.t.Language = v
 			}
 		}
 	}},

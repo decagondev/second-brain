@@ -186,6 +186,22 @@ func (c *Cell) WormTarget(ctx context.Context) (backup.Target, error) {
 	return b, nil
 }
 
+// OffsiteBucket is a backups[] s3 copy (SB-2303): the company's bucket, with no object
+// lock, its store and key pair at vault://tenants/TENANT/offsite. It is checked before each
+// use; the caller seals every object to it.
+func (c *Cell) OffsiteBucket(ctx context.Context, b Backup) (s3.Bucket, error) {
+	name, prefix, err := s3.URL(b.S3)
+	if err != nil {
+		return s3.Bucket{}, err
+	}
+	bk := s3.Bucket{BucketName: name, Prefix: prefix, Plain: true, Creds: c.Secret("offsite"), Label: b.S3, Away: b.Offsite,
+		HTTP: &http.Client{Timeout: time.Minute}}
+	if err := bk.Check(ctx); err != nil {
+		return s3.Bucket{}, err
+	}
+	return bk, nil
+}
+
 // Health is the cell's health from its own records (sb-admin(3); SB-1607): the job
 // finishes every service writes and the sync records the ingest service writes.
 func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error) {

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- The UI in English, German and French (SB-2301); audit rows streamed to the SIEM over syslog TLS (SB-2302); a self-hosted box's off-box copies in the company's S3 bucket, always sealed (SB-2303).
 - Spreadsheets and CSV files on file shares are read; UK, US, Dutch and German national ID numbers are masked like IBANs and cards (SB-2206, SB-2207).
 - Ask the owners of sources you couldn't open to share them; they hear which document, you see counts (SB-2205).
 - Space glossaries that searches and answers use in their space; wrong-citation reports become tenant eval cases that hold a release which regresses them (SB-2203, SB-2204).

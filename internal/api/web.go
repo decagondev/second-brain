@@ -1,10 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
+	"time"
 )
 
 // CSP is the web UI's content security policy (sb-ask(3), The web UI): nothing loads
@@ -15,7 +18,12 @@ const CSP = "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-a
 // get index.html, so the app can route; /v1 is never served from here.
 type Web struct {
 	Files fs.FS
+	// Language is the manifest's default UI language (sb-tenant(5) language; SB-2301),
+	// written into index.html's lang attribute; nil or "" leaves the page as built.
+	Language func() string
 }
+
+var htmlLang = regexp.MustCompile(`<html lang="[a-zA-Z-]*"`)
 
 // Register mounts the UI on mux as its catch-all, for every method, so it never conflicts
 // with a route that takes any method (SCIM, /v1); the more specific patterns win, and
@@ -47,8 +55,28 @@ func (h Web) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if name == "index.html" {
 		hd.Set("Cache-Control", "no-cache")
+		if h.Language != nil {
+			if l := h.Language(); l != "" && l != "en" {
+				h.page(w, r, l)
+				return
+			}
+		}
 	} else if strings.HasPrefix(name, "assets/") {
 		hd.Set("Cache-Control", "public, max-age=31536000, immutable") // Vite names assets by hash
 	}
 	http.ServeFileFS(w, r, h.Files, name)
 }
+
+// page serves index.html in language l: its lang attribute, which the UI starts in.
+func (h Web) page(w http.ResponseWriter, r *http.Request, l string) {
+	b, err := fs.ReadFile(h.Files, "index.html")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	b = htmlLang.ReplaceAll(b, []byte(`<html lang="`+l+`"`))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	http.ServeContent(w, r, "index.html", time0, bytes.NewReader(b))
+}
+
+var time0 time.Time // no modification time: the page changes with the manifest

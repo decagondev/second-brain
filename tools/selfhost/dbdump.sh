@@ -13,11 +13,16 @@ ENV=$DIR/compose.env
 [ -f "$ENV" ] || { echo "dbdump: no self-hosted cell here" >&2; exit 1; }
 # shellcheck source=tools/selfhost/pg.sh
 . tools/selfhost/pg.sh
+# shellcheck source=tools/selfhost/offsite.sh
+. tools/selfhost/offsite.sh
 local_dir=$DIR/db-dumps
+s3=$(off_url)
 off=$(sed -nE 's/^SB_OFFSITE=//p' "$ENV" | tr -d '\r')
 if [[ "$DOCKER" == *.exe ]] && command -v wslpath >/dev/null; then off=$(wslpath -u "$off"); fi # Docker Desktop's host path
 off=$off/db
-mkdir -p "$local_dir" "$off"
+[ -z "$s3" ] || [ -f "$DIR/recovery.pub" ] || { echo "dbdump: SB_OFFSITE is a bucket and nothing unsealed leaves the box, but there is no recovery key" >&2; exit 1; }
+mkdir -p "$local_dir"
+[ -n "$s3" ] || mkdir -p "$off"
 chmod 700 "$local_dir"
 name=sb-$(date -u +%Y-%m-%dT%H%M%SZ).dump
 pg pg_dump -Fc >"$local_dir/$name.tmp"
@@ -29,6 +34,16 @@ chmod 600 "$local_dir/$name"
 tenant=$(sed -nE 's/^SB_TENANT=//p' "$ENV" | tr -d '\r')
 keys=$(sha256sum "$DIR/vault/api/vault/tenants/$tenant/audit/anchor-seed" | cut -c1-16)
 printf '{"tenant":"%s","keys":"%s"}\n' "$tenant" "$keys" >"$local_dir/$name.json"
+# To the company's bucket (SB-2303): sealed, beside its record, each written once. The
+# bucket's lifecycle rule keeps fourteen nights there; the box never deletes in it.
+if [ -n "$s3" ]; then
+  sealed=$(mktemp "$local_dir/.$name.sealed.XXXXXX"); trap 'rm -f "$sealed"' EXIT
+  bash tools/selfhost/sb.sh -q backup seal --to "$DIR/recovery.pub" --out "$sealed" "$local_dir/$name"
+  off_put "$sealed" "db/$name.sealed" && off_put "$local_dir/$name.json" "db/$name.json" || { echo "dbdump: the bucket refused the copy (above)" >&2; exit 1; }
+  ls -1t "$local_dir"/sb-*.dump 2>/dev/null | tail -n +15 | while read -r old; do rm -f "$old" "$old.json"; done
+  echo "dbdump: $name on this machine and sealed in $s3/db"
+  exit 0
+fi
 cp "$local_dir/$name.json" "$off/$name.json"
 # Off the box, sealed to the recovery key (SB-1901): the copy here stays as it is.
 if [ -f "$DIR/recovery.pub" ]; then

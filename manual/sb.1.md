@@ -36,6 +36,10 @@ sb secrets scan [--known PATH]... PATH...   (sb-observability(7))
 sb backup keygen --public FILE --private FILE   (sb-selfhost(7), Sealed off-box copies)
 sb backup seal --to PUBFILE [--out FILE] FILE
 sb backup open --key KEYFILE [--out FILE] FILE.sealed
+sb backup push --to s3://BUCKET/PREFIX --keys FILE [--as NAME] FILE   (sb-selfhost(7), Off-box copies to S3)
+sb backup pull --from s3://BUCKET/PREFIX --keys FILE --out DIR NAME...
+sb backup list --from s3://BUCKET/PREFIX --keys FILE [SUB]
+sb backup check --to s3://BUCKET/PREFIX --keys FILE
 sb recovery split --tenant T --out DIR [--custodian N=NAME]... ARCHIVE   (sb-selfhost(7), The recovery kit)
 sb recovery join --kit KIT.sealed --out FILE SHARE...
 sb version

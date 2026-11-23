@@ -11,6 +11,8 @@ import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged } from "./Start";
 import { SignOutEverywhere } from "./Session";
 import { HandoverView } from "./Handover";
+import { ErrorBox } from "./ErrorBox";
+import { errorText, msg, t, tj } from "./i18n";
 
 interface Turn {
   question: string;
@@ -20,11 +22,11 @@ interface Turn {
 
 type Tab = "answer" | "documents" | "saved" | "questions" | "handover";
 const tabs: { id: Tab; name: string }[] = [
-  { id: "answer", name: "Answer" },
-  { id: "documents", name: "Documents" },
-  { id: "saved", name: "Saved" },
-  { id: "questions", name: "Questions" },
-  { id: "handover", name: "Handover" },
+  { id: "answer", name: msg("Answer") },
+  { id: "documents", name: msg("Documents") },
+  { id: "saved", name: msg("Saved") },
+  { id: "questions", name: msg("Questions") },
+  { id: "handover", name: msg("Handover") },
 ];
 
 // Errors after which the same text can still be searched: search needs no model (SB-1701).
@@ -38,7 +40,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const [busy, setBusy] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [space, setSpace] = useState(""); // "" is the whole company
-  const [tab, setTab] = useState<Tab>(tabs.find((t) => t.id === first)?.id ?? "answer");
+  const [tab, setTab] = useState<Tab>(tabs.find((x) => x.id === first)?.id ?? "answer");
   const [searchFor, setSearchFor] = useState<{ text: string; n: number }>();
   const [shared, setShared] = useState<SharedQuestion>();
   const [sharedError, setSharedError] = useState<string>();
@@ -58,7 +60,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   useEffect(() => {
     if (!share) return;
     openShare(share, fetcher).then(setShared, (e) =>
-      setSharedError(e instanceof AskError ? e.error.message : "That shared question can't be opened."),
+      setSharedError(e instanceof AskError ? errorText(e.error).message : t("That shared question can't be opened.")),
     );
   }, [share, fetcher]);
 
@@ -74,11 +76,11 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
     try {
       const a = await ask(q, conv, fetcher, inSpace || undefined);
       setConversation(a.conversation);
-      setTurns((t) => [...t, { question: q, answer: a }]);
+      setTurns((ts) => [...ts, { question: q, answer: a }]);
       setQuestion("");
     } catch (err) {
-      const error = err instanceof AskError ? err.error : { code: "EUNAVAIL", message: "Something went wrong.", trace: "", remedy: "Try again." };
-      setTurns((t) => [...t, { question: q, error }]);
+      const error = err instanceof AskError ? err.error : { code: "EUNAVAIL", message: t("Something went wrong."), trace: "", remedy: t("Try again.") };
+      setTurns((ts) => [...ts, { question: q, error }]);
     } finally {
       setBusy(false);
     }
@@ -117,15 +119,15 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
 
   return (
     <main>
-      <h1>Second Brain</h1>
+      <h1>{"Second Brain"}</h1>
       {(shared || sharedError) && (
-        <section className="shared" aria-label="Shared question">
+        <section className="shared" aria-label={t("Shared question")}>
           {shared ? (
             <>
-              <p>A colleague shared this question. Asking it shows only what you can open.</p>
+              <p>{t("A colleague shared this question. Asking it shows only what you can open.")}</p>
               <p className="question">{shared.question}</p>
               <button type="button" disabled={busy} onClick={() => askAgain(shared.question, shared.space)}>
-                Ask this question
+                {t("Ask this question")}
               </button>
             </>
           ) : (
@@ -135,56 +137,47 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
           )}
         </section>
       )}
-      <div role="tablist" aria-label="Views" className="tabs">
-        {tabs.map((t, i) => (
+      <div role="tablist" aria-label={t("Views")} className="tabs">
+        {tabs.map((x, i) => (
           <button
-            key={t.id}
+            key={x.id}
             ref={(el) => {
               tabRefs.current[i] = el;
             }}
             type="button"
             role="tab"
-            id={`${base}-tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`${base}-panel-${t.id}`}
-            tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => setTab(t.id)}
+            id={`${base}-tab-${x.id}`}
+            aria-selected={tab === x.id}
+            aria-controls={`${base}-panel-${x.id}`}
+            tabIndex={tab === x.id ? 0 : -1}
+            onClick={() => setTab(x.id)}
             onKeyDown={(e) => onTabKey(e, i)}
           >
-            {t.name}
+            {t(x.name)}
           </button>
         ))}
       </div>
       <div role="tabpanel" id={`${base}-panel-answer`} aria-labelledby={`${base}-tab-answer`} hidden={tab !== "answer"}>
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
-        <section aria-live="polite" aria-busy={busy} aria-label="Conversation" className="turns">
-          {turns.map((t, i) => (
+        <section aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
+          {turns.map((x, i) => (
             <div className="turn" key={i}>
-              <h2 className="question">{t.question}</h2>
-              {t.answer && <AnswerView answer={t.answer} fetcher={fetcher} />}
-              {t.answer && <FeedbackBar answer={t.answer} fetcher={fetcher} />}
-              {t.answer && <TurnTools question={t.question} fetcher={fetcher} space={space || undefined} />}
-              {t.answer && <AskStewards question={t.question} answer={t.answer} space={space || undefined} fetcher={fetcher} />}
-              {t.error && (
+              <h2 className="question">{x.question}</h2>
+              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} />}
+              {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
+              {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
+              {x.answer && <AskStewards question={x.question} answer={x.answer} space={space || undefined} fetcher={fetcher} />}
+              {x.error && x.error.code === "EAUTH" && (
                 <div className="error" role="alert">
-                  {t.error.code === "EAUTH" ? (
-                    <p>
-                      You're signed out. <a href="/login">Sign in</a>, then ask again.
-                    </p>
-                  ) : (
-                    <>
-                      <p>{t.error.message}</p>
-                      {t.error.remedy && t.error.remedy.toLowerCase() !== t.error.message.toLowerCase() && <p>{t.error.remedy}</p>}
-                    </>
-                  )}
-                  {t.error.trace && <p>Quote trace {t.error.trace} to support.</p>}
-                  {searchable.has(t.error.code) && (
-                    <button type="button" onClick={() => searchInstead(t.question)}>
-                      Search documents instead
-                    </button>
-                  )}
+                  <p>{tj("You're signed out. {link}, then ask again.", { link: <a href="/login">{t("Sign in")}</a> })}</p>
                 </div>
+              )}
+              {x.error && x.error.code !== "EAUTH" && <ErrorBox error={x.error} />}
+              {x.error && searchable.has(x.error.code) && (
+                <button type="button" onClick={() => searchInstead(x.question)}>
+                  {t("Search documents instead")}
+                </button>
               )}
             </div>
           ))}
@@ -192,7 +185,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         <form onSubmit={submit} className="ask">
           {spaces.length > 0 && (
             <>
-              <label htmlFor={spaceId}>Ask in</label>
+              <label htmlFor={spaceId}>{t("Ask in")}</label>
               <select
                 id={spaceId}
                 value={space}
@@ -202,7 +195,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
                   setTurns([]);
                 }}
               >
-                <option value="">Whole company</option>
+                <option value="">{t("Whole company")}</option>
                 {spaces.map((s) => (
                   <option key={s.name} value={s.name}>
                     {s.name.charAt(0).toUpperCase() + s.name.slice(1)} ({s.label})
@@ -211,10 +204,10 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               </select>
             </>
           )}
-          <label htmlFor={inputId}>Ask a question</label>
+          <label htmlFor={inputId}>{t("Ask a question")}</label>
           <textarea id={inputId} value={question} maxLength={4000} rows={3} onChange={(e) => setQuestion(e.target.value)} />
           <button type="submit" disabled={busy || question.trim() === ""}>
-            {busy ? "Asking…" : "Ask"}
+            {busy ? t("Asking…") : t("Ask")}
           </button>
           {conversation && (
             <button
@@ -224,7 +217,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
                 setTurns([]);
               }}
             >
-              New conversation
+              {t("New conversation")}
             </button>
           )}
         </form>

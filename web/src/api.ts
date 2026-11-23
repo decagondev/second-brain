@@ -74,6 +74,7 @@ export interface ApiError {
   message: string;
   trace: string;
   remedy: string;
+  retry_after?: number; // seconds, with ERATE (SB-2305)
 }
 
 export class AskError extends Error {

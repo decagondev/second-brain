@@ -54,9 +54,20 @@ elif [ -f "$DIR/Caddyfile" ]; then
   parts+=("\"cert_managed\":true")
 fi
 
-# The off-box directory: on another machine, and writable by the backup job's user.
+# The off-box directory: on another machine, and writable by the backup job's user. Or the
+# company's bucket (SB-2303): whether it answers with the key pair, and its newest dump.
+# shellcheck source=tools/selfhost/offsite.sh
+. tools/selfhost/offsite.sh
 off=$(val SB_OFFSITE)
-if [ -n "$off" ] && [ -d "$off" ]; then
+s3=$(off_url)
+if [ -n "$s3" ]; then
+  ans=$(bash tools/selfhost/sb.sh --json backup check --to "$s3" --keys "$(off_keys)" 2>/dev/null | sed -nE 's/.*"answer":"([a-z]+)".*/\1/p')
+  parts+=("\"offsite\":{\"path\":\"$s3\",\"s3\":true,\"answer\":\"${ans:-unreachable}\"}")
+  if [ "$ans" = ok ]; then
+    o=$(bash tools/selfhost/sb.sh backup list --from "$s3" --keys "$(off_keys)" db/ 2>/dev/null | sed -nE 's#^db/sb-([0-9-]+)T([0-9]{2})([0-9]{2})([0-9]{2})Z\.dump\.sealed$#\1T\2:\3:\4Z#p' | sort | tail -1)
+    [ -n "$o" ] && parts+=("\"last_offsite\":\"$o\"")
+  fi
+elif [ -n "$off" ] && [ -d "$off" ]; then
   tgt=$(findmnt -n -o TARGET -T "$off" 2>/dev/null || echo /)
   mounted=true; onroot=false; [ "$tgt" = / ] && { mounted=false; onroot=true; }
   w=false

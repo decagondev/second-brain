@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { Fetch } from "./api";
 import type { Review } from "./Steward";
+import { t, tj, tn } from "./i18n";
 
 interface Proposal {
   id: string;
@@ -35,8 +36,8 @@ export interface QueueItem {
   reviewed?: { by: string; at: string };
 }
 
-function when(t: string | null): string {
-  return t ? new Date(t).toISOString().replace("T", " ").slice(0, 16) + " UTC" : "never";
+function when(at: string | null): string {
+  return at ? new Date(at).toISOString().replace("T", " ").slice(0, 16) + " UTC" : t("never");
 }
 
 interface Switch {
@@ -48,7 +49,7 @@ interface Switch {
 async function call(f: Fetch, method: string, url: string, body?: unknown) {
   const res = await f(url, { method, credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!res.ok) throw new Error(((data?.error as { message?: string })?.message ?? "That didn't work.") + "");
+  if (!res.ok) throw new Error(((data?.error as { message?: string })?.message ?? t("That didn't work.")) + "");
   return data ?? {};
 }
 
@@ -95,7 +96,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   async function reviewed(item: QueueItem) {
     try {
       await call(fetcher, "POST", `/v1/admin/feedback/${encodeURIComponent(item.trace)}/reviewed`);
-      setStatus(`Marked ${item.trace} reviewed.`);
+      setStatus(t("Marked {trace} reviewed.", { trace: item.trace }));
       await loadQueue();
     } catch (e) {
       setStatus((e as Error).message);
@@ -126,12 +127,12 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
 
   async function kill(set: boolean, s = scope, n = name) {
     if (!reason.trim()) {
-      setStatus("A reason is required; it goes into the audit log.");
+      setStatus(t("A reason is required; it goes into the audit log."));
       return;
     }
     try {
       await call(fetcher, "POST", set ? "/v1/admin/kill" : "/v1/admin/unkill", { scope: s, name: n, reason: reason.trim() });
-      setStatus(set ? `Killed ${s} ${n}. Cells stop within 10 seconds.` : `Cleared ${s} ${n}.`);
+      setStatus(set ? t("Killed {scope} {name}. Cells stop within 10 seconds.", { scope: s, name: n }) : t("Cleared {scope} {name}.", { scope: s, name: n }));
       await load();
     } catch (e) {
       setStatus((e as Error).message);
@@ -144,7 +145,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
     try {
       const a = await call(fetcher, "POST", `/v1/admin/proposals/${encodeURIComponent(p.id)}/approve`, { hash: p.hash });
       setApplyText(String(a.manifest ?? ""));
-      setStatus(`Approved ${p.id}. Apply the manifest below with sb tenant apply to make it so.`);
+      setStatus(t("Approved {id}. Apply the manifest below with {command} to make it so.", { id: p.id, command: "sb tenant apply" }));
       await load();
     } catch (e) {
       setStatus((e as Error).message);
@@ -153,12 +154,12 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
 
   async function reject(p: Proposal) {
     if (!rejectReason.trim()) {
-      setStatus("A rejection needs a reason; it goes into the audit log.");
+      setStatus(t("A rejection needs a reason; it goes into the audit log."));
       return;
     }
     try {
       await call(fetcher, "POST", `/v1/admin/proposals/${encodeURIComponent(p.id)}/reject`, { reason: rejectReason.trim() });
-      setStatus(`Rejected ${p.id}.`);
+      setStatus(t("Rejected {id}.", { id: p.id }));
       setRejectReason("");
       await load();
     } catch (e) {
@@ -172,7 +173,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
     try {
       const d = await call(fetcher, "POST", "/v1/admin/manifest/diff", [{ op: "remove", path }]);
       setDiff(d.diff as string[]);
-      setStatus("This is a proposed manifest change. Apply it with sb tenant apply to make it permanent.");
+      setStatus(t("This is a proposed manifest change. Apply it with {command} to make it permanent.", { command: "sb tenant apply" }));
     } catch (e) {
       setStatus((e as Error).message);
     }
@@ -180,44 +181,49 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
 
   return (
     <main>
-      <h1>Admin console</h1>
-      <section aria-label="Cell health">
-        <h2>Cell health</h2>
+      <h1>{t("Admin console")}</h1>
+      <section aria-label={t("Cell health")}>
+        <h2>{t("Cell health")}</h2>
         {healthError ? (
-          <p className="error">Health can't be shown: {healthError}</p>
+          <p className="error">{t("Health can't be shown: {error}", { error: healthError })}</p>
         ) : !health ? (
-          <p>Loading health…</p>
+          <p>{t("Loading health…")}</p>
         ) : (
           <>
-            <h3>Connectors</h3>
+            <h3>{t("Connectors")}</h3>
             {health.connectors.length === 0 ? (
-              <p>No connectors.</p>
+              <p>{t("No connectors.")}</p>
             ) : (
               <ul>
                 {health.connectors.map((c) => (
                   <li key={c.kind} className={c.stale ? "attention" : undefined}>
-                    <strong>{c.kind}</strong>: {c.stale ? "stale" : "fresh"}, last synced {when(c.last_success)}
-                    {c.failures > 0 ? `, ${c.failures} failed ${c.failures === 1 ? "sync" : "syncs"} since (last ${when(c.last_failure)})` : ""}
+                    <strong>{c.kind}</strong>: {t(c.stale ? "stale, last synced {at}" : "fresh, last synced {at}", { at: when(c.last_success) })}
+                    {c.failures > 0 ? `, ${tn(c.failures, "{n} failed sync since (last {at})", "{n} failed syncs since (last {at})", { at: when(c.last_failure) })}` : ""}
                   </li>
                 ))}
               </ul>
             )}
-            <h3>Scheduled jobs</h3>
+            <h3>{t("Scheduled jobs")}</h3>
             <ul>
               {health.jobs.map((j) => (
                 <li key={j.name} className={j.overdue ? "attention" : undefined}>
                   <strong>{j.name}</strong>
-                  {j.law ? ` (${j.law})` : ""}: {j.overdue ? (j.unreadable ? "overdue, its record can't be read" : "overdue") : "on time"}, last finished {when(j.last_finish)}
+                  {j.law ? ` (${j.law})` : ""}:{" "}
+                  {t(j.overdue ? (j.unreadable ? "overdue, its record can't be read, last finished {at}" : "overdue, last finished {at}") : "on time, last finished {at}", {
+                    at: when(j.last_finish),
+                  })}
                 </li>
               ))}
             </ul>
-            <h3>Box</h3>
+            <h3>{t("Box")}</h3>
             {!health.box ? (
-              <p>Managed by the cloud: no machine to check.</p>
+              <p>{t("Managed by the cloud: no machine to check.")}</p>
             ) : (
               <>
                 <p>
-                  {health.box.verdict === "pass" ? "Every check passes" : `Worst check: ${health.box.verdict}`}, from facts gathered {when(health.box.facts_at)}.
+                  {health.box.verdict === "pass"
+                    ? t("Every check passes, from facts gathered {at}.", { at: when(health.box.facts_at) })
+                    : t("Worst check: {verdict}, from facts gathered {at}.", { verdict: health.box.verdict, at: when(health.box.facts_at) })}
                 </p>
                 <ul>
                   {health.box.checks.map((c) => (
@@ -226,7 +232,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                       {c.fix ? (
                         <>
                           {" "}
-                          (fix: <code>{c.fix}</code>)
+                          ({tj("fix: {command}", { command: <code>{c.fix}</code> })})
                         </>
                       ) : null}
                     </li>
@@ -237,27 +243,33 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
           </>
         )}
       </section>
-      <section aria-label="Unhelpful answers">
-        <h2>Unhelpful answers</h2>
+      <section aria-label={t("Unhelpful answers")}>
+        <h2>{t("Unhelpful answers")}</h2>
         {queueError ? (
-          <p className="error">The queue can't be shown: {queueError}</p>
+          <p className="error">{t("The queue can't be shown: {error}", { error: queueError })}</p>
         ) : queue.length === 0 ? (
-          <p>No unhelpful answers to review.</p>
+          <p>{t("No unhelpful answers to review.")}</p>
         ) : (
           <ul>
             {queue.map((q) => (
               <li key={q.trace}>
-                <article aria-label={`Feedback on ${q.trace}`}>
+                <article aria-label={t("Feedback on {trace}", { trace: q.trace })}>
                   <p>
-                    <strong>{q.trace}</strong> from {q.user}, {when(q.at)}: {q.claims} claims, {q.uncited} uncited, {q.refused} refused
-                    {q.wrong_citation ? `; wrong citation ${q.wrong_citation}` : ""}
+                    {tj("{trace} from {user}, {at}: {claims} claims, {uncited} uncited, {refused} refused", { trace: <strong>{q.trace}</strong> }, {
+                      user: q.user,
+                      at: when(q.at),
+                      claims: q.claims,
+                      uncited: q.uncited,
+                      refused: q.refused,
+                    })}
+                    {q.wrong_citation ? `; ${t("wrong citation {cite}", { cite: q.wrong_citation })}` : ""}
                   </p>
                   {q.comment && <blockquote>{q.comment}</blockquote>}
                   <p>
-                    Decisions: {q.decisions.length === 0 ? "none recorded" : q.decisions.map((d) => `${d.verdict} ${d.reason} ×${d.count}`).join(", ")}
+                    {t("Decisions: {decisions}", { decisions: q.decisions.length === 0 ? t("none recorded") : q.decisions.map((d) => `${d.verdict} ${d.reason} ×${d.count}`).join(", ") })}
                   </p>
                   <button type="button" onClick={() => reviewed(q)}>
-                    Mark {q.trace} reviewed
+                    {t("Mark {trace} reviewed", { trace: q.trace })}
                   </button>
                 </article>
               </li>
@@ -265,21 +277,21 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
           </ul>
         )}
       </section>
-      <section aria-label="Kill switches">
-        <h2>Kill switches</h2>
+      <section aria-label={t("Kill switches")}>
+        <h2>{t("Kill switches")}</h2>
         {switches.length === 0 ? (
-          <p>No kill switches are set.</p>
+          <p>{t("No kill switches are set.")}</p>
         ) : (
           <ul>
             {switches.map((s) => (
               <li key={s.scope}>
-                <strong>{s.scope}</strong>: {s.reason} (by {s.actor}){" "}
+                <strong>{s.scope}</strong>: {t("{reason} (by {actor})", { reason: s.reason, actor: s.actor })}{" "}
                 <button type="button" onClick={() => kill(false, ...(s.scope === "tenant" ? ["tenant", ""] : (s.scope.split(":") as [string, string])))}>
-                  Clear
+                  {t("Clear")}
                 </button>{" "}
                 {s.scope !== "tenant" && (
                   <button type="button" onClick={() => makePermanent(s)}>
-                    Make permanent
+                    {t("Make permanent")}
                   </button>
                 )}
               </li>
@@ -287,54 +299,50 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
           </ul>
         )}
         <div className="kill-form">
-          <label htmlFor={ids.scope}>Scope</label>
+          <label htmlFor={ids.scope}>{t("Scope")}</label>
           <select id={ids.scope} value={scope} onChange={(e) => setScope(e.target.value)}>
-            <option value="agent">agent</option>
-            <option value="connector">connector</option>
-            <option value="tenant">tenant</option>
+            <option value="agent">{"agent"}</option>
+            <option value="connector">{"connector"}</option>
+            <option value="tenant">{"tenant"}</option>
           </select>
-          <label htmlFor={ids.name}>Name</label>
+          <label htmlFor={ids.name}>{t("Name")}</label>
           <input id={ids.name} type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={scope === "tenant"} />
-          <label htmlFor={ids.reason}>Reason (required)</label>
+          <label htmlFor={ids.reason}>{t("Reason (required)")}</label>
           <input id={ids.reason} type="text" value={reason} onChange={(e) => setReason(e.target.value)} />
           <button type="button" onClick={() => kill(true)}>
-            Kill now
+            {t("Kill now")}
           </button>
         </div>
       </section>
-      <section aria-label="Steward proposals">
-        <h2>Steward proposals</h2>
+      <section aria-label={t("Steward proposals")}>
+        <h2>{t("Steward proposals")}</h2>
         {proposals.length === 0 ? (
-          <p>No open proposals.</p>
+          <p>{t("No open proposals.")}</p>
         ) : (
           <>
-            <label htmlFor={ids.reject}>Reason, to reject</label>
+            <label htmlFor={ids.reject}>{t("Reason, to reject")}</label>
             <input id={ids.reject} type="text" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
             {proposals.map((p) => (
-              <article key={p.id} aria-label={`Proposal ${p.id}`}>
-                <h3>
-                  {p.space}: {p.id} by {p.requester}
-                </h3>
+              <article key={p.id} aria-label={t("Proposal {id}", { id: p.id })}>
+                <h3>{t("{space}: {id} by {requester}", { space: p.space, id: p.id, requester: p.requester })}</h3>
                 <pre className="payload">{p.diff.join("\n")}</pre>
-                <p>
-                  Hash <code>{p.hash}</code>
-                </p>
+                <p>{tj("Hash {hash}", { hash: <code>{p.hash}</code> })}</p>
                 <button type="button" onClick={() => approve(p)}>
-                  Approve hash {p.hash.slice(0, 12)}
+                  {t("Approve hash {hash}", { hash: p.hash.slice(0, 12) })}
                 </button>{" "}
                 <button type="button" onClick={() => reject(p)}>
-                  Reject {p.id}
+                  {t("Reject {id}", { id: p.id })}
                 </button>
               </article>
             ))}
           </>
         )}
-        {applyText && <pre className="payload" aria-label="Manifest to apply">{applyText}</pre>}
+        {applyText && <pre className="payload" aria-label={t("Manifest to apply")}>{applyText}</pre>}
       </section>
-      <section aria-label="Access reviews">
-        <h2>Access reviews</h2>
+      <section aria-label={t("Access reviews")}>
+        <h2>{t("Access reviews")}</h2>
         {reviews.length === 0 ? (
-          <p>No access reviews.</p>
+          <p>{t("No access reviews.")}</p>
         ) : (
           <ul>
             {reviews.map((r) => (
@@ -342,21 +350,21 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                 <strong>
                   {r.space} {r.quarter}
                 </strong>
-                : {r.state}
-                {r.overdue ? " (overdue)" : ""}, due {r.due} <a href={`/v1/admin/reviews/${encodeURIComponent(r.id)}/evidence`}>Evidence for {r.space} {r.quarter}</a>
+                : {r.overdue ? t("{state} (overdue), due {due}", { state: r.state, due: r.due }) : t("{state}, due {due}", { state: r.state, due: r.due })}{" "}
+                <a href={`/v1/admin/reviews/${encodeURIComponent(r.id)}/evidence`}>{t("Evidence for {space} {quarter}", { space: r.space, quarter: r.quarter })}</a>
               </li>
             ))}
           </ul>
         )}
       </section>
       {diff && (
-        <section aria-label="Proposed manifest change">
-          <h2>Proposed manifest change</h2>
+        <section aria-label={t("Proposed manifest change")}>
+          <h2>{t("Proposed manifest change")}</h2>
           <pre className="payload">{diff.join("\n")}</pre>
         </section>
       )}
-      <section aria-label="Applied manifest">
-        <h2>Applied manifest</h2>
+      <section aria-label={t("Applied manifest")}>
+        <h2>{t("Applied manifest")}</h2>
         <pre className="payload">{manifest}</pre>
       </section>
       {status && <p role="status">{status}</p>}

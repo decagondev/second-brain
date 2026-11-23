@@ -35,6 +35,10 @@ compose() { DOCKER="$DOCKER" bash tools/selfhost/compose.sh "$@"; }
 sb() { bash tools/selfhost/sb.sh "$@"; }
 TENANT=$(val SB_TENANT) HOST=$(val SB_HOST) PORT=$(val SB_PORT) OFF=$(val SB_OFFSITE) DB=$(val SB_DATABASE)
 if [[ "$DOCKER" == *.exe ]] && command -v wslpath >/dev/null; then OFF=$(wslpath -u "$OFF"); fi
+# shellcheck source=tools/selfhost/offsite.sh
+. tools/selfhost/offsite.sh
+S3=$(off_url) # the company's bucket (SB-2303): what is kept goes there, sealed
+[ -z "$S3" ] || OFF=$S3
 SEED=$DIR/vault/api/vault/tenants/$TENANT/audit/anchor-seed
 [ -f "$SEED" ] || die "the cell's audit key isn't here ($SEED): nothing to retire, or retired already"
 # The compose project's volumes, and any other volume by its name (one made outside compose).
@@ -55,7 +59,13 @@ fi
 command -v shred >/dev/null || die "shred (coreutils) is needed to overwrite the keys"
 TS=$(date -u +%Y%m%dT%H%M%SZ)
 OUT=build/retired/$TENANT-$TS
-mkdir -p "$OUT" "$OFF/retired"
+mkdir -p "$OUT"
+[ -n "$S3" ] || mkdir -p "$OFF/retired"
+if [ -n "$S3" ]; then
+  [ -f "$DIR/recovery.pub" ] || die "SB_OFFSITE is a bucket but there is no recovery key to seal the export to"
+  # The key pair outlives build/selfhost only in this shell, for the statement's copy.
+  OFF_KEYS_JSON=$(cat "$(off_keys)") || die "the bucket's key pair isn't here ($(off_keys))"
+fi
 chmod 700 build/retired "$OUT"
 
 # 1. The audit log, anchored and exported while the cell runs, checked before anything goes.
@@ -67,7 +77,12 @@ SSL_CERT_FILE=${ca:-${SSL_CERT_FILE:-}} SB_TOKEN=$(cat "$DIR/vault/api/vault/ten
 CELLKEY=$(sb selfhost retire-statement --check --tenant "$TENANT" --export "$OUT/audit.ndjson" --anchor-seed "$SEED") ||
   die "the export doesn't verify under the cell's key, so nothing was destroyed"
 # Audit is kept for its seven years off the box, sealed like every other off-box copy.
-if [ -f "$DIR/recovery.pub" ]; then
+if [ -n "$S3" ]; then
+  sb -q backup seal --to "$DIR/recovery.pub" --out "$OUT/audit.ndjson.sealed" "$OUT/audit.ndjson"
+  off_put "$OUT/audit.ndjson.sealed" "retired/audit-$TENANT-$TS.ndjson.sealed" || die "the sealed export couldn't be copied to $S3, so nothing was destroyed"
+  rm -f "$OUT/audit.ndjson.sealed"
+  kept_audit="the audit log's export, sealed to the recovery key, at $S3/retired/audit-$TENANT-$TS.ndjson.sealed"
+elif [ -f "$DIR/recovery.pub" ]; then
   sb -q backup seal --to "$DIR/recovery.pub" --out "$OFF/retired/audit-$TENANT-$TS.ndjson.sealed" "$OUT/audit.ndjson"
   kept_audit="the audit log's export, sealed to the recovery key, at retired/audit-$TENANT-$TS.ndjson.sealed"
 else
@@ -111,7 +126,12 @@ kept=(--kept "sealed off-box copies under $OFF (database dumps, the backup job's
 if [ "$DB" = external ]; then kept+=(--kept "the company's own database, which this box used but didn't own: drop it there"); fi
 sb selfhost retire-statement --tenant "$TENANT" --host "$HOST" --export "$OUT/audit.ndjson" --cell-key "$CELLKEY" \
   "${destroyed[@]}" "${kept[@]}" --out "$OUT/statement.json" | tee "$OUT/statement.txt"
-cp "$OUT/statement.json" "$OFF/retired/statement-$TENANT-$TS.json"
+if [ -n "$S3" ]; then
+  off_put "$OUT/statement.json" "retired/statement-$TENANT-$TS.json" || echo "retire: the statement's copy didn't reach $S3; keep $OUT/statement.json" >&2
+  unset OFF_KEYS_JSON
+else
+  cp "$OUT/statement.json" "$OFF/retired/statement-$TENANT-$TS.json"
+fi
 shred -u -z -n 1 "$OUT/audit.ndjson" # its sealed copy is off the box
 key=$(sed -nE 's/^key: //p' "$OUT/statement.txt")
 cat <<EOF

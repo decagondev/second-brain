@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { AskError, search } from "./api";
 import type { ApiError, Fetch, SearchResponse } from "./api";
 import { AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
+import { errorText, t, tj, tn } from "./i18n";
 
 // Documents: search without the model (sb-ask(3), Search; SB-1701). Every result is a
 // document the asker can open now, with a quote of the source and its cite.
@@ -14,15 +15,15 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
   const id = useId();
 
   async function run(text: string) {
-    const t = text.trim();
-    if (!t || busy) return;
+    const want = text.trim();
+    if (!want || busy) return;
     setBusy(true);
     setError(undefined);
     try {
-      setRes(await search(t, fetcher, space));
+      setRes(await search(want, fetcher, space));
     } catch (e) {
       setRes(undefined);
-      setError(e instanceof AskError ? e.error : { code: "EUNAVAIL", message: "Search is unavailable right now.", trace: "", remedy: "" });
+      setError(e instanceof AskError ? e.error : { code: "EUNAVAIL", message: t("Search is unavailable right now."), trace: "", remedy: "" });
     } finally {
       setBusy(false);
     }
@@ -43,22 +44,22 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
   }
 
   return (
-    <section aria-label="Documents" className="documents">
+    <section aria-label={t("Documents")} className="documents">
       <form onSubmit={submit} className="ask" role="search">
-        <label htmlFor={id}>Search documents</label>
+        <label htmlFor={id}>{t("Search documents")}</label>
         <input id={id} type="search" value={q} maxLength={4000} onChange={(e) => setQ(e.target.value)} />
         <button type="submit" disabled={busy || q.trim() === ""}>
-          {busy ? "Searching…" : "Search"}
+          {busy ? t("Searching…") : t("Search")}
         </button>
       </form>
       <div aria-live="polite" aria-busy={busy}>
         {error && (
           <div className="error" role="alert">
-            <p>{error.message}</p>
-            {error.trace && <p>Quote trace {error.trace} to support.</p>}
+            <p>{errorText(error).message}</p>
+            {error.trace && <p>{t("Quote trace {trace} to support.", { trace: error.trace })}</p>}
           </div>
         )}
-        {res && res.results.length === 0 && <p className="notice">Nothing you can open matches this.</p>}
+        {res && res.results.length === 0 && <p className="notice">{t("Nothing you can open matches this.")}</p>}
         {res && res.results.length > 0 && (
           <ol className="results">
             {res.results.map((r) => {
@@ -68,7 +69,7 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
                 <li key={r.cite} className="result">
                   <h2 className="result-title">
                     {r.url ? (
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={`${name}, source ${r.cite}, opens in a new tab`}>
+                      <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name, cite: r.cite })}>
                         {name}
                       </a>
                     ) : (
@@ -81,14 +82,14 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
                   <p className="meta">
                     <span>{r.cite}</span>
                     {place && <span> · {place}</span>}
-                    {r.age_days !== undefined && <span> · {r.age_days === 1 ? "1 day old" : `${r.age_days} days old`}</span>}
+                    {r.age_days !== undefined && <span> · {tn(r.age_days, "{n} day old", "{n} days old")}</span>}
                     {r.owner && (
                       <span>
                         {" "}
-                        · Owner <PersonName person={r.owner} />
+                        · {tj("Owner {person}", { person: <PersonName person={r.owner} /> })}
                       </span>
                     )}
-                    {r.flags.includes("injection_suspect") && <span className="flag"> · Flagged</span>}
+                    {r.flags.includes("injection_suspect") && <span className="flag"> · {t("Flagged")}</span>}
                   </p>
                 </li>
               );
@@ -98,7 +99,7 @@ export function DocumentsView({ fetcher, space, query }: { fetcher?: Fetch; spac
         {res && <TermsView terms={res.terms} />}
         {res && res.refused > 0 && (
           <p className="refused">
-            {res.refused === 1 ? "1 document was" : `${res.refused} documents were`} not shown because you can't open them.{" "}
+            {tn(res.refused, "{n} document was not shown because you can't open it.", "{n} documents were not shown because you can't open them.")}{" "}
             <AccessRequest trace={res.trace} fetcher={fetcher} />
           </p>
         )}

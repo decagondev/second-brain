@@ -313,3 +313,9 @@ func NewKey() ([]byte, error) {
 	_, err := io.ReadFull(rand.Reader, k)
 	return k, err
 }
+
+// IsSealed is whether data starts as a sealed file does: to a recovery key, or a kit's
+// archive. It says nothing about whether it opens.
+func IsSealed(data []byte) bool {
+	return bytes.HasPrefix(data, []byte(Magic)) || bytes.HasPrefix(data, []byte(kitMagic))
+}

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import type { AskResponse, Cite, Claim, Fetch, Notice, Person, Term } from "./api";
 import { isCited, requestAccess } from "./api";
+import { msg, t, tj, tn } from "./i18n";
 
 const notices: Record<Exclude<Notice, null>, string> = {
-  no_access: "Some sources you don't have access to may answer this. Ask their owner.",
-  no_sources: "Nothing indexed answers this yet.",
-  most_uncited: "Most of this answer isn't backed by your sources.",
+  no_access: msg("Some sources you don't have access to may answer this. Ask their owner."),
+  no_sources: msg("Nothing indexed answers this yet."),
+  most_uncited: msg("Most of this answer isn't backed by your sources."),
 };
 
 // "Finance · restricted": the spaces that hold a source and its label, in words.
@@ -17,15 +18,24 @@ export function placeOf(cite: { spaces?: string[]; label?: string }): string {
 export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   const flagged = cite.flags.includes("injection_suspect");
   const place = placeOf(cite);
-  const age = cite.stale && cite.age_days !== undefined ? `${cite.age_days} days old` : "";
-  const label = `Source ${cite.cite}${cite.title ? `, ${cite.title}` : ""}${place ? `, ${place}` : ""}${age ? `, ${age}` : ""}${flagged ? ", flagged" : ""}${cite.url ? ", opens in a new tab" : ", shows the answer's trace"}`;
+  const age = cite.stale && cite.age_days !== undefined ? tn(cite.age_days, "{n} day old", "{n} days old") : "";
+  const label = [
+    t("Source {cite}", { cite: cite.cite }),
+    cite.title ?? "",
+    place,
+    age,
+    flagged ? t("flagged") : "",
+    cite.url ? t("opens in a new tab") : t("shows the answer's trace"),
+  ]
+    .filter((x) => x !== "")
+    .join(", ");
   const href = cite.url ?? `/v1/traces/${encodeURIComponent(trace)}`;
   return (
     <a className="chip" href={href} target={cite.url ? "_blank" : undefined} rel={cite.url ? "noopener noreferrer" : undefined} aria-label={label}>
       <span>{cite.title ?? cite.cite}</span>
       {place && <span className="place">{place}</span>}
       {age && <span className="place">{age}</span>}
-      {flagged && <span className="flag">Flagged</span>}
+      {flagged && <span className="flag">{t("Flagged")}</span>}
     </a>
   );
 }
@@ -33,8 +43,8 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
 export function ClaimView({ claim, trace }: { claim: Claim; trace: string }) {
   if (!isCited(claim)) {
     return (
-      <li className="claim uncited" title="No source you can open supports this.">
-        <span className="badge">Uncited</span> <span>{claim.text}</span>
+      <li className="claim uncited" title={t("No source you can open supports this.")}>
+        <span className="badge">{t("Uncited")}</span> <span>{claim.text}</span>
       </li>
     );
   }
@@ -77,16 +87,18 @@ export function PeopleView({ answer }: { answer: AskResponse }) {
     return names;
   };
   return (
-    <ul className="people" aria-label="Who to ask">
+    <ul className="people" aria-label={t("Who to ask")}>
       {people.map((p) => (
         <li key={p.email}>
-          Ask <PersonName person={p} />, owner of{" "}
-          {owned(p.email).map((n, i) => (
-            <span key={n}>
-              {i > 0 && ", "}
-              <em>{n}</em>
-            </span>
-          ))}
+          {tj("Ask {person}, owner of {documents}", {
+            person: <PersonName person={p} />,
+            documents: owned(p.email).map((n, i) => (
+              <span key={n}>
+                {i > 0 && ", "}
+                <em>{n}</em>
+              </span>
+            )),
+          })}
         </li>
       ))}
     </ul>
@@ -98,14 +110,14 @@ export function TermsView({ terms }: { terms?: Term[] }) {
   if (!terms || terms.length === 0) return null;
   return (
     <p className="terms">
-      Read with this space's glossary:{" "}
-      {terms.map((t, i) => (
-        <span key={t.term}>
-          {i > 0 && "; "}
-          <abbr title={t.means}>{t.term}</abbr> means {t.means}
-        </span>
-      ))}
-      .
+      {tj("Read with this space's glossary: {terms}.", {
+        terms: terms.map((x, i) => (
+          <span key={x.term}>
+            {i > 0 && "; "}
+            {tj("{term} means {means}", { term: <abbr title={x.means}>{x.term}</abbr> }, { means: x.means })}
+          </span>
+        )),
+      })}
     </p>
   );
 }
@@ -115,11 +127,11 @@ export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fet
   const [state, setState] = useState<"idle" | "busy" | "failed" | { sent: number; already: number; no_owner: number }>("idle");
   if (typeof state === "object") {
     const parts = [
-      state.sent > 0 ? `asked ${state.sent === 1 ? "1 owner" : `${state.sent} owners`}` : "",
-      state.already > 0 ? `${state.already} already asked this week` : "",
-      state.no_owner > 0 ? `${state.no_owner} with no owner to ask` : "",
+      state.sent > 0 ? tn(state.sent, "asked {n} owner", "asked {n} owners") : "",
+      state.already > 0 ? t("{n} already asked this week", { n: state.already }) : "",
+      state.no_owner > 0 ? t("{n} with no owner to ask", { n: state.no_owner }) : "",
     ].filter((p) => p !== "");
-    return <span role="status">{parts.length > 0 ? `Done: ${parts.join(", ")}.` : "There was nobody to ask."}</span>;
+    return <span role="status">{parts.length > 0 ? t("Done: {parts}.", { parts: parts.join(", ") }) : t("There was nobody to ask.")}</span>;
   }
   return (
     <>
@@ -135,17 +147,21 @@ export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fet
           }
         }}
       >
-        Ask the owners for access
+        {t("Ask the owners for access")}
       </button>
-      {state === "failed" && <span role="alert"> The owners couldn't be asked just now.</span>}
+      {state === "failed" && <span role="alert"> {t("The owners couldn't be asked just now.")}</span>}
     </>
   );
 }
 
 export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?: Fetch }) {
   return (
-    <article className="answer" aria-label="Answer">
-      {answer.notice && <p className="notice" role="note">{notices[answer.notice]}</p>}
+    <article className="answer" aria-label={t("Answer")}>
+      {answer.notice && (
+        <p className="notice" role="note">
+          {t(notices[answer.notice])}
+        </p>
+      )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (
           <ClaimView key={i} claim={c} trace={answer.trace} />
@@ -155,11 +171,11 @@ export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?:
       <TermsView terms={answer.terms} />
       {answer.refused > 0 && (
         <p className="refused">
-          {answer.refused === 1 ? "1 source was" : `${answer.refused} sources were`} not shown because you can't open them.{" "}
+          {tn(answer.refused, "{n} source was not shown because you can't open it.", "{n} sources were not shown because you can't open them.")}{" "}
           <AccessRequest trace={answer.trace} fetcher={fetcher} />
         </p>
       )}
-      <p className="trace">Trace {answer.trace}</p>
+      <p className="trace">{t("Trace {trace}", { trace: answer.trace })}</p>
     </article>
   );
 }

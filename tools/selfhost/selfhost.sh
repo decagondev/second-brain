@@ -88,7 +88,7 @@ if [ -n "$DEMO" ]; then
   SB_OFFSITE=${SB_OFFSITE:-$DIR/.offsite}
 else
   [ -f "${SB_MANIFEST:-}" ] || die "SB_MANIFEST must name the tenant's manifest (sb-tenant(5))"
-  [ -n "$SB_OFFSITE" ] && [ -d "$SB_OFFSITE" ] || die "SB_OFFSITE must name a directory on another machine, mounted here (the off-box backup copy)"
+  [[ "$SB_OFFSITE" == s3://* ]] || { [ -n "$SB_OFFSITE" ] && [ -d "$SB_OFFSITE" ]; } || die "SB_OFFSITE must name a directory on another machine, mounted here, or s3://BUCKET/PREFIX (the off-box backup copy)"
   [ -n "${SB_RELEASE_STORE:-}" ] && [ -n "${SB_RELEASE_TRUSTED:-}" ] || die "SB_RELEASE_STORE and SB_RELEASE_TRUSTED name where releases come from and who signs them"
 fi
 # The outbound proxy (SB-1806): a URL without credentials, or a file holding one with them.
@@ -97,6 +97,16 @@ if [ -n "$SB_HTTPS_PROXY" ]; then sbcli selfhost check-proxy "$SB_HTTPS_PROXY" >
 if [ -n "$SB_HTTPS_PROXY_FILE" ]; then
   [ -f "$SB_HTTPS_PROXY_FILE" ] || die "SB_HTTPS_PROXY_FILE ($SB_HTTPS_PROXY_FILE) isn't a file"
   sbcli selfhost check-proxy --file "$SB_HTTPS_PROXY_FILE" >/dev/null || die "SB_HTTPS_PROXY_FILE is refused (above)"
+fi
+# The company's bucket for the off-box copies (SB-2303): sealed always, its key pair in a
+# file, checked before anything changes.
+OFFSITE_S3=
+if [[ "$SB_OFFSITE" == s3://* ]]; then
+  OFFSITE_S3=$SB_OFFSITE
+  [ "$SB_SEAL" = on ] || die "SB_OFFSITE is a bucket: nothing unsealed leaves the box, so SB_SEAL=off is refused"
+  [ -f "${SB_OFFSITE_KEY_FILE:-}" ] || die "SB_OFFSITE=s3://… needs SB_OFFSITE_KEY_FILE, a file holding the bucket's key pair"
+  sbcli backup check --to "$OFFSITE_S3" --keys "$SB_OFFSITE_KEY_FILE" >/dev/null || die "the bucket $OFFSITE_S3 doesn't answer with that key pair (sb backup check)"
+  SB_OFFSITE=$DIR/.offsite-s3 # the job's mount point, unused: the copy goes to the bucket
 fi
 # The database (SB-1807): the bundled one, or the company's on another machine.
 case "$SB_DATABASE" in
@@ -159,6 +169,10 @@ if [ ! -f "$DIR/worm-secret" ]; then
   printf '%s' "$wormsecret" >"$DIR/worm-secret"
   put jobs worm "$(printf '{"access_key":"sb-worm","secret_key":"%s"}' "$wormsecret")"
 fi
+
+# The bucket's key pair (SB-2303): the jobs service's vault only, read by sb on the host.
+rm -f "$V/jobs/vault/tenants/$SB_TENANT/offsite"
+if [ -n "$OFFSITE_S3" ]; then put jobs offsite "$(tr -d '\r' <"$SB_OFFSITE_KEY_FILE")"; fi
 
 # The recovery key (SB-1901): made once, its public half kept here to seal every off-box
 # copy to; the private half waits for the recovery kit (install.sh --recovery-kit), which
@@ -234,6 +248,12 @@ if [ -f "$DIR/model.json" ]; then
 fi
 CONNECTORS='{}'
 if [ -n "$SB_SHARE" ]; then CONNECTORS='{ "docs": { "base": "file:///srv/share" } }'; fi
+# The backup's off-box copy: the mounted directory, or the bucket (always sealed).
+if [ -n "$OFFSITE_S3" ]; then
+  OFFSITE_COPY="{ \"s3\": \"$OFFSITE_S3\", \"offsite\": true, \"seal\": \"$SEAL\" }"
+else
+  OFFSITE_COPY="{ \"dir\": \"/srv/backup-offsite\", \"media\": \"disk\", \"offsite\": true${SEAL:+, \"seal\": \"$SEAL\"} }"
+fi
 cat >"$DIR/cell.json" <<JSON
 {
   "tenant": "$SB_TENANT",
@@ -253,7 +273,7 @@ cat >"$DIR/cell.json" <<JSON
   "backups": [
     { "dir": "/var/lib/sb/state/backups", "media": "disk" },
     { "worm": true },
-    { "dir": "/srv/backup-offsite", "media": "disk", "offsite": true${SEAL:+, \"seal\": \"$SEAL\"} }
+    $OFFSITE_COPY
   ],
   "custody": { "tenant": true, "retain": $RETAIN },
   "release": { "store": "$STORE", "registry": "$REGISTRY", "trusted": "$TRUSTED", "deploy": { "kind": "local" } },
@@ -292,6 +312,7 @@ profiles=$SB_IDP
   echo "SB_TENANT=$SB_TENANT"; echo "SB_HOST=$SB_HOST"; echo "SB_PORT=$SB_PORT"; echo "SB_HTTP_PORT=$SB_HTTP_PORT"
   echo "SB_BIND=$SB_BIND"; echo "SB_BASE_URL=$BASE"; echo "SB_ISSUER=$ISSUER"
   echo "SB_SHARE=$(hostpath "$(abs "${SB_SHARE:-$DIR/empty-share}")")"; echo "SB_OFFSITE=$(hostpath "$(abs "$SB_OFFSITE")")"
+  [ -z "$OFFSITE_S3" ] || echo "SB_OFFSITE_S3=$OFFSITE_S3"
   [ -z "${SB_NOTES:-}" ] || echo "SB_NOTES=$(hostpath "$(abs "$SB_NOTES")")"
   echo "SB_PROFILES=$profiles"
   echo "SB_DATABASE=$SB_DATABASE"

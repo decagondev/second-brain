@@ -49,7 +49,13 @@ out=$(bash tools/selfhost/sb.sh recovery split --tenant "$TENANT" --out "$DIR/ki
 kit=$(printf '%s\n' "$out" | sed -nE 's/^(kit_[0-9a-f]+):.*/\1/p' | head -1)
 [ -n "$kit" ] || die "the kit wasn't made"
 off=$(sed -nE 's/^SB_OFFSITE=//p' "$ENV" | tr -d '\r')
-if [ -n "$off" ] && [ -d "$off" ]; then
+# shellcheck source=tools/selfhost/offsite.sh
+. tools/selfhost/offsite.sh
+if [ -n "$(off_url)" ]; then # the company's bucket (SB-2303): the sealed archive and its record
+  off_put "$DIR/kit/$kit.sealed" "kit/$kit.sealed" && off_put "$DIR/kit/$kit.json" "kit/$kit.json" ||
+    die "the kit couldn't be copied to $(off_url); the recovery key's private half stays until it is"
+  off=$(off_url)
+elif [ -n "$off" ] && [ -d "$off" ]; then
   mkdir -p "$off/kit"
   cp "$DIR/kit/$kit.sealed" "$DIR/kit/$kit.json" "$off/kit/"
 fi

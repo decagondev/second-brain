@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { changes, startHere } from "./api";
 import type { Fetch, SearchResult } from "./api";
 import { PersonName } from "./Answer";
+import { t, tj, tn } from "./i18n";
 
 // Start here: a space's reading list, each item one the member can open now (SB-1706).
 export function StartHere({ space, fetcher }: { space: string; fetcher?: Fetch }) {
@@ -15,13 +16,13 @@ export function StartHere({ space, fetcher }: { space: string; fetcher?: Fetch }
   }, [space, fetcher]);
   if (list.items.length === 0 && list.hidden === 0) return null;
   return (
-    <section aria-label="Start here" className="start">
-      <h2>Start here</h2>
+    <section aria-label={t("Start here")} className="start">
+      <h2>{t("Start here")}</h2>
       <ol className="results">
         {list.items.map((r) => (
           <li key={r.cite}>
             {r.url ? (
-              <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={`${r.title ?? r.cite}, source ${r.cite}, opens in a new tab`}>
+              <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: r.title ?? r.cite, cite: r.cite })}>
                 {r.title ?? r.cite}
               </a>
             ) : (
@@ -30,13 +31,13 @@ export function StartHere({ space, fetcher }: { space: string; fetcher?: Fetch }
             {r.owner && (
               <span className="meta">
                 {" "}
-                · Owner <PersonName person={r.owner} />
+                · {tj("Owner {person}", { person: <PersonName person={r.owner} /> })}
               </span>
             )}
           </li>
         ))}
       </ol>
-      {list.hidden > 0 && <p className="refused">{list.hidden === 1 ? "1 item is" : `${list.hidden} items are`} not shown because you can't open them.</p>}
+      {list.hidden > 0 && <p className="refused">{tn(list.hidden, "{n} item is not shown because you can't open it.", "{n} items are not shown because you can't open them.")}</p>}
     </section>
   );
 }
@@ -54,19 +55,19 @@ export function WhatChanged({ space, fetcher }: { space?: string; fetcher?: Fetc
   }, [space, fetcher]);
   if (items.length === 0) return null;
   return (
-    <section aria-label="What changed this week" className="start">
-      <h2>What changed this week</h2>
+    <section aria-label={t("What changed this week")} className="start">
+      <h2>{t("What changed this week")}</h2>
       <ul className="results">
         {items.map((r) => (
           <li key={r.cite}>
             {r.url ? (
-              <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={`${r.title ?? r.cite}, source ${r.cite}, opens in a new tab`}>
+              <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: r.title ?? r.cite, cite: r.cite })}>
                 {r.title ?? r.cite}
               </a>
             ) : (
               <span>{r.title ?? r.cite}</span>
             )}
-            {r.age_days !== undefined && <span className="meta"> · {r.age_days === 0 ? "today" : r.age_days === 1 ? "1 day ago" : `${r.age_days} days ago`}</span>}
+            {r.age_days !== undefined && <span className="meta"> · {r.age_days === 0 ? t("today") : tn(r.age_days, "{n} day ago", "{n} days ago")}</span>}
           </li>
         ))}
       </ul>

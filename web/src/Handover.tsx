@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { AskError, briefable, handover } from "./api";
 import type { ApiError, Briefable, Claim, Fetch, HandoverBrief } from "./api";
 import { ClaimView } from "./Answer";
+import { ErrorBox } from "./ErrorBox";
+import { t, tn } from "./i18n";
 
 // The handover brief (sb-agents(7), Handover; SB-2002): a person's documents that the asker
 // can open now, cited and grouped by where they live, and a count of the ones they can't.
@@ -16,7 +18,7 @@ export function HandoverView({ fetcher }: { fetcher?: Fetch }) {
   const hintId = useId();
 
   const fail = (err: unknown) =>
-    setError(err instanceof AskError ? err.error : { code: "EUNAVAIL", message: "Something went wrong.", trace: "", remedy: "Try again." });
+    setError(err instanceof AskError ? err.error : { code: "EUNAVAIL", message: t("Something went wrong."), trace: "", remedy: t("Try again.") });
 
   async function brief1(id: string) {
     setBusy(true);
@@ -57,33 +59,27 @@ export function HandoverView({ fetcher }: { fetcher?: Fetch }) {
   }
 
   return (
-    <section aria-label="Handover" className="handover">
-      <h2>Handover</h2>
-      <p>For someone leaving or changing role: a brief of the documents they own that you can open.</p>
+    <section aria-label={t("Handover")} className="handover">
+      <h2>{t("Handover")}</h2>
+      <p>{t("For someone leaving or changing role: a brief of the documents they own that you can open.")}</p>
       <form onSubmit={submit}>
-        <label htmlFor={inputId}>Person</label>
+        <label htmlFor={inputId}>{t("Person")}</label>
         <input id={inputId} aria-describedby={hintId} value={person} maxLength={80} onChange={(e) => setPerson(e.target.value)} />
         <p id={hintId} className="meta">
-          Their name, email or user id. You can brief yourself, someone you manage, or a member of a space you steward.
+          {t("Their name, email or user id. You can brief yourself, someone you manage, or a member of a space you steward.")}
         </p>
         <button type="submit" disabled={busy || person.trim() === ""}>
-          {busy ? "Briefing…" : "Brief"}
+          {busy ? t("Briefing…") : t("Brief")}
         </button>
       </form>
-      {error && (
-        <div className="error" role="alert">
-          <p>{error.message}</p>
-          {error.remedy && error.remedy.toLowerCase() !== error.message.toLowerCase() && <p>{error.remedy}</p>}
-          {error.trace && <p>Quote trace {error.trace} to support.</p>}
-        </div>
-      )}
-      {choices && choices.length === 0 && <p className="notice">No one you may brief matches that.</p>}
+      {error && <ErrorBox error={error} />}
+      {choices && choices.length === 0 && <p className="notice">{t("No one you may brief matches that.")}</p>}
       {choices && choices.length > 0 && (
-        <ul className="saved-list" aria-label="People you may brief">
+        <ul className="saved-list" aria-label={t("People you may brief")}>
           {choices.map((c) => (
             <li key={c.id}>
               <button type="button" onClick={() => brief1(c.id)}>
-                Brief {c.name}
+                {t("Brief {name}", { name: c.name })}
                 {c.email !== c.name ? ` (${c.email})` : ""}
                 {c.title ? `, ${c.title}` : ""}
               </button>
@@ -103,10 +99,10 @@ function BriefView({ brief }: { brief: HandoverBrief }) {
     groups.set(where, [...(groups.get(where) ?? []), c]);
   }
   return (
-    <article className="answer" aria-label={`Handover brief of ${brief.person}`} aria-live="polite">
+    <article className="answer" aria-label={t("Handover brief of {person}", { person: brief.person })} aria-live="polite">
       {[...groups].map(([where, claims]) => (
-        <section key={where} aria-label={where || "Other documents"}>
-          <h3>{where || "Other documents"}</h3>
+        <section key={where} aria-label={where || t("Other documents")}>
+          <h3>{where || t("Other documents")}</h3>
           <ul className="claims">
             {claims.map((c, i) => (
               <ClaimView key={i} claim={c} trace={brief.trace} />
@@ -115,16 +111,19 @@ function BriefView({ brief }: { brief: HandoverBrief }) {
         </section>
       ))}
       {brief.dropped > 0 && (
-        <p className="meta">{brief.dropped === 1 ? "1 line was" : `${brief.dropped} lines were`} left out because no document supported it.</p>
+        <p className="meta">{tn(brief.dropped, "{n} line was left out because no document supported it.", "{n} lines were left out because no document supported them.")}</p>
       )}
       {brief.hidden > 0 && (
         <p className="refused" role="note">
-          {brief.hidden === 1 ? "1 of their documents is" : `${brief.hidden} of their documents are`} not in this brief because you can't open{" "}
-          {brief.hidden === 1 ? "it" : "them"}. Ask the owner of each source to move access to whoever takes the work over before {brief.person} leaves:
-          once their account is removed, their access goes with it.
+          {tn(
+            brief.hidden,
+            "{n} of their documents is not in this brief because you can't open it. Ask the owner of each source to move access to whoever takes the work over before {person} leaves: once their account is removed, their access goes with it.",
+            "{n} of their documents are not in this brief because you can't open them. Ask the owner of each source to move access to whoever takes the work over before {person} leaves: once their account is removed, their access goes with it.",
+            { person: brief.person },
+          )}
         </p>
       )}
-      <p className="trace">Trace {brief.trace}</p>
+      <p className="trace">{t("Trace {trace}", { trace: brief.trace })}</p>
     </article>
   );
 }

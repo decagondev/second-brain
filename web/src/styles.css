@@ -75,3 +75,14 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .turn-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
 .turn-tools input, .documents input { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); }
 .shared { border: 2px solid var(--accent); padding: 0.5rem 0.75rem; }
+
+/* The language picker (SB-2301), above every screen. */
+.language {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 48rem;
+  margin: 0.5rem auto 0;
+  padding: 0 1rem;
+}

@@ -12,6 +12,8 @@ import (
 	"os"
 	"strings"
 
+	"example.com/second-brain/internal/adapters/audit/syslogtls"
+	"example.com/second-brain/internal/adapters/backup/s3"
 	"example.com/second-brain/internal/core/offsite"
 )
 
@@ -65,6 +67,11 @@ type Config struct {
 		ReportWebhook string `json:"report_webhook"`
 	} `json:"alerts"`
 	Backups []Backup `json:"backups"`
+	// Audit.Stream forwards every audit row to the company's SIEM, syslog+tls://HOST:PORT
+	// (sb-audit(7), Streaming to a SIEM; SB-2302).
+	Audit struct {
+		Stream string `json:"stream"`
+	} `json:"audit"`
 	Custody struct {
 		Tenant bool     `json:"tenant"`
 		Retain []string `json:"retain"`
@@ -107,9 +114,13 @@ type Backup struct {
 	// Worm, instead of dir and media, is the copy in the write-once store (worm): an
 	// object store, off the box when its endpoint is (SB-1603).
 	Worm bool `json:"worm"`
-	// Seal, on a dir copy, is the recovery key's public half (sb-recovery-pub:…): every
-	// object is sealed to it before it is written there, as NAME.sealed (SB-1901).
+	// Seal, on a dir or s3 copy, is the recovery key's public half (sb-recovery-pub:…):
+	// every object is sealed to it before it is written there, as NAME.sealed (SB-1901).
 	Seal string `json:"seal"`
+	// S3, instead of dir and media, is a company bucket with no object lock,
+	// s3://BUCKET/PREFIX, its key pair at vault://tenants/TENANT/offsite (SB-2303). It
+	// must be sealed: nothing unsealed leaves the box.
+	S3 string `json:"s3"`
 }
 
 // WormConfig is the write-once store for anchors and a backup copy (sb-audit(7), WORM
@@ -179,6 +190,11 @@ func Parse(b []byte) (Config, error) {
 			return Config{}, fmt.Errorf("%w: %s must be an https URL", ErrConfig, field)
 		}
 	}
+	if c.Audit.Stream != "" {
+		if _, err := syslogtls.Parse(c.Audit.Stream); err != nil {
+			return Config{}, fmt.Errorf("%w: %v", ErrConfig, err)
+		}
+	}
 	if err := c.checkMattermost(); err != nil {
 		return Config{}, err
 	}
@@ -190,22 +206,40 @@ func Parse(b []byte) (Config, error) {
 			return Config{}, fmt.Errorf("%w: worm needs an http(s) endpoint and a bucket", ErrConfig)
 		}
 	}
+	if err := c.checkBackups(); err != nil {
+		return Config{}, err
+	}
+	return c, nil
+}
+
+// checkBackups refuses a backups[] copy that is none of dir, s3 or worm, or is two of them,
+// or an s3 copy that isn't sealed (SB-2303).
+func (c Config) checkBackups() error {
 	for i, b := range c.Backups {
 		switch {
 		case b.Worm && c.Worm == (WormConfig{}):
-			return Config{}, fmt.Errorf("%w: backups[%d] is the worm copy, but there is no worm store", ErrConfig, i)
-		case !b.Worm && (b.Dir == "" || b.Media == ""):
-			return Config{}, fmt.Errorf("%w: backups[%d] needs dir and media, or worm", ErrConfig, i)
+			return fmt.Errorf("%w: backups[%d] is the worm copy, but there is no worm store", ErrConfig, i)
+		case b.S3 != "" && (b.Worm || b.Dir != "" || b.Media != ""):
+			return fmt.Errorf("%w: backups[%d]: s3 is a copy of its own, without dir, media or worm", ErrConfig, i)
+		case b.S3 != "" && b.Seal == "":
+			return fmt.Errorf("%w: backups[%d]: an s3 copy leaves the box, so it needs seal", ErrConfig, i)
+		case b.S3 == "" && !b.Worm && (b.Dir == "" || b.Media == ""):
+			return fmt.Errorf("%w: backups[%d] needs dir and media, s3, or worm", ErrConfig, i)
 		case b.Seal != "" && b.Worm:
-			return Config{}, fmt.Errorf("%w: backups[%d]: seal is for a dir copy", ErrConfig, i)
+			return fmt.Errorf("%w: backups[%d]: seal is for a dir or s3 copy", ErrConfig, i)
+		}
+		if b.S3 != "" {
+			if _, _, err := s3.URL(b.S3); err != nil {
+				return fmt.Errorf("%w: backups[%d].s3: %v", ErrConfig, i, err)
+			}
 		}
 		if b.Seal != "" {
 			if _, err := offsite.ParsePublic(b.Seal); err != nil {
-				return Config{}, fmt.Errorf("%w: backups[%d].seal: %v", ErrConfig, i, err)
+				return fmt.Errorf("%w: backups[%d].seal: %v", ErrConfig, i, err)
 			}
 		}
 	}
-	return c, nil
+	return nil
 }
 
 func sorted(xs []string) []string {

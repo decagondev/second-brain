@@ -445,6 +445,11 @@ func TestLAW02_ExternalDatabaseIsVerified(t *testing.T) {
 	Check(t, "LAW-02", runs, func(r *rand.Rand) error { return law02DSN(r, realDSNCheck) })
 }
 
+func TestLAW07_NothingUnsealedReachesTheBucket(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-07", 30, func(r *rand.Rand) error { return law07Offsite(r, RealPush{}, dir) })
+}
+
 func TestLAW11_OffBoxCopiesAreSealed(t *testing.T) {
 	Check(t, "LAW-11", 40, func(r *rand.Rand) error { return law11Sealed(r, realSeal) })
 }
@@ -546,4 +551,8 @@ func TestLAW01_AskingForAccessTellsTheAskerOnlyCounts(t *testing.T) {
 
 func TestLAW07_AnAccessRequestNeverCarriesTheQuestion(t *testing.T) {
 	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law01Access(r, RealAccess{}) })
+}
+
+func TestLAW11_TheSIEMGetsEveryRowInOrder(t *testing.T) {
+	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11Stream(r, RealStream{}) })
 }

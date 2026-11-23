@@ -69,12 +69,16 @@ type Disk struct {
 	UsedPct float64 `json:"used_pct"`
 }
 
-// Offsite is the off-box backup directory.
+// Offsite is the off-box backup directory, or the bucket (SB-2303).
 type Offsite struct {
 	Path     string `json:"path"`
 	Mounted  bool   `json:"mounted"`
 	Writable bool   `json:"writable"`
 	OnRoot   bool   `json:"on_root"`
+	// S3 is an s3:// bucket, and Answer what it said to the key pair (sb backup check):
+	// ok, refused or unreachable.
+	S3     bool   `json:"s3,omitempty"`
+	Answer string `json:"answer,omitempty"`
 }
 
 // Facts are what the host step saw. A nil pointer or an empty list is a fact it couldn't
@@ -225,6 +229,12 @@ func checkStorage(f Facts, now time.Time, add adder) {
 	switch o := f.Offsite; {
 	case o == nil:
 		add("offsite", Unknown, "the off-box directory couldn't be checked", "findmnt -T $SB_OFFSITE")
+	case o.S3 && o.Answer == "ok":
+		add("offsite", Pass, o.Path+" answers with the key pair", "")
+	case o.S3 && o.Answer == "refused":
+		add("offsite", Fail, o.Path+" refuses the key pair, or has no such bucket", "fix the bucket or SB_OFFSITE_KEY_FILE, then install.sh CONFIG")
+	case o.S3:
+		add("offsite", Unknown, o.Path+" couldn't be reached", "sb backup check --to "+o.Path+" --keys build/selfhost/vault/jobs/vault/tenants/TENANT/offsite")
 	case !o.Mounted || o.OnRoot:
 		add("offsite", Fail, o.Path+" is on this machine's root disk, not another machine", "mount the other machine's directory at "+o.Path)
 	case !o.Writable:

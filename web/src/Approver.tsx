@@ -3,8 +3,9 @@ import type { Fetch } from "./api";
 import { AskError } from "./api";
 import type { ActionView } from "./actions";
 import { approveAction, getAction, rejectAction } from "./actions";
+import { errorText, t } from "./i18n";
 
-const show = (v: unknown) => (v === null || v === undefined ? "(none)" : typeof v === "string" ? v : JSON.stringify(v));
+const show = (v: unknown) => (v === null || v === undefined ? t("(none)") : typeof v === "string" ? v : JSON.stringify(v));
 
 // The approver view (sb-actions(3), The approver view; SB-407). It echoes the hash it was
 // shown, so a payload that changed after loading is refused, never approved unseen.
@@ -18,7 +19,7 @@ export function ApproverView({ id, fetcher }: { id: string; fetcher?: Fetch }) {
   useEffect(() => {
     getAction(id, fetcher)
       .then(setAction)
-      .catch((e) => setError(e instanceof AskError ? e.error.message : "This action couldn't be loaded."));
+      .catch((e) => setError(e instanceof AskError ? errorText(e.error).message : t("This action couldn't be loaded.")));
   }, [id, fetcher]);
 
   async function decide(kind: "approve" | "reject") {
@@ -29,7 +30,10 @@ export function ApproverView({ id, fetcher }: { id: string; fetcher?: Fetch }) {
       setAction({ ...next, diff: action.diff });
       setError(undefined);
     } catch (e) {
-      setError(e instanceof AskError ? `${e.error.message} ${e.error.remedy}` : "That didn't work.");
+      if (e instanceof AskError) {
+        const x = errorText(e.error);
+        setError(`${x.message} ${x.remedy}`.trim());
+      } else setError(t("That didn't work."));
     } finally {
       setBusy(false);
     }
@@ -38,8 +42,8 @@ export function ApproverView({ id, fetcher }: { id: string; fetcher?: Fetch }) {
   if (!action) {
     return (
       <main>
-        <h1>Approval</h1>
-        {error ? <p role="alert">{error}</p> : <p>Loading…</p>}
+        <h1>{t("Approval")}</h1>
+        {error ? <p role="alert">{error}</p> : <p>{t("Loading…")}</p>}
       </main>
     );
   }
@@ -47,40 +51,40 @@ export function ApproverView({ id, fetcher }: { id: string; fetcher?: Fetch }) {
   const pending = action.state === "PendingApproval";
   return (
     <main>
-      <h1>Approve {action.workflow}</h1>
+      <h1>{t("Approve {workflow}", { workflow: action.workflow })}</h1>
       <dl className="action-facts">
-        <dt>Target system</dt>
+        <dt>{t("Target system")}</dt>
         <dd>{system}</dd>
-        <dt>Target</dt>
+        <dt>{t("Target")}</dt>
         <dd>{object}</dd>
-        <dt>Requested by</dt>
+        <dt>{t("Requested by")}</dt>
         <dd>{action.requester}</dd>
-        <dt>Policy reason</dt>
-        <dd>{action.policy_reason ?? "(none)"}</dd>
-        <dt>Expires</dt>
-        <dd>{action.expires_at ?? "(none)"}</dd>
-        <dt>State</dt>
+        <dt>{t("Policy reason")}</dt>
+        <dd>{action.policy_reason ?? t("(none)")}</dd>
+        <dt>{t("Expires")}</dt>
+        <dd>{action.expires_at ?? t("(none)")}</dd>
+        <dt>{t("State")}</dt>
         <dd>{action.state}</dd>
-        <dt>Payload hash</dt>
+        <dt>{t("Payload hash")}</dt>
         <dd>
           <code>{action.payload_sha256}</code>
         </dd>
       </dl>
-      <h2>Exact payload</h2>
+      <h2>{t("Exact payload")}</h2>
       <pre className="payload">{JSON.stringify(action.payload, null, 2)}</pre>
-      <h2>Changes</h2>
+      <h2>{t("Changes")}</h2>
       {action.diff === null ? (
-        <p>The target's current state can't be read, so there is no diff. Check the payload above.</p>
+        <p>{t("The target's current state can't be read, so there is no diff. Check the payload above.")}</p>
       ) : action.diff.length === 0 ? (
-        <p>No field changes.</p>
+        <p>{t("No field changes.")}</p>
       ) : (
         <table className="diff">
-          <caption className="visually-hidden">Fields that change</caption>
+          <caption className="visually-hidden">{t("Fields that change")}</caption>
           <thead>
             <tr>
-              <th scope="col">Field</th>
-              <th scope="col">Now</th>
-              <th scope="col">After approval</th>
+              <th scope="col">{t("Field")}</th>
+              <th scope="col">{t("Now")}</th>
+              <th scope="col">{t("After approval")}</th>
             </tr>
           </thead>
           <tbody>
@@ -99,20 +103,20 @@ export function ApproverView({ id, fetcher }: { id: string; fetcher?: Fetch }) {
         </table>
       )}
       {pending && (
-        <div className="decide" role="group" aria-label="Decision">
-          <label htmlFor={noteId}>Note (optional)</label>
+        <div className="decide" role="group" aria-label={t("Decision")}>
+          <label htmlFor={noteId}>{t("Note (optional)")}</label>
           <textarea id={noteId} value={note} maxLength={2000} rows={2} onChange={(e) => setNote(e.target.value)} />
           <button type="button" disabled={busy} onClick={() => decide("approve")}>
-            Approve this payload
+            {t("Approve this payload")}
           </button>
           <button type="button" disabled={busy} onClick={() => decide("reject")}>
-            Reject
+            {t("Reject")}
           </button>
         </div>
       )}
-      {action.receipt && <p role="status">Ran. Receipt {action.receipt}.</p>}
-      {action.state === "DidNotRun" && <p role="status">Did not run: {action.reason}</p>}
-      {action.state === "Rejected" && <p role="status">Rejected.</p>}
+      {action.receipt && <p role="status">{t("Ran. Receipt {receipt}.", { receipt: action.receipt })}</p>}
+      {action.state === "DidNotRun" && <p role="status">{t("Did not run: {reason}", { reason: action.reason ?? "" })}</p>}
+      {action.state === "Rejected" && <p role="status">{t("Rejected.")}</p>}
       {error && <p role="alert">{error}</p>}
     </main>
   );

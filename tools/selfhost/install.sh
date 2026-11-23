@@ -68,9 +68,17 @@ for t in curl sha256sum base64; do command -v $t >/dev/null || die "$t is needed
 set -a; . "$CONFIG"; set +a
 [ "${SB_IDP:-bundled}" != dev ] || die "SB_IDP=dev has no passwords; an install uses company or bundled"
 [ "${SB_TLS:-internal}" != internal ] || echo "install: SB_TLS=internal: every browser must trust Caddy's own CA; use acme or files for people" >&2
-[ -d "${SB_OFFSITE:-/nonexistent}" ] || die "SB_OFFSITE ($SB_OFFSITE) must be a mounted directory on another machine"
+if [[ "${SB_OFFSITE:-}" == s3://* ]]; then # the company's bucket (SB-2303)
+  [ "${SB_SEAL:-on}" = on ] || die "SB_OFFSITE is a bucket: nothing unsealed leaves the box, so SB_SEAL=off is refused"
+  [ -f "${SB_OFFSITE_KEY_FILE:-}" ] || die "SB_OFFSITE=s3://… needs SB_OFFSITE_KEY_FILE, a file holding the bucket's key pair"
+  o=$(bash tools/selfhost/sb.sh backup check --to "$SB_OFFSITE" --keys "$SB_OFFSITE_KEY_FILE") || die "the bucket doesn't answer with that key pair: $o"
+  offsite="$o"
+else
+[ -d "${SB_OFFSITE:-/nonexistent}" ] || die "SB_OFFSITE ($SB_OFFSITE) must be a mounted directory on another machine, or s3://BUCKET/PREFIX"
+offsite="$SB_OFFSITE"
 if [ "$(findmnt -n -o TARGET -T "$SB_OFFSITE" 2>/dev/null || echo /)" = / ]; then
   echo "install: SB_OFFSITE ($SB_OFFSITE) is on this machine's root disk; the off-box copy must be on another machine" >&2
+fi
 fi
 # The outbound proxy (SB-1806) and the database (SB-1807), checked and reported.
 [ -z "${SB_HTTPS_PROXY:-}" ] || [ -z "${SB_HTTPS_PROXY_FILE:-}" ] || die "set SB_HTTPS_PROXY or SB_HTTPS_PROXY_FILE, not both"
@@ -93,6 +101,7 @@ fi
 if [ -n "$CHECK" ]; then
   echo "install: outbound proxy: $proxy"
   echo "install: database: $database"
+  echo "install: off-box copies: $offsite"
   echo "install: the machine and $CONFIG look right; nothing changed"; exit 0
 fi
 if [ -n "${SB_SHARE:-}" ]; then # stewards' notes (SB-1705): the share's notes/ folder, the only one api writes
@@ -100,7 +109,7 @@ if [ -n "${SB_SHARE:-}" ]; then # stewards' notes (SB-1705): the share's notes/ 
   chown 65532:65532 "$SB_NOTES" 2>/dev/null || echo "install: couldn't give $SB_NOTES to uid 65532; stewards can't publish notes" >&2
   export SB_NOTES
 fi
-chown 65532:65532 "$SB_OFFSITE" 2>/dev/null || echo "install: couldn't give $SB_OFFSITE to uid 65532; the backup job must be able to write there" >&2
+[[ "$SB_OFFSITE" == s3://* ]] || chown 65532:65532 "$SB_OFFSITE" 2>/dev/null || echo "install: couldn't give $SB_OFFSITE to uid 65532; the backup job must be able to write there" >&2
 
 # The images: the bundle's, or built here.
 if ls images/*.tar >/dev/null 2>&1; then

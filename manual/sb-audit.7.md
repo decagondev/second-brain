@@ -61,6 +61,14 @@ Exactly (SB-412):
 - **Sealed off-box copy.** A copy with `seal` (sb-cell(5), `backups`) has every object sealed to the recovery key's public half before it is written, as `NAME.sealed` (SB-1901, sb-selfhost(7), Sealed off-box copies); the other copies are unchanged. Drilling that copy needs the recovery key: `sb backup open` each object first.
 - **Restore drill.** Monthly, and after any restore, the drill fetches the latest audit export from **every** copy. It checks each one's `.sha256`, verifies the chain offline with the cell's pinned key (`sb audit verify --export`), and checks that the copies agree with each other and that none is behind the live chain by more than a day. The drill passes only if every copy passes, and the report names each copy's result. A failure is Sev-1, like a chain break (LAW-11).
 
+### Streaming to a SIEM (SB-2302)
+
+With `audit.stream: syslog+tls://HOST:PORT` in sb-cell(5), the jobs service forwards every audit row to the company's SIEM as it is written, within a few seconds, as syslog over TLS (RFC 5425, octet-counted frames). The SIEM's certificate is verified for its host name against the system's roots, which on a self-hosted cell include the company's CA in `/etc/sb/ca`; TLS 1.2 at least.
+
+Each row is one RFC 5424 message: facility `log audit` (13), severity info, the row's `at` as the timestamp, the cell's host name, `second-brain` as the app, the row's `kind` as the message id, the structured data `[sb@32473 tenant="…" seq="…" hash="…"]`, and as its text the row exactly as the export writes it (sb-audit(5)): ids, hashes, decisions and reasons, never content (LAW-07). A SIEM can check every row it gets as the export's tooling does, its hash and its `prev` link to the row before (LAW-11).
+
+The audit log is the queue: the stream keeps only a cursor, the `seq` of the last row the SIEM took, in `state/audit/stream.json`. A SIEM that is down never blocks a write; the stream tries again every 30 seconds and resumes from the cursor, after a restart too. Before each message it checks that the SIEM still holds the connection, so a row sent to a SIEM that hung up is sent again, never lost; a SIEM should drop a `seq` it already has. Rows queue up to a day: when the oldest row still to send is an hour old, a Sev-2 `audit_stream_behind` alert fires (and again each hour it stays so); rows older than a day when the SIEM comes back are not sent, and one `gap` message (severity warning, `[sb@32473 tenant="…" from="…" to="…"]`) names them, with a Sev-2 `audit_stream_gap` alert, so the SIEM reads them from the export. An unreadable cursor stops the stream, never restarts it from row 1. `sb_audit_stream_rows_total` counts the rows sent and `sb_audit_stream_behind_seconds` says how far behind it is.
+
 ## LAWS
 
 [LAW-04](sb-laws.7.md#law-04), [LAW-07](sb-laws.7.md#law-07), [LAW-11](sb-laws.7.md#law-11).

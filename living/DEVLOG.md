@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-23 S22.1: Language and logs
+
+**Wave/slice:** W22 / S22.1 (SB-2301, SB-2302, SB-2303) · **Status:** Done
+
+**What:** The web UI comes in English, German and French: every string it shows is in one catalog, the manifest's `language` sets the default and a person can switch, kept in their browser, and error codes are translated. A cell can stream its audit rows to the company's SIEM as RFC 5424 over TLS, each row exactly as the export has it. A self-hosted box can send its off-box copies to the company's S3 bucket instead of a mounted NAS: `SB_OFFSITE=s3://BUCKET/PREFIX` with a key pair file.
+
+**Why this way:** The catalog is keyed by the English text, and a test parses every component, so a string added without a translation fails the build rather than showing up in English. The SIEM stream uses the audit log itself as its queue and keeps only a cursor, so a SIEM that is down never blocks a write; rows older than a day are named in one gap message for the SIEM to read from the export. The bucket copies are sealed and written once, and `sb backup push` refuses anything that is neither sealed nor a small record, so the bucket needs no object lock and still never holds anything readable.
+
+**Learned:** A TLS write to a peer that has hung up succeeds, and the row is lost; the sender now checks the connection with a 1 ms read before each write. In the bucket, the box can't rotate what it wrote once, so the fourteen nights are the bucket's own lifecycle rule.
+
+**Laws:** LAW-14 (axe and the uncited-claim mark in each language), LAW-11 (`TestLAW11_TheSIEMGetsEveryRowInOrder`, with a self-test for a sender that trusts every write), LAW-07 (`TestLAW07_NothingUnsealedReachesTheBucket`, with a self-test for a push that sends whatever it is given). Every law test is still green.
+
 ## 2026-11-23 S21.4: Spreadsheets and national ID numbers
 
 **Wave/slice:** W21 / S21.4 (SB-2206, SB-2207) · **Status:** Done

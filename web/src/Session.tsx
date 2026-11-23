@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Fetch } from "./api";
+import { tj, tn, t } from "./i18n";
 
 // Sign out everywhere (sb-identity(7), Signing out everywhere; SB-1906): every session
 // of the person ends, this one included.
@@ -24,16 +25,18 @@ export function SignOutEverywhere({ fetcher = fetch }: { fetcher?: Fetch }) {
     <footer className="session">
       {state === "done" ? (
         <p role="status">
-          Signed out on {count === 1 ? "1 device" : `${count} devices`}, this one included. <a href="/login">Sign in again</a>
+          {tj(tn(count, "Signed out on {n} device, this one included. {link}", "Signed out on {n} devices, this one included. {link}"), {
+            link: <a href="/login">{t("Sign in again")}</a>,
+          })}
         </p>
       ) : (
         <>
           <button type="button" disabled={state === "busy"} onClick={revoke}>
-            Sign out everywhere
+            {t("Sign out everywhere")}
           </button>
           {state === "failed" && (
             <p className="error" role="alert">
-              Your other sessions weren't ended. Try again.
+              {t("Your other sessions weren't ended. Try again.")}
             </p>
           )}
         </>

@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -63,6 +64,11 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	if r.URL.Path != "/"+f.Bucket && !strings.HasPrefix(r.URL.Path, "/"+f.Bucket+"/") {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = io.WriteString(w, "<Error><Code>NoSuchBucket</Code></Error>")
+		return
+	}
 	key := strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, "/"+f.Bucket), "/")
 	q := r.URL.Query()
 	switch {
@@ -74,9 +80,10 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		_, _ = io.WriteString(w, f.Lock)
 	case r.Method == http.MethodGet && key == "" && q.Get("list-type") == "2":
-		f.list(w, q.Get("prefix"), q.Get("continuation-token"))
+		f.list(w, q.Get("prefix"), q.Get("continuation-token"), q.Get("max-keys"))
 	case r.Method == http.MethodPut && key != "":
-		if r.Header.Get("If-None-Match") != "*" || r.Header.Get("Content-MD5") == "" || r.Header.Get("X-Amz-Object-Lock-Mode") != "COMPLIANCE" {
+		// A bucket without lock takes no lock headers, as a store with object lock off does.
+		if r.Header.Get("If-None-Match") != "*" || r.Header.Get("Content-MD5") == "" || (r.Header.Get("X-Amz-Object-Lock-Mode") == "COMPLIANCE") != (f.Lock != "") {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -84,10 +91,14 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusPreconditionFailed)
 			return
 		}
-		until, err := time.Parse(time.RFC3339, r.Header.Get("X-Amz-Object-Lock-Retain-Until-Date"))
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
+		var until time.Time
+		if f.Lock != "" {
+			t, err := time.Parse(time.RFC3339, r.Header.Get("X-Amz-Object-Lock-Retain-Until-Date"))
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			until = t
 		}
 		b, _ := io.ReadAll(r.Body)
 		f.objs[key], f.retain[key] = b, until
@@ -121,7 +132,7 @@ func (f *Fake) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (f *Fake) list(w http.ResponseWriter, prefix, token string) {
+func (f *Fake) list(w http.ResponseWriter, prefix, token, max string) {
 	var keys []string
 	for k := range f.objs {
 		if strings.HasPrefix(k, prefix) {
@@ -141,6 +152,9 @@ func (f *Fake) list(w http.ResponseWriter, prefix, token string) {
 	if f.PageAt > 0 && start+f.PageAt < end {
 		end = start + f.PageAt
 	}
+	if m, err := strconv.Atoi(max); err == nil && m > 0 && start+m < end {
+		end = start + m
+	}
 	type c struct{ Key string }
 	res := struct {
 		XMLName   xml.Name `xml:"ListBucketResult"`
@@ -155,4 +169,19 @@ func (f *Fake) list(w http.ResponseWriter, prefix, token string) {
 		res.Next = keys[end]
 	}
 	_ = xml.NewEncoder(w).Encode(res)
+}
+
+// ReplicateTo copies every object to another fake, as a bucket's replication to a second
+// store does (the restore drill against a second endpoint, SB-2303).
+func (f *Fake) ReplicateTo(to *Fake) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	to.mu.Lock()
+	defer to.mu.Unlock()
+	if to.objs == nil {
+		to.objs, to.retain = map[string][]byte{}, map[string]time.Time{}
+	}
+	for k, v := range f.objs {
+		to.objs[k], to.retain[k] = append([]byte(nil), v...), f.retain[k]
+	}
 }
