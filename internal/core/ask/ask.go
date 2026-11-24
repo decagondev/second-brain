@@ -53,6 +53,8 @@ type Request struct {
 	Length string `json:"length,omitempty"`
 	// Verified answers only from documents with a live review mark, and notes (SB-3602).
 	Verified bool `json:"verified,omitempty"`
+	// File is one file this ask is about, read for it alone and kept nowhere (SB-3802).
+	File *FileUpload `json:"file,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -87,7 +89,7 @@ func seeAlso(claims []answer.Claim, chunks []ports.Chunk, now time.Time) []SeeAl
 	var out []SeeAlso
 	for _, ch := range chunks {
 		d, _, _ := strings.Cut(ch.Cite, "@")
-		if cited[d] || len(out) == MaxSeeAlso {
+		if cited[d] || len(out) == MaxSeeAlso || ch.Kind == FileKind {
 			continue
 		}
 		cited[d] = true
@@ -234,6 +236,8 @@ type Trace struct {
 	Turn      int `json:",omitempty"`
 	Response  Response
 	Decisions []retrieve.Decision
+	// Files is how many files the ask was about (SB-3802): never their name or text.
+	Files int `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -312,6 +316,9 @@ type Agent struct {
 	Marks MarkStore
 	// SyncLag names the connectors of an answer's cites that are behind (SB-2704); nil is none.
 	SyncLag SyncLag
+	// FileText reads an uploaded file's text by its name's extension, ok false for a type
+	// the folder connector doesn't read (SB-3802); nil reads no files.
+	FileText func(name string, b []byte) (string, bool)
 	// Retired keeps the documents stewards took out of their spaces' answers (SB-2801);
 	// nil is none.
 	Retired RetireStore
@@ -342,6 +349,36 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (resp Resp
 }
 
 // ask answers; probe is an eval case's run (SB-2204), which keeps no conversation.
+// take spends one of the asker's asks this minute (SB-2305), or says how long to wait.
+func (a Agent) take(ctx context.Context, s tenancy.Scope) error {
+	if a.Rate == nil {
+		return nil
+	}
+	limit := DefaultAsksPerMinute
+	if a.AsksPerMinute != nil && a.AsksPerMinute() > 0 {
+		limit = a.AsksPerMinute()
+	}
+	if wait, ok := a.Rate.Take(s.User(), limit, a.Now()); !ok {
+		return a.limited(ctx, s.User(), s.Space(), wait)
+	}
+	return nil
+}
+
+// conversation is the ask's conversation and its earlier questions: a new one for "".
+func (a Agent) conversation(ctx context.Context, s tenancy.Scope, conv string) (string, []string, error) {
+	if conv == "" {
+		return a.NewID("cv_"), nil, nil
+	}
+	qs, found, err := a.Store.Questions(ctx, a.Tenant, s.User(), conv)
+	if err != nil {
+		return "", nil, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
+	}
+	if !found {
+		return "", nil, fmt.Errorf("%w: no such conversation", ErrInvalid)
+	}
+	return conv, qs, nil
+}
+
 func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool) (Response, error) {
 	if err := s.Check(); err != nil || s.Tenant() != a.Tenant {
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
@@ -350,19 +387,18 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
+	if err := a.checkFile(req.File); err != nil {
+		return Response{}, err
+	}
 	if a.Killed == nil || a.Killed(ctx) {
 		return Response{}, ErrKilled // no kill-switch reader is treated as killed
 	}
 	if spaceKilled(a.SpaceKilled, s) {
 		return Response{}, ErrKilled
 	}
-	if !probe && a.Rate != nil {
-		limit := DefaultAsksPerMinute
-		if a.AsksPerMinute != nil && a.AsksPerMinute() > 0 {
-			limit = a.AsksPerMinute()
-		}
-		if wait, ok := a.Rate.Take(s.User(), limit, a.Now()); !ok {
-			return Response{}, a.limited(ctx, s.User(), s.Space(), wait)
+	if !probe {
+		if err := a.take(ctx, s); err != nil {
+			return Response{}, err
 		}
 	}
 	var dept *Department
@@ -373,24 +409,22 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		}
 		dept = &d
 	}
-	conv := req.Conversation
-	var earlier []string
-	if conv != "" {
-		qs, found, err := a.Store.Questions(ctx, a.Tenant, s.User(), conv)
-		if err != nil {
-			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
-		}
-		if !found {
-			return Response{}, fmt.Errorf("%w: no such conversation", ErrInvalid)
-		}
-		earlier = qs
-	} else {
-		conv = a.NewID("cv_")
+	conv, earlier, err := a.conversation(ctx, s, req.Conversation)
+	if err != nil {
+		return Response{}, err
 	}
 
 	res, terms, err := a.retrieve(withVerified(withDocs(ctx, docs), req.Verified), s, q, req.Sources, retrieve.Budget)
 	if err != nil {
 		return Response{}, err
+	}
+	files := 0
+	if req.File != nil { // SB-3802: the file's passages first, never indexed or kept
+		fc, err := a.fileChunks(ctx, q, req.File)
+		if err != nil {
+			return Response{}, err
+		}
+		res.Context, files = append(fc, res.Context...), 1
 	}
 
 	trace := a.NewID("tr_")
@@ -467,7 +501,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 		}
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
 		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
 	}

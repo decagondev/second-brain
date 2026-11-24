@@ -453,3 +453,12 @@ func (c *Cell) reviewList(ctx context.Context) ([]reviews.Review, error) {
 	}
 	return c.Reviews.List(ctx)
 }
+
+// tokenLister is the session store as the admin's token list (SB-3803), or nil when the
+// store can't list a tenant's tokens.
+func (c *Cell) tokenLister() api.TokenLister {
+	if lt, ok := c.Sessions.(api.TokenLister); ok {
+		return lt
+	}
+	return nil
+}

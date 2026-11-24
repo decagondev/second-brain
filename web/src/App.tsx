@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { ask, AskError, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
-import type { About, ApiError, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
+import { ask, AskError, fileToAsk, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
+import type { About, ApiError, AskFile, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
 import { DraftPanel } from "./Draft";
@@ -71,6 +71,32 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const askBox = useRef<HTMLTextAreaElement>(null);
   const [short, setShort] = useState<boolean>(() => shortAnswers());
   const [verified, setVerified] = useState<boolean>(() => verifiedOnly("ask"));
+  // One file for the next ask only (SB-3802): sent with it and then let go, never kept.
+  const [file, setFile] = useState<AskFile>();
+  const [fileError, setFileError] = useState<string>();
+  const fileId = useId();
+  const fileInput = useRef<HTMLInputElement>(null);
+  async function pick(f: File | undefined) {
+    setFileError(undefined);
+    setFile(undefined);
+    if (!f) return;
+    const a = await fileToAsk(f).catch(() => null);
+    if (a === null) {
+      setFileError(t("{name} couldn't be read.", { name: f.name }));
+      return;
+    }
+    if (!a) {
+      setFileError(t("{name} is larger than 2 MB.", { name: f.name }));
+      if (fileInput.current) fileInput.current.value = "";
+      return;
+    }
+    setFile(a);
+  }
+  function dropFile() {
+    setFile(undefined);
+    setFileError(undefined);
+    if (fileInput.current) fileInput.current.value = "";
+  }
 
   // Keyboard first (SB-2403): "/" goes to the ask box and Esc closes the API tokens panel,
   // never while the person is typing in a field.
@@ -136,8 +162,9 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file);
       setConversation(a.conversation);
+      dropFile();
       settle({ id, question: q, answer: a });
       setQuestion("");
     } catch (err) {
@@ -414,6 +441,20 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
             />{" "}
             {t("Verified only")}
           </label>
+          <span className="attach">
+            <label htmlFor={fileId}>{t("Attach a file")}</label>{" "}
+            <input id={fileId} ref={fileInput} type="file" onChange={(e) => void pick(e.target.files?.[0])} />
+            {file && (
+              <>
+                {" "}
+                <span>{t("Asking about {name}", { name: file.name })}</span>{" "}
+                <button type="button" onClick={dropFile}>
+                  {t("Remove the file")}
+                </button>
+              </>
+            )}
+            {fileError && <span role="alert">{fileError}</span>}
+          </span>
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}
           </button>

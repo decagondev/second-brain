@@ -195,6 +195,28 @@ export interface About {
 
 export const maxAbout = 5;
 
+// A file asked about (sb-ask(3), file; SB-3802): its bytes in base64, read for one ask only.
+export interface AskFile {
+  name: string;
+  data: string;
+}
+
+export const maxFileBytes = 2 << 20;
+
+// fileToAsk reads a picked file as an AskFile, or undefined when it is over 2 MB.
+export function fileToAsk(f: Blob & { name: string }): Promise<AskFile | undefined> {
+  if (f.size > maxFileBytes) return Promise.resolve(undefined);
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(r.error ?? new Error("unreadable"));
+    r.onload = () => {
+      const url = String(r.result ?? "");
+      resolve({ name: f.name, data: url.slice(url.indexOf(",") + 1) });
+    };
+    r.readAsDataURL(f);
+  });
+}
+
 export async function ask(
   question: string,
   conversation: string | undefined,
@@ -204,8 +226,10 @@ export async function ask(
   documents?: string[],
   short?: boolean,
   verified?: boolean,
+  file?: AskFile,
 ): Promise<AskResponse> {
-  const body: Record<string, string | string[] | boolean> = { question };
+  const body: Record<string, string | string[] | boolean | AskFile> = { question };
+  if (file) body.file = file; // SB-3802
   if (short) body.length = "short"; // SB-3303
   if (verified) body.verified = true; // SB-3602
   if (documents && documents.length > 0) body.documents = documents;

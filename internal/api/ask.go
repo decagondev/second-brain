@@ -18,8 +18,12 @@ import (
 	"example.com/second-brain/internal/errs"
 )
 
-// MaxBody bounds a request body.
-const MaxBody = 64 << 10
+// MaxBody bounds a request body, and MaxAskBody an ask's, which may carry a file of up to
+// 2 MB in base64 (SB-3802).
+const (
+	MaxBody    = 64 << 10
+	MaxAskBody = 3 << 20
+)
 
 // Asker is the ask agent as the handlers use it.
 type Asker interface {
@@ -88,8 +92,12 @@ func (h Ask) ask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req ask.Request
-	body, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
-	if err != nil || len(body) > MaxBody || json.Unmarshal(body, &req) != nil {
+	body, err := io.ReadAll(io.LimitReader(r.Body, MaxAskBody+1))
+	if err != nil || len(body) > MaxAskBody {
+		h.fail(w, "", errs.New(errs.EINVAL, "The request is too large: a file is at most 2 MB."))
+		return
+	}
+	if json.Unmarshal(body, &req) != nil {
 		h.fail(w, "", errs.New(errs.EINVAL, "The request body must be JSON with a question."))
 		return
 	}

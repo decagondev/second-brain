@@ -55,6 +55,7 @@ It never starts with a part switched off.
 | `oidc.client_id` | string | yes | The cell's OIDC client id at the tenant's IdP; its secret is `vault://tenants/TENANT/oidc` |
 | `oidc.issuer` | URL | no | The issuer, when it isn't the manifest's `idp` written as `https://` (a local test IdP) |
 | `web` | path | no | The built web UI (`web/dist`); without it, `GET /` is not served |
+| `mcp` | bool | no | (SB-3801) `true` serves `POST /v1/mcp`, the read-only MCP endpoint other AI tools use with a person's own API token (sb-api(3), MCP). Off by default |
 | `model.provider` | string | yes | `extractive` (a local model that quotes its sources, for development and tests), or a gateway provider of ADR-0019 (`openaicompat`, `anthropic`, `groq`, `openrouter`) with its key at `vault://tenants/TENANT/model` |
 | `model.base` | URL | for a gateway provider | The provider's API |
 | `model.id` | string | for a gateway provider | The model id |

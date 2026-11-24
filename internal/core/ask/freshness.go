@@ -72,7 +72,7 @@ func (a Agent) syncNotices(ctx context.Context, claims []answer.Claim) []SyncNot
 	var kinds []string
 	for _, c := range claims {
 		for _, ci := range c.Cites {
-			if k, _, ok := strings.Cut(ci.Cite, ":"); ok && !seen[k] {
+			if k, _, ok := strings.Cut(ci.Cite, ":"); ok && !seen[k] && k != FileKind {
 				seen[k] = true
 				kinds = append(kinds, k)
 			}

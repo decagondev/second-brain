@@ -468,7 +468,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		}),
 		Glossary: func(name string) map[string]string { return m.Spaces[name].Glossary },
 		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
-		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces}
+		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -613,11 +613,14 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, NotifyTest: c.testEmail, Index: indexReports{c},
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
+	if cfg.MCP {
+		api.MCP{Agent: agent, Release: c.Release}.Register(mux)
+	}
 	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)

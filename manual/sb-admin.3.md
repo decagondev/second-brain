@@ -34,6 +34,8 @@ GET  /v1/admin/index/leftovers
 POST /v1/admin/index/refresh
 POST /v1/admin/index/prune
 POST /v1/admin/sessions/revoke
+GET  /v1/admin/tokens
+DELETE /v1/admin/tokens/ID
 POST /v1/admin/notifications/test
 POST /v1/spaces/NAME/proposals                 (stewards)
 POST /v1/spaces/NAME/proposals/term            (stewards)
@@ -89,6 +91,8 @@ The console (`/?admin`) is a client of this API and has no other powers. It open
 The nightly `retention` job counts the leftovers and keeps the counts, and **`GET /v1/admin/health`** carries `"index": { "at", "gone", "unheld", "warning" }`, `warning` true above zero or when the count is missing or older than two days. It also carries `"prompt": { "p95", "p95_before", "warning" }` (SB-2906): the 95th percentile of the input tokens of each model call in the last seven days and the seven before, from the usage ledger, with `warning` true when this week's is over 1.5 times the week before's. Counts only. It also carries `"answer_time": { "p95_seconds", "p95_seconds_before", "warning" }` (SB-3205), the same for the seconds each answer took, from the duration the usage ledger records for each answer; `warning` is true when this week's is over 1.5 times the week before's, and absent when the ledger has no durations.
 
 **Spaces with no steward left (SB-3102).** Health also carries `"spaces_unstewarded": { "spaces": ["finance"], "unknown": ["legal"], "warning": true }`: the spaces whose steward groups have no active member in the directory now (`spaces`), and those the directory couldn't answer for (`unknown`), read at the moment health is asked. Either list warns: a directory that can't answer is never "has a steward" (LAW-03). The console shows it under Health. A deprovisioned steward stops counting at once, as everywhere (LAW-12). Questions sent to such a space go to the company-wide answerers (sb-spaces(7), Stewards).
+
+**`GET /v1/admin/tokens`** (SB-3803) lists every live read-only API token of the tenant (sb-api(3), Read-only API tokens): `{ "items": [{ "id": "tok_…", "owner": "usr_…", "name", "created", "last_used": "YYYY-MM-DD", "expires" }] }`, oldest unused first: the ones never used, then by the day they were last used. `last_used` is the day the token was last checked against the directory on a use, which happens at most once a minute; it is left out for a token never used. Never the token, and never its hash. **`DELETE /v1/admin/tokens/ID`** `{ "reason": "…" }` revokes one at once: a `kind: access` audit row (subject `token:tok_…`, state `token_revoked`, the reason, the admin as actor) is written first, and if it can't be, nothing is revoked (`EUNAVAIL`). A missing reason, or no such live token, is `EINVAL`. The admin console's **API tokens** lists them with **Revoke**.
 
 **`POST /v1/admin/sessions/revoke`** (SB-1906) takes `{ "user": "usr_…", "reason": "…" }` and ends every session of that person: `{ "user", "revoked": 2, "audit": ["aud_…", "aud_…"] }`. It writes a `kind: access` audit row (subject `sessions:USER`, state `revoke_requested`, the reason) before any session ends, and a second (`revoked`, `sessions=N`) after; if the first can't be written nothing is revoked (`EUNAVAIL`). A person with no session succeeds with `revoked: 0`. A missing reason, or a user that isn't `usr_…`, is `EINVAL`. It doesn't deactivate the person: they can sign in again (sb-identity(7), Signing out everywhere).
 

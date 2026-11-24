@@ -216,22 +216,32 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 	if err != nil {
 		return ports.Document{}, fmt.Errorf("folder: %w", err)
 	}
-	switch strings.ToLower(path.Ext(ref.ID)) {
-	case ".pdf":
-		doc.Text = PDFText(b)
-	case ".vtt", ".srt": // SB-3701
-		doc.Text, _ = TranscriptText(b)
-	case ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv":
-		doc.Text = OfficeText(ref.ID, b)
-		if e := strings.ToLower(path.Ext(ref.ID)); e == ".docx" || e == ".pptx" {
-			doc.ReviewBy = OfficeReviewBy(b)
-		}
-	default:
-		if utf8.Valid(b) {
-			doc.Text = string(b)
-		}
+	doc.Text, _ = Text(ref.ID, b)
+	if e := strings.ToLower(path.Ext(ref.ID)); e == ".docx" || e == ".pptx" {
+		doc.ReviewBy = OfficeReviewBy(b)
 	}
 	return doc, nil
+}
+
+// Text is a document's text as Fetch reads it, by its name's extension; ok is false for a
+// name that isn't a document (an ask's file, SB-3802, uses it too).
+func Text(name string, b []byte) (string, bool) {
+	if !Document(path.Base(name)) {
+		return "", false
+	}
+	switch strings.ToLower(path.Ext(name)) {
+	case ".pdf":
+		return PDFText(b), true
+	case ".vtt", ".srt": // SB-3701
+		t, _ := TranscriptText(b)
+		return t, true
+	case ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv":
+		return OfficeText(name, b), true
+	}
+	if utf8.Valid(b) {
+		return string(b), true
+	}
+	return "", true
 }
 
 // ACL implements ports.Connector: read live from the ACL file. No ACL file, one that

@@ -33,7 +33,9 @@ type Config struct {
 		ClientID string `json:"client_id"`
 		Issuer   string `json:"issuer"`
 	} `json:"oidc"`
-	Web   string `json:"web"`
+	Web string `json:"web"`
+	// MCP serves POST /v1/mcp, the read-only MCP endpoint (sb-api(3), MCP; SB-3801).
+	MCP   bool `json:"mcp"`
 	Model struct {
 		Provider string `json:"provider"`
 		Base     string `json:"base"`

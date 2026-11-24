@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- MCP for other AI tools (SB-3801); ask about a file (SB-3802); every API token in one place (SB-3803).
 - Draft a note from a found-nothing term (SB-3705); ask the owner (SB-3706); already written? (SB-3707).
 - Meeting transcripts (SB-3701); decisions (SB-3702); save a chat thread (SB-3703); question trends (SB-3704).
 - Conflicts (SB-3605); Report this answer (SB-3606); how sure the answer is (SB-3607).

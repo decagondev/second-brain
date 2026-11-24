@@ -59,6 +59,8 @@ type Admin struct {
 	}
 	// Sessions ends a person's sessions (SB-1906); nil means EUNAVAIL.
 	Sessions Revoker
+	// Tokens lists and ends API tokens (SB-3803); nil means EUNAVAIL.
+	Tokens TokenLister
 	// NotifyTest sends the test notification to a person by email (SB-2602); nil is EUNAVAIL.
 	NotifyTest NotifyTest
 	// Index reports on the cell's index (SB-2903); nil is EUNAVAIL.
@@ -100,6 +102,8 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/index/prune", h.guard(h.prune))
 	mux.HandleFunc("POST /v1/admin/index/refresh", h.guard(h.refresh))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
+	mux.HandleFunc("GET /v1/admin/tokens", h.guard(h.listTokens))
+	mux.HandleFunc("DELETE /v1/admin/tokens/{id}", h.guard(h.revokeToken))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
 	mux.HandleFunc("PUT /v1/admin/notice", h.guard(h.setNotice))
 	mux.HandleFunc("DELETE /v1/admin/notice", h.guard(h.clearNotice))

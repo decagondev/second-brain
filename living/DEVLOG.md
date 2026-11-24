@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S37.1: From other tools
+
+**Wave/slice:** W37 / S37.1 (SB-3801 to SB-3803) · **Status:** Done
+
+**What:** With mcp: true in the cell's settings, other AI tools can use the brain over MCP with a person's own read-only API token: search, ask and show a cited passage, each checked live as that person. Ask takes one file of up to 2 MB, cited as your file and kept nowhere. Admins see every live API token in one list, oldest unused first, and can revoke one with a reason.
+
+**Why this way:** MCP is how AI assistants now reach company knowledge, so a read-only endpoint on the existing token reuses every check the paths already make, and it stays off until a cell opts in. A file is read the way ingest reads a document, so the same hidden-text, injection and secret rules apply, but none of it is indexed, and the trace records only that a file was there. Tokens were only visible to their owners, so an admin couldn't find a stale one after someone left. The list shows the token's id and never its hash.
+
+**Learned:** A token's last-used day comes free from the minute-by-minute directory re-check. An MCP tool error belongs in the result with isError, not as a JSON-RPC error, so the calling model can read the refusal. jsdom's File has no arrayBuffer, so the web UI reads a file with FileReader.
+
+**Laws:** LAW-01, LAW-07, LAW-12, LAW-14. Every law test is still green.
+
 ## 2026-11-24 S36.2: Fill it in once
 
 **Wave/slice:** W36 / S36.2 (SB-3705 to SB-3707) · **Status:** Done

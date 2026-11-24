@@ -62,7 +62,8 @@ func IsToken(v string) bool {
 	return strings.HasPrefix(v, TokenPrefix) && len(v) == len(TokenPrefix)+43
 }
 
-// TokenRoute is whether an API token may make this request: ask and search, nothing else.
+// TokenRoute is whether an API token may make this request: ask, search and the read-only
+// MCP endpoint (SB-3801, served only with sb-cell(5) mcp: true), nothing else.
 func TokenRoute(method, path string) bool {
-	return method == "POST" && path == "/v1/ask" || method == "GET" && path == "/v1/search"
+	return method == "POST" && (path == "/v1/ask" || path == "/v1/mcp") || method == "GET" && path == "/v1/search"
 }

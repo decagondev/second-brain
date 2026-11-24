@@ -90,8 +90,8 @@ func (a Agent) verifiedCount(ctx context.Context, claims []answer.Claim, chunks 
 	for _, cl := range claims {
 		for _, ci := range cl.Cites {
 			k := docKey(ci.Cite)
-			if seen[k] {
-				continue
+			if seen[k] || strings.HasPrefix(ci.Cite, FileKind+":") {
+				continue // the asker's own file is no source anyone checks
 			}
 			seen[k] = true
 			v.Of++

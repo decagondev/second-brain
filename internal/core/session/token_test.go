@@ -41,7 +41,7 @@ func TestNewToken(t *testing.T) {
 	if _, _, err := Check(context.Background(), now.Add(2*time.Minute), s, &dir{known: true}); !errors.Is(err, ErrInactive) {
 		t.Fatalf("a deprovisioned person's token: %v", err)
 	}
-	if !TokenRoute("POST", "/v1/ask") || !TokenRoute("GET", "/v1/search") || TokenRoute("POST", "/v1/actions/act_1/approve") ||
+	if !TokenRoute("POST", "/v1/ask") || !TokenRoute("GET", "/v1/search") || !TokenRoute("POST", "/v1/mcp") || TokenRoute("GET", "/v1/mcp") || TokenRoute("POST", "/v1/actions/act_1/approve") ||
 		TokenRoute("GET", "/v1/ask") || TokenRoute("POST", "/v1/tokens") || TokenRoute("GET", "/v1/admin/usage") {
 		t.Fatal("TokenRoute")
 	}

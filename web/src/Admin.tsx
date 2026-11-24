@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import type { Fetch } from "./api";
 import type { Review } from "./Steward";
 import { t, tj, tn, msg } from "./i18n";
+import { AdminTokens } from "./AdminTokens";
 
 interface Proposal {
   id: string;
@@ -415,6 +416,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
         )}
         {applyText && <pre className="payload" aria-label={t("Manifest to apply")}>{applyText}</pre>}
       </section>
+      <AdminTokens fetcher={fetcher} />
       <section aria-label={t("Access reviews")}>
         <h2>{t("Access reviews")}</h2>
         {reviews.length === 0 ? (
