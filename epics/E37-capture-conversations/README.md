@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W34 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] Nothing from chat reaches the index without a steward's click
-- [ ] The brain records no meeting; it reads only transcripts in the share
-- [ ] Trends show only terms with at least 5 asks
-- [ ] A deprovisioned owner can't be asked
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Nothing from chat reaches the index without a steward's click
+- [x] The brain records no meeting; it reads only transcripts in the share
+- [x] Trends show only terms with at least 5 asks
+- [x] A deprovisioned owner can't be asked
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

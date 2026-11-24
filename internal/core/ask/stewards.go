@@ -74,6 +74,8 @@ type StewardQuestion struct {
 	Report *AnswerReport `json:"report,omitempty"`
 	// Thread marks a chat thread saved to the stewards (SB-3703).
 	Thread *SavedThread `json:"thread,omitempty"`
+	// Draft marks a draft a steward started from a found-nothing term (SB-3705).
+	Draft *NoteDraft `json:"draft,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -133,6 +135,9 @@ type Stewards struct {
 	Caretakers CaretakerStore
 	// Zone is the working week's time zone (SB-3404); nil is UTC.
 	Zone *time.Location
+	// Owner is the one active user with an email, ok false for none or several (SB-3706);
+	// nil asks no owner.
+	Owner func(ctx context.Context, email string) (id string, ok bool, err error)
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -177,12 +182,13 @@ type StewardItem struct {
 	Report *ReportView `json:"report,omitempty"`
 	// Thread is a saved chat thread (SB-3703): it names who saved it.
 	Thread *ThreadView `json:"thread,omitempty"`
+	Draft  *NoteDraft  `json:"draft,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
 func SpaceKey(name string) string {
-	if name == "company" {
-		return "company"
+	if name == "company" || IsPerson(name) {
+		return name
 	}
 	return "spc_" + name
 }
@@ -193,7 +199,7 @@ func hashOf(s string) string {
 }
 
 func auditSpace(space string) string {
-	if space == "company" {
+	if space == "company" || IsPerson(space) {
 		return ""
 	}
 	return space
@@ -266,6 +272,12 @@ func (x Stewards) steward(ctx context.Context, s tenancy.Scope, name string) ([]
 		return nil, "", ErrNotSteward
 	}
 	key := SpaceKey(name)
+	if IsPerson(key) { // one person's own queue (SB-3706): theirs alone
+		if key != PersonKey(s.User()) {
+			return nil, "", ErrNotSteward
+		}
+		return []string{"user:" + s.User()}, "", nil
+	}
 	stewards, label, ok := x.Facts(key)
 	if !ok {
 		return nil, "", ErrNotSteward
@@ -302,6 +314,7 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		if q.Thread != nil {
 			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text}
 		}
+		it.Draft = q.Draft
 		if waitedFor(q, SpaceKey(name)) {
 			it.FromSpace, it.Waited = strings.TrimPrefix(q.Space, "spc_"), q.Waited
 		}
@@ -511,6 +524,8 @@ type NotePreview struct {
 	Path     string `json:"path"`
 	Readers  int    `json:"readers"`
 	Narrower int    `json:"narrower"` // cites some of the note's readers can't open
+	// Similar are documents of the space that read the same, checked as the steward (SB-3707).
+	Similar []Result `json:"similar,omitempty"`
 }
 
 // NoteResult is a published note.
@@ -535,6 +550,9 @@ type NotePayload struct {
 // Note previews, or publishes, a reply as a note (SB-1705). It needs a reply, readers no
 // wider than the space's members, and the steward's confirmation of the narrower count.
 func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, req NoteRequest) (NoteResult, error) {
+	if IsPerson(SpaceKey(name)) {
+		return NoteResult{}, fmt.Errorf("%w: a reply to you can't be published as a note", ErrInvalid)
+	}
 	if x.Bus == nil || x.Readers == nil {
 		return NoteResult{}, fmt.Errorf("%w: this cell doesn't publish notes (sb-tenant(5), notes)", ErrInvalid)
 	}
@@ -583,6 +601,7 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 		return NoteResult{}, err
 	}
 	if req.Confirm == nil {
+		p.Similar = x.similar(ctx, s, name, q.Reply.Text) // SB-3707: a warning only
 		return NoteResult{NotePreview: p}, nil
 	}
 	if *req.Confirm != p.Narrower {

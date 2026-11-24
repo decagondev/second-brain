@@ -22,6 +22,8 @@ type FoundNothing struct {
 	ThisWeek int      `json:"this_week"`
 	LastWeek int      `json:"last_week"`
 	Terms    []string `json:"terms"`
+	// Counts are how many of this week's asks used each term (SB-3705).
+	Counts map[string]int `json:"counts,omitempty"`
 }
 
 // foundNothing reads traces only: an ask in space whose notice is no_sources or
@@ -41,6 +43,12 @@ func foundNothing(traces []Trace, space string, now time.Time) FoundNothing {
 		}
 		for _, term := range t.Response.Terms {
 			uses[term.Term]++
+			if !t.At.Before(week) {
+				if out.Counts == nil {
+					out.Counts = map[string]int{}
+				}
+				out.Counts[term.Term]++
+			}
 		}
 	}
 	for term := range uses {
@@ -54,6 +62,11 @@ func foundNothing(traces []Trace, space string, now time.Time) FoundNothing {
 	})
 	if len(out.Terms) > MaxGapTerms {
 		out.Terms = out.Terms[:MaxGapTerms]
+	}
+	for term := range out.Counts {
+		if !contains(out.Terms, term) {
+			delete(out.Counts, term)
+		}
 	}
 	return out
 }

@@ -1,8 +1,8 @@
 import { Fragment, useId, useState } from "react";
 import type { ReactNode } from "react";
 import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Pinned, SeeAlso, Term } from "./api";
-import { AskError, citeName, docKey, isCited, passage, requestAccess } from "./api";
-import { msg, t, tj, tn } from "./i18n";
+import { AskError, askOwner, citeName, docKey, isCited, passage, requestAccess } from "./api";
+import { errorText, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 
 const notices: Record<Exclude<Notice, null>, string> = {
@@ -218,7 +218,17 @@ export function PersonName({ person }: { person: Person }) {
 
 // Who to ask (SB-1702): each owner with the documents of theirs this answer cites, and
 // only those, since a cite is only ever a document the asker may open.
-export function PeopleView({ answer, onOwner }: { answer: AskResponse; onOwner?: (email: string) => void }) {
+export function PeopleView({ answer, onOwner, ask }: { answer: AskResponse; onOwner?: (email: string) => void; ask?: { question: string; space?: string; fetcher?: Fetch } }) {
+  const [asked, setAsked] = useState<Record<string, string>>({});
+  async function askThem(email: string) {
+    if (!ask) return;
+    try {
+      await askOwner(ask.question, answer.trace, email, ask.fetcher, ask.space);
+      setAsked((x) => ({ ...x, [email]: t("Sent to {person}. Their reply shows under Questions.", { person: email }) }));
+    } catch (e) {
+      setAsked((x) => ({ ...x, [email]: e instanceof AskError ? errorText(e.error).message : t("The question couldn't be sent.") }));
+    }
+  }
   const people = answer.people ?? [];
   if (people.length === 0) return null;
   const owned = (email: string) => {
@@ -251,6 +261,15 @@ export function PeopleView({ answer, onOwner }: { answer: AskResponse; onOwner?:
               <button type="button" className="link" aria-label={t("Documents of {person}", { person: p.email })} onClick={() => onOwner(p.email)}>
                 {t("Their documents")}
               </button>
+            </>
+          )}
+          {ask && (
+            <>
+              {" "}
+              <button type="button" className="link" aria-label={t("Ask {person} this question", { person: p.email })} disabled={asked[p.email] !== undefined} onClick={() => askThem(p.email)}>
+                {t("Ask them")}
+              </button>
+              {asked[p.email] && <span role="status"> {asked[p.email]}</span>}
             </>
           )}
         </li>
@@ -385,11 +404,16 @@ export function AnswerView({
   fetcher,
   onAbout,
   onOwner,
+  question,
+  space,
 }: {
   answer: AskResponse;
   fetcher?: Fetch;
   onAbout?: (d: About) => void;
   onOwner?: (email: string) => void;
+  // The question asked and its space, for Ask them (SB-3706).
+  question?: string;
+  space?: string;
 }) {
   const nums = numberCites(answer);
   return (
@@ -410,7 +434,7 @@ export function AnswerView({
         <p className="meta verified-count">{t("{marked} of {of} sources verified", { marked: answer.verified.marked, of: answer.verified.of })}</p>
       )}
       <SeeAlsoView answer={answer} fetcher={fetcher} onAbout={onAbout} />
-      <PeopleView answer={answer} onOwner={onOwner} />
+      <PeopleView answer={answer} onOwner={onOwner} ask={question ? { question, space, fetcher } : undefined} />
       <TermsView terms={answer.terms} />
       {answer.refused > 0 && (
         <p className="refused">

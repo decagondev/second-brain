@@ -55,7 +55,7 @@ func TestFoundNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := ask.FoundNothing{ThisWeek: 2, LastWeek: 1, Terms: []string{"cod", "rota"}}
+	want := ask.FoundNothing{ThisWeek: 2, LastWeek: 1, Terms: []string{"cod", "rota"}, Counts: map[string]int{"cod": 2, "rota": 1}} // SB-3705
 	if !reflect.DeepEqual(res.FoundNothing, want) {
 		t.Fatalf("found nothing: %+v", res.FoundNothing)
 	}

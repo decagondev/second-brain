@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S36.2: Fill it in once
+
+**Wave/slice:** W36 / S36.2 (SB-3705 to SB-3707) · **Status:** Done
+
+**What:** Each term that found nothing on the review list has Draft a note, which puts a draft in the space's questions with the term as its title. In Who to ask, Ask them sends the question to that document's owner, who answers it from their own queue on the Questions tab. Before a note is published, the preview lists up to three documents in the space that already say the same.
+
+**Why this way:** A found-nothing term tells the steward what's missing, and a draft in the queue is the shortest path to the existing note flow, so nothing new publishes. Asking the owner reuses the steward queue as a one-person queue that only that person can open; the owner sees only the question, and a deprovisioned owner can't be asked (LAW-12). Already written? checks each document as the steward, so it never names one they can't open, and it's a warning only.
+
+**Learned:** A one-person queue fits the steward flow once the space key can name a person: replies, claims and notifications work unchanged, but rerouting, the digest's space lines and notes had to leave it out. A company-wide note's similar documents can't be filtered by space, since company-wide chunks carry none.
+
+**Laws:** LAW-01, LAW-07, LAW-11, LAW-12, LAW-16. Every law test is still green.
+
 ## 2026-11-24 S36.1: From meetings and chat
 
 **Wave/slice:** W36 / S36.1 (SB-3701 to SB-3704) · **Status:** Done

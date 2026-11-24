@@ -13,7 +13,7 @@ summary: "A found-nothing term tells the steward what's missing, but not where t
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-16 |
 | Depends on | SB-3101 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ A found-nothing term tells the steward what's missing, but not where to start.
 
 ## Acceptance criteria
 
-- [ ] Each found-nothing term on the review list gets Draft a note
-- [ ] The note form opens with the term as title and the count as a comment
-- [ ] Nothing is published without the steward's click
+- [x] Each found-nothing term on the review list gets Draft a note
+- [x] The note form opens with the term as title and the count as a comment
+- [x] Nothing is published without the steward's click
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Draft a note from each found-nothing term: a draft in the space's queue with the term as title and the week's count
 
 ## Definition of done
 

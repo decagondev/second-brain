@@ -13,7 +13,7 @@ summary: "Who to ask names the owner, but the asker has to find them elsewhere."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07, LAW-11, LAW-12 |
 | Depends on | SB-3405 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Who to ask names the owner, but the asker has to find them elsewhere.
 
 ## Acceptance criteria
 
-- [ ] Who to ask gets Ask them for an owner or caretaker who is one active user
-- [ ] It uses the steward question flow with that person as the only answerer; audited
-- [ ] A deprovisioned owner can't be asked
+- [x] Who to ask gets Ask them for an owner or caretaker who is one active user
+- [x] It uses the steward question flow with that person as the only answerer; audited
+- [x] A deprovisioned owner can't be asked
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Questions
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Questions
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Ask them from Who to ask: the question goes to that one active person's own queue, replied to as a steward would
 
 ## Definition of done
 

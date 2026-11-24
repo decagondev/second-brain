@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, discardThread, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import { AskError, addEvalCase, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, Conflict, PinItem, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
@@ -80,7 +80,7 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
           {items.map((q) => (
             <li key={q.id}>
               <p className="question">
-                {q.question} <span className="meta">({spaceName(q.space) || t("company-wide")}, {t(states[q.state] ?? q.state)})</span>
+                {q.question} <span className="meta">({q.space.startsWith("person:") ? t("to a document's owner") : spaceName(q.space) || t("company-wide")}, {t(states[q.state] ?? q.state)})</span>
               </p>
               {q.reply && (
                 <div className="reply">
@@ -115,6 +115,7 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
           ))}
         </ul>
       )}
+      <StewardQuestions space="me" own fetcher={fetcher} />
       <NotifySettings fetcher={fetcher} />
       <MyData fetcher={fetcher} />
     </section>
@@ -219,7 +220,9 @@ function Count({ n }: { n: number }) {
 const Refresh = 5 * 60 * 1000;
 
 // The steward's queue on their screen (sb-spaces(7); SB-1704, SB-1705).
-export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: Fetch }) {
+// With own, it is the caller's own queue (space "me"): questions sent to them as a
+// document's owner (SB-3706), hidden while empty, with no pins, templates or notes.
+export function StewardQuestions({ space, fetcher, own }: { space: string; fetcher?: Fetch; own?: boolean }) {
   const [items, setItems] = useState<QueueQuestion[]>([]);
   const [status, setStatus] = useState<string>();
   const [text, setText] = useState<Record<string, string>>({});
@@ -233,7 +236,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   const ids = useId();
 
   async function load() {
-    setTemplates(await replyTemplates(space, fetcher));
+    if (!own) setTemplates(await replyTemplates(space, fetcher));
     try {
       setItems(await stewardQueue(space, fetcher));
       setSteward(true);
@@ -301,10 +304,11 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
     }
   }
 
+  if (own && items.length === 0) return null;
   return (
-    <section aria-label={t("Questions")}>
+    <section aria-label={own ? t("Questions to you") : t("Questions")}>
       <h2>
-        {t("Questions")}
+        {own ? t("Questions to you") : t("Questions")}
         {steward && <Count n={items.filter((q) => q.state === "open").length} />}
       </h2>
       {items.length === 0 ? (
@@ -322,6 +326,11 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
               {q.state === "open" && q.overdue && <p className="meta overdue">{t("Overdue")}</p>}
               {q.like && <p className="meta">{t("Looks like {id}", { id: q.like })}</p>}
               {q.report && <ReportedAnswer r={q.report} />}
+              {q.draft && (
+                <p className="meta">
+                  <strong>{t("Draft")}</strong> · {q.draft.comment}
+                </p>
+              )}
               {q.thread && (
                 <div className="report" role="group" aria-label={t("Saved from chat")}>
                   <p className="meta">
@@ -393,29 +402,41 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
               ) : (
                 <div className="decide">
                   <p>{q.reply?.text}</p>
-                  {q.reply?.note ? (
+                  {own ? null : q.reply?.note ? (
                     <p className="meta">{t("Published as a note.")}</p>
                   ) : (
                     <>
                       <label htmlFor={`${ids}-t${i}`}>{t("Note title for: {question}", { question: q.question })}</label>
-                      <input id={`${ids}-t${i}`} type="text" maxLength={200} value={title[q.id] ?? ""} onChange={(e) => setTitle((x) => ({ ...x, [q.id]: e.target.value }))} />
+                      <input id={`${ids}-t${i}`} type="text" maxLength={200} value={title[q.id] ?? q.draft?.title ?? ""} onChange={(e) => setTitle((x) => ({ ...x, [q.id]: e.target.value }))} />
                       <label>
                         <input type="checkbox" checked={keep[q.id] ?? false} onChange={(e) => setKeep((x) => ({ ...x, [q.id]: e.target.checked }))} /> {t("Keep the question in the note")}
                       </label>
                       <button type="button" onClick={() => note(q.id)}>
                         {preview[q.id] ? t("Publish, accepting {n} narrower cites", { n: preview[q.id]!.narrower }) : t("Publish as note")}
                       </button>
+                      {(preview[q.id]?.similar?.length ?? 0) > 0 && (
+                        <div role="note" aria-label={t("Already written?")}>
+                          <p className="meta">{t("Already written? These documents read the same:")}</p>
+                          <ul>
+                            {preview[q.id]!.similar!.map((d) => (
+                              <li key={d.cite}>
+                                <DocName d={d} />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </>
                   )}
-                  {(q.reply?.cites?.length ?? 0) > 0 && <PinButton space={space} id={q.id} question={q.question} onDone={() => setPinsBump((n) => n + 1)} fetcher={fetcher} />}
+                  {!own && (q.reply?.cites?.length ?? 0) > 0 && <PinButton space={space} id={q.id} question={q.question} onDone={() => setPinsBump((n) => n + 1)} fetcher={fetcher} />}
                 </div>
               )}
             </li>
           ))}
         </ul>
       )}
-      {steward && <Pins space={space} bump={pinsBump} fetcher={fetcher} />}
-      {steward && <Templates space={space} items={templates} onChange={setTemplates} fetcher={fetcher} />}
+      {steward && !own && <Pins space={space} bump={pinsBump} fetcher={fetcher} />}
+      {steward && !own && <Templates space={space} items={templates} onChange={setTemplates} fetcher={fetcher} />}
       {status && <p role="status">{status}</p>}
     </section>
   );
@@ -920,13 +941,38 @@ function StartHereStale({ items, hidden }: { items: StartItem[]; hidden: number 
 }
 
 // Questions that found nothing (SB-3101): counts and the space's own terms, never a question.
-function FoundNothingLine({ f }: { f: FoundNothing }) {
+function FoundNothingLine({ f, space, fetcher }: { f: FoundNothing; space: string; fetcher?: Fetch }) {
+  const [status, setStatus] = useState<string>();
   if (f.this_week === 0 && f.last_week === 0) return null;
+  const drafts = f.terms.filter((term) => (f.counts?.[term] ?? 0) > 0);
+  async function draft(term: string) {
+    try {
+      await draftNote(space, term, f.counts?.[term] ?? 1, fetcher);
+      setStatus(t("Added a draft for {term} to the space's questions. Write the text as the reply, then publish it as a note.", { term }));
+    } catch (e) {
+      setStatus(errMsg(e, t("The draft couldn't be added.")));
+    }
+  }
   return (
-    <p className="meta">
-      {t("Questions that found nothing: {now} this week, {last} the week before.", { now: f.this_week, last: f.last_week })}
-      {f.terms.length > 0 ? ` ${t("Glossary terms they used: {terms}.", { terms: f.terms.join(", ") })}` : ""}
-    </p>
+    <>
+      <p className="meta">
+        {t("Questions that found nothing: {now} this week, {last} the week before.", { now: f.this_week, last: f.last_week })}
+        {f.terms.length > 0 ? ` ${t("Glossary terms they used: {terms}.", { terms: f.terms.join(", ") })}` : ""}
+      </p>
+      {drafts.length > 0 && (
+        <ul className="saved-list">
+          {drafts.map((term) => (
+            <li key={term}>
+              {term}{" "}
+              <button type="button" aria-label={t("Draft a note for {term}", { term })} onClick={() => draft(term)}>
+                {t("Draft a note")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {status && <p role="status">{status}</p>}
+    </>
   );
 }
 
@@ -1249,7 +1295,7 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
       {list.usage && <UsageLine u={list.usage} />}
       {list.freshness && <FreshnessLine f={list.freshness} />}
       <DefinedTerms terms={list.terms ?? []} onSuggest={onSuggestTerm} />
-      {list.found_nothing && <FoundNothingLine f={list.found_nothing} />}
+      {list.found_nothing && <FoundNothingLine f={list.found_nothing} space={space} fetcher={fetcher} />}
       <BulkActions
         space={space}
         cites={picked}

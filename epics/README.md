@@ -40,7 +40,7 @@ summary: Epics, waves, slices and tickets.
 | W33 Capture Knowledge | 7 | 0 | 0 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
 | W34 Trust and Control | 6 | 0 | 0 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
 | W35 Trust Each Answer | 7 | 0 | 0 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
-| W36 Capture Conversations | 4 | 0 | 3 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
+| W36 Capture Conversations | 7 | 0 | 0 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
 | W37 Work Where People Are | 0 | 0 | 6 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -690,9 +690,9 @@ flowchart LR
 | [SB-3702](E37-capture-conversations/SB-3702-decisions.md) | S36.1 | E37 | Decisions | Done |
 | [SB-3703](E37-capture-conversations/SB-3703-save-chat-thread.md) | S36.1 | E37 | Save a chat thread | Done |
 | [SB-3704](E37-capture-conversations/SB-3704-question-trends.md) | S36.1 | E37 | Question trends | Done |
-| [SB-3705](E37-capture-conversations/SB-3705-draft-missing.md) | S36.2 | E37 | Write the missing document | Open |
-| [SB-3706](E37-capture-conversations/SB-3706-ask-the-owner.md) | S36.2 | E37 | Ask the owner | Open |
-| [SB-3707](E37-capture-conversations/SB-3707-already-written.md) | S36.2 | E37 | Already written? | Open |
+| [SB-3705](E37-capture-conversations/SB-3705-draft-missing.md) | S36.2 | E37 | Write the missing document | Done |
+| [SB-3706](E37-capture-conversations/SB-3706-ask-the-owner.md) | S36.2 | E37 | Ask the owner | Done |
+| [SB-3707](E37-capture-conversations/SB-3707-already-written.md) | S36.2 | E37 | Already written? | Done |
 
 ### W37 Work Where People Are
 

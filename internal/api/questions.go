@@ -32,6 +32,7 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/questions", h.queue)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/reply", h.reply)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/questions/{id}", h.discard)
+	mux.HandleFunc("POST /v1/spaces/{name}/drafts", h.draft)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/note", h.note)
 	if h.Reviews != nil {
 		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
@@ -121,14 +122,19 @@ func (h Questions) send(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Question, Trace, Note string
-		Report                bool
+		Question, Trace, Note, To string
+		Report                    bool
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a question and its trace."))
 		return
 	}
 	send := h.Service.Send
+	if body.To != "" { // SB-3706
+		send = func(ctx context.Context, s tenancy.Scope, text, trace string) (ask.StewardQuestion, error) {
+			return h.Service.AskOwner(ctx, s, text, trace, body.To)
+		}
+	}
 	if body.Report { // SB-3606
 		send = func(ctx context.Context, s tenancy.Scope, text, trace string) (ask.StewardQuestion, error) {
 			return h.Service.Report(ctx, s, text, trace, body.Note)
@@ -142,6 +148,9 @@ func (h Questions) send(w http.ResponseWriter, r *http.Request) {
 	to := q.Space
 	if len(to) > 4 && to[:4] == "spc_" {
 		to = to[4:]
+	}
+	if ask.IsPerson(to) {
+		to = body.To // never the person's user id
 	}
 	h.k().out().ok(w, "", map[string]string{"id": q.ID, "to": to})
 }
@@ -164,7 +173,7 @@ func (h Questions) queue(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	items, err := h.Service.Queue(r.Context(), s, r.PathValue("name"))
+	items, err := h.Service.Queue(r.Context(), s, queueName(r, s))
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -186,7 +195,7 @@ func (h Questions) reply(w http.ResponseWriter, r *http.Request) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with text and cites."))
 		return
 	}
-	q, err := h.Service.ReplyBoth(r.Context(), s, r.PathValue("name"), r.PathValue("id"), body.Text, body.Cites, body.Both)
+	q, err := h.Service.ReplyBoth(r.Context(), s, queueName(r, s), r.PathValue("id"), body.Text, body.Cites, body.Both)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -240,7 +249,7 @@ func (h Questions) note(w http.ResponseWriter, r *http.Request) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a title, and confirm to publish."))
 		return
 	}
-	res, err := h.Service.Note(r.Context(), s, r.PathValue("name"), r.PathValue("id"), req)
+	res, err := h.Service.Note(r.Context(), s, queueName(r, s), r.PathValue("id"), req)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -306,7 +315,7 @@ func (h Questions) claim(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	c, err := h.Service.Claim(r.Context(), s, r.PathValue("name"), r.PathValue("id"), r.Method == http.MethodDelete)
+	c, err := h.Service.Claim(r.Context(), s, queueName(r, s), r.PathValue("id"), r.Method == http.MethodDelete)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -522,13 +531,43 @@ func (h Questions) unpin(w http.ResponseWriter, r *http.Request) {
 	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "removed": true})
 }
 
+// queueName is the path's space, with me for the caller's own queue (SB-3706).
+func queueName(r *http.Request, s tenancy.Scope) string {
+	if n := r.PathValue("name"); n != "me" {
+		return n
+	}
+	return ask.PersonKey(s.User())
+}
+
+// draft starts a note from a found-nothing term (SB-3705).
+func (h Questions) draft(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Term  string `json:"term"`
+		Count int    `json:"count"`
+	}
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a term and its count."))
+		return
+	}
+	q, err := h.Service.DraftNote(r.Context(), s, r.PathValue("name"), body.Term, body.Count)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"id": q.ID, "draft": q.Draft})
+}
+
 // discard drops an open saved chat thread (SB-3703).
 func (h Questions) discard(w http.ResponseWriter, r *http.Request) {
 	s, ok := h.k().scope(w, r)
 	if !ok {
 		return
 	}
-	if err := h.Service.Discard(r.Context(), s, r.PathValue("name"), r.PathValue("id")); err != nil {
+	if err := h.Service.Discard(r.Context(), s, queueName(r, s), r.PathValue("id")); err != nil {
 		h.fail(w, err)
 		return
 	}

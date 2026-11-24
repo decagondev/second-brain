@@ -193,3 +193,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3601: a pin with one cite the asker can't open isn't shown (TestTrustEachAnswerThroughARunningCell) |
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3605, SB-3606: conflicts and reported answers show the steward only documents they can open (TestTrustEachAnswerThroughARunningCell) |
 | 2026-11-24 | LAW-07 | Tested (extended) | SB-3704: question trends are counts of the space's own terms, at least 5 asks each (TestTrendsBySpace, TestDigestTrends) |
+| 2026-11-24 | LAW-12 | Tested (extended) | SB-3706: a deprovisioned owner can't be asked (TestFillItInOnceThroughARunningCell) |

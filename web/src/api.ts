@@ -407,6 +407,18 @@ export interface QueueQuestion {
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
   thread?: { by: string; link: string; text: string };
+  // A note a steward started from a found-nothing term (SB-3705).
+  draft?: { title: string; comment: string };
+}
+
+// Draft a note from a found-nothing term (SB-3705).
+export function draftNote(space: string, term: string, count: number, f: Fetch = fetch): Promise<{ id: string }> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/drafts`, post({ term, count }), f);
+}
+
+// Ask the owner (SB-3706): the question to one person the answer names in Who to ask.
+export function askOwner(question: string, trace: string, to: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
+  return call(inSpace("/v1/questions", space), post({ question, trace, to }), f);
 }
 
 // Discard a saved chat thread (SB-3703).
@@ -421,6 +433,8 @@ export interface NoteResult {
   action?: string;
   state?: string;
   receipt?: string;
+  // Documents of the space that read the same, checked as the steward (SB-3707).
+  similar?: SearchResult[];
 }
 
 // Report this answer (SB-3606): only by the asker's click, and it names them.
@@ -556,6 +570,7 @@ export interface FoundNothing {
   this_week: number;
   last_week: number;
   terms: string[];
+  counts?: Record<string, number>;
 }
 export interface Ratings {
   helpful: number;

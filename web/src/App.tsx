@@ -259,7 +259,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
             <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
-              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} />}
+              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} />}
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}

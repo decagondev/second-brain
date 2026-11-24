@@ -29,6 +29,9 @@ func stewardFacts(m manifest.Tenant) ask.SpaceFacts {
 		if space == "company" {
 			return []string{m.QuestionsTo}, "", m.QuestionsTo != ""
 		}
+		if id, ok := strings.CutPrefix(space, "person:"); ok && id != "" { // SB-3706
+			return []string{"user:" + id}, "", true
+		}
 		sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
 		return sp.Stewards, sp.Label, ok && len(sp.Stewards) > 0
 	}

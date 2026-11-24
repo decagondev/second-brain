@@ -567,7 +567,23 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			}
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
 		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant,
-		StartItems: func(name string) []string { return m.Spaces[name].StartHere }, Members: c.noteReaders(m)}
+		StartItems: func(name string) []string { return m.Spaces[name].StartHere }, Members: c.noteReaders(m),
+		Owner: func(ctx context.Context, email string) (string, bool, error) { // SB-3706: one active user, or no one
+			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
+			if err != nil {
+				return "", false, err
+			}
+			id := ""
+			for _, u := range us {
+				if u.Active {
+					if id != "" {
+						return "", false, nil
+					}
+					id = u.ID
+				}
+			}
+			return id, id != "", nil
+		}}
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}

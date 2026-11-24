@@ -336,6 +336,7 @@ func (j Job) plan(ctx context.Context, from, now time.Time) ([]outgoing, error) 
 	if err != nil {
 		return nil, fmt.Errorf("notify: questions: %w", err)
 	}
+	asked = notDrafts(asked) // a steward's own draft tells no one (SB-3705)
 	back := j.Lookback
 	if back <= 0 {
 		back = 400 * 24 * time.Hour
@@ -376,7 +377,7 @@ func (j Job) reroute(ctx context.Context, now time.Time) (int, error) {
 		return 0, fmt.Errorf("notify: questions: %w", err)
 	}
 	due := func(q ask.StewardQuestion) bool {
-		return q.Space != "company" && q.Also == "" && q.Reply == nil && (q.Claim == nil || !now.Before(q.Claim.Until)) &&
+		return q.Space != "company" && !ask.IsPerson(q.Space) && q.Also == "" && q.Reply == nil && (q.Claim == nil || !now.Before(q.Claim.Until)) &&
 			ask.WorkingDays(q.At, now, j.Zone) >= ask.RerouteAfter
 	}
 	n := 0
@@ -516,6 +517,9 @@ func (j Job) link() string { return j.tab("questions") }
 
 // stewardLink is the space's steward screen.
 func (j Job) stewardLink(space string) string {
+	if ask.IsPerson(space) {
+		space = "me" // the person's own queue (SB-3706)
+	}
 	return strings.TrimSuffix(j.Base, "/") + "/?steward=" + strings.TrimPrefix(space, "spc_")
 }
 
@@ -537,7 +541,10 @@ func (j Job) stewards(ctx context.Context, asked []ask.StewardQuestion) ([]outgo
 			continue
 		}
 		where := "sent company-wide"
-		if sp != "company" {
+		switch {
+		case ask.IsPerson(sp):
+			where = "sent to you as a document's owner" // SB-3706
+		case sp != "company":
 			where = "for the " + strings.TrimPrefix(sp, "spc_") + " space"
 		}
 		msg := Message{Kind: KindQuestions, Text: plural(count[sp], "new question", "new questions") + " " + where, Link: j.stewardLink(sp)}
@@ -557,6 +564,15 @@ func (j Job) members(ctx context.Context, groups []string) ([]Person, error) {
 	seen := map[string]bool{}
 	var out []Person
 	for _, g := range groups {
+		if id, ok := strings.CutPrefix(g, "user:"); ok && !seen[id] { // one person's queue (SB-3706)
+			seen[id] = true
+			if p, ok, err := j.person(ctx, id); err != nil {
+				return nil, err
+			} else if ok {
+				out = append(out, p)
+			}
+			continue
+		}
 		name, ok := strings.CutPrefix(g, "group:")
 		if !ok {
 			continue
@@ -597,7 +613,7 @@ func (j Job) askers(ctx context.Context, all []ask.StewardQuestion, from, now ti
 	in := func(t time.Time) bool { return !t.IsZero() && !t.Before(from) && t.Before(now) }
 	replies, notes := map[string]int{}, map[string]int{}
 	for _, q := range all {
-		if q.Reply == nil {
+		if q.Reply == nil || q.Draft != nil {
 			continue
 		}
 		if in(q.Reply.At) {
@@ -888,7 +904,7 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 	seen := map[string]bool{}
 	for _, sp := range spaces {
 		groups, _, ok := j.Facts(sp)
-		if !ok {
+		if !ok || ask.IsPerson(sp) {
 			continue
 		}
 		t := by[sp]
@@ -943,4 +959,15 @@ func digestText(titles []string, more int) string {
 		text += fmt.Sprintf(" and %d more", more)
 	}
 	return text
+}
+
+// notDrafts leaves out the drafts stewards started themselves.
+func notDrafts(qs []ask.StewardQuestion) []ask.StewardQuestion {
+	out := qs[:0:0]
+	for _, q := range qs {
+		if q.Draft == nil {
+			out = append(out, q)
+		}
+	}
+	return out
 }
