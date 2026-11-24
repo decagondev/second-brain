@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-36 epics, 115 user stories and 291 tickets across 35 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+39 epics, 121 user stories and 311 tickets across 38 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -39,6 +39,9 @@ summary: Epics, waves, slices and tickets.
 | W32 Ask Better | 7 | 0 | 0 | Planned 2026-11-24 with the user (E33): see also, glossary where it's used, short or full answer, sources disagree, download the conversation, their other documents, suggested questions ([15-ask-capture-trust.md](../docs/15-ask-capture-trust.md)) |
 | W33 Capture Knowledge | 7 | 0 | 0 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
 | W34 Trust and Control | 6 | 0 | 0 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
+| W35 Trust Each Answer | 0 | 0 | 7 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
+| W36 Capture Conversations | 0 | 0 | 7 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
+| W37 Work Where People Are | 0 | 0 | 6 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -142,6 +145,12 @@ flowchart LR
   E30 --> E33
   E31 --> E34
   E32 --> E35
+  E36["E36 Trust Each Answer"]
+  E37["E37 Capture Conversations"]
+  E38["E38 Work Where People Are"]
+  E33 --> E36
+  E34 --> E37
+  E35 --> E38
 ```
 
 ## Epics
@@ -184,6 +193,9 @@ flowchart LR
 | [E33 Ask Better](E33-ask-better/README.md) | An asker gets more out of each answer and knows what to ask. | W32 | 7 |
 | [E34 Capture Knowledge](E34-capture-knowledge/README.md) | A good answer, once given, is kept for the next person, and every document keeps someone looking after it. | W33 | 7 |
 | [E35 Trust and Control](E35-trust-and-control/README.md) | People can see and remove what the brain keeps about them, and admins see access and spending coming. | W34 | 6 |
+| [E36 Trust Each Answer](E36-trust-each-answer/README.md) | An asker knows how far to trust an answer, and a steward can fix one that was wrong. | W35 | 7 |
+| [E37 Capture Conversations](E37-capture-conversations/README.md) | What people decide in meetings and chat reaches the brain, after a steward's click. | W36 | 7 |
+| [E38 Work Where People Are](E38-work-where-people-are/README.md) | The brain is in reach from wherever people work, and admins see how it's used. | W37 | 6 |
 
 ## All tickets by wave
 
@@ -657,3 +669,38 @@ flowchart LR
 | [SB-3504](E35-trust-and-control/SB-3504-access-review.md) | S34.2 | E35 | Access review | Done |
 | [SB-3505](E35-trust-and-control/SB-3505-cost-forecast.md) | S34.2 | E35 | Month-end forecast | Done |
 | [SB-3506](E35-trust-and-control/SB-3506-usage-by-space.md) | S34.2 | E35 | Usage by space | Done |
+
+### W35 Trust Each Answer
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3601](E36-trust-each-answer/SB-3601-verified-answers.md) | S35.1 | E36 | Verified answers | Open |
+| [SB-3602](E36-trust-each-answer/SB-3602-verified-only.md) | S35.1 | E36 | Verified only | Open |
+| [SB-3603](E36-trust-each-answer/SB-3603-review-interval.md) | S35.1 | E36 | Review every N days | Open |
+| [SB-3604](E36-trust-each-answer/SB-3604-unhelpful-clears-mark.md) | S35.1 | E36 | Unhelpful clears the mark | Open |
+| [SB-3605](E36-trust-each-answer/SB-3605-conflicts.md) | S35.2 | E36 | Conflicts | Open |
+| [SB-3606](E36-trust-each-answer/SB-3606-report-answer.md) | S35.2 | E36 | Report this answer | Open |
+| [SB-3607](E36-trust-each-answer/SB-3607-verified-count.md) | S35.2 | E36 | How sure the answer is | Open |
+
+### W36 Capture Conversations
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3701](E37-capture-conversations/SB-3701-meeting-transcripts.md) | S36.1 | E37 | Meeting transcripts | Open |
+| [SB-3702](E37-capture-conversations/SB-3702-decisions.md) | S36.1 | E37 | Decisions | Open |
+| [SB-3703](E37-capture-conversations/SB-3703-save-chat-thread.md) | S36.1 | E37 | Save a chat thread | Open |
+| [SB-3704](E37-capture-conversations/SB-3704-question-trends.md) | S36.1 | E37 | Question trends | Open |
+| [SB-3705](E37-capture-conversations/SB-3705-draft-missing.md) | S36.2 | E37 | Write the missing document | Open |
+| [SB-3706](E37-capture-conversations/SB-3706-ask-the-owner.md) | S36.2 | E37 | Ask the owner | Open |
+| [SB-3707](E37-capture-conversations/SB-3707-already-written.md) | S36.2 | E37 | Already written? | Open |
+
+### W37 Work Where People Are
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3801](E38-work-where-people-are/SB-3801-mcp.md) | S37.1 | E38 | Use the brain from other AI tools | Open |
+| [SB-3802](E38-work-where-people-are/SB-3802-ask-about-file.md) | S37.1 | E38 | Ask about a file | Open |
+| [SB-3803](E38-work-where-people-are/SB-3803-admin-tokens.md) | S37.1 | E38 | Every token in one place | Open |
+| [SB-3804](E38-work-where-people-are/SB-3804-adoption.md) | S37.2 | E38 | Adoption | Open |
+| [SB-3805](E38-work-where-people-are/SB-3805-daily-brief.md) | S37.2 | E38 | Daily brief | Open |
+| [SB-3806](E38-work-where-people-are/SB-3806-opensearch.md) | S37.2 | E38 | Search from the address bar | Open |

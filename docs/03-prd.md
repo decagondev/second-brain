@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better** (built), **W33 Capture Knowledge** (built) and **W34 Trust and Control** (built) add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better** (built), **W33 Capture Knowledge** (built) and **W34 Trust and Control** (built) add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)). **W35 Trust Each Answer**, **W36 Capture Conversations** and **W37 Work Where People Are** add twenty more, drawn from what other company knowledge tools do well: answers people can rely on, what's decided in meetings and chat, and the brain within reach of other tools ([16-trust-capture-reach.md](16-trust-capture-reach.md)).
 
 ## Problem
 
@@ -331,6 +331,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W32 | Ask Better | — | An asker gets more out of each answer and knows what to ask. |
 | W33 | Capture Knowledge | — | A good answer, once given, is kept for the next person, and every document keeps someone looking after it. |
 | W34 | Trust and Control | — | People can see and remove what the brain keeps about them, and admins see access and spending coming. |
+| W35 | Trust Each Answer | — | An asker knows how far to trust an answer, and a steward can fix one that was wrong. |
+| W36 | Capture Conversations | — | What people decide in meetings and chat reaches the brain, after a steward's click. |
+| W37 | Work Where People Are | — | The brain is in reach from wherever people work, and admins see how it's used. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -996,6 +999,57 @@ gantt
 |---|---|---|---|
 | S34.1 | Your own data | What the brain keeps about me, forget my questions, where I'm signed in | [SB-3501](../epics/E35-trust-and-control/SB-3501-my-data.md), [SB-3502](../epics/E35-trust-and-control/SB-3502-forget-my-questions.md), [SB-3503](../epics/E35-trust-and-control/SB-3503-my-sessions.md) |
 | S34.2 | See it before it goes wrong | Access review, month-end forecast, usage by space | [SB-3504](../epics/E35-trust-and-control/SB-3504-access-review.md), [SB-3505](../epics/E35-trust-and-control/SB-3505-cost-forecast.md), [SB-3506](../epics/E35-trust-and-control/SB-3506-usage-by-space.md) |
+
+#### W35 Trust Each Answer
+
+*An asker knows how far to trust an answer, and a steward can fix one that was wrong. Accepted 2026-11-24 ([16-trust-capture-reach.md](16-trust-capture-reach.md)).*
+
+**Exit gate**
+
+- [ ] A pinned answer shows only with every cite checked again as the asker
+- [ ] Verified only only narrows, and a mark at an old version never counts
+- [ ] A report reaches the stewards only by the asker's click
+- [ ] Conflicts name only documents the steward can open
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S35.1 | Answers people can rely on | Verified answers, verified only, review every N days, unhelpful clears the mark | [SB-3601](../epics/E36-trust-each-answer/SB-3601-verified-answers.md), [SB-3602](../epics/E36-trust-each-answer/SB-3602-verified-only.md), [SB-3603](../epics/E36-trust-each-answer/SB-3603-review-interval.md), [SB-3604](../epics/E36-trust-each-answer/SB-3604-unhelpful-clears-mark.md) |
+| S35.2 | When an answer goes wrong | Conflicts, report this answer, how sure the answer is | [SB-3605](../epics/E36-trust-each-answer/SB-3605-conflicts.md), [SB-3606](../epics/E36-trust-each-answer/SB-3606-report-answer.md), [SB-3607](../epics/E36-trust-each-answer/SB-3607-verified-count.md) |
+
+#### W36 Capture Conversations
+
+*What people decide in meetings and chat reaches the brain, after a steward's click. Accepted 2026-11-24 ([16-trust-capture-reach.md](16-trust-capture-reach.md)).*
+
+**Exit gate**
+
+- [ ] Nothing from chat reaches the index without a steward's click
+- [ ] The brain records no meeting; it reads only transcripts in the share
+- [ ] Trends show only terms with at least 5 asks
+- [ ] A deprovisioned owner can't be asked
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S36.1 | From meetings and chat | Meeting transcripts, decisions, save a chat thread, question trends | [SB-3701](../epics/E37-capture-conversations/SB-3701-meeting-transcripts.md), [SB-3702](../epics/E37-capture-conversations/SB-3702-decisions.md), [SB-3703](../epics/E37-capture-conversations/SB-3703-save-chat-thread.md), [SB-3704](../epics/E37-capture-conversations/SB-3704-question-trends.md) |
+| S36.2 | Fill it in once | Write the missing document, ask the owner, already written? | [SB-3705](../epics/E37-capture-conversations/SB-3705-draft-missing.md), [SB-3706](../epics/E37-capture-conversations/SB-3706-ask-the-owner.md), [SB-3707](../epics/E37-capture-conversations/SB-3707-already-written.md) |
+
+#### W37 Work Where People Are
+
+*The brain is in reach from wherever people work, and admins see how it's used. Accepted 2026-11-24 ([16-trust-capture-reach.md](16-trust-capture-reach.md)).*
+
+**Exit gate**
+
+- [ ] MCP tools are read-only, off by default, and stop with a revoked token
+- [ ] An attached file is never kept in the index or the trace
+- [ ] No token is ever shown after it is made
+- [ ] Adoption names no one; no space row under 5 people
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S37.1 | From other tools | Use the brain from other AI tools, ask about a file, every token in one place | [SB-3801](../epics/E38-work-where-people-are/SB-3801-mcp.md), [SB-3802](../epics/E38-work-where-people-are/SB-3802-ask-about-file.md), [SB-3803](../epics/E38-work-where-people-are/SB-3803-admin-tokens.md) |
+| S37.2 | Know it's used | Adoption, daily brief, search from the address bar | [SB-3804](../epics/E38-work-where-people-are/SB-3804-adoption.md), [SB-3805](../epics/E38-work-where-people-are/SB-3805-daily-brief.md), [SB-3806](../epics/E38-work-where-people-are/SB-3806-opensearch.md) |
 
 #### Parked: Portfolio Department Grants
 
