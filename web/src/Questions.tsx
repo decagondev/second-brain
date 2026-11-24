@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, BulkItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import { AskError, addEvalCase, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, BulkItem, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -627,6 +627,52 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
   );
 }
 
+// Coming due (SB-3105): soonest first, each with Reviewed, still right; loaded on request.
+function ComingDue({ space, fetcher }: { space: string; fetcher?: Fetch }) {
+  const [list, setList] = useState<{ items: DueItem[]; hidden: { owner?: string }[] }>();
+  const [error, setError] = useState("");
+  const load = () =>
+    void dueList(space, fetcher)
+      .then((l) => {
+        setList(l);
+        setError("");
+      })
+      .catch((e) => setError(errMsg(e, t("That didn't work. Try again."))));
+  if (!list)
+    return (
+      <>
+        <button type="button" onClick={load}>
+          {t("Show coming due")}
+        </button>
+        {error && <p role="alert">{error}</p>}
+      </>
+    );
+  return (
+    <section aria-label={t("Coming due")}>
+      <h3>
+        {t("Coming due")}
+        <Count n={list.items.length + list.hidden.length} />
+      </h3>
+      {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Nothing answers rely on falls due in the next 14 days.")}</p>}
+      <ul className="saved-list">
+        {list.items.map((r) => (
+          <li key={r.cite}>
+            <DocLink r={r} />
+            <span className="meta"> · {tn(r.due_in_days, "due in {n} day", "due in {n} days")}</span>
+            <MarkReviewed
+              space={space}
+              item={{ ...r, cited: 0, flagged: 0 }}
+              fetcher={fetcher}
+              onDone={() => setList((l) => l && { ...l, items: l.items.filter((x) => x.cite !== r.cite) })}
+            />
+          </li>
+        ))}
+      </ul>
+      {list.hidden.length > 0 && <p className="refused">{tn(list.hidden.length, "{n} more document you can't open falls due", "{n} more documents you can't open fall due")}</p>}
+    </section>
+  );
+}
+
 const startWhy: Record<string, string> = {
   gone: msg("gone from the index"),
   stale: msg("stale"),
@@ -1012,6 +1058,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
         </section>
       )}
       <SameNames groups={list.same_name ?? []} />
+      <ComingDue space={space} fetcher={fetcher} />
       <NeverCited space={space} fetcher={fetcher} onRetired={() => setBump((b) => b + 1)} />
       <RetiredDocs space={space} fetcher={fetcher} bump={bump} />
       {list.personal_data !== undefined && list.personal_data > 0 && (

@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W28 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] No question text appears in any count
-- [ ] A space with no active steward warns and its questions reroute; a directory error warns
-- [ ] Each document in a bulk action is checked and audited on its own
-- [ ] An owner can mark only their own document
-- [ ] Every law test still green; no new store, service or Go module
+- [x] No question text appears in any count
+- [x] A space with no active steward warns and its questions reroute; a directory error warns
+- [x] Each document in a bulk action is checked and audited on its own
+- [x] An owner can mark only their own document
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

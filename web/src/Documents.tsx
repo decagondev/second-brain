@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, search } from "./api";
+import { AskError, markOwnReviewed, search } from "./api";
 import type { About, ApiError, Fetch, Filters, SearchResponse } from "./api";
 import { AboutButton, AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -169,6 +169,7 @@ export function DocumentsView({
                     {r.flags.includes("injection_suspect") && <span className="flag"> · {t("Flagged")}</span>}
                   </p>
                   {onAbout && <AboutButton cite={r.cite} name={name} onAbout={onAbout} />}
+                  {r.mine && <OwnReviewed cite={r.cite} name={name} fetcher={fetcher} />}
                 </li>
               );
             })}
@@ -208,5 +209,32 @@ export function NextSteps({ inSpace, filtered, onWide, onClear, onAsk }: { inSpa
         </button>
       )}
     </div>
+  );
+}
+
+// Reviewed, still right on the person's own document (SB-3106): the stewards' record.
+function OwnReviewed({ cite, name, fetcher }: { cite: string; name: string; fetcher?: Fetch }) {
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [error, setError] = useState("");
+  async function mark() {
+    setState("busy");
+    setError("");
+    try {
+      await markOwnReviewed(cite, fetcher);
+      setState("done");
+    } catch (e) {
+      setState("idle");
+      setError((e as Error).message || t("The document couldn't be marked."));
+    }
+  }
+  if (state === "done") return <p role="status">{t("Marked reviewed: {name}", { name })}</p>;
+  return (
+    <>
+      {" "}
+      <button type="button" disabled={state === "busy"} aria-label={t("Reviewed, still right: {name}", { name })} onClick={() => void mark()}>
+        {t("Reviewed, still right")}
+      </button>
+      {error && <span role="alert"> {error}</span>}
+    </>
   );
 }

@@ -34,6 +34,7 @@ type Stewards struct {
 // Register mounts the endpoints.
 func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals", h.propose)
+	mux.HandleFunc("POST /v1/spaces/{name}/proposals/term", h.proposeTerm)
 	mux.HandleFunc("GET /v1/admin/proposals", h.list)
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/approve", h.decide(true))
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))
@@ -47,27 +48,37 @@ func groupsOf(s tenancy.Scope) []string {
 	return out
 }
 
-func (h Stewards) propose(w http.ResponseWriter, r *http.Request) {
+// stewardOf reads the applied manifest and checks the caller is one of space name's
+// stewards, answering the request itself when not.
+func (h Stewards) stewardOf(w http.ResponseWriter, r *http.Request, name string) (tenancy.Scope, manifest.Tenant, bool) {
 	s, err := tenancy.FromContext(r.Context())
 	if err != nil {
 		fail(w, errs.New(errs.EAUTH, "Sign in again."))
-		return
+		return s, manifest.Tenant{}, false
 	}
-	name := r.PathValue("name")
 	cur, _, err := h.Manifests.Applied(r.Context())
 	if err != nil {
 		fail(w, errs.New(errs.EUNAVAIL, "The applied manifest can't be read."))
-		return
+		return s, cur, false
 	}
 	sp, ok := cur.Spaces[name]
 	if !ok {
 		fail(w, errs.New(errs.ESPACE, "No space %q for you.", name))
-		return
+		return s, cur, false
 	}
 	dec := h.Policy.Authorise(r.Context(), s, "propose_space", policy.Entity{Type: "SpaceConfig", ID: name, Tenant: h.Tenant,
 		Attrs: map[string]any{"stewards": sp.Stewards}}, map[string]any{"groups": groupsOf(s)})
 	if dec.Decision != policy.Allow {
 		fail(w, errs.New(errs.EPERM, "Only the space's stewards can propose changes to it."))
+		return s, cur, false
+	}
+	return s, cur, true
+}
+
+func (h Stewards) propose(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	s, cur, ok := h.stewardOf(w, r, name)
+	if !ok {
 		return
 	}
 	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
@@ -78,11 +89,70 @@ func (h Stewards) propose(w http.ResponseWriter, r *http.Request) {
 		fail(w, errs.New(errs.EINVAL, "The body must be {\"space\": {…}}."))
 		return
 	}
+	h.submit(w, r, s, cur, name, req.Space)
+}
+
+// MaxSpellings is the most other spellings a suggested glossary term takes (SB-3107).
+const MaxSpellings = 10
+
+// proposeTerm is Suggest a term (SB-3107): a proposal of the space as applied plus one
+// glossary term and its other spellings, made and checked as any steward proposal.
+func (h Stewards) proposeTerm(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	s, cur, ok := h.stewardOf(w, r, name)
+	if !ok {
+		return
+	}
+	var req struct {
+		Term      string   `json:"term"`
+		Meaning   string   `json:"meaning"`
+		Spellings []string `json:"spellings"`
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil || strings.TrimSpace(req.Term) == "" || strings.TrimSpace(req.Meaning) == "" {
+		fail(w, errs.New(errs.EINVAL, "The body must be JSON with a term and its meaning."))
+		return
+	}
+	if len(req.Spellings) > MaxSpellings {
+		fail(w, errs.New(errs.EINVAL, "At most %d other spellings.", MaxSpellings))
+		return
+	}
+	sp := cur.Spaces[name]
+	g := map[string]string{}
+	for k, v := range sp.Glossary {
+		g[k] = v
+	}
+	meaning := strings.TrimSpace(req.Meaning)
+	for _, t := range append([]string{req.Term}, req.Spellings...) {
+		t = strings.TrimSpace(t)
+		if t == "" {
+			continue
+		}
+		for k := range g {
+			if strings.EqualFold(k, t) {
+				fail(w, errs.New(errs.EINVAL, "The glossary already has %q.", k))
+				return
+			}
+		}
+		g[t] = meaning
+	}
+	sp.Glossary = g
+	raw, err := json.Marshal(sp)
+	if err != nil {
+		fail(w, errs.New(errs.EUNAVAIL, "The space's definition can't be written."))
+		return
+	}
+	h.submit(w, r, s, cur, name, raw)
+}
+
+// submit checks a proposed definition of space name against the applied manifest, and
+// audits and stores it as an open proposal.
+func (h Stewards) submit(w http.ResponseWriter, r *http.Request, s tenancy.Scope, cur manifest.Tenant, name string, proposed json.RawMessage) {
 	change := h.Change
 	if change == nil {
 		change = manifest.StewardChange
 	}
-	next, ds, err := change(cur, name, req.Space)
+	next, ds, err := change(cur, name, proposed)
 	switch {
 	case err != nil:
 		fail(w, errs.New(errs.EMANIFEST, "%v", err))

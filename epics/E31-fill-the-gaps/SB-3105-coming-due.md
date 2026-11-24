@@ -13,7 +13,7 @@ summary: "The review list shows what is overdue, not what falls due soon."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ The review list shows what is overdue, not what falls due soon.
 
 ## Acceptance criteria
 
-- [ ] `review?section=due` lists cited documents that turn stale in the next 14 days, soonest first, by review_after_days or their own date
-- [ ] Reviewed, still right works on them
-- [ ] Due in 10 days is listed; 20 days isn't
+- [x] `review?section=due` lists cited documents that turn stale in the next 14 days, soonest first, by review_after_days or their own date
+- [x] Reviewed, still right works on them
+- [x] Due in 10 days is listed; 20 days isn't
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Review section
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Review section
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+review?section=due lists relied-on documents that turn stale in the next 14 days, soonest first, with due_in_days; Reviewed, still right works on them and a mark moves the date on, except a document's own review-by date
 
 ## Definition of done
 

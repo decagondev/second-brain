@@ -33,6 +33,7 @@ POST /v1/admin/index/prune
 POST /v1/admin/sessions/revoke
 POST /v1/admin/notifications/test
 POST /v1/spaces/NAME/proposals                 (stewards)
+POST /v1/spaces/NAME/proposals/term            (stewards)
 GET  /v1/admin/proposals
 POST /v1/admin/proposals/ID/approve
 POST /v1/admin/proposals/ID/reject

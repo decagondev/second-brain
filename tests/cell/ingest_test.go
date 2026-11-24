@@ -2,6 +2,7 @@ package cell
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -50,7 +51,30 @@ func (r running) asks(t *testing.T, q, want string) bool {
 	if code != 200 {
 		t.Fatalf("ask: %d %s", code, body)
 	}
-	return strings.Contains(body, want)
+	// Only the answer's claims and their cites: an id elsewhere in the body may hold the
+	// same digits.
+	var a struct {
+		Answer struct {
+			Claims []struct {
+				Text  string
+				Cites []struct{ Cite string }
+			}
+		}
+	}
+	if err := json.Unmarshal([]byte(body), &a); err != nil {
+		t.Fatalf("ask: %v %s", err, body)
+	}
+	for _, c := range a.Answer.Claims {
+		if strings.Contains(c.Text, want) {
+			return true
+		}
+		for _, ci := range c.Cites {
+			if strings.Contains(ci.Cite, want) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (r running) chunks(t *testing.T, source string) int {

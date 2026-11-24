@@ -211,6 +211,8 @@ export interface SearchResult {
   flags: string[];
   spaces?: string[];
   label?: string;
+  // The asker is the document's current owner at the source (SB-3106).
+  mine?: boolean;
 }
 
 export interface SearchResponse {
@@ -590,6 +592,21 @@ export async function uncitedList(space: string, f: Fetch = fetch): Promise<{ it
   } catch {
     return { items: [], hidden: [] };
   }
+}
+
+// Coming due (SB-3105): relied-on documents that turn stale in the next 14 days.
+export interface DueItem extends SearchResult {
+  due_in_days: number;
+}
+
+export async function dueList(space: string, f: Fetch = fetch): Promise<{ items: DueItem[]; hidden: { owner?: string }[] }> {
+  const d = await call<{ items?: DueItem[]; hidden?: { owner?: string }[] }>(`${sp(space)}/review?section=due`, {}, f);
+  return { items: Array.isArray(d.items) ? d.items : [], hidden: Array.isArray(d.hidden) ? d.hidden : [] };
+}
+
+// An owner's Reviewed, still right on their own document (SB-3106).
+export function markOwnReviewed(cite: string, f: Fetch = fetch): Promise<{ document: string; version: number; spaces: string[] }> {
+  return call("/v1/documents/reviewed", post({ cite }), f);
 }
 
 // The handover brief (SB-1707, SB-2002): the person's documents the asker can open now.

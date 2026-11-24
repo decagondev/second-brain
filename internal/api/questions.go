@@ -34,6 +34,7 @@ func (h Questions) Register(mux *http.ServeMux) {
 		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
 	}
 	mux.HandleFunc("POST /v1/spaces/{name}/review/marks", h.mark)
+	mux.HandleFunc("POST /v1/documents/reviewed", h.markOwn)
 	mux.HandleFunc("POST /v1/spaces/{name}/retired", h.retire)
 	mux.HandleFunc("GET /v1/spaces/{name}/retired", h.retired)
 	mux.HandleFunc("POST /v1/spaces/{name}/retired/restore", h.restore)
@@ -58,6 +59,8 @@ func questionErr(err error) *errs.Error {
 	switch {
 	case errors.Is(err, ask.ErrNotSteward):
 		return errs.New(errs.EPERM, "Only the space's stewards can see or answer its questions.")
+	case errors.Is(err, ask.ErrNotOwner):
+		return errs.New(errs.EPERM, "Only the document's current owner can mark it reviewed here.")
 	case errors.Is(err, kill.ErrKilled):
 		return errs.New(errs.EKILLED, "Publishing notes is switched off for now.")
 	case errors.Is(err, toolbus.ErrPerm):
@@ -179,6 +182,15 @@ func (h Questions) review(w http.ResponseWriter, r *http.Request) {
 	if h.ReviewAfter != nil {
 		after = h.ReviewAfter(name)
 	}
+	if r.URL.Query().Get("section") == "due" { // SB-3105
+		res, err := h.Service.ComingDue(r.Context(), s, name, h.Reviews, after)
+		if err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", res)
+		return
+	}
 	if r.URL.Query().Get("section") == "uncited" { // SB-2803
 		res, err := h.Service.Uncited(r.Context(), s, name, h.Reviews)
 		if err != nil {
@@ -241,6 +253,27 @@ func (h Questions) mark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"document": m.Doc, "version": m.Version})
+}
+
+// markOwn is an owner's Reviewed, still right on their own document (SB-3106).
+func (h Questions) markOwn(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Cite string `json:"cite"`
+	}
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite."))
+		return
+	}
+	m, err := h.Service.MarkOwn(r.Context(), s, body.Cite)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", m)
 }
 
 // claim is I'll answer this, and DELETE lets it go (SB-2502).

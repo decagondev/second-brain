@@ -13,7 +13,7 @@ summary: "Owners hear about their old documents but can't mark one reviewed."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-11, LAW-12 |
 | Depends on | SB-2806 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Owners hear about their old documents but can't mark one reviewed.
 
 ## Acceptance criteria
 
-- [ ] The current owner at the source can mark their own document Reviewed, still right from the Documents tab
-- [ ] The mark is the stewards' record and the audit row names the owner
-- [ ] Someone else's document is refused with EPERM; a deprovisioned owner can't mark
+- [x] The current owner at the source can mark their own document Reviewed, still right from the Documents tab
+- [x] The mark is the stewards' record and the audit row names the owner
+- [x] Someone else's document is refused with EPERM; a deprovisioned owner can't mark
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+POST /v1/documents/reviewed lets a document's current owner mark it in each space that holds it, audited as them; search results carry mine and the Documents tab offers the mark. The owner note still links to the Documents tab unfiltered: a filtered view would be a new page
 
 ## Definition of done
 

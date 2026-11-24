@@ -95,6 +95,8 @@ type Result struct {
 	Flags   []string       `json:"flags"`
 	Spaces  []string       `json:"spaces,omitempty"`
 	Label   string         `json:"label,omitempty"`
+	// Mine is the asker being the document's current owner at the source (SB-3106).
+	Mine bool `json:"mine,omitempty"`
 }
 
 // SearchResponse is the 200 body of GET /v1/search.
@@ -141,13 +143,16 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	own := a.owners()
 	shown := map[string]bool{}
 	now := a.Now()
+	mine := a.addresses(ctx, s)
 	for _, c := range res.Context {
 		k := c.Kind + ":" + c.SourceID
 		if shown[k] || len(out.Results) == MaxResults || !req.keep(c, now) {
 			continue
 		}
 		shown[k] = true
-		out.Results = append(out.Results, a.result(ctx, own, c))
+		r := a.result(ctx, own, c)
+		r.Mine = c.Owner != "" && mine[strings.ToLower(c.Owner)]
+		out.Results = append(out.Results, r)
 	}
 	h := sha256.Sum256([]byte(q))
 	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), QuerySHA256: hex.EncodeToString(h[:]),

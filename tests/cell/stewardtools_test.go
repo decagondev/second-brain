@@ -110,6 +110,14 @@ func TestStewardsToolsThroughARunningCell(t *testing.T) {
 	if code, body := r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cite":"`+wrong+`"}`); code != 200 {
 		t.Fatalf("mark: %d %s", code, body)
 	}
+	// SB-3105, SB-3106: the coming-due section answers through the cell; a document that
+	// isn't the caller's own is EPERM.
+	if code, body := r.do(t, "GET", "/v1/spaces/ops/review?section=due", ""); code != 200 || !strings.Contains(body, `"items":`) {
+		t.Fatalf("coming due: %d %s", code, body)
+	}
+	if code, body := r.do(t, "POST", "/v1/documents/reviewed", `{"cite":"docs:nope.md@1"}`); code != http.StatusForbidden {
+		t.Fatalf("someone else's document: %d %s", code, body)
+	}
 	// SB-3103: several at once, each decided on its own; a failure stops nothing.
 	code, body = r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cites":["docs:nope.md@1","`+wrong+`","`+doc+`@99"]}`)
 	if code != 200 || !strings.Contains(body, `{"cite":"`+wrong+`","ok":true}`) ||

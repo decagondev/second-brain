@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S30.2: Share the upkeep
+
+**Wave/slice:** W30 / S30.2 (SB-3105 to SB-3107) · **Status:** Done
+
+**What:** GET /v1/spaces/NAME/review?section=due lists the documents answers lean on that turn stale in the next 14 days, by review_after_days from their version or a mark, or by their own review-by date, soonest first with due_in_days, and the steward screen shows them with Reviewed, still right. POST /v1/documents/reviewed lets a document's current owner at the source mark it reviewed in each space that holds it, the stewards' own record with an audit row naming the owner; search results carry mine, and the Documents tab offers the mark on them. POST /v1/spaces/NAME/proposals/term turns a term, its meaning and up to 10 other spellings into an ordinary steward proposal built from the applied manifest, and the steward screen has Suggest a term.
+
+**Why this way:** Coming due is the same staleness rule run forward, so a mark moves it on and a document's own date doesn't. An owner is recognised only by their own addresses in the directory now, plus the live check, so a deprovisioned or unknown owner gets EPERM, never a guess. A term is a manifest change, so it goes through the proposal and approval by hash (LAW-16); the cell builds the definition so the steward can't overwrite the rest of the space by mistake.
+
+**Learned:** The proposal handler split into a steward check, a body, and a submit, so the term proposal reuses every check. The owner note keeps linking to the Documents tab unfiltered: a filtered list would be a new page.
+
+**Laws:** LAW-01, LAW-11, LAW-12, LAW-16. Every law test is still green.
+
 ## 2026-11-24 S30.1: What the stewards don't see
 
 **Wave/slice:** W30 / S30.1 (SB-3101 to SB-3104) · **Status:** Done

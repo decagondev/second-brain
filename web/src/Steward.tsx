@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import type { FormEvent } from "react";
 import type { Fetch } from "./api";
 import { ReviewList, StewardQuestions } from "./Questions";
 import { t, tj } from "./i18n";
@@ -134,6 +135,7 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
           </div>
         )}
       </section>
+      <SuggestTerm base={base} fetcher={fetcher} />
       <StewardQuestions space={space} fetcher={fetcher} />
       <ReviewList space={space} fetcher={fetcher} />
       <section aria-label={t("Access reviews")}>
@@ -208,5 +210,47 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
       </section>
       {status && <p role="status">{status}</p>}
     </main>
+  );
+}
+
+// Suggest a term (SB-3107): a steward proposal of one glossary term, approved like any other.
+function SuggestTerm({ base, fetcher }: { base: string; fetcher: Fetch }) {
+  const id = useId();
+  const [term, setTerm] = useState("");
+  const [meaning, setMeaning] = useState("");
+  const [spellings, setSpellings] = useState("");
+  const [status, setStatus] = useState("");
+  const list = spellings
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x) => x !== "");
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    try {
+      const p = await call(fetcher, "POST", `${base}/proposals/term`, { term: term.trim(), meaning: meaning.trim(), spellings: list });
+      setStatus(t("Proposal {id} made. Nothing changes until an operator approves it and the manifest is applied.", { id: String(p.id) }));
+      setTerm("");
+      setMeaning("");
+      setSpellings("");
+    } catch (err) {
+      setStatus((err as Error).message);
+    }
+  }
+  return (
+    <section aria-label={t("Glossary")}>
+      <h2>{t("Glossary")}</h2>
+      <form onSubmit={send}>
+        <label htmlFor={`${id}-t`}>{t("Term")}</label>
+        <input id={`${id}-t`} maxLength={40} value={term} onChange={(e) => setTerm(e.target.value)} />
+        <label htmlFor={`${id}-m`}>{t("Meaning")}</label>
+        <input id={`${id}-m`} maxLength={200} value={meaning} onChange={(e) => setMeaning(e.target.value)} />
+        <label htmlFor={`${id}-s`}>{t("Other spellings, separated by commas (at most 10)")}</label>
+        <input id={`${id}-s`} value={spellings} onChange={(e) => setSpellings(e.target.value)} />
+        <button type="submit" disabled={term.trim() === "" || meaning.trim() === "" || list.length > 10}>
+          {t("Suggest a term")}
+        </button>
+      </form>
+      {status && <p role="status">{status}</p>}
+    </section>
   );
 }
