@@ -268,12 +268,12 @@ func (c *Cell) askers(ctx context.Context, from, to time.Time) ([]string, error)
 }
 
 // digestChanges is what changed this week, company-wide, as the person now (SB-2103).
-func (c *Cell) digestChanges(ctx context.Context, user string) ([]string, int, error) {
+func (c *Cell) digestChanges(ctx context.Context, user string, days int) ([]string, int, error) {
 	s, err := c.ScopeAs(ctx, user, "company")
 	if err != nil {
 		return nil, 0, err
 	}
-	resp, err := c.Parts().Agent.Changes(ctx, s, 7)
+	resp, err := c.Parts().Agent.Changes(ctx, s, days)
 	if err != nil {
 		return nil, 0, err
 	}

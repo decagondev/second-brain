@@ -110,6 +110,7 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Copy: {name}, source {cite}, opens in a new tab": { de: "Kopie: {name}, Quelle {cite}, öffnet in einem neuen Tab", fr: "Copie : {name}, source {cite}, s'ouvre dans un nouvel onglet" },
   "Couldn't check stewards for: {spaces}": { de: "Verantwortliche konnten nicht geprüft werden für: {spaces}", fr: "Impossible de vérifier les responsables pour : {spaces}" },
   "Counted {at}: {gone} documents their source no longer lists, {unheld} no space holds. sb index prune --dry-run lists them.": { de: "Gezählt {at}: {gone} Dokumente, die ihre Quelle nicht mehr führt, {unheld}, die kein Bereich hält. sb index prune --dry-run listet sie.", fr: "Compté {at} : {gone} documents que leur source ne liste plus, {unheld} qu'aucun espace ne contient. sb index prune --dry-run les liste." },
+  "Daily, each working morning": { de: "Täglich, jeden Arbeitsmorgen", fr: "Chaque jour ouvré, le matin" },
   "Decision": { de: "Entscheidung", fr: "Décision" },
   "Decisions": { de: "Entscheidungen", fr: "Décisions" },
   "Decisions: {decisions}": { de: "Entscheidungen: {decisions}", fr: "Décisions : {decisions}" },

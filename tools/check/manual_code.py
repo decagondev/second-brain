@@ -16,7 +16,7 @@ NOT_BUILT = {}
 
 ROUTE = re.compile(r'Handle(?:Func)?\("(GET|POST|PUT|PATCH|DELETE) (/[^"]*)"')
 MANUAL_ROUTE = re.compile(
-    r'\b(GET|POST|PUT|PATCH|DELETE)\s+(/(?:v1|scim|metrics|verify|healthz|readyz|connectors|login|logout|callback|chat|Users|Groups)[^\s`\'")\]|,;]*|/(?=[\s`]))')
+    r'\b(GET|POST|PUT|PATCH|DELETE)\s+(/(?:v1|scim|metrics|verify|healthz|readyz|connectors|login|logout|callback|chat|Users|Groups|opensearch\.xml)[^\s`\'")\]|,;]*|/(?=[\s`]))')
 CASE = re.compile(r'case "([a-z][a-z-]*(?: [a-z][a-z-]*)?)"')
 PLANNED = re.compile(r'"([a-z]+ [a-z-]+)":\s*"SB-\d+"')
 FLAG = re.compile(r'"(--[a-z][a-z-]+)"')

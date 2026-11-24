@@ -13,7 +13,7 @@ summary: "Searching the brain means opening it first."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | — |
 | Depends on | SB-1701 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ Searching the brain means opening it first.
 
 ## Acceptance criteria
 
-- [ ] The cell serves `/opensearch.xml` pointing at the Documents tab with the words as q
-- [ ] The search runs signed in as always
-- [ ] The file is valid OpenSearch
+- [x] The cell serves `/opensearch.xml` pointing at the Documents tab with the words as q
+- [x] The search runs signed in as always
+- [x] The file is valid OpenSearch
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Cell
-- [ ] UI
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Cell
+- [x] UI
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. `api.Web.Base` and `Web.openSearch`: `GET /opensearch.xml` (OpenSearch 1.1, `BASE/?tab=documents&q={searchTerms}`), linked from index.html; `App` takes `q` and runs it on the Documents tab. TestOpenSearch (parsed as XML), web brief.test.tsx.
 
 ## Definition of done
 

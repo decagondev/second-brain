@@ -195,3 +195,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-07 | Tested (extended) | SB-3704: question trends are counts of the space's own terms, at least 5 asks each (TestTrendsBySpace, TestDigestTrends) |
 | 2026-11-24 | LAW-12 | Tested (extended) | SB-3706: a deprovisioned owner can't be asked (TestFillItInOnceThroughARunningCell) |
 | 2026-11-24 | LAW-12 | Tested (extended) | SB-3801, SB-3803: a token an admin revokes is refused on MCP at once (TestWorkWherePeopleAreThroughARunningCell) |
+| 2026-11-24 | LAW-01 | Tested (extended) | SB-3805: the digest law runs with the daily window (law01digest) |

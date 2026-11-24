@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S37.2: Know it's used
+
+**Wave/slice:** W37 / S37.2 (SB-3804 to SB-3806) · **Status:** Done
+
+**What:** The weekly report adds an Adoption row: how many seats asked this week and last week, and by space where at least 5 people asked. In their notification settings, people can choose a daily digest that arrives each working morning instead of on Mondays. A browser can add the brain as a search engine: the cell serves /opensearch.xml, and its URL opens the Documents tab with the search already run.
+
+**Why this way:** Admins need to see whether people use the brain without anyone being watched, so the row has counts only and leaves out any space with fewer than 5 people. The daily digest reuses the weekly one's code and the same check as each person, and only the timing and the window change. Searching from the address bar needs no extension and no new page, only a static description file and a query parameter the app already understood.
+
+**Learned:** Once the daily part existed, the watch check had to be split by person, so each saved question is checked on exactly one schedule. On a Monday, the daily window has to reach back to Friday morning.
+
+**Laws:** LAW-01, LAW-07, LAW-12. Every law test is still green.
+
 ## 2026-11-24 S37.1: From other tools
 
 **Wave/slice:** W37 / S37.1 (SB-3801 to SB-3803) · **Status:** Done

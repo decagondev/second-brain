@@ -547,7 +547,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		savers = append(savers, rules)
 	}
 	if cfg.Web != "" {
-		api.Web{Files: os.DirFS(cfg.Web), Language: func() string { return c.Manifest().Language }}.Register(public)
+		api.Web{Files: os.DirFS(cfg.Web), Base: cfg.BaseURL, Language: func() string { return c.Manifest().Language }}.Register(public)
 	}
 	api.Ask{Agent: agent, Feedback: ask.Feedbacks{Agent: agent, Store: c.Traces}, Release: c.Release, NewID: newID}.Register(mux)
 	api.Drafts{Agent: ask.Drafts{Agent: agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},

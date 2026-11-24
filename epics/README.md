@@ -41,7 +41,7 @@ summary: Epics, waves, slices and tickets.
 | W34 Trust and Control | 6 | 0 | 0 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
 | W35 Trust Each Answer | 7 | 0 | 0 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
 | W36 Capture Conversations | 7 | 0 | 0 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
-| W37 Work Where People Are | 3 | 0 | 3 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
+| W37 Work Where People Are | 6 | 0 | 0 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -701,6 +701,6 @@ flowchart LR
 | [SB-3801](E38-work-where-people-are/SB-3801-mcp.md) | S37.1 | E38 | Use the brain from other AI tools | Done |
 | [SB-3802](E38-work-where-people-are/SB-3802-ask-about-file.md) | S37.1 | E38 | Ask about a file | Done |
 | [SB-3803](E38-work-where-people-are/SB-3803-admin-tokens.md) | S37.1 | E38 | Every token in one place | Done |
-| [SB-3804](E38-work-where-people-are/SB-3804-adoption.md) | S37.2 | E38 | Adoption | Open |
-| [SB-3805](E38-work-where-people-are/SB-3805-daily-brief.md) | S37.2 | E38 | Daily brief | Open |
-| [SB-3806](E38-work-where-people-are/SB-3806-opensearch.md) | S37.2 | E38 | Search from the address bar | Open |
+| [SB-3804](E38-work-where-people-are/SB-3804-adoption.md) | S37.2 | E38 | Adoption | Done |
+| [SB-3805](E38-work-where-people-are/SB-3805-daily-brief.md) | S37.2 | E38 | Daily brief | Done |
+| [SB-3806](E38-work-where-people-are/SB-3806-opensearch.md) | S37.2 | E38 | Search from the address bar | Done |

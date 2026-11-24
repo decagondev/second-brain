@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W34 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] MCP tools are read-only, off by default, and stop with a revoked token
-- [ ] An attached file is never kept in the index or the trace
-- [ ] No token is ever shown after it is made
-- [ ] Adoption names no one; no space row under 5 people
-- [ ] Every law test still green; no new store, service or Go module
+- [x] MCP tools are read-only, off by default, and stop with a revoked token
+- [x] An attached file is never kept in the index or the trace
+- [x] No token is ever shown after it is made
+- [x] Adoption names no one; no space row under 5 people
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

@@ -280,7 +280,7 @@ func TestWeeklyDigestAndWatches(t *testing.T) {
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) {
 		return []string{"usr_ann", "usr_bob", "usr_ann", "usr_gone", "usr_cat"}, nil
 	}
-	j.Changes = func(_ context.Context, u string) ([]string, int, error) {
+	j.Changes = func(_ context.Context, u string, _ int) ([]string, int, error) {
 		switch u {
 		case "usr_ann":
 			return []string{"Refund policy", "Carrier contracts"}, 3, nil
@@ -331,7 +331,7 @@ func TestWeeklyDigestAndWatches(t *testing.T) {
 	j, s, c = world(now.AddDate(0, 0, 7))
 	j.Questions = questions{}
 	c.weekly["weekly"] = now
-	j.Digest, j.Askers, j.Changes = false, func(context.Context, time.Time, time.Time) ([]string, error) { return []string{"usr_ann"}, nil }, func(context.Context, string) ([]string, int, error) { return []string{"x"}, 0, nil }
+	j.Digest, j.Askers, j.Changes = false, func(context.Context, time.Time, time.Time) ([]string, error) { return []string{"usr_ann"}, nil }, func(context.Context, string, int) ([]string, int, error) { return []string{"x"}, 0, nil }
 	w.qs[0].Sources = "old"
 	j.Watches, j.Sources = w, func(context.Context, string, string, string) (string, error) { return "new", nil }
 	if _, err := j.Run(context.Background()); err != nil || len(s.got) != 2 || s.got[0].msg.Kind != KindWatch || s.got[1].msg.Kind != KindWatch {
@@ -345,7 +345,7 @@ func TestFirstWeekSendsNothing(t *testing.T) {
 	j.Questions = questions{}
 	j.Digest = true
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return []string{"usr_ann"}, nil }
-	j.Changes = func(context.Context, string) ([]string, int, error) { return []string{"x"}, 0, nil }
+	j.Changes = func(context.Context, string, int) ([]string, int, error) { return []string{"x"}, 0, nil }
 	if _, err := j.Run(context.Background()); err != nil || len(s.got) != 0 || !c.weekly["weekly"].Equal(Monday(now, nil)) {
 		t.Fatalf("%v %v %v", s.got, err, c.weekly)
 	}
@@ -407,7 +407,7 @@ func TestDigestStewardLines(t *testing.T) {
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) {
 		return []string{"usr_sam", "usr_ann"}, nil
 	}
-	j.Changes = func(_ context.Context, u string) ([]string, int, error) {
+	j.Changes = func(_ context.Context, u string, _ int) ([]string, int, error) {
 		if u == "usr_sam" {
 			return []string{"Refund policy"}, 0, nil
 		}
@@ -437,7 +437,7 @@ func TestDigestStewardLines(t *testing.T) {
 	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
 	j.Questions = questions{[]ask.StewardQuestion{{ID: "qs_1", Space: "spc_finance", At: now.Add(-2 * 24 * time.Hour)}}}
 	j.Clock.(*clock).t = now.Add(-time.Minute)
-	j.Digest, j.Askers, j.Changes = true, func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }, func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.Digest, j.Askers, j.Changes = true, func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }, func(context.Context, string, int) ([]string, int, error) { return nil, 0, nil }
 	j.Dir.(dir).groups["finance-leads"] = []string{"usr_hal"}
 	if _, err := j.Run(context.Background()); err != nil {
 		t.Fatal(err)
@@ -457,7 +457,7 @@ func TestDigestFoundNothing(t *testing.T) {
 	j.Clock.(*clock).t = now.Add(-time.Minute)
 	j.Digest, j.Zone = true, time.UTC
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }
-	j.Changes = func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.Changes = func(context.Context, string, int) ([]string, int, error) { return nil, 0, nil }
 	j.FoundNothing = func(context.Context, time.Time, time.Time) (map[string]int, error) {
 		return map[string]int{"spc_finance": 3, "spc_gone": 2}, nil
 	}
@@ -473,7 +473,7 @@ func TestDigestFoundNothing(t *testing.T) {
 	j.Clock.(*clock).t = now.Add(-time.Minute)
 	j.Digest, j.Zone = true, time.UTC
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }
-	j.Changes = func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.Changes = func(context.Context, string, int) ([]string, int, error) { return nil, 0, nil }
 	j.FoundNothing = func(context.Context, time.Time, time.Time) (map[string]int, error) {
 		return nil, errors.New("traces down")
 	}

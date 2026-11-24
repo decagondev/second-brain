@@ -31,16 +31,16 @@ import (
 
 // DigestSystem is the digest's view of changes: titles of what changed for user, now.
 type DigestSystem interface {
-	Changes(a ask.Agent, scope func(user string) tenancy.Scope) func(ctx context.Context, user string) ([]string, int, error)
+	Changes(a ask.Agent, scope func(user string) tenancy.Scope) func(ctx context.Context, user string, days int) ([]string, int, error)
 }
 
 // RealDigest is the cell's: GET /v1/changes as the person, now.
 type RealDigest struct{}
 
 // Changes implements DigestSystem.
-func (RealDigest) Changes(a ask.Agent, scope func(string) tenancy.Scope) func(context.Context, string) ([]string, int, error) {
-	return func(ctx context.Context, user string) ([]string, int, error) {
-		resp, err := a.Changes(ctx, scope(user), 7)
+func (RealDigest) Changes(a ask.Agent, scope func(string) tenancy.Scope) func(context.Context, string, int) ([]string, int, error) {
+	return func(ctx context.Context, user string, days int) ([]string, int, error) {
+		resp, err := a.Changes(ctx, scope(user), days)
 		if err != nil {
 			return nil, 0, err
 		}

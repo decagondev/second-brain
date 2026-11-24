@@ -817,14 +817,20 @@ export interface NotifyPrefs {
   off: string[];
   // Until when everything is paused (SB-2506); none is not paused.
   paused_until?: string;
+  // "daily" for the daily brief (SB-3805); none is weekly.
+  digest?: string;
 }
 
-function prefsOf(d: { off?: string[]; paused_until?: string }): NotifyPrefs {
-  return { off: Array.isArray(d.off) ? d.off : [], ...(typeof d.paused_until === "string" ? { paused_until: d.paused_until } : {}) };
+function prefsOf(d: { off?: string[]; paused_until?: string; digest?: string }): NotifyPrefs {
+  return {
+    off: Array.isArray(d.off) ? d.off : [],
+    ...(typeof d.paused_until === "string" ? { paused_until: d.paused_until } : {}),
+    ...(d.digest === "daily" ? { digest: "daily" } : {}),
+  };
 }
 
 export async function notifySettings(f: Fetch = fetch): Promise<NotifyPrefs> {
-  return prefsOf(await call<{ off?: string[]; paused_until?: string }>("/v1/me/notifications", {}, f));
+  return prefsOf(await call<{ off?: string[]; paused_until?: string; digest?: string }>("/v1/me/notifications", {}, f));
 }
 
 // setNotifySettings replaces the kinds turned off; pauseDays, when given, pauses for that
@@ -834,8 +840,9 @@ export function testNotification(f: Fetch = fetch): Promise<{ sent: boolean; via
   return call("/v1/me/notifications/test", post({}), f);
 }
 
-export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number): Promise<NotifyPrefs> {
-  const body = pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
+export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number, digest?: "daily" | "weekly"): Promise<NotifyPrefs> {
+  const body: Record<string, unknown> = pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
+  if (digest) body.digest = digest;
   return prefsOf(await call("/v1/me/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, f));
 }
 

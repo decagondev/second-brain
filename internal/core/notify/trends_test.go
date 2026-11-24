@@ -17,7 +17,7 @@ func TestDigestTrends(t *testing.T) {
 	j.Clock.(*clock).t = now.Add(-time.Minute)
 	j.Digest, j.Zone = true, time.UTC
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }
-	j.Changes = func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.Changes = func(context.Context, string, int) ([]string, int, error) { return nil, 0, nil }
 	j.Trends = func(context.Context, time.Time, time.Time) (map[string][]ask.TermCount, error) {
 		return map[string][]ask.TermCount{"spc_finance": {{Term: "cutoff", Count: 14}, {Term: "PO", Count: 9}}}, nil
 	}

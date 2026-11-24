@@ -52,6 +52,7 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Off       []string `json:"off"`
 		PauseDays *int     `json:"pause_days"`
+		Digest    *string  `json:"digest"` // SB-3805; nil keeps it
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"off": ["digest"]}.`))
@@ -63,7 +64,15 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// A pause is set only by pause_days, from now; one sent as paused_until is ignored (SB-2506).
-	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil}.Check()
+	digest := old.Digest
+	if body.Digest != nil {
+		digest = *body.Digest
+	}
+	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil, Digest: digest}.Check()
+	if errors.Is(err, notify.ErrDigest) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The digest is daily or weekly."))
+		return
+	}
 	if errors.Is(err, notify.ErrKind) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access, tokens or owned."))
 		return

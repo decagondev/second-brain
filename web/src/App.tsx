@@ -42,7 +42,8 @@ const tabs: { id: Tab; name: string }[] = [
 const searchable = new Set(["EUNAVAIL", "EBUDGET"]);
 
 // tab opens the app on a tab, from a notification's link (?tab=questions; SB-2102).
-export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: string; tab?: string }) {
+// q is a search from the address bar (SB-3806): with tab documents, it runs at once.
+export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetch; share?: string; tab?: string; q?: string }) {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
@@ -51,7 +52,9 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [space, setSpace] = useState(""); // "" is the whole company
   const [tab, setTab] = useState<Tab>(tabs.find((x) => x.id === first)?.id ?? "answer");
-  const [searchFor, setSearchFor] = useState<{ text: string; n: number }>();
+  const [searchFor, setSearchFor] = useState<{ text: string; n: number } | undefined>(() =>
+    first === "documents" && fromBar?.trim() ? { text: fromBar.trim().slice(0, 4000), n: 1 } : undefined,
+  );
   const [ownerFor, setOwnerFor] = useState<{ email: string; n: number }>(); // SB-3306
   const [suggested, setSuggested] = useState<string[]>([]); // SB-3307
   const [shared, setShared] = useState<SharedQuestion>();

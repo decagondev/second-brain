@@ -175,3 +175,21 @@ func TestMCPOffByDefault(t *testing.T) {
 		t.Fatalf("MCP without mcp: true: %d", code)
 	}
 }
+
+// SB-3805: the daily brief is a setting a person chooses and can take back.
+func TestDailyBriefSetting(t *testing.T) {
+	r := start(t)
+	r.signIn(t, "ann")
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"digest":"daily"}`); code != 200 || !strings.Contains(body, `"digest":"daily"`) {
+		t.Fatalf("daily: %d %s", code, body)
+	}
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":["watch"]}`); code != 200 || !strings.Contains(body, `"digest":"daily"`) {
+		t.Fatalf("kept without digest: %d %s", code, body)
+	}
+	if code, _ := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"digest":"hourly"}`); code != http.StatusBadRequest {
+		t.Fatalf("hourly: %d", code)
+	}
+	if code, body := r.do(t, "PUT", "/v1/me/notifications", `{"off":[],"digest":"weekly"}`); code != 200 || strings.Contains(body, `"digest"`) {
+		t.Fatalf("weekly: %d %s", code, body)
+	}
+}

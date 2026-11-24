@@ -142,9 +142,9 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
   }, [fetcher]);
   if (!prefs) return null;
   const off = prefs.off;
-  async function save(next: string[], pauseDays?: number) {
+  async function save(next: string[], pauseDays?: number, digest?: "daily" | "weekly") {
     try {
-      setPrefs(await setNotifySettings(next, fetcher, pauseDays));
+      setPrefs(await setNotifySettings(next, fetcher, pauseDays, digest));
       setStatus(t("Saved."));
     } catch (e) {
       setStatus(errMsg(e, t("Your settings couldn't be saved.")));
@@ -171,6 +171,18 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
             onChange={(e) => save(e.target.checked ? off.filter((x) => x !== k.id) : [...off, k.id])}
           />{" "}
           <label htmlFor={`${base}-${k.id}`}>{t(k.name)}</label>
+          {k.id === "digest" && !off.includes("digest") && (
+            <>
+              {" "}
+              <input
+                type="checkbox"
+                id={`${base}-daily`}
+                checked={prefs.digest === "daily"}
+                onChange={(e) => save(off, undefined, e.target.checked ? "daily" : "weekly")}
+              />{" "}
+              <label htmlFor={`${base}-daily`}>{t("Daily, each working morning")}</label>
+            </>
+          )}
         </div>
       ))}
       {paused ? (

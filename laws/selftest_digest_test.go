@@ -14,8 +14,8 @@ import (
 // uncheckedDigest lists what the index says changed, without checking it as the person.
 type uncheckedDigest struct{ sinceForever bool }
 
-func (u uncheckedDigest) Changes(a ask.Agent, _ func(string) tenancy.Scope) func(context.Context, string) ([]string, int, error) {
-	return func(ctx context.Context, _ string) ([]string, int, error) {
+func (u uncheckedDigest) Changes(a ask.Agent, _ func(string) tenancy.Scope) func(context.Context, string, int) ([]string, int, error) {
+	return func(ctx context.Context, _ string, _ int) ([]string, int, error) {
 		since := a.Now().Add(-7 * 24 * time.Hour)
 		if u.sinceForever {
 			since = time.Time{}

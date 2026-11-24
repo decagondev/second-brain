@@ -13,7 +13,7 @@ summary: "The digest comes once a week, which is too slow for some people."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07, LAW-12 |
 | Depends on | SB-2103 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ The digest comes once a week, which is too slow for some people.
 
 ## Acceptance criteria
 
-- [ ] Notification settings take `digest: daily`, which sends a short message each working morning at 08:00 instead of Monday's
-- [ ] It holds what changed in their spaces and their watched questions
-- [ ] A quiet day sends nothing; weekly people are unchanged
+- [x] Notification settings take `digest: daily`, which sends a short message each working morning at 08:00 instead of Monday's
+- [x] It holds what changed in their spaces and their watched questions
+- [x] A quiet day sends nothing; weekly people are unchanged
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Notify
-- [ ] Settings
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Notify
+- [x] Settings
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. `notify.Prefs.Digest` (`daily`), `ErrDigest`, `WorkingMorning`, `Job.daily`, `Job.dailyDigests`, `Job.watched` (shared with the weekly part), the `daily` clock part; `Job.Changes` takes the days. `PUT /v1/me/notifications` takes `digest`; the Questions tab's settings have **Daily, each working morning**. TestDailyBrief, TestWorkingMorning, TestPrefsDigest, TestDailyBriefSetting, web brief.test.tsx; LAW-01's digest law runs with the days.
 
 ## Definition of done
 

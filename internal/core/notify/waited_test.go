@@ -116,7 +116,7 @@ func TestDigestOverdueFirst(t *testing.T) {
 	j.Clock.(*clock).t = now.Add(-time.Minute)
 	j.Digest, j.Zone = true, time.UTC
 	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }
-	j.Changes = func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.Changes = func(context.Context, string, int) ([]string, int, error) { return nil, 0, nil }
 	if _, err := j.Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}

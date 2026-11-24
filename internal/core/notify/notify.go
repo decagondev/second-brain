@@ -75,6 +75,8 @@ var ErrNoSuchPerson = errors.New("notify: the chat knows no one by this email")
 type Prefs struct {
 	Off         []string   `json:"off"`
 	PausedUntil *time.Time `json:"paused_until,omitempty"`
+	// Digest is "daily" for the daily brief (SB-3805); "" is the weekly default.
+	Digest string `json:"digest,omitempty"`
 }
 
 // MaxPauseDays is the longest pause.
@@ -118,6 +120,13 @@ var ErrKind = errors.New("notify: EINVAL not a notification kind")
 func (p Prefs) Check() (Prefs, error) {
 	seen := map[string]bool{}
 	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil}
+	switch p.Digest {
+	case "", DigestWeekly:
+	case DigestDaily:
+		out.Digest = DigestDaily
+	default:
+		return Prefs{}, ErrDigest
+	}
 	for _, k := range p.Off {
 		if !Kinds[k] {
 			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned)", ErrKind, k)
@@ -179,9 +188,9 @@ type Job struct {
 	Digest bool
 	// Askers are the people who asked anything in [from, to).
 	Askers func(ctx context.Context, from, to time.Time) ([]string, error)
-	// Changes are the titles of the documents that changed this week in user's spaces,
-	// as user, now (GET /v1/changes), at most MaxDigest, and how many more.
-	Changes func(ctx context.Context, user string) (titles []string, more int, err error)
+	// Changes are the titles of the documents that changed in the last days in user's
+	// spaces, as user, now (GET /v1/changes), at most MaxDigest, and how many more.
+	Changes func(ctx context.Context, user string, days int) (titles []string, more int, err error)
 	// Watches and Sources check watched saved questions: Sources is the hash of the
 	// question's search results as user, in space, now.
 	Watches ask.WatchStore
@@ -278,6 +287,20 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		}
 		marks = append(marks, mark...)
 	}
+	day, dailyDue, err := j.dailyDue(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	if dailyDue {
+		more, mark, err := j.daily(ctx, now)
+		if err != nil {
+			return Result{}, err
+		}
+		if j.Send != nil {
+			out = append(out, more...)
+		}
+		marks = append(marks, mark...)
+	}
 	var res Result
 	for _, o := range out {
 		if !j.wants(ctx, o.to.ID, o.msg.Kind, now) {
@@ -306,6 +329,11 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 	}
 	if due {
 		if err := j.Clock.Mark(ctx, "weekly", week); err != nil {
+			return res, fmt.Errorf("notify: mark: %w", err)
+		}
+	}
+	if dailyDue {
+		if err := j.Clock.Mark(ctx, "daily", day); err != nil {
 			return res, fmt.Errorf("notify: mark: %w", err)
 		}
 	}
@@ -694,6 +722,9 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 				continue
 			}
 			seen[id] = true
+			if j.dailyPerson(ctx, id) {
+				continue // told each working morning instead (SB-3805)
+			}
 			p, ok, err := j.person(ctx, id)
 			if err != nil {
 				return nil, nil, err
@@ -701,7 +732,7 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 			if !ok {
 				continue
 			}
-			titles, more, err := j.Changes(ctx, id)
+			titles, more, err := j.Changes(ctx, id, 7)
 			if err != nil || len(titles) == 0 {
 				continue // nothing they can open changed, or it can't be read as them now
 			}
@@ -728,9 +759,20 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 		return nil, nil, err
 	}
 	out = append(out, owned...)
-	if j.Watches == nil || j.Sources == nil {
-		return out, nil, nil
+	watch, marks, err := j.watched(ctx, func(user string) bool { return !j.dailyPerson(ctx, user) })
+	if err != nil {
+		return nil, nil, err
 	}
+	return append(out, watch...), marks, nil
+}
+
+// watched plans the watch messages of the people for whom ok is true; the marks save the
+// new hashes once the run has sent.
+func (j Job) watched(ctx context.Context, ok func(user string) bool) ([]outgoing, []func() error, error) {
+	if j.Watches == nil || j.Sources == nil {
+		return nil, nil, nil
+	}
+	var out []outgoing
 	qs, err := j.Watches.Watched(ctx, j.Tenant)
 	if err != nil {
 		return nil, nil, fmt.Errorf("notify: watched: %w", err)
@@ -739,7 +781,10 @@ func (j Job) weekly(ctx context.Context, now time.Time) ([]outgoing, []func() er
 	var order []string
 	var marks []func() error
 	for _, q := range qs {
-		if _, ok, err := j.person(ctx, q.User); err != nil || !ok {
+		if !ok(q.User) {
+			continue
+		}
+		if _, active, err := j.person(ctx, q.User); err != nil || !active {
 			continue
 		}
 		h, err := j.Sources(ctx, q.User, q.Space, q.Question)

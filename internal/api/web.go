@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/xml"
 	"io/fs"
 	"net/http"
 	"path"
@@ -21,6 +22,8 @@ type Web struct {
 	// Language is the manifest's default UI language (sb-tenant(5) language; SB-2301),
 	// written into index.html's lang attribute; nil or "" leaves the page as built.
 	Language func() string
+	// Base is the cell's base_url, for /opensearch.xml (SB-3806); "" serves none.
+	Base string
 }
 
 var htmlLang = regexp.MustCompile(`<html lang="[a-zA-Z-]*"`)
@@ -30,6 +33,30 @@ var htmlLang = regexp.MustCompile(`<html lang="[a-zA-Z-]*"`)
 // the UI answers only GET and HEAD (BUG-0026).
 func (h Web) Register(mux *http.ServeMux) {
 	mux.Handle("/", h) // route: GET /
+	if h.Base != "" {
+		mux.HandleFunc("GET /opensearch.xml", h.openSearch)
+	}
+}
+
+// openSearch is the OpenSearch 1.1 description (sb-ask(3), Address bar; SB-3806): the
+// Documents tab with the words as q. Only the cell's own address; no sign-in needed.
+func (h Web) openSearch(w http.ResponseWriter, _ *http.Request) {
+	base := strings.TrimRight(h.Base, "/")
+	var b bytes.Buffer
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	b.WriteString(`<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">` + "\n")
+	b.WriteString("  <ShortName>Second Brain</ShortName>\n")
+	b.WriteString("  <Description>Search the company's documents you can open</Description>\n")
+	b.WriteString("  <InputEncoding>UTF-8</InputEncoding>\n")
+	b.WriteString(`  <Url type="text/html" method="get" template="`)
+	_ = xml.EscapeText(&b, []byte(base+"/?tab=documents&q={searchTerms}"))
+	b.WriteString(`"/>` + "\n")
+	b.WriteString("</OpenSearchDescription>\n")
+	hd := w.Header()
+	hd.Set("Content-Type", "application/opensearchdescription+xml; charset=utf-8")
+	hd.Set("X-Content-Type-Options", "nosniff")
+	hd.Set("Cache-Control", "public, max-age=3600")
+	_, _ = w.Write(b.Bytes())
 }
 
 func (h Web) ServeHTTP(w http.ResponseWriter, r *http.Request) {

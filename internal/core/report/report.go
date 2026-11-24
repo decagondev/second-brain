@@ -63,11 +63,13 @@ type Report struct {
 	// Stale counts the cited answers that rested mostly on stale cites (SB-2807).
 	Stale ask.StaleCount `json:"stale_answers"`
 	// Spaces is usage by space (SB-3506): fewer than 5 asks shows only that.
-	Spaces          []ask.SpaceUsage `json:"spaces,omitempty"`
-	Gaps            map[string]int   `json:"gaps"`
-	DraftsUsed      int              `json:"drafts_used"`
-	DraftsDiscarded int              `json:"drafts_discarded"`
-	Actions         map[string]int   `json:"actions"`
+	Spaces []ask.SpaceUsage `json:"spaces,omitempty"`
+	// Adoption is who asked of the seats, this week and last, by space (SB-3804).
+	Adoption        *Adoption      `json:"adoption,omitempty"`
+	Gaps            map[string]int `json:"gaps"`
+	DraftsUsed      int            `json:"drafts_used"`
+	DraftsDiscarded int            `json:"drafts_discarded"`
+	Actions         map[string]int `json:"actions"`
 	// Notify is the notify job's last run when the report was made (SB-2607); counts only.
 	Notify *notify.RunRecord `json:"notify,omitempty"`
 	// Prompt is the 95th percentile of input tokens per model call this week and the week
@@ -202,6 +204,11 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 	if r.Seats > 0 {
 		r.ActivePerSeat = float64(r.ActiveUsers) / float64(r.Seats)
 	}
+	before, err := src.Traces(ctx, tenant, from.AddDate(0, 0, -7), from)
+	if err != nil {
+		return r, err
+	}
+	r.Adoption = AdoptionOf(traces, before, r.Seats)
 	if ns, ok := src.(NotifySource); ok {
 		rec, found, err := ns.LastNotify(ctx)
 		if err != nil {
@@ -246,6 +253,9 @@ func (r Report) Markdown() string {
 	fmt.Fprintf(&b, "# Second Brain weekly report: %s, %s\n\n", r.Tenant, r.Week)
 	fmt.Fprintf(&b, "| Measure | This week |\n|---|---|\n")
 	fmt.Fprintf(&b, "| Weekly active users per seat | %d of %d (%.0f%%) |\n", r.ActiveUsers, r.Seats, 100*r.ActivePerSeat)
+	if r.Adoption != nil {
+		fmt.Fprintf(&b, "| Adoption | %s |\n", r.Adoption.line())
+	}
 	fmt.Fprintf(&b, "| Asks | %d |\n", r.Asks)
 	fmt.Fprintf(&b, "| Searches | %d |\n", r.Searches)
 	fmt.Fprintf(&b, "| Asks refused by the per-person limit | %d |\n", r.Limited)
