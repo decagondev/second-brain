@@ -22,6 +22,8 @@ export interface Health {
   // The index's leftovers (SB-2905) and input tokens per model call (SB-2906).
   index?: { at: string | null; gone: number; unheld: number; warning: boolean };
   prompt?: { p95: number; p95_before: number; warning: boolean };
+  // Spaces with no active steward, and those the directory couldn't answer for (SB-3102).
+  spaces_unstewarded?: { spaces: string[]; unknown: string[]; warning: boolean };
 }
 
 // One answer in the unhelpful-answer queue (SB-1609): counts, decisions and the asker's own
@@ -86,7 +88,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
   async function loadHealth() {
     try {
       const h = (await call(fetcher, "GET", "/v1/admin/health")) as Partial<Health>;
-      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box, notify: h.notify, index: h.index, prompt: h.prompt });
+      setHealth({ jobs: h.jobs ?? [], connectors: h.connectors ?? [], at: h.at ?? "", box: h.box, notify: h.notify, index: h.index, prompt: h.prompt, spaces_unstewarded: h.spaces_unstewarded });
       setHealthError(undefined);
     } catch (e) {
       setHealth(undefined);
@@ -265,6 +267,17 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                   })}
                   {health.prompt.warning ? ` ${t("Growing: over half again last week's.")}` : ""}
                 </p>
+              </>
+            )}
+            {health.spaces_unstewarded?.warning && (
+              <>
+                <h3>{t("Stewards")}</h3>
+                {health.spaces_unstewarded.spaces.length > 0 && (
+                  <p className="attention">{t("Spaces with no active steward: {spaces}", { spaces: health.spaces_unstewarded.spaces.join(", ") })}</p>
+                )}
+                {health.spaces_unstewarded.unknown.length > 0 && (
+                  <p className="attention">{t("Couldn't check stewards for: {spaces}", { spaces: health.spaces_unstewarded.unknown.join(", ") })}</p>
+                )}
               </>
             )}
             <h3>{t("Box")}</h3>

@@ -447,6 +447,41 @@ func TestDigestStewardLines(t *testing.T) {
 	}
 }
 
+// SB-3101: the stewards' line counts questions that found nothing this week, even in a
+// space with no question sent; a failed count sends no digest on a guess.
+func TestDigestFoundNothing(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	j, s, c := world(now)
+	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
+	j.Questions = questions{}
+	j.Clock.(*clock).t = now.Add(-time.Minute)
+	j.Digest, j.Zone = true, time.UTC
+	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }
+	j.Changes = func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.FoundNothing = func(context.Context, time.Time, time.Time) (map[string]int, error) {
+		return map[string]int{"spc_finance": 3, "spc_gone": 2}, nil
+	}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.got) != 1 || s.got[0].to.ID != "usr_sam" || s.got[0].msg.Text != "finance: 0 answered this week, 0 still open, 3 questions found nothing" {
+		t.Fatalf("digests: %+v", s.got)
+	}
+	j, s, c = world(now)
+	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
+	j.Questions = questions{}
+	j.Clock.(*clock).t = now.Add(-time.Minute)
+	j.Digest, j.Zone = true, time.UTC
+	j.Askers = func(context.Context, time.Time, time.Time) ([]string, error) { return nil, nil }
+	j.Changes = func(context.Context, string) ([]string, int, error) { return nil, 0, nil }
+	j.FoundNothing = func(context.Context, time.Time, time.Time) (map[string]int, error) {
+		return nil, errors.New("traces down")
+	}
+	if _, err := j.Run(context.Background()); err == nil {
+		t.Fatalf("a failed count was taken as none: %+v", s.got)
+	}
+}
+
 // SB-2606: a token's owner is told once, seven days before it expires, by its name only;
 // never a deprovisioned owner.
 func TestTokenExpiryToldOnce(t *testing.T) {

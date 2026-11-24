@@ -51,16 +51,48 @@ func (h Questions) Register(mux *http.ServeMux) {
 func (h Questions) k() Knowledge { return Knowledge{Release: h.Release, NewID: h.NewID} }
 
 func (h Questions) fail(w http.ResponseWriter, err error) {
+	h.k().out().fail(w, "", questionErr(err))
+}
+
+func questionErr(err error) *errs.Error {
 	switch {
 	case errors.Is(err, ask.ErrNotSteward):
-		h.k().out().fail(w, "", errs.New(errs.EPERM, "Only the space's stewards can see or answer its questions."))
+		return errs.New(errs.EPERM, "Only the space's stewards can see or answer its questions.")
 	case errors.Is(err, kill.ErrKilled):
-		h.k().out().fail(w, "", errs.New(errs.EKILLED, "Publishing notes is switched off for now."))
+		return errs.New(errs.EKILLED, "Publishing notes is switched off for now.")
 	case errors.Is(err, toolbus.ErrPerm):
-		h.k().out().fail(w, "", errs.New(errs.EPERM, "The note can't be published by you."))
+		return errs.New(errs.EPERM, "The note can't be published by you.")
 	default:
-		h.k().out().fail(w, "", mapErr(err))
+		return mapErr(err)
 	}
+}
+
+// MaxBulk is the most documents one bulk mark or retirement takes (SB-3103).
+const MaxBulk = 50
+
+// bulkItem is one document's outcome in a bulk action.
+type bulkItem struct {
+	Cite  string            `json:"cite"`
+	OK    bool              `json:"ok,omitempty"`
+	Error map[string]string `json:"error,omitempty"`
+}
+
+// bulk runs one action per cite, each on its own: a failure stops nothing (SB-3103).
+func (h Questions) bulk(w http.ResponseWriter, cites []string, one func(cite string) error) {
+	if len(cites) > MaxBulk {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "At most %d documents at once.", MaxBulk))
+		return
+	}
+	items := make([]bulkItem, 0, len(cites))
+	for _, c := range cites {
+		if err := one(c); err != nil {
+			e := questionErr(err)
+			items = append(items, bulkItem{Cite: c, Error: map[string]string{"code": string(e.Code), "message": e.Msg}})
+			continue
+		}
+		items = append(items, bulkItem{Cite: c, OK: true})
+	}
+	h.k().out().ok(w, "", map[string]any{"items": items})
 }
 
 func readJSON(r *http.Request, v any) bool {
@@ -189,10 +221,18 @@ func (h Questions) mark(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Cite string `json:"cite"`
+		Cite  string   `json:"cite"`
+		Cites []string `json:"cites"`
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite."))
+		return
+	}
+	if body.Cites != nil {
+		h.bulk(w, body.Cites, func(c string) error {
+			_, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), c)
+			return err
+		})
 		return
 	}
 	m, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), body.Cite)
@@ -281,12 +321,24 @@ func (h Questions) retire(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Cite       string `json:"cite"`
-		Reason     string `json:"reason"`
-		ReplacedBy string `json:"replaced_by"`
+		Cite       string   `json:"cite"`
+		Cites      []string `json:"cites"`
+		Reason     string   `json:"reason"`
+		ReplacedBy string   `json:"replaced_by"`
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite and a reason."))
+		return
+	}
+	if body.Cites != nil {
+		if body.ReplacedBy != "" {
+			h.k().out().fail(w, "", errs.New(errs.EINVAL, "A replacement is named for one document at a time."))
+			return
+		}
+		h.bulk(w, body.Cites, func(c string) error {
+			_, err := h.Service.Retire(r.Context(), s, r.PathValue("name"), c, body.Reason, "")
+			return err
+		})
 		return
 	}
 	ret, err := h.Service.Retire(r.Context(), s, r.PathValue("name"), body.Cite, body.Reason, body.ReplacedBy)

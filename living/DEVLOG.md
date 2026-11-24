@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S30.1: What the stewards don't see
+
+**Wave/slice:** W30 / S30.1 (SB-3101 to SB-3104) · **Status:** Done
+
+**What:** A space's review now shows how many questions found nothing this week and the week before, with the glossary terms they used, and the stewards' weekly digest line adds that count. A question sent from a space whose steward groups have no active member goes to the company stewards and says which space it came from; health's spaces_unstewarded lists those spaces and any the directory couldn't answer for. Review marks and retirements take up to 50 cites at once, each decided on its own with its own result, and the review list has checkboxes for them. The review also shows this month's and last month's Helpful and Not helpful ratings for answers asked in the space, and the documents the unhelpful ones cited most, checked as the steward.
+
+**Why this way:** Counts and glossary terms tell a steward where the gaps are without showing anyone's question. Only a definite no-steward answer reroutes: a directory that can't answer keeps the question where it was, so nothing is widened on a guess (LAW-03), and health warns instead. A bulk action is the single action repeated, so it gets every check the single one has, and one failure stops nothing.
+
+**Learned:** The running-cell steward test looked for the reported cite anywhere in the review body, which the new feedback section now also names; it now reads the items list only.
+
+**Laws:** LAW-03, LAW-14. Every law test is still green.
+
 ## 2026-11-24 S29.2: Narrow it and say how thin it is
 
 **Wave/slice:** W29 / S29.2 (SB-3004 to SB-3006) · **Status:** Done

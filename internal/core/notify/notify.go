@@ -155,10 +155,13 @@ type Job struct {
 	Questions ask.StewardStore
 	Facts     ask.SpaceFacts
 	Dir       Directory
-	Prefs     PrefStore
-	Send      Sender // nil sends nothing
-	Clock     Clock
-	Now       func() time.Time
+	// FoundNothing counts, per space, the asks in a window that found nothing, for the
+	// stewards' line (SB-3101); nil adds nothing.
+	FoundNothing func(ctx context.Context, from, to time.Time) (map[string]int, error)
+	Prefs        PrefStore
+	Send         Sender // nil sends nothing
+	Clock        Clock
+	Now          func() time.Time
 	// Lookback is how far back a question can be and still have its reply told; the
 	// tenant's retention, since older questions are gone.
 	Lookback time.Duration
@@ -652,11 +655,22 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 		return nil, nil, fmt.Errorf("notify: questions: %w", err)
 	}
 	type tally struct {
-		answered, open int
-		oldest         time.Time
+		answered, open, nothing int
+		oldest                  time.Time
 	}
 	by := map[string]*tally{}
 	week := now.Add(-7 * 24 * time.Hour)
+	if j.FoundNothing != nil { // SB-3101: counts only, never a question
+		found, err := j.FoundNothing(ctx, week, now)
+		if err != nil {
+			return nil, nil, fmt.Errorf("notify: traces: %w", err)
+		}
+		for sp, n := range found {
+			if n > 0 {
+				by[sp] = &tally{nothing: n}
+			}
+		}
+	}
 	for _, q := range qs {
 		t := by[q.Space]
 		if t == nil {
@@ -696,6 +710,9 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 		line := fmt.Sprintf("%s: %d answered this week, %d still open", name, t.answered, t.open)
 		if t.open > 0 {
 			line += ", the oldest " + plural(int(now.Sub(t.oldest).Hours()/24), "day", "days") + " old"
+		}
+		if t.nothing > 0 {
+			line += ", " + plural(t.nothing, "question", "questions") + " found nothing"
 		}
 		ps, err := j.members(ctx, groups)
 		if err != nil {

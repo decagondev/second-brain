@@ -13,7 +13,7 @@ summary: "A space whose steward group emptied out still takes questions nobody g
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-12, LAW-03 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A space whose steward group emptied out still takes questions nobody gets.
 
 ## Acceptance criteria
 
-- [ ] A space whose steward groups have no active member shows in health as `spaces_unstewarded` and warns
-- [ ] Its new questions go to the company-wide answerers, saying the space has no active steward
-- [ ] A directory error warns, never reads as fine
+- [x] A space whose steward groups have no active member shows in health as `spaces_unstewarded` and warns
+- [x] Its new questions go to the company-wide answerers, saying the space has no active steward
+- [x] A directory error warns, never reads as fine
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Check
-- [ ] Routing
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Check
+- [x] Routing
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+A question from a space with no active steward goes to company stewards with from_space; an unknown directory keeps it; health lists spaces_unstewarded
 
 ## Definition of done
 

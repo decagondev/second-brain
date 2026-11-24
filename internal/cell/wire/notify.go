@@ -150,7 +150,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	}
 	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
-		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview,
+		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, FoundNothing: c.foundNothing,
 		Failed: func(kind string) {
 			c.Metrics.Add("sb_notify_failed_total", "Notifications that couldn't be sent, by kind (sb-ask(3)).", map[string]string{"kind": kind}, 1)
 		}}
@@ -404,4 +404,13 @@ func lastNotify(state string) (notify.RunRecord, bool, error) {
 		return rec, false, err
 	}
 	return rec, true, nil
+}
+
+// foundNothing counts the asks per space that found nothing between from and to (SB-3101).
+func (c *Cell) foundNothing(ctx context.Context, from, to time.Time) (map[string]int, error) {
+	ts, err := c.Traces.Between(ctx, c.Config.Tenant, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return ask.FoundNothingBySpace(ts, from, to), nil
 }

@@ -35,6 +35,7 @@ import (
 	"example.com/second-brain/internal/core/backup"
 	"example.com/second-brain/internal/core/health"
 	"example.com/second-brain/internal/core/holds"
+	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
@@ -238,6 +239,7 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 		}
 		r.Prompt = health.PromptFrom(week, before)
 	}
+	r.Unstewarded = c.Unstewarded(ctx)
 	return r, nil
 }
 
@@ -291,4 +293,81 @@ func (c *Cell) syncLag(ctx context.Context, kinds []string) ([]ask.SyncNotice, e
 		}
 	}
 	return out, nil
+}
+
+// stewardDir is the directory reads a steward check needs.
+type stewardDir interface {
+	Members(ctx context.Context, tenant, name string) ([]string, error)
+	User(ctx context.Context, tenant, id string) (u ports.User, found bool, err error)
+}
+
+// unstewarded says whether a space (spc_NAME) has no active member in any of its steward
+// groups now (SB-3102).
+func (c *Cell) unstewarded(ctx context.Context, space string) (none, known bool, err error) {
+	none, known = stewardless(ctx, c.Directory, c.Config.Tenant, c.Manifest(), space)
+	return none, known, nil
+}
+
+// stewardless is unstewarded on a directory and a manifest. A group or user the directory
+// can't answer for, or a steward that isn't a group, makes it unknown: never "has a
+// steward" and never "has none".
+func stewardless(ctx context.Context, dir stewardDir, tenant string, m manifest.Tenant, space string) (none, known bool) {
+	sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
+	if !ok || len(sp.Stewards) == 0 || dir == nil {
+		return false, false
+	}
+	known = true
+	for _, g := range sp.Stewards {
+		name, ok := strings.CutPrefix(g, "group:")
+		if !ok {
+			return false, false
+		}
+		ids, err := dir.Members(ctx, tenant, name)
+		if err != nil {
+			known = false
+			continue
+		}
+		for _, id := range ids {
+			u, found, err := dir.User(ctx, tenant, id)
+			if err != nil {
+				known = false
+				continue
+			}
+			if found && u.Active {
+				return false, true
+			}
+		}
+	}
+	return known, known
+}
+
+// Unstewarded is health's spaces with no active steward, and those it couldn't tell (SB-3102).
+func (c *Cell) Unstewarded(ctx context.Context) *health.Unstewarded {
+	return unstewardedOf(ctx, c.Directory, c.Config.Tenant, c.Manifest())
+}
+
+func unstewardedOf(ctx context.Context, dir stewardDir, tenant string, m manifest.Tenant) *health.Unstewarded {
+	if len(m.Spaces) == 0 {
+		return nil
+	}
+	out := &health.Unstewarded{Spaces: []string{}, Unknown: []string{}}
+	names := make([]string, 0, len(m.Spaces))
+	for n := range m.Spaces {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		if len(m.Spaces[n].Stewards) == 0 {
+			continue
+		}
+		none, known := stewardless(ctx, dir, tenant, m, "spc_"+n)
+		switch {
+		case !known:
+			out.Unknown = append(out.Unknown, n)
+		case none:
+			out.Spaces = append(out.Spaces, n)
+		}
+	}
+	out.Warning = len(out.Spaces)+len(out.Unknown) > 0
+	return out
 }

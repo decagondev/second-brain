@@ -182,11 +182,15 @@ type ReviewResponse struct {
 	// the steward can't open (SB-2907).
 	StartHere   []StartItem `json:"start_here,omitempty"`
 	StartHidden int         `json:"start_here_hidden,omitempty"`
+	// FoundNothing counts the space's answers that found nothing (SB-3101), and Feedback
+	// its ratings and the documents unhelpful answers cited (SB-3104).
+	FoundNothing FoundNothing    `json:"found_nothing"`
+	Feedback     StewardFeedback `json:"feedback"`
 }
 
 // reviewTraces reads the traces once: the review window's, and the space's stale-answer
 // counts this calendar month and last (SB-2807).
-func (x Stewards) reviewTraces(ctx context.Context, src ReviewSource, name string, now time.Time) ([]Trace, Freshness, error) {
+func (x Stewards) reviewTraces(ctx context.Context, src ReviewSource, name string, now time.Time) ([]Trace, []Trace, Freshness, error) {
 	last := MonthStart(MonthStart(now).Add(-time.Hour))
 	from := now.Add(-ReviewWindow)
 	if last.Before(from) {
@@ -194,7 +198,7 @@ func (x Stewards) reviewTraces(ctx context.Context, src ReviewSource, name strin
 	}
 	all, err := src.Between(ctx, x.Agent.Tenant, from, now)
 	if err != nil {
-		return nil, Freshness{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
+		return nil, nil, Freshness{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 	}
 	var traces, thisMonth, lastMonth []Trace
 	for _, t := range all {
@@ -208,7 +212,7 @@ func (x Stewards) reviewTraces(ctx context.Context, src ReviewSource, name strin
 			lastMonth = append(lastMonth, t)
 		}
 	}
-	return traces, Freshness{ThisMonth: StaleShare(thisMonth, SpaceKey(name)), LastMonth: StaleShare(lastMonth, SpaceKey(name))}, nil
+	return traces, all, Freshness{ThisMonth: StaleShare(thisMonth, SpaceKey(name)), LastMonth: StaleShare(lastMonth, SpaceKey(name))}, nil
 }
 
 // Review lists the documents a space holds that answers lean on but that are older than
@@ -221,9 +225,13 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		after = DefaultReviewDays
 	}
 	now := x.Now().UTC()
-	traces, fresh, err := x.reviewTraces(ctx, src, name, now)
+	traces, all, fresh, err := x.reviewTraces(ctx, src, name, now)
 	if err != nil {
 		return ReviewResponse{}, err
+	}
+	months, err := src.FeedbackBetween(ctx, x.Agent.Tenant, MonthStart(MonthStart(now).Add(-time.Hour)), now)
+	if err != nil {
+		return ReviewResponse{}, fmt.Errorf("%w: feedback: %v", ErrUnavailable, err)
 	}
 	fbs, err := src.FeedbackBetween(ctx, x.Agent.Tenant, now.Add(-ReviewWindow), now)
 	if err != nil {
@@ -243,7 +251,10 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		return ReviewResponse{}, err
 	}
 	flaggedAt := lastFlags(fbs)
-	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh}
+	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh, FoundNothing: foundNothing(all, SpaceKey(name), now)}
+	if out.Feedback, err = x.stewardFeedback(ctx, s, SpaceKey(name), all, months, now); err != nil {
+		return out, err
+	}
 	if x.Agent.Glossary != nil {
 		_, out.GlossaryFlagged = usable(x.Agent.Glossary(name))
 	}

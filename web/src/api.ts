@@ -326,6 +326,8 @@ export interface QueueQuestion {
   reply?: { by: string; text: string; cites: string[]; at: string; note?: string };
   // A steward's live claim (SB-2502): who, whether it is the caller's, and until when.
   claim?: { by: string; mine: boolean; until: string };
+  // Rerouted from a space with no active steward (SB-3102).
+  from_space?: string;
 }
 
 export interface NoteResult {
@@ -442,7 +444,43 @@ export interface Freshness {
   last_month: StaleCount;
 }
 
+// Questions that found nothing (SB-3101) and the space's feedback (SB-3104): counts only.
+export interface FoundNothing {
+  this_week: number;
+  last_week: number;
+  terms: string[];
+}
+export interface Ratings {
+  helpful: number;
+  not_helpful: number;
+}
+export interface StewardFeedback {
+  this_month: Ratings;
+  last_month: Ratings;
+  documents: SearchResult[];
+  documents_hidden: number;
+}
+
+// Each document's outcome in a bulk mark or retirement (SB-3103).
+export interface BulkItem {
+  cite: string;
+  ok?: boolean;
+  error?: { code: string; message: string };
+}
+
+export async function markReviewedMany(space: string, cites: string[], f: Fetch = fetch): Promise<BulkItem[]> {
+  const d = await call<{ items?: BulkItem[] }>(`${sp(space)}/review/marks`, post({ cites }), f);
+  return Array.isArray(d.items) ? d.items : [];
+}
+
+export async function retireMany(space: string, cites: string[], reason: string, f: Fetch = fetch): Promise<BulkItem[]> {
+  const d = await call<{ items?: BulkItem[] }>(`${sp(space)}/retired`, post({ cites, reason }), f);
+  return Array.isArray(d.items) ? d.items : [];
+}
+
 export interface ReviewData {
+  found_nothing?: FoundNothing;
+  feedback?: StewardFeedback;
   items: ReviewItem[];
   hidden: { owner?: string; owner_gone?: boolean }[];
   personal_data?: number;
@@ -486,6 +524,8 @@ export async function reviewList(
       evals_to_check?: { id: string; question: string; check: string }[];
       start_here?: StartItem[];
       start_here_hidden?: number;
+      found_nothing?: FoundNothing;
+      feedback?: StewardFeedback;
     }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
@@ -501,6 +541,8 @@ export async function reviewList(
       start_here: Array.isArray(d.start_here) ? d.start_here.filter((x) => typeof x.item === "string" && Array.isArray(x.why)) : undefined,
       start_here_hidden: typeof d.start_here_hidden === "number" ? d.start_here_hidden : undefined,
       freshness: d.freshness && typeof d.freshness.this_month?.answers === "number" && typeof d.freshness.last_month?.answers === "number" ? d.freshness : undefined,
+      found_nothing: d.found_nothing && typeof d.found_nothing.this_week === "number" && Array.isArray(d.found_nothing.terms) ? d.found_nothing : undefined,
+      feedback: d.feedback && typeof d.feedback.this_month?.helpful === "number" && Array.isArray(d.feedback.documents) ? d.feedback : undefined,
     };
   } catch {
     return { items: [], hidden: [] };

@@ -59,6 +59,9 @@ type StewardQuestion struct {
 	Reply    *StewardReply `json:"reply,omitempty"`
 	// Claim is a steward's "I'll answer this" (SB-2502); a reply ends it.
 	Claim *StewardClaim `json:"claim,omitempty"`
+	// FromSpace is the space it was sent from when that space had no active steward, so
+	// it went to the company queue (SB-3102), by name.
+	FromSpace string `json:"from_space,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -109,6 +112,9 @@ type Stewards struct {
 	// members now (SB-2907); nil checks no start_here items.
 	StartItems func(name string) []string
 	Members    func(ctx context.Context, space string) ([]string, error)
+	// Unstewarded says whether a space (spc_NAME) has no active steward now (none), and
+	// whether the directory could tell (known) (SB-3102); nil never reroutes.
+	Unstewarded func(ctx context.Context, space string) (none, known bool, err error)
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -141,6 +147,8 @@ type StewardItem struct {
 	State    string        `json:"state"`
 	Reply    *StewardReply `json:"reply,omitempty"`
 	Claim    *ClaimView    `json:"claim,omitempty"`
+	// FromSpace is the space with no active steward it came from (SB-3102).
+	FromSpace string `json:"from_space,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -179,6 +187,15 @@ func (x Stewards) Send(ctx context.Context, s tenancy.Scope, text, trace string)
 		return StewardQuestion{}, fmt.Errorf("%w: nobody answers questions sent from here", ErrInvalid)
 	}
 	sq := StewardQuestion{ID: x.NewID("qs_"), Tenant: x.Agent.Tenant, Asker: s.User(), Question: q, Space: s.Space(), Trace: trace, At: x.Now().UTC()}
+	if sq.Space != "company" && x.Unstewarded != nil {
+		// Only a definite "nobody" reroutes: an unknown directory keeps it in the space,
+		// which never widens who reads it on a guess (LAW-03).
+		if none, known, err := x.Unstewarded(ctx, sq.Space); err == nil && known && none {
+			if _, _, ok := x.Facts("company"); ok {
+				sq.FromSpace, sq.Space = strings.TrimPrefix(sq.Space, "spc_"), "company"
+			}
+		}
+	}
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "access", Subject: sq.ID, State: "asked",
 		PayloadSHA256: hashOf(q), Reason: "question to stewards", Space: auditSpace(sq.Space)}); err != nil {
 		return StewardQuestion{}, fmt.Errorf("%w: audit: %v", ErrUnavailable, err)
@@ -249,7 +266,7 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 	out := []StewardItem{}
 	now := x.Now().UTC()
 	for _, q := range qs {
-		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply}
+		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace}
 		if q.Reply != nil {
 			it.State = "answered"
 		} else if it.Claim, err = x.claimView(ctx, s, q.Claim, stewards, now); err != nil {

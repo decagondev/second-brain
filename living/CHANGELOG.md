@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Questions that found nothing (SB-3101); no steward left reroutes to company (SB-3102); several documents at once (SB-3103); feedback for the stewards (SB-3104).
 - Ask about this document (SB-3004); one-source warning (SB-3005); GitHub cites open at the cited lines (SB-3006). W29 built.
 - The cited passage (SB-3001); section on the cite (SB-3002); answers in the asker's language (SB-3003).
 - Eval cases that went stale (SB-2904); index leftovers and sb index prune (SB-2905); prompt growth watch (SB-2906); start here gone stale (SB-2907). W28 built.

@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import { AskError, addEvalCase, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, BulkItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -300,6 +300,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
           {items.map((q, i) => (
             <li key={q.id}>
               <p className="question">{q.question}</p>
+              {q.from_space && <p className="meta">{t("{space} has no active steward", { space: q.from_space })}</p>}
               {q.state === "open" ? (
                 <div className="decide">
                   <p className="meta">
@@ -655,6 +656,102 @@ function StartHereStale({ items, hidden }: { items: StartItem[]; hidden: number 
   );
 }
 
+// Questions that found nothing (SB-3101): counts and the space's own terms, never a question.
+function FoundNothingLine({ f }: { f: FoundNothing }) {
+  if (f.this_week === 0 && f.last_week === 0) return null;
+  return (
+    <p className="meta">
+      {t("Questions that found nothing: {now} this week, {last} the week before.", { now: f.this_week, last: f.last_week })}
+      {f.terms.length > 0 ? ` ${t("Glossary terms they used: {terms}.", { terms: f.terms.join(", ") })}` : ""}
+    </p>
+  );
+}
+
+// The space's feedback this month and last, and what unhelpful answers cited (SB-3104).
+function FeedbackLine({ f }: { f: StewardFeedback }) {
+  const any = f.this_month.helpful + f.this_month.not_helpful + f.last_month.helpful + f.last_month.not_helpful > 0;
+  if (!any) return null;
+  return (
+    <section aria-label={t("Feedback")}>
+      <h3>{t("Feedback")}</h3>
+      <p className="meta">
+        {t("This month: {up} helpful, {down} not helpful. Last month: {upBefore} helpful, {downBefore} not helpful.", {
+          up: f.this_month.helpful,
+          down: f.this_month.not_helpful,
+          upBefore: f.last_month.helpful,
+          downBefore: f.last_month.not_helpful,
+        })}
+      </p>
+      {(f.documents.length > 0 || f.documents_hidden > 0) && (
+        <>
+          <p>{t("Cited most in answers rated not helpful:")}</p>
+          <ul className="saved-list">
+            {f.documents.map((d) => (
+              <li key={d.cite}>
+                {d.url ? (
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: d.title ?? d.cite, cite: d.cite })}>
+                    {d.title ?? d.cite}
+                  </a>
+                ) : (
+                  <span>{d.title ?? d.cite}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          {f.documents_hidden > 0 && (
+            <p className="refused">{tn(f.documents_hidden, "and {n} document you can't open", "and {n} documents you can't open")}</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+// Several at once (SB-3103): each document is decided on its own; failures are listed.
+function BulkActions({ space, cites, onDone, fetcher }: { space: string; cites: string[]; onDone: (ok: string[]) => void; fetcher?: Fetch }) {
+  const [reason, setReason] = useState("");
+  const [failed, setFailed] = useState<BulkItem[]>([]);
+  const [busy, setBusy] = useState(false);
+  const id = useId();
+  if (cites.length === 0 && failed.length === 0) return null;
+  async function run(f: () => Promise<BulkItem[]>) {
+    setBusy(true);
+    try {
+      const items = await f();
+      setFailed(items.filter((x) => !x.ok));
+      onDone(items.filter((x) => x.ok).map((x) => x.cite));
+    } catch (e) {
+      setFailed(cites.map((c) => ({ cite: c, error: { code: "EUNAVAIL", message: errMsg(e, t("That didn't work. Try again.")) } })));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="bulk" role="group" aria-label={t("Selected documents")}>
+      {cites.length > 0 && (
+        <>
+          <span>{tn(cites.length, "{n} selected", "{n} selected")}</span>{" "}
+          <button type="button" disabled={busy} onClick={() => void run(() => markReviewedMany(space, cites, fetcher))}>
+            {t("Mark reviewed")}
+          </button>{" "}
+          <label htmlFor={id}>{t("Reason")}</label>{" "}
+          <input id={id} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />{" "}
+          <button type="button" disabled={busy || reason.trim() === ""} onClick={() => void run(() => retireMany(space, cites, reason, fetcher))}>
+            {t("Retire")}
+          </button>
+        </>
+      )}
+      {failed.length > 0 && (
+        <ul className="refused">
+          {failed.map((x) => (
+            <li key={x.cite}>{t("{cite}: {message}", { cite: x.cite, message: x.error?.message ?? "" })}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // The share of the month's cited answers resting mostly on stale cites (SB-2807).
 function FreshnessLine({ f }: { f: Freshness }) {
   const pct = (c: { answers: number; stale: number }) => (c.answers > 0 ? Math.round((100 * c.stale) / c.answers) : 0);
@@ -780,6 +877,7 @@ export function reviewCSV(list: Pick<ReviewData, "items" | "hidden">): string {
 export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
   const [list, setList] = useState<ReviewData>({ items: [], hidden: [] });
   const [bump, setBump] = useState(0);
+  const [picked, setPicked] = useState<string[]>([]);
   const retired = (cite: string) => {
     setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== cite) }));
     setBump((b) => b + 1);
@@ -810,11 +908,30 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
         </button>
       )}
       {list.freshness && <FreshnessLine f={list.freshness} />}
+      {list.found_nothing && <FoundNothingLine f={list.found_nothing} />}
+      <BulkActions
+        space={space}
+        cites={picked}
+        fetcher={fetcher}
+        onDone={(ok) => {
+          setList((l) => ({ ...l, items: l.items.filter((x) => !ok.includes(x.cite)) }));
+          setPicked((p) => p.filter((c) => !ok.includes(c)));
+          setBump((b) => b + 1);
+        }}
+      />
       {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Nothing to review: no relied-on document here is stale or marked wrong.")}</p>}
       {list.items.length > 0 && (
         <ul className="saved-list">
           {list.items.map((r) => (
             <li key={r.cite}>
+              {!r.question && (
+                <input
+                  type="checkbox"
+                  aria-label={t("Select {name}", { name: r.title ?? r.cite })}
+                  checked={picked.includes(r.cite)}
+                  onChange={(e) => setPicked((p) => (e.target.checked ? [...p, r.cite] : p.filter((c) => c !== r.cite)))}
+                />
+              )}{" "}
               {r.url ? (
                 <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: r.title ?? r.cite, cite: r.cite })}>
                   {r.title ?? r.cite}
@@ -876,6 +993,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
           })}
         </p>
       )}
+      {list.feedback && <FeedbackLine f={list.feedback} />}
       <StartHereStale items={list.start_here ?? []} hidden={list.start_here_hidden ?? 0} />
       {list.evals_to_check && list.evals_to_check.length > 0 && (
         <section aria-label={t("Eval cases to check")}>

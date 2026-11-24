@@ -65,6 +65,16 @@ type Report struct {
 	// tokens per model call (SB-2906). Counts only.
 	Index  *Index  `json:"index,omitempty"`
 	Prompt *Prompt `json:"prompt,omitempty"`
+	// Unstewarded are the spaces with no active steward now, and those the directory
+	// couldn't answer for (SB-3102); absent in a cell without spaces.
+	Unstewarded *Unstewarded `json:"spaces_unstewarded,omitempty"`
+}
+
+// Unstewarded is health's spaces with no active steward; either list warns.
+type Unstewarded struct {
+	Spaces  []string `json:"spaces"`
+	Unknown []string `json:"unknown"`
+	Warning bool     `json:"warning"`
 }
 
 // IndexStale is how old the nightly leftover count may be before it warns.

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/adapters/oidc/oidctest"
+	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/cell/ingestsvc"
 	"example.com/second-brain/internal/cell/wire"
 	"example.com/second-brain/internal/cell/wire/celltest"
@@ -85,7 +86,16 @@ func TestStewardsToolsThroughARunningCell(t *testing.T) {
 		if code != 200 {
 			t.Fatalf("review: %d %s", code, body)
 		}
-		return strings.Contains(body, wrong)
+		var rv struct {
+			Items []struct{ Cite string }
+		}
+		_ = json.Unmarshal([]byte(body), &rv)
+		for _, it := range rv.Items {
+			if it.Cite == wrong {
+				return true
+			}
+		}
+		return false
 	}
 	if !listed() {
 		t.Fatal("the reported document isn't on the list")
@@ -99,6 +109,19 @@ func TestStewardsToolsThroughARunningCell(t *testing.T) {
 	}
 	if code, body := r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cite":"`+wrong+`"}`); code != 200 {
 		t.Fatalf("mark: %d %s", code, body)
+	}
+	// SB-3103: several at once, each decided on its own; a failure stops nothing.
+	code, body = r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cites":["docs:nope.md@1","`+wrong+`","`+doc+`@99"]}`)
+	if code != 200 || !strings.Contains(body, `{"cite":"`+wrong+`","ok":true}`) ||
+		strings.Count(body, `"ok":true`) != 1 || strings.Count(body, `"error":`) != 2 {
+		t.Fatalf("bulk mark: %d %s", code, body)
+	}
+	many := `"` + strings.Repeat(`docs:x@1","`, api.MaxBulk) + `docs:x@1"`
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cites":[`+many+`]}`); code != http.StatusBadRequest {
+		t.Fatalf("more than %d at once: %d %s", api.MaxBulk, code, body)
+	}
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/retired", `{"cites":["`+wrong+`"],"reason":"x","replaced_by":"`+wrong+`"}`); code != http.StatusBadRequest {
+		t.Fatalf("a bulk retire with a replacement: %d %s", code, body)
 	}
 	if listed() {
 		t.Fatal("a document marked reviewed is still on the list")

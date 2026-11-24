@@ -34,7 +34,7 @@ summary: Epics, waves, slices and tickets.
 | W27 A Tidy Corpus | 7 | 0 | 0 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
 | W28 A Focused Context | 7 | 0 | 0 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
 | W29 Show the Evidence | 6 | 0 | 0 | Planned 2026-11-24 with the user (E30): show the passage, section on the cite, answers in the asker's language, ask about this document, one-source warning, open at the cited lines ([14-evidence-gaps-surprises.md](../docs/14-evidence-gaps-surprises.md)) |
-| W30 Fill the Gaps | 0 | 0 | 7 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
+| W30 Fill the Gaps | 4 | 0 | 3 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
 | W31 Run Without Surprises | 0 | 0 | 7 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -591,10 +591,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-3101](E31-fill-the-gaps/SB-3101-found-nothing.md) | S30.1 | E31 | Questions that found nothing | Open |
-| [SB-3102](E31-fill-the-gaps/SB-3102-no-steward-left.md) | S30.1 | E31 | Spaces with no steward left | Open |
-| [SB-3103](E31-fill-the-gaps/SB-3103-bulk-review.md) | S30.1 | E31 | Review several at once | Open |
-| [SB-3104](E31-fill-the-gaps/SB-3104-steward-feedback.md) | S30.1 | E31 | Feedback for the stewards | Open |
+| [SB-3101](E31-fill-the-gaps/SB-3101-found-nothing.md) | S30.1 | E31 | Questions that found nothing | Done |
+| [SB-3102](E31-fill-the-gaps/SB-3102-no-steward-left.md) | S30.1 | E31 | Spaces with no steward left | Done |
+| [SB-3103](E31-fill-the-gaps/SB-3103-bulk-review.md) | S30.1 | E31 | Review several at once | Done |
+| [SB-3104](E31-fill-the-gaps/SB-3104-steward-feedback.md) | S30.1 | E31 | Feedback for the stewards | Done |
 | [SB-3105](E31-fill-the-gaps/SB-3105-coming-due.md) | S30.2 | E31 | Coming due | Open |
 | [SB-3106](E31-fill-the-gaps/SB-3106-owner-marks.md) | S30.2 | E31 | Owners mark their own reviewed | Open |
 | [SB-3107](E31-fill-the-gaps/SB-3107-suggest-term.md) | S30.2 | E31 | Suggest a glossary term | Open |
