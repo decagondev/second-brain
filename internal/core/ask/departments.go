@@ -14,6 +14,8 @@ import (
 type Department struct {
 	Name, Template, Prompt, Lead string
 	Tools                        []string // always empty: a department agent can't act (LAW-09)
+	// Restricted runs it only in a restricted space (SB-4003: exec-brief).
+	Restricted bool
 }
 
 // Departments are the department agents the release ships.
@@ -22,6 +24,15 @@ var Departments = map[string]Department{
 	"spec-digest":      {Name: "spec-digest", Template: "product", Prompt: "spec-digest", Lead: "Spec: "},
 	"close-checklist":  {Name: "close-checklist", Template: "finance", Prompt: "close-checklist", Lead: "Close: "},
 	"runbook-answer":   {Name: "runbook-answer", Template: "it-security", Prompt: "runbook-answer", Lead: "Question: "},
+	// An agent for every department (SB-4001 to SB-4003).
+	"policy-answer":    {Name: "policy-answer", Template: "people", Prompt: "policy-answer", Lead: "Policy: "},
+	"clause-finder":    {Name: "clause-finder", Template: "legal", Prompt: "clause-finder", Lead: "Topic: "},
+	"account-brief":    {Name: "account-brief", Template: "sales", Prompt: "account-brief", Lead: "Account: "},
+	"case-brief":       {Name: "case-brief", Template: "support", Prompt: "case-brief", Lead: "Case: "},
+	"brand-check":      {Name: "brand-check", Template: "marketing", Prompt: "brand-check", Lead: "Draft: "},
+	"sop-steps":        {Name: "sop-steps", Template: "operations", Prompt: "sop-steps", Lead: "Procedure: "},
+	"design-rationale": {Name: "design-rationale", Template: "design", Prompt: "design-rationale", Lead: "Design: "},
+	"exec-brief":       {Name: "exec-brief", Template: "executive", Prompt: "exec-brief", Lead: "Question: ", Restricted: true},
 }
 
 // department checks that a department agent may run for this scope: enabled by the
@@ -44,6 +55,9 @@ func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (De
 	}
 	if !found || sp.Template != d.Template || !contains(sp.Agents, name) {
 		return Department{}, fmt.Errorf("%w: agent %s runs only in a %s space that lists it", ErrInvalid, name, d.Template)
+	}
+	if d.Restricted && sp.Label != "restricted" {
+		return Department{}, fmt.Errorf("%w: agent %s runs only in a restricted %s space", ErrInvalid, name, d.Template)
 	}
 	if a.AgentKilled == nil || a.AgentKilled(name) {
 		return Department{}, ErrKilled // no kill-switch reader is treated as killed

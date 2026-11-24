@@ -21,7 +21,9 @@ when { principal.tenant == resource.tenant && resource has enabled && resource.e
 permit (principal, action == Action::"use_agent", resource is Agent)
 when {
   principal.tenant == resource.tenant && resource has enabled && resource.enabled && !resource.consequential &&
-  (resource.name == "incident-summary" || resource.name == "spec-digest" || resource.name == "close-checklist" || resource.name == "runbook-answer")
+  (resource.name == "incident-summary" || resource.name == "spec-digest" || resource.name == "close-checklist" || resource.name == "runbook-answer" ||
+   resource.name == "policy-answer" || resource.name == "clause-finder" || resource.name == "account-brief" || resource.name == "case-brief" ||
+   resource.name == "brand-check" || resource.name == "sop-steps" || resource.name == "design-rationale" || resource.name == "exec-brief")
 };
 
 // Stewards (SB-1201): a member of one of a space's stewards groups may propose a change to

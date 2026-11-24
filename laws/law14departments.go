@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 
@@ -30,8 +31,8 @@ import (
 type DeptAsk func(agent, space string) (ask.Response, error)
 
 type deptSpace struct {
-	name, template string
-	agents         []string
+	name, template, label string // label "" is internal
+	agents                []string
 }
 
 // newDeptCell builds the system under test: the real ask agent with spaces, the shipped
@@ -49,6 +50,9 @@ func newDeptCell(sp []deptSpace) (DeptAsk, error) {
 	for _, s := range sp {
 		x := ports.Space{ID: spaces.ID(s.name), Tenant: spaceTenant, Name: s.name, Template: s.template, Agents: s.agents,
 			Members: []string{"group:staff"}, Label: "internal"}
+		if s.label != "" {
+			x.Label = s.label
+		}
 		all = append(all, x)
 		if err := reg.PutSpace(ctx, x); err != nil {
 			return nil, err
@@ -92,10 +96,13 @@ func newDeptCell(sp []deptSpace) (DeptAsk, error) {
 }
 
 func law14Departments(r *rand.Rand, mk func([]deptSpace) (DeptAsk, error)) error {
-	templates := []string{"engineering", "product", "finance", "it-security", "support"}
+	templates := []string{"engineering", "product", "finance", "it-security", "support", "people", "legal", "sales", "marketing", "operations", "design", "executive"}
 	var sp []deptSpace
 	for i, t := range templates {
 		s := deptSpace{name: fmt.Sprintf("s%d", i), template: t, agents: []string{"ask"}}
+		if r.Intn(2) == 0 {
+			s.label = "restricted" // exec-brief runs only in a restricted space (SB-4003)
+		}
 		for name, d := range ask.Departments {
 			if r.Intn(3) != 0 && (d.Template == t || r.Intn(4) == 0) {
 				s.agents = append(s.agents, name) // sometimes even another template's agent
@@ -107,14 +114,19 @@ func law14Departments(r *rand.Rand, mk func([]deptSpace) (DeptAsk, error)) error
 	if err != nil {
 		return err
 	}
-	names := []string{"incident-summary", "spec-digest", "close-checklist", "runbook-answer"}
+	names := make([]string, 0, len(ask.Departments))
+	for n := range ask.Departments {
+		names = append(names, n)
+	}
+	sort.Strings(names)
 	for i := 0; i < 8; i++ {
 		name := names[r.Intn(len(names))]
 		k := r.Intn(len(sp) + 1)
 		space, want := spaces.Company, false
 		if k < len(sp) {
 			space = sp[k].name
-			want = sp[k].template == ask.Departments[name].Template && contains(sp[k].agents, name)
+			want = sp[k].template == ask.Departments[name].Template && contains(sp[k].agents, name) &&
+				(!ask.Departments[name].Restricted || sp[k].label == "restricted")
 		}
 		resp, err := run(name, space)
 		switch {

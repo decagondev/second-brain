@@ -27,16 +27,16 @@ A **template** is data: a label default, default sources, default agents, retent
 |---|---|---|---|---|---|
 | `engineering` | internal | code, tickets, docs, chat | `ask`, `incident-summary` | tenant's | Product, Design, Support (read), IT/Security |
 | `product` | internal | docs, tickets | `ask`, `spec-digest` | tenant's | Engineering, Design, Sales and Marketing leads |
-| `design` | internal | docs | `ask` | tenant's | Product, Engineering, Marketing |
-| `sales` | confidential | crm, docs | `ask`, `draft-reply` | tenant's | Finance, Support, Executive |
-| `marketing` | internal | docs, chat | `ask`, `draft-reply` | tenant's | Sales, Product |
-| `support` | internal | tickets, docs | `ask`, `draft-reply` | tenant's | Engineering, Product, Sales |
-| `people` | restricted | hris, docs | `ask` | 365 days | Managers for their own reports only; Legal for cases |
+| `design` | internal | docs | `ask`, `design-rationale` | tenant's | Product, Engineering, Marketing |
+| `sales` | confidential | crm, docs | `ask`, `draft-reply`, `account-brief` | tenant's | Finance, Support, Executive |
+| `marketing` | internal | docs, chat | `ask`, `draft-reply`, `brand-check` | tenant's | Sales, Product |
+| `support` | internal | tickets, docs | `ask`, `draft-reply`, `case-brief` | tenant's | Engineering, Product, Sales |
+| `people` | restricted | hris, docs | `ask`, `policy-answer` | 365 days | Managers for their own reports only; Legal for cases |
 | `finance` | restricted | accounting, docs | `ask`, `close-checklist` | tenant's | Executive, budget owners for their own lines |
-| `legal` | restricted | docs | `ask` | tenant's; a legal hold overrides it | Executive; deal teams by matter |
+| `legal` | restricted | docs | `ask`, `clause-finder` | tenant's; a legal hold overrides it | Executive; deal teams by matter |
 | `it-security` | confidential | docs, tickets | `ask`, `runbook-answer` | tenant's | Engineering |
-| `operations` | internal | docs | `ask` | tenant's | Finance, Sales |
-| `executive` | restricted | docs | `ask` | tenant's | Board, named deal teams |
+| `operations` | internal | docs | `ask`, `sop-steps` | tenant's | Finance, Sales |
+| `executive` | restricted | docs | `ask`, `exec-brief` | tenant's | Board, named deal teams |
 | `custom` | internal | any | `ask` | tenant's | whoever its members are |
 
 Some content needs more than the template's default:

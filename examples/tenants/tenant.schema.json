@@ -15,7 +15,15 @@
           "incident-summary",
           "spec-digest",
           "close-checklist",
-          "runbook-answer"
+          "runbook-answer",
+          "policy-answer",
+          "clause-finder",
+          "account-brief",
+          "case-brief",
+          "brand-check",
+          "sop-steps",
+          "design-rationale",
+          "exec-brief"
         ]
       },
       "type": "array",
@@ -216,7 +224,15 @@
                 "incident-summary",
                 "spec-digest",
                 "close-checklist",
-                "runbook-answer"
+                "runbook-answer",
+                "policy-answer",
+                "clause-finder",
+                "account-brief",
+                "case-brief",
+                "brand-check",
+                "sop-steps",
+                "design-rationale",
+                "exec-brief"
               ]
             },
             "type": "array",

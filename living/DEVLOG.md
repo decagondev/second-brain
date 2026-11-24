@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S39.1: The catalogue
+
+**Wave/slice:** W39 / S39.1 (SB-4001 to SB-4003) · **Status:** Done
+
+**What:** Every department template now has an agent of its own: policy-answer for People, clause-finder for Legal, account-brief for Sales, case-brief for Support, brand-check for Marketing, sop-steps for Operations, design-rationale for Design, and exec-brief for Executive. Each runs only in a space of its template, cites every claim, has no tools, and has an eval suite in the release gate.
+
+**Why this way:** Department agents are already a prompt, a template and a lead line on the ask path (SB-1102), so eight more are data and prompts, not code paths. exec-brief also needs a restricted space, because leadership minutes are the most sensitive content a company has.
+
+**Learned:** The prompt set's tests assumed answer was the first prompt by name, which stopped being true once account-brief existed. The Makefile now runs every agent suite by glob, so a new agent can't be left out of the gate.
+
+**Laws:** LAW-01, LAW-09, LAW-14. Every law test is still green.
+
 ## 2026-11-24 S38.2: Leaders and escalation
 
 **Wave/slice:** W38 / S38.2 (SB-3904 to SB-3907) · **Status:** Done

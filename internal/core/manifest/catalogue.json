@@ -4,16 +4,16 @@
   "templates": [
     {"name": "engineering", "label": "internal", "sources": ["code", "tickets", "docs", "chat"], "agents": ["ask", "incident-summary"], "retention_days": 0, "suite": "template-engineering"},
     {"name": "product", "label": "internal", "sources": ["docs", "tickets"], "agents": ["ask", "spec-digest"], "retention_days": 0, "suite": "template-product"},
-    {"name": "design", "label": "internal", "sources": ["docs"], "agents": ["ask"], "retention_days": 0, "suite": "template-design"},
-    {"name": "sales", "label": "confidential", "sources": ["crm", "docs"], "agents": ["ask", "draft-reply"], "retention_days": 0, "suite": "template-sales"},
-    {"name": "marketing", "label": "internal", "sources": ["docs", "chat"], "agents": ["ask", "draft-reply"], "retention_days": 0, "suite": "template-marketing"},
-    {"name": "support", "label": "internal", "sources": ["tickets", "docs"], "agents": ["ask", "draft-reply"], "retention_days": 0, "suite": "template-support"},
-    {"name": "people", "label": "restricted", "sources": ["hris", "docs"], "agents": ["ask"], "retention_days": 365, "suite": "template-people"},
+    {"name": "design", "label": "internal", "sources": ["docs"], "agents": ["ask", "design-rationale"], "retention_days": 0, "suite": "template-design"},
+    {"name": "sales", "label": "confidential", "sources": ["crm", "docs"], "agents": ["ask", "draft-reply", "account-brief"], "retention_days": 0, "suite": "template-sales"},
+    {"name": "marketing", "label": "internal", "sources": ["docs", "chat"], "agents": ["ask", "draft-reply", "brand-check"], "retention_days": 0, "suite": "template-marketing"},
+    {"name": "support", "label": "internal", "sources": ["tickets", "docs"], "agents": ["ask", "draft-reply", "case-brief"], "retention_days": 0, "suite": "template-support"},
+    {"name": "people", "label": "restricted", "sources": ["hris", "docs"], "agents": ["ask", "policy-answer"], "retention_days": 365, "suite": "template-people"},
     {"name": "finance", "label": "restricted", "sources": ["accounting", "docs"], "agents": ["ask", "close-checklist"], "retention_days": 0, "suite": "template-finance"},
-    {"name": "legal", "label": "restricted", "sources": ["docs"], "agents": ["ask"], "retention_days": 0, "suite": "template-legal"},
+    {"name": "legal", "label": "restricted", "sources": ["docs"], "agents": ["ask", "clause-finder"], "retention_days": 0, "suite": "template-legal"},
     {"name": "it-security", "label": "confidential", "sources": ["docs", "tickets"], "agents": ["ask", "runbook-answer"], "retention_days": 0, "suite": "template-it-security"},
-    {"name": "operations", "label": "internal", "sources": ["docs"], "agents": ["ask"], "retention_days": 0, "suite": "template-operations"},
-    {"name": "executive", "label": "restricted", "sources": ["docs"], "agents": ["ask"], "retention_days": 0, "suite": "template-executive"},
+    {"name": "operations", "label": "internal", "sources": ["docs"], "agents": ["ask", "sop-steps"], "retention_days": 0, "suite": "template-operations"},
+    {"name": "executive", "label": "restricted", "sources": ["docs"], "agents": ["ask", "exec-brief"], "retention_days": 0, "suite": "template-executive"},
     {"name": "custom", "label": "internal", "sources": [], "agents": ["ask"], "retention_days": 0, "suite": ""}
   ]
 }

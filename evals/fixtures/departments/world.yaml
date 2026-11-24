@@ -1,17 +1,33 @@
 # World for the department agent suites (SB-1102): one space per department template that
 # ships an agent, each listing it, and one space of another template that doesn't.
 tenant: acme-logistics
-agents: [ask, incident-summary, spec-digest, close-checklist, runbook-answer]
+agents: [ask, incident-summary, spec-digest, close-checklist, runbook-answer, policy-answer, clause-finder, account-brief, case-brief, brand-check, sop-steps, design-rationale, exec-brief]
 users:
   - { id: usr_eng, email: eng@acme-logistics.example, groups: [grp_eng] }
   - { id: usr_pm, email: pm@acme-logistics.example, groups: [grp_product] }
   - { id: usr_fin, email: fin@acme-logistics.example, groups: [grp_finance] }
   - { id: usr_ops, email: ops@acme-logistics.example, groups: [grp_it] }
+  - { id: usr_hr, email: hr@acme-logistics.example, groups: [grp_people] }
+  - { id: usr_law, email: law@acme-logistics.example, groups: [grp_legal] }
+  - { id: usr_ae, email: ae@acme-logistics.example, groups: [grp_sales] }
+  - { id: usr_cs, email: cs@acme-logistics.example, groups: [grp_support] }
+  - { id: usr_mkt, email: mkt@acme-logistics.example, groups: [grp_marketing] }
+  - { id: usr_opsm, email: opsm@acme-logistics.example, groups: [grp_operations] }
+  - { id: usr_ux, email: ux@acme-logistics.example, groups: [grp_design] }
+  - { id: usr_ceo, email: ceo@acme-logistics.example, groups: [grp_exec] }
 spaces:
   engineering: { template: engineering, agents: [ask, incident-summary], members: [grp_eng], label: internal, scope: { docs: ["/Engineering/**"] } }
   product: { template: product, agents: [ask, spec-digest], members: [grp_product, grp_eng], label: internal, scope: { docs: ["/Product/**"] } }
   finance: { template: finance, agents: [ask, close-checklist], members: [grp_finance], label: restricted, scope: { docs: ["/Finance/**"] } }
   it-security: { template: it-security, agents: [ask, runbook-answer], members: [grp_it, grp_eng], label: confidential, scope: { docs: ["/IT/**"] } }
+  people: { template: people, agents: [ask, policy-answer], members: [grp_people], label: restricted, scope: { docs: ["/People/**"] } }
+  legal: { template: legal, agents: [ask, clause-finder], members: [grp_legal], label: restricted, scope: { docs: ["/Legal/**"] } }
+  sales: { template: sales, agents: [ask, account-brief], members: [grp_sales], label: confidential, scope: { docs: ["/Sales/**"] } }
+  support: { template: support, agents: [ask, case-brief], members: [grp_support], label: internal, scope: { docs: ["/Support/**"] } }
+  marketing: { template: marketing, agents: [ask, brand-check], members: [grp_marketing], label: internal, scope: { docs: ["/Marketing/**"] } }
+  operations: { template: operations, agents: [ask, sop-steps], members: [grp_operations], label: internal, scope: { docs: ["/Operations/**"] } }
+  design: { template: design, agents: [ask, design-rationale], members: [grp_design], label: internal, scope: { docs: ["/Design/**"] } }
+  executive: { template: executive, agents: [ask, exec-brief], members: [grp_exec], label: restricted, scope: { docs: ["/Executive/**"] } }
 documents:
   - id: inc-0917
     title: Incident 0917 timeline
@@ -33,3 +49,43 @@ documents:
     text: "First check the VPN gateway health page. Then fail over to the second gateway."
     path: /IT/Runbooks/vpn
     viewers: [ops@acme-logistics.example, eng@acme-logistics.example]
+  - id: leave-policy
+    title: Leave policy
+    text: "Version 4 of the leave policy, reviewed in October, gives 25 days of annual leave. Ask the people team about carry-over."
+    path: /People/Policies/leave
+    viewers: [hr@acme-logistics.example]
+  - id: msa-beta-freight
+    title: Beta Freight master services agreement
+    text: "Clause 12 limits liability to the fees paid in the previous twelve months. Clause 14 lets either party end the agreement with ninety days notice."
+    path: /Legal/Contracts/beta-freight
+    viewers: [law@acme-logistics.example]
+  - id: acct-gamma-parts
+    title: Gamma Parts account notes
+    text: "Gamma Parts has one open deal for warehouse scanning at the proposal stage. The last contact was a call on 12 November about delivery windows."
+    path: /Sales/Accounts/gamma-parts
+    viewers: [ae@acme-logistics.example]
+  - id: case-4411
+    title: Case 4411 tracking not updating
+    text: "The customer reported that tracking stopped updating on 3 November. Similar cases were solved by resyncing the carrier feed."
+    path: /Support/Cases/4411
+    viewers: [cs@acme-logistics.example]
+  - id: brand-guide
+    title: Brand guide
+    text: "Write the company name as Acme Logistics, never ACME. Use sentence case for headlines."
+    path: /Marketing/Brand/guide
+    viewers: [mkt@acme-logistics.example]
+  - id: sop-returns
+    title: Returns procedure
+    text: "Version 3 of the returns procedure: first log the return, then inspect the parcel, then refund within five days."
+    path: /Operations/SOP/returns
+    viewers: [opsm@acme-logistics.example]
+  - id: design-tracking
+    title: Tracking page decision
+    text: "The tracking page shows one status line because the review found that customers missed details in a timeline. A full timeline was set aside."
+    path: /Design/Decisions/tracking
+    viewers: [ux@acme-logistics.example]
+  - id: minutes-nov
+    title: Leadership minutes November
+    text: "The leadership team decided to open the Leeds depot in March. The pricing review is still open."
+    path: /Executive/Minutes/november
+    viewers: [ceo@acme-logistics.example]

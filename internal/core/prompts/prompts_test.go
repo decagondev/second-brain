@@ -13,7 +13,17 @@ func TestGet(t *testing.T) {
 		}
 	}
 	all, err := All()
-	if err != nil || len(all) == 0 || all[0].Name != "answer" {
+	if err != nil || len(all) == 0 {
 		t.Fatalf("All: %v %v", all, err)
+	}
+	found := false
+	for i, p := range all {
+		found = found || p.Name == "answer"
+		if i > 0 && all[i-1].Name >= p.Name {
+			t.Fatalf("All isn't sorted by name: %s before %s", all[i-1].Name, p.Name)
+		}
+	}
+	if !found {
+		t.Fatal("All has no answer prompt")
 	}
 }

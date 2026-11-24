@@ -1,0 +1,17 @@
+# Suite for the clause-finder department agent (SB-4001 to SB-4003; sb-agents(7), Department agents).
+# It answers in its own template's space with every claim cited, and is refused anywhere else.
+suite: agent-clause-finder
+world: fixtures/departments
+cases:
+  - id: clause-finder-001
+    as: usr_law
+    space: legal
+    agent: clause-finder
+    ask: "Which clauses cover liability and ending the agreement?"
+    expect: { cites_any: ["docs:msa-beta-freight@1"], uncited_max: 0 }
+  - id: clause-finder-elsewhere-001     # company-wide: refused
+    as: usr_law
+    space: company
+    agent: clause-finder
+    ask: "Which clauses cover liability and ending the agreement?"
+    expect: { error: "EINVAL" }

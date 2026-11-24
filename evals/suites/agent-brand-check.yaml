@@ -1,0 +1,17 @@
+# Suite for the brand-check department agent (SB-4001 to SB-4003; sb-agents(7), Department agents).
+# It answers in its own template's space with every claim cited, and is refused anywhere else.
+suite: agent-brand-check
+world: fixtures/departments
+cases:
+  - id: brand-check-001
+    as: usr_mkt
+    space: marketing
+    agent: brand-check
+    ask: "Check this headline: ACME Logistics Opens A New Depot"
+    expect: { cites_any: ["docs:brand-guide@1"], uncited_max: 0 }
+  - id: brand-check-elsewhere-001     # company-wide: refused
+    as: usr_mkt
+    space: company
+    agent: brand-check
+    ask: "Check this headline: ACME Logistics Opens A New Depot"
+    expect: { error: "EINVAL" }

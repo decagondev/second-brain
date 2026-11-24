@@ -23,3 +23,11 @@ template-legal: { failures_max: 0 }   # SB-1107
 template-it-security: { failures_max: 0 }   # SB-1107
 template-operations: { failures_max: 0 }   # SB-1107
 template-executive: { failures_max: 0 }   # SB-1107
+agent-policy-answer: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-clause-finder: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-account-brief: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-case-brief: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-brand-check: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-sop-steps: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-design-rationale: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-exec-brief: { failures_max: 0 }   # SB-4001 to SB-4003

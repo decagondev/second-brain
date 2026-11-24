@@ -81,7 +81,8 @@ var (
 	ConnectorKinds = []string{"docs", "chat", "tickets", "crm", "code", "hris", "accounting"}
 	// Languages are the web UI's languages (sb-tenant(5) language; SB-2301).
 	Languages = []string{"en", "de", "fr"}
-	Agents    = []string{"ask", "draft-reply", "incident-summary", "spec-digest", "close-checklist", "runbook-answer"}
+	Agents    = []string{"ask", "draft-reply", "incident-summary", "spec-digest", "close-checklist", "runbook-answer",
+		"policy-answer", "clause-finder", "account-brief", "case-brief", "brand-check", "sop-steps", "design-rationale", "exec-brief"}
 	// Workflows maps each known workflow to the connector kind it writes to.
 	Workflows = map[string]string{"ticket-update": "tickets"}
 )

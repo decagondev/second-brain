@@ -1,0 +1,17 @@
+# Suite for the policy-answer department agent (SB-4001 to SB-4003; sb-agents(7), Department agents).
+# It answers in its own template's space with every claim cited, and is refused anywhere else.
+suite: agent-policy-answer
+world: fixtures/departments
+cases:
+  - id: policy-answer-001
+    as: usr_hr
+    space: people
+    agent: policy-answer
+    ask: "How many days of annual leave do we get?"
+    expect: { cites_any: ["docs:leave-policy@1"], uncited_max: 0 }
+  - id: policy-answer-elsewhere-001     # company-wide: refused
+    as: usr_hr
+    space: company
+    agent: policy-answer
+    ask: "How many days of annual leave do we get?"
+    expect: { error: "EINVAL" }

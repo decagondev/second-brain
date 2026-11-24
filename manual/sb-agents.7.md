@@ -29,6 +29,14 @@ tool call: killed? → authorise → audit → approved? → execute
 | `spec-digest` | Product: what a spec decides and what it leaves open | No |
 | `close-checklist` | Finance: what is done and what is open for a month-end close | No |
 | `runbook-answer` | IT and security: the steps of a runbook for a question, in order | No |
+| `policy-answer` | People: the policy that applies to a question, with its version and review date, and who to ask; never a named employee's own case (SB-4001) | No |
+| `clause-finder` | Legal: the clauses on a topic in the contracts the asker can open, one cited line each, grouped by contract; never legal advice (SB-4001) | No |
+| `account-brief` | Sales: an account's open deals, last contact and people, every line cited (SB-4002) | No |
+| `case-brief` | Support: a case's history and how similar cases were solved (SB-4002) | No |
+| `brand-check` | Marketing: a draft in the question checked against the brand guide, each finding citing the rule; it suggests and never rewrites (SB-4002) | No |
+| `sop-steps` | Operations: a procedure's steps in order, each cited, with its version (SB-4003) | No |
+| `design-rationale` | Design: why a design is as it is, from specs, decisions and reviews (SB-4003) | No |
+| `exec-brief` | Executive: what the leadership team decided this month and what's open; only in a **restricted** `executive` space (SB-4003) | No |
 | `handover` | A brief of the documents one person owns, for whoever takes over from them (SB-1707) | No |
 | workflow, e.g. `ticket-update` | Proposes one consequential action | Only after approval, and only with a receipt |
 
@@ -36,9 +44,9 @@ Agents are **definitions in the release bundle**: a prompt, a tool list and limi
 
 ### Department agents (SB-1102)
 
-`incident-summary`, `spec-digest`, `close-checklist` and `runbook-answer` are read-only agents for one department each. Each is a prompt in the release bundle (`internal/core/prompts/set/NAME.md`) and runs on the `ask` agent's path: the same retrieval, space checks and live ACL, the same model gateway and the same composer. They differ from `ask` in three ways:
+`incident-summary`, `spec-digest`, `close-checklist` and `runbook-answer`, and since SB-4001 to SB-4003 `policy-answer` (`people`), `clause-finder` (`legal`), `account-brief` (`sales`), `case-brief` (`support`), `brand-check` (`marketing`), `sop-steps` (`operations`), `design-rationale` (`design`) and `exec-brief` (`executive`), are read-only agents for one department each, so every department template has one. Each is a prompt in the release bundle (`internal/core/prompts/set/NAME.md`) and runs on the `ask` agent's path: the same retrieval, space checks and live ACL, the same model gateway and the same composer. They differ from `ask` in three ways:
 
-1. **Only in their template's spaces.** Each belongs to one template of the catalogue (sb-departments(7)): `incident-summary` to `engineering`, `spec-digest` to `product`, `close-checklist` to `finance` and `runbook-answer` to `it-security`. It runs only in a space made from that template whose `agents` list it (the template's default when the manifest enables it, sb-space(5)), and the manifest's `agents` must enable it. Anywhere else, and in any company-wide ask, it is refused with `EINVAL` before retrieval. A space can't borrow another department's agent.
+1. **Only in their template's spaces.** Each belongs to one template of the catalogue (sb-departments(7)): `incident-summary` to `engineering`, `spec-digest` to `product`, `close-checklist` to `finance` and `runbook-answer` to `it-security`. It runs only in a space made from that template whose `agents` list it (the template's default when the manifest enables it, sb-space(5)), and the manifest's `agents` must enable it. Anywhere else, and in any company-wide ask, it is refused with `EINVAL` before retrieval. A space can't borrow another department's agent. `exec-brief` also needs the space's label to be `restricted`, the executive template's default; a looser executive space is refused. A team under a department (sb-spaces(7), The tree) takes its department's template, so it can run the department's agent.
 2. **Every claim cited.** A claim the model leaves uncited is dropped from the answer, and counted in `dropped`, rather than labelled. An answer with nothing left is the one uncited "nothing you can open answers this" claim, with its notice (LAW-14).
 3. **No tools.** None of them has a tool, so nothing they read can lead to a tool call (LAW-09).
 
