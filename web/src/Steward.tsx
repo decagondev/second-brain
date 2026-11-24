@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import type { DefinedTerm, Fetch } from "./api";
 import { ReviewList, StewardQuestions } from "./Questions";
 import { SpaceAgents } from "./Agents";
+import { StewardPolicies } from "./Company";
 import { t, tj } from "./i18n";
 
 export interface ReviewItem {
@@ -140,6 +141,7 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
       <SuggestTerm base={base} fetcher={fetcher} prefill={prefill} />
       <SuggestedEditor base={base} fetcher={fetcher} />
       <SpaceAgents base={base} fetcher={fetcher} />
+      <StewardPolicies base={base} fetcher={fetcher} />
       <StewardQuestions space={space} fetcher={fetcher} />
       <ReviewList space={space} fetcher={fetcher} onSuggestTerm={setPrefill} />
       <section aria-label={t("Access reviews")}>

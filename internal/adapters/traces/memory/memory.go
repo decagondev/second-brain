@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -34,6 +35,8 @@ type Store struct {
 	suggest  map[string]ask.Suggested     // tenant/space
 	pins     map[string]ask.Pins          // tenant/space
 	cares    map[string]ask.Caretaker     // tenant/doc
+	policies map[string]ask.SpacePolicy   // tenant/space/doc (SB-4103)
+	reads    map[string]ask.PolicyRead    // tenant/space/doc/email/version
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -49,7 +52,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}}
 }
 
 // PutTrace implements ask.Store.
@@ -772,4 +775,52 @@ func (s *Store) DeleteCaretaker(_ context.Context, tenant, doc string) error {
 	defer s.mu.Unlock()
 	delete(s.cares, tenant+"/"+doc)
 	return nil
+}
+
+var _ ask.PolicyStore = (*Store)(nil)
+
+// PutPolicy implements ask.PolicyStore (SB-4103): one per space and document.
+func (s *Store) PutPolicy(_ context.Context, p ask.SpacePolicy) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.policies[p.Tenant+"/"+p.Space+"/"+p.Doc] = p
+	return nil
+}
+
+// Policies implements ask.PolicyStore, by document.
+func (s *Store) Policies(_ context.Context, tenant, space string) ([]ask.SpacePolicy, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.SpacePolicy{}
+	for _, p := range s.policies {
+		if p.Tenant == tenant && p.Space == space {
+			out = append(out, p)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Doc < out[j].Doc })
+	return out, nil
+}
+
+// PutPolicyRead implements ask.PolicyStore: one per person and version.
+func (s *Store) PutPolicyRead(_ context.Context, r ask.PolicyRead) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.reads[fmt.Sprintf("%s/%s/%s/%s/%d", r.Tenant, r.Space, r.Doc, r.Email, r.Version)] = r
+	return nil
+}
+
+// PolicyReads implements ask.PolicyStore.
+func (s *Store) PolicyReads(_ context.Context, tenant, space, doc string) ([]ask.PolicyRead, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.PolicyRead{}
+	for _, r := range s.reads {
+		if r.Tenant == tenant && r.Space == space && r.Doc == doc {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Email < out[j].Email || out[i].Email == out[j].Email && out[i].Version < out[j].Version
+	})
+	return out, nil
 }

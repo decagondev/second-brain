@@ -37,6 +37,15 @@ func TestBrief(t *testing.T) {
 			t.Errorf("%s: got %s", want, format("m.yaml", ds))
 		}
 	}
+	up := strings.Replace(treeHead, "    review_after_days: 90\n", "    review_after_days: 90\n    updates: true\n", 1)
+	if m, ds := Check([]byte(up)); len(ds) > 0 || !m.Spaces["finance"].Updates {
+		t.Fatalf("updates: %v", ds)
+	} else if again, ds := Check(Format(m)); len(ds) > 0 || !again.Spaces["finance"].Updates {
+		t.Fatalf("updates round trip: %v", ds)
+	}
+	if _, ds := Check([]byte(strings.Replace(up, "updates: true", "updates: weekly", 1))); !strings.Contains(format("m.yaml", ds), "must be true or false") {
+		t.Errorf("updates: weekly: %s", format("m.yaml", ds))
+	}
 	noStewards := strings.Replace(strings.Replace(treeHead, "    stewards: [group:finance-leads]\n", "", 1), "    label: confidential\n", "    label: internal\n    brief: { agent: ask, weekly: monday }\n", 1)
 	if _, ds := Check([]byte(noStewards)); !strings.Contains(format("m.yaml", ds), "needs stewards") {
 		t.Errorf("no stewards: %s", format("m.yaml", ds))

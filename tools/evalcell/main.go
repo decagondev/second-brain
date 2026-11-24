@@ -65,6 +65,7 @@ type world struct {
 		Scope    map[string][]string `json:"scope"`
 		Template string              `json:"template"` // SB-1102
 		Agents   []string            `json:"agents"`
+		Updates  bool                `json:"updates"` // SB-4102
 	} `json:"spaces"`
 	// Agents are the agents the world's manifest enables (SB-1102); ask is always on.
 	Agents   []string    `json:"agents"`
@@ -248,7 +249,8 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 			}
 			return st.Space(ctx, w.Tenant, id)
 		},
-		AgentKilled: func(string) bool { return false }}
+		AgentKilled: func(string) bool { return false },
+		Updates:     func(name string) bool { return w.Spaces[name].Updates }}
 
 	return &cell{w: w, src: src, conn: conn, agent: agent, users: users, texts: texts}, nil
 }

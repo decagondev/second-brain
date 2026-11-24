@@ -132,6 +132,10 @@ type Stewards struct {
 	// members now (SB-2907); nil checks no start_here items.
 	StartItems func(name string) []string
 	Members    func(ctx context.Context, space string) ([]string, error)
+	// Policies keeps policies to read and reads (SB-4103), and ScopeOf is the one active
+	// user with an email as a scope now, to check what a member can open; nil keeps none.
+	Policies PolicyStore
+	ScopeOf  func(ctx context.Context, email string) (tenancy.Scope, bool, error)
 	// Unstewarded says whether a space (spc_NAME) has no active steward now (none), and
 	// whether the directory could tell (known) (SB-3102); nil never reroutes.
 	Unstewarded func(ctx context.Context, space string) (none, known bool, err error)
@@ -601,6 +605,9 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 		return NoteResult{}, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
 	}
 	path := "notes/" + name + "/" + id + ".md"
+	if q.Thread != nil && q.Thread.Kind == DraftUpdate {
+		path = "notes/" + name + "/updates/" + id + ".md" // a status update (SB-4102)
+	}
 	var was ports.Chunk
 	if republish {
 		if was, err = x.noteNow(ctx, path); err != nil {

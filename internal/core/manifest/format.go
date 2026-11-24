@@ -89,6 +89,9 @@ func Format(t Tenant) []byte {
 			fmt.Fprintf(&b, "    label: %s%s", sp.Label, nl)
 			fmt.Fprintf(&b, "    agents: %s%s", flowList(sp.Agents, false), nl)
 			fmt.Fprintf(&b, "    retention_days: %d%s", sp.RetentionDays, nl)
+			if sp.Updates {
+				fmt.Fprintf(&b, "    updates: true%s", nl)
+			}
 			if sp.Brief != nil {
 				fmt.Fprintf(&b, "    brief: { agent: %s, weekly: %s }%s", sp.Brief.Agent, sp.Brief.Weekly, nl)
 			}

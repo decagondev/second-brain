@@ -25,6 +25,17 @@ import (
 // Agents on a schedule and when something happens (sb-agents(7); SB-4005, SB-4006).
 
 // briefDays are the spaces' brief days, by space key.
+func updateSpaces(m manifest.Tenant) []string {
+	var out []string
+	for n, sp := range m.Spaces {
+		if sp.Updates {
+			out = append(out, ask.SpaceKey(n))
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 func briefDays(m manifest.Tenant) map[string]time.Weekday {
 	out := map[string]time.Weekday{}
 	for n, sp := range m.Spaces {
@@ -72,13 +83,31 @@ func (c *Cell) firstSteward(ctx context.Context, m manifest.Tenant, key string) 
 // runBrief runs a space's brief as its first active steward, and puts the draft in its
 // queue; why is the reason it didn't (notify.Brief*), "" when it did.
 func (c *Cell) runBrief(ctx context.Context, key string) (string, error) {
-	m := c.Manifest()
-	name := strings.TrimPrefix(key, "spc_")
-	sp, ok := m.Spaces[name]
+	sp, ok := c.Manifest().Spaces[strings.TrimPrefix(key, "spc_")]
 	if !ok || sp.Brief == nil {
 		return "", nil // gone since the job was built
 	}
-	if c.agentKilled(sp.Brief.Agent) {
+	return c.runAs(ctx, key, ask.DraftBrief, "Weekly brief: "+sp.Brief.Agent, ask.Request{Question: ask.BriefQuestion, Agent: sp.Brief.Agent})
+}
+
+// runUpdate drafts a space's weekly status update with the update agent (SB-4102).
+func (c *Cell) runUpdate(ctx context.Context, key string) (string, error) {
+	if sp, ok := c.Manifest().Spaces[strings.TrimPrefix(key, "spc_")]; !ok || !sp.Updates {
+		return "", nil
+	}
+	return c.runAs(ctx, key, ask.DraftUpdate, "Update: week of "+time.Now().UTC().AddDate(0, 0, -7).Format(time.DateOnly),
+		ask.Request{Question: ask.UpdateQuestion, Agent: ask.AgentUpdate})
+}
+
+// runAs runs req in space key as its first active steward and puts the answer in its queue
+// as a draft of kind; why is the reason it didn't (notify.Brief*), "" when it did.
+func (c *Cell) runAs(ctx context.Context, key, kind, title string, req ask.Request) (string, error) {
+	m := c.Manifest()
+	agent := req.Agent
+	if agent == "" {
+		agent = "ask"
+	}
+	if c.agentKilled(agent) {
 		return notify.BriefKilled, nil
 	}
 	over, err := c.overBudget(ctx)
@@ -89,11 +118,11 @@ func (c *Cell) runBrief(ctx context.Context, key string) (string, error) {
 	if err != nil || user == "" {
 		return notify.BriefNoSteward, err
 	}
-	s, err := c.ScopeAs(ctx, user, ask.SpaceKey(name))
+	s, err := c.ScopeAs(ctx, user, key)
 	if err != nil {
 		return notify.BriefNoSteward, nil //nolint:nilerr // not active by now: nobody to run it as
 	}
-	_, err = c.Parts().Stewards.AgentDraft(ctx, s, ask.DraftBrief, "Weekly brief: "+sp.Brief.Agent, ask.Request{Question: ask.BriefQuestion, Agent: sp.Brief.Agent})
+	_, err = c.Parts().Stewards.AgentDraft(ctx, s, kind, title, req)
 	switch {
 	case errors.Is(err, ask.ErrInvalid):
 		return notify.BriefNothing, nil
@@ -250,35 +279,11 @@ func (c *Cell) newTranscripts(ctx context.Context, from, to time.Time) ([]notify
 
 // runDecisions drafts a new transcript's decisions as its space's first active steward.
 func (c *Cell) runDecisions(ctx context.Context, d notify.NewDoc) (string, error) {
-	m := c.Manifest()
-	name := strings.TrimPrefix(d.Space, "spc_")
-	if _, ok := m.Spaces[name]; !ok {
+	if _, ok := c.Manifest().Spaces[strings.TrimPrefix(d.Space, "spc_")]; !ok {
 		return "", nil
 	}
-	if c.agentKilled("ask") {
-		return notify.BriefKilled, nil
-	}
-	over, err := c.overBudget(ctx)
-	if err != nil || over {
-		return notify.BriefBudget, err
-	}
-	user, err := c.firstSteward(ctx, m, d.Space)
-	if err != nil || user == "" {
-		return notify.BriefNoSteward, err
-	}
-	s, err := c.ScopeAs(ctx, user, ask.SpaceKey(name))
-	if err != nil {
-		return notify.BriefNoSteward, nil //nolint:nilerr // not active by now: nobody to run it as
-	}
-	_, err = c.Parts().Stewards.AgentDraft(ctx, s, ask.DraftDecisions, "Decisions: "+d.Title,
+	return c.runAs(ctx, d.Space, ask.DraftDecisions, "Decisions: "+d.Title,
 		ask.Request{Question: ask.DecisionsQuestion, Documents: []string{d.Ref}})
-	switch {
-	case errors.Is(err, ask.ErrInvalid):
-		return notify.BriefNothing, nil
-	case err != nil:
-		return "", err
-	}
-	return "", nil
 }
 
 // departmental are the spaces a scope's user is a member of, by their groups, that run a
@@ -307,4 +312,15 @@ func departmental(m manifest.Tenant) func(ctx context.Context, s tenancy.Scope) 
 		}
 		return out
 	}
+}
+
+// policyNotices are the spaces' policies to tell their readers about (SB-4103).
+func (c *Cell) policyNotices(ctx context.Context) ([]ask.PolicyNotice, error) {
+	m := c.Manifest()
+	names := make([]string, 0, len(m.Spaces))
+	for n := range m.Spaces {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return c.Parts().Stewards.PolicyNotices(ctx, names)
 }

@@ -45,6 +45,11 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 			marks = append(marks, func() error { return j.Welcomed(ctx, w) })
 		}
 	}
+	pol, polMarks, err := j.policies(ctx, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	out, marks = append(out, pol...), append(marks, polMarks...)
 	if j.Transcripts == nil || j.RunDecisions == nil {
 		return out, marks, nil
 	}
@@ -67,6 +72,39 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		if err := j.Clock.Mark(ctx, key, now); err != nil {
 			return nil, nil, err
 		}
+	}
+	return out, marks, nil
+}
+
+// policies tells each policy version's readers once, marked after the run sends.
+func (j Job) policies(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.PolicyNotices == nil {
+		return nil, nil, nil
+	}
+	ns, err := j.PolicyNotices(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: policies: %w", err)
+	}
+	var out []outgoing
+	var marks []func() error
+	for _, n := range ns {
+		key := "policy-" + n.Key
+		if _, done, err := j.Clock.Last(ctx, key); err != nil || done {
+			if err != nil {
+				return nil, nil, err
+			}
+			continue
+		}
+		for _, id := range n.To {
+			p, ok, err := j.person(ctx, id)
+			if err != nil {
+				return nil, nil, err
+			}
+			if ok && j.Send != nil {
+				out = append(out, outgoing{p, Message{Kind: KindPolicy, Text: fmt.Sprintf("Please read %s in %s, then press I've read it", n.Title, n.Space), Link: j.tab("answer")}})
+			}
+		}
+		marks = append(marks, func() error { return j.Clock.Mark(ctx, key, now) })
 	}
 	return out, marks, nil
 }

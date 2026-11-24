@@ -52,6 +52,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 	if h.Reviews != nil {
 		mux.HandleFunc("GET /v1/spaces/{name}/people", h.people)
 	}
+	mux.HandleFunc("GET /v1/spaces/{name}/goals", h.goals)
+	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
+	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
 	mux.HandleFunc("GET /v1/spaces/{name}/pins", h.pins)
 	mux.HandleFunc("POST /v1/spaces/{name}/pins", h.pin)
@@ -464,6 +467,34 @@ func (h Questions) people(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", p)
+}
+
+// goals are a space's branch's goals, for its members (SB-4101).
+func (h Questions) goals(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	g, err := h.Service.Goals(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", g)
+}
+
+// updates are a department's teams' latest published updates, for its members (SB-4102).
+func (h Questions) updates(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	u, err := h.Service.TeamUpdates(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", u)
 }
 
 // suggested is a space's suggested questions, for its members (SB-3307).

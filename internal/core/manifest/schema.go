@@ -80,6 +80,7 @@ func JSONSchema() []byte {
 				"properties": map[string]any{
 					"template": map[string]any{"enum": keys(Templates)},
 					"parent":   map[string]any{"type": "string", "pattern": spaceNameRe},
+					"updates":  map[string]any{"type": "boolean"},
 					"brief": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"agent", "weekly"},
 						"properties": map[string]any{"agent": map[string]any{"enum": Agents}, "weekly": map[string]any{"enum": Weekdays}}},
 					"members":           map[string]any{"type": "array", "minItems": 1, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": groupRe}},

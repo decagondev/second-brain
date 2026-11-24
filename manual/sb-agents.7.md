@@ -72,6 +72,10 @@ An agent runs on its own only in these three ways. Each runs on the `ask` agent'
 
 A draft's text is the answer's cited claims, one line each with the titles they cite; an uncited claim is left out, and an answer with nothing cited leaves no draft. It ran as one steward, so **only that steward sees its text**: the others see that it waits, who it ran as, and "Only … sees its text" (LAW-12). A brief or a decisions draft runs nothing when its agent is killed, when the month's model spend has reached `budget_usd_month` (sb-tenant(5)), or when the space has no active steward to run it as; for a brief, the space's stewards are told why ("This week's brief didn't run: …"). The welcome is a notification kind a person can turn off (sb-ask(3), Notifications), writes a trace with agent `welcome` that no report counts as an ask, and an audit row (`welcomed`).
 
+### The update agent (SB-4102)
+
+`update` writes a space's weekly status update. It runs only in a space with `updates: true` (sb-space(5)), only where the `use_agent` policy allows it, and never when it is killed. Every Monday, on the notify job's first run after 08:00 in the `digest` time zone, it answers "What changed in this space last week, what did it decide, and how do its goals stand?" as the space's first active steward, with every check a search makes, and leaves a draft titled "Update: week of DATE" in the space's queue. Its claims start "Week: ". Like every scheduled agent it has no tools and publishes nothing: a steward who publishes it writes a note under `notes/SPACE/updates/` (sb-connector(3), Notes), which the department above lists (sb-ask(3), Goals, updates and policies). Its suite is `agent-update` (sb-evals(7)).
+
 ### The tool bus
 
 Every tool call takes the same path, in this order:

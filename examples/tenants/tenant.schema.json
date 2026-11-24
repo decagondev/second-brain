@@ -396,6 +396,9 @@
               "sales",
               "support"
             ]
+          },
+          "updates": {
+            "type": "boolean"
           }
         },
         "required": [

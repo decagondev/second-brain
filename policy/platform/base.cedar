@@ -17,13 +17,15 @@ permit (principal, action == Action::"use_agent", resource == Agent::"draft-repl
 when { principal.tenant == resource.tenant && resource has enabled && resource.enabled };
 
 // Department agents (SB-1102), where the manifest enables them: read-only, and the cell
-// runs each only in a space of its own template (sb-agents(7), Department agents).
+// runs each only in a space of its own template (sb-agents(7), Department agents). update
+// (SB-4102) runs only in a space with updates: true.
 permit (principal, action == Action::"use_agent", resource is Agent)
 when {
   principal.tenant == resource.tenant && resource has enabled && resource.enabled && !resource.consequential &&
   (resource.name == "incident-summary" || resource.name == "spec-digest" || resource.name == "close-checklist" || resource.name == "runbook-answer" ||
    resource.name == "policy-answer" || resource.name == "clause-finder" || resource.name == "account-brief" || resource.name == "case-brief" ||
-   resource.name == "brand-check" || resource.name == "sop-steps" || resource.name == "design-rationale" || resource.name == "exec-brief")
+   resource.name == "brand-check" || resource.name == "sop-steps" || resource.name == "design-rationale" || resource.name == "exec-brief" ||
+   resource.name == "update")
 };
 
 // Stewards (SB-1201): a member of one of a space's stewards groups may propose a change to

@@ -29,5 +29,6 @@ agent-account-brief: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-case-brief: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-brand-check: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-sop-steps: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-update: { failures_max: 0 }      # SB-4102
 agent-design-rationale: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-exec-brief: { failures_max: 0 }   # SB-4001 to SB-4003

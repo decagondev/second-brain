@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S40.1: Goals, updates and policies
+
+**Wave/slice:** W40 / S40.1 (SB-4101 to SB-4103) · **Status:** Done
+
+**What:** A document with type: goal front matter is a goal, and GET /v1/spaces/NAME/goals lists a department's goals with its teams' goals nested under them, by quarter. A space with updates: true gets the update agent's weekly draft, which its steward publishes under notes/NAME/updates/, and the department above lists each team's latest. Stewards mark documents as policies to read; members who can open one are told once per version, record that they read it, and stewards see by name who hasn't.
+
+**Why this way:** Goals, updates and policies are already documents. Keeping them in the source and reading their fields at query time means each one is checked as the person who looks, like any document, and nothing about them is stored apart from it.
+
+**Learned:** A goal's title is its file name when the source gives none, so nesting by parent_goal has to match a title or a source id suffix. A policy read must name the version, or a new version would quietly count as read.
+
+**Laws:** LAW-01, LAW-07, LAW-10, LAW-13. Every law test is still green.
+
 ## 2026-11-24 S39.2: Agents that run themselves
 
 **Wave/slice:** W39 / S39.2 (SB-4004 to SB-4007) · **Status:** Done

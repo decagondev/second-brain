@@ -27,7 +27,7 @@ const NotesDir = "notes"
 // MaxNote is the largest note, in bytes.
 const MaxNote = 64 << 10
 
-var notePath = regexp.MustCompile(`^notes/([a-z][a-z0-9-]{1,30}|company)/qs_[A-Za-z0-9_]{1,40}\.md$`)
+var notePath = regexp.MustCompile(`^notes/([a-z][a-z0-9-]{1,30}|company)/(?:updates/)?qs_[A-Za-z0-9_]{1,40}\.md$`)
 
 // EnableNotes opens dir/notes as a root of its own for writes, making it if it isn't there.
 // Nothing else of the share is ever opened for writing.
@@ -56,7 +56,7 @@ func (c *Connector) Act(_ context.Context, a ports.Action, _ ports.IdempotencyKe
 		return ports.Receipt{}, errors.New("ENOTSUP: folder connector is read-only")
 	}
 	if !notePath.MatchString(a.Target) {
-		return ports.Receipt{}, fmt.Errorf("EINVAL: a note is written only to notes/SPACE/qs_ID.md")
+		return ports.Receipt{}, fmt.Errorf("EINVAL: a note is written only to notes/SPACE/qs_ID.md or notes/SPACE/updates/qs_ID.md")
 	}
 	var p notePayload
 	d := json.NewDecoder(bytes.NewReader(a.Payload))
@@ -75,8 +75,14 @@ func (c *Connector) Act(_ context.Context, a ports.Action, _ ports.IdempotencyKe
 		return ports.Receipt{}, fmt.Errorf("EINVAL: a note's readers and owner must be emails, its label [a-z-]")
 	}
 	rel := strings.TrimPrefix(a.Target, NotesDir+"/")
-	if err := c.notes.Mkdir(filepath.Dir(rel), 0o755); err != nil && !errors.Is(err, fs.ErrExist) {
-		return ports.Receipt{}, fmt.Errorf("folder: notes: %w", err)
+	dir := filepath.Dir(rel)
+	for _, d := range []string{filepath.Dir(dir), dir} { // SPACE, then SPACE/updates (SB-4102)
+		if d == "." {
+			continue
+		}
+		if err := c.notes.Mkdir(d, 0o755); err != nil && !errors.Is(err, fs.ErrExist) {
+			return ports.Receipt{}, fmt.Errorf("folder: notes: %w", err)
+		}
 	}
 	// The note first: until its ACL file is there it is Unknown to everyone (LAW-03).
 	if err := c.create(rel, []byte(p.Markdown)); err != nil {

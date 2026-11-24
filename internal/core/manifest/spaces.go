@@ -38,6 +38,8 @@ type Space struct {
 	Parent string `json:"parent,omitempty"`
 	// Brief is the space's one scheduled agent (SB-4005), nil for none.
 	Brief *Brief `json:"brief,omitempty"`
+	// Updates drafts a weekly status update for the stewards each Monday (SB-4102).
+	Updates bool `json:"updates,omitempty"`
 }
 
 // Brief runs Agent once a week, on Weekly (monday to sunday), as the space's first active
@@ -154,16 +156,16 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention, fields, label, parent, brief *node
-	set                                                             map[string]bool
-	start                                                           []*node
+	members, scope, agents, retention, fields, label, parent, brief, updates *node
+	set                                                                      map[string]bool
+	start                                                                    []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -243,54 +245,21 @@ func (c *checker) space(name string, n *node, p string) {
 			s.RetentionDays = c.intIn(v, f, MinSpaceRetention, 0)
 		case "fields":
 			sn.fields = v
-			if c.mapOf(v, f, "{ hris: [salary_band] }") {
-				for j, kk := range v.keys {
-					if c.skip[kk] {
-						continue
-					}
-					fk := f + "." + kk.value
-					vs, ns, ok := c.list(v.vals[j], fk, "[salary_band]")
-					if !ok {
-						continue
-					}
-					for m, name := range vs {
-						if !fieldName.MatchString(name) {
-							c.add(ns[m], fmt.Sprintf("%s[%d]", fk, m), "%q isn't a field name ([a-z][a-z0-9_]*)", name)
-							continue
-						}
-						s.Fields[kk.value] = append(s.Fields[kk.value], name)
-					}
-				}
-			}
+			c.spaceFields(v, f, &s)
 		case "channels":
-			vs, ns, ok := c.list(v, f, `["#finance-ask"]`)
-			if ok {
-				for j, ch := range vs {
-					fj := fmt.Sprintf("%s[%d]", f, j)
-					switch {
-					case !channelName.MatchString(ch):
-						c.add(ns[j], fj, "%q must be a channel, #name", ch)
-					case contains(s.Channels, ch):
-						c.add(ns[j], fj, "%q is listed twice", ch)
-					default:
-						if other, taken := c.channelOwner[ch]; taken {
-							c.add(ns[j], fj, "%q already asks in space %q; a channel belongs to one space", ch, other)
-							continue
-						}
-						if c.channelOwner == nil {
-							c.channelOwner = map[string]string{}
-						}
-						c.channelOwner[ch] = name
-						s.Channels = append(s.Channels, ch)
-					}
-				}
-			}
+			c.spaceChannels(name, v, f, &s)
 		case "start_here":
 			c.startHere(v, f, &s, &sn)
 		case "glossary":
 			s.Glossary = c.glossary(v, f)
 		case "brief":
 			s.Brief, sn.brief = c.brief(v, f), v
+		case "updates":
+			if b, ok := c.scalar(v, f); ok && b != "true" && b != "false" {
+				c.add(v, f, "must be true or false")
+			} else {
+				s.Updates, sn.updates = b == "true", v
+			}
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -307,6 +276,55 @@ func (c *checker) space(name string, n *node, p string) {
 	}
 	c.t.Spaces[name] = s
 	c.spaceNodes[name] = sn
+}
+
+// spaceFields reads a space's fields, kind → sensitive field names.
+func (c *checker) spaceFields(v *node, f string, s *Space) {
+	if c.mapOf(v, f, "{ hris: [salary_band] }") {
+		for j, kk := range v.keys {
+			if c.skip[kk] {
+				continue
+			}
+			fk := f + "." + kk.value
+			vs, ns, ok := c.list(v.vals[j], fk, "[salary_band]")
+			if !ok {
+				continue
+			}
+			for m, name := range vs {
+				if !fieldName.MatchString(name) {
+					c.add(ns[m], fmt.Sprintf("%s[%d]", fk, m), "%q isn't a field name ([a-z][a-z0-9_]*)", name)
+					continue
+				}
+				s.Fields[kk.value] = append(s.Fields[kk.value], name)
+			}
+		}
+	}
+}
+
+// spaceChannels reads a space's chat channels, each in one space only.
+func (c *checker) spaceChannels(name string, v *node, f string, s *Space) {
+	vs, ns, ok := c.list(v, f, `["#finance-ask"]`)
+	if ok {
+		for j, ch := range vs {
+			fj := fmt.Sprintf("%s[%d]", f, j)
+			switch {
+			case !channelName.MatchString(ch):
+				c.add(ns[j], fj, "%q must be a channel, #name", ch)
+			case contains(s.Channels, ch):
+				c.add(ns[j], fj, "%q is listed twice", ch)
+			default:
+				if other, taken := c.channelOwner[ch]; taken {
+					c.add(ns[j], fj, "%q already asks in space %q; a channel belongs to one space", ch, other)
+					continue
+				}
+				if c.channelOwner == nil {
+					c.channelOwner = map[string]string{}
+				}
+				c.channelOwner[ch] = name
+				s.Channels = append(s.Channels, ch)
+			}
+		}
+	}
 }
 
 // groupList is a list of distinct group:NAME values.
@@ -652,6 +670,9 @@ func (c *checker) spaceBrief(s Space, sn spaceNodes, p string) {
 		c.add(sn.brief, p+".brief.agent", "%q isn't one of this space's agents", b.Agent)
 	case len(s.Stewards) == 0:
 		c.add(sn.brief, p+".brief", "a brief needs stewards; its draft waits for them")
+	}
+	if s.Updates && len(s.Stewards) == 0 {
+		c.add(sn.updates, p+".updates", "updates need stewards; each draft waits for them")
 	}
 }
 

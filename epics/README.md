@@ -44,7 +44,7 @@ summary: Epics, waves, slices and tickets.
 | W37 Work Where People Are | 6 | 0 | 0 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
 | W38 One Org, Many Levels | 7 | 0 | 0 | Planned 2026-11-24 with the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
 | W39 An Agent for Every Department | 7 | 0 | 0 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
-| W40 Run the Company | 0 | 0 | 6 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
+| W40 Run the Company | 3 | 0 | 3 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -745,9 +745,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-4101](E41-run-the-company/SB-4101-goals.md) | S40.1 | E41 | Goals | Open |
-| [SB-4102](E41-run-the-company/SB-4102-status-updates.md) | S40.1 | E41 | Status updates | Open |
-| [SB-4103](E41-run-the-company/SB-4103-policies-to-read.md) | S40.1 | E41 | Policies to read | Open |
+| [SB-4101](E41-run-the-company/SB-4101-goals.md) | S40.1 | E41 | Goals | Done |
+| [SB-4102](E41-run-the-company/SB-4102-status-updates.md) | S40.1 | E41 | Status updates | Done |
+| [SB-4103](E41-run-the-company/SB-4103-policies-to-read.md) | S40.1 | E41 | Policies to read | Done |
 | [SB-4104](E41-run-the-company/SB-4104-requests.md) | S40.2 | E41 | Requests to a department | Open |
 | [SB-4105](E41-run-the-company/SB-4105-department-budgets.md) | S40.2 | E41 | Department budgets | Open |
 | [SB-4106](E41-run-the-company/SB-4106-space-home.md) | S40.2 | E41 | A home for each space | Open |

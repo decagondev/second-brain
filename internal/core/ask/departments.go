@@ -3,6 +3,7 @@ package ask
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/policy"
@@ -35,11 +36,21 @@ var Departments = map[string]Department{
 	"exec-brief":       {Name: "exec-brief", Template: "executive", Prompt: "exec-brief", Lead: "Question: ", Restricted: true},
 }
 
+// AgentUpdate is the status-update agent (SB-4102): read-only like a department agent, every
+// claim cited, but of no template: it runs in any space whose manifest sets updates: true.
+const AgentUpdate = "update"
+
+// updateAgent is the update agent as a department agent runs.
+var updateAgent = Department{Name: AgentUpdate, Prompt: "update", Lead: "Week: "}
+
 // department checks that a department agent may run for this scope: enabled by the
 // manifest, asked in a space of its own template that lists it, not killed, and allowed
 // by the policy kernel. It returns the agent, or an error before any retrieval.
 func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (Department, error) {
 	d, ok := Departments[name]
+	if name == AgentUpdate {
+		return a.updateDept(ctx, s)
+	}
 	if !ok {
 		return Department{}, fmt.Errorf("%w: no agent %q", ErrInvalid, name)
 	}
@@ -68,6 +79,23 @@ func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (De
 		return Department{}, fmt.Errorf("%w: agent %s: %s", ErrInvalid, name, use.Reason)
 	}
 	return d, nil
+}
+
+// updateDept checks that the update agent may run in the scope's space.
+func (a Agent) updateDept(ctx context.Context, s tenancy.Scope) (Department, error) {
+	sp := strings.TrimPrefix(s.Space(), "spc_")
+	if !strings.HasPrefix(s.Space(), "spc_") || a.Updates == nil || !a.Updates(sp) {
+		return Department{}, fmt.Errorf("%w: agent update runs only in a space with updates: true", ErrInvalid)
+	}
+	if a.AgentKilled == nil || a.AgentKilled(AgentUpdate) {
+		return Department{}, ErrKilled
+	}
+	use := a.Auth.Policy.Authorise(ctx, s, "use_agent", policy.Entity{Type: "Agent", ID: AgentUpdate, Tenant: a.Tenant,
+		Attrs: map[string]any{"name": AgentUpdate, "consequential": false, "enabled": true}}, nil)
+	if use.Decision != policy.Allow {
+		return Department{}, fmt.Errorf("%w: agent update: %s", ErrInvalid, use.Reason)
+	}
+	return updateAgent, nil
 }
 
 // citedOnly keeps the cited claims and counts the rest (sb-agents(7): every claim cited).

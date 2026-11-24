@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -33,38 +34,50 @@ func BriefDay(now time.Time, zone *time.Location, day time.Weekday) time.Time {
 	return d.UTC()
 }
 
-// briefs runs the briefs that are due, and tells a space's stewards each one that didn't
-// run. Each is marked in Clock when it has run or been told, so it runs once a week.
+// scheduled is one weekly run: a space's brief, or its status update (SB-4102).
+type scheduled struct {
+	space, clock string
+	day          time.Weekday
+	run          func(ctx context.Context, space string) (string, error)
+}
+
+// briefs runs the briefs and updates that are due, and tells a space's stewards each brief
+// that didn't run. Each is marked in Clock when it has run or been told, so it runs once a
+// week.
 func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
-	if j.RunBrief == nil {
-		return nil, nil
+	var runs []scheduled
+	if j.RunBrief != nil {
+		for s, d := range j.Briefs {
+			runs = append(runs, scheduled{s, "brief-" + s, d, j.RunBrief})
+		}
 	}
-	spaces := make([]string, 0, len(j.Briefs))
-	for s := range j.Briefs {
-		spaces = append(spaces, s)
+	if j.RunUpdate != nil {
+		for _, s := range j.Updates {
+			runs = append(runs, scheduled{s, "update-" + s, time.Monday, j.RunUpdate})
+		}
 	}
-	sort.Strings(spaces)
+	sort.Slice(runs, func(a, b int) bool { return runs[a].clock < runs[b].clock })
 	var out []outgoing
-	for _, sp := range spaces {
-		day := BriefDay(now, j.Zone, j.Briefs[sp])
-		last, found, err := j.Clock.Last(ctx, "brief-"+sp)
+	for _, r := range runs {
+		day := BriefDay(now, j.Zone, r.day)
+		last, found, err := j.Clock.Last(ctx, r.clock)
 		if err != nil {
 			return nil, fmt.Errorf("notify: last brief: %w", err)
 		}
 		if found && !last.Before(day) {
 			continue
 		}
-		why, err := j.RunBrief(ctx, sp)
+		why, err := r.run(ctx, r.space)
 		if err != nil {
-			return nil, fmt.Errorf("notify: brief of %s: %w", sp, err)
+			return nil, fmt.Errorf("notify: %s: %w", r.clock, err)
 		}
-		if err := j.Clock.Mark(ctx, "brief-"+sp, day); err != nil {
+		if err := j.Clock.Mark(ctx, r.clock, day); err != nil {
 			return nil, err
 		}
 		if why == "" || j.Send == nil {
 			continue
 		}
-		groups, _, ok := j.Facts(sp)
+		groups, _, ok := j.Facts(r.space)
 		if !ok {
 			continue
 		}
@@ -72,8 +85,12 @@ func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
 		if err != nil {
 			return nil, err
 		}
+		text := briefText(why)
+		if strings.HasPrefix(r.clock, "update-") {
+			text = strings.Replace(text, "This week's brief", "This week's update", 1)
+		}
 		for _, p := range people {
-			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: briefText(why), Link: j.stewardLink(sp)}})
+			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(r.space)}})
 		}
 	}
 	return out, nil

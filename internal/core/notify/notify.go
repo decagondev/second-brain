@@ -29,6 +29,7 @@ const (
 	KindTokens    = "tokens"    // a read-only API token expires in TokenWarn (SB-2606)
 	KindOwned     = "owned"     // an owner's often-cited documents are past review, monthly (SB-2806)
 	KindWelcome   = "welcome"   // a new member's welcome brief (SB-4006)
+	KindPolicy    = "policy"    // a policy to read, once per version (SB-4103)
 )
 
 // TokenWarn is how long before a token expires its owner is told.
@@ -48,7 +49,7 @@ const KindTest = "test"
 const TestText = "This is a test from Second Brain. Its notifications reach you here."
 
 // Kinds are every kind, for validating a person's settings.
-var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true}
+var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true, KindPolicy: true}
 
 // Person is one recipient: a directory user and the email the chat finds them by.
 type Person struct {
@@ -218,6 +219,10 @@ type Job struct {
 	// returning why it didn't ("" when it did) (SB-4005); nil runs none.
 	Briefs   map[string]time.Weekday
 	RunBrief func(ctx context.Context, space string) (why string, err error)
+	// Updates are the spaces with updates: true, by key, and RunUpdate drafts one's weekly
+	// status update each Monday (SB-4102); nil drafts none.
+	Updates   []string
+	RunUpdate func(ctx context.Context, space string) (why string, err error)
 	// Welcomes are the welcome briefs waiting, and Welcomed marks one sent (SB-4006); nil
 	// sends none. Transcripts are the transcripts first seen in a window, and RunDecisions
 	// drafts one's decisions to its space's stewards; nil drafts none.
@@ -225,6 +230,9 @@ type Job struct {
 	Welcomed     func(ctx context.Context, w Welcome) error
 	Transcripts  func(ctx context.Context, from, to time.Time) ([]NewDoc, error)
 	RunDecisions func(ctx context.Context, d NewDoc) (why string, err error)
+	// PolicyNotices are the policies' current versions and who to tell (SB-4103); each is
+	// told once. nil tells no one.
+	PolicyNotices func(ctx context.Context) ([]ask.PolicyNotice, error)
 }
 
 // The digest's limits.

@@ -19,7 +19,11 @@ import (
 const (
 	DraftBrief     = "brief"
 	DraftDecisions = "decisions"
+	DraftUpdate    = "update" // a weekly status update, published under notes/SPACE/updates/ (SB-4102)
 )
+
+// UpdateQuestion is the fixed question of a weekly status update (SB-4102).
+const UpdateQuestion = "What changed in this space last week, what did it decide, and how do its goals stand?"
 
 // BriefQuestion is the fixed question of a scheduled brief.
 const BriefQuestion = "What happened in this space this week, and what is still open?"
@@ -56,7 +60,7 @@ func (x Stewards) AgentDraft(ctx context.Context, s tenancy.Scope, kind, title s
 	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant || s.Space() == "" || s.Space() == "company" {
 		return StewardQuestion{}, fmt.Errorf("%w: an agent draft runs in a space", ErrInvalid)
 	}
-	if kind != DraftBrief && kind != DraftDecisions {
+	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate {
 		return StewardQuestion{}, fmt.Errorf("%w: no draft kind %q", ErrInvalid, kind)
 	}
 	agent := req.Agent

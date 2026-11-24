@@ -1,0 +1,23 @@
+# Suite for the update agent (SB-4102; sb-agents(7), Department agents): it drafts a space's
+# weekly update with every claim cited, only in a space with updates: true.
+suite: agent-update
+world: fixtures/departments
+cases:
+  - id: update-001
+    as: usr_opsm
+    space: operations
+    agent: update
+    ask: "What changed in this space last week, what did it decide, and how do its goals stand?"
+    expect: { cites_any: ["docs:ops-week@1"], uncited_max: 0 }
+  - id: update-no-updates-001       # a space without updates: true: refused
+    as: usr_ux
+    space: design
+    agent: update
+    ask: "What changed in this space last week, what did it decide, and how do its goals stand?"
+    expect: { error: "EINVAL" }
+  - id: update-company-001          # company-wide: refused
+    as: usr_opsm
+    space: company
+    agent: update
+    ask: "What changed in this space last week?"
+    expect: { error: "EINVAL" }

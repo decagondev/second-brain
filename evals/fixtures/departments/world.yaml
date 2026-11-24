@@ -25,7 +25,7 @@ spaces:
   sales: { template: sales, agents: [ask, account-brief], members: [grp_sales], label: confidential, scope: { docs: ["/Sales/**"] } }
   support: { template: support, agents: [ask, case-brief], members: [grp_support], label: internal, scope: { docs: ["/Support/**"] } }
   marketing: { template: marketing, agents: [ask, brand-check], members: [grp_marketing], label: internal, scope: { docs: ["/Marketing/**"] } }
-  operations: { template: operations, agents: [ask, sop-steps], members: [grp_operations], label: internal, scope: { docs: ["/Operations/**"] } }
+  operations: { template: operations, agents: [ask, sop-steps], members: [grp_operations], label: internal, updates: true, scope: { docs: ["/Operations/**"] } }
   design: { template: design, agents: [ask, design-rationale], members: [grp_design], label: internal, scope: { docs: ["/Design/**"] } }
   executive: { template: executive, agents: [ask, exec-brief], members: [grp_exec], label: restricted, scope: { docs: ["/Executive/**"] } }
 documents:
@@ -89,3 +89,8 @@ documents:
     text: "The leadership team decided to open the Leeds depot in March. The pricing review is still open."
     path: /Executive/Minutes/november
     viewers: [ceo@acme-logistics.example]
+  - id: ops-week
+    title: Operations week notes
+    text: "Last week the operations team decided to move the returns desk to Bay 4. The returns goal is on track."
+    path: /Operations/Notes/week
+    viewers: [opsm@acme-logistics.example]

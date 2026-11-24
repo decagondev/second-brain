@@ -47,7 +47,7 @@ type SearchRequest struct {
 var Types = map[string][]string{
 	"pdf": {".pdf"}, "doc": {".docx", ".doc", ".odt", ".rtf"}, "sheet": {".xlsx", ".xls", ".ods", ".csv"},
 	"slides": {".pptx", ".ppt", ".odp"}, "web": {".html", ".htm"}, "text": {".txt", ".md"}, "transcript": {".vtt", ".srt"},
-	"decision": nil, "other": nil,
+	"decision": nil, "goal": nil, "other": nil,
 }
 
 // MaxSinceDays bounds since=.
@@ -77,7 +77,7 @@ func (r SearchRequest) keep(c ports.Chunk, now time.Time) bool {
 		want := TypeOf(c)
 		found := false
 		for _, t := range r.Types {
-			found = found || t == want || (t == "decision" && isDecision(c))
+			found = found || t == want || (t == "decision" && isDecision(c)) || (t == "goal" && isGoal(c))
 		}
 		if !found {
 			return false
@@ -137,7 +137,7 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	}
 	for _, t := range req.Types {
 		if _, ok := Types[t]; !ok {
-			return SearchResponse{}, fmt.Errorf("%w: unknown type %q (pdf, doc, sheet, slides, web, text, transcript, decision, other)", ErrInvalid, t)
+			return SearchResponse{}, fmt.Errorf("%w: unknown type %q (pdf, doc, sheet, slides, web, text, transcript, decision, goal, other)", ErrInvalid, t)
 		}
 	}
 	if req.SinceDays < 0 || req.SinceDays > MaxSinceDays {

@@ -82,7 +82,7 @@ type Cell struct {
 
 // NoteTarget is a steward's note before it is written (sb-connector(3), Notes): the path
 // the folder connector writes, notes/SPACE/qs_ID.md, SPACE a space's name or company.
-var NoteTarget = regexp.MustCompile(`^notes/([a-z][a-z0-9-]{1,30}|company)/qs_[A-Za-z0-9_]{1,40}\.md$`)
+var NoteTarget = regexp.MustCompile(`^notes/([a-z][a-z0-9-]{1,30}|company)/(?:updates/)?qs_[A-Za-z0-9_]{1,40}\.md$`)
 
 // NoteKind is the connector kind notes are written to and indexed from.
 const NoteKind = "docs"

@@ -303,6 +303,8 @@ type Agent struct {
 	// Departmental are the spaces the scope's user is a member of that run a department
 	// agent, for the right-department suggestion (SB-4007); nil suggests none.
 	Departmental func(ctx context.Context, s tenancy.Scope) []DeptSpace
+	// Updates says whether a space, by name, sets updates: true (SB-4102); nil is none.
+	Updates func(space string) bool
 	// Owner finds the one active directory user with an email (SB-1702; ActiveOwner); nil
 	// shows no owners.
 	Owner func(ctx context.Context, email string) (answer.Person, bool)

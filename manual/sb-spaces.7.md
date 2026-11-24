@@ -165,6 +165,10 @@ Spaces follow the company's shape: the company, its departments, and their teams
 
 **Ask across a branch (SB-3903).** In a department, `?space=NAME&branch=true` (sb-ask(3)) asks in the department and every team under it **that the asker is a member of**. Retrieval and every check run once per space, as the asker in that space, and the chunks each run allowed are joined: nothing one space's checks refused enters through another's unless that run allowed it on its own. A team the asker isn't in adds nothing and isn't named. Cites name the spaces that hold each document, as always. The web UI's switcher offers **Finance and its teams** only when the asker is in at least one of its teams; `GET /v1/spaces` says so with `"teams": true` on the department, and names a space's `parent` only to a member of the parent too.
 
+### Run the company (SB-4101 to SB-4103)
+
+Each space can hold its **goals** (documents with `type: goal`, sb-ingest(7)), which a department sees with its teams' goals nested under its own; its weekly **status updates**, which the `update` agent drafts and a steward publishes, and which the department above lists team by team; and its **policies to read**, which its stewards mark and its members, and the members of its teams, are asked to read once per version. Stewards see by name who hasn't read a policy, and a count of who can't open it. Everything is checked as the person who looks, so a goal, an update or a policy they can't open is only counted, never named (sb-ask(3), Goals, updates and policies).
+
 ### Reorg preview (SB-1206)
 
 Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.

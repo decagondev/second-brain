@@ -13,7 +13,7 @@ summary: "A policy everyone must read has no way to ask people to read it or see
 | Manual | [`sb-api(3)`](../../manual/sb-api.3.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-01, LAW-07, LAW-11 |
 | Depends on | SB-3901 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ A policy everyone must read has no way to ask people to read it or see who has.
 
 ## Acceptance criteria
 
-- [ ] `POST /v1/spaces/NAME/policies` marks a document as a policy for the branch; members who can open it are told once (`policy`)
-- [ ] I've read it is recorded per person and version and audited; a new version asks again
-- [ ] Stewards see who hasn't read it by name; members who can't open it are counted
+- [x] `POST /v1/spaces/NAME/policies` marks a document as a policy for the branch; members who can open it are told once (`policy`)
+- [x] I've read it is recorded per person and version and audited; a new version asks again
+- [x] Stewards see who hasn't read it by name; members who can't open it are counted
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API and records
-- [ ] Notify
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API and records
+- [x] Notify
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. ask.PolicyStore (memory and Postgres kinds policy, policyread); POST/GET /v1/spaces/NAME/policies, …/policies/read, …/policies/status (not_read by email, read, cant_open); the policy notify kind once per version to members who can open it; audit policy_marked and policy_read with no text; web PoliciesToRead and StewardPolicies.
 
 ## Definition of done
 

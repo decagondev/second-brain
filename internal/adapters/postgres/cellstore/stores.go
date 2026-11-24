@@ -949,3 +949,25 @@ func (t Traces) CaretakerOf(ctx context.Context, tenant, doc string) (ask.Careta
 func (t Traces) DeleteCaretaker(ctx context.Context, tenant, doc string) error {
 	return del(ctx, t.Pool, tenant, "caretaker", doc)
 }
+
+var _ ask.PolicyStore = Traces{}
+
+// PutPolicy implements ask.PolicyStore (SB-4103): one per space and document.
+func (t Traces) PutPolicy(ctx context.Context, p ask.SpacePolicy) error {
+	return put(ctx, t.Pool, p.Tenant, "policy", p.Space+"|"+p.Doc, meta{at: p.At, user: p.By, space: p.Space}, p, false)
+}
+
+// Policies implements ask.PolicyStore, by document.
+func (t Traces) Policies(ctx context.Context, tenant, space string) ([]ask.SpacePolicy, error) {
+	return list[ask.SpacePolicy](ctx, t.Pool, tenant, "policy", "space = $3", "id", space)
+}
+
+// PutPolicyRead implements ask.PolicyStore: one per person and version.
+func (t Traces) PutPolicyRead(ctx context.Context, r ask.PolicyRead) error {
+	return put(ctx, t.Pool, r.Tenant, "policyread", fmt.Sprintf("%s|%s|%s|%d", r.Space, r.Doc, r.Email, r.Version), meta{at: r.At, user: r.User, space: r.Space}, r, false)
+}
+
+// PolicyReads implements ask.PolicyStore.
+func (t Traces) PolicyReads(ctx context.Context, tenant, space, doc string) ([]ask.PolicyRead, error) {
+	return list[ask.PolicyRead](ctx, t.Pool, tenant, "policyread", "space = $3 AND body->>'doc' = $4", "id", space, doc)
+}

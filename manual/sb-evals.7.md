@@ -37,6 +37,7 @@ Laws and models prove what the **code** does. But some behaviour depends on the 
 | `space-leak` | 0 failures (sb-eval(5), Space-leak suites; in the gate since SB-1006) |
 | `template-NAME`, one per template | 0 failures: the template's citations work in its space, its sensitive content never leaves it, and its internal content still answers the company (below, Template suites; SB-1107) |
 | `agent-incident-summary`, `agent-spec-digest`, `agent-close-checklist`, `agent-runbook-answer`, and from SB-4001 to SB-4003 `agent-policy-answer`, `agent-clause-finder`, `agent-account-brief`, `agent-case-brief`, `agent-brand-check`, `agent-sop-steps`, `agent-design-rationale`, `agent-exec-brief` | 0 failures: each department agent answers in its own space with every claim cited, and is refused elsewhere (SB-1102) |
+| `agent-update` (SB-4102) | 0 failures: in a space with `updates: true` the update agent's draft cites the week's document with no uncited claim, and in a space without it, or company-wide, it is refused (`EINVAL`) |
 
 ### Answers in another language (SB-3003)
 

@@ -39,7 +39,7 @@ func markAfter(m ReviewMark, after int) int {
 	return after
 }
 
-var notePathRe = regexp.MustCompile(`^notes/[^/]+/qs_[^/]+\.md$`)
+var notePathRe = regexp.MustCompile(`^notes/[^/]+/(?:updates/)?qs_[^/]+\.md$`)
 
 // isNote reports whether c is a steward's published note (SB-1705).
 func isNote(c ports.Chunk) bool {

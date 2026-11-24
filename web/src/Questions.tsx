@@ -130,6 +130,7 @@ const kinds: { id: string; name: string }[] = [
   { id: "tokens", name: msg("My API tokens about to expire") },
   { id: "owned", name: msg("My often-cited documents past review, monthly") },
   { id: "welcome", name: msg("A welcome when I join a space") },
+  { id: "policy", name: msg("A policy to read") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).

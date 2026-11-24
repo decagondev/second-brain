@@ -462,6 +462,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		},
 		AgentKilled:  func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
 		Departmental: departmental(m),
+		Updates:      func(name string) bool { return m.Spaces[name].Updates },
 		ReviewAfter: func(ids []string) int {
 			least := 0
 			for _, id := range ids {
@@ -598,7 +599,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
 		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant,
 		StartItems: func(name string) []string { return m.Effective(name).StartHere }, Members: c.noteReaders(m),
-		Children: m.Children, ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays },
+		Children: m.Children, Policies: c.Traces, ScopeOf: c.ownerScope, ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays },
 		Parent: func(name string) string { return m.Spaces[name].Parent }, StewardPeople: c.stewardPeople(m),
 		Owner: func(ctx context.Context, email string) (string, bool, error) { // SB-3706: one active user, or no one
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
