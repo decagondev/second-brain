@@ -43,6 +43,8 @@ type Cite struct {
 type Person struct {
 	Email string `json:"email"`
 	Title string `json:"title,omitempty"`
+	// Caretaker marks someone a steward named for a document whose owner is gone (SB-3405).
+	Caretaker bool `json:"caretaker,omitempty"`
 }
 
 // Claim is one sentence or short passage of an answer.

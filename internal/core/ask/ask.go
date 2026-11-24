@@ -291,6 +291,8 @@ type Agent struct {
 	// Owner finds the one active directory user with an email (SB-1702; ActiveOwner); nil
 	// shows no owners.
 	Owner func(ctx context.Context, email string) (answer.Person, bool)
+	// Caretaker is a document's (KIND:ID) caretaker's email, or "" (SB-3405); nil is none.
+	Caretaker func(ctx context.Context, doc string) string
 	// ReviewAfter is the shortest review_after_days of the spaces holding a document, by
 	// their ids (SB-1709); nil, or no spaces, is the default 365.
 	ReviewAfter func(spaces []string) int

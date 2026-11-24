@@ -435,7 +435,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: c.Embedder, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
 		NewID: newID, Now: time.Now, Metrics: c.askMeter(), Enabled: func(a string) bool { return contains(m.Agents, a) },
-		Link: linker(authz.Connectors),
+		Link: linker(authz.Connectors), Caretaker: ask.CaretakerOf(c.Traces, tenant),
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
@@ -539,7 +539,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
 	stewards := ask.Stewards{Agent: agent, Store: c.Traces, Audit: c.Audit, Policy: c.Policy, NewID: newID, Now: time.Now,
-		Unstewarded: c.unstewarded, Suggested: c.Traces, Zone: workZone(m),
+		Unstewarded: c.unstewarded, Suggested: c.Traces, Zone: workZone(m), Caretakers: c.Traces,
 		Facts: stewardFacts(m), Gone: func(ctx context.Context, email string) (bool, error) {
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
 			if err != nil {

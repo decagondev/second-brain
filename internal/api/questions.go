@@ -46,6 +46,8 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/spaces/{name}/templates/{id}", h.deleteTemplate)
 	mux.HandleFunc("GET /v1/spaces/{name}/suggested", h.suggested)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
+	mux.HandleFunc("PUT /v1/spaces/{name}/caretakers", h.caretaker)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/caretakers", h.caretaker)
 	mux.HandleFunc("POST /v1/spaces/{name}/evals", h.addEval)
 	mux.HandleFunc("GET /v1/spaces/{name}/evals", h.evals)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/evals/{id}", h.deleteEval)
@@ -453,4 +455,34 @@ func (h Questions) setSuggested(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"questions": qs})
+}
+
+// caretaker names or removes a document's caretaker (SB-3405).
+func (h Questions) caretaker(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	if r.Method == http.MethodDelete {
+		if err := h.Service.RemoveCaretaker(r.Context(), s, r.PathValue("name"), r.URL.Query().Get("doc")); err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", map[string]any{"removed": true})
+		return
+	}
+	var body struct {
+		Doc   string `json:"doc"`
+		Email string `json:"email"`
+	}
+	if !readJSON(r, &body) {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	c, err := h.Service.NameCaretaker(r.Context(), s, r.PathValue("name"), body.Doc, body.Email)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"doc": c.Doc, "email": c.Email})
 }

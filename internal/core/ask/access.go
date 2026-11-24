@@ -89,7 +89,8 @@ func (a Agent) RequestAccess(ctx context.Context, s tenancy.Scope, trace string,
 	for _, ci := range cites {
 		c, ok := docs[docKey(ci)]
 		owner := own.of(ctx, c)
-		if !ok || owner == nil {
+		if !ok || owner == nil || owner.Caretaker { // a caretaker can't share it at the source
+
 			out.NoOwner++ // not indexed now, or nobody to ask: counted, never named
 			continue
 		}

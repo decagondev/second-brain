@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W31 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A published reply names no asker
-- [ ] No asker sees another asker's question
-- [ ] A deprovisioned caretaker is dropped
-- [ ] A suggested term is only a proposal
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A published reply names no asker
+- [x] No asker sees another asker's question
+- [x] A deprovisioned caretaker is dropped
+- [x] A suggested term is only a proposal
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

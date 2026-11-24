@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, BulkItem, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import { AskError, addEvalCase, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { errorText, msg, t, tn } from "./i18n";
 
@@ -470,6 +470,69 @@ function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: R
   );
 }
 
+// Caretaker (SB-3405): on a document whose owner is gone, a steward names an active member
+// of the space to look after it, or removes them.
+function Caretaker({ space, item, onDone, fetcher }: { space: string; item: ReviewItem; onDone: () => void; fetcher?: Fetch }) {
+  const id = useId();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const doc = item.cite.replace(/@\d+$/, "");
+  const name = item.title ?? item.cite;
+  async function act(remove: boolean) {
+    setError("");
+    try {
+      if (remove) await removeCaretaker(space, doc, fetcher);
+      else await nameCaretaker(space, doc, email.trim(), fetcher);
+      setEmail("");
+      onDone();
+    } catch (err) {
+      setError(errMsg(err, t("The caretaker couldn't be saved.")));
+    }
+  }
+  if (item.owner?.caretaker)
+    return (
+      <span>
+        {" "}
+        {t("Caretaker {person}", { person: item.owner.email })}{" "}
+        <button type="button" aria-label={t("Remove the caretaker of {name}", { name })} onClick={() => act(true)}>
+          {t("Remove")}
+        </button>
+        {error && <span role="alert"> {error}</span>}
+      </span>
+    );
+  return (
+    <span>
+      {" "}
+      <label htmlFor={id}>{t("Caretaker's email for {name}", { name })}</label>
+      <input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <button type="button" disabled={email.trim() === ""} onClick={() => act(false)}>
+        {t("Name a caretaker")}
+      </button>
+      {error && <span role="alert"> {error}</span>}
+    </span>
+  );
+}
+
+// Terms the documents define (SB-3407): suggestions only; Suggest fills the Glossary form.
+function DefinedTerms({ terms, onSuggest }: { terms: DefinedTerm[]; onSuggest?: (term: DefinedTerm) => void }) {
+  if (terms.length === 0 || !onSuggest) return null;
+  return (
+    <details>
+      <summary>{t("Terms the documents define")}</summary>
+      <ul>
+        {terms.map((d) => (
+          <li key={d.term + d.meaning}>
+            {d.term}: {d.meaning} <span className="meta">· {tn(d.docs, "in {n} document", "in {n} documents")}</span>{" "}
+            <button type="button" aria-label={t("Suggest {term}", { term: d.term })} onClick={() => onSuggest(d)}>
+              {t("Suggest")}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 // Retire from answers (SB-2801): a reason, and the document that replaces it if any.
 function Retire({ space, cite, name, onDone, fetcher }: { space: string; cite: string; name: string; onDone: () => void; fetcher?: Fetch }) {
   const reasonId = useId();
@@ -935,7 +998,7 @@ export function reviewCSV(list: Pick<ReviewData, "items" | "hidden">): string {
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 
-export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch }) {
+export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; fetcher?: Fetch; onSuggestTerm?: (term: DefinedTerm) => void }) {
   const [list, setList] = useState<ReviewData>({ items: [], hidden: [] });
   const [bump, setBump] = useState(0);
   const [picked, setPicked] = useState<string[]>([]);
@@ -943,12 +1006,13 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
     setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== cite) }));
     setBump((b) => b + 1);
   };
+  const [reload, setReload] = useState(0);
   useEffect(() => {
     const load = () => void reviewList(space, fetcher).then(setList);
     load();
     const timer = window.setInterval(load, Refresh);
     return () => window.clearInterval(timer);
-  }, [space, fetcher]);
+  }, [space, fetcher, reload]);
   const download = () => {
     const url = URL.createObjectURL(new Blob([reviewCSV(list)], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -969,6 +1033,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
         </button>
       )}
       {list.freshness && <FreshnessLine f={list.freshness} />}
+      <DefinedTerms terms={list.terms ?? []} onSuggest={onSuggestTerm} />
       {list.found_nothing && <FoundNothingLine f={list.found_nothing} />}
       <BulkActions
         space={space}
@@ -1027,6 +1092,7 @@ export function ReviewList({ space, fetcher }: { space: string; fetcher?: Fetch 
                   ))}
                 </span>
               )}
+              {r.owner_gone && <Caretaker space={space} item={r} fetcher={fetcher} onDone={() => setReload((n) => n + 1)} />}
               {r.wider !== undefined && r.wider > 0 && r.question && <Narrow space={space} item={r} fetcher={fetcher} />}
               {!r.owner_gone && !(r.wider !== undefined && r.wider > 0) && !(r.copies && r.copies.length > 0) && (
                 <MarkReviewed space={space} item={r} fetcher={fetcher} onDone={() => setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== r.cite) }))} />

@@ -17,31 +17,51 @@ type PersonRef struct {
 	Email string `json:"email"`
 	Title string `json:"title,omitempty"`
 	Cites int    `json:"cites"`
+	// Caretaker marks someone named for documents whose owner is gone (SB-3405).
+	Caretaker bool `json:"caretaker,omitempty"`
 }
 
 // owners looks owners up once per request. A lookup that fails, or finds no single active
 // user, shows no owner: an owner is never guessed (sb-ask(3), Who to ask).
 type owners struct {
 	find func(ctx context.Context, email string) (answer.Person, bool)
+	care func(ctx context.Context, doc string) string
 	seen map[string]*answer.Person
+	docs map[string]*answer.Person
 }
 
 func (a Agent) owners() *owners {
-	return &owners{find: a.Owner, seen: map[string]*answer.Person{}}
+	return &owners{find: a.Owner, care: a.Caretaker, seen: map[string]*answer.Person{}, docs: map[string]*answer.Person{}}
 }
 
+// of is the chunk's owner when they are one active user; otherwise, for an owner who is
+// none, the document's caretaker when they are one (SB-3405).
 func (o *owners) of(ctx context.Context, c ports.Chunk) *answer.Person {
 	if o == nil || o.find == nil || c.Owner == "" {
 		return nil
 	}
-	if p, ok := o.seen[c.Owner]; ok {
+	p, ok := o.seen[c.Owner]
+	if !ok {
+		if q, found := o.find(ctx, c.Owner); found && q.Email != "" {
+			p = &q
+		}
+		o.seen[c.Owner] = p
+	}
+	if p != nil || o.care == nil {
 		return p
 	}
-	var out *answer.Person
-	if p, ok := o.find(ctx, c.Owner); ok && p.Email != "" {
-		out = &p
+	k := c.Kind + ":" + c.SourceID
+	if d, ok := o.docs[k]; ok {
+		return d
 	}
-	o.seen[c.Owner] = out
+	var out *answer.Person
+	if e := o.care(ctx, k); e != "" {
+		if q, found := o.find(ctx, e); found && q.Email != "" {
+			q.Caretaker = true
+			out = &q
+		}
+	}
+	o.docs[k] = out
 	return out
 }
 
@@ -58,7 +78,7 @@ func people(claims []answer.Claim) []PersonRef {
 			}
 			p, ok := count[ci.Owner.Email]
 			if !ok {
-				p = &PersonRef{Email: ci.Owner.Email, Title: ci.Owner.Title}
+				p = &PersonRef{Email: ci.Owner.Email, Title: ci.Owner.Title, Caretaker: ci.Owner.Caretaker}
 				count[ci.Owner.Email] = p
 			}
 			p.Cites++

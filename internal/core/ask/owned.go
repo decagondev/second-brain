@@ -38,37 +38,142 @@ func (a Agent) OwnedPastReview(ctx context.Context, traces []Trace, scopeOf func
 		return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 	}
 	marks := &marksCache{store: a.Marks, by: map[string]map[string]ReviewMark{}}
-	by := map[string][]ports.Chunk{}
+	var stale []ports.Chunk
 	for _, c := range firsts(latest(chunks)) {
 		if c.Owner != "" && a.freshness(ctx, marks, c).stale {
-			by[c.Owner] = append(by[c.Owner], c)
+			stale = append(stale, c)
 		}
 	}
-	owners := make([]string, 0, len(by))
-	for o := range by {
-		owners = append(owners, o)
+	by, err := a.ownedBy(ctx, stale, scopeOf)
+	if err != nil {
+		return out, err
 	}
-	sort.Strings(owners)
-	for _, o := range owners {
-		s, ok, err := scopeOf(ctx, o)
+	for u, docs := range by {
+		out[u] = len(docs)
+	}
+	return out, nil
+}
+
+// ownedBy is, by user id, the documents of chunks each person looks after and can open
+// now, checked as them: the owner at the source when they are one active user, else the
+// document's caretaker when they are one (SB-3405). Nobody else is ever counted.
+func (a Agent) ownedBy(ctx context.Context, chunks []ports.Chunk, scopeOf func(ctx context.Context, email string) (tenancy.Scope, bool, error)) (map[string]map[string]bool, error) {
+	type who struct {
+		s  tenancy.Scope
+		ok bool
+	}
+	people := map[string]who{}
+	look := func(email string) (who, error) {
+		if w, ok := people[email]; ok {
+			return w, nil
+		}
+		s, ok, err := scopeOf(ctx, email)
 		if err != nil {
-			return out, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
+			return who{}, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
 		}
-		if !ok {
+		people[email] = who{s, ok}
+		return people[email], nil
+	}
+	by := map[string][]ports.Chunk{}
+	for _, c := range chunks {
+		if c.Owner == "" {
 			continue
 		}
-		cand := by[o]
-		sort.Slice(cand, func(i, j int) bool { return cand[i].ID < cand[j].ID })
-		res, err := retrieve.Allowed(ctx, s, ports.UserRef{ID: s.User(), Email: o}, a.Auth, cand, len(cand))
+		email := c.Owner
+		w, err := look(email)
 		if err != nil {
-			return out, fmt.Errorf("%w: %v", ErrUnavailable, err)
+			return nil, err
 		}
-		seen := map[string]bool{}
+		if !w.ok && a.Caretaker != nil {
+			if e := a.Caretaker(ctx, c.Kind+":"+c.SourceID); e != "" {
+				email = e
+				if w, err = look(email); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if w.ok {
+			by[email] = append(by[email], c)
+		}
+	}
+	emails := make([]string, 0, len(by))
+	for e := range by {
+		emails = append(emails, e)
+	}
+	sort.Strings(emails)
+	out := map[string]map[string]bool{}
+	for _, e := range emails {
+		s := people[e].s
+		cand := by[e]
+		sort.Slice(cand, func(i, j int) bool { return cand[i].ID < cand[j].ID })
+		res, err := retrieve.Allowed(ctx, s, ports.UserRef{ID: s.User(), Email: e}, a.Auth, cand, len(cand))
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrUnavailable, err)
+		}
 		for _, c := range res.Context {
-			seen[c.Kind+":"+c.SourceID] = true
+			if out[s.User()] == nil {
+				out[s.User()] = map[string]bool{}
+			}
+			out[s.User()][c.Kind+":"+c.SourceID] = true
 		}
-		if len(seen) > 0 {
-			out[s.User()] += len(seen)
+	}
+	return out, nil
+}
+
+// HelpedOwners counts, by user id, the answers among traces rated up in fbs that cite a
+// document the person looks after and can open now (SB-3406): counts only.
+func (a Agent) HelpedOwners(ctx context.Context, traces []Trace, fbs []Feedback, scopeOf func(ctx context.Context, email string) (tenancy.Scope, bool, error)) (map[string]int, error) {
+	out := map[string]int{}
+	up := map[string]bool{}
+	for _, f := range fbs {
+		up[f.Trace] = f.Rating == "up" // the latest feedback on a trace replaces any earlier one
+	}
+	cites := map[string][]string{}
+	var refs []ports.SourceRef
+	seen := map[string]bool{}
+	for _, t := range traces {
+		if !up[t.ID] {
+			continue
+		}
+		for _, cl := range t.Response.Answer.Claims {
+			for _, ci := range cl.Cites {
+				k := docKey(ci.Cite)
+				cites[t.ID] = append(cites[t.ID], k)
+				if !seen[k] {
+					seen[k] = true
+					kind, id, _ := strings.Cut(k, ":")
+					refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
+				}
+			}
+		}
+	}
+	if len(refs) == 0 {
+		return out, nil
+	}
+	lk, ok := a.Index.(ports.DocLookup)
+	if !ok {
+		return out, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+	}
+	chunks, err := lk.Docs(ctx, a.Tenant, ports.DocQuery{Refs: refs})
+	if err != nil {
+		return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	var docs []ports.Chunk
+	for _, c := range firsts(latest(chunks)) {
+		docs = append(docs, c)
+	}
+	by, err := a.ownedBy(ctx, docs, scopeOf)
+	if err != nil {
+		return out, err
+	}
+	for u, mine := range by {
+		for _, ks := range cites {
+			for _, k := range ks {
+				if mine[k] {
+					out[u]++
+					break
+				}
+			}
 		}
 	}
 	return out, nil

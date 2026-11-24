@@ -188,6 +188,9 @@ type Job struct {
 	// Owned is, by user id, how many documents each active owner owns, can open now, and
 	// answers often cite while past review (SB-2806); nil tells no one.
 	Owned func(ctx context.Context, now time.Time) (map[string]int, error)
+	// Helped is, by user id, how many answers rated helpful last calendar month cited the
+	// documents each person looks after (SB-3406); nil adds no line.
+	Helped func(ctx context.Context, now time.Time) (map[string]int, error)
 	// Audit writes a row for each question shown to the company-wide answerers because it
 	// waited (SB-3404); nil shows none there.
 	Audit ask.Auditor
@@ -701,10 +704,20 @@ func (j Job) owned(ctx context.Context, now time.Time) ([]outgoing, error) {
 	if err != nil {
 		return nil, fmt.Errorf("notify: owned documents: %w", err)
 	}
-	ids := make([]string, 0, len(by))
-	for id, n := range by {
-		if n > 0 {
-			ids = append(ids, id)
+	helped := map[string]int{}
+	if j.Helped != nil {
+		if helped, err = j.Helped(ctx, now); err != nil {
+			return nil, fmt.Errorf("notify: helpful answers: %w", err)
+		}
+	}
+	seen := map[string]bool{}
+	var ids []string
+	for _, m := range []map[string]int{by, helped} {
+		for id, n := range m {
+			if n > 0 && !seen[id] {
+				seen[id] = true
+				ids = append(ids, id)
+			}
 		}
 	}
 	sort.Strings(ids)
@@ -717,11 +730,17 @@ func (j Job) owned(ctx context.Context, now time.Time) ([]outgoing, error) {
 		if !ok {
 			continue
 		}
-		text := "1 of your documents that answers often cite is past review"
-		if n := by[id]; n != 1 {
-			text = fmt.Sprintf("%d of your documents that answers often cite are past review", n)
+		var lines []string
+		switch n := by[id]; {
+		case n == 1:
+			lines = append(lines, "1 of your documents that answers often cite is past review")
+		case n > 1:
+			lines = append(lines, fmt.Sprintf("%d of your documents that answers often cite are past review", n))
 		}
-		out = append(out, outgoing{p, Message{Kind: KindOwned, Text: text, Link: j.tab("documents")}})
+		if n := helped[id]; n > 0 {
+			lines = append(lines, "Your documents were cited in "+plural(n, "answer", "answers")+" people found helpful last month")
+		}
+		out = append(out, outgoing{p, Message{Kind: KindOwned, Text: strings.Join(lines, "\n"), Link: j.tab("documents")}})
 	}
 	return out, nil
 }

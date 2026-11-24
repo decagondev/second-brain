@@ -37,7 +37,7 @@ summary: Epics, waves, slices and tickets.
 | W30 Fill the Gaps | 7 | 0 | 0 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
 | W31 Run Without Surprises | 7 | 0 | 0 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
 | W32 Ask Better | 7 | 0 | 0 | Planned 2026-11-24 with the user (E33): see also, glossary where it's used, short or full answer, sources disagree, download the conversation, their other documents, suggested questions ([15-ask-capture-trust.md](../docs/15-ask-capture-trust.md)) |
-| W33 Capture Knowledge | 4 | 0 | 3 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
+| W33 Capture Knowledge | 7 | 0 | 0 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
 | W34 Trust and Control | 0 | 0 | 6 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -643,9 +643,9 @@ flowchart LR
 | [SB-3402](E34-capture-knowledge/SB-3402-spot-repeat.md) | S33.1 | E34 | Spot a repeat | Done |
 | [SB-3403](E34-capture-knowledge/SB-3403-notes-due.md) | S33.1 | E34 | Notes come due | Done |
 | [SB-3404](E34-capture-knowledge/SB-3404-nudge-old-questions.md) | S33.1 | E34 | Nudge old questions | Done |
-| [SB-3405](E34-capture-knowledge/SB-3405-caretaker.md) | S33.2 | E34 | Take over a document | Open |
-| [SB-3406](E34-capture-knowledge/SB-3406-documents-helped.md) | S33.2 | E34 | Your documents helped | Open |
-| [SB-3407](E34-capture-knowledge/SB-3407-defined-terms.md) | S33.2 | E34 | Terms the documents define | Open |
+| [SB-3405](E34-capture-knowledge/SB-3405-caretaker.md) | S33.2 | E34 | Take over a document | Done |
+| [SB-3406](E34-capture-knowledge/SB-3406-documents-helped.md) | S33.2 | E34 | Your documents helped | Done |
+| [SB-3407](E34-capture-knowledge/SB-3407-defined-terms.md) | S33.2 | E34 | Terms the documents define | Done |
 
 ### W34 Trust and Control
 

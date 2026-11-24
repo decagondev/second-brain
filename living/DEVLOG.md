@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S33.2: Keep someone on every document
+
+**Wave/slice:** W33 / S33.2 (SB-3405 to SB-3407) · **Status:** Done
+
+**What:** A steward names a caretaker for a document whose owner at the source is gone: an active member of the space, who then shows in Who to ask and gets the owners' monthly note for it. That note now also says how many answers people found helpful last month cited the person's documents. The review list suggests terms the space's documents define, like purchase order (PO), and Suggest fills the Glossary form.
+
+**Why this way:** The owner at the source stays the truth: a caretaker shows only while no active owner does, and a deprovisioned one is nobody (LAW-12). One cell_docs record, audited by a hash (LAW-11, LAW-19). The helpful count is counts only, of documents the person can open now (LAW-01, LAW-07). Suggested terms come from documents the steward can open, never from flagged chunks, and are only ever a proposal (LAW-09, LAW-16).
+
+**Learned:** The defined terms didn't need the weekly job: the review list already reads the space's chunks, so computing them on demand keeps nothing and is always current. An access request had to skip caretakers, since only the real owner can share at the source.
+
+**Laws:** LAW-01, LAW-07, LAW-09, LAW-11, LAW-12, LAW-16, LAW-19. Every law test is still green.
+
 ## 2026-11-24 S33.1: Keep the good replies
 
 **Wave/slice:** W33 / S33.1 (SB-3401 to SB-3404) · **Status:** Done

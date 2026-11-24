@@ -125,6 +125,8 @@ type Stewards struct {
 	// Unstewarded says whether a space (spc_NAME) has no active steward now (none), and
 	// whether the directory could tell (known) (SB-3102); nil never reroutes.
 	Unstewarded func(ctx context.Context, space string) (none, known bool, err error)
+	// Caretakers keeps documents' caretakers (SB-3405); nil keeps none.
+	Caretakers CaretakerStore
 	// Zone is the working week's time zone (SB-3404); nil is UTC.
 	Zone *time.Location
 }

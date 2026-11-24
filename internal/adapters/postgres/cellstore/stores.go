@@ -920,3 +920,20 @@ func (t Traces) PutSuggested(ctx context.Context, x ask.Suggested) error {
 func (t Traces) Suggested(ctx context.Context, tenant, space string) (ask.Suggested, bool, error) {
 	return get[ask.Suggested](ctx, t.Pool, tenant, "suggested", space, false)
 }
+
+var _ ask.CaretakerStore = Traces{}
+
+// PutCaretaker implements ask.CaretakerStore (SB-3405): one per document.
+func (t Traces) PutCaretaker(ctx context.Context, c ask.Caretaker) error {
+	return put(ctx, t.Pool, c.Tenant, "caretaker", c.Doc, meta{at: c.At, user: c.By, space: c.Space}, c, false)
+}
+
+// CaretakerOf implements ask.CaretakerStore.
+func (t Traces) CaretakerOf(ctx context.Context, tenant, doc string) (ask.Caretaker, bool, error) {
+	return get[ask.Caretaker](ctx, t.Pool, tenant, "caretaker", doc, false)
+}
+
+// DeleteCaretaker implements ask.CaretakerStore.
+func (t Traces) DeleteCaretaker(ctx context.Context, tenant, doc string) error {
+	return del(ctx, t.Pool, tenant, "caretaker", doc)
+}

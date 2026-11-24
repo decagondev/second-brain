@@ -150,7 +150,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	}
 	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
-		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, FoundNothing: c.foundNothing, Audit: c.Audit,
+		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Audit: c.Audit,
 		Failed: func(kind string) {
 			c.Metrics.Add("sb_notify_failed_total", "Notifications that couldn't be sent, by kind (sb-ask(3)).", map[string]string{"kind": kind}, 1)
 		}}
@@ -210,23 +210,41 @@ func (c *Cell) ownedPastReview(ctx context.Context, now time.Time) (map[string]i
 	if err != nil {
 		return nil, err
 	}
-	return c.Parts().Agent.OwnedPastReview(ctx, ts, func(ctx context.Context, email string) (tenancy.Scope, bool, error) {
-		us, err := c.Directory.UsersByEmail(ctx, c.Config.Tenant, email)
-		if err != nil {
-			return tenancy.Scope{}, false, err
+	return c.Parts().Agent.OwnedPastReview(ctx, ts, c.ownerScope)
+}
+
+// helpedOwners counts last calendar month's helpful answers for each person's documents
+// (SB-3406).
+func (c *Cell) helpedOwners(ctx context.Context, now time.Time) (map[string]int, error) {
+	from, to := ask.MonthStart(ask.MonthStart(now).Add(-time.Hour)), ask.MonthStart(now)
+	ts, err := c.Traces.Between(ctx, c.Config.Tenant, from, to)
+	if err != nil {
+		return nil, err
+	}
+	fbs, err := c.Traces.FeedbackBetween(ctx, c.Config.Tenant, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return c.Parts().Agent.HelpedOwners(ctx, ts, fbs, c.ownerScope)
+}
+
+// ownerScope is the scope of the one active user with email, company-wide, or false.
+func (c *Cell) ownerScope(ctx context.Context, email string) (tenancy.Scope, bool, error) {
+	us, err := c.Directory.UsersByEmail(ctx, c.Config.Tenant, email)
+	if err != nil {
+		return tenancy.Scope{}, false, err
+	}
+	var active []ports.User
+	for _, u := range us {
+		if u.Active {
+			active = append(active, u)
 		}
-		var active []ports.User
-		for _, u := range us {
-			if u.Active {
-				active = append(active, u)
-			}
-		}
-		if len(active) != 1 {
-			return tenancy.Scope{}, false, nil // nobody single to tell (LAW-12)
-		}
-		s, err := c.ScopeAs(ctx, active[0].ID, "company")
-		return s, err == nil, err
-	})
+	}
+	if len(active) != 1 {
+		return tenancy.Scope{}, false, nil // nobody single to tell (LAW-12)
+	}
+	s, err := c.ScopeAs(ctx, active[0].ID, "company")
+	return s, err == nil, err
 }
 
 func (c *Cell) askers(ctx context.Context, from, to time.Time) ([]string, error) {

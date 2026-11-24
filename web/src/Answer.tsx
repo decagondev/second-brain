@@ -211,6 +211,7 @@ export function PersonName({ person }: { person: Person }) {
     <span className="person">
       {person.email}
       {person.title ? ` (${person.title})` : ""}
+      {person.caretaker ? ` · ${t("caretaker")}` : ""}
     </span>
   );
 }

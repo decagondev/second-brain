@@ -25,6 +25,8 @@ export interface Cite {
 export interface Person {
   email: string;
   title?: string;
+  // Named by a steward for a document whose owner is gone (SB-3405).
+  caretaker?: boolean;
 }
 
 export interface PersonRef extends Person {
@@ -538,6 +540,23 @@ export interface ReviewData {
   evals_to_check?: { id: string; question: string; check: string }[];
   start_here?: StartItem[];
   start_here_hidden?: number;
+  // Terms the space's documents define that its glossary lacks (SB-3407).
+  terms?: DefinedTerm[];
+}
+
+export interface DefinedTerm {
+  term: string;
+  meaning: string;
+  docs: number;
+}
+
+// A document's caretaker (SB-3405): named by a steward, or removed.
+export function nameCaretaker(space: string, doc: string, email: string, f: Fetch = fetch): Promise<{ doc: string; email: string }> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/caretakers`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, email }) }, f);
+}
+
+export function removeCaretaker(space: string, doc: string, f: Fetch = fetch): Promise<unknown> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/caretakers?doc=${encodeURIComponent(doc)}`, { method: "DELETE" }, f);
 }
 
 export interface StartItem {
@@ -573,6 +592,7 @@ export async function reviewList(
       start_here_hidden?: number;
       found_nothing?: FoundNothing;
       feedback?: StewardFeedback;
+      terms?: DefinedTerm[];
     }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
@@ -590,6 +610,7 @@ export async function reviewList(
       freshness: d.freshness && typeof d.freshness.this_month?.answers === "number" && typeof d.freshness.last_month?.answers === "number" ? d.freshness : undefined,
       found_nothing: d.found_nothing && typeof d.found_nothing.this_week === "number" && Array.isArray(d.found_nothing.terms) ? d.found_nothing : undefined,
       feedback: d.feedback && typeof d.feedback.this_month?.helpful === "number" && Array.isArray(d.feedback.documents) ? d.feedback : undefined,
+      terms: Array.isArray(d.terms) ? d.terms.filter((x) => typeof x.term === "string" && typeof x.meaning === "string") : undefined,
     };
   } catch {
     return { items: [], hidden: [] };

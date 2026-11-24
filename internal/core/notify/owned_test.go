@@ -53,3 +53,30 @@ func TestOwnersHearMonthly(t *testing.T) {
 		t.Fatal("FirstMonday")
 	}
 }
+
+// SB-3406: the owners' monthly note adds the helpful answers line, counts only, left out at
+// 0; someone with only helpful answers gets the line alone.
+func TestOwnersHearTheyHelped(t *testing.T) {
+	now := time.Date(2026, 12, 7, 9, 0, 0, 0, time.UTC)
+	j, s, c := world(now)
+	j.Questions = questions{}
+	c.weekly["weekly"] = Monday(now, nil).AddDate(0, 0, -7)
+	j.Owned = func(context.Context, time.Time) (map[string]int, error) { return map[string]int{"usr_ann": 1}, nil }
+	j.Helped = func(context.Context, time.Time) (map[string]int, error) {
+		return map[string]int{"usr_ann": 2, "usr_bob": 1, "usr_cat": 0, "usr_gone": 4}, nil
+	}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, m := range s.got {
+		if m.msg.Kind == KindOwned {
+			got = append(got, m.to.ID+": "+m.msg.Text)
+		}
+	}
+	want := "usr_ann: 1 of your documents that answers often cite is past review\nYour documents were cited in 2 answers people found helpful last month|" +
+		"usr_bob: Your documents were cited in 1 answer people found helpful last month"
+	if len(got) != 2 || got[0]+"|"+got[1] != want {
+		t.Fatalf("%q", got)
+	}
+}

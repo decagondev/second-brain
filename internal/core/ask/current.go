@@ -166,6 +166,8 @@ const MaxOwnerGone = 50
 type ReviewResponse struct {
 	Items  []ReviewItem `json:"items"`
 	Hidden []HiddenItem `json:"hidden"`
+	// Terms are the terms the space's documents define that its glossary lacks (SB-3407).
+	Terms []DefinedTerm `json:"terms"`
 	// Personal is how many documents the space holds with personal data, an IBAN or a
 	// card number (SB-1904): a count, never which.
 	Personal int `json:"personal_data"`
@@ -262,7 +264,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	if !ok {
 		return out, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
 	}
-	if out.Personal, err = x.personalIn(ctx, lk, name); err != nil {
+	if out.Personal, out.Terms, err = x.heldFacts(ctx, s, lk, name); err != nil {
 		return out, err
 	}
 	widerBy, notes, err := x.widerNotes(ctx, lk, name)
@@ -327,8 +329,8 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		allowed[k] = true
 		r := x.Agent.result(ctx, own, c)
 		r.Snippet = ""
-		if gone[c.Owner] {
-			r.Owner = nil // never someone to ask
+		if gone[c.Owner] && (r.Owner == nil || !r.Owner.Caretaker) {
+			r.Owner = nil // never someone to ask; a caretaker is (SB-3405)
 		}
 		if n, ok := newest[c.TextSHA256]; ok && copied[k] && n != k {
 			copies[n] = append(copies[n], r)
@@ -547,6 +549,17 @@ func reviewCounts(traces []Trace, fbs []Feedback) (cited, flagged map[string]int
 }
 
 // personalIn counts the documents the space holds with personal data (SB-1904).
+// heldFacts are the space's personal-data count (SB-1904) and the terms its documents
+// define (SB-3407).
+func (x Stewards) heldFacts(ctx context.Context, s tenancy.Scope, lk ports.DocLookup, name string) (int, []DefinedTerm, error) {
+	n, err := x.personalIn(ctx, lk, name)
+	if err != nil {
+		return 0, nil, err
+	}
+	terms, err := x.termsDefined(ctx, s, lk, name)
+	return n, terms, err
+}
+
 func (x Stewards) personalIn(ctx context.Context, lk ports.DocLookup, name string) (int, error) {
 	personal, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Flag: ingest.FlagPersonal})
 	if err != nil {

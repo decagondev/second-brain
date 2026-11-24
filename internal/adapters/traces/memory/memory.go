@@ -32,6 +32,7 @@ type Store struct {
 	tmpls    map[string]ask.ReplyTemplate // tenant/space/id
 	notices  map[string]ask.CellNotice    // tenant
 	suggest  map[string]ask.Suggested     // tenant/space
+	cares    map[string]ask.Caretaker     // tenant/doc
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -47,7 +48,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, cares: map[string]ask.Caretaker{}}
 }
 
 // PutTrace implements ask.Store.
@@ -724,4 +725,30 @@ func (s *Store) Suggested(_ context.Context, tenant, space string) (ask.Suggeste
 	defer s.mu.Unlock()
 	x, ok := s.suggest[tenant+"/"+space]
 	return x, ok, nil
+}
+
+var _ ask.CaretakerStore = (*Store)(nil)
+
+// PutCaretaker implements ask.CaretakerStore (SB-3405): one per document.
+func (s *Store) PutCaretaker(_ context.Context, c ask.Caretaker) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cares[c.Tenant+"/"+c.Doc] = c
+	return nil
+}
+
+// CaretakerOf implements ask.CaretakerStore.
+func (s *Store) CaretakerOf(_ context.Context, tenant, doc string) (ask.Caretaker, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.cares[tenant+"/"+doc]
+	return c, ok, nil
+}
+
+// DeleteCaretaker implements ask.CaretakerStore.
+func (s *Store) DeleteCaretaker(_ context.Context, tenant, doc string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.cares, tenant+"/"+doc)
+	return nil
 }

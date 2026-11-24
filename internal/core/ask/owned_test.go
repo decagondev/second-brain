@@ -87,3 +87,41 @@ func TestUnusedTermsAndFreshness(t *testing.T) {
 		t.Fatalf("the whole cell: %+v", got)
 	}
 }
+
+// SB-3405, SB-3406: helpful answers count for the person who looks after a cited document
+// and can open it: its owner, or its caretaker when the owner is gone; unhelpful ones and
+// documents they can't open don't count.
+func TestHelpedOwners(t *testing.T) {
+	a := freshAgent(t, `{"claims":[]}`)
+	ix := a.Index.(index)
+	for i := range ix {
+		ix[i].Owner = "alice@acme.example"
+	}
+	ix[1].Owner = "gone@acme.example"
+	a.Index = ix
+	a.Caretaker = func(_ context.Context, doc string) string {
+		if doc == ix[1].Kind+":"+ix[1].SourceID {
+			return "alice@acme.example"
+		}
+		return ""
+	}
+	now := time.Now()
+	tr := func(id string, docs ...string) ask.Trace {
+		x := citing(now, "spc_ops", false, docs...)
+		x.ID = id
+		return x
+	}
+	traces := []ask.Trace{tr("tr_1", "docs:a@3"), tr("tr_2", "docs:b@3"), tr("tr_3", "docs:a@3"), tr("tr_4", "docs:salaries@3"), tr("tr_5", "docs:a@3", "docs:c@3")}
+	fbs := []ask.Feedback{{Trace: "tr_1", Rating: "up"}, {Trace: "tr_2", Rating: "up"}, {Trace: "tr_3", Rating: "down"}, {Trace: "tr_4", Rating: "up"},
+		{Trace: "tr_5", Rating: "up"}, {Trace: "tr_5", Rating: "down"}}
+	scopeOf := func(_ context.Context, email string) (tenancy.Scope, bool, error) {
+		if email != "alice@acme.example" {
+			return tenancy.Scope{}, false, nil
+		}
+		return scope(t, "alice"), true, nil
+	}
+	got, err := a.HelpedOwners(context.Background(), traces, fbs, scopeOf)
+	if err != nil || !reflect.DeepEqual(got, map[string]int{"alice": 2}) {
+		t.Fatalf("%v %v", got, err)
+	}
+}

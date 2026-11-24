@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import type { Fetch } from "./api";
+import type { DefinedTerm, Fetch } from "./api";
 import { ReviewList, StewardQuestions } from "./Questions";
 import { t, tj } from "./i18n";
 
@@ -66,6 +66,7 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
   const [status, setStatus] = useState<string>();
   const [removing, setRemoving] = useState<{ review: string; user: string }>();
   const [reason, setReason] = useState("");
+  const [prefill, setPrefill] = useState<DefinedTerm>();
   const ids = { def: useId(), reason: useId() };
   const base = `/v1/spaces/${encodeURIComponent(space)}`;
 
@@ -135,10 +136,10 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
           </div>
         )}
       </section>
-      <SuggestTerm base={base} fetcher={fetcher} />
+      <SuggestTerm base={base} fetcher={fetcher} prefill={prefill} />
       <SuggestedEditor base={base} fetcher={fetcher} />
       <StewardQuestions space={space} fetcher={fetcher} />
-      <ReviewList space={space} fetcher={fetcher} />
+      <ReviewList space={space} fetcher={fetcher} onSuggestTerm={setPrefill} />
       <section aria-label={t("Access reviews")}>
         <h2>{t("Access reviews")}</h2>
         {reviews.length === 0 ? (
@@ -215,10 +216,15 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
 }
 
 // Suggest a term (SB-3107): a steward proposal of one glossary term, approved like any other.
-function SuggestTerm({ base, fetcher }: { base: string; fetcher: Fetch }) {
+function SuggestTerm({ base, fetcher, prefill }: { base: string; fetcher: Fetch; prefill?: DefinedTerm }) {
   const id = useId();
   const [term, setTerm] = useState("");
   const [meaning, setMeaning] = useState("");
+  useEffect(() => {
+    if (!prefill) return;
+    setTerm(prefill.term); // a suggestion from the documents (SB-3407): only fills the form
+    setMeaning(prefill.meaning);
+  }, [prefill]);
   const [spellings, setSpellings] = useState("");
   const [status, setStatus] = useState("");
   const list = spellings
