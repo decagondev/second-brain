@@ -19,7 +19,6 @@ import (
 	"example.com/second-brain/internal/cell/wire"
 	"example.com/second-brain/internal/core/canary"
 	"example.com/second-brain/internal/core/ingest"
-	"example.com/second-brain/internal/core/ports"
 )
 
 // MaxBackoff is the longest wait between a failing connector's syncs.
@@ -60,25 +59,7 @@ func (s *Service) Kinds() []string {
 
 // Pipeline is the ingest pipeline for one connector kind, built from the cell's parts.
 func (s *Service) Pipeline(kind string) ingest.Pipeline {
-	c := s.Cell
-	m := c.Metrics
-	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Parts().Connectors[kind], Embedder: c.Parts().Agent.Embedder,
-		Index: c.Index, Kind: kind, Now: s.now,
-		Spaces: func(ctx context.Context) ([]ports.Space, error) { return c.Spaces.Spaces(ctx, c.Config.Tenant) },
-		SecretDropped: func(k, pattern string) {
-			m.Add("sb_ingest_secrets_dropped_total", "Chunks dropped for holding a secret (SB-1103).", map[string]string{"connector": k, "pattern": pattern}, 1)
-		},
-		FieldsDropped: func(k string, names []string) {
-			for _, n := range names {
-				m.Add("sb_ingest_fields_dropped_total", "Structured fields dropped at ingest, by name (SB-1106).", map[string]string{"connector": k, "field": n}, 1)
-			}
-		},
-		BadReviewBy: func(k string) {
-			m.Add("sb_ingest_review_by_ignored_total", "Review-by dates ingest couldn't read and ignored (SB-2705).", map[string]string{"connector": k}, 1)
-		},
-		RerouteDropped: func(k string) {
-			m.Add("sb_ingest_reroute_dropped_total", "Documents Reroute took out because they couldn't be fetched.", map[string]string{"connector": k}, 1)
-		}}
+	return s.Cell.IngestPipeline(kind, s.now)
 }
 
 // SyncerFor is the durable-cursor syncer for one connector kind.
@@ -109,10 +90,10 @@ func (r recorder) record(err error) {
 	}
 }
 
-func (r recorder) SyncFailed(tenant, connector string) {
+func (r recorder) SyncFailed(tenant, connector string, err error) {
 	r.s.Cell.Metrics.Add("sb_ingest_sync_failures_total", "Failed syncs by connector (sb-ingest(7)).",
 		map[string]string{"tenant": tenant, "connector": connector}, 1)
-	r.record(r.s.Cell.Syncs.Failed(context.Background(), connector, r.s.now()))
+	r.record(r.s.Cell.Syncs.Failed(context.Background(), connector, r.s.now(), ingest.FailureClass(err)))
 }
 
 // Reroute re-routes every connector's documents to the cell's current spaces, before the

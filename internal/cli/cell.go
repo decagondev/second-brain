@@ -137,12 +137,36 @@ func (e *env) auditVerifyCell(name string, o cellOpts, since, key string) int {
 	return e.verifyExport(name, raw, key)
 }
 
+// tailFilter is sb audit tail's filters: every one set must match.
+type tailFilter struct {
+	kinds                      map[string]bool
+	actor, space, since, until string
+}
+
+func (f tailFilter) match(r audit.Row) bool {
+	if len(f.kinds) > 0 && !f.kinds[r.Kind] {
+		return false
+	}
+	if f.actor != "" && r.Actor != f.actor {
+		return false
+	}
+	if f.space != "" && r.Space != "spc_"+f.space && (r.Kind != "kill" || r.Subject != "space:"+f.space) {
+		return false
+	}
+	day := r.At
+	if len(day) >= 10 {
+		day = day[:10]
+	}
+	return (f.since == "" || day >= f.since) && (f.until == "" || day <= f.until)
+}
+
 // auditTail prints the cell's rows that match, then follows new ones (sb-audit(1), tail).
 func (e *env) auditTail(args []string) int {
 	const name = "sb audit tail"
 	var o cellOpts
 	kinds := map[string]bool{}
 	actor, space, follow, from := "", "", true, int64(1)
+	sinceDay, untilDay := "", "" // SB-3204: whole UTC days, both inclusive
 	args = e.localArgs(args)
 	for i := 0; i < len(args); i++ {
 		if took, err := o.take(args, &i); took {
@@ -159,7 +183,7 @@ func (e *env) auditTail(args []string) int {
 			return args[i], true
 		}
 		switch a := args[i]; a {
-		case "--kind", "--actor", "--space", "--from":
+		case "--kind", "--actor", "--space", "--from", "--since", "--until":
 			v, ok := val()
 			if !ok {
 				return e.fail(name, errs.New(errs.EUSAGE, "%s needs a value", a))
@@ -174,6 +198,15 @@ func (e *env) auditTail(args []string) int {
 				actor = v
 			case "--space":
 				space = v
+			case "--since", "--until":
+				if _, err := time.Parse("2006-01-02", v); err != nil {
+					return e.fail(name, errs.New(errs.EUSAGE, "%s needs a date, YYYY-MM-DD", a))
+				}
+				if a == "--since" {
+					sinceDay = v
+				} else {
+					untilDay = v
+				}
 			case "--from":
 				n, err := strconv.ParseInt(v, 10, 64)
 				if err != nil || n < 1 {
@@ -191,18 +224,7 @@ func (e *env) auditTail(args []string) int {
 	if err != nil {
 		return e.fail(name, err)
 	}
-	match := func(r audit.Row) bool {
-		if len(kinds) > 0 && !kinds[r.Kind] {
-			return false
-		}
-		if actor != "" && r.Actor != actor {
-			return false
-		}
-		if space != "" && r.Space != "spc_"+space && (r.Kind != "kill" || r.Subject != "space:"+space) {
-			return false
-		}
-		return true
-	}
+	f := tailFilter{kinds: kinds, actor: actor, space: space, since: sinceDay, until: untilDay}
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	defer signal.Stop(stop)
@@ -219,7 +241,7 @@ func (e *env) auditTail(args []string) int {
 			return e.fail(name, errs.New(errs.EUNAVAIL, "the cell's answer is unreadable"))
 		}
 		for _, r := range page.Rows {
-			if match(r) {
+			if f.match(r) {
 				e.printRow(r)
 			}
 		}

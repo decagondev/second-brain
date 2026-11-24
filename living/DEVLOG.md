@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S31.1: Know why
+
+**Wave/slice:** W31 / S31.1 (SB-3201 to SB-3204) · **Status:** Done
+
+**What:** A connector's sync record keeps the class of its last failure, from the status the source answered with or the network error that kept it from answering: auth, rate_limited, unreachable or source_error. Health shows it with the section of the new connectors runbook that fixes it, and the console says it in words. POST /v1/admin/index/refresh and sb index refresh CITE --reason re-read one document through the same pipeline a sync uses, audited before and after; one the source says is gone leaves the index. /metrics now carries every health line as sb_health_warning and sb_health_unknown, read on each scrape. The audit API takes actor, from and to, and sb audit tail takes --since and --until.
+
+**Why this way:** The class is all a record keeps, so nothing from the source reaches a log (LAW-07), and anything the cell can't place is source_error, never fine (LAW-03). A refresh only removes a document on a definite 404, 410 or missing file; any other fetch failure changes nothing. A health line that can't be read is 1 on the unknown gauge, never 0 on both.
+
+**Learned:** Connectors each had their own private error type; a small StatusError interface in ports lets core read the status without importing an adapter. sb audit tail already used --from for the row number, so the day filters are --since and --until there. The console has no audit list, so the filters weren't added to one.
+
+**Laws:** LAW-03, LAW-07, LAW-11, LAW-13. Every law test is still green.
+
 ## 2026-11-24 S30.2: Share the upkeep
 
 **Wave/slice:** W30 / S30.2 (SB-3105 to SB-3107) · **Status:** Done

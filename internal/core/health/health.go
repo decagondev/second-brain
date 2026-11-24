@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/box"
@@ -26,6 +27,9 @@ type Sync struct {
 	LastSuccess time.Time `json:"last_success"`
 	LastFailure time.Time `json:"last_failure"`
 	Failures    int       `json:"failures"` // since the last success
+	// Failure is the last failure's class while it stands (SB-3201): auth, rate_limited,
+	// unreachable or source_error, never a URL, body or message.
+	Failure string `json:"failure,omitempty"`
 }
 
 // Syncs keeps each connector's sync record. found is false for a connector that has never
@@ -50,7 +54,14 @@ type Connector struct {
 	LastFailure *time.Time `json:"last_failure"`
 	Failures    int        `json:"failures"`
 	Stale       bool       `json:"stale"`
+	// Failure is the class of the last failed sync, and Fix the runbook section for it
+	// (SB-3201); both are absent once a sync succeeds.
+	Failure string `json:"failure,omitempty"`
+	Fix     string `json:"fix,omitempty"`
 }
+
+// ConnectorRunbook is the runbook whose sections fix each class of sync failure.
+const ConnectorRunbook = "docs/runbooks/connectors.md"
 
 // Report is the cell's health, overdue and stale items first.
 type Report struct {
@@ -213,6 +224,10 @@ func Build(ctx context.Context, runs schedule.Runs, syncs Syncs, kinds []string,
 		}
 		c := Connector{Kind: k, LastSuccess: ptr(s.LastSuccess, found), LastFailure: ptr(s.LastFailure, found), Failures: s.Failures}
 		c.Stale = !found || s.LastSuccess.IsZero() || now.Sub(s.LastSuccess) > FreshnessSLA
+		if s.Failures > 0 {
+			c.Failure = ingest.KnownClass(s.Failure)
+			c.Fix = ConnectorRunbook + "#" + strings.ReplaceAll(c.Failure, "_", "-")
+		}
 		r.Connectors = append(r.Connectors, c)
 	}
 	sort.SliceStable(r.Jobs, func(a, b int) bool { return r.Jobs[a].Overdue && !r.Jobs[b].Overdue })

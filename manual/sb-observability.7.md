@@ -41,6 +41,21 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 
 Every alert links to a runbook.
 
+### Health as gauges, exactly (SB-3203)
+
+`/metrics` carries every line of `GET /v1/admin/health` (sb-admin(3)) as two gauges, read each time `/metrics` is scraped: `sb_health_warning{check}` is 1 when the line warns and 0 when it doesn't, and `sb_health_unknown{check}` is 1 when the cell can't read it. A line it can't read is always 1 on `sb_health_unknown`, so it is never 0 on both (LAW-03). The checks are `job:NAME` (overdue; unknown when its record is unreadable), `connector:KIND` (stale), `box:CHECK` (`warn` or `fail`; unknown for `unknown`), `notify`, `index`, `prompt`, `answer_time`, `disk` and `stewards` (a space with no active steward; unknown when the directory couldn't say), each only when health has that line. When health can't be built at all, `sb_health_unknown{check="health"}` is 1. Labels are check names only, never a person or a document. The existing alerts can use them, for example:
+
+```yaml
+- alert: CellHealthWarning
+  expr: max by (check) (sb_health_warning) == 1
+  for: 30m
+- alert: CellHealthUnknown
+  expr: max by (check) (sb_health_unknown) == 1
+  for: 30m
+```
+
+The connectors runbook ([docs/runbooks/connectors.md](../docs/runbooks/connectors.md)) says what to do for each `connector:` line, by its `failure`.
+
 ### Law alerts, exactly (SB-608)
 
 Every law with a production check has one alert rule, in `internal/core/alerts`, and one runbook, `docs/runbooks/LAW-nn.md`. A test fails the build if a law with a **Watch** line in sb-laws(7) lacks either.

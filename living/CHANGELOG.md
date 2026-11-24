@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Why a sync fails (SB-3201); refresh one document (SB-3202); health on /metrics (SB-3203); audit by person and date (SB-3204).
 - Coming due (SB-3105); owners mark their own reviewed (SB-3106); suggest a glossary term (SB-3107). W30 built.
 - Questions that found nothing (SB-3101); no steward left reroutes to company (SB-3102); several documents at once (SB-3103); feedback for the stewards (SB-3104).
 - Ask about this document (SB-3004); one-source warning (SB-3005); GitHub cites open at the cited lines (SB-3006). W29 built.

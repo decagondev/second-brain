@@ -135,3 +135,64 @@ func (e *env) indexPrune(args []string) int {
 	}
 	return 0
 }
+
+// indexRefresh re-reads one document from its source now (sb(1); SB-3202):
+// POST /v1/admin/index/refresh with the cite and a reason.
+func (e *env) indexRefresh(args []string) int {
+	const name = "sb index refresh"
+	const usage = "usage: sb index refresh CITE --reason TEXT (--cell URL | --tenant T)"
+	var o cellOpts
+	cite, reason := "", ""
+	args = e.localArgs(args)
+	for i := 0; i < len(args); i++ {
+		took, err := o.take(args, &i)
+		if err != nil {
+			return e.fail(name, err)
+		}
+		if took {
+			continue
+		}
+		switch {
+		case args[i] == "--reason" && i+1 < len(args):
+			reason = args[i+1]
+			i++
+		case cite == "" && !strings.HasPrefix(args[i], "-"):
+			cite = args[i]
+		default:
+			return e.fail(name, errs.New(errs.EUSAGE, "unexpected %s; %s", args[i], usage))
+		}
+	}
+	if cite == "" || strings.TrimSpace(reason) == "" {
+		return e.fail(name, errs.New(errs.EUSAGE, "name the document and say why; %s", usage))
+	}
+	cellURL, _, err := e.cellURL(o)
+	if err != nil {
+		return e.fail(name, err)
+	}
+	body, _ := json.Marshal(map[string]string{"cite": cite, "reason": reason})
+	raw, err := cellDo(http.MethodPost, cellURL, "/v1/admin/index/refresh", "application/json", body, 10*time.Minute)
+	if err != nil {
+		return e.fail(name, err)
+	}
+	var r struct {
+		Document string `json:"document"`
+		Version  int    `json:"version"`
+		Changed  bool   `json:"changed"`
+		Removed  bool   `json:"removed"`
+	}
+	if json.Unmarshal(raw, &r) != nil || r.Document == "" {
+		return e.fail(name, errs.New(errs.EUNAVAIL, "the cell's answer isn't a refresh"))
+	}
+	if e.g.JSON {
+		return e.json(r)
+	}
+	switch {
+	case r.Removed:
+		fmt.Fprintf(e.out, "%s: the source no longer has it, so it is out of the index.\n", r.Document)
+	case r.Changed:
+		fmt.Fprintf(e.out, "%s: now version %d.\n", r.Document, r.Version)
+	default:
+		fmt.Fprintf(e.out, "%s: unchanged, version %d.\n", r.Document, r.Version)
+	}
+	return 0
+}

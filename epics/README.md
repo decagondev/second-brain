@@ -35,7 +35,7 @@ summary: Epics, waves, slices and tickets.
 | W28 A Focused Context | 7 | 0 | 0 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
 | W29 Show the Evidence | 6 | 0 | 0 | Planned 2026-11-24 with the user (E30): show the passage, section on the cite, answers in the asker's language, ask about this document, one-source warning, open at the cited lines ([14-evidence-gaps-surprises.md](../docs/14-evidence-gaps-surprises.md)) |
 | W30 Fill the Gaps | 7 | 0 | 0 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
-| W31 Run Without Surprises | 0 | 0 | 7 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
+| W31 Run Without Surprises | 4 | 0 | 3 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -603,10 +603,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-3201](E32-run-without-surprises/SB-3201-sync-reason.md) | S31.1 | E32 | Why a sync fails | Open |
-| [SB-3202](E32-run-without-surprises/SB-3202-refresh-document.md) | S31.1 | E32 | Refresh one document | Open |
-| [SB-3203](E32-run-without-surprises/SB-3203-health-metrics.md) | S31.1 | E32 | Health in Prometheus | Open |
-| [SB-3204](E32-run-without-surprises/SB-3204-audit-filters.md) | S31.1 | E32 | Audit by person and date | Open |
+| [SB-3201](E32-run-without-surprises/SB-3201-sync-reason.md) | S31.1 | E32 | Why a sync fails | Done |
+| [SB-3202](E32-run-without-surprises/SB-3202-refresh-document.md) | S31.1 | E32 | Refresh one document | Done |
+| [SB-3203](E32-run-without-surprises/SB-3203-health-metrics.md) | S31.1 | E32 | Health in Prometheus | Done |
+| [SB-3204](E32-run-without-surprises/SB-3204-audit-filters.md) | S31.1 | E32 | Audit by person and date | Done |
 | [SB-3205](E32-run-without-surprises/SB-3205-answer-time.md) | S31.2 | E32 | Answer time watch | Open |
 | [SB-3206](E32-run-without-surprises/SB-3206-disk-runway.md) | S31.2 | E32 | Disk runway | Open |
 | [SB-3207](E32-run-without-surprises/SB-3207-notice-to-everyone.md) | S31.2 | E32 | Notice to everyone | Open |

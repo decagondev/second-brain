@@ -56,6 +56,18 @@ type gqlError struct {
 
 func (e *gqlError) Error() string { return fmt.Sprintf("linear: %d %s", e.status, e.code) }
 
+// HTTPStatus is the status Linear answered with, an authentication error as 401 and a
+// missing issue as 404 (ports.StatusError).
+func (e *gqlError) HTTPStatus() int {
+	switch e.code {
+	case "AUTHENTICATION_ERROR", "FORBIDDEN":
+		return 401
+	case "NOT_FOUND":
+		return 404
+	}
+	return e.status
+}
+
 // Operations, sent by name; the fake and the real API both accept them.
 const (
 	opIssue = `query IssueByID($id: String!) { issue(id: $id) { id identifier title description updatedAt archivedAt trashed

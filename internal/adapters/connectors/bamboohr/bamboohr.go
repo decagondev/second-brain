@@ -67,6 +67,9 @@ type apiError struct{ status int }
 
 func (e *apiError) Error() string { return fmt.Sprintf("bamboohr: HTTP %d", e.status) }
 
+// HTTPStatus is the status BambooHR answered with (ports.StatusError).
+func (e *apiError) HTTPStatus() int { return e.status }
+
 type creds struct{ Key, Subdomain string }
 
 func (c *Connector) creds(ctx context.Context) (creds, error) {

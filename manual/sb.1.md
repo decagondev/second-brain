@@ -22,6 +22,7 @@ sb space   templates
 sb space   diff FILE --idp-snapshot SNAPSHOT [--json]
 sb space   scope-report (--cell URL | --tenant T) [--json]
 sb index   prune [--dry-run] [--reason TEXT] (--cell URL | --tenant T)   (sb-admin(3), index leftovers)
+sb index   refresh CITE --reason TEXT (--cell URL | --tenant T)      (sb-admin(3), index refresh)
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
@@ -63,6 +64,8 @@ Every command:
 - is audited server-side when it changes anything.
 
 `sb index prune --dry-run` prints the index's leftovers by cite (`GET /v1/admin/index/leftovers`): documents their source no longer lists, and chunks no space holds. Without `--dry-run` it removes the documents their source no longer lists, which needs `--reason` and is audited (`POST /v1/admin/index/prune`; SB-2905). It never touches a document its source still lists, so chunks no space holds are only listed.
+
+`sb index refresh CITE --reason TEXT` re-reads one document from its source now (`POST /v1/admin/index/refresh`; SB-3202) and prints its version and whether it changed, or that it was removed because the source no longer has it. Audited; admins only.
 
 During the build, every command in the SYNOPSIS exists. A command whose ticket hasn't landed yet exits 2 with `ENOTIMPL` and names the ticket, for example `sb tenant check: not built yet (SB-101)`. It never pretends to succeed.
 

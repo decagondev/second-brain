@@ -100,12 +100,12 @@ func (s Syncs) Sync(_ context.Context, kind string) (health.Sync, bool, error) {
 
 // Succeeded records a successful sync, clearing the failures.
 func (s Syncs) Succeeded(ctx context.Context, kind string, at time.Time) error {
-	return s.update(ctx, kind, func(x *health.Sync) { x.LastSuccess, x.Failures = at.UTC(), 0 })
+	return s.update(ctx, kind, func(x *health.Sync) { x.LastSuccess, x.Failures, x.Failure = at.UTC(), 0, "" })
 }
 
-// Failed records a failed sync.
-func (s Syncs) Failed(ctx context.Context, kind string, at time.Time) error {
-	return s.update(ctx, kind, func(x *health.Sync) { x.LastFailure = at.UTC(); x.Failures++ })
+// Failed records a failed sync and its class (SB-3201): the class only, never a message.
+func (s Syncs) Failed(ctx context.Context, kind string, at time.Time, class string) error {
+	return s.update(ctx, kind, func(x *health.Sync) { x.LastFailure, x.Failure = at.UTC(), class; x.Failures++ })
 }
 
 func (s Syncs) update(ctx context.Context, kind string, f func(*health.Sync)) error {

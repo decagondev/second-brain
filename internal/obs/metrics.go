@@ -154,7 +154,7 @@ func (f *Freshness) SyncSucceeded(tenant, connector string, at time.Time) {
 	f.last[[2]string{tenant, connector}] = float64(at.Unix())
 }
 
-func (f *Freshness) SyncFailed(tenant, connector string) {
+func (f *Freshness) SyncFailed(tenant, connector string, _ error) {
 	f.M.Add(failuresMetric, "Failed ingest syncs.", map[string]string{"tenant": tenant, "connector": connector}, 1)
 }
 

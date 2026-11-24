@@ -89,6 +89,9 @@ type apiError struct{ status int }
 
 func (e *apiError) Error() string { return fmt.Sprintf("hubspot: HTTP %d", e.status) }
 
+// HTTPStatus is the status HubSpot answered with (ports.StatusError).
+func (e *apiError) HTTPStatus() int { return e.status }
+
 func notFound(err error) bool {
 	var e *apiError
 	return errors.As(err, &e) && e.status == http.StatusNotFound

@@ -182,3 +182,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3004: a document filter only narrows after the checks, and a hidden chosen document is no_access (TestAskAboutDocuments) |
 | 2026-11-24 | LAW-03 | Tested (extended) | SB-3102: an unknown or failed steward check keeps a question in its space (TestNoStewardReroute) |
 | 2026-11-24 | LAW-16 | Tested (extended) | SB-3107: a suggested term changes nothing until approved, and the approved manifest has it (TestSuggestedTermIsAProposal) |
+| 2026-11-24 | LAW-03 | Tested (extended) | SB-3201, SB-3203: an unclassed sync failure is source_error and an unreadable health line is unknown (TestFailureClass, TestFailureAndChecks) |

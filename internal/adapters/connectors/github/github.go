@@ -62,6 +62,9 @@ type apiError struct{ status int }
 
 func (e *apiError) Error() string { return fmt.Sprintf("github: HTTP %d", e.status) }
 
+// HTTPStatus is the status GitHub answered with (ports.StatusError).
+func (e *apiError) HTTPStatus() int { return e.status }
+
 func notFound(err error) bool {
 	var a *apiError
 	return errors.As(err, &a) && a.status == http.StatusNotFound

@@ -13,7 +13,7 @@ summary: "Health is JSON only, so the site's alerts can't see it."
 | Manual | [`sb-observability(7)`](../../manual/sb-observability.7.md) |
 | Laws | LAW-03 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Health is JSON only, so the site's alerts can't see it.
 
 ## Acceptance criteria
 
-- [ ] `/metrics` has `sb_health_warning{check}` at 0 or 1 for every health line, and `sb_health_unknown` for lines it can't read
-- [ ] The runbook gives example alert rules
-- [ ] Each warning in health is 1 on its gauge; an unreadable line is never 0 on both
+- [x] `/metrics` has `sb_health_warning{check}` at 0 or 1 for every health line, and `sb_health_unknown` for lines it can't read
+- [x] The runbook gives example alert rules
+- [x] Each warning in health is 1 on its gauge; an unreadable line is never 0 on both
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Metrics
-- [ ] Runbook
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Metrics
+- [x] Runbook
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+/metrics sets sb_health_warning{check} and sb_health_unknown{check} from health on each scrape, and sb_health_unknown{check=health} when health can't be built; sb-observability(7) gives example alert rules
 
 ## Definition of done
 

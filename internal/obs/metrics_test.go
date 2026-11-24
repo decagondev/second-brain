@@ -12,7 +12,7 @@ func TestFreshnessMetrics(t *testing.T) {
 	f := &Freshness{M: m}
 	at := time.Unix(1000, 0)
 	f.SyncSucceeded("acme-logistics", "docs", at)
-	f.SyncFailed("acme-logistics", "chat")
+	f.SyncFailed("acme-logistics", "chat", nil)
 	f.Update(1090)
 	labels := map[string]string{"tenant": "acme-logistics", "connector": "docs"}
 	if v, ok := m.Get("sb_ingest_last_success_age_seconds", labels); !ok || v != 90 {

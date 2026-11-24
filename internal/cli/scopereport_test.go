@@ -60,3 +60,26 @@ func TestIndexPrune(t *testing.T) {
 		t.Fatalf("prune: %d %q %q", code, out, posted)
 	}
 }
+
+// SB-3202: sb index refresh needs a cite and a reason, and says what happened.
+func TestIndexRefresh(t *testing.T) {
+	var posted string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/v1/admin/index/refresh" {
+			b, _ := io.ReadAll(r.Body)
+			posted = string(b)
+			_, _ = w.Write([]byte(`{"document":"docs:a.md","version":7,"changed":true,"removed":false}`))
+			return
+		}
+		w.WriteHeader(404)
+	}))
+	defer srv.Close()
+	t.Setenv("SB_TOKEN", "op-token")
+	if code, _, _ := run("index", "refresh", "docs:a.md", "--cell", srv.URL); code != 2 || posted != "" {
+		t.Fatalf("a refresh without a reason: exit %d, posted %q", code, posted)
+	}
+	code, out, _ := run("index", "refresh", "docs:a.md@3", "--reason", "owner says it changed", "--cell", srv.URL)
+	if code != 0 || !strings.Contains(out, "docs:a.md: now version 7.") || posted != `{"cite":"docs:a.md@3","reason":"owner says it changed"}` {
+		t.Fatalf("refresh: %d %q %q", code, out, posted)
+	}
+}

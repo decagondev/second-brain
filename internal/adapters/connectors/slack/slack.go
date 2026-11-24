@@ -80,6 +80,16 @@ type slackError struct {
 
 func (e *slackError) Error() string { return fmt.Sprintf("slack: %d %s", e.status, e.code) }
 
+// HTTPStatus is the status Slack answered with, and a revoked or invalid token as 401
+// (ports.StatusError).
+func (e *slackError) HTTPStatus() int {
+	switch e.code {
+	case "invalid_auth", "not_authed", "token_revoked", "token_expired", "account_inactive", "missing_scope":
+		return 401
+	}
+	return e.status
+}
+
 func (c *Connector) call(ctx context.Context, method string, q url.Values, v any) error {
 	k, err := c.creds(ctx)
 	if err != nil {

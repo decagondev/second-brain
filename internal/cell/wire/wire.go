@@ -496,7 +496,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /login", c.Auth.Login)
 	public.HandleFunc("GET /callback", c.Auth.Callback)
 	public.Handle("/scim/v2/", (&scim.Endpoint{Tenant: tenant, Directory: c.Directory, Sessions: c.Sessions, Token: secret("scim")}).Handler())
-	api.Verifier{Release: c.Release, Metrics: c.Metrics.Handler(), ControlPlane: c.controlPlane, Attest: c.attestor(), TargetFor: c.VerifyTarget}.Register(public)
+	api.Verifier{Release: c.Release, Metrics: c.metricsHandler(), ControlPlane: c.controlPlane, Attest: c.attestor(), TargetFor: c.VerifyTarget}.Register(public)
 	if sc, ok := conns["chat"].(*slack.Connector); ok {
 		public.Handle("POST /connectors/slack/events", sc.EventsHandler(time.Now))
 		creds := secret("connectors/chat")
@@ -562,7 +562,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, NotifyTest: c.testEmail, Index: indexReports{c}}
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, NotifyTest: c.testEmail, Index: indexReports{c},
+		ActiveByEmail: c.activeByEmail}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)

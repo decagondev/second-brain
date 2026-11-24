@@ -371,3 +371,57 @@ func unstewardedOf(ctx context.Context, dir stewardDir, tenant string, m manifes
 	out.Warning = len(out.Spaces)+len(out.Unknown) > 0
 	return out
 }
+
+// activeByEmail are the active user ids with email, for the audit API's actor= (SB-3204).
+func (c *Cell) activeByEmail(ctx context.Context, email string) ([]string, error) {
+	if c.Directory == nil {
+		return nil, errors.New("wire: no directory")
+	}
+	us, err := c.Directory.UsersByEmail(ctx, c.Config.Tenant, email)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, u := range us {
+		if u.Active {
+			out = append(out, u.ID)
+		}
+	}
+	return out, nil
+}
+
+// metricsHandler serves /metrics with health's lines as gauges, read on each scrape
+// (SB-3203).
+func (c *Cell) metricsHandler() http.Handler {
+	inner := c.Metrics.Handler()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c.healthGauges(r.Context(), time.Now())
+		inner.ServeHTTP(w, r)
+	})
+}
+
+// healthGauges sets sb_health_warning and sb_health_unknown for every line of health; a
+// report that can't be built is unknown on check "health", never fine.
+func (c *Cell) healthGauges(ctx context.Context, now time.Time) {
+	set := func(check string, warn, unknown bool) {
+		l := map[string]string{"check": check}
+		c.Metrics.Set("sb_health_warning", "A health line that warns, 1, or not, 0 (SB-3203).", l, one(warn))
+		c.Metrics.Set("sb_health_unknown", "A health line the cell can't read, 1 (SB-3203).", l, one(unknown))
+	}
+	r, err := c.Health(ctx, now)
+	if err != nil {
+		set("health", false, true)
+		return
+	}
+	set("health", false, false)
+	for _, ch := range r.Checks() {
+		set(ch.Name, ch.Warning, ch.Unknown)
+	}
+}
+
+func one(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
+}

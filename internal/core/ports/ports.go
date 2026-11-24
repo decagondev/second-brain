@@ -110,6 +110,13 @@ type IdempotencyKey string
 // Receipt carries the target-issued id of a change (LAW-05).
 type Receipt struct{ TargetID string }
 
+// StatusError is a connector error that knows the HTTP status the source answered with, so
+// a failed sync can be classed without reading its message (SB-3201).
+type StatusError interface {
+	error
+	HTTPStatus() int
+}
+
 // Connector is the four-call contract (sb-connector(3)).
 type Connector interface {
 	APIVersion() int

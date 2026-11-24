@@ -23,6 +23,10 @@ Hand-off:
 
 - [Hand-off](handoff.md): move a cell to the company's own cloud account under its own key (SB-701)
 
+Connectors:
+
+- [Connector syncs](connectors.md): why a sync fails, by the class health shows, and the fix (SB-3201)
+
 Self-hosted cells:
 
 - [Self-hosted install](selfhost.md): install, people, upgrades, backup and restore on one machine the company owns (SB-1605)

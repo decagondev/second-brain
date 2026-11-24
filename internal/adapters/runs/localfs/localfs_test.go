@@ -42,8 +42,8 @@ func TestSyncRecords(t *testing.T) {
 	}
 	at := time.Date(2027, 3, 10, 12, 0, 0, 0, time.UTC)
 	_ = s.Succeeded(ctx, "docs", at)
-	_ = s.Failed(ctx, "docs", at.Add(time.Minute))
-	_ = s.Failed(ctx, "docs", at.Add(2*time.Minute))
+	_ = s.Failed(ctx, "docs", at.Add(time.Minute), "auth")
+	_ = s.Failed(ctx, "docs", at.Add(2*time.Minute), "auth")
 	x, found, err := s.Sync(ctx, "docs")
 	if err != nil || !found || x.Failures != 2 || !x.LastSuccess.Equal(at) || !x.LastFailure.Equal(at.Add(2*time.Minute)) {
 		t.Fatalf("record %+v %v %v", x, found, err)

@@ -108,10 +108,17 @@ func (c *Connector) get(ctx context.Context, k creds, p string, q url.Values, v 
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("quickbooks: HTTP %d", resp.StatusCode)
+		return &apiError{resp.StatusCode}
 	}
 	return json.NewDecoder(io.LimitReader(resp.Body, 8<<20)).Decode(v)
 }
+
+type apiError struct{ status int }
+
+func (e *apiError) Error() string { return fmt.Sprintf("quickbooks: HTTP %d", e.status) }
+
+// HTTPStatus is the status QuickBooks answered with (ports.StatusError).
+func (e *apiError) HTTPStatus() int { return e.status }
 
 // account holds only what may be read; AcctNum, BankNum and the rest are never decoded.
 type account struct {

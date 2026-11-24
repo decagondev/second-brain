@@ -73,6 +73,15 @@ type apiError struct {
 
 func (e *apiError) Error() string { return fmt.Sprintf("gdrive: HTTP %d %s", e.status, e.reason) }
 
+// HTTPStatus is the status Drive answered with, a quota 403 as the 429 it means
+// (ports.StatusError).
+func (e *apiError) HTTPStatus() int {
+	if e.rateLimited() {
+		return 429
+	}
+	return e.status
+}
+
 func (e *apiError) rateLimited() bool {
 	return e.status == 429 || (e.status == 403 && (e.reason == "rateLimitExceeded" || e.reason == "userRateLimitExceeded"))
 }

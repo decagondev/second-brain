@@ -11,10 +11,20 @@ interface Proposal {
   diff: string[];
 }
 
+// Why the last sync failed, by its class (SB-3201); a class it doesn't know is a source error.
+const sourceError = msg("The source answered with an error.");
+const failureText: Record<string, string> = {
+  auth: msg("The source refused the connector's credentials."),
+  rate_limited: msg("The source asked the connector to slow down."),
+  unreachable: msg("The source didn't answer."),
+  source_error: sourceError,
+};
+
 // The cell's health (sb-admin(3), GET /v1/admin/health; SB-1607).
 export interface Health {
   jobs: { name: string; law?: string; last_finish: string | null; overdue: boolean; unreadable?: boolean }[];
-  connectors: { kind: string; last_success: string | null; last_failure: string | null; failures: number; stale: boolean }[];
+  // failure is the last failed sync's class and fix its runbook section (SB-3201).
+  connectors: { kind: string; last_success: string | null; last_failure: string | null; failures: number; stale: boolean; failure?: string; fix?: string }[];
   at: string;
   // The machine on a self-hosted cell (SB-1802); absent on a managed one.
   box?: { facts_at: string | null; verdict: string; checks: { check: string; verdict: string; detail: string; fix?: string }[] };
@@ -210,6 +220,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
                   <li key={c.kind} className={c.stale ? "attention" : undefined}>
                     <strong>{c.kind}</strong>: {t(c.stale ? "stale, last synced {at}" : "fresh, last synced {at}", { at: when(c.last_success) })}
                     {c.failures > 0 ? `, ${tn(c.failures, "{n} failed sync since (last {at})", "{n} failed syncs since (last {at})", { at: when(c.last_failure) })}` : ""}
+                    {c.failure ? `. ${t(failureText[c.failure] ?? sourceError)}${c.fix ? " " + t("See {fix}.", { fix: c.fix }) : ""}` : ""}
                   </li>
                 ))}
               </ul>

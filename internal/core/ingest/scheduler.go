@@ -17,7 +17,7 @@ const (
 // Recorder receives sync outcomes for metrics (obs.Metrics in production).
 type Recorder interface {
 	SyncSucceeded(tenant, connector string, at time.Time)
-	SyncFailed(tenant, connector string)
+	SyncFailed(tenant, connector string, err error)
 }
 
 // Syncer runs one connector's sync with a durable cursor.
@@ -43,7 +43,7 @@ func (s Syncer) Once(ctx context.Context) error {
 	}
 	if s.Recorder != nil {
 		if err != nil {
-			s.Recorder.SyncFailed(t, s.Connector)
+			s.Recorder.SyncFailed(t, s.Connector, err)
 		} else {
 			s.Recorder.SyncSucceeded(t, s.Connector, s.Now())
 		}

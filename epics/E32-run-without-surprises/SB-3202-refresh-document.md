@@ -13,7 +13,7 @@ summary: "The only way to re-read one changed document is to wait for a sync."
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb(1)`](../../manual/sb.1.md) |
 | Laws | LAW-11, LAW-13 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ The only way to re-read one changed document is to wait for a sync.
 
 ## Acceptance criteria
 
-- [ ] `sb index refresh CITE --reason` and `POST /v1/admin/index/refresh` re-read one document through the normal pipeline, admins only, with an audit row
-- [ ] A document the source no longer has is tombstoned
-- [ ] A changed document has a new version after the refresh
+- [x] `sb index refresh CITE --reason` and `POST /v1/admin/index/refresh` re-read one document through the normal pipeline, admins only, with an audit row
+- [x] A document the source no longer has is tombstoned
+- [x] A changed document has a new version after the refresh
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] CLI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] CLI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+POST /v1/admin/index/refresh and sb index refresh CITE --reason re-read one document through the normal pipeline, audited before and after; a 404, 410 or missing file takes it out of the index, any other failure changes nothing
 
 ## Definition of done
 

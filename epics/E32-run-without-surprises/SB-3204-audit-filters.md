@@ -13,7 +13,7 @@ summary: "The audit API filters by kind and space, not by who or when."
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-audit(1)`](../../manual/sb-audit.1.md) |
 | Laws | LAW-11 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ The audit API filters by kind and space, not by who or when.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/admin/audit` takes `actor`, `from` and `to`; the console and `sb audit tail` get the same
-- [ ] Paging still works
-- [ ] The filters narrow as expected
+- [x] `GET /v1/admin/audit` takes `actor`, `from` and `to`; the console and `sb audit tail` get the same
+- [x] Paging still works
+- [x] The filters narrow as expected
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] Console and CLI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] Console and CLI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+GET /v1/admin/audit takes actor (a user id, or an email of one active user), from and to (days, inclusive); sb audit tail takes --since and --until, since --from was already the row number. The console has no audit list, so none was added
 
 ## Definition of done
 

@@ -113,3 +113,44 @@ func TestNotifyFrom(t *testing.T) {
 		t.Fatalf("no channel: %+v", n)
 	}
 }
+
+// SB-3201, SB-3203: a failed sync names its class and fix until a success; every line is a
+// check, and an unreadable job is unknown.
+func TestFailureAndChecks(t *testing.T) {
+	now := time.Date(2027, 3, 10, 12, 0, 0, 0, time.UTC)
+	s := syncs{
+		"docs":    {LastSuccess: now.Add(-time.Hour), LastFailure: now.Add(-time.Minute), Failures: 2, Failure: "auth"},
+		"chat":    {LastSuccess: now.Add(-time.Minute), Failures: 0, Failure: ""},
+		"tickets": {LastSuccess: now.Add(-time.Minute), LastFailure: now, Failures: 1},
+	}
+	rep, err := Build(context.Background(), runs{}, s, []string{"docs", "chat", "tickets"}, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]Connector{}
+	for _, c := range rep.Connectors {
+		by[c.Kind] = c
+	}
+	if by["docs"].Failure != "auth" || by["docs"].Fix != "docs/runbooks/connectors.md#auth" {
+		t.Fatalf("docs: %+v", by["docs"])
+	}
+	if by["chat"].Failure != "" || by["chat"].Fix != "" {
+		t.Fatalf("a healthy connector has a failure: %+v", by["chat"])
+	}
+	if by["tickets"].Failure != "source_error" {
+		t.Fatalf("a failure with no class: %+v", by["tickets"])
+	}
+	rep.Unstewarded = &Unstewarded{Spaces: []string{}, Unknown: []string{"hr"}}
+	checks := map[string]Check{}
+	for _, c := range rep.Checks() {
+		checks[c.Name] = c
+	}
+	if !checks["connector:docs"].Warning || checks["connector:chat"].Warning || !checks["stewards"].Unknown || checks["stewards"].Warning {
+		t.Fatalf("checks: %+v", checks)
+	}
+	for _, c := range checks {
+		if c.Name[:4] == "job:" && !c.Warning && !c.Unknown {
+			t.Fatalf("a job that never ran is fine: %+v", c)
+		}
+	}
+}

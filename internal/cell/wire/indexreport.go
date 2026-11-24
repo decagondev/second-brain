@@ -114,6 +114,52 @@ func (x indexReports) Prune(ctx context.Context, actor, reason string) (int, err
 	return len(gone), nil
 }
 
+// IngestPipeline is the normal ingest pipeline for one connector kind, with the cell's
+// counters, as a sync uses it and a refresh re-reads one document through it.
+func (c *Cell) IngestPipeline(kind string, now func() time.Time) ingest.Pipeline {
+	m := c.Metrics
+	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Parts().Connectors[kind], Embedder: c.Parts().Agent.Embedder,
+		Index: c.Index, Kind: kind, Now: now,
+		Spaces: func(ctx context.Context) ([]ports.Space, error) { return c.Spaces.Spaces(ctx, c.Config.Tenant) },
+		SecretDropped: func(k, pattern string) {
+			m.Add("sb_ingest_secrets_dropped_total", "Chunks dropped for holding a secret (SB-1103).", map[string]string{"connector": k, "pattern": pattern}, 1)
+		},
+		FieldsDropped: func(k string, names []string) {
+			for _, n := range names {
+				m.Add("sb_ingest_fields_dropped_total", "Structured fields dropped at ingest, by name (SB-1106).", map[string]string{"connector": k, "field": n}, 1)
+			}
+		},
+		BadReviewBy: func(k string) {
+			m.Add("sb_ingest_review_by_ignored_total", "Review-by dates ingest couldn't read and ignored (SB-2705).", map[string]string{"connector": k}, 1)
+		},
+		RerouteDropped: func(k string) {
+			m.Add("sb_ingest_reroute_dropped_total", "Documents Reroute took out because they couldn't be fetched.", map[string]string{"connector": k}, 1)
+		}}
+}
+
+// Refresh re-reads one document from its source now (SB-3202), with an audit row before
+// and after; the first row is written before anything is read.
+func (x indexReports) Refresh(ctx context.Context, actor, reason string, ref ports.SourceRef) (ingest.Refreshed, error) {
+	c := x.c
+	if _, ok := c.Parts().Connectors[ref.Kind]; !ok {
+		return ingest.Refreshed{}, ingest.ErrNoConnector
+	}
+	subject := ref.Kind + ":" + ref.ID
+	if _, err := c.Audit.Write(ctx, audit.Event{Actor: actor, Kind: "config", Subject: subject, State: "requested", Reason: "index refresh: " + reason}); err != nil {
+		return ingest.Refreshed{}, err
+	}
+	res, err := c.IngestPipeline(ref.Kind, time.Now).Refresh(ctx, ref)
+	if err != nil {
+		return res, err
+	}
+	state := "refreshed"
+	if res.Removed {
+		state = "removed"
+	}
+	_, err = c.Audit.Write(ctx, audit.Event{Actor: actor, Kind: "config", Subject: subject, State: state, Reason: fmt.Sprintf("version=%d changed=%t", res.Version, res.Changed)})
+	return res, err
+}
+
 // leftoverCount is the nightly count health reads.
 type leftoverCount struct {
 	At     time.Time `json:"at"`

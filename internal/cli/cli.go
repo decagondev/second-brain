@@ -162,6 +162,8 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.spaceScopeReport(args), true
 	case "index prune":
 		return e.indexPrune(args), true
+	case "index refresh":
+		return e.indexRefresh(args), true
 	case "selfhost doctor":
 		return e.selfhostDoctor(args), true
 	case "selfhost verify-bundle":

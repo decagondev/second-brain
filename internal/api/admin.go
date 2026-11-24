@@ -12,6 +12,7 @@ import (
 
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/costs"
+	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
@@ -61,6 +62,9 @@ type Admin struct {
 	NotifyTest NotifyTest
 	// Index reports on the cell's index (SB-2903); nil is EUNAVAIL.
 	Index IndexReports
+	// ActiveByEmail are the active user ids with an email, for actor= (SB-3204); nil
+	// matches actor= as a user id only.
+	ActiveByEmail func(ctx context.Context, email string) ([]string, error)
 }
 
 // IndexReports are the operator's reports on the index: counts and locations only.
@@ -70,6 +74,8 @@ type IndexReports interface {
 	// holds; Prune removes the first, audited (SB-2905).
 	Leftovers(ctx context.Context) (gone, unheld []ports.Chunk, err error)
 	Prune(ctx context.Context, actor, reason string) (int, error)
+	// Refresh re-reads one document from its source now, audited (SB-3202).
+	Refresh(ctx context.Context, actor, reason string, ref ports.SourceRef) (ingest.Refreshed, error)
 }
 
 // Register mounts the endpoints.
@@ -88,6 +94,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/index/scopes", h.guard(h.scopes))
 	mux.HandleFunc("GET /v1/admin/index/leftovers", h.guard(h.leftovers))
 	mux.HandleFunc("POST /v1/admin/index/prune", h.guard(h.prune))
+	mux.HandleFunc("POST /v1/admin/index/refresh", h.guard(h.refresh))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
@@ -395,6 +402,38 @@ func (h Admin) prune(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
 	h.ok(w, map[string]any{"pruned": n})
 }
 
+// refresh re-reads one document from its source now (SB-3202).
+func (h Admin) refresh(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+	var req struct {
+		Cite   string `json:"cite"`
+		Reason string `json:"reason"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&req); err != nil || strings.TrimSpace(req.Reason) == "" {
+		h.fail(w, errs.New(errs.EINVAL, "Say which document and why: the body is {\"cite\": \"docs:…\", \"reason\": \"…\"}."))
+		return
+	}
+	doc, _, _ := strings.Cut(req.Cite, "@")
+	kind, id, _ := strings.Cut(doc, ":")
+	if kind == "" || id == "" {
+		h.fail(w, errs.New(errs.EINVAL, "A cite is KIND:ID, with or without @VERSION."))
+		return
+	}
+	if h.Index == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The index can't be read in this cell."))
+		return
+	}
+	res, err := h.Index.Refresh(r.Context(), s.User(), strings.TrimSpace(req.Reason), ports.SourceRef{Kind: kind, ID: id})
+	switch {
+	case errors.Is(err, ingest.ErrNoConnector):
+		h.fail(w, errs.New(errs.EINVAL, "This cell has no %s connector.", kind))
+		return
+	case err != nil:
+		h.fail(w, errs.New(errs.EUNAVAIL, "The document couldn't be read from its source now; nothing changed."))
+		return
+	}
+	h.ok(w, map[string]any{"document": doc, "version": res.Version, "changed": res.Changed, "removed": res.Removed})
+}
+
 func (h Admin) switches(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	list, err := h.Switches.List(r.Context(), h.Tenant)
 	if err != nil {
@@ -404,10 +443,38 @@ func (h Admin) switches(w http.ResponseWriter, r *http.Request, _ tenancy.Scope)
 	h.ok(w, map[string]any{"switches": list})
 }
 
+// auditFilter is GET /v1/admin/audit's actor=, from= and to= (SB-3204): an email is the one
+// active user it names, and the dates are whole UTC days, both inclusive.
+func (h Admin) auditFilter(r *http.Request) (actor, from, to string, err *errs.Error) {
+	q := r.URL.Query()
+	actor, from, to = strings.TrimSpace(q.Get("actor")), q.Get("from"), q.Get("to")
+	for _, d := range []string{from, to} {
+		if _, e := time.Parse("2006-01-02", d); d != "" && e != nil {
+			return "", "", "", errs.New(errs.EINVAL, "from and to are dates, YYYY-MM-DD.")
+		}
+	}
+	if strings.Contains(actor, "@") && h.ActiveByEmail != nil {
+		ids, e := h.ActiveByEmail(r.Context(), actor)
+		switch {
+		case e != nil:
+			return "", "", "", errs.New(errs.EUNAVAIL, "The directory can't be read.")
+		case len(ids) != 1:
+			return "", "", "", errs.New(errs.EINVAL, "No one active has that email; give their user id.")
+		}
+		actor = ids[0]
+	}
+	return actor, from, to, nil
+}
+
 func (h Admin) audit(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	since, _ := strconv.ParseInt(r.URL.Query().Get("since"), 10, 64)
 	kind := r.URL.Query().Get("kind")
 	space := r.URL.Query().Get("space")
+	actor, from, to, ferr := h.auditFilter(r)
+	if ferr != nil {
+		h.fail(w, ferr)
+		return
+	}
 	rows, err := h.AuditRows.Range(r.Context(), since, 500)
 	if err != nil {
 		h.fail(w, errs.New(errs.EUNAVAIL, "The audit log can't be read."))
@@ -415,7 +482,12 @@ func (h Admin) audit(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	}
 	var out []audit.Row
 	for _, row := range rows {
-		if (kind == "" || row.Kind == kind) && (space == "" || audit.InSpace(row, space)) {
+		day := row.At
+		if len(day) >= 10 {
+			day = day[:10]
+		}
+		if (kind == "" || row.Kind == kind) && (space == "" || audit.InSpace(row, space)) && (actor == "" || row.Actor == actor) &&
+			(from == "" || day >= from) && (to == "" || day <= to) {
 			out = append(out, row)
 		}
 	}

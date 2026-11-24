@@ -70,7 +70,7 @@ func (flatEmbed) Embed(_ context.Context, ts []string) ([][]float32, error) {
 type rec struct{ ok, failed int }
 
 func (r *rec) SyncSucceeded(string, string, time.Time) { r.ok++ }
-func (r *rec) SyncFailed(string, string)               { r.failed++ }
+func (r *rec) SyncFailed(string, string, error)        { r.failed++ }
 
 // A failed sync keeps the old cursor, and the next run finishes the work.
 func TestCursorAdvancesOnlyAfterSuccess(t *testing.T) {
