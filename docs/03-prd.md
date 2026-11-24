@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)).
 
 ## Problem
 
@@ -325,6 +325,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W26 | Fresh Answers | — | An asker can tell at a glance when an answer rests on old sources, and the brain prefers the newer of two equal ones. |
 | W27 | A Tidy Corpus | — | Stewards and owners can see what has gone stale or unused, and take it out of answers without waiting on the source. |
 | W28 | A Focused Context | — | What the model reads stays short and on topic, and the operator can see when the index, the scopes, the eval cases or the prompts start to creep. |
+| W29 | Show the Evidence | — | An asker can check an answer without leaving it, and the answer reads in their language. |
+| W30 | Fill the Gaps | — | Stewards see what people couldn't find, and the upkeep is spread across stewards and owners. |
+| W31 | Run Without Surprises | — | The operator learns about trouble from the cell before users do, and can fix the small things in one command. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -888,6 +891,57 @@ gantt
 |---|---|---|---|
 | S28.1 | Keep the model's context short | Conversations stay short, one document can't crowd out the rest, scope report | [SB-2901](../epics/E29-focused-context/SB-2901-short-conversations.md), [SB-2902](../epics/E29-focused-context/SB-2902-per-document-cap.md), [SB-2903](../epics/E29-focused-context/SB-2903-scope-report.md) |
 | S28.2 | Watch for creep | Eval cases that went stale, index leftovers, prompt growth, start here goes stale | [SB-2904](../epics/E29-focused-context/SB-2904-stale-eval-cases.md), [SB-2905](../epics/E29-focused-context/SB-2905-index-leftovers.md), [SB-2906](../epics/E29-focused-context/SB-2906-prompt-growth.md), [SB-2907](../epics/E29-focused-context/SB-2907-start-here-stale.md) |
+
+#### W29 Show the Evidence
+
+*An asker can check an answer without leaving it, and the answer reads in their language. Accepted 2026-11-24 ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)).*
+
+**Exit gate**
+
+- [ ] A passage is checked live on every open and refused once access is gone
+- [ ] A cite names its section, and a rebuild fills it in
+- [ ] A German ask gets German claims with the same cites, and the eval cases pass
+- [ ] A document filter only narrows
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S29.1 | See what it rests on | Show the passage, section on the cite, answers in the asker's language | [SB-3001](../epics/E30-show-the-evidence/SB-3001-show-passage.md), [SB-3002](../epics/E30-show-the-evidence/SB-3002-section-on-cite.md), [SB-3003](../epics/E30-show-the-evidence/SB-3003-answer-language.md) |
+| S29.2 | Narrow it and say how thin it is | Ask about this document, one-source warning, open at the cited lines | [SB-3004](../epics/E30-show-the-evidence/SB-3004-ask-about-document.md), [SB-3005](../epics/E30-show-the-evidence/SB-3005-one-source-warning.md), [SB-3006](../epics/E30-show-the-evidence/SB-3006-cited-lines.md) |
+
+#### W30 Fill the Gaps
+
+*Stewards see what people couldn't find, and the upkeep is spread across stewards and owners. Accepted 2026-11-24 ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)).*
+
+**Exit gate**
+
+- [ ] No question text appears in any count
+- [ ] A space with no active steward warns and its questions reroute; a directory error warns
+- [ ] Each document in a bulk action is checked and audited on its own
+- [ ] An owner can mark only their own document
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S30.1 | See what's missing | Questions that found nothing, spaces with no steward left, review several at once, feedback for the stewards | [SB-3101](../epics/E31-fill-the-gaps/SB-3101-found-nothing.md), [SB-3102](../epics/E31-fill-the-gaps/SB-3102-no-steward-left.md), [SB-3103](../epics/E31-fill-the-gaps/SB-3103-bulk-review.md), [SB-3104](../epics/E31-fill-the-gaps/SB-3104-steward-feedback.md) |
+| S30.2 | Share the upkeep | Coming due, owners mark their own reviewed, suggest a glossary term | [SB-3105](../epics/E31-fill-the-gaps/SB-3105-coming-due.md), [SB-3106](../epics/E31-fill-the-gaps/SB-3106-owner-marks.md), [SB-3107](../epics/E31-fill-the-gaps/SB-3107-suggest-term.md) |
+
+#### W31 Run Without Surprises
+
+*The operator learns about trouble from the cell before users do, and can fix the small things in one command. Accepted 2026-11-24 ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)).*
+
+**Exit gate**
+
+- [ ] A sync failure is classified and its record holds no URL
+- [ ] An unreadable health line is never 0 on both gauges
+- [ ] A disk runway is never shown from too little history
+- [ ] A notice ends by itself within 7 days
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S31.1 | Know why | Why a sync fails, refresh one document, health in Prometheus, audit by person and date | [SB-3201](../epics/E32-run-without-surprises/SB-3201-sync-reason.md), [SB-3202](../epics/E32-run-without-surprises/SB-3202-refresh-document.md), [SB-3203](../epics/E32-run-without-surprises/SB-3203-health-metrics.md), [SB-3204](../epics/E32-run-without-surprises/SB-3204-audit-filters.md) |
+| S31.2 | See it coming | Answer time watch, disk runway, notice to everyone | [SB-3205](../epics/E32-run-without-surprises/SB-3205-answer-time.md), [SB-3206](../epics/E32-run-without-surprises/SB-3206-disk-runway.md), [SB-3207](../epics/E32-run-without-surprises/SB-3207-notice-to-everyone.md) |
 
 #### Parked: Portfolio Department Grants
 

@@ -23,6 +23,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 11 | [Keep people in the loop, keep knowledge owned, fit the site](11-loop-own-fit.md) | Twenty small features: notifications, owned and right documents, and the site's languages, logs and storage (W20 to W22) |
 | 12 | [Easier to ask, easier to steward, easier to operate](12-ask-steward-operate.md) | Twenty small quality-of-life features for askers, stewards and operators (W23 to W25) |
 | 13 | [Fresh answers, a tidy corpus, a focused context](13-fresh-tidy-focused.md) | Twenty small features against stale data, document rot and context creep (W26 to W28) |
+| 14 | [Show the evidence, fill the gaps, run without surprises](14-evidence-gaps-surprises.md) | Twenty small features: passages and sections on cites, gaps for stewards, early warnings for operators (W29 to W31) |
 
 ## Architecture
 

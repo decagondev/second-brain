@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-30 epics, 103 user stories and 251 tickets across 29 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+33 epics, 109 user stories and 271 tickets across 32 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -33,6 +33,9 @@ summary: Epics, waves, slices and tickets.
 | W26 Fresh Answers | 6 | 0 | 0 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
 | W27 A Tidy Corpus | 7 | 0 | 0 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
 | W28 A Focused Context | 7 | 0 | 0 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
+| W29 Show the Evidence | 0 | 0 | 6 | Planned 2026-11-24 with the user (E30): show the passage, section on the cite, answers in the asker's language, ask about this document, one-source warning, open at the cited lines ([14-evidence-gaps-surprises.md](../docs/14-evidence-gaps-surprises.md)) |
+| W30 Fill the Gaps | 0 | 0 | 7 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
+| W31 Run Without Surprises | 0 | 0 | 7 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -124,6 +127,12 @@ flowchart LR
   E25 --> E27
   E25 --> E28
   E26 --> E29
+  E30["E30 Show the Evidence"]
+  E31["E31 Fill the Gaps"]
+  E32["E32 Run Without Surprises"]
+  E27 --> E30
+  E28 --> E31
+  E29 --> E32
 ```
 
 ## Epics
@@ -160,6 +169,9 @@ flowchart LR
 | [E27 Fresh Answers](E27-fresh-answers/README.md) | An asker can tell at a glance when an answer rests on old sources, and the brain prefers the newer of two equal ones. | W26 | 6 |
 | [E28 A Tidy Corpus](E28-tidy-corpus/README.md) | Stewards and owners can see what has gone stale or unused, and take it out of answers without waiting on the source. | W27 | 7 |
 | [E29 A Focused Context](E29-focused-context/README.md) | What the model reads stays short and on topic, and the operator can see when the index, the scopes, the eval cases or the prompts start to creep. | W28 | 7 |
+| [E30 Show the Evidence](E30-show-the-evidence/README.md) | An asker can check an answer without leaving it, and the answer reads in their language. | W29 | 6 |
+| [E31 Fill the Gaps](E31-fill-the-gaps/README.md) | Stewards see what people couldn't find, and the upkeep is spread across stewards and owners. | W30 | 7 |
+| [E32 Run Without Surprises](E32-run-without-surprises/README.md) | The operator learns about trouble from the cell before users do, and can fix the small things in one command. | W31 | 7 |
 
 ## All tickets by wave
 
@@ -563,3 +575,38 @@ flowchart LR
 | [SB-2905](E29-focused-context/SB-2905-index-leftovers.md) | S28.2 | E29 | Index leftovers | Done |
 | [SB-2906](E29-focused-context/SB-2906-prompt-growth.md) | S28.2 | E29 | Prompt growth watch | Done |
 | [SB-2907](E29-focused-context/SB-2907-start-here-stale.md) | S28.2 | E29 | Start here goes stale | Done |
+
+### W29 Show the Evidence
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3001](E30-show-the-evidence/SB-3001-show-passage.md) | S29.1 | E30 | Show the passage | Open |
+| [SB-3002](E30-show-the-evidence/SB-3002-section-on-cite.md) | S29.1 | E30 | Section on the cite | Open |
+| [SB-3003](E30-show-the-evidence/SB-3003-answer-language.md) | S29.1 | E30 | Answers in the asker's language | Open |
+| [SB-3004](E30-show-the-evidence/SB-3004-ask-about-document.md) | S29.2 | E30 | Ask about this document | Open |
+| [SB-3005](E30-show-the-evidence/SB-3005-one-source-warning.md) | S29.2 | E30 | One-source warning | Open |
+| [SB-3006](E30-show-the-evidence/SB-3006-cited-lines.md) | S29.2 | E30 | Open at the cited lines | Open |
+
+### W30 Fill the Gaps
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3101](E31-fill-the-gaps/SB-3101-found-nothing.md) | S30.1 | E31 | Questions that found nothing | Open |
+| [SB-3102](E31-fill-the-gaps/SB-3102-no-steward-left.md) | S30.1 | E31 | Spaces with no steward left | Open |
+| [SB-3103](E31-fill-the-gaps/SB-3103-bulk-review.md) | S30.1 | E31 | Review several at once | Open |
+| [SB-3104](E31-fill-the-gaps/SB-3104-steward-feedback.md) | S30.1 | E31 | Feedback for the stewards | Open |
+| [SB-3105](E31-fill-the-gaps/SB-3105-coming-due.md) | S30.2 | E31 | Coming due | Open |
+| [SB-3106](E31-fill-the-gaps/SB-3106-owner-marks.md) | S30.2 | E31 | Owners mark their own reviewed | Open |
+| [SB-3107](E31-fill-the-gaps/SB-3107-suggest-term.md) | S30.2 | E31 | Suggest a glossary term | Open |
+
+### W31 Run Without Surprises
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3201](E32-run-without-surprises/SB-3201-sync-reason.md) | S31.1 | E32 | Why a sync fails | Open |
+| [SB-3202](E32-run-without-surprises/SB-3202-refresh-document.md) | S31.1 | E32 | Refresh one document | Open |
+| [SB-3203](E32-run-without-surprises/SB-3203-health-metrics.md) | S31.1 | E32 | Health in Prometheus | Open |
+| [SB-3204](E32-run-without-surprises/SB-3204-audit-filters.md) | S31.1 | E32 | Audit by person and date | Open |
+| [SB-3205](E32-run-without-surprises/SB-3205-answer-time.md) | S31.2 | E32 | Answer time watch | Open |
+| [SB-3206](E32-run-without-surprises/SB-3206-disk-runway.md) | S31.2 | E32 | Disk runway | Open |
+| [SB-3207](E32-run-without-surprises/SB-3207-notice-to-everyone.md) | S31.2 | E32 | Notice to everyone | Open |
