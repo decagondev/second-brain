@@ -16,6 +16,7 @@ const MinUsage = 5
 // a space with fewer than MinUsage asks shows only that.
 type SpaceUsage struct {
 	Space        string   `json:"space"`
+	Parent       string   `json:"parent,omitempty"` // its department, for a team (SB-3905)
 	Asks         *int     `json:"asks,omitempty"`
 	FewerThan5   bool     `json:"fewer_than_5,omitempty"`
 	FoundNothing *float64 `json:"found_nothing_share,omitempty"`
@@ -87,4 +88,25 @@ func ownUsage(traces []Trace, fbs []Feedback, name string, now time.Time) *Space
 		return &row
 	}
 	return &SpaceUsage{Space: name, FewerThan5: true}
+}
+
+// Nest puts each team's row right after its department's, with Parent set (SB-3905);
+// parent is a space's department by name, "" for none. Counts are untouched.
+func Nest(rows []SpaceUsage, parent func(space string) string) []SpaceUsage {
+	if parent == nil {
+		return rows
+	}
+	out := make([]SpaceUsage, 0, len(rows))
+	key := func(r SpaceUsage) string {
+		if r.Parent != "" {
+			return r.Parent + "/" + r.Space
+		}
+		return r.Space
+	}
+	for _, r := range rows {
+		r.Parent = parent(r.Space)
+		out = append(out, r)
+	}
+	sort.SliceStable(out, func(i, j int) bool { return key(out[i]) < key(out[j]) })
+	return out
 }

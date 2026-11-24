@@ -128,6 +128,28 @@ func TestTreeThroughARunningCell(t *testing.T) {
 	if code != 200 || strings.Contains(out, "Finance/AP/") || strings.Contains(out, "Finance/FPA/") || strings.Contains(out, `"ap"`) || strings.Contains(out, `"fpa"`) {
 		t.Fatalf("lee's branch ask: %d %s", code, out)
 	}
+
+	// SB-3906: who's who for a member; a non-member is refused.
+	if code, out := r.do(t, "GET", "/v1/spaces/ap/people", ""); code != http.StatusForbidden {
+		t.Fatalf("a non-member saw who's who: %d %s", code, out)
+	}
+	signInAs(sam)
+	r.do(t, "POST", "/v1/ask?space=ap", `{"question":"When is the zebra cutoff?"}`)
+	code, out = r.do(t, "GET", "/v1/spaces/ap/people", "")
+	var p ask.SpacePeople
+	if err := json.Unmarshal([]byte(out), &p); err != nil || code != 200 || p.Members != 1 || p.Parent != "finance" || len(p.Stewards) != 1 {
+		t.Fatalf("who's who: %d %s", code, out)
+	}
+
+	// SB-3905: the department's list rolls its teams up, counts only.
+	code, out = r.do(t, "GET", "/v1/spaces/finance/review", "")
+	var rev ask.ReviewResponse
+	if err := json.Unmarshal([]byte(out), &rev); err != nil || code != 200 || len(rev.Teams) != 2 || rev.Teams[0].Space != "ap" || !rev.Teams[0].FewerThan5 {
+		t.Fatalf("roll-up: %d %s", code, out)
+	}
+	if strings.Contains(out, "Finance/AP/") || strings.Contains(out, "Finance/FPA/") {
+		t.Fatalf("a team's document rolled up: %s", out)
+	}
 }
 
 func sorted(xs []string) []string {

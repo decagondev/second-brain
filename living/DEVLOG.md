@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S38.2: Leaders and escalation
+
+**Wave/slice:** W38 / S38.2 (SB-3904 to SB-3907) · **Status:** Done
+
+**What:** A team's question that nobody answers climbs the tree: to its department's stewards after 10 working days and to the company-wide answerers after 20, staying in each queue. A department's review list shows each team's counts under Teams, and the weekly report nests teams under their department. Each space has a who's who for its members, and Who to ask names the department's stewards when no owner of the answer's documents is active. LAW-24, the tree never widens, has its law test.
+
+**Why this way:** Escalation reuses the reroute of SB-3404 with one more step, so claims, audit and counts-only notices are unchanged. Roll-ups count only what the department's steward could open, since a count is also something a law can leak. Who's who reuses the owners and caretakers that answers already show, checked the same way.
+
+**Learned:** The first roll-up counted the team's hidden documents too, which LAW-24's word 'count' rules out, so it now counts only what the department's steward can open. A law test of the tree has to compare each branch ask with every leaf ask the person could make on their own.
+
+**Laws:** LAW-07, LAW-11, LAW-12, LAW-24 (new). Every law test is still green.
+
 ## 2026-11-24 S38.1: The tree
 
 **Wave/slice:** W38 / S38.1 (SB-3901 to SB-3903) · **Status:** Done

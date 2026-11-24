@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Escalate up the tree (SB-3904); roll-ups for leaders (SB-3905); who's who (SB-3906); LAW-24 (SB-3907). W38 built.
 - Parent spaces (SB-3901); settings flow down (SB-3902); ask across a branch (SB-3903).
 - Adoption in the weekly report (SB-3804); daily brief (SB-3805); search from the address bar (SB-3806). W37 built.
 - MCP for other AI tools (SB-3801); ask about a file (SB-3802); every API token in one place (SB-3803).

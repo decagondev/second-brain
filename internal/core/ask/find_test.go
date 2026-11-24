@@ -92,7 +92,7 @@ func TestAskNamesOwnersOfAllowedCites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := fmt.Sprint(resp.People); got != "[{ann@acme-logistics.example Support lead 2 false}]" {
+	if got := fmt.Sprint(resp.People); got != "[{ann@acme-logistics.example Support lead 2 false false}]" {
 		t.Fatalf("people %s", got) // bob's document was refused; gone's owner is deprovisioned
 	}
 	for _, c := range resp.Answer.Claims {

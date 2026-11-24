@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/adapters/smtpmail"
 	"example.com/second-brain/internal/api"
+	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/notify"
@@ -34,6 +36,52 @@ func stewardFacts(m manifest.Tenant) ask.SpaceFacts {
 		}
 		sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
 		return sp.Stewards, sp.Label, ok && len(sp.Stewards) > 0
+	}
+}
+
+// stewardPeople are the active people in a space's steward groups now, by space key, each
+// once, by email (SB-3906).
+func (c *Cell) stewardPeople(m manifest.Tenant) func(ctx context.Context, space string) ([]answer.Person, error) {
+	return func(ctx context.Context, space string) ([]answer.Person, error) {
+		groups, _, ok := stewardFacts(m)(space)
+		if !ok || strings.HasPrefix(space, "person:") || space == "company" {
+			return []answer.Person{}, nil
+		}
+		seen := map[string]bool{}
+		out := []answer.Person{}
+		for _, g := range groups {
+			name, ok := strings.CutPrefix(g, "group:")
+			if !ok {
+				continue
+			}
+			ids, err := c.Directory.Members(ctx, c.Config.Tenant, name)
+			if err != nil {
+				return nil, err
+			}
+			for _, id := range ids {
+				u, found, err := c.Directory.User(ctx, c.Config.Tenant, id)
+				if err != nil {
+					return nil, err
+				}
+				if !found || !u.Active || len(u.Emails) == 0 || seen[u.Emails[0]] {
+					continue
+				}
+				seen[u.Emails[0]] = true
+				out = append(out, answer.Person{Email: u.Emails[0], Title: u.Title})
+			}
+		}
+		sort.Slice(out, func(i, j int) bool { return out[i].Email < out[j].Email })
+		return out, nil
+	}
+}
+
+// parentOf is a space key's department's key, "" for none (SB-3904).
+func parentOf(m manifest.Tenant) func(space string) string {
+	return func(space string) string {
+		if sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]; ok && sp.Parent != "" && strings.HasPrefix(space, "spc_") {
+			return "spc_" + sp.Parent
+		}
+		return ""
 	}
 }
 
@@ -152,7 +200,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	if weekly == nil {
 		weekly = time.UTC
 	}
-	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m),
+	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m), Parent: parentOf(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
 		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Trends: c.trends, Audit: c.Audit, Reviews: c.reviewList,
 		Failed: func(kind string) {

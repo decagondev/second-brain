@@ -16,6 +16,11 @@ import (
 )
 
 // Source reads one week of a cell's records.
+// TreeSource is a Source that knows each space's department (SB-3905).
+type TreeSource interface {
+	ParentOf(space string) string
+}
+
 type Source interface {
 	Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 	Drafts(ctx context.Context, tenant string, from, to time.Time) (used, discarded int, err error)
@@ -149,7 +154,7 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 		if err != nil {
 			return r, err
 		}
-		r.Spaces = ask.UsageBySpace(traces, ask.Helpful(fbs))
+		r.Spaces = usageBySpace(src, traces, fbs)
 	}
 	if r.Asks > 0 {
 		r.CitedAnswerRate = float64(cited) / float64(r.Asks)
@@ -283,11 +288,15 @@ func (r Report) Markdown() string {
 	if len(r.Spaces) > 0 {
 		parts := make([]string, len(r.Spaces))
 		for i, u := range r.Spaces {
+			name := u.Space
+			if u.Parent != "" {
+				name = u.Parent + " / " + u.Space
+			}
 			if u.FewerThan5 {
-				parts[i] = u.Space + " fewer than 5 asks"
+				parts[i] = name + " fewer than 5 asks"
 				continue
 			}
-			parts[i] = fmt.Sprintf("%s %d asks, %.0f%% found nothing, %.0f%% helpful", u.Space, *u.Asks, 100**u.FoundNothing, 100**u.Helpful)
+			parts[i] = fmt.Sprintf("%s %d asks, %.0f%% found nothing, %.0f%% helpful", name, *u.Asks, 100**u.FoundNothing, 100**u.Helpful)
 		}
 		fmt.Fprintf(&b, "| Usage by space | %s |\n", strings.Join(parts, "; "))
 	}
@@ -371,4 +380,14 @@ func Weekly(ctx context.Context, src Source, tenant string, now time.Time, price
 		return r, err
 	}
 	return r, deliver(ctx, r.Markdown())
+}
+
+// usageBySpace is usage by space (SB-3506), each team under its department when src knows
+// the tree (SB-3905).
+func usageBySpace(src Source, traces []ask.Trace, fbs []ask.Feedback) []ask.SpaceUsage {
+	rows := ask.UsageBySpace(traces, ask.Helpful(fbs))
+	if ts, ok := src.(TreeSource); ok {
+		rows = ask.Nest(rows, ts.ParentOf)
+	}
+	return rows
 }

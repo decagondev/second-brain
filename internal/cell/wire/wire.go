@@ -177,6 +177,15 @@ type usage struct {
 	dir     DirectoryStore
 	index   IndexStore
 	state   string
+	tree    func() manifest.Tenant // the manifest now, for usage by space (SB-3905); nil is flat
+}
+
+// ParentOf is a space's department by name, "" for none (SB-3905).
+func (u usage) ParentOf(space string) string {
+	if u.tree == nil {
+		return ""
+	}
+	return u.tree().Spaces[space].Parent
 }
 
 func (u usage) Traces(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error) {
@@ -365,7 +374,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	}
 	c.inbox, c.receipts, c.Actions, c.Proposals, c.Reviews = st.inbox, st.receipts, st.actions, st.proposals, st.reviews
 	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
-	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index, state: c.Config.State}
+	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index, state: c.Config.State, tree: c.Manifest}
 	c.model = func(m manifest.Tenant) (ports.Model, error) {
 		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
 			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}, Once: c.Usage,
@@ -468,7 +477,25 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		}),
 		Glossary: func(name string) map[string]string { return m.Effective(name).Glossary },
 		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
-		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text}
+		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
+		Climb: func(ctx context.Context, space string) []ask.PersonRef { // SB-3906: up to the department's stewards
+			up := parentOf(m)(space)
+			if up == "" {
+				return nil
+			}
+			ps, err := c.stewardPeople(m)(ctx, up)
+			if err != nil {
+				return nil // unknown names no one; never a guess
+			}
+			var out []ask.PersonRef
+			for _, p := range ps {
+				out = append(out, ask.PersonRef{Email: p.Email, Title: p.Title, Steward: true})
+			}
+			if len(out) > ask.MaxPeople {
+				out = out[:ask.MaxPeople]
+			}
+			return out
+		}}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -568,6 +595,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
 		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant,
 		StartItems: func(name string) []string { return m.Effective(name).StartHere }, Members: c.noteReaders(m),
+		Children: m.Children, ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays },
+		Parent: func(name string) string { return m.Spaces[name].Parent }, StewardPeople: c.stewardPeople(m),
 		Owner: func(ctx context.Context, email string) (string, bool, error) { // SB-3706: one active user, or no one
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
 			if err != nil {

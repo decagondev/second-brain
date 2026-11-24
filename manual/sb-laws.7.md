@@ -1,7 +1,7 @@
 ---
 title: "sb-laws(7)"
 man: "7"
-summary: The twenty-three laws the platform must never break, and how each is checked.
+summary: The twenty-four laws the platform must never break, and how each is checked.
 ---
 
 # sb-laws(7)
@@ -24,7 +24,7 @@ LAW-08 at most one behind stable             LAW-16 the manifest is the truth
 LAW-17 hand-off leaves no unlisted access    LAW-18 the root key always has a custodian
 LAW-19 spaces only narrow                    LAW-20 restricted stays home
 LAW-21 moves revoke fast                     LAW-22 barriers hold
-LAW-23 grants are consented and revocable
+LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 ```
 
 ## DESCRIPTION
@@ -179,6 +179,12 @@ No answer, citation, draft or action crosses a declared information barrier, in 
 A parent-org grant on a company space carries only the aggregates the company approved, never content, and stops within 5 minutes of being revoked (ADR-0014; built only if Q-01 is yes).
 
 *Owner:* portfolio lead. *Checks:* Property (`TestLAW23_GrantsAreConsentedAndRevocable`, red until SB-1302).
+
+### LAW-24: The tree never widens {#law-24}
+
+A space's place in the tree (sb-spaces(7), The tree) never lets anyone see, count or be told about a document they couldn't see from the space that holds it. A branch ask uses only what an ask in one of the branch's spaces the asker is a member of would use on its own; a team is never looser than its department, and what flows down to it never changes its members, label or what it holds; a department's roll-ups count only what its steward can open, and nothing but counts; a question that climbs the tree carries only itself, never a document.
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW24_TheTreeNeverWidens`: generated trees of departments and teams, with random members, labels, barriers and source ACLs, through branch asks, and the manifest's settings that flow down; SB-3907) · Selftest (`TestSelf_LAW24CatchesAWideTree`: a branch open to every team's members goes red).
 
 ### External review (SB-612)
 

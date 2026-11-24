@@ -42,7 +42,7 @@ summary: Epics, waves, slices and tickets.
 | W35 Trust Each Answer | 7 | 0 | 0 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
 | W36 Capture Conversations | 7 | 0 | 0 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
 | W37 Work Where People Are | 6 | 0 | 0 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
-| W38 One Org, Many Levels | 3 | 0 | 4 | Planned 2026-11-24 with the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
+| W38 One Org, Many Levels | 7 | 0 | 0 | Planned 2026-11-24 with the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
 | W39 An Agent for Every Department | 0 | 0 | 7 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
 | W40 Run the Company | 0 | 0 | 6 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -724,10 +724,10 @@ flowchart LR
 | [SB-3901](E39-one-org-many-levels/SB-3901-parent-spaces.md) | S38.1 | E39 | Parent spaces | Done |
 | [SB-3902](E39-one-org-many-levels/SB-3902-settings-flow-down.md) | S38.1 | E39 | Settings flow down | Done |
 | [SB-3903](E39-one-org-many-levels/SB-3903-ask-across-branch.md) | S38.1 | E39 | Ask across a branch | Done |
-| [SB-3904](E39-one-org-many-levels/SB-3904-escalate-up-tree.md) | S38.2 | E39 | Escalate up the tree | Open |
-| [SB-3905](E39-one-org-many-levels/SB-3905-roll-ups.md) | S38.2 | E39 | Roll-ups for leaders | Open |
-| [SB-3906](E39-one-org-many-levels/SB-3906-whos-who.md) | S38.2 | E39 | Who's who in a branch | Open |
-| [SB-3907](E39-one-org-many-levels/SB-3907-tree-never-widens.md) | S38.2 | E39 | The tree never widens | Open |
+| [SB-3904](E39-one-org-many-levels/SB-3904-escalate-up-tree.md) | S38.2 | E39 | Escalate up the tree | Done |
+| [SB-3905](E39-one-org-many-levels/SB-3905-roll-ups.md) | S38.2 | E39 | Roll-ups for leaders | Done |
+| [SB-3906](E39-one-org-many-levels/SB-3906-whos-who.md) | S38.2 | E39 | Who's who in a branch | Done |
+| [SB-3907](E39-one-org-many-levels/SB-3907-tree-never-widens.md) | S38.2 | E39 | The tree never widens | Done |
 
 ### W39 An Agent for Every Department
 

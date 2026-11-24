@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, addEvalCase, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, Conflict, PinItem, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import type { AskResponse, BulkItem, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -1149,6 +1149,37 @@ function FreshnessLine({ f }: { f: Freshness }) {
   );
 }
 
+// A department's teams (SB-3905): counts only, never what they count.
+export function TeamsTable({ teams }: { teams: TeamRollup[] }) {
+  return (
+    <section aria-label={t("Teams")}>
+      <h3>{t("Teams")}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">{t("Team")}</th>
+            <th scope="col">{t("To review")}</th>
+            <th scope="col">{t("Open questions")}</th>
+            <th scope="col">{t("Overdue")}</th>
+            <th scope="col">{t("Asks this week")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {teams.map((x) => (
+            <tr key={x.space}>
+              <th scope="row">{x.space}</th>
+              <td>{x.to_review}</td>
+              <td>{x.open_questions}</td>
+              <td>{x.overdue}</td>
+              <td>{x.fewer_than_5 || x.asks === undefined ? t("fewer than 5") : t("{asks}, {none} found nothing", { asks: x.asks, none: x.found_nothing ?? 0 })}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 // The space's own usage this week (SB-3506): counts and shares, or too few to say.
 function UsageLine({ u }: { u: SpaceUsage }) {
   if (u.fewer_than_5 || u.asks === undefined) return <p className="meta">{t("Fewer than 5 questions were asked here in the last 7 days.")}</p>;
@@ -1305,6 +1336,7 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
         </button>
       )}
       {list.usage && <UsageLine u={list.usage} />}
+      {list.teams && list.teams.length > 0 && <TeamsTable teams={list.teams} />}
       {list.freshness && <FreshnessLine f={list.freshness} />}
       <DefinedTerms terms={list.terms ?? []} onSuggest={onSuggestTerm} />
       {list.found_nothing && <FoundNothingLine f={list.found_nothing} space={space} fetcher={fetcher} />}

@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/policy"
@@ -70,6 +71,9 @@ type StewardQuestion struct {
 	// Waited working days in its space (SB-3404).
 	Also   string `json:"also,omitempty"`
 	Waited int    `json:"waited,omitempty"`
+	// Up are the queues above its own it has reached, in order, by space key: a team's
+	// department's, then company (SB-3904). It stays in each one it reached.
+	Up []string `json:"up,omitempty"`
 	// Report marks a report of the answer Trace by its asker (SB-3606).
 	Report *AnswerReport `json:"report,omitempty"`
 	// Thread marks a chat thread saved to the stewards (SB-3703).
@@ -135,6 +139,15 @@ type Stewards struct {
 	Caretakers CaretakerStore
 	// Zone is the working week's time zone (SB-3404); nil is UTC.
 	Zone *time.Location
+	// Children are a department's team spaces, by name (SB-3905); nil is a flat cell.
+	Children func(name string) []string
+	// ReviewAfter is a space's review_after_days, for its row in a roll-up; nil uses the
+	// department's.
+	ReviewAfter func(name string) int
+	// Parent is a space's department by name, "" for none, and StewardPeople the active
+	// people in a space's steward groups now (SB-3906); nil names none.
+	Parent        func(name string) string
+	StewardPeople func(ctx context.Context, space string) ([]answer.Person, error)
 	// Owner is the one active user with an email, ok false for none or several (SB-3706);
 	// nil asks no owner.
 	Owner func(ctx context.Context, email string) (id string, ok bool, err error)
@@ -346,7 +359,7 @@ func (x Stewards) queue(ctx context.Context, name string) ([]StewardQuestion, er
 	if err != nil {
 		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 	}
-	if SpaceKey(name) != "company" {
+	if IsPerson(SpaceKey(name)) {
 		return qs, nil
 	}
 	all, err := x.Store.StewardQuestionsBetween(ctx, x.Agent.Tenant, time.Time{}, x.Now().UTC().Add(time.Minute))
@@ -354,7 +367,7 @@ func (x Stewards) queue(ctx context.Context, name string) ([]StewardQuestion, er
 		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 	}
 	for _, q := range all {
-		if q.Space != "company" && waitedFor(q, "company") {
+		if q.Space != SpaceKey(name) && waitedFor(q, SpaceKey(name)) {
 			qs = append(qs, q)
 		}
 	}

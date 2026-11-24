@@ -187,3 +187,34 @@ func (b between) StewardQuestionsBetween(_ context.Context, _ string, from, to t
 	}
 	return out, nil
 }
+
+// SB-3904: a team's question that climbed shows on its department's queue, marked where
+// it waited, and stays off the company-wide queue until it gets there.
+func TestATeamQuestionOnTheDepartmentQueue(t *testing.T) {
+	ctx := context.Background()
+	x, _, store := captureWorld(t)
+	now := time.Now().UTC()
+	store.m["qs_ap"] = ask.StewardQuestion{ID: "qs_ap", Tenant: tenant, Asker: "alice", Question: "ap one", Space: "spc_ap", At: now.AddDate(0, 0, -15),
+		Up: []string{"spc_finance"}, Waited: 10}
+	x.Store = between{store}
+	items, err := x.Queue(ctx, scope(t, "sam"), "finance")
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, it := range items {
+		if it.ID == "qs_ap" {
+			found = it.FromSpace == "ap" && it.Waited == 10
+		}
+	}
+	if !found {
+		t.Fatalf("the team's question isn't on the department's queue as waited: %+v", items)
+	}
+	if items, err := x.Queue(ctx, scope(t, "sam"), "company"); err == nil {
+		for _, it := range items {
+			if it.ID == "qs_ap" {
+				t.Fatal("on the company-wide queue before it got there")
+			}
+		}
+	}
+}

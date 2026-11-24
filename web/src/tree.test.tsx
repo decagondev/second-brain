@@ -42,3 +42,25 @@ describe("ask across a branch", () => {
     expect(spaceQuery("finance+teams")).toBe("space=finance&branch=true");
   });
 });
+
+// SB-3905, SB-3906
+describe("leaders and who's who", () => {
+  it("shows a department's teams as counts, with too few asks said so", async () => {
+    const { TeamsTable } = await import("./Questions");
+    render(<TeamsTable teams={[{ space: "ap", to_review: 2, overdue: 1, open_questions: 3, asks: 9, found_nothing: 2 }, { space: "fpa", to_review: 0, overdue: 0, open_questions: 0, fewer_than_5: true }]} />);
+    const rows = screen.getAllByRole("row").map((r) => r.textContent);
+    expect(rows[1]).toBe("ap2319, 2 found nothing");
+    expect(rows[2]).toBe("fpa000fewer than 5");
+  });
+
+  it("shows a space's stewards, owners and member count", async () => {
+    const { WhosWho } = await import("./Start");
+    const fetcher: Fetch = async () =>
+      json({ space: "ap", stewards: [{ email: "sam@acme-logistics.example" }], owners: [{ email: "ann@acme-logistics.example", cites: 4 }], members: 12 });
+    const { container } = render(<WhosWho space="ap" fetcher={fetcher} />);
+    await act(async () => undefined);
+    expect(container.textContent).toContain("12 members");
+    expect(container.textContent).toContain("sam@acme-logistics.example");
+    expect(container.textContent).toContain("cited 4 times this month");
+  });
+});

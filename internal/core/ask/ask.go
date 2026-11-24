@@ -303,6 +303,9 @@ type Agent struct {
 	Owner func(ctx context.Context, email string) (answer.Person, bool)
 	// Caretaker is a document's (KIND:ID) caretaker's email, or "" (SB-3405); nil is none.
 	Caretaker func(ctx context.Context, doc string) string
+	// Climb is who to ask when no owner of an answer's cites is active: a team's
+	// department's stewards (SB-3906), for a space key; nil climbs nowhere.
+	Climb func(ctx context.Context, space string) []PersonRef
 	// ReviewAfter is the shortest review_after_days of the spaces holding a document, by
 	// their ids (SB-1709); nil, or no spaces, is the default 365.
 	ReviewAfter func(spaces []string) int
@@ -465,7 +468,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			claims, resp.Dropped = citedOnly(claims)
 		}
 		resp.Answer.Claims = claims
-		resp.People = people(claims)
+		resp.People = a.whoToAsk(ctx, s, claims)
 		uncited := 0
 		for _, c := range claims {
 			if c.Uncited {
@@ -623,4 +626,24 @@ func withUser(ctx context.Context, user string) context.Context {
 func (Agent) user(ctx context.Context) string {
 	u, _ := ctx.Value(userKey{}).(string)
 	return u
+}
+
+// whoToAsk is the owners on an answer's cites, or, with none active, who it climbs to
+// (SB-3906).
+func (a Agent) whoToAsk(ctx context.Context, s tenancy.Scope, claims []answer.Claim) []PersonRef {
+	out := people(claims)
+	if len(out) == 0 && a.Climb != nil && anyCited(claims) {
+		out = a.Climb(ctx, s.Space())
+	}
+	return out
+}
+
+// anyCited reports whether any claim has a cite.
+func anyCited(claims []answer.Claim) bool {
+	for _, c := range claims {
+		if !c.Uncited && len(c.Cites) > 0 {
+			return true
+		}
+	}
+	return false
 }

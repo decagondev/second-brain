@@ -663,6 +663,40 @@ export interface ReviewData {
   terms?: DefinedTerm[];
   // The space's own usage over the last 7 days (SB-3506).
   usage?: SpaceUsage;
+  // A department's teams, counts only (SB-3905).
+  teams?: TeamRollup[];
+}
+
+// One team's counts on its department's list (SB-3905): never a title or a question.
+export interface TeamRollup {
+  space: string;
+  to_review: number;
+  overdue: number;
+  open_questions: number;
+  found_nothing?: number;
+  asks?: number;
+  fewer_than_5?: boolean;
+}
+
+// Who's who in a space (SB-3906): its stewards, the owners of its most-cited documents the
+// member can open, and how many members it has.
+export interface SpacePeople {
+  space: string;
+  parent?: string;
+  stewards: Person[];
+  owners: { email: string; title?: string; cites: number; caretaker?: boolean }[];
+  members: number;
+}
+
+// A space's people for a member. Any failure shows none.
+export async function spacePeople(space: string, f: Fetch = fetch): Promise<SpacePeople | undefined> {
+  try {
+    const d = await call<Partial<SpacePeople>>(`${sp(space)}/people`, {}, f);
+    if (!Array.isArray(d.stewards) || !Array.isArray(d.owners) || typeof d.members !== "number") return undefined;
+    return { space, parent: d.parent, stewards: d.stewards, owners: d.owners, members: d.members };
+  } catch {
+    return undefined;
+  }
 }
 
 // One space's usage row (SB-3506): no shares with fewer than 5 asks.
@@ -726,6 +760,7 @@ export async function reviewList(
       conflicts_hidden?: number;
       terms?: DefinedTerm[];
       usage?: SpaceUsage;
+      teams?: TeamRollup[];
     }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
@@ -745,6 +780,7 @@ export async function reviewList(
       feedback: d.feedback && typeof d.feedback.this_month?.helpful === "number" && Array.isArray(d.feedback.documents) ? d.feedback : undefined,
       terms: Array.isArray(d.terms) ? d.terms.filter((x) => typeof x.term === "string" && typeof x.meaning === "string") : undefined,
       usage: d.usage && typeof d.usage.space === "string" ? d.usage : undefined,
+      teams: Array.isArray(d.teams) ? d.teams.filter((x) => typeof x.space === "string" && typeof x.to_review === "number") : undefined,
       conflicts: Array.isArray(d.conflicts) ? d.conflicts.filter((c) => c.a && c.b && typeof c.answers === "number") : undefined,
       conflicts_hidden: typeof d.conflicts_hidden === "number" ? d.conflicts_hidden : undefined,
     };

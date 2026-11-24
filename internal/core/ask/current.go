@@ -196,6 +196,21 @@ type ReviewResponse struct {
 	// ConflictsHidden the pairs the steward can't open both of (SB-3605).
 	Conflicts       []Conflict `json:"conflicts,omitempty"`
 	ConflictsHidden int        `json:"conflicts_hidden,omitempty"`
+	// Teams are a department's teams, counts only (SB-3905).
+	Teams []TeamRollup `json:"teams,omitempty"`
+}
+
+// TeamRollup is one team's counts on its department's review list (SB-3905): never a
+// title, a question or a person. A team with fewer than 5 asks in the last 7 days shows
+// FewerThan5 instead of its ask counts, as usage by space does.
+type TeamRollup struct {
+	Space        string `json:"space"`
+	ToReview     int    `json:"to_review"`
+	Overdue      int    `json:"overdue"`
+	Open         int    `json:"open_questions"`
+	FoundNothing *int   `json:"found_nothing,omitempty"`
+	Asks         *int   `json:"asks,omitempty"`
+	FewerThan5   bool   `json:"fewer_than_5,omitempty"`
 }
 
 // answerFacts fills what the list reads from the space's answers and their ratings.
@@ -241,6 +256,55 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	if err := x.reviewer(ctx, s, name); err != nil {
 		return ReviewResponse{}, err
 	}
+	out, err := x.review(ctx, s, name, src, after)
+	if err != nil || x.Children == nil {
+		return out, err
+	}
+	out.Teams, err = x.teams(ctx, s, name, src, after)
+	return out, err
+}
+
+// teams rolls each team's list up to its department's stewards (SB-3905, LAW-24): the
+// counts its own stewards see, never what they count. A department's stewards are
+// stewards of its teams for this.
+func (x Stewards) teams(ctx context.Context, s tenancy.Scope, name string, src ReviewSource, after int) ([]TeamRollup, error) {
+	var out []TeamRollup
+	now := x.Now().UTC()
+	for _, team := range x.Children(name) {
+		days := after
+		if x.ReviewAfter != nil {
+			days = x.ReviewAfter(team)
+		}
+		r, err := x.review(ctx, s, team, src, days)
+		if err != nil {
+			return nil, err
+		}
+		row := TeamRollup{Space: team, ToReview: len(r.Items)} // only what the department's steward can open (LAW-24)
+		qs, err := x.Store.StewardQueue(ctx, x.Agent.Tenant, SpaceKey(team))
+		if err != nil {
+			return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
+		}
+		for _, q := range qs {
+			if q.Reply == nil && (q.Thread == nil || !q.Thread.Discarded) {
+				row.Open++
+				if WorkingDays(q.At, now, x.Zone) >= OverdueAfter {
+					row.Overdue++
+				}
+			}
+		}
+		if r.Usage == nil || r.Usage.FewerThan5 || r.Usage.Asks == nil {
+			row.FewerThan5 = true
+		} else {
+			asks, nothing := *r.Usage.Asks, r.FoundNothing.ThisWeek
+			row.Asks, row.FoundNothing = &asks, &nothing
+		}
+		out = append(out, row)
+	}
+	return out, nil
+}
+
+// review is the list for one space, without the steward check, which its callers make.
+func (x Stewards) review(ctx context.Context, s tenancy.Scope, name string, src ReviewSource, after int) (ReviewResponse, error) {
 	if after <= 0 {
 		after = DefaultReviewDays
 	}

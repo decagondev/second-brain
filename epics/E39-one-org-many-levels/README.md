@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W37 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] The tree is at most three levels, with no cycles, and a child is never looser than its parent
-- [ ] A branch ask returns only what each leaf space's own checks allowed
-- [ ] Roll-ups carry counts only, with rows under 5 hidden
-- [ ] LAW-24's law test is green, and red for the broken system
-- [ ] Every law test still green; no new store, service or Go module
+- [x] The tree is at most three levels, with no cycles, and a child is never looser than its parent
+- [x] A branch ask returns only what each leaf space's own checks allowed
+- [x] Roll-ups carry counts only, with rows under 5 hidden
+- [x] LAW-24's law test is green, and red for the broken system
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

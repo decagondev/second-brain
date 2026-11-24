@@ -8,7 +8,7 @@ import { DraftPanel } from "./Draft";
 import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
-import { StartHere, WhatChanged } from "./Start";
+import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { MySessions, SignOutEverywhere } from "./Session";
 import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
@@ -285,6 +285,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
       </div>
       <div role="tabpanel" id={`${base}-panel-answer`} aria-labelledby={`${base}-tab-answer`} hidden={tab !== "answer"}>
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
+        {space && turns.length === 0 && <WhosWho space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
         <section id="conversation" tabIndex={-1} aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
           {turns.map((x) => (

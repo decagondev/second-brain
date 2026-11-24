@@ -19,6 +19,8 @@ type PersonRef struct {
 	Cites int    `json:"cites"`
 	// Caretaker marks someone named for documents whose owner is gone (SB-3405).
 	Caretaker bool `json:"caretaker,omitempty"`
+	// Steward marks a department's steward named because no owner was active (SB-3906).
+	Steward bool `json:"steward,omitempty"`
 }
 
 // owners looks owners up once per request. A lookup that fails, or finds no single active

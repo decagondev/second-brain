@@ -312,6 +312,10 @@ func TestLAW22_BarriersHold(t *testing.T) {
 	Check(t, "LAW-22", runs, func(r *rand.Rand) error { return law22(r, NewBarrierSystem()) })
 }
 
+func TestLAW24_TheTreeNeverWidens(t *testing.T) {
+	Check(t, "LAW-24", runs, func(r *rand.Rand) error { return law24(r, NewTreeSystem()) })
+}
+
 func TestLAW23_GrantsAreConsentedAndRevocable(t *testing.T) {
 	Check(t, "LAW-23", runs, func(r *rand.Rand) error { return law23(r, NewGrantSystem()) })
 }

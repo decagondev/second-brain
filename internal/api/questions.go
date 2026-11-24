@@ -49,6 +49,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /v1/spaces/{name}/templates/{id}", h.saveTemplate)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/templates/{id}", h.deleteTemplate)
 	mux.HandleFunc("GET /v1/spaces/{name}/suggested", h.suggested)
+	if h.Reviews != nil {
+		mux.HandleFunc("GET /v1/spaces/{name}/people", h.people)
+	}
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
 	mux.HandleFunc("GET /v1/spaces/{name}/pins", h.pins)
 	mux.HandleFunc("POST /v1/spaces/{name}/pins", h.pin)
@@ -71,7 +74,7 @@ func questionErr(err error) *errs.Error {
 	case errors.Is(err, ask.ErrNotSteward):
 		return errs.New(errs.EPERM, "Only the space's stewards can see or answer its questions.")
 	case errors.Is(err, ask.ErrNotMember):
-		return errs.New(errs.EPERM, "Only the space's members can see its suggested questions.")
+		return errs.New(errs.EPERM, "Only the space's members can see this.")
 	case errors.Is(err, ask.ErrNotOwner):
 		return errs.New(errs.EPERM, "Only the document's current owner can mark it reviewed here.")
 	case errors.Is(err, kill.ErrKilled):
@@ -447,6 +450,20 @@ func (h Questions) restore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"document": body.Document, "restored": true})
+}
+
+// people is who's who in a space, for its members (SB-3906).
+func (h Questions) people(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	p, err := h.Service.People(r.Context(), s, r.PathValue("name"), h.Reviews)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", p)
 }
 
 // suggested is a space's suggested questions, for its members (SB-3307).

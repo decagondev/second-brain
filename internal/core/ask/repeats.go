@@ -104,8 +104,16 @@ func partner(q StewardQuestion, qs []StewardQuestion) string {
 	return ""
 }
 
-// waitedFor reports whether a question in space shows on the company-wide queue because it
-// waited there (SB-3404).
+// waitedFor reports whether a question shows on space's queue (a space key) because it
+// waited in its own: the company-wide queue (SB-3404), or the department's (SB-3904).
 func waitedFor(q StewardQuestion, space string) bool {
-	return space == "company" && q.Also == "company"
+	if space == "company" && q.Also == "company" {
+		return true
+	}
+	for _, u := range q.Up {
+		if u == space {
+			return true
+		}
+	}
+	return false
 }

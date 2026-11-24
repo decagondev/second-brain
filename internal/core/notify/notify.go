@@ -165,7 +165,10 @@ type Job struct {
 	Base      string // the cell's base_url
 	Questions ask.StewardStore
 	Facts     ask.SpaceFacts
-	Dir       Directory
+	// Parent is the space key of a space's department, "" for none (SB-3904); nil is a
+	// cell without a tree, where a question goes straight to company.
+	Parent func(space string) string
+	Dir    Directory
 	// FoundNothing counts, per space, the asks in a window that found nothing, for the
 	// stewards' line (SB-3101); nil adds nothing.
 	FoundNothing func(ctx context.Context, from, to time.Time) (map[string]int, error)
@@ -386,15 +389,14 @@ func (j Job) plan(ctx context.Context, from, now time.Time) ([]outgoing, error) 
 	return append(out, toks...), err
 }
 
-// reroute shows the company-wide answerers each question open RerouteAfter working days in
-// its space, with no live claim (SB-3404). It stays in its space's queue too. Each one is
-// audited, counts and ids only.
-func (j Job) reroute(ctx context.Context, now time.Time) (int, error) {
+// reroute climbs the tree (SB-3404, SB-3904): a question open RerouteAfter working days in
+// its space, with no live claim, goes to the queue above it, the department's for a team
+// and the company-wide answerers' for a department, and RerouteAfter more takes a team's
+// on to company. It stays in every queue it reached. A step whose queue has no stewards
+// waits. Each step is audited, counts and ids only, and the counts are by queue reached.
+func (j Job) reroute(ctx context.Context, now time.Time) (map[string]int, error) {
 	if j.Audit == nil || j.Facts == nil {
-		return 0, nil
-	}
-	if _, _, ok := j.Facts("company"); !ok {
-		return 0, nil
+		return nil, nil
 	}
 	back := j.Lookback
 	if back <= 0 {
@@ -402,57 +404,90 @@ func (j Job) reroute(ctx context.Context, now time.Time) (int, error) {
 	}
 	qs, err := j.Questions.StewardQuestionsBetween(ctx, j.Tenant, now.Add(-back), now)
 	if err != nil {
-		return 0, fmt.Errorf("notify: questions: %w", err)
+		return nil, fmt.Errorf("notify: questions: %w", err)
 	}
-	due := func(q ask.StewardQuestion) bool {
-		return q.Space != "company" && !ask.IsPerson(q.Space) && q.Also == "" && q.Reply == nil && (q.Claim == nil || !now.Before(q.Claim.Until)) &&
-			ask.WorkingDays(q.At, now, j.Zone) >= ask.RerouteAfter
-	}
-	n := 0
+	n := map[string]int{}
 	for _, q := range qs {
-		if !due(q) {
+		to := j.nextUp(q, now)
+		if to == "" {
 			continue
 		}
 		if _, err := j.Audit.Write(ctx, audit.Event{Actor: "sys_notify", Kind: "access", Subject: q.ID, State: "rerouted",
-			Reason: "open 10 working days", Space: q.Space}); err != nil {
+			Reason: fmt.Sprintf("open %d working days; to %s", ask.RerouteAfter*(len(q.Up)+1), to), Space: q.Space}); err != nil {
 			return n, fmt.Errorf("notify: audit: %w", err)
 		}
 		moved := false
 		if _, err := j.Questions.UpdateStewardQuestion(ctx, j.Tenant, q.ID, func(q *ask.StewardQuestion) error {
-			if moved = due(*q); moved {
-				q.Also, q.Waited = "company", ask.WorkingDays(q.At, now, j.Zone)
+			if moved = j.nextUp(*q, now) == to; moved {
+				q.Up, q.Waited = append(q.Up, to), ask.WorkingDays(q.At, now, j.Zone)
+				if to == "company" {
+					q.Also = "company"
+				}
 			}
 			return nil
 		}); err != nil {
 			return n, fmt.Errorf("notify: questions: %w", err)
 		}
 		if moved {
-			n++
+			n[to]++
 		}
 	}
 	return n, nil
 }
 
-// waited tells the company-wide answerers how many questions came to them this run.
-func (j Job) waited(ctx context.Context, n int) ([]outgoing, error) {
-	if n == 0 {
-		return nil, nil
+// nextUp is the queue a question goes to now, or "" for none: open, unclaimed, past
+// RerouteAfter working days for each step it has taken, with stewards in the next queue.
+func (j Job) nextUp(q ask.StewardQuestion, now time.Time) string {
+	if q.Space == "company" || ask.IsPerson(q.Space) || q.Also == "company" || q.Reply != nil || (q.Claim != nil && now.Before(q.Claim.Until)) {
+		return ""
 	}
-	groups, _, ok := j.Facts("company")
-	if !ok {
-		return nil, nil
+	if ask.WorkingDays(q.At, now, j.Zone) < ask.RerouteAfter*(len(q.Up)+1) {
+		return ""
 	}
-	people, err := j.members(ctx, groups)
-	if err != nil {
-		return nil, err
+	to := "company"
+	if j.Parent != nil && len(q.Up) == 0 {
+		if p := j.Parent(q.Space); p != "" {
+			to = p
+		}
 	}
-	text := "1 question waited 10 working days in its space"
-	if n != 1 {
-		text = fmt.Sprintf("%d questions waited 10 working days in their spaces", n)
+	if _, _, ok := j.Facts(to); !ok {
+		return ""
 	}
+	return to
+}
+
+// waited tells each queue's answerers how many questions came up to them this run: the
+// company-wide answerers, and a department's stewards for its teams' (SB-3904). Counts only.
+func (j Job) waited(ctx context.Context, moved map[string]int) ([]outgoing, error) {
+	keys := make([]string, 0, len(moved))
+	for k := range moved {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	var out []outgoing
-	for _, p := range people {
-		out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink("company")}})
+	for _, to := range keys {
+		n := moved[to]
+		groups, _, ok := j.Facts(to)
+		if !ok || n == 0 {
+			continue
+		}
+		people, err := j.members(ctx, groups)
+		if err != nil {
+			return nil, err
+		}
+		text := "1 question waited 10 working days in its space"
+		if n != 1 {
+			text = fmt.Sprintf("%d questions waited 10 working days in their spaces", n)
+		}
+		if to != "company" {
+			text = "1 question waited 10 working days in a team"
+			if n != 1 {
+				text = fmt.Sprintf("%d questions waited 10 working days in your teams", n)
+			}
+		}
+		for _, p := range people {
+			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(to)}})
+		}
 	}
 	return out, nil
 }
