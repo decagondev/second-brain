@@ -1,0 +1,150 @@
+package cell
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"example.com/second-brain/internal/adapters/oidc/oidctest"
+	"example.com/second-brain/internal/cell/ingestsvc"
+	"example.com/second-brain/internal/cell/wire"
+	"example.com/second-brain/internal/cell/wire/celltest"
+	"example.com/second-brain/internal/core/ask"
+)
+
+// SB-3601 to SB-3604 through a running cell: a steward pins a cited reply, and a close ask
+// in the space shows it first, until an asker can't open one of its cites; verified only
+// answers from marked documents alone; a mark takes its own interval; and unhelpful
+// ratings since the mark list the document again.
+func TestTrustEachAnswerThroughARunningCell(t *testing.T) {
+	share := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(share, "Ops"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write := func(name, text string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(share, "Ops", name), []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("cutoff.md", "The zebra cutoff is 3pm on weekdays.")
+	write("rota.md", "The zebra cutoff rota is kept by the night team.")
+	write(".acl", "read domain:acme.example\n")
+	r := startWith(t, func(idp *oidctest.IdP, base string) wire.Config {
+		cfg := celltest.FixtureFor(t, idp, base, opsManifest, nil)
+		cfg.Connectors = map[string]wire.ConnectorConfig{"docs": {Base: "file://" + share}}
+		return cfg
+	})
+	signInAs := func(id string) {
+		t.Helper()
+		r.idp.User = id
+		if code, _ := r.do(t, "GET", "/login", ""); code != http.StatusNotFound {
+			t.Fatalf("sign-in: %d", code)
+		}
+	}
+	r.signIn(t, "lee")
+	lee := r.idp.User
+	r.signIn(t, "sam")
+	sam := r.idp.User
+	if code, body := r.do(t, "POST", "/scim/v2/Groups", `{"displayName":"ops","members":[{"value":"`+sam+`"},{"value":"`+lee+`"}]}`,
+		"Authorization", "Bearer scim-token", "Content-Type", "application/scim+json"); code != http.StatusCreated {
+		t.Fatalf("SCIM group: %d %s", code, body)
+	}
+	signInAs(sam)
+	sync := func() {
+		t.Helper()
+		if fails := (&ingestsvc.Service{Cell: r.cell, Alert: &alerts{}}).SyncAll(context.Background()); len(fails) > 0 {
+			t.Fatal(fails)
+		}
+	}
+	sync()
+	asked := func(body string) ask.Response {
+		t.Helper()
+		code, out := r.do(t, "POST", "/v1/ask?space=ops", body)
+		var a ask.Response
+		if err := json.Unmarshal([]byte(out), &a); err != nil || code != 200 {
+			t.Fatalf("ask: %d %s", code, out)
+		}
+		return a
+	}
+	cutoff := ""
+	for _, c := range asked(`{"question":"When is the zebra cutoff?"}`).Answer.Claims {
+		for _, ci := range c.Cites {
+			if strings.HasPrefix(ci.Cite, "docs:Ops/cutoff.md@") {
+				cutoff = ci.Cite
+			}
+		}
+	}
+	if cutoff == "" {
+		t.Fatal("no cite of the cutoff document")
+	}
+
+	// SB-3601: a cited reply is pinned; one without cites can't be.
+	for id, cites := range map[string][]string{"sq_1": {cutoff}, "sq_2": nil} {
+		if err := r.cell.Traces.PutStewardQuestion(context.Background(), ask.StewardQuestion{ID: id, Tenant: "acme-logistics", Asker: lee,
+			Question: "When is the zebra cutoff?", Space: "spc_ops", Trace: "tr_x", At: time.Now(),
+			Reply: &ask.StewardReply{By: sam, Text: "3pm on weekdays.", Cites: cites, At: time.Now()}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/pins", `{"question_id":"sq_2"}`); code != http.StatusBadRequest {
+		t.Fatalf("a reply without cites pinned: %d %s", code, body)
+	}
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/pins", `{"question_id":"sq_1","question":"When is the zebra cutoff?"}`); code != 200 || !strings.Contains(body, `"id":"pin_`) {
+		t.Fatalf("pin: %d %s", code, body)
+	}
+	if code, body := r.do(t, "GET", "/v1/spaces/ops/pins", ""); code != 200 || strings.Count(body, `"id":"pin_`) != 1 {
+		t.Fatalf("pins: %d %s", code, body)
+	}
+	signInAs(lee)
+	a := asked(`{"question":"When is the zebra cutoff?"}`)
+	if a.Pinned == nil || a.Pinned.Text != "3pm on weekdays." || a.Pinned.Verified != time.Now().UTC().Format(time.DateOnly) || len(a.Answer.Claims) == 0 {
+		t.Fatalf("the pin isn't first: %+v", a)
+	}
+	if a := asked(`{"question":"Who keeps the payroll forms in the archive?"}`); a.Pinned != nil {
+		t.Fatalf("an unlike question got the pin: %+v", a.Pinned)
+	}
+	if code, out := r.do(t, "POST", "/v1/ask", `{"question":"When is the zebra cutoff?"}`); code != 200 || strings.Contains(out, `"pinned"`) {
+		t.Fatalf("a company-wide ask got the space's pin: %d %s", code, out)
+	}
+
+	// SB-3602: verified only answers from marked documents alone.
+	signInAs(sam)
+	if a := asked(`{"question":"zebra cutoff rota","verified":true}`); a.Notice == nil || *a.Notice != ask.NoticeNoSources {
+		t.Fatalf("verified only with nothing marked: %+v", a)
+	}
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cite":"`+cutoff+`","days":45}`); code != http.StatusBadRequest {
+		t.Fatalf("an interval of 45 days: %d %s", code, body)
+	}
+	if code, body := r.do(t, "POST", "/v1/spaces/ops/review/marks", `{"cite":"`+cutoff+`","days":30}`); code != 200 {
+		t.Fatalf("mark: %d %s", code, body)
+	}
+	a = asked(`{"question":"zebra cutoff rota","verified":true}`)
+	for _, c := range a.Answer.Claims {
+		for _, ci := range c.Cites {
+			if !strings.HasPrefix(ci.Cite, "docs:Ops/cutoff.md@") {
+				t.Fatalf("verified only cited an unmarked document: %+v", a.Answer)
+			}
+		}
+	}
+	if code, body := r.do(t, "GET", "/v1/search?space=ops&q=zebra+cutoff+rota&verified=true", ""); code != 200 || strings.Contains(body, "rota.md") || !strings.Contains(body, "cutoff.md") {
+		t.Fatalf("verified search: %d %s", code, body)
+	}
+
+	// SB-3601: once the asker can't open a cite, the pin isn't shown to them.
+	write("cutoff.md.acl", "read sam@acme.example\n")
+	sync()
+	signInAs(lee)
+	if a := asked(`{"question":"When is the zebra cutoff?"}`); a.Pinned != nil {
+		t.Fatalf("a pin with a cite lee can't open: %+v", a.Pinned)
+	}
+	signInAs(sam)
+	if code, _ := r.do(t, "DELETE", "/v1/spaces/ops/pins/pin_nope", ""); code != http.StatusBadRequest {
+		t.Fatalf("unpin of none: %d", code)
+	}
+}

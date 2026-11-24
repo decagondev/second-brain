@@ -4,6 +4,8 @@ import { AskError, markOwnReviewed, search } from "./api";
 import type { About, ApiError, Fetch, Filters, SearchResponse } from "./api";
 import { AboutButton, AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
 import { errorText, msg, t, tj, tn } from "./i18n";
+import { setVerifiedOnly, verifiedOnly } from "./recent";
+import { ReviewAgain } from "./Questions";
 
 // The filters (SB-2404), as the API names them.
 const types: { id: string; name: string }[] = [
@@ -45,6 +47,7 @@ export function DocumentsView({
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
   const [since, setSince] = useState(0);
+  const [verified, setVerified] = useState<boolean>(() => verifiedOnly("documents")); // SB-3602
   const [wide, setWide] = useState(false); // searching the whole company from a space (SB-2406)
   const [ran, setRan] = useState<{ text: string; filtered: boolean; inSpace: boolean }>();
   const typeId = useId();
@@ -56,7 +59,7 @@ export function DocumentsView({
 
   useEffect(() => setWide(false), [space]);
 
-  async function run(text: string, filters: Filters = { type, since, owner: ownerOf }, whole = wide) {
+  async function run(text: string, filters: Filters = { type, since, owner: ownerOf, verified }, whole = wide) {
     const want = text.trim();
     if ((!want && !filters.owner) || busy) return;
     setBusy(true);
@@ -77,7 +80,7 @@ export function DocumentsView({
     if (owner?.email) {
       setOwnerOf(owner.email);
       setQ("");
-      void run("", { type, since, owner: owner.email });
+      void run("", { type, since, owner: owner.email, verified });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [owner?.n]);
@@ -117,6 +120,17 @@ export function DocumentsView({
             </option>
           ))}
         </select>
+        <label className="short">
+          <input
+            type="checkbox"
+            checked={verified}
+            onChange={(e) => {
+              setVerified(e.target.checked);
+              setVerifiedOnly("documents", e.target.checked);
+            }}
+          />{" "}
+          {t("Verified only")}
+        </label>
         <button type="submit" disabled={busy || (q.trim() === "" && !ownerOf)}>
           {busy ? t("Searching…") : t("Search")}
         </button>
@@ -244,11 +258,12 @@ export function NextSteps({ inSpace, filtered, onWide, onClear, onAsk }: { inSpa
 function OwnReviewed({ cite, name, fetcher }: { cite: string; name: string; fetcher?: Fetch }) {
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState("");
+  const [days, setDays] = useState(0);
   async function mark() {
     setState("busy");
     setError("");
     try {
-      await markOwnReviewed(cite, fetcher);
+      await markOwnReviewed(cite, fetcher, days);
       setState("done");
     } catch (e) {
       setState("idle");
@@ -258,7 +273,7 @@ function OwnReviewed({ cite, name, fetcher }: { cite: string; name: string; fetc
   if (state === "done") return <p role="status">{t("Marked reviewed: {name}", { name })}</p>;
   return (
     <>
-      {" "}
+      <ReviewAgain days={days} onChange={setDays} name={name} />{" "}
       <button type="button" disabled={state === "busy"} aria-label={t("Reviewed, still right: {name}", { name })} onClick={() => void mark()}>
         {t("Reviewed, still right")}
       </button>

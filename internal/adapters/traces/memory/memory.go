@@ -32,6 +32,7 @@ type Store struct {
 	tmpls    map[string]ask.ReplyTemplate // tenant/space/id
 	notices  map[string]ask.CellNotice    // tenant
 	suggest  map[string]ask.Suggested     // tenant/space
+	pins     map[string]ask.Pins          // tenant/space
 	cares    map[string]ask.Caretaker     // tenant/doc
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
@@ -48,7 +49,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, cares: map[string]ask.Caretaker{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}}
 }
 
 // PutTrace implements ask.Store.
@@ -725,6 +726,26 @@ func (s *Store) Suggested(_ context.Context, tenant, space string) (ask.Suggeste
 	defer s.mu.Unlock()
 	x, ok := s.suggest[tenant+"/"+space]
 	return x, ok, nil
+}
+
+var _ ask.PinStore = (*Store)(nil)
+
+// PutPins implements ask.PinStore (SB-3601): one record per space.
+func (s *Store) PutPins(_ context.Context, p ask.Pins) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p.Items = append([]ask.Pin(nil), p.Items...)
+	s.pins[p.Tenant+"/"+p.Space] = p
+	return nil
+}
+
+// Pins implements ask.PinStore.
+func (s *Store) Pins(_ context.Context, tenant, space string) (ask.Pins, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.pins[tenant+"/"+space]
+	p.Items = append([]ask.Pin(nil), p.Items...)
+	return p, ok, nil
 }
 
 var _ ask.CaretakerStore = (*Store)(nil)

@@ -13,7 +13,7 @@ summary: "Every document in a space comes due on the same schedule."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-13 |
 | Depends on | SB-2501 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Every document in a space comes due on the same schedule.
 
 ## Acceptance criteria
 
-- [ ] A review mark takes `days` of 30, 90, 180 or 365, and the document comes due at its end
-- [ ] Owners marking their own documents get the same choice
-- [ ] Without `days` nothing changes; another value gives EINVAL
+- [x] A review mark takes `days` of 30, 90, 180 or 365, and the document comes due at its end
+- [x] Owners marking their own documents get the same choice
+- [x] Without `days` nothing changes; another value gives EINVAL
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Marks
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Marks
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+A mark takes its own review interval of 30, 90, 180 or 365 days
 
 ## Definition of done
 

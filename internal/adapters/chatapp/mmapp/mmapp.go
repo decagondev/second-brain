@@ -257,6 +257,9 @@ func Render(question string, r ask.Response) Message {
 	for _, w := range ask.Warnings(r) { // before the answer (SB-2701, SB-2704)
 		b.WriteString("_" + escape(w) + "_\n")
 	}
+	if p := r.Pinned; p != nil { // SB-3601: first, then the brain's answer
+		b.WriteString("_" + escape(ask.PinnedLead(*p)) + "_ " + escape(p.Text) + " (" + escape(strings.Join(p.Cites, ", ")) + ")\n")
+	}
 	for _, c := range r.Answer.Claims {
 		if c.Uncited || len(c.Cites) == 0 {
 			b.WriteString("- _Uncited:_ " + escape(c.Text) + "\n")

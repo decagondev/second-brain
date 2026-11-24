@@ -30,6 +30,26 @@ export function forgetQuestions(): void {
   }
 }
 
+// Verified only (SB-3602): the person's choice for asks and for Documents, in this browser.
+const verifiedKey = (where: string) => `sb.verified.${where}`;
+
+export function verifiedOnly(where: "ask" | "documents"): boolean {
+  try {
+    return window.localStorage.getItem(verifiedKey(where)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setVerifiedOnly(where: "ask" | "documents", on: boolean): void {
+  try {
+    if (on) window.localStorage.setItem(verifiedKey(where), "1");
+    else window.localStorage.removeItem(verifiedKey(where));
+  } catch {
+    // storage off: the choice lasts this page only
+  }
+}
+
 // Short answers (SB-3303): the person's choice, kept in this browser only.
 const shortKey = "sb.short";
 

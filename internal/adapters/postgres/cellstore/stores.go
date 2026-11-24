@@ -909,6 +909,18 @@ func (t Traces) DeleteNotice(ctx context.Context, tenant string) error {
 	return del(ctx, t.Pool, tenant, "notice", "cell")
 }
 
+var _ ask.PinStore = Traces{}
+
+// PutPins implements ask.PinStore (SB-3601): one record per space.
+func (t Traces) PutPins(ctx context.Context, p ask.Pins) error {
+	return put(ctx, t.Pool, p.Tenant, "pins", p.Space, meta{at: p.At, space: p.Space}, p, false)
+}
+
+// Pins implements ask.PinStore.
+func (t Traces) Pins(ctx context.Context, tenant, space string) (ask.Pins, bool, error) {
+	return get[ask.Pins](ctx, t.Pool, tenant, "pins", space, false)
+}
+
 var _ ask.SuggestedStore = Traces{}
 
 // PutSuggested implements ask.SuggestedStore (SB-3307): one list per space.

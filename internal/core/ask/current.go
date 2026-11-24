@@ -150,6 +150,8 @@ type ReviewItem struct {
 	// Reports are the traces of the answers reported as citing it wrongly, newest first,
 	// for an eval case (SB-2204).
 	Reports []string `json:"reports,omitempty"`
+	// Unhelpful counts the Not helpful ratings of answers citing it since its mark (SB-3604).
+	Unhelpful int `json:"unhelpful,omitempty"`
 }
 
 // HiddenItem is a document to review the steward can't open: only its owner, if any and
@@ -243,18 +245,14 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	}
 	cited, flagged, refs := reviewCounts(traces, fbs)
 	outdated := outdatedOf(fbs)
-	for k := range outdated {
-		if cited[k] == 0 && flagged[k] == 0 {
-			kind, id, _ := strings.Cut(k, ":")
-			refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
-		}
-	}
+	refs = withOutdated(refs, outdated, cited, flagged)
 	reports := reportsOf(fbs)
 	marks, err := x.marked(ctx, name)
 	if err != nil {
 		return ReviewResponse{}, err
 	}
 	flaggedAt := lastFlags(fbs)
+	unhelpful := unhelpfulSince(traces, fbs, marks)
 	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh, FoundNothing: foundNothing(all, SpaceKey(name), now),
 		Usage: ownUsage(all, fbs, name, now)}
 	if out.Feedback, err = x.stewardFeedback(ctx, s, SpaceKey(name), all, months, now); err != nil {
@@ -301,7 +299,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
 		}
 	}
-	cand, in := dueFor(SpaceKey(name), chunks, reviewFacts{cited: cited, flagged: flagged, outdated: outdated, flaggedAt: flaggedAt, marks: marks}, after, now)
+	cand, in := dueFor(SpaceKey(name), chunks, reviewFacts{cited: cited, flagged: flagged, outdated: outdated, flaggedAt: flaggedAt, marks: marks, unhelpful: unhelpful}, after, now)
 	for _, c := range notes {
 		if k := c.Kind + ":" + c.SourceID; !in[k] {
 			cand = append(cand, c)
@@ -340,6 +338,9 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 			continue // listed once, under the newest copy
 		}
 		it := ReviewItem{Result: r, Cited: cited[k], Flagged: flagged[k], Outdated: outdated[k], Wider: widerBy[k], OwnerGone: gone[c.Owner], Reports: reports[k], SourcesMoved: movedBy[k]}
+		if m, ok := marks[k]; ok && m.Version == c.Version && unhelpful[k] >= UnhelpfulAfterMark {
+			it.Unhelpful = unhelpful[k]
+		}
 		if it.Wider > 0 {
 			it.Question = strings.TrimSuffix(path.Base(c.SourceID), ".md")
 		}
@@ -349,14 +350,19 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		out.Items[i].Copies = copies[docKey(it.Cite)]
 	}
 	out.Hidden = hiddenOf(cand, allowed, gone)
-	sort.SliceStable(out.Items, func(i, j int) bool {
-		a, b := out.Items[i], out.Items[j]
+	sortReview(out.Items)
+	return out, nil
+}
+
+// sortReview puts a note read wider than its space first, then the most flagged and cited.
+func sortReview(items []ReviewItem) {
+	sort.SliceStable(items, func(i, j int) bool {
+		a, b := items[i], items[j]
 		if (a.Wider > 0) != (b.Wider > 0) {
-			return a.Wider > 0 // a note read wider than its space comes first
+			return a.Wider > 0
 		}
 		return a.Flagged+a.Outdated+a.Cited > b.Flagged+b.Outdated+b.Cited
 	})
-	return out, nil
 }
 
 // hiddenOf is an entry for each candidate the steward can't open: never its title or cite,
@@ -487,6 +493,7 @@ type reviewFacts struct {
 	cited, flagged, outdated map[string]int
 	flaggedAt                map[string]time.Time
 	marks                    map[string]ReviewMark
+	unhelpful                map[string]int // since the mark (SB-3604)
 }
 
 // dueFor picks the documents space id holds that are due for review: cited often and old
@@ -499,7 +506,8 @@ func dueFor(id string, chunks []ports.Chunk, f reviewFacts, after int, now time.
 		due := pastReviewBy(c, now) // the document's own date, which a mark doesn't lift (SB-2705)
 		stale := (known && age > after || due) && f.cited[k] >= ReviewCites
 		m, marked := f.marks[k]
-		if contains(c.Spaces, id) && (stale || f.flagged[k] > 0 || f.outdated[k] > 0) && (due || !covers(m, marked, c, f.flaggedAt[k], after, now)) {
+		rated := marked && m.Version == c.Version && f.unhelpful[k] >= UnhelpfulAfterMark
+		if contains(c.Spaces, id) && (rated || (stale || f.flagged[k] > 0 || f.outdated[k] > 0) && (due || !covers(m, marked, c, f.flaggedAt[k], after, now))) {
 			cand = append(cand, c)
 			in[k] = true
 		}
@@ -629,4 +637,15 @@ func (a Agent) reviewAfter(spaces []string) int {
 		}
 	}
 	return DefaultReviewDays
+}
+
+// withOutdated adds the documents only an Outdated rating names to refs.
+func withOutdated(refs []ports.SourceRef, outdated, cited, flagged map[string]int) []ports.SourceRef {
+	for k := range outdated {
+		if cited[k] == 0 && flagged[k] == 0 {
+			kind, id, _ := strings.Cut(k, ":")
+			refs = append(refs, ports.SourceRef{Kind: kind, ID: id})
+		}
+	}
+	return refs
 }

@@ -100,10 +100,10 @@ func TestComingDue(t *testing.T) {
 	if got.Items[0].Snippet != "" {
 		t.Fatal("a snippet on the review list")
 	}
-	if _, err := x.MarkReviewed(ctx, alice, "ops", "docs:a@3"); err != nil {
+	if _, err := x.MarkReviewed(ctx, alice, "ops", "docs:a@3", 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := x.MarkReviewed(ctx, alice, "ops", "docs:e@3"); err != nil {
+	if _, err := x.MarkReviewed(ctx, alice, "ops", "docs:e@3", 0); err != nil {
 		t.Fatal(err)
 	}
 	got, _ = x.ComingDue(ctx, alice, "ops", src, 30)
@@ -126,7 +126,7 @@ func TestOwnerMarksTheirOwn(t *testing.T) {
 	st := &markStore{}
 	x.Marks = st
 	alice := scope(t, "alice")
-	m, err := x.MarkOwn(ctx, alice, "docs:a@3")
+	m, err := x.MarkOwn(ctx, alice, "docs:a@3", 0)
 	if err != nil || m.Doc != "docs:a" || len(m.Spaces) != 1 || m.Spaces[0] != "ops" {
 		t.Fatalf("%+v %v", m, err)
 	}
@@ -138,15 +138,15 @@ func TestOwnerMarksTheirOwn(t *testing.T) {
 		t.Fatalf("audit: %+v", rs)
 	}
 	for _, c := range []string{"docs:b@3", "docs:salaries@3", "docs:nope@1"} {
-		if _, err := x.MarkOwn(ctx, alice, c); !errors.Is(err, ask.ErrNotOwner) {
+		if _, err := x.MarkOwn(ctx, alice, c, 0); !errors.Is(err, ask.ErrNotOwner) {
 			t.Fatalf("%s: %v", c, err)
 		}
 	}
-	if _, err := x.MarkOwn(ctx, alice, "docs:a@2"); !errors.Is(err, ask.ErrInvalid) {
+	if _, err := x.MarkOwn(ctx, alice, "docs:a@2", 0); !errors.Is(err, ask.ErrInvalid) {
 		t.Fatalf("an old version: %v", err)
 	}
 	x.Agent.Emails = func(context.Context, string) ([]string, error) { return nil, errors.New("directory down") }
-	if _, err := x.MarkOwn(ctx, alice, "docs:a@3"); !errors.Is(err, ask.ErrNotOwner) {
+	if _, err := x.MarkOwn(ctx, alice, "docs:a@3", 0); !errors.Is(err, ask.ErrNotOwner) {
 		t.Fatalf("an unknown directory: %v", err)
 	}
 	if len(st.m) != 1 {

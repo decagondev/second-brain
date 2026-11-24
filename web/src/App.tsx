@@ -16,7 +16,7 @@ import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { NoticeBanner } from "./Notice";
 import { AnswerTools, DownloadConversation } from "./Copy";
-import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, shortAnswers } from "./recent";
+import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, setVerifiedOnly, shortAnswers, verifiedOnly } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
 
 interface Turn {
@@ -70,6 +70,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   }
   const askBox = useRef<HTMLTextAreaElement>(null);
   const [short, setShort] = useState<boolean>(() => shortAnswers());
+  const [verified, setVerified] = useState<boolean>(() => verifiedOnly("ask"));
 
   // Keyboard first (SB-2403): "/" goes to the ask box and Esc closes the API tokens panel,
   // never while the person is typing in a field.
@@ -135,7 +136,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified);
       setConversation(a.conversation);
       settle({ id, question: q, answer: a });
       setQuestion("");
@@ -401,6 +402,17 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               }}
             />{" "}
             {t("Short answer")}
+          </label>
+          <label className="short">
+            <input
+              type="checkbox"
+              checked={verified}
+              onChange={(e) => {
+                setVerified(e.target.checked);
+                setVerifiedOnly("ask", e.target.checked);
+              }}
+            />{" "}
+            {t("Verified only")}
           </label>
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}

@@ -39,6 +39,8 @@ type SearchRequest struct {
 	// Owner keeps only that owner's documents, after every check (SB-3306); with no Query
 	// it lists them.
 	Owner string
+	// Verified keeps only notes and documents with a live review mark (SB-3602).
+	Verified bool
 }
 
 // Types are the document types search filters by (SB-2404), from a file's extension.
@@ -148,10 +150,13 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	if q == "" {
 		res, err = a.ownerDocs(ctx, s, req.Owner)
 	} else {
-		res, terms, err = a.retrieve(ctx, s, q, req.Sources, retrieve.Candidates)
+		res, terms, err = a.retrieve(withVerified(ctx, req.Verified), s, q, req.Sources, retrieve.Candidates)
 	}
 	if err != nil {
 		return SearchResponse{}, err
+	}
+	if q == "" && req.Verified {
+		res.Context = a.onlyVerified(ctx, res.Context) // SB-3602
 	}
 	trace := a.NewID("tr_")
 	out := SearchResponse{Trace: trace, Release: a.Release, Results: []Result{}, Refused: res.Refused, Terms: terms}
@@ -235,6 +240,9 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 	}
 	if res.Context, err = a.dropRetired(ctx, s, res.Context); err != nil { // SB-2801
 		return retrieve.Result{}, nil, err
+	}
+	if verifiedOf(ctx) { // SB-3602: only narrows, after every check
+		res.Context = a.onlyVerified(ctx, res.Context)
 	}
 	return res, terms, nil
 }

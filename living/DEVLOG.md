@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S35.1: Answers people can rely on
+
+**Wave/slice:** W35 / S35.1 (SB-3601 to SB-3604) · **Status:** Done
+
+**What:** A steward pins a cited reply as the space's verified answer, and a close ask in the space shows it first with the date it was verified. Verified only on ask and search answers from reviewed documents and steward notes alone. A review mark takes its own interval, and three unhelpful ratings since a mark put the document back on the review list.
+
+**Why this way:** People asked the same questions and got slightly different answers; a pin gives the stewards' answer once and keeps the model's answer under it. A pin is checked again as each asker, and one cite they can't open hides the whole pin (LAW-01). Verified only is a filter after the live checks, so it only ever narrows. A mark that never expires would hide a document that has gone wrong, so ratings since the mark undo it.
+
+**Learned:** A pin's question is shown to everyone in the space, so the steward sees and can edit it before pinning. The man page's response example must carry every field, which caught the new pinned field.
+
+**Laws:** LAW-01, LAW-03. Every law test is still green.
+
 ## 2026-11-24 S34.2: See it before it goes wrong
 
 **Wave/slice:** W34 / S34.2 (SB-3504 to SB-3506) · **Status:** Done

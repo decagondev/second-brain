@@ -34,6 +34,8 @@ type ReviewMark struct {
 	Version int       `json:"version"`
 	By      string    `json:"by"`
 	At      time.Time `json:"at"`
+	// Days is how long the mark lasts instead of review_after_days (SB-3603); 0 is the default.
+	Days int `json:"days,omitempty"`
 }
 
 // MarkStore keeps review marks, one per space and document.
@@ -96,7 +98,7 @@ func (x Stewards) marked(ctx context.Context, name string) (map[string]ReviewMar
 // covers reports whether mark m still takes chunk c off the list: the same version, younger
 // than after days, and no wrong-citation report since.
 func covers(m ReviewMark, ok bool, c ports.Chunk, lastFlag time.Time, after int, now time.Time) bool {
-	return ok && m.Version == c.Version && now.Sub(m.At) <= time.Duration(after)*24*time.Hour && !lastFlag.After(m.At)
+	return ok && m.Version == c.Version && now.Sub(m.At) <= time.Duration(markAfter(m, after))*24*time.Hour && !lastFlag.After(m.At)
 }
 
 // lastFlags is the time of the newest wrong-citation or outdated report of each document.
@@ -113,9 +115,12 @@ func lastFlags(fbs []Feedback) map[string]time.Time {
 }
 
 // MarkReviewed marks a document of the space reviewed at its current version (SB-2501).
-func (x Stewards) MarkReviewed(ctx context.Context, s tenancy.Scope, name, cite string) (ReviewMark, error) {
+func (x Stewards) MarkReviewed(ctx context.Context, s tenancy.Scope, name, cite string, days int) (ReviewMark, error) {
 	if err := x.reviewer(ctx, s, name); err != nil {
 		return ReviewMark{}, err
+	}
+	if days != 0 && !MarkDays[days] {
+		return ReviewMark{}, fmt.Errorf("%w: review again in 30, 90, 180 or 365 days", ErrInvalid)
 	}
 	if x.Marks == nil {
 		return ReviewMark{}, fmt.Errorf("%w: this cell keeps no review marks", ErrUnavailable)
@@ -157,7 +162,7 @@ func (x Stewards) MarkReviewed(ctx context.Context, s tenancy.Scope, name, cite 
 	if res.Context[0].Version != ver {
 		return ReviewMark{}, fmt.Errorf("%w: mark the document's current version, %d", ErrInvalid, res.Context[0].Version)
 	}
-	m := ReviewMark{Tenant: x.Agent.Tenant, Space: SpaceKey(name), Doc: doc, Version: ver, By: s.User(), At: x.Now().UTC()}
+	m := ReviewMark{Tenant: x.Agent.Tenant, Space: SpaceKey(name), Doc: doc, Version: ver, By: s.User(), At: x.Now().UTC(), Days: days}
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "config", Subject: cite, State: "reviewed",
 		Reason: "reviewed, still right", Space: auditSpace(m.Space)}); err != nil {
 		return ReviewMark{}, fmt.Errorf("%w: audit: %v", ErrUnavailable, err)

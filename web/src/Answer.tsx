@@ -1,6 +1,6 @@
 import { Fragment, useId, useState } from "react";
 import type { ReactNode } from "react";
-import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, SeeAlso, Term } from "./api";
+import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Pinned, SeeAlso, Term } from "./api";
 import { AskError, citeName, docKey, isCited, passage, requestAccess } from "./api";
 import { msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
@@ -361,6 +361,25 @@ function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
   );
 }
 
+// PinnedView is the stewards' verified answer, first (SB-3601); every cite was checked as the asker.
+function PinnedView({ pin }: { pin: Pinned }) {
+  return (
+    <section className="pinned" aria-label={t("Verified by the stewards")}>
+      <h3>{t("Verified by the stewards on {date}", { date: pin.verified })}</h3>
+      <p className="meta">{pin.question}</p>
+      <p>{pin.text}</p>
+      <ul className="cites">
+        {pin.cites.map((c) => (
+          <li key={c}>
+            <code>{c}</code>
+          </li>
+        ))}
+      </ul>
+      <h3>{t("The brain's answer")}</h3>
+    </section>
+  );
+}
+
 export function AnswerView({
   answer,
   fetcher,
@@ -375,6 +394,7 @@ export function AnswerView({
   const nums = numberCites(answer);
   return (
     <article className="answer" aria-label={t("Answer")}>
+      {answer.pinned && <PinnedView pin={answer.pinned} />}
       <Freshness answer={answer} />
       {answer.notice && (
         <p className="notice" role="note">

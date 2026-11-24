@@ -117,7 +117,7 @@ func (a Agent) freshness(ctx context.Context, marks *marksCache, ch ports.Chunk)
 	}
 	if m, ok := marks.reviewed(ctx, a.Tenant, ch); ok {
 		f.reviewed = m.At.UTC().Format("2006-01-02")
-		f.stale = now.Sub(m.At) > time.Duration(a.reviewAfter(ch.Spaces))*24*time.Hour
+		f.stale = now.Sub(m.At) > time.Duration(markAfter(m, a.reviewAfter(ch.Spaces)))*24*time.Hour
 	}
 	if pastReviewBy(ch, now) {
 		f.stale = true

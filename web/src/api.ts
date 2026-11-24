@@ -104,6 +104,27 @@ export interface AskResponse {
   // How many earlier questions of the conversation the model didn't read (SB-2901).
   earlier_dropped?: number;
   see_also?: SeeAlso[];
+  // The stewards' verified answer to a question like this one (SB-3601).
+  pinned?: Pinned;
+}
+
+// A verified answer, every cite checked again as the asker (SB-3601).
+export interface Pinned {
+  id: string;
+  question: string;
+  text: string;
+  cites: string[];
+  verified: string;
+}
+
+// A pin on the steward screen.
+export interface PinItem {
+  id: string;
+  question: string;
+  text: string;
+  cites: string[];
+  at: string;
+  due?: boolean;
 }
 
 // A space glossary entry the question used (SB-2203).
@@ -180,9 +201,11 @@ export async function ask(
   language?: string,
   documents?: string[],
   short?: boolean,
+  verified?: boolean,
 ): Promise<AskResponse> {
-  const body: Record<string, string | string[]> = { question };
+  const body: Record<string, string | string[] | boolean> = { question };
   if (short) body.length = "short"; // SB-3303
+  if (verified) body.verified = true; // SB-3602
   if (documents && documents.length > 0) body.documents = documents;
   if (conversation) body.conversation = conversation;
   if (language) body.language = language;
@@ -306,6 +329,7 @@ export interface Filters {
   type?: string;
   since?: number;
   owner?: string; // an owner's documents (SB-3306)
+  verified?: boolean; // verified documents only (SB-3602)
 }
 
 export function search(q: string, f: Fetch = fetch, space?: string, filters: Filters = {}): Promise<SearchResponse> {
@@ -313,6 +337,7 @@ export function search(q: string, f: Fetch = fetch, space?: string, filters: Fil
   if (filters.type) path += `&type=${encodeURIComponent(filters.type)}`;
   if (filters.since) path += `&since=${filters.since}d`;
   if (filters.owner) path += `&owner=${encodeURIComponent(filters.owner)}`;
+  if (filters.verified) path += "&verified=true";
   return call<SearchResponse>(inSpace(path, space), {}, f);
 }
 
@@ -413,8 +438,23 @@ export function publishNote(space: string, id: string, title: string, confirm: n
 // Stewards' tools (sb-ask(3); SB-2501 to SB-2503).
 const sp = (space: string) => `/v1/spaces/${encodeURIComponent(space)}`;
 
-export function markReviewed(space: string, cite: string, f: Fetch = fetch): Promise<{ document: string; version: number }> {
-  return call(`${sp(space)}/review/marks`, post({ cite }), f);
+// markReviewed is Reviewed, still right; days is Review again in (SB-3603), 0 the space's default.
+export function markReviewed(space: string, cite: string, f: Fetch = fetch, days = 0): Promise<{ document: string; version: number }> {
+  return call(`${sp(space)}/review/marks`, post(days ? { cite, days } : { cite }), f);
+}
+
+// The space's verified answers (SB-3601).
+export async function listPins(space: string, f: Fetch = fetch): Promise<PinItem[]> {
+  const d = await call<{ items?: PinItem[] }>(`${sp(space)}/pins`, {}, f);
+  return Array.isArray(d.items) ? d.items : [];
+}
+
+export function pinReply(space: string, questionId: string, question: string, f: Fetch = fetch): Promise<PinItem> {
+  return call(`${sp(space)}/pins`, post({ question_id: questionId, question }), f);
+}
+
+export function unpin(space: string, id: string, f: Fetch = fetch): Promise<unknown> {
+  return call(`${sp(space)}/pins/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
 }
 
 export async function claimQuestion(space: string, id: string, release: boolean, f: Fetch = fetch): Promise<QueueQuestion["claim"] | null> {
@@ -469,6 +509,8 @@ export async function changes(days: number, f: Fetch = fetch, space?: string): P
 export interface ReviewItem extends SearchResult {
   cited: number;
   flagged: number;
+  // Not helpful ratings since its review (SB-3604).
+  unhelpful?: number;
   // Reports that it is out of date (SB-2703).
   outdated?: number;
   // A note read wider than its space now (SB-2004): how many readers to remove, and its question.
@@ -684,8 +726,8 @@ export async function dueList(space: string, f: Fetch = fetch): Promise<{ items:
 }
 
 // An owner's Reviewed, still right on their own document (SB-3106).
-export function markOwnReviewed(cite: string, f: Fetch = fetch): Promise<{ document: string; version: number; spaces: string[] }> {
-  return call("/v1/documents/reviewed", post({ cite }), f);
+export function markOwnReviewed(cite: string, f: Fetch = fetch, days = 0): Promise<{ document: string; version: number; spaces: string[] }> {
+  return call("/v1/documents/reviewed", post(days ? { cite, days } : { cite }), f);
 }
 
 // The handover brief (SB-1707, SB-2002): the person's documents the asker can open now.

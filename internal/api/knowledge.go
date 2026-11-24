@@ -82,7 +82,7 @@ func (h Knowledge) search(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	req := ask.SearchRequest{Query: r.URL.Query().Get("q"), Owner: r.URL.Query().Get("owner")}
+	req := ask.SearchRequest{Query: r.URL.Query().Get("q"), Owner: r.URL.Query().Get("owner"), Verified: r.URL.Query().Get("verified") == "true"}
 	if src := r.URL.Query().Get("sources"); src != "" {
 		req.Sources = strings.Split(src, ",")
 	}

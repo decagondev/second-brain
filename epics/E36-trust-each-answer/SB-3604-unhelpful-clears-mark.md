@@ -13,7 +13,7 @@ summary: "A reviewed document stays off the review list even when people find it
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07 |
 | Depends on | SB-2501 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ A reviewed document stays off the review list even when people find its answers 
 
 ## Acceptance criteria
 
-- [ ] 3 unhelpful ratings of answers citing a marked document since its mark put it back on the review list, with why
-- [ ] Ratings before the mark don't count
-- [ ] No asker is named
+- [x] 3 unhelpful ratings of answers citing a marked document since its mark put it back on the review list, with why
+- [x] Ratings before the mark don't count
+- [x] No asker is named
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Review list
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Review list
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Three unhelpful ratings since a mark list the document again
 
 ## Definition of done
 

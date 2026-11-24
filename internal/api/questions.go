@@ -46,6 +46,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /v1/spaces/{name}/templates/{id}", h.deleteTemplate)
 	mux.HandleFunc("GET /v1/spaces/{name}/suggested", h.suggested)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
+	mux.HandleFunc("GET /v1/spaces/{name}/pins", h.pins)
+	mux.HandleFunc("POST /v1/spaces/{name}/pins", h.pin)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/pins/{id}", h.unpin)
 	mux.HandleFunc("PUT /v1/spaces/{name}/caretakers", h.caretaker)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/caretakers", h.caretaker)
 	mux.HandleFunc("POST /v1/spaces/{name}/evals", h.addEval)
@@ -242,6 +245,7 @@ func (h Questions) mark(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Cite  string   `json:"cite"`
 		Cites []string `json:"cites"`
+		Days  int      `json:"days"` // SB-3603
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite."))
@@ -249,12 +253,12 @@ func (h Questions) mark(w http.ResponseWriter, r *http.Request) {
 	}
 	if body.Cites != nil {
 		h.bulk(w, body.Cites, func(c string) error {
-			_, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), c)
+			_, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), c, body.Days)
 			return err
 		})
 		return
 	}
-	m, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), body.Cite)
+	m, err := h.Service.MarkReviewed(r.Context(), s, r.PathValue("name"), body.Cite, body.Days)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -270,12 +274,13 @@ func (h Questions) markOwn(w http.ResponseWriter, r *http.Request) {
 	}
 	var body struct {
 		Cite string `json:"cite"`
+		Days int    `json:"days"` // SB-3603
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the document's cite."))
 		return
 	}
-	m, err := h.Service.MarkOwn(r.Context(), s, body.Cite)
+	m, err := h.Service.MarkOwn(r.Context(), s, body.Cite, body.Days)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -455,6 +460,54 @@ func (h Questions) setSuggested(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"questions": qs})
+}
+
+// pins lists the space's verified answers for its stewards (SB-3601).
+func (h Questions) pins(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	ps, err := h.Service.PinsOf(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"items": ps})
+}
+
+// pin pins a cited reply as the space's verified answer to its question.
+func (h Questions) pin(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		QuestionID string `json:"question_id"`
+		Question   string `json:"question"`
+	}
+	if !readJSON(r, &body) || body.QuestionID == "" {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the question_id of an answered question."))
+		return
+	}
+	p, err := h.Service.PinReply(r.Context(), s, r.PathValue("name"), body.QuestionID, body.Question)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", p)
+}
+
+func (h Questions) unpin(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	if err := h.Service.Unpin(r.Context(), s, r.PathValue("name"), r.PathValue("id")); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "removed": true})
 }
 
 // caretaker names or removes a document's caretaker (SB-3405).

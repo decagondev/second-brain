@@ -51,6 +51,8 @@ type Request struct {
 	Documents []string `json:"documents,omitempty"`
 	// Length "short" asks for at most MaxShort claims (SB-3303); anything else is ignored.
 	Length string `json:"length,omitempty"`
+	// Verified answers only from documents with a live review mark, and notes (SB-3602).
+	Verified bool `json:"verified,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -179,6 +181,8 @@ type Response struct {
 	// SeeAlso are documents the search found and the asker can open that no claim cites
 	// (SB-3301).
 	SeeAlso []SeeAlso `json:"see_also,omitempty"`
+	// Pinned is the stewards' verified answer to a question like this one (SB-3601).
+	Pinned *Pinned `json:"pinned,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -309,6 +313,8 @@ type Agent struct {
 	// Retired keeps the documents stewards took out of their spaces' answers (SB-2801);
 	// nil is none.
 	Retired RetireStore
+	// Pins are the stewards' verified answers (SB-3601); nil is none.
+	Pins PinStore
 }
 
 // Ask answers one question for the scope's user.
@@ -380,7 +386,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		conv = a.NewID("cv_")
 	}
 
-	res, terms, err := a.retrieve(withDocs(ctx, docs), s, q, req.Sources, retrieve.Budget)
+	res, terms, err := a.retrieve(withVerified(withDocs(ctx, docs), req.Verified), s, q, req.Sources, retrieve.Budget)
 	if err != nil {
 		return Response{}, err
 	}
@@ -397,6 +403,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	if probe {
 		resp.Agent, resp.Conversation = AgentEval, ""
+	} else if dept == nil {
+		resp.Pinned = a.pinned(ctx, s, q)
 	}
 	if len(res.Context) == 0 {
 		n := NoticeNoSources

@@ -32,7 +32,7 @@ describe("counts on the steward screen", () => {
     let open = 2;
     const fetcher: Fetch = async (u) => {
       if (u.endsWith("/review")) return json(review);
-      if (u.endsWith("/templates") || u.endsWith("/retired")) return json({ items: [] });
+      if (u.endsWith("/templates") || u.endsWith("/retired") || u.endsWith("/pins")) return json({ items: [] });
       reads++;
       return json({ items: Array.from({ length: open }, (_, i) => ({ id: `qs_${i}`, question: `q${i}?`, at: "2026-11-22T00:00:00Z", state: "open" })) });
     };

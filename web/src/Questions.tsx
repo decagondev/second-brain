@@ -1,7 +1,7 @@
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import { AskError, addEvalCase, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, PinItem, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
 import { errorText, msg, t, tn } from "./i18n";
@@ -226,6 +226,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   const [cites, setCites] = useState<Record<string, string>>({});
   const [title, setTitle] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<Record<string, NoteResult>>({});
+  const [pinsBump, setPinsBump] = useState(0);
   const [keep, setKeep] = useState<Record<string, boolean>>({});
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
   const [steward, setSteward] = useState(false);
@@ -380,15 +381,123 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
                       </button>
                     </>
                   )}
+                  {(q.reply?.cites?.length ?? 0) > 0 && <PinButton space={space} id={q.id} question={q.question} onDone={() => setPinsBump((n) => n + 1)} fetcher={fetcher} />}
                 </div>
               )}
             </li>
           ))}
         </ul>
       )}
+      {steward && <Pins space={space} bump={pinsBump} fetcher={fetcher} />}
       {steward && <Templates space={space} items={templates} onChange={setTemplates} fetcher={fetcher} />}
       {status && <p role="status">{status}</p>}
     </section>
+  );
+}
+
+// Pin as the verified answer (SB-3601): the question as askers will see it, then the pin.
+function PinButton({ space, id, question, onDone, fetcher }: { space: string; id: string; question: string; onDone: () => void; fetcher?: Fetch }) {
+  const fid = useId();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(question);
+  const [msg, setMsg] = useState("");
+  async function pin(e: FormEvent) {
+    e.preventDefault();
+    setMsg("");
+    try {
+      await pinReply(space, id, text.trim(), fetcher);
+      setOpen(false);
+      setMsg(t("Pinned as the verified answer."));
+      onDone();
+    } catch (err) {
+      setMsg(errMsg(err, t("The answer couldn't be pinned.")));
+    }
+  }
+  if (!open)
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>
+          {t("Pin as the verified answer")}
+        </button>
+        {msg && <span role="status"> {msg}</span>}
+      </>
+    );
+  return (
+    <form onSubmit={pin}>
+      <label htmlFor={fid}>{t("The question as askers will see it")}</label>
+      <input id={fid} type="text" maxLength={300} value={text} onChange={(e) => setText(e.target.value)} />
+      <button type="submit" disabled={text.trim() === ""}>
+        {t("Pin")}
+      </button>
+      {msg && <span role="alert"> {msg}</span>}
+    </form>
+  );
+}
+
+// The space's verified answers (SB-3601), with Remove.
+function Pins({ space, bump, fetcher }: { space: string; bump: number; fetcher?: Fetch }) {
+  const [items, setItems] = useState<PinItem[]>([]);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    try {
+      setItems(await listPins(space, fetcher));
+    } catch {
+      setItems([]);
+    }
+  }, [space, fetcher]);
+  useEffect(() => {
+    void load();
+  }, [load, bump]);
+  if (items.length === 0) return null;
+  return (
+    <section aria-label={t("Verified answers")}>
+      <h3>{t("Verified answers")}</h3>
+      <ul>
+        {items.map((p) => (
+          <li key={p.id}>
+            <strong>{p.question}</strong> {p.due && <span className="meta">{t("due for review, no longer shown")}</span>}
+            <p>{p.text}</p>
+            <button
+              type="button"
+              aria-label={t("Remove the verified answer: {question}", { question: p.question })}
+              onClick={async () => {
+                setError("");
+                try {
+                  await unpin(space, p.id, fetcher);
+                  await load();
+                } catch (err) {
+                  setError(errMsg(err, t("The verified answer couldn't be removed.")));
+                }
+              }}
+            >
+              {t("Remove")}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
+// ReviewAgain is the choice of how long a mark lasts (SB-3603): 0 is the space's default.
+export function ReviewAgain({ days, onChange, name }: { days: number; onChange: (d: number) => void; name: string }) {
+  const id = useId();
+  return (
+    <>
+      {" "}
+      <label htmlFor={id} className="visually-hidden">
+        {t("Review again in, for {name}", { name })}
+      </label>
+      <select id={id} value={days} onChange={(e) => onChange(Number(e.target.value))}>
+        <option value={0}>{t("the space's default")}</option>
+        {[30, 90, 180, 365].map((d) => (
+          <option key={d} value={d}>
+            {t("{n} days", { n: d })}
+          </option>
+        ))}
+      </select>
+    </>
   );
 }
 
@@ -452,10 +561,11 @@ function Templates({ space, items, onChange, fetcher }: { space: string; items: 
 // Reviewed, still right (SB-2501): off the list until a new version, its age or a new report.
 function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: ReviewItem; onDone: () => void; fetcher?: Fetch }) {
   const [error, setError] = useState("");
+  const [days, setDays] = useState(0);
   async function mark() {
     setError("");
     try {
-      await markReviewed(space, item.cite, fetcher);
+      await markReviewed(space, item.cite, fetcher, days);
       onDone();
     } catch (err) {
       setError(errMsg(err, t("The document couldn't be marked.")));
@@ -464,6 +574,7 @@ function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: R
   return (
     <>
       {" "}
+      <ReviewAgain days={days} onChange={setDays} name={item.title ?? item.cite} />{" "}
       <button type="button" aria-label={t("Reviewed, still right: {name}", { name: item.title ?? item.cite })} onClick={mark}>
         {t("Reviewed, still right")}
       </button>
@@ -1089,6 +1200,7 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
                 {r.age_days !== undefined ? ` · ${tn(r.age_days, "{n} day old", "{n} days old")}` : ""}
                 {r.flagged > 0 ? ` · ${tn(r.flagged, "marked wrong {n} time", "marked wrong {n} times")}` : ""}
                 {r.outdated ? ` · ${tn(r.outdated, "reported out of date {n} time", "reported out of date {n} times")}` : ""}
+                {r.unhelpful ? ` · ${tn(r.unhelpful, "rated unhelpful {n} time since its review", "rated unhelpful {n} times since its review")}` : ""}
                 {r.owner_gone ? ` · ${t("owner gone: find it a new owner")}` : ""}
                 {r.sources_moved ? ` · ${tn(r.sources_moved, "{n} of its sources changed or is gone", "{n} of its sources changed or are gone")}` : ""}
               </span>

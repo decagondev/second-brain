@@ -75,6 +75,7 @@ type TraceStore interface {
 	ask.RetireStore
 	ask.NoticeStore
 	ask.SuggestedStore
+	ask.PinStore
 	ask.CaretakerStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)

@@ -46,11 +46,11 @@ func staleAt(c ports.Chunk, m ReviewMark, marked bool, after int) (time.Time, bo
 	}
 	var at time.Time
 	if !c.Seen.IsZero() {
-		base := c.Seen
+		base, days := c.Seen, after
 		if marked && m.Version == c.Version && m.At.After(base) {
-			base = m.At
+			base, days = m.At, markAfter(m, after) // SB-3603
 		}
-		at = base.Add(time.Duration(after) * 24 * time.Hour)
+		at = base.Add(time.Duration(days) * 24 * time.Hour)
 	}
 	if !c.ReviewBy.IsZero() && (at.IsZero() || c.ReviewBy.Before(at)) {
 		at = c.ReviewBy
@@ -176,9 +176,12 @@ type OwnMark struct {
 // MarkOwn marks the caller's own document Reviewed, still right at its current version,
 // in every space that holds it, as the stewards' record (SB-3106). Only its current owner
 // at the source, who can open it now, may.
-func (x Stewards) MarkOwn(ctx context.Context, s tenancy.Scope, cite string) (OwnMark, error) {
+func (x Stewards) MarkOwn(ctx context.Context, s tenancy.Scope, cite string, days int) (OwnMark, error) {
 	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant {
 		return OwnMark{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
+	}
+	if days != 0 && !MarkDays[days] {
+		return OwnMark{}, fmt.Errorf("%w: review again in 30, 90, 180 or 365 days", ErrInvalid)
 	}
 	if x.Marks == nil {
 		return OwnMark{}, fmt.Errorf("%w: this cell keeps no review marks", ErrUnavailable)
@@ -222,7 +225,7 @@ func (x Stewards) MarkOwn(ctx context.Context, s tenancy.Scope, cite string) (Ow
 	out := OwnMark{Doc: doc, Version: ver, Spaces: []string{}}
 	at := x.Now().UTC()
 	for _, sp := range cur.Spaces {
-		m := ReviewMark{Tenant: x.Agent.Tenant, Space: sp, Doc: doc, Version: ver, By: s.User(), At: at}
+		m := ReviewMark{Tenant: x.Agent.Tenant, Space: sp, Doc: doc, Version: ver, By: s.User(), At: at, Days: days}
 		if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "config", Subject: cite, State: "reviewed",
 			Reason: "reviewed by its owner", Space: auditSpace(sp)}); err != nil {
 			return out, fmt.Errorf("%w: audit: %v", ErrUnavailable, err)
