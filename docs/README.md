@@ -27,6 +27,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 15 | [Ask better, capture knowledge, trust and control](15-ask-capture-trust.md) | Twenty small features: more from each answer, replies kept as notes, people's control of their own data (W32 to W34) |
 | 16 | [Trust each answer, capture conversations, work where people are](16-trust-capture-reach.md) | Twenty features drawn from other knowledge tools: verified answers, meetings and chat captured, MCP and adoption (W35 to W37) |
 | 17 | [One org, many levels; an agent for every department; run the company](17-org-agents-os.md) | Twenty features toward a company OS: spaces as a tree, an agent for every department, goals, updates, policies, requests and budgets (W38 to W40) |
+| 18 | [Agents that do the legwork; work that comes to you; govern every agent](18-legwork-inbox-govern.md) | Twenty features from a deeper survey of company OS and second brain tools: research, meeting prep, action items and follow-ups; one inbox, routines and memory; owners, evals and a lint for every agent (W41 to W43) |
 
 ## Architecture
 

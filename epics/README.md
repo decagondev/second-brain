@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-42 epics, 127 user stories and 331 tickets across 41 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+45 epics, 133 user stories and 351 tickets across 44 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -45,6 +45,9 @@ summary: Epics, waves, slices and tickets.
 | W38 One Org, Many Levels | 7 | 0 | 0 | Planned 2026-11-24 with the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
 | W39 An Agent for Every Department | 7 | 0 | 0 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
 | W40 Run the Company | 6 | 0 | 0 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
+| W41 Agents That Do the Legwork | 0 | 0 | 7 | Proposed 2026-11-24, waiting on the user (E42): research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W42 Work That Comes to You | 0 | 0 | 7 | Proposed 2026-11-24, waiting on the user (E43): one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W43 Govern Every Agent | 0 | 0 | 6 | Proposed 2026-11-24, waiting on the user (E44): feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -160,6 +163,12 @@ flowchart LR
   E36 --> E39
   E39 --> E40
   E40 --> E41
+  E42["E42 Agents That Do the Legwork"]
+  E43["E43 Work That Comes to You"]
+  E44["E44 Govern Every Agent"]
+  E41 --> E42
+  E42 --> E43
+  E43 --> E44
 ```
 
 ## Epics
@@ -208,6 +217,9 @@ flowchart LR
 | [E39 One Org, Many Levels](E39-one-org-many-levels/README.md) | Spaces follow the company's shape (company, department, team), and access only narrows down the tree. | W38 | 7 |
 | [E40 An Agent for Every Department](E40-agent-for-every-department/README.md) | Every department template has an agent worth asking, agents can run on a schedule or when something happens, and admins see every agent in one place. | W39 | 7 |
 | [E41 Run the Company](E41-run-the-company/README.md) | The work around knowledge (goals, updates, policies, requests and budgets) lives where the knowledge is, without becoming a second project tool. | W40 | 6 |
+| [E42 Agents That Do the Legwork](E42-agents-do-the-legwork/README.md) | Agents prepare, research and follow up for people, and every result is still a cited draft or a message to the person themselves. | W41 | 7 |
+| [E43 Work That Comes to You](E43-work-comes-to-you/README.md) | Each person sees in one place what waits on them, has recurring questions answered for them, and keeps context for their work, all checked as them. | W42 | 7 |
+| [E44 Govern Every Agent](E44-govern-every-agent/README.md) | Every agent has an owner, real feedback improves its evals, the gate catches a bad definition, and admins see the cost and the risk. | W43 | 6 |
 
 ## All tickets by wave
 
@@ -751,3 +763,38 @@ flowchart LR
 | [SB-4104](E41-run-the-company/SB-4104-requests.md) | S40.2 | E41 | Requests to a department | Done |
 | [SB-4105](E41-run-the-company/SB-4105-department-budgets.md) | S40.2 | E41 | Department budgets | Done |
 | [SB-4106](E41-run-the-company/SB-4106-space-home.md) | S40.2 | E41 | A home for each space | Done |
+
+### W41 Agents That Do the Legwork
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4201](E42-agents-do-the-legwork/SB-4201-research-reports.md) | S41.1 | E42 | Research reports | Open |
+| [SB-4202](E42-agents-do-the-legwork/SB-4202-meeting-prep.md) | S41.1 | E42 | Meeting prep | Open |
+| [SB-4203](E42-agents-do-the-legwork/SB-4203-action-items.md) | S41.1 | E42 | Action items from meetings | Open |
+| [SB-4204](E42-agents-do-the-legwork/SB-4204-incident-brief.md) | S41.2 | E42 | Incident brief | Open |
+| [SB-4205](E42-agents-do-the-legwork/SB-4205-voice-of-customer.md) | S41.2 | E42 | Voice of the customer | Open |
+| [SB-4206](E42-agents-do-the-legwork/SB-4206-draft-the-fix.md) | S41.2 | E42 | Draft the fix | Open |
+| [SB-4207](E42-agents-do-the-legwork/SB-4207-goal-check-ins.md) | S41.2 | E42 | Goal check-ins | Open |
+
+### W42 Work That Comes to You
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4301](E43-work-comes-to-you/SB-4301-one-inbox.md) | S42.1 | E43 | One inbox | Open |
+| [SB-4302](E43-work-comes-to-you/SB-4302-routines.md) | S42.1 | E43 | My routines | Open |
+| [SB-4303](E43-work-comes-to-you/SB-4303-memory.md) | S42.1 | E43 | Memory I control | Open |
+| [SB-4304](E43-work-comes-to-you/SB-4304-collections.md) | S42.2 | E43 | Collections | Open |
+| [SB-4305](E43-work-comes-to-you/SB-4305-agent-runs.md) | S42.2 | E43 | What agents did as me | Open |
+| [SB-4306](E43-work-comes-to-you/SB-4306-agents-over-mcp.md) | S42.2 | E43 | Agents over MCP | Open |
+| [SB-4307](E43-work-comes-to-you/SB-4307-numbers-from-tables.md) | S42.2 | E43 | Numbers from tables | Open |
+
+### W43 Govern Every Agent
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4401](E44-govern-every-agent/SB-4401-feedback-to-evals.md) | S43.1 | E44 | Feedback becomes evals | Open |
+| [SB-4402](E44-govern-every-agent/SB-4402-agent-owners.md) | S43.1 | E44 | Agent owners and changes | Open |
+| [SB-4403](E44-govern-every-agent/SB-4403-agent-lint.md) | S43.1 | E44 | Agent lint in the gate | Open |
+| [SB-4404](E44-govern-every-agent/SB-4404-signed-events.md) | S43.2 | E44 | Signed events out | Open |
+| [SB-4405](E44-govern-every-agent/SB-4405-model-tiers.md) | S43.2 | E44 | Model tiers | Open |
+| [SB-4406](E44-govern-every-agent/SB-4406-guardrail-insights.md) | S43.2 | E44 | Guardrail insights | Open |

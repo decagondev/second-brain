@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better** (built), **W33 Capture Knowledge** (built) and **W34 Trust and Control** (built) add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)). **W35 Trust Each Answer** (built), **W36 Capture Conversations** (built) and **W37 Work Where People Are** (built) add twenty more, drawn from what other company knowledge tools do well: answers people can rely on, what's decided in meetings and chat, and the brain within reach of other tools ([16-trust-capture-reach.md](16-trust-capture-reach.md)). **W38 One Org, Many Levels**, **W39 An Agent for Every Department** and **W40 Run the Company** turn the brain into a company OS: spaces arranged as company, department and team, a read-only agent for every department, and goals, updates, policies and requests beside the knowledge ([17-org-agents-os.md](17-org-agents-os.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better** (built), **W33 Capture Knowledge** (built) and **W34 Trust and Control** (built) add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)). **W35 Trust Each Answer** (built), **W36 Capture Conversations** (built) and **W37 Work Where People Are** (built) add twenty more, drawn from what other company knowledge tools do well: answers people can rely on, what's decided in meetings and chat, and the brain within reach of other tools ([16-trust-capture-reach.md](16-trust-capture-reach.md)). **W38 One Org, Many Levels**, **W39 An Agent for Every Department** and **W40 Run the Company** turn the brain into a company OS: spaces arranged as company, department and team, a read-only agent for every department, and goals, updates, policies and requests beside the knowledge ([17-org-agents-os.md](17-org-agents-os.md)). **W41 Agents That Do the Legwork**, **W42 Work That Comes to You** and **W43 Govern Every Agent** (proposed) add read-only agents that research, prepare and follow up, one inbox, routines and memory for each person, and owners, evals and a lint for every agent ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).
 
 ## Problem
 
@@ -337,6 +337,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W38 | One Org, Many Levels | — | Spaces follow the company's shape (company, department, team), and access only narrows down the tree. |
 | W39 | An Agent for Every Department | — | Every department template has an agent worth asking, agents can run on a schedule or when something happens, and admins see every agent in one place. |
 | W40 | Run the Company | — | The work around knowledge (goals, updates, policies, requests and budgets) lives where the knowledge is, without becoming a second project tool. |
+| W41 | Agents That Do the Legwork | — | Agents prepare, research and follow up for people, and every result is still a cited draft or a message to the person themselves. |
+| W42 | Work That Comes to You | — | Each person sees in one place what waits on them, has recurring questions answered for them, and keeps context for their work, all checked as them. |
+| W43 | Govern Every Agent | — | Every agent has an owner, real feedback improves its evals, the gate catches a bad definition, and admins see the cost and the risk. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -1104,6 +1107,57 @@ gantt
 |---|---|---|---|
 | S40.1 | Goals and updates | Goals, status updates, policies to read | [SB-4101](../epics/E41-run-the-company/SB-4101-goals.md), [SB-4102](../epics/E41-run-the-company/SB-4102-status-updates.md), [SB-4103](../epics/E41-run-the-company/SB-4103-policies-to-read.md) |
 | S40.2 | Requests, budgets and a home | Requests to a department, budgets, a home for each space | [SB-4104](../epics/E41-run-the-company/SB-4104-requests.md), [SB-4105](../epics/E41-run-the-company/SB-4105-department-budgets.md), [SB-4106](../epics/E41-run-the-company/SB-4106-space-home.md) |
+
+#### W41 Agents That Do the Legwork
+
+*Agents prepare, research and follow up for people, and every result is still a cited draft or a message to the person themselves. Proposed 2026-11-24, waiting on the user's decisions ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
+
+**Exit gate**
+
+- [ ] A research plan runs only when the person presses Run, within its cost cap
+- [ ] Every new agent has an eval suite that passes the gate and calls no tool
+- [ ] Nothing an agent drafts reaches anyone before a steward, owner or the person acts on it
+- [ ] Every cite in a stored result is checked again as the reader (LAW-26 green)
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S41.1 | Research and prepare | Research reports, meeting prep, action items from meetings | [SB-4201](../epics/E42-agents-do-the-legwork/SB-4201-research-reports.md), [SB-4202](../epics/E42-agents-do-the-legwork/SB-4202-meeting-prep.md), [SB-4203](../epics/E42-agents-do-the-legwork/SB-4203-action-items.md) |
+| S41.2 | Follow up | Incident brief, voice of the customer, draft the fix, goal check-ins | [SB-4204](../epics/E42-agents-do-the-legwork/SB-4204-incident-brief.md), [SB-4205](../epics/E42-agents-do-the-legwork/SB-4205-voice-of-customer.md), [SB-4206](../epics/E42-agents-do-the-legwork/SB-4206-draft-the-fix.md), [SB-4207](../epics/E42-agents-do-the-legwork/SB-4207-goal-check-ins.md) |
+
+#### W42 Work That Comes to You
+
+*Each person sees in one place what waits on them, has recurring questions answered for them, and keeps context for their work, all checked as them. Proposed 2026-11-24, waiting on the user's decisions ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
+
+**Exit gate**
+
+- [ ] Every inbox item, routine answer and collection item is checked as the reader when shown
+- [ ] A memory never holds document text or reaches another person's ask (LAW-25 green)
+- [ ] Every run made as a person appears on their Agent runs
+- [ ] A computed number in an answer always comes from the table tool, with its cells cited
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S42.1 | One inbox | One inbox, my routines, memory I control | [SB-4301](../epics/E43-work-comes-to-you/SB-4301-one-inbox.md), [SB-4302](../epics/E43-work-comes-to-you/SB-4302-routines.md), [SB-4303](../epics/E43-work-comes-to-you/SB-4303-memory.md) |
+| S42.2 | Context for the work | Collections, what agents did as me, agents over MCP, numbers from tables | [SB-4304](../epics/E43-work-comes-to-you/SB-4304-collections.md), [SB-4305](../epics/E43-work-comes-to-you/SB-4305-agent-runs.md), [SB-4306](../epics/E43-work-comes-to-you/SB-4306-agents-over-mcp.md), [SB-4307](../epics/E43-work-comes-to-you/SB-4307-numbers-from-tables.md) |
+
+#### W43 Govern Every Agent
+
+*Every agent has an owner, real feedback improves its evals, the gate catches a bad definition, and admins see the cost and the risk. Proposed 2026-11-24, waiting on the user's decisions ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
+
+**Exit gate**
+
+- [ ] Every shipped agent has an owner and passes `sb agents lint`
+- [ ] An accepted candidate case runs in the next gate, and the asker is never named
+- [ ] An event body carries ids only
+- [ ] A model tier that fails its evals takes no asks
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S43.1 | Owners and evals | Feedback becomes evals, agent owners and changes, agent lint in the gate | [SB-4401](../epics/E44-govern-every-agent/SB-4401-feedback-to-evals.md), [SB-4402](../epics/E44-govern-every-agent/SB-4402-agent-owners.md), [SB-4403](../epics/E44-govern-every-agent/SB-4403-agent-lint.md) |
+| S43.2 | Out, cost and risk | Signed events out, model tiers, guardrail insights | [SB-4404](../epics/E44-govern-every-agent/SB-4404-signed-events.md), [SB-4405](../epics/E44-govern-every-agent/SB-4405-model-tiers.md), [SB-4406](../epics/E44-govern-every-agent/SB-4406-guardrail-insights.md) |
 
 #### Parked: Portfolio Department Grants
 
