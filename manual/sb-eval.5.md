@@ -46,12 +46,14 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | Check | Passes when |
 |---|---|
 | `cites_any: [cite…]` | At least one listed citation appears |
+| `cites_all: [cite…]` | Every listed citation appears (SB-3304) |
 | `cites_none: [cite…]` | None of these appear (for refused docs) |
 | `uncited_max: N` | At most N uncited claims |
 | `faithful_min: 0.9` | Support score of every claim–citation pair is at least this |
 | `refuses: true` | `notice` is `no_access` or `no_sources` |
 | `tool_calls: N` | Exactly N tool calls were attempted |
 | `not_contains: [str…]` | None of the strings (e.g. canaries) appear anywhere in output or tool arguments |
+| `disagrees: true` | Some claim is marked `disagree` (`false`: none is; SB-3304) |
 | `error: CODE` | The ask is refused with this error code (for example `EINVAL` for a department agent asked outside its space); without it, any error fails the case |
 
 ### Faithfulness (`faithful_min` and the `citation` score)

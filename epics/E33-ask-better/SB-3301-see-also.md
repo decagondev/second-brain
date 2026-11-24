@@ -13,7 +13,7 @@ summary: "An answer shows only what it cites, so the near-misses the search foun
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-14 |
 | Depends on | SB-3001 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ An answer shows only what it cites, so the near-misses the search found are lost
 
 ## Acceptance criteria
 
-- [ ] The response's `see_also` lists at most 3 documents retrieval kept for the asker that no claim cites, by title, cite and age, never their text
-- [ ] The UI lists them as See also with Show passage and Ask about this document; chat leaves them out
-- [ ] A document the asker can't open never appears
+- [x] The response's `see_also` lists at most 3 documents retrieval kept for the asker that no claim cites, by title, cite and age, never their text
+- [x] The UI lists them as See also with Show passage and Ask about this document; chat leaves them out
+- [x] A document the asker can't open never appears
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Agent
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Agent
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+ask.SeeAlso and Response.SeeAlso: at most 3 documents of the allowed context no claim cites, in rank order, each once, with span and age, never text; spanOf opens their passage; the UI's SeeAlsoView with Show passage and Ask about this document; chat leaves them out. Tests: ask/askbetter_test.go TestSeeAlso, web askbetter.test.tsx.
 
 ## Definition of done
 

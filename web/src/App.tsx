@@ -16,7 +16,7 @@ import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { NoticeBanner } from "./Notice";
 import { AnswerTools } from "./Copy";
-import { forgetQuestions, recentQuestions, rememberQuestion } from "./recent";
+import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, shortAnswers } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
 
 interface Turn {
@@ -67,6 +67,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
     setRecent([]);
   }
   const askBox = useRef<HTMLTextAreaElement>(null);
+  const [short, setShort] = useState<boolean>(() => shortAnswers());
 
   // Keyboard first (SB-2403): "/" goes to the ask box and Esc closes the API tokens panel,
   // never while the person is typing in a field.
@@ -123,7 +124,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key));
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short);
       setConversation(a.conversation);
       settle({ id, question: q, answer: a });
       setQuestion("");
@@ -357,6 +358,17 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               </button>
             </details>
           )}
+          <label className="short">
+            <input
+              type="checkbox"
+              checked={short}
+              onChange={(e) => {
+                setShort(e.target.checked);
+                setShortAnswers(e.target.checked);
+              }}
+            />{" "}
+            {t("Short answer")}
+          </label>
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}
           </button>

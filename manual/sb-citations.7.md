@@ -49,13 +49,18 @@ The model sees each allowed chunk as a data block labelled `C1`, `C2`, … and m
 1. maps each label to its chunk; a label that isn't one of this answer's allowed chunks is **stripped** and counted as `citation_spoof` (by label, never by text);
 2. marks a claim `uncited` if none of its labels survived;
 3. turns surviving labels into citations: `cite`, title, span and the chunk's flags;
-4. treats output that isn't valid JSON of that shape as one claim, the whole text, `uncited`.
+4. treats output that isn't valid JSON of that shape as one claim, the whole text, `uncited`;
+5. keeps a claim's `"disagree": true` (SB-3304), the model's word that its sources say different things, only when its surviving citations name at least two different documents, and drops it otherwise.
 
 A claim never carries a citation the asker wasn't live-authorised for, and the model can't mark anything as cited by itself (LAW-01, LAW-14).
 
 ### The passage (SB-3001)
 
 A citation can be opened as its passage: the cited chunk's own text at the cited version, at most 600 characters, cut at a sentence (sb-ask(3), The cited passage). It is the source's text, never the model's, shown as a quote and never as markup (LAW-09). It is checked live each time it is opened, exactly as a retrieval is (sb-permissions(7)), so a citation someone could open yesterday can't show them its text today if they have lost access (LAW-01). A citation also names its **section**, the nearest heading above it (sb-ingest(7), Sections; SB-3002).
+
+### Sources that disagree (SB-3304)
+
+A claim marked `disagree` cites every source it rests on, so the asker can open each one and judge. The mark is the model's word, kept by code only when two different documents survived the live check for this asker; a document the asker can't open never makes a disagreement and is never hinted at. The citation suite has a case whose documents disagree and one whose documents agree (sb-evals(7)).
 
 ### Versions
 

@@ -35,3 +35,11 @@ cases:
     ask: "How long do standard shipments take to arrive?"
     language: fr
     expect: { cites_any: ["docs:shipping-sla@1"], faithful_min: 0.9 }
+  - id: cite-008
+    as: usr_alice
+    ask: "How many days after delivery are returns accepted?"
+    expect: { cites_all: ["docs:returns-eu@1", "docs:returns-uk@1"], disagrees: true, faithful_min: 0.9 }
+  - id: cite-009
+    as: usr_fin
+    ask: "What are the office hours on weekdays?"
+    expect: { cites_all: ["docs:desk-hours@1", "docs:office-hours@1"], disagrees: false, faithful_min: 0.9 }

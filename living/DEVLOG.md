@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S32.1: More from each answer
+
+**Wave/slice:** W32 / S32.1 (SB-3301 to SB-3304) · **Status:** Done
+
+**What:** An answer lists, under See also, up to three documents the search found and the asker can open but no claim cites, by title and age, each with Show passage and Ask about this document. Glossary terms are underlined where a claim uses them, with their meaning on hover and focus. A Short answer checkbox asks for at most three claims. A claim whose sources say different things is marked Sources disagree, in the UI and the chat apps, with both cites.
+
+**Why this way:** See also comes only from the chunks the live check already allowed, and never shows their text, so it shows nothing Documents wouldn't (LAW-01, LAW-14). The disagreement mark is the model's word, kept by code only when two different documents survived the check for this asker, so a hidden document can never be hinted at. A short answer goes through the same composer, so every claim is still cited or marked uncited.
+
+**Learned:** The extractive model the evals run had to learn to join two blocks on one subject, or a disagreement case could never be tested in make check; chunk text starts with the title line, so it compares the sentence after it. An eval expectation over the whole answer caught a disagreement from other retrieved documents, so the agreeing case asks as a person who can't open them.
+
+**Laws:** LAW-01, LAW-09, LAW-14. Every law test is still green.
+
 ## 2026-11-24 S31.2: See it coming
 
 **Wave/slice:** W31 / S31.2 (SB-3205 to SB-3207) · **Status:** Done

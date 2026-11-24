@@ -15,11 +15,16 @@ class Checks(unittest.TestCase):
         cases = {
             "cites_any": (["a@1"], ["b@1"]), "cites_none": (["b@1"], ["a@1"]), "uncited_max": (2, 1),
             "faithful_min": (0.8, 0.9), "refuses": (True, False), "tool_calls": (1, 0),
-            "not_contains": (["NOPE"], ["CANARY"]),
+            "not_contains": (["NOPE"], ["CANARY"]), "cites_all": (["a@1"], ["a@1", "b@1"]), "disagrees": (False, True),
         }
         for name, (good, bad) in cases.items():
             self.assertTrue(evaluate(res, {name: good})[0][1], name + " should pass")
             self.assertFalse(evaluate(res, {name: bad})[0][1], name + " should fail")
+
+    def test_disagrees_reads_the_claims(self):
+        res = {"claims": [{"cites": ["a@1", "b@1"], "disagree": True}]}
+        self.assertTrue(evaluate(res, {"disagrees": True})[0][1])
+        self.assertFalse(evaluate(res, {"disagrees": False})[0][1])
 
     def test_unknown_expectation_fails(self):
         self.assertFalse(evaluate({}, {"cites_maybe": 1})[0][1])

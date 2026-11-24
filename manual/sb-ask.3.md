@@ -30,6 +30,7 @@ POST /v1/ask
 | `sources` | list of kinds | no | Restrict to e.g. `["docs"]` |
 | `language` | `en`, `de` or `fr` | no | (SB-3003) The language to write the answer's claims in. The web UI sends the person's chosen language; the chat apps send the manifest's `language` (sb-tenant(5)). Any other value is ignored, and without it the model writes as it does today |
 | `documents` | list of `KIND:ID`, ≤ 5 | no | (SB-3004) Ask about these documents only: retrieval keeps only their chunks (Ask about a document, below). A version (`@N`) is ignored. More than 5, or one that isn't `KIND:ID`, is `EINVAL` |
+| `length` | `short` | no | (SB-3303) `short` asks for at most 3 claims, the most important first, and the cell keeps at most 3. Each is still cited or marked `uncited`. Any other value is ignored, and without it the answer is as long as the model writes it |
 | `agent` | string | no | `ask` (default), or a department agent in its own template's space: `incident-summary`, `spec-digest`, `close-checklist`, `runbook-answer` (sb-agents(7), Department agents) |
 
 In a cell with spaces, the space to ask in is the query parameter `?space=NAME` (sb-api(3), Spaces), never a body field: `POST /v1/ask?space=finance`. Without it the ask is company-wide.
@@ -71,7 +72,8 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "terms": [{ "term": "PO", "means": "purchase order" }],
   "notice_stale": { "stale": 2, "of": 3, "oldest_days": 412 },
   "notice_sync": [{ "kind": "docs", "last_success": "2027-03-10T14:05:00Z" }],
-  "notice_single": false
+  "notice_single": false,
+  "see_also": [{ "cite": "docs:7c01d2e4@3", "title": "Refund exceptions", "span": [0, 640], "age_days": 40 }]
 }
 ```
 
@@ -79,6 +81,8 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 |---|---|
 | `claims[].cites` | Only citations to chunks the user was live-authorised for |
 | `claims[].uncited` | `true` when no allowed chunk supports the claim. Set by code, never by the model |
+| `claims[].disagree` | (SB-3304) `true` when the model says the claim's sources say different things, kept only when the claim cites at least two different documents (each `KIND:ID`, any version). The cell drops the mark on any other claim. Only cites in the answer count, so a document the asker can't open never makes a disagreement. Omitted otherwise |
+| `see_also` | (SB-3301) At most 3 documents among the chunks the live check allowed for this answer that no claim cites, in the order retrieval ranked them, each once: `cite`, `title`, `section`, `span` and `age_days`, never their text. **Show passage** works on them as on a claim's cite. They are search results, not claims (LAW-14), and the chat apps leave them out. Omitted when there are none |
 | `refused` | How many candidate documents were refused (deny or unknown). Never their titles |
 | `notice` | `null`, `"most_uncited"`, `"no_access"` or `"no_sources"` |
 | `conversation` | The conversation this turn belongs to, `cv_…` |
@@ -309,6 +313,10 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | Ask about a document | (SB-3004) Each citation chip and each Documents result has **Ask about this document**. It adds the document to a filter shown above the ask box as "Asking about: TITLE" (at most 5), with **Clear**; the next questions carry it as `documents` until it is cleared or the conversation starts fresh |
 | Passage | (SB-3001) Each citation chip is followed by **Show passage**, a button that opens the cited text under the chip as a quote, with "Hide passage" to close it. A refusal shows "You can't open this source now." and no text |
 | Section | (SB-3002) A chip with a `section` shows "Title › Section"; copied and printed cites do the same |
+| See also | (SB-3301) Under an answer with `see_also`: "See also", each document by title (or cite) and age, with **Show passage** and **Ask about this document**, never as a claim |
+| Glossary where it's used | (SB-3302) Each of the answer's `terms` is underlined where a claim uses it, as a whole word, with the glossary's case rule (a term with a capital letter only as written). Its meaning shows as plain text on hover and on keyboard focus |
+| Short answer | (SB-3303) A **Short answer** checkbox beside Ask sends `length: short`; the choice is kept in that browser |
+| Sources disagree | (SB-3304) A claim with `disagree` starts with "Sources disagree:" and keeps its chips, so both sources can be opened. The chat apps start it with *Sources disagree:* too |
 | Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |
 | Errors | The error's `message` and `remedy`, with the trace id to quote to support. An ask that fails with `EUNAVAIL` or `EBUDGET` also offers "Search documents instead", which runs the same text as a search |
 | Tabs | One page with tabs: **Answer**, **Documents** (search), **Saved** and **Questions**, a labelled `tablist` usable by keyboard |

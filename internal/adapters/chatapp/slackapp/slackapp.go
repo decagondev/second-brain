@@ -297,7 +297,11 @@ func Render(question string, r ask.Response) Message {
 			b.WriteString("• _Uncited:_ " + escape(c.Text) + "\n")
 			continue
 		}
-		b.WriteString("• " + escape(c.Text) + " " + links(c.Cites) + "\n")
+		lead := ""
+		if c.Disagree { // SB-3304
+			lead = "_Sources disagree:_ "
+		}
+		b.WriteString("• " + lead + escape(c.Text) + " " + links(c.Cites) + "\n")
 	}
 	for _, p := range r.People {
 		who := p.Email

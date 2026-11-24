@@ -13,7 +13,7 @@ summary: "Glossary terms are listed at the foot of the answer, not where they ar
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-09, LAW-14 |
 | Depends on | SB-2203 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ Glossary terms are listed at the foot of the answer, not where they are used.
 
 ## Acceptance criteria
 
-- [ ] Each term in `terms` is underlined where a claim uses it, as a whole word with the glossary's case rule
-- [ ] Its meaning shows on hover and focus as plain text
-- [ ] axe passes; a meaning with HTML shows as text
+- [x] Each term in `terms` is underlined where a claim uses it, as a whole word with the glossary's case rule
+- [x] Its meaning shows on hover and focus as plain text
+- [x] axe passes; a meaning with HTML shows as text
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+The UI's glossed() underlines each of the answer's terms where a claim uses it, as a whole word with the glossary's case rule, and TermWord shows the meaning as plain text on hover and focus (role tooltip, aria-describedby). Test: web askbetter.test.tsx.
 
 ## Definition of done
 

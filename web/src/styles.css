@@ -139,3 +139,35 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
   margin: 0 0 1rem;
   border-radius: 4px;
 }
+
+/* Glossary where it's used (SB-3302), sources that disagree (SB-3304), See also (SB-3301). */
+.term {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  position: relative;
+  cursor: help;
+}
+.term-tip {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 2;
+  min-width: 12rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+}
+.term:hover .term-tip,
+.term:focus .term-tip {
+  display: block;
+}
+.disagree {
+  color: var(--flag);
+}
+.see-also h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}

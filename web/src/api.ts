@@ -70,6 +70,17 @@ export interface Claim {
   text: string;
   cites: Cite[];
   uncited?: boolean;
+  // The claim's documents say different things (SB-3304).
+  disagree?: boolean;
+}
+
+// A document the search found that no claim cites (SB-3301): never its text.
+export interface SeeAlso {
+  cite: string;
+  title?: string;
+  section?: string;
+  span: [number, number];
+  age_days?: number;
 }
 
 export type Notice = "most_uncited" | "no_access" | "no_sources" | null;
@@ -90,6 +101,7 @@ export interface AskResponse {
   notice_single?: boolean;
   // How many earlier questions of the conversation the model didn't read (SB-2901).
   earlier_dropped?: number;
+  see_also?: SeeAlso[];
 }
 
 // A space glossary entry the question used (SB-2203).
@@ -158,8 +170,17 @@ export interface About {
 
 export const maxAbout = 5;
 
-export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch, space?: string, language?: string, documents?: string[]): Promise<AskResponse> {
+export async function ask(
+  question: string,
+  conversation: string | undefined,
+  f: Fetch = fetch,
+  space?: string,
+  language?: string,
+  documents?: string[],
+  short?: boolean,
+): Promise<AskResponse> {
   const body: Record<string, string | string[]> = { question };
+  if (short) body.length = "short"; // SB-3303
   if (documents && documents.length > 0) body.documents = documents;
   if (conversation) body.conversation = conversation;
   if (language) body.language = language;

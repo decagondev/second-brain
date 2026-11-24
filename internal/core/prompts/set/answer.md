@@ -8,3 +8,6 @@ Reply with one JSON object and nothing else:
 
 Cite the labels of the blocks each claim comes from. If the blocks do not answer the
 question, say so in one claim with no cites. Never invent a label.
+
+When the blocks a claim rests on say different things, write one claim that says so, cite
+every one of those blocks, and add "disagree": true to it.

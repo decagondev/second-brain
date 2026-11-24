@@ -13,7 +13,9 @@ import (
 )
 
 // Model answers each data block's first sentence, citing it; with Shift, it cites
-// the next block instead (misattribution, for the self-test).
+// the next block instead (misattribution, for the self-test). Blocks whose first sentences
+// open with the same three words are one claim citing them all, marked disagree when the
+// sentences differ (SB-3304).
 type Model struct{ Shift bool }
 
 var block = regexp.MustCompile(`(?s)<<data cite="(C[0-9]+) [^"]*" flags="[^"]*">>\n(.*?)\n<</data>>`)
@@ -22,10 +24,12 @@ func (m Model) Complete(_ context.Context, req ports.ModelRequest) (ports.ModelR
 	last := req.Messages[len(req.Messages)-1].Content
 	bs := block.FindAllStringSubmatch(last, -1)
 	type cl struct {
-		Text  string   `json:"text"`
-		Cites []string `json:"cites"`
+		Text     string   `json:"text"`
+		Cites    []string `json:"cites"`
+		Disagree bool     `json:"disagree,omitempty"`
 	}
 	var cs []cl
+	opened := map[string]int{} // a claim's first three words -> its index (SB-3304)
 	for i, b := range bs {
 		label := b[1]
 		if m.Shift {
@@ -34,7 +38,16 @@ func (m Model) Complete(_ context.Context, req ports.ModelRequest) (ports.ModelR
 				label = "C99"
 			}
 		}
-		cs = append(cs, cl{Text: firstSentence(b[2]), Cites: []string{label}})
+		text := firstSentence(b[2])
+		if k := opening(text); k != "" && !m.Shift {
+			if j, ok := opened[k]; ok { // two blocks on one subject: one claim citing both
+				cs[j].Cites = append(cs[j].Cites, label)
+				cs[j].Disagree = cs[j].Disagree || !strings.EqualFold(body(cs[j].Text), body(text))
+				continue
+			}
+			opened[k] = len(cs)
+		}
+		cs = append(cs, cl{Text: text, Cites: []string{label}})
 	}
 	if len(cs) == 0 {
 		cs = append(cs, cl{Text: "I don't know.", Cites: nil})
@@ -51,4 +64,21 @@ func firstSentence(t string) string {
 		}
 	}
 	return t
+}
+
+// body is a sentence without the title line a chunk starts with.
+func body(t string) string {
+	if i := strings.LastIndex(t, "\n"); i >= 0 {
+		t = t[i+1:]
+	}
+	return strings.TrimSpace(t)
+}
+
+// opening is a sentence's first three words, lower-cased, or "" for a shorter one.
+func opening(t string) string {
+	ws := strings.Fields(strings.ToLower(body(t)))
+	if len(ws) < 4 {
+		return ""
+	}
+	return strings.Join(ws[:3], " ")
 }

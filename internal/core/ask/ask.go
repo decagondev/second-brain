@@ -49,6 +49,53 @@ type Request struct {
 	Language string `json:"language,omitempty"`
 	// Documents narrows the ask to at most MaxDocuments documents, as KIND:ID (SB-3004).
 	Documents []string `json:"documents,omitempty"`
+	// Length "short" asks for at most MaxShort claims (SB-3303); anything else is ignored.
+	Length string `json:"length,omitempty"`
+}
+
+// MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
+// documents See also lists (SB-3301).
+const (
+	MaxShort   = 3
+	MaxSeeAlso = 3
+)
+
+// ShortLine is the answer prompt's extra line for a short answer.
+const ShortLine = "\n\nGive at most 3 claims, the most important first."
+
+// SeeAlso is a document the live check allowed for this answer that no claim cites
+// (SB-3301): never its text.
+type SeeAlso struct {
+	Cite    string `json:"cite"`
+	Title   string `json:"title,omitempty"`
+	Section string `json:"section,omitempty"`
+	Span    [2]int `json:"span"`
+	AgeDays *int   `json:"age_days,omitempty"`
+}
+
+// seeAlso is at most MaxSeeAlso documents of chunks, in their order, that no claim cites.
+func seeAlso(claims []answer.Claim, chunks []ports.Chunk, now time.Time) []SeeAlso {
+	cited := map[string]bool{}
+	for _, c := range claims {
+		for _, ci := range c.Cites {
+			d, _, _ := strings.Cut(ci.Cite, "@")
+			cited[d] = true
+		}
+	}
+	var out []SeeAlso
+	for _, ch := range chunks {
+		d, _, _ := strings.Cut(ch.Cite, "@")
+		if cited[d] || len(out) == MaxSeeAlso {
+			continue
+		}
+		cited[d] = true
+		sa := SeeAlso{Cite: ch.Cite, Title: ch.Title, Section: ch.Section, Span: [2]int{ch.Start, ch.End}}
+		if d, ok := ageDays(ch.Seen, now); ok {
+			sa.AgeDays = &d
+		}
+		out = append(out, sa)
+	}
+	return out
 }
 
 // MaxDocuments is the most documents one ask may be narrowed to (SB-3004).
@@ -129,6 +176,9 @@ type Response struct {
 	// NoticeSingle says every cite of an answer with two or more cited claims is one
 	// document (SB-3005).
 	NoticeSingle bool `json:"notice_single,omitempty"`
+	// SeeAlso are documents the search found and the asker can open that no claim cites
+	// (SB-3301).
+	SeeAlso []SeeAlso `json:"see_also,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -358,9 +408,12 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		if dept != nil {
 			prompt, lead = dept.Prompt, dept.Lead
 		}
-		claims, err := a.composeWith(withLanguage(withTerms(withUser(ctx, s.User()), terms), req.Language), prompt, lead, trace, q, sent, res.Context)
+		claims, err := a.composeWith(withShort(withLanguage(withTerms(withUser(ctx, s.User()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
 		if err != nil {
 			return Response{}, err
+		}
+		if req.Length == "short" && len(claims) > MaxShort {
+			claims = claims[:MaxShort]
 		}
 		if dept != nil {
 			claims, resp.Dropped = citedOnly(claims)
@@ -383,6 +436,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.NoticeStale = staleNotice(claims)
 		resp.NoticeSingle = oneDocument(claims)
 		resp.NoticeSync = a.syncNotices(ctx, claims)
+		resp.SeeAlso = seeAlso(claims, res.Context, a.Now())
 	}
 
 	if probe {
@@ -419,7 +473,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
 	msgs = append(msgs, ports.Message{Role: "user", Content: glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
-	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)), Messages: msgs, JSON: true, User: a.user(ctx)})
+	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {
 			return nil, fmt.Errorf("%w: %v", ErrBudget, err)
@@ -493,6 +547,20 @@ func docsOf(ctx context.Context) []string {
 // withLanguage carries the ask's language to the model call (SB-3003).
 func withLanguage(ctx context.Context, code string) context.Context {
 	return context.WithValue(ctx, languageKey{}, code)
+}
+
+type shortKey struct{}
+
+// withShort carries a short answer's ask to the prompt (SB-3303).
+func withShort(ctx context.Context, short bool) context.Context {
+	return context.WithValue(ctx, shortKey{}, short)
+}
+
+func shortLine(ctx context.Context) string {
+	if short, _ := ctx.Value(shortKey{}).(bool); short {
+		return ShortLine
+	}
+	return ""
 }
 
 func languageOf(ctx context.Context) string {

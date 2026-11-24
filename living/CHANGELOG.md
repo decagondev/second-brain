@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- See also (SB-3301); glossary where it's used (SB-3302); short answers (SB-3303); sources disagree (SB-3304).
 - Answer time watch (SB-3205); disk runway (SB-3206); a notice to everyone (SB-3207).
 - Why a sync fails (SB-3201); refresh one document (SB-3202); health on /metrics (SB-3203); audit by person and date (SB-3204).
 - Coming due (SB-3105); owners mark their own reviewed (SB-3106); suggest a glossary term (SB-3107). W30 built.

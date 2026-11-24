@@ -1,5 +1,6 @@
-import { useState } from "react";
-import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Term } from "./api";
+import { Fragment, useId, useState } from "react";
+import type { ReactNode } from "react";
+import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, SeeAlso, Term } from "./api";
 import { AskError, citeName, docKey, isCited, passage, requestAccess } from "./api";
 import { msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
@@ -99,29 +100,72 @@ export function AboutButton({ cite, name, onAbout }: { cite: string; name: strin
   );
 }
 
+// TermWord is a glossary term where a claim uses it, its meaning shown as plain text on
+// hover and on keyboard focus (SB-3302).
+function TermWord({ word, means }: { word: string; means: string }) {
+  const id = useId();
+  return (
+    <span className="term" tabIndex={0} aria-describedby={id}>
+      {word}
+      <span role="tooltip" id={id} className="term-tip">
+        {means}
+      </span>
+    </span>
+  );
+}
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// glossed is a claim's text with each glossary term underlined where it is used, as a whole
+// word: a term with a capital letter only as written, a lower-case one in any case.
+export function glossed(text: string, terms?: Term[]): ReactNode {
+  const ts = (terms ?? []).filter((x) => x.term.trim() !== "");
+  if (ts.length === 0) return text;
+  const out: ReactNode[] = [];
+  let rest = text;
+  let key = 0;
+  for (;;) {
+    let best: { at: number; len: number; term: Term } | null = null;
+    for (const x of ts) {
+      const flags = x.term === x.term.toLowerCase() ? "iu" : "u";
+      const m = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(x.term)}(?![\\p{L}\\p{N}])`, flags).exec(rest);
+      if (m && (best === null || m.index < best.at || (m.index === best.at && m[0].length > best.len))) best = { at: m.index, len: m[0].length, term: x };
+    }
+    if (best === null) break;
+    out.push(<Fragment key={key++}>{rest.slice(0, best.at)}</Fragment>);
+    out.push(<TermWord key={key++} word={rest.slice(best.at, best.at + best.len)} means={best.term.means} />);
+    rest = rest.slice(best.at + best.len);
+  }
+  out.push(<Fragment key={key++}>{rest}</Fragment>);
+  return out;
+}
+
 export function ClaimView({
   claim,
   trace,
   nums,
   fetcher,
   onAbout,
+  terms,
 }: {
   claim: Claim;
   trace: string;
   nums?: { cite: Cite; n: number }[];
   fetcher?: Fetch;
   onAbout?: (d: About) => void;
+  terms?: Term[];
 }) {
   if (!isCited(claim)) {
     return (
       <li className="claim uncited" title={t("No source you can open supports this.")}>
-        <span className="badge">{t("Uncited")}</span> <span>{claim.text}</span>
+        <span className="badge">{t("Uncited")}</span> <span>{glossed(claim.text, terms)}</span>
       </li>
     );
   }
   return (
     <li className="claim cited">
-      <span>{claim.text}</span>{" "}
+      {claim.disagree && <strong className="disagree">{t("Sources disagree:")} </strong>}
+      <span>{glossed(claim.text, terms)}</span>{" "}
       <span className="chips">
         {claim.cites.map((c, i) => (
           <span key={`${c.cite}-${i}`} className="cite-with-passage">
@@ -133,6 +177,31 @@ export function ClaimView({
       </span>
       {nums && <span className="print-only"> {claim.cites.map((c) => `[${numberOf(nums, c.cite)}]`).join(" ")}</span>}
     </li>
+  );
+}
+
+// SeeAlsoView lists the documents the search found that no claim cites (SB-3301), by title
+// and age, never as claims: their text is only ever a passage the asker opens.
+export function SeeAlsoView({ answer, fetcher, onAbout }: { answer: AskResponse; fetcher?: Fetch; onAbout?: (d: About) => void }) {
+  const items: SeeAlso[] = answer.see_also ?? [];
+  if (items.length === 0) return null;
+  return (
+    <section className="see-also" aria-label={t("See also")}>
+      <h3>{t("See also")}</h3>
+      <ul>
+        {items.map((x) => {
+          const cite: Cite = { cite: x.cite, title: x.title, section: x.section, span: x.span, flags: [] };
+          return (
+            <li key={x.cite}>
+              <span>{citeName(cite)}</span>
+              {x.age_days !== undefined && <span className="place"> {tn(x.age_days, "{n} day old", "{n} days old")}</span>}{" "}
+              {answer.trace.startsWith("tr_") && <PassageView cite={cite} trace={answer.trace} fetcher={fetcher} />}
+              {onAbout && <AboutButton cite={x.cite} name={citeName(cite)} onAbout={onAbout} />}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -295,9 +364,10 @@ export function AnswerView({ answer, fetcher, onAbout }: { answer: AskResponse; 
       )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (
-          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} onAbout={onAbout} />
+          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} onAbout={onAbout} terms={answer.terms} />
         ))}
       </ul>
+      <SeeAlsoView answer={answer} fetcher={fetcher} onAbout={onAbout} />
       <PeopleView answer={answer} />
       <TermsView terms={answer.terms} />
       {answer.refused > 0 && (

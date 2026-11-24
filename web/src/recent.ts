@@ -29,3 +29,23 @@ export function forgetQuestions(): void {
     // nothing to clear
   }
 }
+
+// Short answers (SB-3303): the person's choice, kept in this browser only.
+const shortKey = "sb.short";
+
+export function shortAnswers(): boolean {
+  try {
+    return window.localStorage.getItem(shortKey) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setShortAnswers(on: boolean): void {
+  try {
+    if (on) window.localStorage.setItem(shortKey, "1");
+    else window.localStorage.removeItem(shortKey);
+  } catch {
+    // storage off: the choice lasts this page only
+  }
+}

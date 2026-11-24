@@ -50,6 +50,23 @@ type Claim struct {
 	Text    string `json:"text"`
 	Cites   []Cite `json:"cites"`
 	Uncited bool   `json:"uncited,omitempty"`
+	// Disagree is the model's word that the claim's sources say different things, kept only
+	// when its citations name at least two documents (SB-3304).
+	Disagree bool `json:"disagree,omitempty"`
+}
+
+// TwoDocuments says the cites name at least two different documents (KIND:ID).
+func TwoDocuments(cs []Cite) bool {
+	first := ""
+	for _, c := range cs {
+		d, _, _ := strings.Cut(c.Cite, "@")
+		if first == "" {
+			first = d
+		} else if d != first {
+			return true
+		}
+	}
+	return false
 }
 
 // Context is this answer's allowed chunks, labelled C1, C2, … in order.
@@ -92,8 +109,9 @@ type Result struct {
 func Compose(raw string, ctx Context, titles map[string]string) Result {
 	var parsed struct {
 		Claims []struct {
-			Text  string   `json:"text"`
-			Cites []string `json:"cites"`
+			Text     string   `json:"text"`
+			Cites    []string `json:"cites"`
+			Disagree bool     `json:"disagree"`
 		} `json:"claims"`
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &parsed); err != nil || len(parsed.Claims) == 0 {
@@ -129,6 +147,7 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 				Spaces: held, Label: ch.Label, Section: ch.Section})
 		}
 		c.Uncited = len(c.Cites) == 0
+		c.Disagree = pc.Disagree && TwoDocuments(c.Cites) // the model's word, kept only with two documents
 		res.Claims = append(res.Claims, c)
 	}
 	return res

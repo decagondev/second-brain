@@ -21,3 +21,19 @@ documents:
     title: Onboarding guide
     text: "New starters receive their laptop on the first day. Accounts are created by IT before the start date."
     viewers: [alice@acme-logistics.example, bob@acme-logistics.example, fin@acme-logistics.example]
+  - id: returns-eu
+    title: Returns (EU)
+    text: "Returns are accepted within 30 days of delivery."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example]
+  - id: returns-uk
+    title: Returns (UK)
+    text: "Returns are accepted within 14 days of delivery."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example]
+  - id: desk-hours
+    title: Front desk
+    text: "Office hours run from 9 to 5 on weekdays. The front desk closes at noon on Fridays."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example, fin@acme-logistics.example]
+  - id: office-hours
+    title: Office hours
+    text: "Office hours run from 9 to 5 on weekdays. Visitors sign in at reception."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example, fin@acme-logistics.example]

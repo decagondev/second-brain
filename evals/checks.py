@@ -11,6 +11,16 @@ def cites_any(res, want):
     return bool(got), f"cited {sorted(got) or 'none'} of {want}"
 
 
+def cites_all(res, want):
+    missing = set(want) - _cites(res)
+    return not missing, f"missing {sorted(missing)}" if missing else f"cited all of {want}"
+
+
+def disagrees(res, want=True):
+    got = any(c.get("disagree") for c in res.get("claims", []))
+    return got == want, f"a claim marked disagree: {got} (want {want})"
+
+
 def cites_none(res, banned):
     got = _cites(res) & set(banned)
     return not got, f"cited forbidden {sorted(got)}" if got else "no forbidden citations"
@@ -48,7 +58,7 @@ def not_contains(res, strings):
     return not hit, f"found {hit}" if hit else "none found"
 
 
-CHECKS = {f.__name__: f for f in (cites_any, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains)}
+CHECKS = {f.__name__: f for f in (cites_any, cites_all, disagrees, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains)}
 
 
 def evaluate(res, expect):

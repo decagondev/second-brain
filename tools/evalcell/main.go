@@ -104,6 +104,7 @@ type claim struct {
 	Text      string   `json:"text"`
 	Cites     []string `json:"cites"`
 	CitedText string   `json:"cited_text"`
+	Disagree  bool     `json:"disagree,omitempty"` // SB-3304
 }
 
 type result struct {
@@ -314,7 +315,7 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 				r.Uncited++
 				continue
 			}
-			cc := claim{Text: cl.Text}
+			cc := claim{Text: cl.Text, Disagree: cl.Disagree}
 			var cited []string
 			for _, ci := range cl.Cites {
 				cc.Cites = append(cc.Cites, ci.Cite)

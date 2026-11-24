@@ -184,3 +184,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-16 | Tested (extended) | SB-3107: a suggested term changes nothing until approved, and the approved manifest has it (TestSuggestedTermIsAProposal) |
 | 2026-11-24 | LAW-03 | Tested (extended) | SB-3201, SB-3203: an unclassed sync failure is source_error and an unreadable health line is unknown (TestFailureClass, TestFailureAndChecks) |
 | 2026-11-24 | LAW-07 | Tested (extended) | SB-3207: a notice's audit rows hold its digest, never its text (TestNoticeToEveryone) |
+| 2026-11-24 | LAW-14 | Tested (extended) | SB-3303, SB-3304: a short answer and a disagreement mark keep every claim cited or uncited, and the mark needs two documents (TestShortAnswerAndOneDocumentDisagreement, TestDisagreeNeedsTwoDocuments, cite-008, cite-009) |

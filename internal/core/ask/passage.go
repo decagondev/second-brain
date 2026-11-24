@@ -79,6 +79,11 @@ func spanOf(r Response, cite string, start int) ([2]int, bool) {
 			}
 		}
 	}
+	for _, c := range r.SeeAlso { // a See also document opens the same way (SB-3301)
+		if c.Cite == cite && (start < 0 || c.Span[0] == start) {
+			return c.Span, true
+		}
+	}
 	return [2]int{}, false
 }
 
