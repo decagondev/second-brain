@@ -191,7 +191,7 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 		}
 		emails = e
 	}
-	query := ports.Query{Text: q, Kinds: sources}
+	query := ports.Query{Text: q, Kinds: sources, Docs: docsOf(ctx)}
 	for _, t := range terms {
 		query.Also = append(query.Also, t.Means)
 	}

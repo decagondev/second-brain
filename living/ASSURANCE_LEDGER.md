@@ -179,3 +179,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-23 | LAW-16 | Tested (extended) | SB-2903: the scope report only counts; a typo and a too-wide pattern are named and nothing changes (TestScopeReport, TestRetireThroughARunningCell) |
 | 2026-11-23 | LAW-13 | Tested (extended) | SB-2905: a missed tombstone is counted and pruned, and nothing a source still lists is touched (TestLeftovers, TestIndexLeftoversThroughARunningCell) |
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3001: a passage is checked live on every open, and refused once access is revoked or unknown (TestPassage) |
+| 2026-11-24 | LAW-01 | Tested (extended) | SB-3004: a document filter only narrows after the checks, and a hidden chosen document is no_access (TestAskAboutDocuments) |

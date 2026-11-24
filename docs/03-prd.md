@@ -898,11 +898,11 @@ gantt
 
 **Exit gate**
 
-- [ ] A passage is checked live on every open and refused once access is gone
-- [ ] A cite names its section, and a rebuild fills it in
-- [ ] A German ask gets German claims with the same cites, and the eval cases pass
-- [ ] A document filter only narrows
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A passage is checked live on every open and refused once access is gone
+- [x] A cite names its section, and a rebuild fills it in
+- [x] A German ask gets German claims with the same cites, and the eval cases pass
+- [x] A document filter only narrows
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

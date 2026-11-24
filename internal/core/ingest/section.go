@@ -1,6 +1,7 @@
 package ingest
 
 import (
+	"sort"
 	"strings"
 	"unicode/utf8"
 )
@@ -56,6 +57,29 @@ func sectionAt(hs []heading, start int) string {
 		s = h.text
 	}
 	return s
+}
+
+// lines maps a rune offset in the normalised text (the title, a blank line, then the text)
+// to its line in the document's own text, from 1 (SB-3006). A line in the title is line 1.
+func lines(rs []rune, title, body string) func(int) int {
+	var breaks []int // offsets of each newline
+	for i, r := range rs {
+		if r == '\n' {
+			breaks = append(breaks, i)
+		}
+	}
+	first := 2 // the body starts after the title's line and a blank one
+	if strings.TrimSpace(title) == "" {
+		lead := body[:len(body)-len(strings.TrimLeft(body, " \t\r\n"))]
+		first = -strings.Count(strings.ReplaceAll(strings.ReplaceAll(lead, "\r\n", "\n"), "\r", "\n"), "\n")
+	}
+	return func(at int) int {
+		n := sort.SearchInts(breaks, at) // newlines before at
+		if l := n - first + 1; l > 1 {
+			return l
+		}
+		return 1
+	}
 }
 
 // Section is the section of a chunk starting at start in normalised text (SB-3002).

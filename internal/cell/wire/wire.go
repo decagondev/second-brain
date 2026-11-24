@@ -419,6 +419,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: c.Embedder, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
 		NewID: newID, Now: time.Now, Metrics: c.Metrics, Enabled: func(a string) bool { return contains(m.Agents, a) },
+		Link: linker(authz.Connectors),
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
@@ -896,5 +897,20 @@ func (c *Cell) relations(m manifest.Tenant) ask.Relations {
 			}
 		}
 		return out, nil
+	}
+}
+
+// linker opens a cite at its source for a connector that can link (SB-3006), or "".
+func linker(conns map[string]ports.Connector) func(ports.Chunk) string {
+	return func(ch ports.Chunk) string {
+		l, ok := conns[ch.Kind].(interface {
+			Link(ctx context.Context, ch ports.Chunk) string
+		})
+		if !ok {
+			return ""
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		return l.Link(ctx, ch)
 	}
 }

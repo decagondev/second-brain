@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Term } from "./api";
-import { AskError, citeName, isCited, passage, requestAccess } from "./api";
+import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Term } from "./api";
+import { AskError, citeName, docKey, isCited, passage, requestAccess } from "./api";
 import { msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 
@@ -90,7 +90,28 @@ export function PassageView({ cite, trace, fetcher }: { cite: Cite; trace: strin
   );
 }
 
-export function ClaimView({ claim, trace, nums, fetcher }: { claim: Claim; trace: string; nums?: { cite: Cite; n: number }[]; fetcher?: Fetch }) {
+// AboutButton is Ask about this document (SB-3004): the next questions search only it.
+export function AboutButton({ cite, name, onAbout }: { cite: string; name: string; onAbout: (d: About) => void }) {
+  return (
+    <button type="button" className="link" aria-label={t("Ask about {title}", { title: name })} onClick={() => onAbout({ key: docKey(cite), name })}>
+      {t("Ask about this document")}
+    </button>
+  );
+}
+
+export function ClaimView({
+  claim,
+  trace,
+  nums,
+  fetcher,
+  onAbout,
+}: {
+  claim: Claim;
+  trace: string;
+  nums?: { cite: Cite; n: number }[];
+  fetcher?: Fetch;
+  onAbout?: (d: About) => void;
+}) {
   if (!isCited(claim)) {
     return (
       <li className="claim uncited" title={t("No source you can open supports this.")}>
@@ -106,6 +127,7 @@ export function ClaimView({ claim, trace, nums, fetcher }: { claim: Claim; trace
           <span key={`${c.cite}-${i}`} className="cite-with-passage">
             <CitationChip cite={c} trace={trace} />
             {trace.startsWith("tr_") && <PassageView cite={c} trace={trace} fetcher={fetcher} />}
+            {onAbout && <AboutButton cite={c.cite} name={citeName(c)} onAbout={onAbout} />}
           </span>
         ))}
       </span>
@@ -214,6 +236,11 @@ function Freshness({ answer }: { answer: AskResponse }) {
   const s = answer.notice_stale;
   return (
     <>
+      {answer.notice_single && (
+        <p className="notice" role="note">
+          {t("This answer rests on one document. Check it if it matters.")}
+        </p>
+      )}
       {s && (
         <p className="notice" role="note">
           {tn(
@@ -256,7 +283,7 @@ function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
   );
 }
 
-export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?: Fetch }) {
+export function AnswerView({ answer, fetcher, onAbout }: { answer: AskResponse; fetcher?: Fetch; onAbout?: (d: About) => void }) {
   const nums = numberCites(answer);
   return (
     <article className="answer" aria-label={t("Answer")}>
@@ -268,7 +295,7 @@ export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?:
       )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (
-          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} />
+          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} onAbout={onAbout} />
         ))}
       </ul>
       <PeopleView answer={answer} />

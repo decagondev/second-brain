@@ -13,7 +13,7 @@ summary: "A GitHub cite opens the file at the top, not where the answer comes fr
 | Manual | [`sb-connector(3)`](../../manual/sb-connector.3.md) |
 | Laws | — |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,20 +21,20 @@ A GitHub cite opens the file at the top, not where the answer comes from.
 
 ## Acceptance criteria
 
-- [ ] A GitHub cite's url ends with `#L12-L20` for the span's lines at that commit
-- [ ] Other kinds are unchanged
-- [ ] A span in lines 12 to 20 links to #L12-L20
+- [x] A GitHub cite's url opens the file on the default branch and ends with `#L12-L20` for the chunk's lines (the version is a commit time, so there is no commit to link)
+- [x] Other kinds are unchanged
+- [x] A span in lines 12 to 20 links to #L12-L20
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Connector
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Connector
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S29.2; tested in internal/core/ask/evidence_test.go (TestAskAboutDocuments, TestOneSourceWarning), tests/spaces/evidence_test.go, internal/adapters/connectors/github/github_test.go (TestLink) and web/src/evidence.test.tsx.
 
 ## Definition of done
 

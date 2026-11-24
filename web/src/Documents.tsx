@@ -1,8 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, search } from "./api";
-import type { ApiError, Fetch, Filters, SearchResponse } from "./api";
-import { AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
+import type { About, ApiError, Fetch, Filters, SearchResponse } from "./api";
+import { AboutButton, AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
 import { errorText, msg, t, tj, tn } from "./i18n";
 
 // The filters (SB-2404), as the API names them.
@@ -31,11 +31,13 @@ export function DocumentsView({
   space,
   query,
   onAsk,
+  onAbout,
 }: {
   fetcher?: Fetch;
   space?: string;
   query?: { text: string; n: number };
   onAsk?: (q: string) => void;
+  onAbout?: (d: About) => void;
 }) {
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
@@ -166,6 +168,7 @@ export function DocumentsView({
                     )}
                     {r.flags.includes("injection_suspect") && <span className="flag"> · {t("Flagged")}</span>}
                   </p>
+                  {onAbout && <AboutButton cite={r.cite} name={name} onAbout={onAbout} />}
                 </li>
               );
             })}

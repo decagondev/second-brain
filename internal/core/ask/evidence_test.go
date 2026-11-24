@@ -89,3 +89,54 @@ func TestAnswerLanguage(t *testing.T) {
 		t.Fatalf("%+v", de.Answer.Claims)
 	}
 }
+
+// SB-3004: documents narrows retrieval to the chosen documents, finds a chunk the search
+// didn't rank, and a hidden chosen document is no_access, counting only itself.
+func TestAskAboutDocuments(t *testing.T) {
+	ctx := context.Background()
+	m := &model{reply: `{"claims":[{"text":"x","cites":["C1"]}]}`}
+	a, _ := setup(t, m)
+	resp, err := a.Ask(ctx, scope(t, "alice"), ask.Request{Question: "refund limit?", Documents: []string{"docs:refunds@2"}})
+	if err != nil || resp.Answer.Claims[0].Cites[0].Cite != "docs:refunds@2" || resp.Refused != 0 {
+		t.Fatalf("%+v %v", resp, err)
+	}
+	if p := prompt(m.got[0]); strings.Contains(p, "salaries") {
+		t.Fatalf("another document reached the model:\n%s", p)
+	}
+	resp, err = a.Ask(ctx, scope(t, "alice"), ask.Request{Question: "refund limit?", Documents: []string{"docs:salaries"}})
+	if err != nil || resp.Notice == nil || *resp.Notice != ask.NoticeNoAccess || resp.Refused != 1 {
+		t.Fatalf("hidden: %+v %v", resp, err)
+	}
+	for _, bad := range [][]string{{"refunds"}, {"nope:x"}, {"docs:"}, {"docs:a", "docs:b", "docs:c", "docs:d", "docs:e", "docs:f"}} {
+		if _, err := a.Ask(ctx, scope(t, "alice"), ask.Request{Question: "q?", Documents: bad}); !errors.Is(err, ask.ErrInvalid) {
+			t.Fatalf("%v: %v", bad, err)
+		}
+	}
+}
+
+// SB-3005: two or more cited claims from one document warn; two documents or one claim don't.
+func TestOneSourceWarning(t *testing.T) {
+	ctx := context.Background()
+	for _, c := range []struct {
+		reply string
+		want  bool
+	}{
+		{`{"claims":[{"text":"a","cites":["C1"]},{"text":"b","cites":["C1"]},{"text":"c","cites":[]}]}`, true},
+		{`{"claims":[{"text":"a","cites":["C1"]}]}`, false},
+	} {
+		a, _ := setup(t, &model{reply: c.reply})
+		resp, err := a.Ask(ctx, scope(t, "alice"), ask.Request{Question: "refund limit?"})
+		if err != nil || resp.NoticeSingle != c.want {
+			t.Fatalf("%s: %+v %v", c.reply, resp, err)
+		}
+		if got := len(ask.Warnings(resp)) > 0 && ask.Warnings(resp)[0] == ask.SingleLine; got != c.want {
+			t.Fatalf("chat warning: %v", ask.Warnings(resp))
+		}
+	}
+	two, _ := setup(t, &model{reply: `{"claims":[{"text":"a","cites":["C1"]},{"text":"b","cites":["C2"]}]}`})
+	two.Auth.Connectors["docs"].(source)["salaries|alice"] = ports.VerdictAllow
+	resp, err := two.Ask(ctx, scope(t, "alice"), ask.Request{Question: "refund limit?"})
+	if err != nil || resp.NoticeSingle {
+		t.Fatalf("two documents: %+v %v", resp, err)
+	}
+}

@@ -118,3 +118,31 @@ describe("show the evidence", () => {
     expect(answerText("carry over?", answer as never)).toContain("[1] Staff handbook › Carry-over");
   });
 });
+
+// SB-3004, SB-3005
+describe("narrow it and say how thin it is", () => {
+  it("asks about the chosen document until it is cleared", async () => {
+    const bodies: string[] = [];
+    const { container } = render(<App fetcher={app(() => new Response("{}"), bodies)} />);
+    await act(async () => {});
+    await askOne();
+    fireEvent.click(screen.getByRole("button", { name: "Ask about Staff handbook › Carry-over" }));
+    expect(screen.getByRole("status").textContent).toContain("Asking about: Staff handbook › Carry-over");
+    await askOne();
+    expect(JSON.parse(bodies[1]!)).toMatchObject({ documents: ["docs:hb"] });
+    expect(await violations(container)).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    await askOne();
+    expect(JSON.parse(bodies[2]!).documents).toBeUndefined();
+  });
+
+  it("warns when the answer rests on one document", async () => {
+    const single = { ...answer, notice_single: true };
+    const f: Fetch = async (u) =>
+      new Response(JSON.stringify(u.startsWith("/v1/ask") ? single : { items: [], results: [], spaces: [] }), { status: 200 });
+    render(<App fetcher={f} />);
+    await act(async () => {});
+    await askOne();
+    expect(screen.getByText("This answer rests on one document. Check it if it matters.")).toBeTruthy();
+  });
+});

@@ -711,3 +711,36 @@ func (c *Connector) repoChanges(ctx context.Context, k creds, rp repoInfo, cur p
 	}
 	return nil
 }
+
+// Link opens a cited chunk on GitHub (sb-connector(3), Links; SB-3006): a file on the
+// repository's default branch at the chunk's lines, an issue or a pull request. It reads
+// only the organisation from the credentials; nothing is fetched. "" when it can't.
+func (c *Connector) Link(ctx context.Context, ch ports.Chunk) string {
+	r, err := parse(ch.SourceID)
+	if err != nil {
+		return ""
+	}
+	k, err := c.creds(ctx)
+	if err != nil {
+		return ""
+	}
+	web := "https://github.com"
+	if b := strings.TrimSuffix(c.base(), "/"); b != "https://api.github.com" {
+		web = strings.TrimSuffix(b, "/api/v3")
+	}
+	base := web + "/" + url.PathEscape(k.Org) + "/" + url.PathEscape(r.repo)
+	switch r.kind {
+	case "issues":
+		return base + "/issues/" + strconv.Itoa(r.n)
+	case "pulls":
+		return base + "/pull/" + strconv.Itoa(r.n)
+	}
+	u := base + "/blob/HEAD/" + escapePath(r.path)
+	switch from, to := ch.Lines[0], ch.Lines[1]; {
+	case from > 0 && to > from:
+		u += fmt.Sprintf("#L%d-L%d", from, to)
+	case from > 0:
+		u += fmt.Sprintf("#L%d", from)
+	}
+	return u
+}

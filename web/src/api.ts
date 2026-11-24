@@ -70,6 +70,8 @@ export interface AskResponse {
   // Most cited documents stale, and connectors behind on syncing (SB-2701, SB-2704).
   notice_stale?: { stale: number; of: number; oldest_days: number };
   notice_sync?: { kind: string; last_success: string | null }[];
+  // Every cite is one document (SB-3005).
+  notice_single?: boolean;
   // How many earlier questions of the conversation the model didn't read (SB-2901).
   earlier_dropped?: number;
 }
@@ -126,8 +128,23 @@ export async function passage(trace: string, cite: string, start: number, f: Fet
   return data as Passage;
 }
 
-export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch, space?: string, language?: string): Promise<AskResponse> {
-  const body: Record<string, string> = { question };
+// docKey is a cite's document, KIND:ID, without its version (SB-3004).
+export function docKey(cite: string): string {
+  const at = cite.lastIndexOf("@");
+  return at > 0 ? cite.slice(0, at) : cite;
+}
+
+// About is a document the next questions are asked about (SB-3004).
+export interface About {
+  key: string;
+  name: string;
+}
+
+export const maxAbout = 5;
+
+export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch, space?: string, language?: string, documents?: string[]): Promise<AskResponse> {
+  const body: Record<string, string | string[]> = { question };
+  if (documents && documents.length > 0) body.documents = documents;
   if (conversation) body.conversation = conversation;
   if (language) body.language = language;
   const url = space ? `/v1/ask?space=${encodeURIComponent(space)}` : "/v1/ask";

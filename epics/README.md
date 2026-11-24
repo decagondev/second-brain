@@ -33,7 +33,7 @@ summary: Epics, waves, slices and tickets.
 | W26 Fresh Answers | 6 | 0 | 0 | Planned 2026-11-23 with the user (E27): old-source warning, reviewed on the cite, report as outdated, sync lag notice, review-by dates, newer wins a tie ([13-fresh-tidy-focused.md](../docs/13-fresh-tidy-focused.md)) |
 | W27 A Tidy Corpus | 7 | 0 | 0 | Planned 2026-11-23 with the user (E28): retire from answers, same name different text, never cited, notes whose sources moved, unused terms, owners' monthly note, freshness in the report |
 | W28 A Focused Context | 7 | 0 | 0 | Planned 2026-11-23 with the user (E29): short conversations, a per-document cap, scope report, stale eval cases, index leftovers, prompt growth, stale start here |
-| W29 Show the Evidence | 3 | 0 | 3 | Planned 2026-11-24 with the user (E30): show the passage, section on the cite, answers in the asker's language, ask about this document, one-source warning, open at the cited lines ([14-evidence-gaps-surprises.md](../docs/14-evidence-gaps-surprises.md)) |
+| W29 Show the Evidence | 6 | 0 | 0 | Planned 2026-11-24 with the user (E30): show the passage, section on the cite, answers in the asker's language, ask about this document, one-source warning, open at the cited lines ([14-evidence-gaps-surprises.md](../docs/14-evidence-gaps-surprises.md)) |
 | W30 Fill the Gaps | 0 | 0 | 7 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
 | W31 Run Without Surprises | 0 | 0 | 7 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -583,9 +583,9 @@ flowchart LR
 | [SB-3001](E30-show-the-evidence/SB-3001-show-passage.md) | S29.1 | E30 | Show the passage | Done |
 | [SB-3002](E30-show-the-evidence/SB-3002-section-on-cite.md) | S29.1 | E30 | Section on the cite | Done |
 | [SB-3003](E30-show-the-evidence/SB-3003-answer-language.md) | S29.1 | E30 | Answers in the asker's language | Done |
-| [SB-3004](E30-show-the-evidence/SB-3004-ask-about-document.md) | S29.2 | E30 | Ask about this document | Open |
-| [SB-3005](E30-show-the-evidence/SB-3005-one-source-warning.md) | S29.2 | E30 | One-source warning | Open |
-| [SB-3006](E30-show-the-evidence/SB-3006-cited-lines.md) | S29.2 | E30 | Open at the cited lines | Open |
+| [SB-3004](E30-show-the-evidence/SB-3004-ask-about-document.md) | S29.2 | E30 | Ask about this document | Done |
+| [SB-3005](E30-show-the-evidence/SB-3005-one-source-warning.md) | S29.2 | E30 | One-source warning | Done |
+| [SB-3006](E30-show-the-evidence/SB-3006-cited-lines.md) | S29.2 | E30 | Open at the cited lines | Done |
 
 ### W30 Fill the Gaps
 

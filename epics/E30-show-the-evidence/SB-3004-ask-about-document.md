@@ -13,7 +13,7 @@ summary: "There is no way to ask about one particular document."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ There is no way to ask about one particular document.
 
 ## Acceptance criteria
 
-- [ ] A chip and a search result offer Ask about this document; the next ask carries `documents` (at most 5) and retrieval keeps only their chunks, after the checks
-- [ ] A chip above the ask box shows the filter, with Clear
-- [ ] An answer cites only the chosen document; a hidden one gives no_access and nothing else
+- [x] A chip and a search result offer Ask about this document; the next ask carries `documents` (at most 5) and retrieval keeps only their chunks, after the checks
+- [x] A chip above the ask box shows the filter, with Clear
+- [x] An answer cites only the chosen document; a hidden one gives no_access and nothing else
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Ask
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Ask
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S29.2; tested in internal/core/ask/evidence_test.go (TestAskAboutDocuments, TestOneSourceWarning), tests/spaces/evidence_test.go, internal/adapters/connectors/github/github_test.go (TestLink) and web/src/evidence.test.tsx.
 
 ## Definition of done
 

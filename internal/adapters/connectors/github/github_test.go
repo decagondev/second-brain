@@ -241,3 +241,34 @@ func TestSourceOptInBackfills(t *testing.T) {
 		t.Fatalf("listed again: %+v", set)
 	}
 }
+
+// SB-3006: a file cite links to the default branch at its lines; issues and pull requests
+// link with no lines; an Enterprise base links on its own host; bad credentials link nowhere.
+func TestLink(t *testing.T) {
+	ctx := context.Background()
+	creds := func(context.Context) (string, error) { return `{"token":"t","org":"acme-logistics"}`, nil }
+	c := &Connector{Creds: creds}
+	for _, x := range []struct {
+		ch   ports.Chunk
+		want string
+	}{
+		{ports.Chunk{SourceID: "payments/blob/docs/run book.md", Lines: [2]int{12, 20}}, "https://github.com/acme-logistics/payments/blob/HEAD/docs/run%20book.md#L12-L20"},
+		{ports.Chunk{SourceID: "payments/blob/README.md", Lines: [2]int{3, 3}}, "https://github.com/acme-logistics/payments/blob/HEAD/README.md#L3"},
+		{ports.Chunk{SourceID: "payments/blob/README.md"}, "https://github.com/acme-logistics/payments/blob/HEAD/README.md"},
+		{ports.Chunk{SourceID: "payments/issues/7", Lines: [2]int{1, 4}}, "https://github.com/acme-logistics/payments/issues/7"},
+		{ports.Chunk{SourceID: "payments/pulls/9"}, "https://github.com/acme-logistics/payments/pull/9"},
+		{ports.Chunk{SourceID: "bad"}, ""},
+	} {
+		if got := c.Link(ctx, x.ch); got != x.want {
+			t.Errorf("%s: %q, want %q", x.ch.SourceID, got, x.want)
+		}
+	}
+	ghe := &Connector{Base: "https://git.acme-logistics.example/api/v3", Creds: creds}
+	if got := ghe.Link(ctx, ports.Chunk{SourceID: "payments/pulls/9"}); got != "https://git.acme-logistics.example/acme-logistics/payments/pull/9" {
+		t.Fatal(got)
+	}
+	none := &Connector{Creds: func(context.Context) (string, error) { return "{}", nil }}
+	if got := none.Link(ctx, ports.Chunk{SourceID: "payments/pulls/9"}); got != "" {
+		t.Fatal(got)
+	}
+}

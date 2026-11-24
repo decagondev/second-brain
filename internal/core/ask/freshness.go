@@ -160,6 +160,9 @@ func (m *marksCache) reviewed(ctx context.Context, tenant string, c ports.Chunk)
 	return best, found
 }
 
+// SingleLine is the one-source warning in the web UI's words (SB-3005).
+const SingleLine = "This answer rests on one document. Check it if it matters."
+
 // StaleLine is the stale warning in the web UI's words, for the chat apps.
 func StaleLine(n StaleNotice) string {
 	return fmt.Sprintf("Most of the sources for this answer haven't been reviewed in a while (the oldest is %d days old). Check with their owner before relying on it.", n.OldestDays)
@@ -176,6 +179,9 @@ func SyncLine(n SyncNotice) string {
 // Warnings are the answer's stale and sync lines, in order, for the chat apps.
 func Warnings(r Response) []string {
 	var out []string
+	if r.NoticeSingle {
+		out = append(out, SingleLine)
+	}
 	if r.NoticeStale != nil {
 		out = append(out, StaleLine(*r.NoticeStale))
 	}

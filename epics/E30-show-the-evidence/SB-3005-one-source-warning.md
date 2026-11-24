@@ -13,7 +13,7 @@ summary: "An answer resting on one document looks the same as one backed by five
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-14 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ An answer resting on one document looks the same as one backed by five.
 
 ## Acceptance criteria
 
-- [ ] When every cite of an answer with at least two claims is one document, the response carries `notice_single` and the UI and chat apps say so first
-- [ ] Hidden cites don't count
-- [ ] Three claims from one document warn; two documents or a one-claim answer don't
+- [x] When every cite of an answer with at least two claims is one document, the response carries `notice_single` and the UI and chat apps say so first
+- [x] Hidden cites don't count
+- [x] Three claims from one document warn; two documents or a one-claim answer don't
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Notice
-- [ ] UI and chat apps
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Notice
+- [x] UI and chat apps
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S29.2; tested in internal/core/ask/evidence_test.go (TestAskAboutDocuments, TestOneSourceWarning), tests/spaces/evidence_test.go, internal/adapters/connectors/github/github_test.go (TestLink) and web/src/evidence.test.tsx.
 
 ## Definition of done
 

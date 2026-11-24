@@ -47,6 +47,43 @@ type Request struct {
 	// Language is the language to write the claims in: en, de or fr (SB-3003). Anything
 	// else is ignored.
 	Language string `json:"language,omitempty"`
+	// Documents narrows the ask to at most MaxDocuments documents, as KIND:ID (SB-3004).
+	Documents []string `json:"documents,omitempty"`
+}
+
+// MaxDocuments is the most documents one ask may be narrowed to (SB-3004).
+const MaxDocuments = 5
+
+// validate checks an ask's question, sources and documents.
+func validate(req Request) (string, []string, error) {
+	q := strings.TrimSpace(req.Question)
+	if q == "" || utf8.RuneCountInString(q) > MaxQuestion {
+		return "", nil, fmt.Errorf("%w: question must be 1 to %d characters", ErrInvalid, MaxQuestion)
+	}
+	for _, k := range req.Sources {
+		if !Kinds[k] {
+			return "", nil, fmt.Errorf("%w: unknown source kind %q", ErrInvalid, k)
+		}
+	}
+	docs, err := documentKeys(req.Documents)
+	return q, docs, err
+}
+
+// documentKeys checks an ask's documents and returns them as KIND:ID, any version dropped.
+func documentKeys(ds []string) ([]string, error) {
+	if len(ds) > MaxDocuments {
+		return nil, fmt.Errorf("%w: at most %d documents", ErrInvalid, MaxDocuments)
+	}
+	var out []string
+	for _, d := range ds {
+		d, _, _ = strings.Cut(strings.TrimSpace(d), "@")
+		kind, id, ok := strings.Cut(d, ":")
+		if !ok || !Kinds[kind] || id == "" {
+			return nil, fmt.Errorf("%w: documents must be KIND:ID", ErrInvalid)
+		}
+		out = append(out, d)
+	}
+	return out, nil
 }
 
 // Languages are the languages an answer can be asked for, as the prompt names them.
@@ -89,6 +126,29 @@ type Response struct {
 	// connector of a cite is behind on syncing (SB-2701, SB-2704).
 	NoticeStale *StaleNotice `json:"notice_stale,omitempty"`
 	NoticeSync  []SyncNotice `json:"notice_sync,omitempty"`
+	// NoticeSingle says every cite of an answer with two or more cited claims is one
+	// document (SB-3005).
+	NoticeSingle bool `json:"notice_single,omitempty"`
+}
+
+// oneDocument says an answer of at least two cited claims cites one document only.
+func oneDocument(claims []answer.Claim) bool {
+	doc, cited := "", 0
+	for _, c := range claims {
+		if c.Uncited || len(c.Cites) == 0 {
+			continue
+		}
+		cited++
+		for _, ci := range c.Cites {
+			d, _, _ := strings.Cut(ci.Cite, "@")
+			if doc == "" {
+				doc = d
+			} else if d != doc {
+				return false
+			}
+		}
+	}
+	return cited >= 2
 }
 
 // MaxEarlier is the most earlier questions of a conversation the model reads (SB-2901), and
@@ -226,14 +286,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err := s.Check(); err != nil || s.Tenant() != a.Tenant {
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
-	q := strings.TrimSpace(req.Question)
-	if q == "" || utf8.RuneCountInString(q) > MaxQuestion {
-		return Response{}, fmt.Errorf("%w: question must be 1 to %d characters", ErrInvalid, MaxQuestion)
-	}
-	for _, k := range req.Sources {
-		if !Kinds[k] {
-			return Response{}, fmt.Errorf("%w: unknown source kind %q", ErrInvalid, k)
-		}
+	q, docs, err := validate(req)
+	if err != nil {
+		return Response{}, err
 	}
 	if a.Killed == nil || a.Killed(ctx) {
 		return Response{}, ErrKilled // no kill-switch reader is treated as killed
@@ -273,7 +328,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		conv = a.NewID("cv_")
 	}
 
-	res, terms, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Budget)
+	res, terms, err := a.retrieve(withDocs(ctx, docs), s, q, req.Sources, retrieve.Budget)
 	if err != nil {
 		return Response{}, err
 	}
@@ -282,7 +337,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	turn := len(earlier)
 	sent, left := recent(earlier)
 	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left}
-	res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
+	if len(docs) == 0 { // chosen documents aren't capped (SB-3004)
+		res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
+	}
 	if dept != nil {
 		resp.Agent = dept.Name
 	}
@@ -324,6 +381,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			return Response{}, err
 		}
 		resp.NoticeStale = staleNotice(claims)
+		resp.NoticeSingle = oneDocument(claims)
 		resp.NoticeSync = a.syncNotices(ctx, claims)
 	}
 
@@ -419,6 +477,18 @@ func spaceKilled(killed func(string) bool, s tenancy.Scope) bool {
 type userKey struct{}
 
 type languageKey struct{}
+
+type docsKey struct{}
+
+// withDocs carries an ask's chosen documents to retrieval (SB-3004).
+func withDocs(ctx context.Context, docs []string) context.Context {
+	return context.WithValue(ctx, docsKey{}, docs)
+}
+
+func docsOf(ctx context.Context) []string {
+	d, _ := ctx.Value(docsKey{}).([]string)
+	return d
+}
 
 // withLanguage carries the ask's language to the model call (SB-3003).
 func withLanguage(ctx context.Context, code string) context.Context {

@@ -332,6 +332,9 @@ type Chunk struct {
 	TextSHA256 string
 	// Section is the nearest heading at or above the chunk, or "" (SB-3002).
 	Section string
+	// Lines are the chunk's first and last line in the document's own text, from 1; zero
+	// when unknown (SB-3006).
+	Lines [2]int
 	// ReviewBy is the document's own review-by or expires date (SB-2705); zero for none.
 	// A cite is stale from it, if that is sooner than its age makes it.
 	ReviewBy time.Time
@@ -394,6 +397,8 @@ type Query struct {
 	// Also are phrases a chunk may match instead of Text: the meanings of the glossary
 	// terms the query used (SB-2203). Vector is the embedding of Text with them.
 	Also []string
+	// Docs are the only documents to keep, as KIND:ID (SB-3004); empty means all.
+	Docs []string
 }
 
 // Candidate is a retrieved chunk with its rank in each ranking (0 = not ranked there).

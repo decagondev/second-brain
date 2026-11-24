@@ -29,6 +29,7 @@ POST /v1/ask
 | `conversation` | string `cv_…` | no | Continue a conversation; earlier turns are re-authorised too |
 | `sources` | list of kinds | no | Restrict to e.g. `["docs"]` |
 | `language` | `en`, `de` or `fr` | no | (SB-3003) The language to write the answer's claims in. The web UI sends the person's chosen language; the chat apps send the manifest's `language` (sb-tenant(5)). Any other value is ignored, and without it the model writes as it does today |
+| `documents` | list of `KIND:ID`, ≤ 5 | no | (SB-3004) Ask about these documents only: retrieval keeps only their chunks (Ask about a document, below). A version (`@N`) is ignored. More than 5, or one that isn't `KIND:ID`, is `EINVAL` |
 | `agent` | string | no | `ask` (default), or a department agent in its own template's space: `incident-summary`, `spec-digest`, `close-checklist`, `runbook-answer` (sb-agents(7), Department agents) |
 
 In a cell with spaces, the space to ask in is the query parameter `?space=NAME` (sb-api(3), Spaces), never a body field: `POST /v1/ask?space=finance`. Without it the ask is company-wide.
@@ -69,7 +70,8 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "people": [{ "email": "ann@acme-logistics.example", "title": "Support lead", "cites": 1 }],
   "terms": [{ "term": "PO", "means": "purchase order" }],
   "notice_stale": { "stale": 2, "of": 3, "oldest_days": 412 },
-  "notice_sync": [{ "kind": "docs", "last_success": "2027-03-10T14:05:00Z" }]
+  "notice_sync": [{ "kind": "docs", "last_success": "2027-03-10T14:05:00Z" }],
+  "notice_single": false
 }
 ```
 
@@ -86,6 +88,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `terms` | The space's glossary entries the question used (Glossary, below; SB-2203). Omitted when none |
 | `notice_stale` | (SB-2701) `{ "stale": N, "of": M, "oldest_days": D }` when more than half of the answer's cited documents (each counted once) are `stale`, below; `oldest_days` is the oldest of the stale ones. Only cites in the answer are counted, so a document the asker can't open changes nothing. Omitted otherwise |
 | `notice_sync` | (SB-2704) `[{ "kind": "docs", "last_success": "…" }]`, one per connector kind of the answer's cites whose last successful sync is older than the 15-minute freshness target (sb-ingest(7)); `last_success` is `null` when the cell has no record of one or can't read it, which is shown as unknown, never as fresh (LAW-03). It names a connector kind only, never a document. Omitted when every kind is fresh |
+| `notice_single` | (SB-3005) `true` when the answer has at least two cited claims and every cite of every claim is one document. Only the cites in the answer count, so a document the asker can't open changes nothing. Omitted otherwise |
 | `claims[].cites[].reviewed` | (SB-2702) The date a steward of a space that holds the document marked it **Reviewed, still right** at this version (`YYYY-MM-DD`), the newest such mark. Omitted otherwise. The steward is not named |
 | `earlier_dropped` | (SB-2901) How many of the conversation's earlier questions were left out of what the model read: only the last 8 are sent. 0 otherwise. The conversation itself keeps every question |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner |
@@ -105,6 +108,8 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 **Answers in the asker's language** (SB-3003). `language` changes only the language the claims are written in. Retrieval, the live checks, the citations, the titles, sections and passages are the same as without it, and stay in the source's own language. An uncited claim is marked in every language (LAW-14). The language isn't stored with the question; the trace keeps the answer as written.
 
 **The cited passage** (SB-3001). `GET /v1/traces/{id}/passage?cite=CITE&start=N` returns the text of one cite of that answer: `{ "cite": "docs:4f2a9c11@17", "text": "…", "cut": false }`. Only the person who asked (or an auditor, as for the trace) may call it, only for a cite that is in the trace's answer (`start` picks the span when the answer cites a document more than once; without it, the first), and every call checks the person's access to that document **again, now and as them** (sb-permissions(7)), so an old trace or a share can't show text they have lost access to. `text` is the cited chunk's text at that version, at most **600 characters**, cut after the last full sentence that fits (`cut` is then `true`). It is `EPERM` ("You can't open this source now.") when the live check denies or can't decide (LAW-01, LAW-03), and `200` with `"gone": true` and no `text` when the index no longer holds that version, which the UI shows as "This version is no longer indexed." A cite that isn't in the answer is `EINVAL`. Nothing is stored, and the text is never in a log (LAW-07). The web UI shows it as plain text in a block quote, never as markup (LAW-09).
+
+**Ask about a document** (SB-3004). With `documents`, the candidates are only the chunks of those documents: those the search ranks, in its order, then the rest of each document's chunks in their order in it, so a document is found however the question is worded. They take every check as any candidate does, and the checks run first: the filter only ever narrows. A chosen document the asker can't open is refused like any other, so the answer is `no_access`; `refused` counts only the chosen documents. The three-chunk cap below doesn't apply, since every chunk is from a document the asker chose, but the usual budget does. Conversations, `language` and every notice work as without it.
 
 **One document, three chunks** (SB-2902): of the chunks that pass every check and the one-copy rule (Copies, below), at most **3 of one document** go into what the model reads for an answer or a draft, its best-ranked ones, in rank order; the rest of the budget goes to other documents. Search results (`GET /v1/search`) are unchanged.
 
@@ -286,9 +291,11 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | `notice` | `no_access`: "Some sources you don't have access to may answer this. Ask their owner." `no_sources`: "Nothing indexed answers this yet." `most_uncited`: "Most of this answer isn't backed by your sources." |
 | `refused` | "N sources were not shown because you can't open them", never their names |
 | `notice_stale` | (SB-2701) One line **above** the answer: "Most of the sources for this answer haven't been reviewed in a while (the oldest is N days old). Check with their owner before relying on it." |
+| `notice_single` | (SB-3005) One line above the answer: "This answer rests on one document. Check it if it matters." The chat apps put it first too |
 | `notice_sync` | (SB-2704) One line above the answer for each kind: "docs last synced at 14:05; newer changes may be missing.", or "docs: when it last synced is unknown; newer changes may be missing." |
 | Feedback | Under an answer, **Helpful** and **Not helpful**, a comment, and two choices of the answer's cites: **Wrong citation** and **Out of date** (SB-2703) |
 | Space switcher | In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from `GET /v1/spaces`, and nothing else. The chosen space goes on the ask as `?space=`. Changing it starts a new conversation. A cell without spaces shows no switcher |
+| Ask about a document | (SB-3004) Each citation chip and each Documents result has **Ask about this document**. It adds the document to a filter shown above the ask box as "Asking about: TITLE" (at most 5), with **Clear**; the next questions carry it as `documents` until it is cleared or the conversation starts fresh |
 | Passage | (SB-3001) Each citation chip is followed by **Show passage**, a button that opens the cited text under the chip as a quote, with "Hide passage" to close it. A refusal shows "You can't open this source now." and no text |
 | Section | (SB-3002) A chip with a `section` shows "Title › Section"; copied and printed cites do the same |
 | Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |

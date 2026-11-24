@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S29.2: Narrow it and say how thin it is
+
+**Wave/slice:** W29 / S29.2 (SB-3004 to SB-3006) · **Status:** Done
+
+**What:** POST /v1/ask takes documents (at most 5, KIND:ID): retrieval keeps only those documents' chunks, the ranked ones first and then the rest of each document in order, all through the same checks, and refused counts only the chosen documents; the web UI's Ask about this document on a chip or a search result fills a filter shown above the ask box until it is cleared or the conversation starts fresh. An answer of two or more cited claims that all cite one document carries notice_single, shown first on the web and in Slack and Mattermost. Ingest records each chunk's first and last line in the document's own text (line_start, line_end), and the GitHub connector links a file cite on the default branch at those lines, an issue or a pull request without them; the cell now wires the ask agent's Link to any connector that can link.
+
+**Why this way:** A filter after the checks can only narrow (LAW-01), and the rest of a chosen document is looked up so a question worded differently still finds it; the three-chunk cap is lifted there because every chunk is one the asker chose. The one-source line counts only the cites in the answer, so a hidden document changes nothing. A GitHub version is a commit time, not a commit, so the link is to the default branch, and the cite's age says how old the lines are.
+
+**Learned:** The ask agent's Link had never been wired in the running cell, so no cite carried a url there; it is now wired through each connector's own Link, and only GitHub has one. The plan's "at that commit" was not possible without a commit id, so the ticket says default branch.
+
+**Laws:** LAW-01, LAW-14. Every law test is still green.
+
 ## 2026-11-24 S29.1: See what it rests on
 
 **Wave/slice:** W29 / S29.1 (SB-3001 to SB-3003) · **Status:** Done

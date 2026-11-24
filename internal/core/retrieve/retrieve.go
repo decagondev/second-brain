@@ -192,10 +192,19 @@ func ContextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, email
 	for _, k := range q.Kinds {
 		keep[k] = true
 	}
+	docs := map[string]bool{}
+	for _, d := range q.Docs {
+		docs[d] = true
+	}
 	var chunks []ports.Chunk
 	for _, c := range cands {
-		if len(keep) == 0 || keep[c.Chunk.Kind] {
+		if (len(keep) == 0 || keep[c.Chunk.Kind]) && (len(docs) == 0 || docs[docKey(c.Chunk)]) {
 			chunks = append(chunks, c.Chunk)
+		}
+	}
+	if len(docs) > 0 {
+		if chunks, err = withRest(ctx, s.Tenant(), r, q.Docs, chunks); err != nil {
+			return Result{}, err
 		}
 	}
 	res, err := Allowed(ctx, s, user, a, chunks, len(chunks))
@@ -207,6 +216,43 @@ func ContextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, email
 		res.Context = res.Context[:budget]
 	}
 	return res, nil
+}
+
+// withRest adds, after the ranked chunks of the chosen documents, the rest of their chunks
+// in document order (SB-3004), so a chosen document is found however the question is put.
+// They still take every check.
+func withRest(ctx context.Context, tenant string, r ports.Retriever, docs []string, ranked []ports.Chunk) ([]ports.Chunk, error) {
+	lk, ok := r.(ports.DocLookup)
+	if !ok {
+		return ranked, nil
+	}
+	var q ports.DocQuery
+	for _, d := range docs {
+		kind, id, ok := strings.Cut(d, ":")
+		if ok {
+			q.Refs = append(q.Refs, ports.SourceRef{Kind: kind, ID: id})
+		}
+	}
+	all, err := lk.Docs(ctx, tenant, q)
+	if err != nil {
+		return nil, err
+	}
+	sort.SliceStable(all, func(i, j int) bool {
+		if docKey(all[i]) != docKey(all[j]) {
+			return docKey(all[i]) < docKey(all[j])
+		}
+		return all[i].Start < all[j].Start
+	})
+	seen := map[string]bool{}
+	for _, c := range ranked {
+		seen[c.ID] = true
+	}
+	for _, c := range all {
+		if !seen[c.ID] {
+			ranked = append(ranked, c)
+		}
+	}
+	return ranked, nil
 }
 
 // OneCopy keeps, of documents with the same text (ports.Chunk.TextSHA256), only the newest

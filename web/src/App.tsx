@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { ask, AskError, listSpaces, openShare, search, spaceName } from "./api";
-import type { ApiError, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
+import { ask, AskError, listSpaces, maxAbout, openShare, search, spaceName } from "./api";
+import type { About, ApiError, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
 import { DraftPanel } from "./Draft";
@@ -45,6 +45,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
+  const [about, setAbout] = useState<About[]>([]); // SB-3004
   const [busy, setBusy] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [space, setSpace] = useState(""); // "" is the whole company
@@ -121,7 +122,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang());
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key));
       setConversation(a.conversation);
       settle({ id, question: q, answer: a });
       setQuestion("");
@@ -162,6 +163,13 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   // From Documents: the text goes into the ask box, to be asked when the person chooses.
   function askInstead(q: string) {
     setQuestion(q);
+    setTab("answer");
+    setTimeout(() => askBox.current?.focus(), 0);
+  }
+
+  // Ask about this document (SB-3004): the next questions search only the chosen ones.
+  function addAbout(d: About) {
+    setAbout((xs) => (xs.some((x) => x.key === d.key) || xs.length >= maxAbout ? xs : [...xs, d]));
     setTab("answer");
     setTimeout(() => askBox.current?.focus(), 0);
   }
@@ -231,7 +239,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
             <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
-              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} />}
+              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} />}
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
@@ -253,6 +261,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
                     onClick={() => {
                       setConversation(undefined);
                       setTurns([]);
+                      setAbout([]);
                     }}
                   >
                     {t("Start fresh")}
@@ -294,6 +303,14 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
                 ))}
               </select>
             </>
+          )}
+          {about.length > 0 && (
+            <p className="about" role="status">
+              {t("Asking about: {titles}", { titles: about.map((d) => d.name).join(", ") })}{" "}
+              <button type="button" className="link" onClick={() => setAbout([])}>
+                {t("Clear")}
+              </button>
+            </p>
           )}
           <label htmlFor={inputId}>{t("Ask a question")}</label>
           <textarea
@@ -347,6 +364,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               onClick={() => {
                 setConversation(undefined);
                 setTurns([]);
+                setAbout([]);
               }}
             >
               {t("New conversation")}
@@ -356,7 +374,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         <DraftPanel fetcher={fetcher} />
       </div>
       <div role="tabpanel" id={`${base}-panel-documents`} aria-labelledby={`${base}-tab-documents`} hidden={tab !== "documents"}>
-        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} onAsk={askInstead} />
+        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} onAsk={askInstead} onAbout={addAbout} />
       </div>
       <div role="tabpanel" id={`${base}-panel-saved`} aria-labelledby={`${base}-tab-saved`} hidden={tab !== "saved"}>
         {tab === "saved" && <SavedView fetcher={fetcher} onAsk={askAgain} />}

@@ -81,8 +81,8 @@ The goal is that an asker can check an answer without leaving it, and the answer
 **SB-3005 One-source warning.** When every cite of an answer with at least two claims comes from one document, the response carries `"notice_single": true`. The UI then shows one line above the answer: "This answer rests on one document. Check it if it matters." Slack and Mattermost put it first. Hidden cites don't count.
 *Laws:* LAW-01, LAW-14. *Acceptance:* three claims from one document warn. Two documents don't. A one-claim answer doesn't.
 
-**SB-3006 Open at the cited lines.** For a GitHub cite, the connector turns the span into line numbers at that commit and adds `#L12-L20` to `url`. The folder connector's `file:` links and other kinds are unchanged.
-*Laws:* none new. *Acceptance:* a span in lines 12 to 20 links to `#L12-L20` at the cited commit.
+**SB-3006 Open at the cited lines.** For a GitHub cite, ingest records the chunk's lines and the connector links the file on the default branch with `#L12-L20`. A version is a commit time, not a commit, so the link is to the default branch (built: the plan said "at that commit"). Other kinds are unchanged.
+*Laws:* none new. *Acceptance:* a span in lines 12 to 20 links to `#L12-L20`.
 
 ## W30 Fill the gaps (epic E31, SB-3101 to SB-3107)
 
