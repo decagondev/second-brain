@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-33 epics, 109 user stories and 271 tickets across 32 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+36 epics, 115 user stories and 291 tickets across 35 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -36,6 +36,9 @@ summary: Epics, waves, slices and tickets.
 | W29 Show the Evidence | 6 | 0 | 0 | Planned 2026-11-24 with the user (E30): show the passage, section on the cite, answers in the asker's language, ask about this document, one-source warning, open at the cited lines ([14-evidence-gaps-surprises.md](../docs/14-evidence-gaps-surprises.md)) |
 | W30 Fill the Gaps | 7 | 0 | 0 | Planned 2026-11-24 with the user (E31): questions that found nothing, spaces with no steward, review several at once, feedback for stewards, coming due, owners mark their own, suggest a term |
 | W31 Run Without Surprises | 7 | 0 | 0 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
+| W32 Ask Better | 0 | 0 | 7 | Planned 2026-11-24 with the user (E33): see also, glossary where it's used, short or full answer, sources disagree, download the conversation, their other documents, suggested questions ([15-ask-capture-trust.md](../docs/15-ask-capture-trust.md)) |
+| W33 Capture Knowledge | 0 | 0 | 7 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
+| W34 Trust and Control | 0 | 0 | 6 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -133,6 +136,12 @@ flowchart LR
   E27 --> E30
   E28 --> E31
   E29 --> E32
+  E33["E33 Ask Better"]
+  E34["E34 Capture Knowledge"]
+  E35["E35 Trust and Control"]
+  E30 --> E33
+  E31 --> E34
+  E32 --> E35
 ```
 
 ## Epics
@@ -172,6 +181,9 @@ flowchart LR
 | [E30 Show the Evidence](E30-show-the-evidence/README.md) | An asker can check an answer without leaving it, and the answer reads in their language. | W29 | 6 |
 | [E31 Fill the Gaps](E31-fill-the-gaps/README.md) | Stewards see what people couldn't find, and the upkeep is spread across stewards and owners. | W30 | 7 |
 | [E32 Run Without Surprises](E32-run-without-surprises/README.md) | The operator learns about trouble from the cell before users do, and can fix the small things in one command. | W31 | 7 |
+| [E33 Ask Better](E33-ask-better/README.md) | An asker gets more out of each answer and knows what to ask. | W32 | 7 |
+| [E34 Capture Knowledge](E34-capture-knowledge/README.md) | A good answer, once given, is kept for the next person, and every document keeps someone looking after it. | W33 | 7 |
+| [E35 Trust and Control](E35-trust-and-control/README.md) | People can see and remove what the brain keeps about them, and admins see access and spending coming. | W34 | 6 |
 
 ## All tickets by wave
 
@@ -610,3 +622,38 @@ flowchart LR
 | [SB-3205](E32-run-without-surprises/SB-3205-answer-time.md) | S31.2 | E32 | Answer time watch | Done |
 | [SB-3206](E32-run-without-surprises/SB-3206-disk-runway.md) | S31.2 | E32 | Disk runway | Done |
 | [SB-3207](E32-run-without-surprises/SB-3207-notice-to-everyone.md) | S31.2 | E32 | Notice to everyone | Done |
+
+### W32 Ask Better
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3301](E33-ask-better/SB-3301-see-also.md) | S32.1 | E33 | See also | Open |
+| [SB-3302](E33-ask-better/SB-3302-glossary-in-place.md) | S32.1 | E33 | Glossary where it's used | Open |
+| [SB-3303](E33-ask-better/SB-3303-short-answer.md) | S32.1 | E33 | Short or full answer | Open |
+| [SB-3304](E33-ask-better/SB-3304-sources-disagree.md) | S32.1 | E33 | Sources disagree | Open |
+| [SB-3305](E33-ask-better/SB-3305-download-conversation.md) | S32.2 | E33 | Download the conversation | Open |
+| [SB-3306](E33-ask-better/SB-3306-owner-documents.md) | S32.2 | E33 | Their other documents | Open |
+| [SB-3307](E33-ask-better/SB-3307-suggested-questions.md) | S32.2 | E33 | Suggested questions | Open |
+
+### W33 Capture Knowledge
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3401](E34-capture-knowledge/SB-3401-reply-to-note.md) | S33.1 | E34 | Reply to note | Open |
+| [SB-3402](E34-capture-knowledge/SB-3402-spot-repeat.md) | S33.1 | E34 | Spot a repeat | Open |
+| [SB-3403](E34-capture-knowledge/SB-3403-notes-due.md) | S33.1 | E34 | Notes come due | Open |
+| [SB-3404](E34-capture-knowledge/SB-3404-nudge-old-questions.md) | S33.1 | E34 | Nudge old questions | Open |
+| [SB-3405](E34-capture-knowledge/SB-3405-caretaker.md) | S33.2 | E34 | Take over a document | Open |
+| [SB-3406](E34-capture-knowledge/SB-3406-documents-helped.md) | S33.2 | E34 | Your documents helped | Open |
+| [SB-3407](E34-capture-knowledge/SB-3407-defined-terms.md) | S33.2 | E34 | Terms the documents define | Open |
+
+### W34 Trust and Control
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3501](E35-trust-and-control/SB-3501-my-data.md) | S34.1 | E35 | What the brain keeps about me | Open |
+| [SB-3502](E35-trust-and-control/SB-3502-forget-my-questions.md) | S34.1 | E35 | Forget my questions | Open |
+| [SB-3503](E35-trust-and-control/SB-3503-my-sessions.md) | S34.1 | E35 | Where I'm signed in | Open |
+| [SB-3504](E35-trust-and-control/SB-3504-access-review.md) | S34.2 | E35 | Access review | Open |
+| [SB-3505](E35-trust-and-control/SB-3505-cost-forecast.md) | S34.2 | E35 | Month-end forecast | Open |
+| [SB-3506](E35-trust-and-control/SB-3506-usage-by-space.md) | S34.2 | E35 | Usage by space | Open |

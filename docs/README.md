@@ -24,6 +24,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 12 | [Easier to ask, easier to steward, easier to operate](12-ask-steward-operate.md) | Twenty small quality-of-life features for askers, stewards and operators (W23 to W25) |
 | 13 | [Fresh answers, a tidy corpus, a focused context](13-fresh-tidy-focused.md) | Twenty small features against stale data, document rot and context creep (W26 to W28) |
 | 14 | [Show the evidence, fill the gaps, run without surprises](14-evidence-gaps-surprises.md) | Twenty small features: passages and sections on cites, gaps for stewards, early warnings for operators (W29 to W31) |
+| 15 | [Ask better, capture knowledge, trust and control](15-ask-capture-trust.md) | Twenty small features: more from each answer, replies kept as notes, people's control of their own data (W32 to W34) |
 
 ## Architecture
 

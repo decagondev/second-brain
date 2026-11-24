@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better**, **W33 Capture Knowledge** and **W34 Trust and Control** add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)).
 
 ## Problem
 
@@ -328,6 +328,9 @@ A **wave** is a release-sized group of work with an exit gate. A **slice** is a 
 | W29 | Show the Evidence | — | An asker can check an answer without leaving it, and the answer reads in their language. |
 | W30 | Fill the Gaps | — | Stewards see what people couldn't find, and the upkeep is spread across stewards and owners. |
 | W31 | Run Without Surprises | — | The operator learns about trouble from the cell before users do, and can fix the small things in one command. |
+| W32 | Ask Better | — | An asker gets more out of each answer and knows what to ask. |
+| W33 | Capture Knowledge | — | A good answer, once given, is kept for the next person, and every document keeps someone looking after it. |
+| W34 | Trust and Control | — | People can see and remove what the brain keeps about them, and admins see access and spending coming. |
 
 The portfolio department grants (E13) first planned as W13 are parked while Q-01 stays no; their section is at the end of this list.
 
@@ -942,6 +945,57 @@ gantt
 |---|---|---|---|
 | S31.1 | Know why | Why a sync fails, refresh one document, health in Prometheus, audit by person and date | [SB-3201](../epics/E32-run-without-surprises/SB-3201-sync-reason.md), [SB-3202](../epics/E32-run-without-surprises/SB-3202-refresh-document.md), [SB-3203](../epics/E32-run-without-surprises/SB-3203-health-metrics.md), [SB-3204](../epics/E32-run-without-surprises/SB-3204-audit-filters.md) |
 | S31.2 | See it coming | Answer time watch, disk runway, notice to everyone | [SB-3205](../epics/E32-run-without-surprises/SB-3205-answer-time.md), [SB-3206](../epics/E32-run-without-surprises/SB-3206-disk-runway.md), [SB-3207](../epics/E32-run-without-surprises/SB-3207-notice-to-everyone.md) |
+
+#### W32 Ask Better
+
+*An asker gets more out of each answer and knows what to ask. Accepted 2026-11-24 ([15-ask-capture-trust.md](15-ask-capture-trust.md)).*
+
+**Exit gate**
+
+- [ ] See also lists only documents the asker can open, never as claims
+- [ ] A disagreement mark needs two documents the asker can open
+- [ ] A short answer still has every claim cited or marked uncited
+- [ ] Suggested questions reach only the space's members
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S32.1 | More from each answer | See also, glossary where it's used, short or full answer, sources disagree | [SB-3301](../epics/E33-ask-better/SB-3301-see-also.md), [SB-3302](../epics/E33-ask-better/SB-3302-glossary-in-place.md), [SB-3303](../epics/E33-ask-better/SB-3303-short-answer.md), [SB-3304](../epics/E33-ask-better/SB-3304-sources-disagree.md) |
+| S32.2 | Know where to look | Download the conversation, their other documents, suggested questions | [SB-3305](../epics/E33-ask-better/SB-3305-download-conversation.md), [SB-3306](../epics/E33-ask-better/SB-3306-owner-documents.md), [SB-3307](../epics/E33-ask-better/SB-3307-suggested-questions.md) |
+
+#### W33 Capture Knowledge
+
+*A good answer, once given, is kept for the next person, and every document keeps someone looking after it. Accepted 2026-11-24 ([15-ask-capture-trust.md](15-ask-capture-trust.md)).*
+
+**Exit gate**
+
+- [ ] A published reply names no asker
+- [ ] No asker sees another asker's question
+- [ ] A deprovisioned caretaker is dropped
+- [ ] A suggested term is only a proposal
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S33.1 | Keep the good replies | Reply to note, spot a repeat, notes come due, nudge old questions | [SB-3401](../epics/E34-capture-knowledge/SB-3401-reply-to-note.md), [SB-3402](../epics/E34-capture-knowledge/SB-3402-spot-repeat.md), [SB-3403](../epics/E34-capture-knowledge/SB-3403-notes-due.md), [SB-3404](../epics/E34-capture-knowledge/SB-3404-nudge-old-questions.md) |
+| S33.2 | Keep someone on every document | Take over a document, your documents helped, terms the documents define | [SB-3405](../epics/E34-capture-knowledge/SB-3405-caretaker.md), [SB-3406](../epics/E34-capture-knowledge/SB-3406-documents-helped.md), [SB-3407](../epics/E34-capture-knowledge/SB-3407-defined-terms.md) |
+
+#### W34 Trust and Control
+
+*People can see and remove what the brain keeps about them, and admins see access and spending coming. Accepted 2026-11-24 ([15-ask-capture-trust.md](15-ask-capture-trust.md)).*
+
+**Exit gate**
+
+- [ ] A person's export and erasure touch only their own records, and a legal hold still wins
+- [ ] Nobody sees another person's sessions
+- [ ] Access review changes no group; Remove asks the admin
+- [ ] No forecast from fewer than 3 days of data; no space row under 5 asks
+- [ ] Every law test still green; no new store, service or Go module
+
+| Slice | Name | Delivers | Tickets |
+|---|---|---|---|
+| S34.1 | Your own data | What the brain keeps about me, forget my questions, where I'm signed in | [SB-3501](../epics/E35-trust-and-control/SB-3501-my-data.md), [SB-3502](../epics/E35-trust-and-control/SB-3502-forget-my-questions.md), [SB-3503](../epics/E35-trust-and-control/SB-3503-my-sessions.md) |
+| S34.2 | See it before it goes wrong | Access review, month-end forecast, usage by space | [SB-3504](../epics/E35-trust-and-control/SB-3504-access-review.md), [SB-3505](../epics/E35-trust-and-control/SB-3505-cost-forecast.md), [SB-3506](../epics/E35-trust-and-control/SB-3506-usage-by-space.md) |
 
 #### Parked: Portfolio Department Grants
 
