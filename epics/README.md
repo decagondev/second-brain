@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-39 epics, 121 user stories and 311 tickets across 38 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+42 epics, 127 user stories and 331 tickets across 41 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -42,6 +42,9 @@ summary: Epics, waves, slices and tickets.
 | W35 Trust Each Answer | 7 | 0 | 0 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
 | W36 Capture Conversations | 7 | 0 | 0 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
 | W37 Work Where People Are | 6 | 0 | 0 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
+| W38 One Org, Many Levels | 0 | 0 | 7 | Proposed 2026-11-24, waiting on the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
+| W39 An Agent for Every Department | 0 | 0 | 7 | Proposed 2026-11-24, waiting on the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
+| W40 Run the Company | 0 | 0 | 6 | Proposed 2026-11-24, waiting on the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -151,6 +154,12 @@ flowchart LR
   E33 --> E36
   E34 --> E37
   E35 --> E38
+  E39["E39 One Org, Many Levels"]
+  E40["E40 An Agent for Every Department"]
+  E41["E41 Run the Company"]
+  E36 --> E39
+  E39 --> E40
+  E40 --> E41
 ```
 
 ## Epics
@@ -196,6 +205,9 @@ flowchart LR
 | [E36 Trust Each Answer](E36-trust-each-answer/README.md) | An asker knows how far to trust an answer, and a steward can fix one that was wrong. | W35 | 7 |
 | [E37 Capture Conversations](E37-capture-conversations/README.md) | What people decide in meetings and chat reaches the brain, after a steward's click. | W36 | 7 |
 | [E38 Work Where People Are](E38-work-where-people-are/README.md) | The brain is in reach from wherever people work, and admins see how it's used. | W37 | 6 |
+| [E39 One Org, Many Levels](E39-one-org-many-levels/README.md) | Spaces follow the company's shape (company, department, team), and access only narrows down the tree. | W38 | 7 |
+| [E40 An Agent for Every Department](E40-agent-for-every-department/README.md) | Every department template has an agent worth asking, agents can run on a schedule or when something happens, and admins see every agent in one place. | W39 | 7 |
+| [E41 Run the Company](E41-run-the-company/README.md) | The work around knowledge (goals, updates, policies, requests and budgets) lives where the knowledge is, without becoming a second project tool. | W40 | 6 |
 
 ## All tickets by wave
 
@@ -704,3 +716,38 @@ flowchart LR
 | [SB-3804](E38-work-where-people-are/SB-3804-adoption.md) | S37.2 | E38 | Adoption | Done |
 | [SB-3805](E38-work-where-people-are/SB-3805-daily-brief.md) | S37.2 | E38 | Daily brief | Done |
 | [SB-3806](E38-work-where-people-are/SB-3806-opensearch.md) | S37.2 | E38 | Search from the address bar | Done |
+
+### W38 One Org, Many Levels
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-3901](E39-one-org-many-levels/SB-3901-parent-spaces.md) | S38.1 | E39 | Parent spaces | Open |
+| [SB-3902](E39-one-org-many-levels/SB-3902-settings-flow-down.md) | S38.1 | E39 | Settings flow down | Open |
+| [SB-3903](E39-one-org-many-levels/SB-3903-ask-across-branch.md) | S38.1 | E39 | Ask across a branch | Open |
+| [SB-3904](E39-one-org-many-levels/SB-3904-escalate-up-tree.md) | S38.2 | E39 | Escalate up the tree | Open |
+| [SB-3905](E39-one-org-many-levels/SB-3905-roll-ups.md) | S38.2 | E39 | Roll-ups for leaders | Open |
+| [SB-3906](E39-one-org-many-levels/SB-3906-whos-who.md) | S38.2 | E39 | Who's who in a branch | Open |
+| [SB-3907](E39-one-org-many-levels/SB-3907-tree-never-widens.md) | S38.2 | E39 | The tree never widens | Open |
+
+### W39 An Agent for Every Department
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4001](E40-agent-for-every-department/SB-4001-people-legal-agents.md) | S39.1 | E40 | People and Legal agents | Open |
+| [SB-4002](E40-agent-for-every-department/SB-4002-sales-support-marketing-agents.md) | S39.1 | E40 | Sales, Support and Marketing agents | Open |
+| [SB-4003](E40-agent-for-every-department/SB-4003-ops-design-exec-agents.md) | S39.1 | E40 | Operations, Design and Executive agents | Open |
+| [SB-4004](E40-agent-for-every-department/SB-4004-agent-registry.md) | S39.2 | E40 | Every agent in one place | Open |
+| [SB-4005](E40-agent-for-every-department/SB-4005-scheduled-agents.md) | S39.2 | E40 | Agents on a schedule | Open |
+| [SB-4006](E40-agent-for-every-department/SB-4006-triggered-agents.md) | S39.2 | E40 | Agents when something happens | Open |
+| [SB-4007](E40-agent-for-every-department/SB-4007-right-department.md) | S39.2 | E40 | The right department | Open |
+
+### W40 Run the Company
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4101](E41-run-the-company/SB-4101-goals.md) | S40.1 | E41 | Goals | Open |
+| [SB-4102](E41-run-the-company/SB-4102-status-updates.md) | S40.1 | E41 | Status updates | Open |
+| [SB-4103](E41-run-the-company/SB-4103-policies-to-read.md) | S40.1 | E41 | Policies to read | Open |
+| [SB-4104](E41-run-the-company/SB-4104-requests.md) | S40.2 | E41 | Requests to a department | Open |
+| [SB-4105](E41-run-the-company/SB-4105-department-budgets.md) | S40.2 | E41 | Department budgets | Open |
+| [SB-4106](E41-run-the-company/SB-4106-space-home.md) | S40.2 | E41 | A home for each space | Open |
