@@ -9,7 +9,7 @@ summary: "The work around knowledge (goals, updates, policies, requests and budg
 
 **Waves:** W40 · **Tickets:** 6 · **Stories:** 2
 
-Proposed 2026-11-24 after W37, waiting on the user's decisions. The concept is in [17-org-agents-os.md](../../docs/17-org-agents-os.md). Every ticket keeps to the bloat rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, nothing widens what anyone sees, a person approves every write, the tree only narrows, and agents are definitions in the release bundle.
+Proposed 2026-11-24 after W37 and accepted by the user the same day, with every recommended decision. The concept is in [17-org-agents-os.md](../../docs/17-org-agents-os.md). Every ticket keeps to the bloat rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, nothing widens what anyone sees, a person approves every write, the tree only narrows, and agents are definitions in the release bundle.
 
 ## User stories
 
@@ -44,4 +44,4 @@ Proposed 2026-11-24 after W37, waiting on the user's decisions. The concept is i
 
 ## Decisions for the user
 
-Waiting on the user ([17-org-agents-os.md](../../docs/17-org-agents-os.md#decisions-for-the-user)). Recommended: all of W38 to W40, in order; a tree of at most three levels where a child is only stricter and members aren't inherited (SB-3901); agents stay definitions in the release bundle (SB-4001 to SB-4003); one weekly brief a space and two fixed triggers, drafts only and no tools (SB-4005, SB-4006); stewards see by name who hasn't read a policy (SB-4103); budgets warn at 80% and pause scheduled runs at 100% (SB-4105).
+Decided 2026-11-24 ([17-org-agents-os.md](../../docs/17-org-agents-os.md#decisions-for-the-user)): all of W38 to W40, in order; a tree of at most three levels where a child is only stricter and members aren't inherited (SB-3901); agents stay definitions in the release bundle (SB-4001 to SB-4003); one weekly brief a space and two fixed triggers, drafts only and no tools (SB-4005, SB-4006); stewards see by name who hasn't read a policy (SB-4103); budgets warn at 80% and pause scheduled runs at 100% (SB-4105).

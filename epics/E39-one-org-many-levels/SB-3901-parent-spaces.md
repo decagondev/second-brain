@@ -13,7 +13,7 @@ summary: "Spaces are flat, so a team is just another space beside its department
 | Manual | [`sb-space(5)`](../../manual/sb-space.5.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-21, LAW-24 |
 | Depends on | SB-1206 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ Spaces are flat, so a team is just another space beside its department.
 
 ## Acceptance criteria
 
-- [ ] sb-space(5) gains `parent: NAME`; the tree is at most three levels with no cycles
-- [ ] `sb tenant check` refuses a deeper tree, a missing parent, a cycle or a looser child, with the line
-- [ ] Members aren't inherited; the registry knows each space's parent and depth
+- [x] sb-space(5) gains `parent: NAME`; the tree is at most three levels with no cycles
+- [x] `sb tenant check` refuses a deeper tree, a missing parent, a cycle or a looser child, with the line
+- [x] Members aren't inherited; the registry knows each space's parent and depth
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Manifest and check
-- [ ] Registry
-- [ ] Reorg preview
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Manifest and check
+- [x] Registry
+- [x] Reorg preview
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. sb-space(5) `parent`; `manifest.Space.Parent`, `checker.treeChecks` (rule 17: a missing parent, the space itself, a fourth level or a cycle), a team at least as strict as its department (`labelRank`), `Tenant.Depth`, `Children`, `Branch`, `Up`; `ports.Space.Parent` in the registry. Members are never inherited. TestTreeFlowsDown, TestTreeRefused, TestTreeStricterChildIsFine.
 
 ## Definition of done
 

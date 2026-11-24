@@ -33,7 +33,8 @@ A map from a space name to its definition. A space name is `[a-z][a-z0-9-]{1,30}
 
 | Field | Type | Required | Default | Rules |
 |---|---|---|---|---|
-| `template` | string | no | `custom` | One of the templates in [sb-departments(7)](sb-departments.7.md). It supplies the defaults below; any field set here wins |
+| `template` | string | no | `custom`, or the parent's | One of the templates in [sb-departments(7)](sb-departments.7.md). It supplies the defaults below; any field set here wins. A team space (`parent`) without one takes its department's |
+| `parent` | space name | no | none | The department space this one is a team of (SB-3901; sb-spaces(7), The tree). The parent is another space of the manifest, and has no parent of its own, so the tree is at most company, department and team. A team is at least as strict as its department: its `label` is at least the parent's and its `retention_days` at most the parent's, and when it leaves them out it takes the parent's. `members` are never inherited: a team's members are its own groups. A team without its own `glossary`, `start_here`, `review_after_days` or `agents` takes its department's (SB-3902): glossaries merge, the team's own term winning; start-here lists join, the department's first, at most ten; agents are the department's that the team's template allows |
 | `members` | list of `group:NAME` | yes | | At least one, each once. Groups come from the cell's directory (SCIM). An unknown group is an error at `apply`, never ignored |
 | `stewards` | list of `group:NAME` | no | `[]` | May propose changes to this space (W12), and answer the questions its members send to it and publish notes (SB-1704, SB-1705; sb-spaces(7)). Stewards aren't members unless listed in `members` too. A `restricted` space needs at least one |
 | `label` | label | no | from the template | The default label for documents in this space whose source carries none: `public`, `internal`, `confidential` or `restricted` |
@@ -76,6 +77,7 @@ All of these are errors, reported with line and column like every manifest error
 14. `barriers` with no `spaces`. The barrier checks run with the space checks, so a cell without spaces couldn't enforce them (SB-1401).
 15. A `start_here` with more than ten items, an item listed twice, an item that isn't `KIND:ID` or `KIND:/Folder/`, or a kind outside the space's `scope`.
 16. A `glossary` with more than 200 terms, a term listed twice (ignoring case), a term over 40 or a meaning over 200 characters, or a character that isn't printable.
+17. A `parent` that isn't another space of the manifest, is the space itself, or has a parent of its own (a fourth level, or a cycle); a team whose `label` is looser than its parent's, or whose `retention_days` is above its parent's (SB-3901, LAW-24).
 
 A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always `ask`), and the retention (the template's, or else the tenant's, never more than the tenant's).
 

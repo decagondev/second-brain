@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { ask, AskError, fileToAsk, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
+import { ask, AskError, BRANCH, fileToAsk, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
 import type { About, ApiError, AskFile, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
@@ -51,6 +51,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
   const [busy, setBusy] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [space, setSpace] = useState(""); // "" is the whole company
+  const [branch, setBranch] = useState(false); // this department and its teams (SB-3903)
   const [tab, setTab] = useState<Tab>(tabs.find((x) => x.id === first)?.id ?? "answer");
   const [searchFor, setSearchFor] = useState<{ text: string; n: number } | undefined>(() =>
     first === "documents" && fromBar?.trim() ? { text: fromBar.trim().slice(0, 4000), n: 1 } : undefined,
@@ -183,13 +184,14 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
     e.preventDefault();
     const q = question.trim();
     if (!q || busy) return;
-    await run(q, space, conversation);
+    await run(q, branch && space ? space + BRANCH : space, conversation);
   }
 
   // Asking a saved or shared question again starts a new conversation, live.
   async function askAgain(q: string, recordSpace: string, remember = true) {
     const sp = spaceFor(recordSpace);
     setSpace(sp);
+    setBranch(false);
     setConversation(undefined);
     setTurns([]);
     setTab("answer");
@@ -338,19 +340,26 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
               <label htmlFor={spaceId}>{t("Ask in")}</label>
               <select
                 id={spaceId}
-                value={space}
+                value={branch && space ? space + BRANCH : space}
                 onChange={(e) => {
-                  setSpace(e.target.value);
+                  const v = e.target.value;
+                  setBranch(v.endsWith(BRANCH));
+                  setSpace(v.endsWith(BRANCH) ? v.slice(0, -BRANCH.length) : v);
                   setConversation(undefined); // a new space starts a new conversation
                   setTurns([]);
                 }}
               >
                 <option value="">{t("Whole company")}</option>
-                {spaces.map((s) => (
+                {spaces.map((s) => [
                   <option key={s.name} value={s.name}>
                     {s.name.charAt(0).toUpperCase() + s.name.slice(1)} ({s.label})
-                  </option>
-                ))}
+                  </option>,
+                  s.teams && (
+                    <option key={s.name + BRANCH} value={s.name + BRANCH}>
+                      {t("{space} and its teams", { space: s.name.charAt(0).toUpperCase() + s.name.slice(1) })}
+                    </option>
+                  ),
+                ])}
               </select>
             </>
           )}
@@ -478,7 +487,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
         <DraftPanel fetcher={fetcher} />
       </div>
       <div role="tabpanel" id={`${base}-panel-documents`} aria-labelledby={`${base}-tab-documents`} hidden={tab !== "documents"}>
-        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} onAsk={askInstead} onAbout={addAbout} owner={ownerFor} />
+        <DocumentsView fetcher={fetcher} space={(branch && space ? space + BRANCH : space) || undefined} query={searchFor} onAsk={askInstead} onAbout={addAbout} owner={ownerFor} />
       </div>
       <div role="tabpanel" id={`${base}-panel-saved`} aria-labelledby={`${base}-tab-saved`} hidden={tab !== "saved"}>
         {tab === "saved" && <SavedView fetcher={fetcher} onAsk={askAgain} />}

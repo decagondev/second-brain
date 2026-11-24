@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S38.1: The tree
+
+**Wave/slice:** W38 / S38.1 (SB-3901 to SB-3903) · **Status:** Done
+
+**What:** A space can name its department with parent, so spaces form a tree of company, department and team, at most three levels deep. A team is at least as strict as its department and never inherits members. A team with no glossary, start-here list, review interval or agents of its own takes its department's. In a department, branch=true asks across the department and every team under it that the asker is in, and the web switcher offers "Finance and its teams".
+
+**Why this way:** The registry already held every space as configuration, so the tree is one more field there, not a new store. Stricter-only children and per-person team membership keep the rule that spaces only narrow. A branch ask runs retrieval and every check once per space, as the asker in that space, and then joins the results, so no space's checks can let in what another's refused.
+
+**Learned:** A team that takes its department's template must also take the department's label, not the template's default, or a confidential Finance team would become restricted. A branch can only be made by the auth middleware, which holds the Issuer, so a handler can't make one up.
+
+**Laws:** LAW-01, LAW-21, LAW-24 (proposed, its law test arrives with SB-3907). Every law test is still green.
+
 ## 2026-11-24 S37.2: Know it's used
 
 **Wave/slice:** W37 / S37.2 (SB-3804 to SB-3806) · **Status:** Done

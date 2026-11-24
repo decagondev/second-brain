@@ -13,7 +13,7 @@ summary: "Every team space has to repeat its department's glossary, start-here l
 | Manual | [`sb-space(5)`](../../manual/sb-space.5.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-24 |
 | Depends on | SB-3901 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Every team space has to repeat its department's glossary, start-here list and ag
 
 ## Acceptance criteria
 
-- [ ] A child without its own `glossary`, `start_here`, `review_after_days` or `agents` takes its parent's; the child's own term wins
-- [ ] A child can only tighten `label` and `retention_days`
-- [ ] A parent's stewards are stewards of each child for escalations and roll-ups, not for publishing its notes
+- [x] A child without its own `glossary`, `start_here`, `review_after_days` or `agents` takes its parent's; the child's own term wins
+- [x] A child can only tighten `label` and `retention_days`
+- [x] A parent's stewards are stewards of each child for escalations and roll-ups, not for publishing its notes
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Manifest
-- [ ] Spaces
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Manifest
+- [x] Spaces
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. A team takes its department's template, label and retention at check time, and its agents filtered by its template; `Tenant.Effective` merges glossaries (the team's term wins), joins start-here lists (the department's first, at most ten) and takes the review interval, used by the cell for the glossary, start here, review and verify paths. TestTreeFlowsDown, TestTreeThroughARunningCell.
 
 ## Definition of done
 

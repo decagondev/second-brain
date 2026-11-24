@@ -13,7 +13,7 @@ summary: "A department member can't ask across the teams they belong to in one g
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-spaces(7)`](../../manual/sb-spaces.7.md) |
 | Laws | LAW-01, LAW-24 |
 | Depends on | SB-3901 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A department member can't ask across the teams they belong to in one go.
 
 ## Acceptance criteria
 
-- [ ] `?space=NAME&branch=true` runs the space checks once per space in the branch the asker is a member of, and unions what each allowed
-- [ ] A team the asker isn't in adds nothing and isn't named
-- [ ] Cites say which space each came from; without `branch` nothing changes
+- [x] `?space=NAME&branch=true` runs the space checks once per space in the branch the asker is a member of, and unions what each allowed
+- [x] A team the asker isn't in adds nothing and isn't named
+- [x] Cites say which space each came from; without `branch` nothing changes
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Retrieval
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Retrieval
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. `?space=NAME&branch=true`: the auth middleware issues the asker's scope in each team under the space they are a member of (`spaces.Teams`, `tenancy.WithBranch`), and `retrieve.branchContext` runs retrieval and every check once per space and joins what each allowed. `GET /v1/spaces` gains `parent` and `teams`; the web switcher offers **NAME and its teams**. TestTreeThroughARunningCell, tree.test.tsx.
 
 ## Definition of done
 

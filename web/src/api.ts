@@ -36,6 +36,19 @@ export interface PersonRef extends Person {
 export interface Space {
   name: string;
   label: string;
+  parent?: string; // the department above, when the asker is a member of it too (SB-3901)
+  teams?: boolean; // the asker is in at least one team under it (SB-3903)
+}
+
+// A branch ask (SB-3903) is the space's name with this suffix: the department and the
+// teams under it the asker is in.
+export const BRANCH = "+teams";
+
+// spaceQuery is the space part of a URL: space=NAME, and branch=true for a branch ask.
+export function spaceQuery(space: string): string {
+  const branch = space.endsWith(BRANCH);
+  const name = branch ? space.slice(0, -BRANCH.length) : space;
+  return `space=${encodeURIComponent(name)}${branch ? "&branch=true" : ""}`;
 }
 
 // The asker's spaces (GET /v1/spaces). Any failure shows no switcher, so the UI asks
@@ -235,7 +248,7 @@ export async function ask(
   if (documents && documents.length > 0) body.documents = documents;
   if (conversation) body.conversation = conversation;
   if (language) body.language = language;
-  const url = space ? `/v1/ask?space=${encodeURIComponent(space)}` : "/v1/ask";
+  const url = space ? `/v1/ask?${spaceQuery(space)}` : "/v1/ask";
   let res: Response;
   try {
     res = await f(url, {
@@ -347,7 +360,7 @@ function post(body: unknown): RequestInit {
 
 function inSpace(path: string, space?: string): string {
   if (!space) return path;
-  return `${path}${path.includes("?") ? "&" : "?"}space=${encodeURIComponent(space)}`;
+  return `${path}${path.includes("?") ? "&" : "?"}${spaceQuery(space)}`;
 }
 
 // Filters narrow a search after every check (SB-2404): a type and a number of days.

@@ -77,7 +77,7 @@ func SyncHeld(ctx context.Context, st ports.SpaceStore, keys *Keys, t manifest.T
 		}
 		if err := st.PutSpace(ctx, ports.Space{ID: ID(n), Tenant: t.Tenant, Name: n, Template: s.Template, Label: s.Label,
 			Members: s.Members, Stewards: s.Stewards, Agents: s.Agents, Scope: s.Scope, RetentionDays: s.RetentionDays,
-			Channels: s.Channels, Fields: s.Fields}); err != nil {
+			Channels: s.Channels, Fields: s.Fields, Parent: s.Parent}); err != nil {
 			return fmt.Errorf("spaces: %s: %w", n, err)
 		}
 	}
@@ -118,6 +118,27 @@ func Resolve(ctx context.Context, st ports.SpaceStore, tenant string, groups []s
 		return "", ErrSpace
 	}
 	return s.ID, nil
+}
+
+// Teams are the spaces directly under parent (a space id) that the asker, with these
+// directory group names, is a member of, by id (SB-3903). A team the asker isn't in is
+// left out, and nothing says it exists.
+func Teams(ctx context.Context, st ports.SpaceStore, tenant string, groups []string, parent string) ([]string, error) {
+	if st == nil || parent == Company {
+		return nil, nil
+	}
+	all, err := st.Spaces(ctx, tenant)
+	if err != nil {
+		return nil, ErrUnavailable
+	}
+	var out []string
+	for _, s := range all {
+		if s.Tenant == tenant && s.Parent != "" && ID(s.Parent) == parent && Member(s, groups) {
+			out = append(out, s.ID)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
 }
 
 // Member is whether any of the asker's directory groups is one of the space's members.

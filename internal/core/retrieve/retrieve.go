@@ -180,6 +180,61 @@ func ContextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, email
 	if err := s.Check(); err != nil {
 		return Result{}, ErrNoScope
 	}
+	if teams := tenancy.BranchFrom(ctx, s); len(teams) > 0 {
+		return branchContext(ctx, append([]tenancy.Scope{s}, teams...), user, emails, r, a, q, budget)
+	}
+	return contextUpTo(ctx, s, user, emails, r, a, q, budget)
+}
+
+// branchContext is a branch ask (SB-3903, LAW-24): retrieval and every check run once per
+// space of the branch, each as the asker in that space, and the chunks each run allowed
+// are joined, taking each run's best in turn. Nothing one space refused is let in by
+// another's run unless that run allowed it on its own checks.
+func branchContext(ctx context.Context, scopes []tenancy.Scope, user ports.UserRef, emails []string, r ports.Retriever, a Authoriser, q ports.Query, budget int) (Result, error) {
+	var out Result
+	runs := make([][]ports.Chunk, 0, len(scopes))
+	decided := map[string]int{}
+	for _, sc := range scopes {
+		res, err := contextUpTo(ctx, sc, user, emails, r, a, q, budget)
+		if err != nil {
+			return Result{}, err
+		}
+		runs = append(runs, res.Context)
+		for _, d := range res.Decisions {
+			if i, ok := decided[d.Cite]; !ok {
+				decided[d.Cite] = len(out.Decisions)
+				out.Decisions = append(out.Decisions, d)
+			} else if d.Verdict == "allow" {
+				out.Decisions[i] = d
+			}
+		}
+	}
+	seen := map[string]bool{}
+	for i := 0; len(out.Context) < budget; i++ {
+		more := false
+		for _, run := range runs {
+			if i >= len(run) {
+				continue
+			}
+			more = true
+			if c := run[i]; !seen[c.ID] && len(out.Context) < budget {
+				seen[c.ID] = true
+				out.Context = append(out.Context, c)
+			}
+		}
+		if !more {
+			break
+		}
+	}
+	for _, d := range out.Decisions {
+		if d.Verdict != "allow" {
+			out.Refused++
+		}
+	}
+	return out, nil
+}
+
+func contextUpTo(ctx context.Context, s tenancy.Scope, user ports.UserRef, emails []string, r ports.Retriever, a Authoriser, q ports.Query, budget int) (Result, error) {
 	if q.Limit == 0 {
 		q.Limit = Candidates
 	}

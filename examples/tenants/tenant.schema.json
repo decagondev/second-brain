@@ -270,6 +270,10 @@
             "type": "array",
             "uniqueItems": true
           },
+          "parent": {
+            "pattern": "^[a-z][a-z0-9-]{1,30}$",
+            "type": "string"
+          },
           "retention_days": {
             "maximum": 3650,
             "minimum": 30,

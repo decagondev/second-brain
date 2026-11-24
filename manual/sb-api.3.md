@@ -64,6 +64,8 @@ Messages are safe to show to the user. They never include the titles or content 
 
 Every request is in one space or company-wide (sb-spaces(7)). A request names its space with the query parameter `space`, for example `POST /v1/ask?space=finance`. Without it, or with `space=company`, the request is company-wide. A space the cell doesn't hold, or one the asker isn't a member of, is `ESPACE` (403), never a company-wide request instead. `GET /v1/search` takes `space` the same way, and a saved question or share keeps the space it was made in. A space name is never read from a body or a header, so one request can't name two spaces.
 
+`branch=true` with a department's `space` (SB-3903) adds the teams under it that the asker is a member of, each checked as its own space (sb-spaces(7), The tree). `GET /v1/spaces` lists the asker's spaces, `{ "spaces": [{ "name", "label", "parent"?, "teams"? }] }`: `parent` only when the asker is a member of the parent too, and `teams: true` on a space with at least one team the asker is in.
+
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.

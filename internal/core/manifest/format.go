@@ -79,6 +79,9 @@ func Format(t Tenant) []byte {
 			sp := t.Spaces[n]
 			fmt.Fprintf(&b, "  %s:%s", n, nl)
 			fmt.Fprintf(&b, "    template: %s%s", sp.Template, nl)
+			if sp.Parent != "" {
+				fmt.Fprintf(&b, "    parent: %s%s", sp.Parent, nl)
+			}
 			fmt.Fprintf(&b, "    members: %s%s", flowList(sp.Members, false), nl)
 			if len(sp.Stewards) > 0 {
 				fmt.Fprintf(&b, "    stewards: %s%s", flowList(sp.Stewards, false), nl)

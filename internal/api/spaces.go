@@ -22,6 +22,10 @@ type Spaces struct {
 type SpaceItem struct {
 	Name  string `json:"name"`
 	Label string `json:"label"`
+	// Parent is the department above, named only to a member of it too (SB-3901); Teams
+	// says the asker is in a team under this space, so it can be asked as a branch (SB-3903).
+	Parent string `json:"parent,omitempty"`
+	Teams  bool   `json:"teams,omitempty"`
 }
 
 // Register mounts the endpoint on mux.
@@ -41,9 +45,25 @@ func (h Spaces) list(w http.ResponseWriter, r *http.Request) {
 			fail(w, errs.New(errs.EUNAVAIL, "Spaces are unavailable right now."))
 			return
 		}
+		mine := map[string]bool{}
 		for _, sp := range all {
 			if sp.Tenant == s.Tenant() && spaces.Member(sp, s.Groups()) {
-				out = append(out, SpaceItem{Name: sp.Name, Label: sp.Label})
+				mine[sp.Name] = true
+			}
+		}
+		teams := map[string]bool{}
+		for _, sp := range all {
+			if mine[sp.Name] && mine[sp.Parent] {
+				teams[sp.Parent] = true
+			}
+		}
+		for _, sp := range all {
+			if mine[sp.Name] {
+				it := SpaceItem{Name: sp.Name, Label: sp.Label, Teams: teams[sp.Name]}
+				if mine[sp.Parent] {
+					it.Parent = sp.Parent
+				}
+				out = append(out, it)
 			}
 		}
 	}

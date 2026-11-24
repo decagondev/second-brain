@@ -213,7 +213,7 @@ func (t *cellTarget) Unreachable(ctx context.Context) (int, []string, error) {
 	total := 0
 	var bad []string
 	for _, name := range names {
-		sp := m.Spaces[name]
+		sp := m.Effective(name)
 		if len(sp.StartHere) == 0 {
 			continue
 		}

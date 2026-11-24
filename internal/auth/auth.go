@@ -209,7 +209,25 @@ func (c *Cell) Middleware(next http.Handler) http.Handler {
 			}
 			scope = scope.WithAttrs(attrs)
 		}
-		next.ServeHTTP(w, r.WithContext(tenancy.WithScope(r.Context(), scope)))
+		ctx := tenancy.WithScope(r.Context(), scope)
+		if r.URL.Query().Get("branch") == "true" { // SB-3903: this department and its teams
+			teams, err := spaces.Teams(r.Context(), c.Spaces, s.Tenant, groups, space)
+			if err != nil {
+				refuse(w, errs.New(errs.EUNAVAIL, "space registry unavailable"))
+				return
+			}
+			var branch []tenancy.Scope
+			for _, id := range teams {
+				in, err := c.Issuer.IssueIn(s.Tenant, s.User, groups, id)
+				if err != nil {
+					refuse(w, errs.New(errs.EAUTH, "sign in again"))
+					return
+				}
+				branch = append(branch, in.WithAttrs(scope.Attrs()))
+			}
+			ctx = tenancy.WithBranch(ctx, branch)
+		}
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

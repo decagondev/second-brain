@@ -1,13 +1,13 @@
 ---
 title: One Org, Many Levels; An Agent for Every Department; Run the Company
-summary: Concept for W38 to W40 (proposed 2026-11-24): twenty features that turn the second brain into a company OS, with spaces arranged as company, department and team, a read-only agent for every department, and goals, updates, policies and requests on top. No new service, store or Go module.
+summary: Concept for W38 to W40 (accepted 2026-11-24): twenty features that turn the second brain into a company OS, with spaces arranged as company, department and team, a read-only agent for every department, and goals, updates, policies and requests on top. No new service, store or Go module.
 ---
 
 # One org, many levels; an agent for every department; run the company
 
 | Version | Date | Owner | Status | Related |
 |---|---|---|---|---|
-| 0.1 | 2026-11-24 | Platform lead | Proposed, waiting on the user's decisions | [Principles](01-principles.md) · [08-department-brains.md](08-department-brains.md) · [16-trust-capture-reach.md](16-trust-capture-reach.md) · [PRD waves](03-prd.md#waves) |
+| 0.2 | 2026-11-24 | Platform lead | Accepted by the user with every recommended decision | [Principles](01-principles.md) · [08-department-brains.md](08-department-brains.md) · [16-trust-capture-reach.md](16-trust-capture-reach.md) · [PRD waves](03-prd.md#waves) |
 
 ## Summary
 
@@ -172,7 +172,7 @@ The goal is that the work around knowledge (goals, updates, policies, requests a
 
 ## Decisions for the user
 
-Waiting on the user. Each has a recommended option:
+Decided by the user on 2026-11-24: **every recommended option** below.
 
 1. **Scope and order.** *Recommended:* all three waves, all twenty tickets, in the order W38, W39, W40. The tree comes first because agents, roll-ups and budgets follow it. *Other:* W39 first, so the new agents land sooner.
 2. **The tree (SB-3901 to SB-3903).** *Recommended:* at most three levels set by `parent`. A child can only be stricter, members aren't inherited, and a branch ask covers only the teams the asker is in. *Other:* any depth.

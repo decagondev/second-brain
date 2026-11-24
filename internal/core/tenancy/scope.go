@@ -118,3 +118,25 @@ func FromContext(ctx context.Context) (Scope, error) {
 	}
 	return s, nil
 }
+
+type branchKey struct{}
+
+// WithBranch returns ctx carrying the scopes of a branch ask (SB-3903): the asker's scope
+// in each team space under the space asked in that they are a member of. Only the auth
+// middleware, which holds the Issuer, makes them, so a branch can't be made up.
+func WithBranch(ctx context.Context, scopes []Scope) context.Context {
+	return context.WithValue(ctx, branchKey{}, append([]Scope(nil), scopes...))
+}
+
+// BranchFrom returns the branch scopes ctx carries that belong to s's tenant and user, or
+// none for an ask of one space.
+func BranchFrom(ctx context.Context, s Scope) []Scope {
+	all, _ := ctx.Value(branchKey{}).([]Scope)
+	var out []Scope
+	for _, b := range all {
+		if b.Valid() && b.tenant == s.tenant && b.user == s.user && b.space != "" && b.space != s.space {
+			out = append(out, b)
+		}
+	}
+	return out
+}

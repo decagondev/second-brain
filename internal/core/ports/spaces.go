@@ -11,6 +11,7 @@ type Space struct {
 	RetentionDays                     int
 	Channels                          []string            // chat channels that ask in this space (SB-1007)
 	Fields                            map[string][]string // kind -> sensitive fields allowed (SB-1106)
+	Parent                            string              `json:",omitempty"` // the department space above, "" for none (SB-3901)
 }
 
 // SpaceStore is a cell's space registry. Only `sb tenant apply` writes it (spaces.Sync);

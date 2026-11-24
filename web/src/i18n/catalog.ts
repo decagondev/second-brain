@@ -547,6 +547,7 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Where I'm signed in": { de: "Wo ich angemeldet bin", fr: "Où je suis connecté" },
   "Who to ask": { de: "Wen Sie fragen können", fr: "À qui demander" },
   "Whole company": { de: "Ganzes Unternehmen", fr: "Toute l'entreprise" },
+  "{space} and its teams": { de: "{space} und seine Teams", fr: "{space} et ses équipes" },
   "Why it should leave this space's answers": { de: "Warum es aus den Antworten dieses Bereichs soll", fr: "Pourquoi il doit sortir des réponses de cet espace" },
   "Word documents": { de: "Textdokumente", fr: "Documents texte" },
   "Worst check: {verdict}, from facts gathered {at}.": { de: "Schlechteste Prüfung: {verdict}, nach Daten vom {at}.", fr: "Pire vérification : {verdict}, d'après les données du {at}." },

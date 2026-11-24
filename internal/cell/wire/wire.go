@@ -453,7 +453,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		ReviewAfter: func(ids []string) int {
 			least := 0
 			for _, id := range ids {
-				d := m.Spaces[strings.TrimPrefix(id, "spc_")].ReviewAfterDays
+				d := m.Effective(strings.TrimPrefix(id, "spc_")).ReviewAfterDays
 				if d == 0 {
 					d = manifest.DefaultReviewAfterDays
 				}
@@ -466,7 +466,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Owner: ask.ActiveOwner(func(ctx context.Context, email string) ([]ports.User, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		}),
-		Glossary: func(name string) map[string]string { return m.Spaces[name].Glossary },
+		Glossary: func(name string) map[string]string { return m.Effective(name).Glossary },
 		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
 		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text}
 
@@ -567,7 +567,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			}
 			return true, nil // no active user has it: they left, or were deprovisioned (SB-2201)
 		}, Evals: c.Traces, Feedback: c.Traces, Marks: c.Traces, Replies: c.Traces, Claimant: c.claimant,
-		StartItems: func(name string) []string { return m.Spaces[name].StartHere }, Members: c.noteReaders(m),
+		StartItems: func(name string) []string { return m.Effective(name).StartHere }, Members: c.noteReaders(m),
 		Owner: func(ctx context.Context, email string) (string, bool, error) { // SB-3706: one active user, or no one
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
 			if err != nil {
@@ -591,10 +591,10 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		app.Saver = stewards
 	}
 	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces,
-		ReviewAfter: func(name string) int { return m.Spaces[name].ReviewAfterDays }}.Register(mux)
+		ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays }}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
 		Start: func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error) {
-			return agent.StartHere(ctx, s, m.Spaces[strings.TrimPrefix(s.Space(), "spc_")].StartHere)
+			return agent.StartHere(ctx, s, m.Effective(strings.TrimPrefix(s.Space(), "spc_")).StartHere)
 		},
 		Changes: agent.Changes,
 		Access: func(ctx context.Context, s tenancy.Scope, trace string) (ask.AccessResponse, error) {

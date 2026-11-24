@@ -33,6 +33,8 @@ type Space struct {
 	ReviewAfterDays int `json:"review_after_days"`
 	// Glossary is the space's terms and their meanings (SB-2203); nil for none.
 	Glossary map[string]string `json:"glossary,omitempty"`
+	// Parent is the department space this team space sits under, "" for none (SB-3901).
+	Parent string `json:"parent,omitempty"`
 }
 
 // MaxGlossary is the most terms a space keeps, and MaxTerm and MaxMeaning their lengths.
@@ -129,16 +131,16 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention, fields *node
-	set                                       map[string]bool
-	start                                     []*node
+	members, scope, agents, retention, fields, label, parent *node
+	set                                                      map[string]bool
+	start                                                    []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -193,7 +195,11 @@ func (c *checker) space(name string, n *node, p string) {
 		case "stewards":
 			s.Stewards = c.groupList(v, f)
 		case "label":
-			s.Label = c.oneOf(v, f, Labels)
+			s.Label, sn.label = c.oneOf(v, f, Labels), v
+		case "parent":
+			if pn, ok := c.scalar(v, f); ok {
+				s.Parent, sn.parent = pn, v
+			}
 		case "scope":
 			s.Scope, sn.scope = c.scope(v, f), v
 		case "agents":
@@ -388,12 +394,18 @@ func (c *checker) spaceChecks() {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	c.treeChecks(names)
+	// Departments before their teams, so a team inherits from a parent already filled in.
+	sort.SliceStable(names, func(i, j int) bool { return c.t.Spaces[names[i]].Parent == "" && c.t.Spaces[names[j]].Parent != "" })
 	for _, name := range names {
 		s, sn, p := c.t.Spaces[name], c.spaceNodes[name], "spaces."+name
-		tpl := Templates[s.Template]
-		if s.Label == "" {
-			s.Label = tpl.Label
+		par, hasParent := c.t.Spaces[s.Parent]
+		hasParent = hasParent && s.Parent != ""
+		if hasParent && !sn.set["template"] {
+			s.Template = par.Template // a team under Finance is a Finance team (SB-3902)
 		}
+		tpl := Templates[s.Template]
+		c.spaceLabel(&s, sn, p, tpl, par, hasParent)
 		if s.Label == "restricted" && len(s.Stewards) == 0 && c.seen["spaces"] != nil {
 			c.add(c.spaceNode(name), p, "a restricted space needs stewards; someone has to own who can read it")
 		}
@@ -411,35 +423,8 @@ func (c *checker) spaceChecks() {
 				}
 			}
 		}
-		if sn.agents != nil {
-			if c.seen["agents"] != nil && c.seen["agents"].kind == seqNode {
-				for i, a := range s.Agents {
-					switch {
-					case !contains(c.t.Agents, a):
-						c.add(sn.agents.items[i], fmt.Sprintf("%s.agents[%d]", p, i), "%q is not in the manifest's agents", a)
-					case a != "ask" && a != "draft-reply" && !contains(tpl.Agents, a):
-						c.add(sn.agents.items[i], fmt.Sprintf("%s.agents[%d]", p, i), "%q is another department's agent; it runs only in spaces of its own template (sb-agents(7))", a)
-					}
-				}
-			}
-		} else {
-			s.Agents = []string{}
-			for _, a := range tpl.Agents {
-				if contains(c.t.Agents, a) {
-					s.Agents = append(s.Agents, a)
-				}
-			}
-		}
-		if sn.retention != nil {
-			if s.RetentionDays > c.t.RetentionDays && c.t.RetentionDays > 0 {
-				c.add(sn.retention, p+".retention_days", "%d is above the tenant's retention_days (%d); a space can keep less, never more", s.RetentionDays, c.t.RetentionDays)
-			}
-		} else {
-			s.RetentionDays = c.t.RetentionDays
-			if tpl.RetentionDays > 0 && tpl.RetentionDays < s.RetentionDays {
-				s.RetentionDays = tpl.RetentionDays
-			}
-		}
+		c.spaceAgents(&s, sn, p, tpl, par, hasParent)
+		c.spaceRetention(&s, sn, p, tpl, par, hasParent)
 		c.t.Spaces[name] = s
 	}
 	c.reachChecks(names)
@@ -449,6 +434,70 @@ func (c *checker) spaceChecks() {
 				c.add(c.barrierNodes[i], fmt.Sprintf("barriers[%d]", indexOf(c.seen["barriers"].items, c.barrierNodes[i])),
 					"space %q has both %s and %s as members, so it could never answer either", name, pair[0], pair[1])
 			}
+		}
+	}
+}
+
+// spaceLabel fills in a space's label, from its template or, for a team, its department,
+// and refuses a team looser than its department (SB-3901).
+func (c *checker) spaceLabel(s *Space, sn spaceNodes, p string, tpl Template, par Space, hasParent bool) {
+	if s.Label == "" {
+		s.Label = tpl.Label
+		if hasParent && !sn.set["template"] {
+			s.Label = par.Label // the department's label, not its template's default
+		} else if hasParent && labelRank(par.Label) > labelRank(s.Label) {
+			s.Label = par.Label
+		}
+	} else if hasParent && labelRank(s.Label) < labelRank(par.Label) {
+		c.add(sn.label, p+".label", "%s is looser than its parent %s's %s; a team can be stricter than its department, never looser (LAW-24)", s.Label, s.Parent, par.Label)
+	}
+}
+
+// spaceAgents checks a space's agents, or fills them in from its template or, for a
+// team, its department's that its template allows (SB-3902).
+func (c *checker) spaceAgents(s *Space, sn spaceNodes, p string, tpl Template, par Space, hasParent bool) {
+	if sn.agents != nil {
+		if c.seen["agents"] != nil && c.seen["agents"].kind == seqNode {
+			for i, a := range s.Agents {
+				switch {
+				case !contains(c.t.Agents, a):
+					c.add(sn.agents.items[i], fmt.Sprintf("%s.agents[%d]", p, i), "%q is not in the manifest's agents", a)
+				case a != "ask" && a != "draft-reply" && !contains(tpl.Agents, a):
+					c.add(sn.agents.items[i], fmt.Sprintf("%s.agents[%d]", p, i), "%q is another department's agent; it runs only in spaces of its own template (sb-agents(7))", a)
+				}
+			}
+		}
+	} else {
+		from := tpl.Agents
+		if hasParent {
+			from = par.Agents // settings flow down (SB-3902)
+		}
+		s.Agents = []string{}
+		for _, a := range from {
+			if contains(c.t.Agents, a) && (a == "ask" || a == "draft-reply" || contains(tpl.Agents, a)) {
+				s.Agents = append(s.Agents, a)
+			}
+		}
+	}
+}
+
+// spaceRetention checks a space's retention against the tenant's and, for a team, its
+// department's, or fills it in as the least of them (SB-3901).
+func (c *checker) spaceRetention(s *Space, sn spaceNodes, p string, tpl Template, par Space, hasParent bool) {
+	if sn.retention != nil {
+		switch {
+		case s.RetentionDays > c.t.RetentionDays && c.t.RetentionDays > 0:
+			c.add(sn.retention, p+".retention_days", "%d is above the tenant's retention_days (%d); a space can keep less, never more", s.RetentionDays, c.t.RetentionDays)
+		case hasParent && par.RetentionDays > 0 && s.RetentionDays > par.RetentionDays:
+			c.add(sn.retention, p+".retention_days", "%d is above its parent %s's retention_days (%d); a team can keep less, never more (LAW-24)", s.RetentionDays, s.Parent, par.RetentionDays)
+		}
+	} else {
+		s.RetentionDays = c.t.RetentionDays
+		if tpl.RetentionDays > 0 && tpl.RetentionDays < s.RetentionDays {
+			s.RetentionDays = tpl.RetentionDays
+		}
+		if hasParent && par.RetentionDays > 0 && par.RetentionDays < s.RetentionDays {
+			s.RetentionDays = par.RetentionDays
 		}
 	}
 }
@@ -485,6 +534,9 @@ func SpaceAttrs(s Space) map[string]string {
 			gs = append(gs, k+": "+s.Glossary[k])
 		}
 		a["glossary"] = strings.Join(gs, "; ")
+	}
+	if s.Parent != "" {
+		a["parent"] = s.Parent
 	}
 	if s.ReviewAfterDays != 0 && s.ReviewAfterDays != DefaultReviewAfterDays {
 		a["review_after_days"] = strconv.Itoa(s.ReviewAfterDays)
@@ -616,4 +668,129 @@ func (c *checker) startKinds(s Space, sn spaceNodes, p string) {
 			c.add(sn.start[j], fmt.Sprintf("%s.start_here[%d]", p, j), "kind %q isn't in this space's scope", kind)
 		}
 	}
+}
+
+// labelRank is a label's place in Labels, least sensitive first; -1 for none.
+func labelRank(l string) int {
+	for i, x := range Labels {
+		if x == l {
+			return i
+		}
+	}
+	return -1
+}
+
+// treeChecks are the rules of the tree (sb-space(5) rule 17; SB-3901): a parent is
+// another space in the manifest, and a parent has no parent of its own, so the tree is
+// at most company, department, team and can hold no cycle.
+func (c *checker) treeChecks(names []string) {
+	for _, name := range names {
+		s, sn := c.t.Spaces[name], c.spaceNodes[name]
+		if s.Parent == "" {
+			continue
+		}
+		f := "spaces." + name + ".parent"
+		par, ok := c.t.Spaces[s.Parent]
+		switch {
+		case s.Parent == name:
+			c.add(sn.parent, f, "a space can't be its own parent")
+		case !ok:
+			c.add(sn.parent, f, "%q is not a space in this manifest", s.Parent)
+		case par.Parent != "":
+			c.add(sn.parent, f, "%s is itself under %s; the tree is at most company, department and team", s.Parent, par.Parent)
+		default:
+			continue
+		}
+		s.Parent = "" // a bad parent is reported once and not inherited from
+		c.t.Spaces[name] = s
+	}
+}
+
+// Depth is a space's level in the tree (SB-3901): 1 for the company (""), 2 for a space
+// with no parent, 3 for a team under one.
+func (t Tenant) Depth(name string) int {
+	switch s, ok := t.Spaces[name]; {
+	case name == "" || name == "company" || !ok:
+		return 1
+	case s.Parent == "":
+		return 2
+	default:
+		return 3
+	}
+}
+
+// Children are the spaces whose parent is name, sorted (SB-3901).
+func (t Tenant) Children(name string) []string {
+	var out []string
+	for n, s := range t.Spaces {
+		if s.Parent == name && name != "" {
+			out = append(out, n)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// Branch is name and its children, the space first (SB-3903).
+func (t Tenant) Branch(name string) []string {
+	if _, ok := t.Spaces[name]; !ok {
+		return nil
+	}
+	return append([]string{name}, t.Children(name)...)
+}
+
+// Up is the chain from name to its department, name first (SB-3902, SB-3904).
+func (t Tenant) Up(name string) []string {
+	s, ok := t.Spaces[name]
+	if !ok {
+		return nil
+	}
+	if s.Parent == "" {
+		return []string{name}
+	}
+	return []string{name, s.Parent}
+}
+
+// Effective is a space with what flows down from its parent filled in (SB-3902): a team
+// with no glossary, start-here list or review interval of its own takes its department's.
+// Glossaries merge, the team's own term winning; start-here lists join, the department's
+// first, at most MaxStartHere. Label, retention and agents are settled by Check already.
+func (t Tenant) Effective(name string) Space {
+	s := t.Spaces[name]
+	par, ok := t.Spaces[s.Parent]
+	if s.Parent == "" || !ok {
+		return s
+	}
+	if len(par.Glossary) > 0 {
+		g := map[string]string{}
+		own := map[string]bool{}
+		for k := range s.Glossary {
+			own[strings.ToLower(k)] = true
+		}
+		for k, v := range par.Glossary {
+			if !own[strings.ToLower(k)] {
+				g[k] = v
+			}
+		}
+		for k, v := range s.Glossary {
+			g[k] = v
+		}
+		s.Glossary = g
+	}
+	if len(par.StartHere) > 0 {
+		joined := append([]string{}, par.StartHere...)
+		for _, it := range s.StartHere {
+			if !contains(joined, it) {
+				joined = append(joined, it)
+			}
+		}
+		if len(joined) > MaxStartHere {
+			joined = joined[:MaxStartHere]
+		}
+		s.StartHere = joined
+	}
+	if s.ReviewAfterDays == 0 {
+		s.ReviewAfterDays = par.ReviewAfterDays
+	}
+	return s
 }

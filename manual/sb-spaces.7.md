@@ -155,6 +155,16 @@ While a hold is active:
 
 Placing and releasing a hold each write a `kind: retention` audit row (subject `hold:ID`, state `placed` or `released`, the matter and scope in the reason) **before** the hold takes or loses effect; if the row can't be written, nothing changes (LAW-11). Releasing needs a Legal steward and a reason. A released hold stops protecting at once, and the next sweep deletes what it had kept.
 
+### The tree (SB-3901 to SB-3903)
+
+Spaces follow the company's shape: the company, its departments, and their teams. A space names its department with `parent` (sb-space(5)); a space with no parent is a department, and a company-wide ask is the top of the tree. There are at most three levels and no cycles, and `sb tenant check` refuses anything else with its line. Reorg preview shows a change of `parent` like any change to the manifest.
+
+**The tree only narrows** (LAW-24). A team is at least as strict as its department: its label is at least the department's, its retention at most the department's, and the department's barriers hold in it as everywhere. **Members are never inherited.** A team's members are its own groups, since IdPs already nest groups, and a person in a team who isn't in the department's groups isn't a member of the department.
+
+**Settings flow down (SB-3902).** A team with no glossary, start-here list, review interval or agents of its own takes its department's. Glossaries merge, the team's own term winning; start-here lists join, the department's first, at most ten, each item checked as the reader as always. The department's stewards are stewards of each of its teams for questions that come up the tree and for roll-ups, not for publishing notes in a team unless the team names them.
+
+**Ask across a branch (SB-3903).** In a department, `?space=NAME&branch=true` (sb-ask(3)) asks in the department and every team under it **that the asker is a member of**. Retrieval and every check run once per space, as the asker in that space, and the chunks each run allowed are joined: nothing one space's checks refused enters through another's unless that run allowed it on its own. A team the asker isn't in adds nothing and isn't named. Cites name the spaces that hold each document, as always. The web UI's switcher offers **Finance and its teams** only when the asker is in at least one of its teams; `GET /v1/spaces` says so with `"teams": true` on the department, and names a space's `parent` only to a member of the parent too.
+
 ### Reorg preview (SB-1206)
 
 Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.
