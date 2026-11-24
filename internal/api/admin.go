@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/ingest"
@@ -65,6 +66,9 @@ type Admin struct {
 	// ActiveByEmail are the active user ids with an email, for actor= (SB-3204); nil
 	// matches actor= as a user id only.
 	ActiveByEmail func(ctx context.Context, email string) ([]string, error)
+	// Notices keeps the cell's one notice to everyone (SB-3207); nil is EUNAVAIL to set it
+	// and no notice to read.
+	Notices ask.NoticeStore
 }
 
 // IndexReports are the operator's reports on the index: counts and locations only.
@@ -97,6 +101,9 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/index/refresh", h.guard(h.refresh))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
+	mux.HandleFunc("PUT /v1/admin/notice", h.guard(h.setNotice))
+	mux.HandleFunc("DELETE /v1/admin/notice", h.guard(h.clearNotice))
+	mux.HandleFunc("GET /v1/notice", h.notice)
 	mux.HandleFunc("GET /v1/admin/refusals", h.guard(func(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
 		h.fail(w, errs.New(errs.ENOTIMPL, "refusal reports arrive with SB-607"))
 	}))

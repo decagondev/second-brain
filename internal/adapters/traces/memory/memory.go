@@ -30,6 +30,7 @@ type Store struct {
 	marks    map[string]ask.ReviewMark    // tenant/space/doc
 	retired  map[string]ask.Retirement    // tenant/space/doc
 	tmpls    map[string]ask.ReplyTemplate // tenant/space/id
+	notices  map[string]ask.CellNotice    // tenant
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -45,7 +46,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}}
 }
 
 // PutTrace implements ask.Store.
@@ -678,4 +679,30 @@ func (s *Store) DeleteRetirement(_ context.Context, tenant, space, doc string) (
 	_, ok := s.retired[k]
 	delete(s.retired, k)
 	return ok, nil
+}
+
+var _ ask.NoticeStore = (*Store)(nil)
+
+// PutNotice implements ask.NoticeStore (SB-3207): one per tenant.
+func (s *Store) PutNotice(_ context.Context, n ask.CellNotice) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.notices[n.Tenant] = n
+	return nil
+}
+
+// Notice implements ask.NoticeStore.
+func (s *Store) Notice(_ context.Context, tenant string) (ask.CellNotice, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n, ok := s.notices[tenant]
+	return n, ok, nil
+}
+
+// DeleteNotice implements ask.NoticeStore.
+func (s *Store) DeleteNotice(_ context.Context, tenant string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.notices, tenant)
+	return nil
 }

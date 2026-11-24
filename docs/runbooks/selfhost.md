@@ -128,6 +128,14 @@ When the company stops using the box (SB-1907):
 
 There is no IAM to enumerate, so the cell keeps its own list of what the factory can reach (`state/iam/TENANT.json`): at most the release store's read-only pull token. The monthly `access` job checks it and leaves a signed statement in `state/access/statement-DATE.json`, whose hash is in the audit log and so in the next anchor. An unlisted path is a Sev-1 `access_path` ([LAW-17](LAW-17.md)). To show an auditor: the statement, `sb audit verify`, and the anchor covering the statement's audit row.
 
+## Disk runway
+
+The doctor's **disk runway** line estimates the days until a disk is full from its growth over the last 14 days (sb-selfhost(7), Disk runway). Under 30 days it warns; under 7 it fails and alerts.
+
+1. Run `du -sh build/selfhost/db-dumps` and `docker system df`: old dumps and unused images are the usual growth. Remove dumps the off-box copy already holds.
+2. If the growth is the index or the database, the cell is simply holding more: give the machine a bigger disk, or move Docker's data root to one, before the runway ends.
+3. Check again the next day: the estimate uses the samples kept, so it settles after a few days.
+
 ## When something breaks
 
 1. Run `sudo /opt/second-brain/tools/selfhost/install.sh --doctor` and follow the fixes it prints.

@@ -65,10 +65,12 @@ type Report struct {
 	Notify *notify.RunRecord `json:"notify,omitempty"`
 	// Prompt is the 95th percentile of input tokens per model call this week and the week
 	// before (SB-2906).
-	Prompt    *health.Prompt `json:"prompt,omitempty"`
-	TokensIn  int            `json:"tokens_in"`
-	TokensOut int            `json:"tokens_out"`
-	SpendUSD  float64        `json:"spend_usd"`
+	Prompt *health.Prompt `json:"prompt,omitempty"`
+	// AnswerTime is seconds per answer this week and last (SB-3205).
+	AnswerTime *health.AnswerTime `json:"answer_time,omitempty"`
+	TokensIn   int                `json:"tokens_in"`
+	TokensOut  int                `json:"tokens_out"`
+	SpendUSD   float64            `json:"spend_usd"`
 }
 
 // WeekOf is the ISO week label and its Monday-to-Monday UTC bounds.
@@ -206,6 +208,17 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 		}
 		r.Prompt = health.PromptFrom(week, before)
 	}
+	if as, ok := src.(AnswerSource); ok {
+		week, err := as.AnswerMillis(ctx, tenant, from, to)
+		if err != nil {
+			return r, err
+		}
+		before, err := as.AnswerMillis(ctx, tenant, from.AddDate(0, 0, -7), from)
+		if err != nil {
+			return r, err
+		}
+		r.AnswerTime = health.AnswerFrom(week, before)
+	}
 	if r.TokensIn, r.TokensOut, err = src.Tokens(ctx, tenant, from, to); err != nil {
 		return r, err
 	}
@@ -282,6 +295,13 @@ func (r Report) Markdown() string {
 		}
 		fmt.Fprintf(&b, "| Input tokens per model call (95th percentile) | %d (last week %d%s) |\n", p.P95, p.P95Before, grew)
 	}
+	if a := r.AnswerTime; a != nil {
+		slower := ""
+		if a.Warning {
+			slower = ", slower"
+		}
+		fmt.Fprintf(&b, "| Seconds per answer (95th percentile) | %.1f (last week %.1f%s) |\n", a.P95Seconds, a.P95SecondsBefore, slower)
+	}
 	if n := r.Notify; n != nil {
 		state := ""
 		if n.Error || n.Failed > 0 {
@@ -290,6 +310,11 @@ func (r Report) Markdown() string {
 		fmt.Fprintf(&b, "| Notifications | last run %s by %s%s: %d sent, %d skipped, %d failed |\n", n.At.UTC().Format("2006-01-02 15:04 UTC"), n.Via, state, n.Sent, n.Skipped, n.Failed)
 	}
 	return b.String()
+}
+
+// AnswerSource is a Source that keeps each answer's duration (SB-3205).
+type AnswerSource interface {
+	AnswerMillis(ctx context.Context, tenant string, from, to time.Time) ([]int, error)
 }
 
 // PromptSource is a Source that keeps each model call's input tokens (SB-2906).

@@ -112,6 +112,7 @@ describe("accessibility (axe, WCAG 2.2 A and AA rules that jsdom can check)", ()
   it("has no violations in the app with an answer and an error", async () => {
     let n = 0;
     const fetcher: Fetch = async (url) => {
+      if (url === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (url === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       if (url.startsWith("/v1/changes")) return new Response(JSON.stringify({ items: [] }), { status: 200 }); // SB-1708
       if (url.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304
@@ -137,6 +138,7 @@ describe("conversation", () => {
   it("sends the conversation id on later turns", async () => {
     const bodies: string[] = [];
     const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       if (u.startsWith("/v1/changes")) return new Response(JSON.stringify({ items: [] }), { status: 200 }); // SB-1708
       if (u.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304
@@ -208,6 +210,7 @@ describe("spaces", () => {
     const urls: string[] = [];
     const fetcher: Fetch = async (u) => {
       urls.push(u);
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [{ name: "finance", label: "restricted" }] }), { status: 200 });
       return new Response(JSON.stringify(response([finance])), { status: 200 });
     };
@@ -245,6 +248,7 @@ describe("spaces", () => {
 describe("signed out", () => {
   it("sends a signed-out user to sign in, and never repeats the same words twice", async () => {
     const fetcher: Fetch = async (u) => {
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 401 });
       return new Response(JSON.stringify({ error: { code: "EAUTH", message: "sign in again", remedy: "Sign in again", trace: "" } }), { status: 401 });
     };

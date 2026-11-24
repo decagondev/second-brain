@@ -891,3 +891,20 @@ func (t Traces) DeleteRetirement(ctx context.Context, tenant, space, doc string)
 	}
 	return true, del(ctx, t.Pool, tenant, "retirement", space+"|"+doc)
 }
+
+var _ ask.NoticeStore = Traces{}
+
+// PutNotice implements ask.NoticeStore (SB-3207): the tenant's one notice.
+func (t Traces) PutNotice(ctx context.Context, n ask.CellNotice) error {
+	return put(ctx, t.Pool, n.Tenant, "notice", "cell", meta{at: n.At, user: n.By}, n, false)
+}
+
+// Notice implements ask.NoticeStore.
+func (t Traces) Notice(ctx context.Context, tenant string) (ask.CellNotice, bool, error) {
+	return get[ask.CellNotice](ctx, t.Pool, tenant, "notice", "cell", false)
+}
+
+// DeleteNotice implements ask.NoticeStore.
+func (t Traces) DeleteNotice(ctx context.Context, tenant string) error {
+	return del(ctx, t.Pool, tenant, "notice", "cell")
+}

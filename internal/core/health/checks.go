@@ -35,6 +35,9 @@ func (r Report) Checks() []Check {
 	if r.Prompt != nil {
 		out = append(out, Check{Name: "prompt", Warning: r.Prompt.Warning})
 	}
+	if r.AnswerTime != nil {
+		out = append(out, Check{Name: "answer_time", Warning: r.AnswerTime.Warning})
+	}
 	if r.Unstewarded != nil {
 		out = append(out, Check{Name: "stewards", Warning: len(r.Unstewarded.Spaces) > 0, Unknown: len(r.Unstewarded.Unknown) > 0})
 	}

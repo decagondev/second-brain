@@ -150,6 +150,9 @@ func (a *App) command(w http.ResponseWriter, r *http.Request) {
 				m.Attachments = []Attachment{{Actions: []Action{{ID: "share", Name: "Share in channel", Integration: Integration{URL: a.ActionURL, Context: c}}}}}
 			}
 		}
+		if line := a.Rules.NoticeLine(ctx); line != "" { // first, while an admin's notice stands (SB-3207)
+			m.Text = "**" + line + "**\n" + m.Text
+		}
 		_ = a.post(ctx, responseURL, m.Message)
 	})
 }

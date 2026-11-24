@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W28 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A sync failure is classified and its record holds no URL
-- [ ] An unreadable health line is never 0 on both gauges
-- [ ] A disk runway is never shown from too little history
-- [ ] A notice ends by itself within 7 days
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A sync failure is classified and its record holds no URL
+- [x] An unreadable health line is never 0 on both gauges
+- [x] A disk runway is never shown from too little history
+- [x] A notice ends by itself within 7 days
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

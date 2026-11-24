@@ -209,6 +209,8 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Nothing indexed answers this yet.": { de: "Noch beantwortet nichts im Index diese Frage.", fr: "Rien dans l'index ne répond encore à cette question." },
   "Nothing to review: no relied-on document here is stale or marked wrong.": { de: "Nichts zu prüfen: Kein genutztes Dokument hier ist veraltet oder als falsch markiert.", fr: "Rien à revoir : aucun document utilisé ici n'est obsolète ni signalé comme faux." },
   "Nothing you can open matches this.": { de: "Nichts, was Sie öffnen können, passt dazu.", fr: "Rien de ce que vous pouvez ouvrir ne correspond." },
+  "Notice from your admins": { de: "Hinweis Ihrer Admins", fr: "Avis de vos administrateurs" },
+  "Notice:": { de: "Hinweis:", fr: "Avis :" },
   "Notifications": { de: "Benachrichtigungen", fr: "Notifications" },
   "Now": { de: "Jetzt", fr: "Actuellement" },
   "on time, last finished {at}": { de: "pünktlich, zuletzt beendet {at}", fr: "à l'heure, dernière fin {at}" },

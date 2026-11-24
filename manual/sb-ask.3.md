@@ -331,6 +331,10 @@ The UI renders a claim only as cited (with at least one chip) or as uncited, nev
 
 `cites[].url` is set when the source's connector can link to a version; it is omitted otherwise. `agent` names the agent that answered, and `dropped` counts the uncited claims a department agent left out, always 0 for `ask` (sb-agents(7), Department agents). In a cell with spaces, `cites[].spaces` names the spaces that hold the cited document and `cites[].label` its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).
 
+### The notice to everyone (SB-3207)
+
+While an admin's notice stands (sb-admin(3), `PUT /v1/admin/notice`), the web UI shows it at the top of every screen, read from `GET /v1/notice` on load and every five minutes, and the chat apps put it as the first line of every answer, `Notice: …`. It is shown as plain text, never as a link or markup, and it is gone once its end time passes.
+
 ### Spaces
 
 `GET /v1/spaces` lists the spaces the asker is a member of, now, as `{"spaces": [{"name": "finance", "label": "restricted"}]}`, sorted by name. Spaces the asker isn't in are never listed, and a cell without spaces returns an empty list. A registry that can't answer is `EUNAVAIL`.

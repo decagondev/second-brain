@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S31.2: See it coming
+
+**Wave/slice:** W31 / S31.2 (SB-3205 to SB-3207) · **Status:** Done
+
+**What:** Health and the weekly report show seconds per answer at the 95th percentile, this week against last, and warn once it is over 1.5 times as long. The box check has a disk runway line: from at most one used-bytes sample a day it says how many days are left at the current rate, warns under 30 and fails under 7, and says not enough history yet until it has some. An admin can set one notice to everyone with PUT /v1/admin/notice: the web UI shows it at the top of every screen and the Slack and Mattermost apps put it first in every answer, until it ends by itself within 7 days or DELETE clears it.
+
+**Why this way:** Each feature reuses what is there: the usage ledger for answer times, the box facts for disk history and the traces store for the notice, so nothing new runs or keeps data. The notice is plain text with no link or markup, so it can't be used to send people somewhere, and its audit rows carry only the text's SHA-256 (LAW-07). A runway is never guessed from too little history (LAW-03).
+
+**Learned:** The web tests' fetchers answer every unknown URL as an answer, so a new GET on load had to be answered in each of them. An aside can't take role status under axe; a div can.
+
+**Laws:** LAW-03, LAW-07. Every law test is still green.
+
 ## 2026-11-24 S31.1: Know why
 
 **Wave/slice:** W31 / S31.1 (SB-3201 to SB-3204) · **Status:** Done

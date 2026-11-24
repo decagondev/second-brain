@@ -62,6 +62,33 @@ type App struct {
 	// Language is the manifest's language, which answers are written in (SB-3003); nil
 	// leaves it to the model.
 	Language func() string
+	// Notice is the cell's notice to everyone as a first line, "Notice: …", or "" when none
+	// stands (SB-3207); nil is none.
+	Notice func(ctx context.Context) string
+}
+
+// NoticeLine is the first line every answer starts with while an admin's notice stands.
+func (a *App) NoticeLine(ctx context.Context) string {
+	if a == nil || a.Notice == nil {
+		return ""
+	}
+	return a.Notice(ctx)
+}
+
+// WithNotice puts the notice first in m, as plain text.
+func (a *App) WithNotice(ctx context.Context, m Message) Message {
+	line := a.NoticeLine(ctx)
+	if line == "" {
+		return m
+	}
+	line = "*" + escape(line) + "*\n"
+	m.Text = line + m.Text
+	if len(m.Blocks) > 0 && m.Blocks[0].Text != nil {
+		t := *m.Blocks[0].Text
+		t.Text = line + t.Text
+		m.Blocks = append([]Block{{Type: m.Blocks[0].Type, Text: &t, Elements: m.Blocks[0].Elements}}, m.Blocks[1:]...)
+	}
+	return m
 }
 
 // AnswerLanguage is the language chat answers are asked in.
@@ -178,7 +205,7 @@ func (a *App) command(w http.ResponseWriter, r *http.Request) {
 	a.run(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), AnswerTimeout)
 		defer cancel()
-		_ = a.post(ctx, responseURL, a.answer(ctx, user, form.Get("channel_name"), question))
+		_ = a.post(ctx, responseURL, a.WithNotice(ctx, a.answer(ctx, user, form.Get("channel_name"), question)))
 	})
 }
 

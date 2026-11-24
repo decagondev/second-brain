@@ -44,6 +44,7 @@ describe.each(["en", "de", "fr"] as Lang[])("the UI in %s", (l) => {
     setLang(l);
     let n = 0;
     const fetcher: Fetch = async (url) => {
+      if (url === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (url === "/v1/spaces") return new Response(JSON.stringify({ spaces: [] }), { status: 200 });
       if (url.startsWith("/v1/changes")) return new Response(JSON.stringify({ items: [] }), { status: 200 });
       if (url.startsWith("/v1/search")) return new Response(JSON.stringify({ trace: "tr_s", release: "rel_x", results: [], refused: 0 }), { status: 200 }); // SB-2304

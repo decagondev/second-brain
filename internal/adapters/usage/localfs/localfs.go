@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,7 +40,7 @@ var _ costs.Meter = (*Ledger)(nil)
 
 type entry struct {
 	At       time.Time `json:"at"`
-	Kind     string    `json:"kind"` // tokens_in, tokens_out, draft_used, draft_discarded, spend_usd
+	Kind     string    `json:"kind"` // tokens_in, tokens_out, draft_used, draft_discarded, spend_usd, answer_ms
 	N        float64   `json:"n"`
 	Tenant   string    `json:"tenant"`
 	Provider string    `json:"provider,omitempty"`
@@ -68,6 +69,30 @@ func (l *Ledger) Add(name, help string, labels map[string]string, v float64) {
 		return
 	}
 	l.write(e)
+}
+
+// Observe forwards a histogram observation, and records each answer's duration in
+// milliseconds for the answer-time watch (SB-3205): a duration, never a question.
+func (l *Ledger) Observe(name, help string, labels map[string]string, v float64) {
+	if o, ok := l.Next.(interface {
+		Observe(name, help string, labels map[string]string, v float64)
+	}); ok {
+		o.Observe(name, help, labels, v)
+	}
+	if name == "sb_ask_seconds" {
+		l.write(entry{At: l.Now().UTC(), Kind: "answer_ms", N: math.Round(v * 1000), Tenant: l.Tenant})
+	}
+}
+
+// AnswerMillis are the milliseconds each answer in [from, to) took (SB-3205).
+func (l *Ledger) AnswerMillis(_ context.Context, tenant string, from, to time.Time) ([]int, error) {
+	var out []int
+	err := l.each(tenant, func(e entry) {
+		if e.Kind == "answer_ms" && !e.At.Before(from) && e.At.Before(to) {
+			out = append(out, int(e.N))
+		}
+	})
+	return out, err
 }
 
 func (l *Ledger) write(e entry) {

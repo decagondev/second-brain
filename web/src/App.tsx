@@ -14,6 +14,7 @@ import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
+import { NoticeBanner } from "./Notice";
 import { AnswerTools } from "./Copy";
 import { forgetQuestions, recentQuestions, rememberQuestion } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
@@ -194,6 +195,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         {t("Skip to the conversation")}
       </a>
       <h1>{"Second Brain"}</h1>
+      <NoticeBanner fetcher={fetcher} />
       {(shared || sharedError) && (
         <section className="shared" aria-label={t("Shared question")}>
           {shared ? (

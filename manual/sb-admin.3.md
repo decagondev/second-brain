@@ -16,6 +16,8 @@ sb-admin — manifest diffs, kill switches, audit and usage
 GET  /v1/admin/health
 GET  /v1/admin/feedback?rating=down[&reviewed=true]
 POST /v1/admin/feedback/TRACE/reviewed
+PUT  /v1/admin/notice
+DELETE /v1/admin/notice
 GET  /v1/admin/manifest
 POST /v1/admin/manifest/diff
 POST /v1/admin/kill
@@ -58,6 +60,8 @@ The console (`/?admin`) is a client of this API and has no other powers. It open
 
 **`POST /v1/admin/feedback/TRACE/reviewed`** marks an item reviewed by the operator who sends it, and records that in the audit log (`config` row, subject `feedback:TRACE`). Marking an item twice keeps the first review. A trace with no feedback is `EINVAL`.
 
+**`PUT /v1/admin/notice`** `{ "text": "…", "until": "2027-03-12T18:00:00Z" }` (SB-3207) sets the cell's one notice to everyone: one line of plain text, at most 200 characters, with no link or markup (no `<`, `>`, `[`, `]`, `` ` ``, or `://`), ending at `until`, which must be in the future and at most 7 days away; anything else is `EINVAL`. It replaces any notice there was. **`DELETE /v1/admin/notice`** clears it. Each writes a `kind: config` audit row (subject `notice`, state `set` or `cleared`, with the SHA-256 of the text, never the text). The notice is one record in the cell's store and ends by itself at `until`: nothing needs to clear it. **`GET /v1/notice`**, for anyone signed in, answers `{ "text", "until" }` while it stands and `{}` after. The web UI shows it at the top of every screen, and the chat apps put it first in every answer (sb-ask(3)). Admins only, like the rest of this page.
+
 **`GET /v1/admin/manifest`** returns the applied manifest and its git commit.
 
 **`POST /v1/admin/manifest/diff`** takes a JSON patch, e.g. `[{ "op": "add", "path": "/agents/-", "value": "draft-reply" }]`, validates it as `sb tenant check` would, and returns the YAML diff. Depending on tenant setup, the diff is either opened as a pull request against the tenant's manifest repo or signed and applied. Either way, the result is a manifest change (LAW-16).
@@ -82,7 +86,7 @@ The console (`/?admin`) is a client of this API and has no other powers. It open
 
 **`POST /v1/admin/index/refresh`** `{ "cite": "docs:…", "reason": "…" }` (SB-3202) re-reads one document from its source now, with the same pipeline and checks a sync uses, instead of waiting for the next change. The cite's version, if any, is ignored: the source's current version is what is read. A document the source says is gone (404, 410, or a missing file) is taken out of the index as a sync would take it out; a fetch that fails any other way changes nothing and is `EUNAVAIL`. It writes a `kind: config` audit row before (subject the document, state `requested`, the reason) and one after (`refreshed` or `removed`), and answers `{ "document": "docs:…", "version": N, "changed": true|false, "removed": false }`. Admins only; a missing reason is `EINVAL`, a kind the cell has no connector for is `EINVAL`. `sb index refresh CITE --reason TEXT` calls it (sb(1)).
 
-The nightly `retention` job counts the leftovers and keeps the counts, and **`GET /v1/admin/health`** carries `"index": { "at", "gone", "unheld", "warning" }`, `warning` true above zero or when the count is missing or older than two days. It also carries `"prompt": { "p95", "p95_before", "warning" }` (SB-2906): the 95th percentile of the input tokens of each model call in the last seven days and the seven before, from the usage ledger, with `warning` true when this week's is over 1.5 times the week before's. Counts only.
+The nightly `retention` job counts the leftovers and keeps the counts, and **`GET /v1/admin/health`** carries `"index": { "at", "gone", "unheld", "warning" }`, `warning` true above zero or when the count is missing or older than two days. It also carries `"prompt": { "p95", "p95_before", "warning" }` (SB-2906): the 95th percentile of the input tokens of each model call in the last seven days and the seven before, from the usage ledger, with `warning` true when this week's is over 1.5 times the week before's. Counts only. It also carries `"answer_time": { "p95_seconds", "p95_seconds_before", "warning" }` (SB-3205), the same for the seconds each answer took, from the duration the usage ledger records for each answer; `warning` is true when this week's is over 1.5 times the week before's, and absent when the ledger has no durations.
 
 **Spaces with no steward left (SB-3102).** Health also carries `"spaces_unstewarded": { "spaces": ["finance"], "unknown": ["legal"], "warning": true }`: the spaces whose steward groups have no active member in the directory now (`spaces`), and those the directory couldn't answer for (`unknown`), read at the moment health is asked. Either list warns: a directory that can't answer is never "has a steward" (LAW-03). The console shows it under Health. A deprovisioned steward stops counting at once, as everywhere (LAW-12). Questions sent to such a space go to the company-wide answerers (sb-spaces(7), Stewards).
 

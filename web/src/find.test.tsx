@@ -52,6 +52,7 @@ describe("documents", () => {
     const urls: string[] = [];
     const fetcher: Fetch = async (u) => {
       urls.push(u);
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return json({ spaces: [] });
       return json({
         trace: "tr_s",
@@ -91,6 +92,7 @@ describe("documents", () => {
     const urls: string[] = [];
     const fetcher: Fetch = async (u) => {
       urls.push(u);
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return json({ spaces: [] });
       if (u.startsWith("/v1/search")) return json({ trace: "tr_s", release: "rel_x", refused: 0, results: [] });
       return json({ error: { code: "EBUDGET", message: "The model budget or rate limit was reached.", trace: "tr_9", remedy: "Wait." } }, 429);
@@ -121,6 +123,7 @@ describe("saved and shared questions", () => {
   it("saves and shares only the question, and asks a saved one again", async () => {
     const posts: [string, unknown][] = [];
     const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return json({ spaces: [] });
       if (init?.method === "POST") posts.push([u, JSON.parse(String(init.body))]);
       if (u === "/v1/saved" && init?.method === "POST") return json({ id: "sq_1" });
@@ -158,6 +161,7 @@ describe("saved and shared questions", () => {
   it("opens a share and asks it as the recipient", async () => {
     const asked: string[] = [];
     const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return json({ spaces: [] });
       if (u.startsWith("/v1/shares/")) return json({ id: "sh_1", question: "who approves refunds?", space: "spc_support", expires: "2026-12-22T00:00:00Z" });
       if (u.startsWith("/v1/changes")) return json({ items: [] });
@@ -193,6 +197,7 @@ describe("watching a saved question", () => {
     const puts: [string, unknown][] = [];
     let watch = false;
     const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/notice") return new Response("{}", { status: 200 }); // SB-3207
       if (u === "/v1/spaces") return json({ spaces: [] });
       if (init?.method === "PUT") {
         puts.push([u, JSON.parse(String(init.body))]);

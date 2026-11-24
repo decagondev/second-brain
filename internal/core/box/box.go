@@ -67,6 +67,9 @@ type Timer struct {
 type Disk struct {
 	Path    string  `json:"path"`
 	UsedPct float64 `json:"used_pct"`
+	// UsedBytes and SizeBytes are the filesystem's use and size (SB-3206); 0 when unknown.
+	UsedBytes uint64 `json:"used_bytes,omitempty"`
+	SizeBytes uint64 `json:"size_bytes,omitempty"`
 }
 
 // Offsite is the off-box backup directory, or the bucket (SB-2303).
@@ -84,10 +87,12 @@ type Offsite struct {
 // Facts are what the host step saw. A nil pointer or an empty list is a fact it couldn't
 // gather.
 type Facts struct {
-	At          time.Time  `json:"at"`
-	Services    []Service  `json:"services,omitempty"`
-	Timers      []Timer    `json:"timers,omitempty"`
-	Disks       []Disk     `json:"disks,omitempty"`
+	At       time.Time `json:"at"`
+	Services []Service `json:"services,omitempty"`
+	Timers   []Timer   `json:"timers,omitempty"`
+	Disks    []Disk    `json:"disks,omitempty"`
+	// DiskHistory is a sample a day of each disk's use, the last 14 days (SB-3206).
+	DiskHistory []Sample   `json:"disk_history,omitempty"`
 	CertExpires *time.Time `json:"cert_expires,omitempty"`
 	CertManaged bool       `json:"cert_managed,omitempty"` // ACME: Caddy renews it
 	Offsite     *Offsite   `json:"offsite,omitempty"`
@@ -150,6 +155,7 @@ func Check(f Facts, now time.Time) []Line {
 	stale := f.At.IsZero() || now.Sub(f.At) > FactsMaxAge || f.At.After(now.Add(5*time.Minute))
 	checkRuntime(f, add)
 	checkStorage(f, now, add)
+	checkRunway(f, add)
 	checkRecovery(f, now, add)
 	checkEdge(f, now, add)
 	if stale {

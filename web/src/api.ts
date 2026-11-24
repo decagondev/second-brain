@@ -38,6 +38,22 @@ export interface Space {
 
 // The asker's spaces (GET /v1/spaces). Any failure shows no switcher, so the UI asks
 // company-wide; it never guesses a space.
+// The admin's notice to everyone while it stands, or null (SB-3207). A failure is no notice.
+export type CellNotice = { text: string; until: string };
+
+export async function readNotice(f: Fetch = fetch): Promise<CellNotice | null> {
+  try {
+    const res = await f("/v1/notice", { credentials: "same-origin" });
+    if (!res.ok) return null;
+    const d = (await res.json()) as { text?: unknown; until?: unknown };
+    if (typeof d?.text !== "string" || d.text === "" || typeof d.until !== "string") return null;
+    if (!(Date.parse(d.until) > Date.now())) return null;
+    return { text: d.text, until: d.until };
+  } catch {
+    return null;
+  }
+}
+
 export async function listSpaces(f: Fetch = fetch): Promise<Space[]> {
   try {
     const res = await f("/v1/spaces", { credentials: "same-origin" });

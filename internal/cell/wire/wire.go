@@ -230,6 +230,22 @@ func (u usage) Tokens(ctx context.Context, tenant string, from, to time.Time) (i
 func (u usage) InputTokens(ctx context.Context, tenant string, from, to time.Time) ([]int, error) {
 	return u.ledger.InputTokens(ctx, tenant, from, to)
 }
+func (u usage) AnswerMillis(ctx context.Context, tenant string, from, to time.Time) ([]int, error) {
+	return u.ledger.AnswerMillis(ctx, tenant, from, to)
+}
+
+// askMeter is the ask agent's counters: the usage ledger, which keeps each answer's
+// duration and forwards everything to the metrics registry (SB-3205), or the registry
+// alone when there is no ledger.
+func (c *Cell) askMeter() interface {
+	Add(name, help string, labels map[string]string, v float64)
+	Observe(name, help string, labels map[string]string, v float64)
+} {
+	if c.Usage != nil {
+		return c.Usage
+	}
+	return c.Metrics
+}
 func (u usage) Seats(ctx context.Context, tenant string) (int, error) {
 	return u.dir.ActiveUsers(ctx, tenant)
 }
@@ -418,7 +434,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	}
 	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: c.Embedder, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
-		NewID: newID, Now: time.Now, Metrics: c.Metrics, Enabled: func(a string) bool { return contains(m.Agents, a) },
+		NewID: newID, Now: time.Now, Metrics: c.askMeter(), Enabled: func(a string) bool { return contains(m.Agents, a) },
 		Link: linker(authz.Connectors),
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
@@ -503,7 +519,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		app := &slackapp.App{Tenant: tenant, TeamID: cfg.Chat.TeamID, Secret: slackField(creds, "signing_secret"),
 			Email: slackapp.WebEmail(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second}),
 			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now,
-			Language: func() string { return c.Manifest().Language }}
+			Language: func() string { return c.Manifest().Language }, Notice: c.noticeLine}
 		app.Register(public)
 	}
 	if mm := cfg.Mattermost; mm.Base != "" {
@@ -511,7 +527,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		client := &http.Client{Timeout: 10 * time.Second}
 		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"),
 			Rules: &slackapp.App{Tenant: tenant, Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Spaces: c.Spaces,
-				Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client), Language: func() string { return c.Manifest().Language }},
+				Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client), Language: func() string { return c.Manifest().Language },
+				Notice: c.noticeLine},
 			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions"}).Register(public)
 	}
 	if cfg.Web != "" {
@@ -563,7 +580,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, NotifyTest: c.testEmail, Index: indexReports{c},
-		ActiveByEmail: c.activeByEmail}
+		ActiveByEmail: c.activeByEmail, Notices: c.Traces}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)

@@ -42,9 +42,15 @@ d=
 root=$("$DOCKER" info -f '{{.DockerRootDir}}' 2>/dev/null | tr -d '\r')
 for p in "$(pwd)" ${root:+"$root"}; do
   pct=$(df -P "$p" 2>/dev/null | awk 'NR==2{gsub("%","",$5); print $5}')
-  [ -n "$pct" ] && d+="${d:+,}{\"path\":\"$p\",\"used_pct\":$pct}"
+  # Used and total bytes, for the disk runway (SB-3206); left out when df can't say.
+  bytes=$(df -PB1 "$p" 2>/dev/null | awk 'NR==2 && $2 ~ /^[0-9]+$/ && $3 ~ /^[0-9]+$/ {printf ",\"used_bytes\":%s,\"size_bytes\":%s", $3, $2}')
+  [ -n "$pct" ] && d+="${d:+,}{\"path\":\"$p\",\"used_pct\":$pct$bytes}"
 done
 [ -n "$d" ] && parts+=("\"disks\":[$d]")
+# The samples the cell keeps of them (state/box/disk.json), so the doctor judges the same
+# history as the console; none yet is no runway line.
+hist=$("$DOCKER" run --rm -v sb-selfhost_state:/s:ro "$HELPER" cat /s/box/disk.json 2>/dev/null | tr -d '\r\n')
+case "$hist" in "["*"]") parts+=("\"disk_history\":$hist") ;; esac
 
 # The certificate: the company's file (SB_TLS=files), or Caddy's own (acme or internal).
 if [ -f "$DIR/tls/cert.pem" ]; then

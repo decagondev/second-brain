@@ -129,3 +129,13 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
 .recent button.link { text-align: left; min-height: 32px; padding: 0.25rem 0; }
 .next-steps { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .next-steps p { margin: 0; flex-basis: 100%; }
+
+/* The admin's notice to everyone (SB-3207). */
+.cell-notice {
+  border: 1px solid var(--uncited-border);
+  background: var(--uncited-bg);
+  color: var(--fg);
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  border-radius: 4px;
+}

@@ -79,6 +79,8 @@ type Report struct {
 	// Unstewarded are the spaces with no active steward now, and those the directory
 	// couldn't answer for (SB-3102); absent in a cell without spaces.
 	Unstewarded *Unstewarded `json:"spaces_unstewarded,omitempty"`
+	// AnswerTime is seconds per answer, this week and the week before (SB-3205).
+	AnswerTime *AnswerTime `json:"answer_time,omitempty"`
 }
 
 // Unstewarded is health's spaces with no active steward; either list warns.
@@ -130,6 +132,24 @@ func P95(xs []int) int {
 
 // Grew reports this week's p95 over 1.5 times the week before's.
 func Grew(now, before int) bool { return before > 0 && 2*now > 3*before }
+
+// AnswerTime is the 95th percentile of seconds per answer this week and the week before,
+// and whether it is over 1.5 times as long (SB-3205).
+type AnswerTime struct {
+	P95Seconds       float64 `json:"p95_seconds"`
+	P95SecondsBefore float64 `json:"p95_seconds_before"`
+	Warning          bool    `json:"warning"`
+}
+
+// AnswerFrom is the answer-time watch from the week's and the week before's durations in
+// milliseconds; nil when there are none.
+func AnswerFrom(week, before []int) *AnswerTime {
+	if len(week)+len(before) == 0 {
+		return nil
+	}
+	now, was := P95(week), P95(before)
+	return &AnswerTime{P95Seconds: float64(now) / 1000, P95SecondsBefore: float64(was) / 1000, Warning: Grew(now, was)}
+}
 
 // PromptFrom is the prompt watch from the week's and the week before's input tokens.
 func PromptFrom(week, before []int) *Prompt {

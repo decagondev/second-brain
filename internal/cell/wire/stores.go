@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/backup"
+	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/health"
 	"example.com/second-brain/internal/core/holds"
 	"example.com/second-brain/internal/core/manifest"
@@ -71,6 +73,7 @@ type TraceStore interface {
 	ask.MarkStore
 	ask.TemplateStore
 	ask.RetireStore
+	ask.NoticeStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }
@@ -238,6 +241,15 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 			return r, err
 		}
 		r.Prompt = health.PromptFrom(week, before)
+		wa, err := c.Usage.AnswerMillis(ctx, c.Config.Tenant, now.Add(-7*24*time.Hour), now)
+		if err != nil {
+			return r, err
+		}
+		ba, err := c.Usage.AnswerMillis(ctx, c.Config.Tenant, now.Add(-14*24*time.Hour), now.Add(-7*24*time.Hour))
+		if err != nil {
+			return r, err
+		}
+		r.AnswerTime = health.AnswerFrom(wa, ba)
 	}
 	r.Unstewarded = c.Unstewarded(ctx)
 	return r, nil
@@ -253,6 +265,9 @@ func (c *Cell) box(now time.Time) *health.Box {
 	b, err := os.ReadFile(filepath.Join(dir, "facts.json"))
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return health.BoxFrom(nil, true, now) // there, but unreadable: Unknown
+	}
+	if err == nil {
+		b = c.withDiskHistory(b, now)
 	}
 	return health.BoxFrom(b, err == nil, now)
 }
@@ -424,4 +439,43 @@ func one(b bool) float64 {
 		return 1
 	}
 	return 0
+}
+
+// diskHistoryPath is the box's disk samples, a day each for 14 days (SB-3206).
+func diskHistoryPath(state string) string { return filepath.Join(state, "box", "disk.json") }
+
+// withDiskHistory adds today's disk use to the kept samples and puts them in the facts, so
+// the Box section judges the runway; facts it can't read are judged as they are.
+func (c *Cell) withDiskHistory(raw []byte, now time.Time) []byte {
+	f, err := box.Parse(raw)
+	if err != nil || now.Sub(f.At) > box.FactsMaxAge {
+		return raw
+	}
+	p := diskHistoryPath(c.Config.State)
+	var hist []box.Sample
+	if old, err := os.ReadFile(p); err == nil {
+		_ = json.Unmarshal(old, &hist) // an unreadable file starts again
+	}
+	next := box.AddSamples(hist, f.Disks, f.At)
+	if !reflect.DeepEqual(next, hist) {
+		if b, err := json.Marshal(next); err == nil && os.MkdirAll(filepath.Dir(p), 0o700) == nil {
+			if os.WriteFile(p+".tmp", b, 0o600) == nil {
+				_ = os.Rename(p+".tmp", p)
+			}
+		}
+	}
+	f.DiskHistory = next
+	out, err := json.Marshal(f)
+	if err != nil {
+		return raw
+	}
+	return out
+}
+
+// noticeLine is the admin's notice as the chat apps' first line, or "" (SB-3207).
+func (c *Cell) noticeLine(ctx context.Context) string {
+	if c.Traces == nil {
+		return ""
+	}
+	return ask.NoticeLine(ctx, c.Traces, c.Config.Tenant, time.Now())
 }
