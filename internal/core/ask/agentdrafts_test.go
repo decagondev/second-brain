@@ -31,6 +31,9 @@ func TestAgentDraftWaitsForItsSteward(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if m, ok := a.Model.(*model); ok && (len(m.got) == 0 || m.got[len(m.got)-1].Space != "spc_ops") {
+		t.Fatalf("the model call isn't metered by its space (SB-4105): %+v", m.got)
+	}
 	if sq.Question != "Weekly brief: ask" || sq.Space != "spc_ops" || sq.Thread == nil || sq.Thread.Kind != "brief" || sq.Trace == "" {
 		t.Fatalf("draft %+v", sq)
 	}

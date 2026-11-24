@@ -1094,11 +1094,11 @@ gantt
 
 **Exit gate**
 
-- [ ] Goals and policies stay in the source; the brain only reads them
-- [ ] Nothing an agent drafts is published without a steward
-- [ ] A space over budget pauses scheduled runs and still answers asks
-- [ ] Every part of the home is checked as the reader and hidden when empty
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Goals and policies stay in the source; the brain only reads them
+- [x] Nothing an agent drafts is published without a steward
+- [x] A space over budget pauses scheduled runs and still answers asks
+- [x] Every part of the home is checked as the reader and hidden when empty
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

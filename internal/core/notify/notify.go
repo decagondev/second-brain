@@ -223,6 +223,9 @@ type Job struct {
 	// status update each Monday (SB-4102); nil drafts none.
 	Updates   []string
 	RunUpdate func(ctx context.Context, space string) (why string, err error)
+	// SpaceBudgets are the spaces with a budget_usd_month and the share of it their branch
+	// has spent this month (SB-4105); their stewards are told at WarnShare and at 1.
+	SpaceBudgets func(ctx context.Context) ([]SpaceBudget, error)
 	// Welcomes are the welcome briefs waiting, and Welcomed marks one sent (SB-4006); nil
 	// sends none. Transcripts are the transcripts first seen in a window, and RunDecisions
 	// drafts one's decisions to its space's stewards; nil drafts none.
@@ -300,6 +303,11 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	out = append(out, briefs...)
+	spend, err := j.budgets(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, spend...)
 	trig, trigMarks, err := j.triggers(ctx, from, now)
 	if err != nil {
 		return Result{}, err
@@ -444,7 +452,7 @@ func (j Job) reroute(ctx context.Context, now time.Time) (map[string]int, error)
 			continue
 		}
 		if _, err := j.Audit.Write(ctx, audit.Event{Actor: "sys_notify", Kind: "access", Subject: q.ID, State: "rerouted",
-			Reason: fmt.Sprintf("open %d working days; to %s", ask.RerouteAfter*(len(q.Up)+1), to), Space: q.Space}); err != nil {
+			Reason: fmt.Sprintf("open %d working days; to %s", climbAfter(q)*(len(q.Up)+1), to), Space: q.Space}); err != nil {
 			return n, fmt.Errorf("notify: audit: %w", err)
 		}
 		moved := false
@@ -459,7 +467,9 @@ func (j Job) reroute(ctx context.Context, now time.Time) (map[string]int, error)
 		}); err != nil {
 			return n, fmt.Errorf("notify: questions: %w", err)
 		}
-		if moved {
+		if moved && q.Request != nil {
+			n[requestKey+to]++
+		} else if moved {
 			n[to]++
 		}
 	}
@@ -472,7 +482,7 @@ func (j Job) nextUp(q ask.StewardQuestion, now time.Time) string {
 	if q.Space == "company" || ask.IsPerson(q.Space) || q.Also == "company" || q.Reply != nil || (q.Claim != nil && now.Before(q.Claim.Until)) {
 		return ""
 	}
-	if ask.WorkingDays(q.At, now, j.Zone) < ask.RerouteAfter*(len(q.Up)+1) {
+	if ask.WorkingDays(q.At, now, j.Zone) < climbAfter(q)*(len(q.Up)+1) {
 		return ""
 	}
 	to := "company"
@@ -487,6 +497,18 @@ func (j Job) nextUp(q ask.StewardQuestion, now time.Time) string {
 	return to
 }
 
+// climbAfter is how many working days a question waits in each queue before it climbs: a
+// request its due days (SB-4104), any other question RerouteAfter.
+func climbAfter(q ask.StewardQuestion) int {
+	if q.Request != nil && q.Request.DueDays > 0 {
+		return q.Request.DueDays
+	}
+	return ask.RerouteAfter
+}
+
+// requestKey prefixes a queue's count of requests that climbed to it, in reroute's counts.
+const requestKey = "request:"
+
 // waited tells each queue's answerers how many questions came up to them this run: the
 // company-wide answerers, and a department's stewards for its teams' (SB-3904). Counts only.
 func (j Job) waited(ctx context.Context, moved map[string]int) ([]outgoing, error) {
@@ -498,7 +520,7 @@ func (j Job) waited(ctx context.Context, moved map[string]int) ([]outgoing, erro
 	var out []outgoing
 	for _, to := range keys {
 		n := moved[to]
-		groups, _, ok := j.Facts(to)
+		groups, _, ok := j.Facts(strings.TrimPrefix(to, requestKey))
 		if !ok || n == 0 {
 			continue
 		}
@@ -506,21 +528,39 @@ func (j Job) waited(ctx context.Context, moved map[string]int) ([]outgoing, erro
 		if err != nil {
 			return nil, err
 		}
-		text := "1 question waited 10 working days in its space"
-		if n != 1 {
-			text = fmt.Sprintf("%d questions waited 10 working days in their spaces", n)
-		}
-		if to != "company" {
-			text = "1 question waited 10 working days in a team"
-			if n != 1 {
-				text = fmt.Sprintf("%d questions waited 10 working days in your teams", n)
-			}
-		}
+		text := waitedText(to, n)
 		for _, p := range people {
-			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(to)}})
+			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(strings.TrimPrefix(to, requestKey))}})
 		}
 	}
 	return out, nil
+}
+
+// waitedText is what a queue's answerers are told about the n questions, or requests, that
+// came up to them. Counts only.
+func waitedText(to string, n int) string {
+	if q, ok := strings.CutPrefix(to, requestKey); ok {
+		switch {
+		case n == 1 && q == "company":
+			return "1 request went past its due date in its space"
+		case n == 1:
+			return "1 request went past its due date in a team"
+		case q == "company":
+			return fmt.Sprintf("%d requests went past their due dates in their spaces", n)
+		}
+		return fmt.Sprintf("%d requests went past their due dates in your teams", n)
+	}
+	text := "1 question waited 10 working days in its space"
+	if n != 1 {
+		text = fmt.Sprintf("%d questions waited 10 working days in their spaces", n)
+	}
+	if to != "company" {
+		text = "1 question waited 10 working days in a team"
+		if n != 1 {
+			text = fmt.Sprintf("%d questions waited 10 working days in your teams", n)
+		}
+	}
+	return text
 }
 
 // reviews tells each open review's stewards once when it opens and once when it becomes

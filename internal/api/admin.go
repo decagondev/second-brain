@@ -75,6 +75,19 @@ type Admin struct {
 	// read is an error, never no hold.
 	AgentKilled func(agent string) bool
 	EvalHeld    func() (bool, error)
+	// SpaceSpend is each space's branch spend in a month (SB-4105); nil is EUNAVAIL.
+	SpaceSpend func(ctx context.Context, month string) ([]SpaceSpend, error)
+}
+
+// SpaceSpend is one space's model spend in a month: its own and its teams' (the branch),
+// its budget (0 for none) and, for the month still running, the month-end forecast.
+type SpaceSpend struct {
+	Space       string   `json:"space"`
+	Parent      string   `json:"parent,omitempty"`
+	OwnUSD      float64  `json:"own_usd"`
+	SpentUSD    float64  `json:"spent_usd"`
+	BudgetUSD   int      `json:"budget_usd_month"`
+	ForecastUSD *float64 `json:"forecast_usd,omitempty"`
 }
 
 // IndexReports are the operator's reports on the index: counts and locations only.
@@ -98,6 +111,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/audit", h.guard(h.audit))
 	mux.HandleFunc("GET /v1/admin/usage", h.readers(h.usage))
 	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
+	mux.HandleFunc("GET /v1/admin/costs/spaces", h.readers(h.spaceCosts))
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
 	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
 	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
@@ -172,6 +186,25 @@ func (h Admin) costs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.ok(w, st)
+}
+
+// spaceCosts is each branch's spend in a month (SB-4105): amounts only.
+func (h Admin) spaceCosts(w http.ResponseWriter, r *http.Request) {
+	month := r.URL.Query().Get("month")
+	if _, _, err := costs.ParseMonth(month); err != nil {
+		h.fail(w, errs.New(errs.EINVAL, "month must be like 2027-03"))
+		return
+	}
+	if h.SpaceSpend == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Metering by space isn't available in this cell."))
+		return
+	}
+	rows, err := h.SpaceSpend(r.Context(), month)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The spend by space can't be read right now."))
+		return
+	}
+	h.ok(w, map[string]any{"month": month, "spaces": rows})
 }
 
 // usage is the week's numbers (SB-606).

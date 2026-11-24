@@ -277,6 +277,10 @@
             ],
             "type": "object"
           },
+          "budget_usd_month": {
+            "minimum": 1,
+            "type": "integer"
+          },
           "channels": {
             "items": {
               "pattern": "^#[a-z0-9][a-z0-9_-]{0,79}$",
@@ -328,6 +332,29 @@
           "parent": {
             "pattern": "^[a-z][a-z0-9-]{1,30}$",
             "type": "string"
+          },
+          "requests": {
+            "additionalProperties": false,
+            "properties": {
+              "categories": {
+                "items": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9 \u0026/:'-]{0,39}$",
+                  "type": "string"
+                },
+                "maxItems": 10,
+                "minItems": 1,
+                "type": "array"
+              },
+              "due_days": {
+                "maximum": 30,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "categories"
+            ],
+            "type": "object"
           },
           "retention_days": {
             "maximum": 3650,

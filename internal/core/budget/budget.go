@@ -93,10 +93,28 @@ type Once interface {
 // Record meters a finished call from the provider's reported usage, and sends the month's
 // budget warning if this call took spend past WarnAt of the budget.
 func (g *Guard) Record(ctx context.Context, input, output int) error {
+	return g.RecordIn(ctx, "", input, output)
+}
+
+// SpaceMeter keeps a tenant's spend per space and month too (SB-4105). A meter without it
+// meters the tenant only.
+type SpaceMeter interface {
+	AddSpace(ctx context.Context, tenant, space, month string, usd float64) error
+	SpentBySpace(ctx context.Context, tenant, month string) (map[string]float64, error)
+}
+
+// RecordIn is Record for a call that ran in space (spc_NAME, or "" for none): the spend is
+// metered for the tenant and, with a SpaceMeter, for the space.
+func (g *Guard) RecordIn(ctx context.Context, space string, input, output int) error {
 	usd := float64(input)/1e6*g.Price.InputPerM + float64(output)/1e6*g.Price.OutputPerM
 	month := g.month()
 	if err := g.Meter.Add(ctx, g.Tenant, month, usd); err != nil {
 		return err
+	}
+	if sm, ok := g.Meter.(SpaceMeter); ok && space != "" {
+		if err := sm.AddSpace(ctx, g.Tenant, space, month, usd); err != nil {
+			return err
+		}
 	}
 	g.warn(ctx, month)
 	return nil
@@ -167,11 +185,41 @@ func (g *Guard) count(reason string) {
 	}
 }
 
-// MemoryMeter is an in-process Meter (development and tests).
+// MemoryMeter is an in-process Meter and SpaceMeter (development and tests).
 type MemoryMeter struct {
-	mu   sync.Mutex
-	m    map[string]float64
-	Fail bool
+	mu     sync.Mutex
+	m      map[string]float64
+	spaces map[string]map[string]float64
+	Fail   bool
+}
+
+// AddSpace implements SpaceMeter.
+func (m *MemoryMeter) AddSpace(_ context.Context, tenant, space, month string, usd float64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.spaces == nil {
+		m.spaces = map[string]map[string]float64{}
+	}
+	k := tenant + "/" + month
+	if m.spaces[k] == nil {
+		m.spaces[k] = map[string]float64{}
+	}
+	m.spaces[k][space] += usd
+	return nil
+}
+
+// SpentBySpace implements SpaceMeter.
+func (m *MemoryMeter) SpentBySpace(_ context.Context, tenant, month string) (map[string]float64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.Fail {
+		return nil, errors.New("meter down")
+	}
+	out := map[string]float64{}
+	for s, v := range m.spaces[tenant+"/"+month] {
+		out[s] = v
+	}
+	return out, nil
 }
 
 // Spent implements Meter.

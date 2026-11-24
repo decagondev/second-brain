@@ -92,8 +92,8 @@ export function TeamUpdates({ space, fetcher = fetch }: { space: string; fetcher
   }, [space, fetcher]);
   if (items.length === 0) return null;
   return (
-    <section aria-label={t("Team updates")} className="start">
-      <h2>{t("Team updates")}</h2>
+    <section aria-label={t("Latest updates")} className="start">
+      <h2>{t("Latest updates")}</h2>
       <ul>
         {items.map((u) => (
           <li key={u.cite}>
@@ -228,6 +228,148 @@ export function StewardPolicies({ base, fetcher = fetch }: { base: string; fetch
         ))}
       </ul>
       {status && <p role="status">{status}</p>}
+    </section>
+  );
+}
+
+interface MyRequest {
+  id: string;
+  question: string;
+  space: string;
+  state: string;
+  request?: { category: string; due: string };
+}
+
+// Ask the department (SB-4104): a request in one of the space's categories goes to its
+// stewards with a due date; the member's own open requests to it are listed.
+export function Requests({ space, fetcher = fetch }: { space: string; fetcher?: Fetch }) {
+  const [cats, setCats] = useState<string[]>([]);
+  const [mine, setMine] = useState<MyRequest[]>([]);
+  const [category, setCategory] = useState("");
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState<string>();
+  const base = `/v1/spaces/${encodeURIComponent(space)}/requests`;
+  async function load() {
+    try {
+      const f = await call(fetcher, "GET", base);
+      const cs = (f.categories as string[]) ?? [];
+      setCats(cs);
+      setCategory((c) => c || cs[0] || "");
+      const q = await call(fetcher, "GET", "/v1/questions");
+      setMine(((q.items as MyRequest[]) ?? []).filter((x) => x.request && x.state === "open" && x.space === `spc_${space}`));
+    } catch {
+      setCats([]);
+    }
+  }
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [space, fetcher]);
+  async function send() {
+    try {
+      const r = await call(fetcher, "POST", base, { category, text: text.trim() });
+      setText("");
+      setStatus(t("Sent. It is due {due}.", { due: String(r.due ?? "").slice(0, 10) }));
+      await load();
+    } catch {
+      setStatus(t("The request couldn't be sent."));
+    }
+  }
+  if (cats.length === 0 && mine.length === 0) return null;
+  return (
+    <section aria-label={t("Ask the department")} className="start">
+      <h2>{t("Ask the department")}</h2>
+      {mine.length > 0 && (
+        <ul>
+          {mine.map((r) => (
+            <li key={r.id}>
+              {r.question}{" "}
+              <span className="meta">
+                · {r.request!.category} · {t("due {due}", { due: r.request!.due.slice(0, 10) })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {cats.length > 0 && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (text.trim()) void send();
+          }}
+        >
+          <label>
+            {t("Category")}{" "}
+            <select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {cats.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            {t("What do you need?")} <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={4000} />
+          </label>
+          <button type="submit" disabled={!text.trim()}>
+            {t("Send request")}
+          </button>
+        </form>
+      )}
+      {status && <p role="status">{status}</p>}
+    </section>
+  );
+}
+
+interface SpaceSpend {
+  space: string;
+  parent?: string;
+  own_usd: number;
+  spent_usd: number;
+  budget_usd_month: number;
+  forecast_usd?: number;
+}
+
+const usd = (v: number) => `$${v.toFixed(2)}`;
+
+// Spend by space (SB-4105): each branch's spend this month, its budget and forecast.
+export function AdminSpend({ fetcher = fetch, month = new Date().toISOString().slice(0, 7) }: { fetcher?: Fetch; month?: string }) {
+  const [rows, setRows] = useState<SpaceSpend[]>([]);
+  const [error, setError] = useState<string>();
+  useEffect(() => {
+    call(fetcher, "GET", `/v1/admin/costs/spaces?month=${month}`)
+      .then((d) => setRows((d.spaces as SpaceSpend[]) ?? []))
+      .catch((e: Error) => setError(e.message));
+  }, [fetcher, month]);
+  return (
+    <section aria-label={t("Spend by space")}>
+      <h2>{t("Spend by space")}</h2>
+      {error ? (
+        <p role="alert">{error}</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{t("Space")}</th>
+              <th scope="col">{t("Its own")}</th>
+              <th scope="col">{t("With its teams")}</th>
+              <th scope="col">{t("Budget")}</th>
+              <th scope="col">{t("Forecast")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.space} className={r.budget_usd_month > 0 && r.spent_usd >= r.budget_usd_month ? "overdue" : undefined}>
+                <th scope="row">{r.parent ? `${r.parent} / ${r.space}` : r.space}</th>
+                <td>{usd(r.own_usd)}</td>
+                <td>{usd(r.spent_usd)}</td>
+                <td>{r.budget_usd_month > 0 ? usd(r.budget_usd_month) : "-"}</td>
+                <td>{r.forecast_usd !== undefined ? usd(r.forecast_usd) : "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }

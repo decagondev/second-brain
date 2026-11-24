@@ -132,3 +132,16 @@ func TestBudgetRefusesBeforeCalling(t *testing.T) {
 		t.Fatalf("over budget: %v after %d calls", err, m.calls)
 	}
 }
+
+// SB-4105: the gateway meters a call by the space it ran in.
+func TestMeteredBySpace(t *testing.T) {
+	meter := &budget.MemoryMeter{}
+	now := time.Date(2027, 3, 2, 10, 0, 0, 0, time.UTC)
+	g := Gateway{Model: &model{}, Secrets: scrub{}, Budget: &budget.Guard{Tenant: "acme-logistics", MonthlyUSD: 1e5, Price: budget.Price{InputPerM: 1e6, OutputPerM: 1e6}, Meter: meter, Now: func() time.Time { return now }}}
+	if _, err := g.Complete(context.Background(), ports.ModelRequest{User: "u1", Space: "spc_finance"}); err != nil {
+		t.Fatal(err)
+	}
+	if by, _ := meter.SpentBySpace(context.Background(), "acme-logistics", "2027-03"); by["spc_finance"] != 13 {
+		t.Fatalf("by space %v", by)
+	}
+}

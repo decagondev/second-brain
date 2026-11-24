@@ -140,3 +140,22 @@ func TestForecastWarnsEarly(t *testing.T) {
 		Forecast: func(context.Context) (float64, bool) { return 500, false }}
 	_ = g2.Record(ctx, 1, 0)
 }
+
+// SB-4105: a call that ran in a space is metered for the tenant and for the space.
+func TestRecordInMetersTheSpace(t *testing.T) {
+	m := &MemoryMeter{}
+	g := &Guard{Tenant: "acme-logistics", MonthlyUSD: 100, Price: Price{InputPerM: 1, OutputPerM: 2}, Meter: m,
+		Now: func() time.Time { return time.Date(2027, 3, 2, 0, 0, 0, 0, time.UTC) }}
+	ctx := context.Background()
+	if err := g.RecordIn(ctx, "spc_finance", 1_000_000, 1_000_000); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.Record(ctx, 1_000_000, 0); err != nil {
+		t.Fatal(err)
+	}
+	spent, _ := m.Spent(ctx, "acme-logistics", "2027-03")
+	by, _ := m.SpentBySpace(ctx, "acme-logistics", "2027-03")
+	if spent != 4 || len(by) != 1 || by["spc_finance"] != 3 {
+		t.Fatalf("spent %v, by space %v", spent, by)
+	}
+}

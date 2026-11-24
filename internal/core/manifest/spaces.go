@@ -40,7 +40,28 @@ type Space struct {
 	Brief *Brief `json:"brief,omitempty"`
 	// Updates drafts a weekly status update for the stewards each Monday (SB-4102).
 	Updates bool `json:"updates,omitempty"`
+	// Requests are the categories a member can send a request in, nil for none (SB-4104).
+	Requests *Requests `json:"requests,omitempty"`
+	// BudgetUSDMonth is the space's monthly model budget, 0 for none (SB-4105): at
+	// BudgetWarnAt its stewards are told, and at it its scheduled runs pause.
+	BudgetUSDMonth int `json:"budget_usd_month,omitempty"`
 }
+
+// Requests are a space's request categories and how many working days one is due in.
+type Requests struct {
+	Categories []string `json:"categories"`
+	DueDays    int      `json:"due_days"`
+}
+
+// Request limits (SB-4104).
+const (
+	MaxRequestCategories = 10
+	MaxCategory          = 40
+	DefaultDueDays       = 5
+	MaxDueDays           = 30
+)
+
+var categoryRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 &/:'-]{0,39}$`)
 
 // Brief runs Agent once a week, on Weekly (monday to sunday), as the space's first active
 // steward; its answer waits in the steward queue as a draft (sb-space(5), brief).
@@ -156,16 +177,16 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "requests", "budget_usd_month"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention, fields, label, parent, brief, updates *node
-	set                                                                      map[string]bool
-	start                                                                    []*node
+	members, scope, agents, retention, fields, label, parent, brief, updates, budget *node
+	set                                                                              map[string]bool
+	start                                                                            []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -260,6 +281,10 @@ func (c *checker) space(name string, n *node, p string) {
 			} else {
 				s.Updates, sn.updates = b == "true", v
 			}
+		case "requests":
+			s.Requests = c.requests(v, f)
+		case "budget_usd_month":
+			s.BudgetUSDMonth, sn.budget = c.intIn(v, f, MinBudgetUSDMonth, 0), v
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -469,6 +494,7 @@ func (c *checker) spaceChecks() {
 		c.spaceAgents(&s, sn, p, tpl, par, hasParent)
 		c.spaceBrief(s, sn, p)
 		c.spaceRetention(&s, sn, p, tpl, par, hasParent)
+		c.spaceBudget(s, sn, p, par, hasParent)
 		c.t.Spaces[name] = s
 	}
 	c.reachChecks(names)
@@ -673,6 +699,68 @@ func (c *checker) spaceBrief(s Space, sn spaceNodes, p string) {
 	}
 	if s.Updates && len(s.Stewards) == 0 {
 		c.add(sn.updates, p+".updates", "updates need stewards; each draft waits for them")
+	}
+}
+
+// requests reads a space's requests, { categories: [Access, Laptop], due_days: 5 } (SB-4104).
+func (c *checker) requests(v *node, f string) *Requests {
+	if !c.mapOf(v, f, `{ categories: [Access, Laptop], due_days: 5 }`) {
+		return nil
+	}
+	r := &Requests{DueDays: DefaultDueDays}
+	for j, k := range v.keys {
+		fk := f + "." + k.value
+		switch k.value {
+		case "categories":
+			vs, ns, ok := c.list(v.vals[j], fk, "[Access, Laptop]")
+			if !ok {
+				continue
+			}
+			if len(vs) > MaxRequestCategories {
+				c.add(v.vals[j], fk, "at most %d categories", MaxRequestCategories)
+			}
+			for m, cat := range vs {
+				fm := fmt.Sprintf("%s[%d]", fk, m)
+				switch {
+				case !categoryRe.MatchString(cat):
+					c.add(ns[m], fm, "%q must be 1 to %d letters, digits, spaces or & / : ' -", cat, MaxCategory)
+				case containsFold(r.Categories, cat):
+					c.add(ns[m], fm, "%q is listed twice", cat)
+				default:
+					r.Categories = append(r.Categories, cat)
+				}
+			}
+		case "due_days":
+			r.DueDays = c.intIn(v.vals[j], fk, 1, MaxDueDays)
+		default:
+			c.add(k, fk, "unknown field in requests; use categories or due_days")
+		}
+	}
+	if len(r.Categories) == 0 {
+		c.add(v, f, "requests need at least one category")
+		return nil
+	}
+	return r
+}
+
+func containsFold(xs []string, s string) bool {
+	for _, x := range xs {
+		if strings.EqualFold(x, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// spaceBudget checks a space's budget against the tenant's and its department's: a team
+// spends at most what its department may (SB-4105).
+func (c *checker) spaceBudget(s Space, sn spaceNodes, p string, par Space, hasParent bool) {
+	switch {
+	case sn.budget == nil || s.BudgetUSDMonth == 0:
+	case c.t.BudgetUSDMonth > 0 && s.BudgetUSDMonth > c.t.BudgetUSDMonth:
+		c.add(sn.budget, p+".budget_usd_month", "%d is above the tenant's budget_usd_month (%d)", s.BudgetUSDMonth, c.t.BudgetUSDMonth)
+	case hasParent && par.BudgetUSDMonth > 0 && s.BudgetUSDMonth > par.BudgetUSDMonth:
+		c.add(sn.budget, p+".budget_usd_month", "%d is above its parent %s's budget_usd_month (%d)", s.BudgetUSDMonth, s.Parent, par.BudgetUSDMonth)
 	}
 }
 

@@ -465,7 +465,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		if dept != nil {
 			prompt, lead = dept.Prompt, dept.Lead
 		}
-		claims, err := a.composeWith(withShort(withLanguage(withTerms(withUser(ctx, s.User()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
+		claims, err := a.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
 		if err != nil {
 			return Response{}, err
 		}
@@ -531,7 +531,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
 	msgs = append(msgs, ports.Message{Role: "user", Content: glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
-	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx)})
+	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {
 			return nil, fmt.Errorf("%w: %v", ErrBudget, err)
@@ -629,6 +629,22 @@ func languageOf(ctx context.Context) string {
 // withUser carries the asker to the model call for the budget's rate limit.
 func withUser(ctx context.Context, user string) context.Context {
 	return context.WithValue(ctx, userKey{}, user)
+}
+
+type spaceKey struct{}
+
+// withSpace carries the space an ask runs in to the model call, so its spend is metered
+// by space (SB-4105); company-wide and a person's own queue meter none.
+func withSpace(ctx context.Context, space string) context.Context {
+	if !strings.HasPrefix(space, "spc_") {
+		return ctx
+	}
+	return context.WithValue(ctx, spaceKey{}, space)
+}
+
+func spaceOf(ctx context.Context) string {
+	s, _ := ctx.Value(spaceKey{}).(string)
+	return s
 }
 
 func (Agent) user(ctx context.Context) string {

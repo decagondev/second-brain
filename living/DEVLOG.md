@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S40.2: Requests, budgets and a home
+
+**Wave/slice:** W40 / S40.2 (SB-4104 to SB-4106) · **Status:** Done
+
+**What:** A space can take requests in up to 10 categories with due_days: a member sends one from the space's home, it waits in the steward queue as a question with a category and a due date, and past due it climbs the tree. A space can set budget_usd_month: every model call in a space is metered for that space, a department's spend includes its teams', stewards are told at 80% and at 100%, and at 100% weekly briefs and updates pause while asks carry on. Admins see the spend by space. The Answer tab is each space's home: policies, goals, latest updates, requests and what changed.
+
+**Why this way:** A request is a steward question with a category and a date, so claims, replies, notifications and escalation needed no new path. Metering by space at the gateway, from the space the ask already runs in, keeps spend exact without a second meter, and pausing only scheduled runs means nobody is stopped mid-question.
+
+**Learned:** A request should climb after its own due days, not the 10 days a question waits, so the climb now takes its threshold from the question. Spend that can't be read has to pause the runs, like the tenant budget refuses a call, or a broken meter would let a spent space keep running.
+
+**Laws:** LAW-01, LAW-07, LAW-11. Every law test is still green.
+
 ## 2026-11-24 S40.1: Goals, updates and policies
 
 **Wave/slice:** W40 / S40.1 (SB-4101 to SB-4103) · **Status:** Done

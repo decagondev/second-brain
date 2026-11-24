@@ -82,6 +82,7 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
               <p className="question">
                 {q.question} <span className="meta">({q.space.startsWith("person:") ? t("to a document's owner") : spaceName(q.space) || t("company-wide")}, {t(states[q.state] ?? q.state)})</span>
               </p>
+              {q.request && <p className="meta">{t("Request: {category}, due {due}", { category: q.request.category, due: q.request.due.slice(0, 10) })}</p>}
               {q.reply && (
                 <div className="reply">
                   <p>{q.reply.text}</p>
@@ -332,6 +333,7 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
           {items.map((q, i) => (
             <li key={q.id}>
               <p className="question">{q.question}</p>
+              {q.request && <p className="meta">{t("Request: {category}, due {due}", { category: q.request.category, due: q.request.due.slice(0, 10) })}</p>}
               {q.from_space && (
                 <p className="meta">
                   {q.waited ? t("{space} hasn't answered this in {n} working days", { space: q.from_space, n: q.waited }) : t("{space} has no active steward", { space: q.from_space })}

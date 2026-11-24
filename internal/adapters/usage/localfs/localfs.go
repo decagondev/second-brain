@@ -40,12 +40,13 @@ var _ costs.Meter = (*Ledger)(nil)
 
 type entry struct {
 	At       time.Time `json:"at"`
-	Kind     string    `json:"kind"` // tokens_in, tokens_out, draft_used, draft_discarded, spend_usd, answer_ms
+	Kind     string    `json:"kind"` // tokens_in, tokens_out, draft_used, draft_discarded, spend_usd, space_usd, answer_ms
 	N        float64   `json:"n"`
 	Tenant   string    `json:"tenant"`
 	Provider string    `json:"provider,omitempty"`
 	Model    string    `json:"model,omitempty"`
 	Month    string    `json:"month,omitempty"` // spend_usd: the budget month
+	Space    string    `json:"space,omitempty"` // space_usd: the space it ran in, spc_NAME (SB-4105)
 }
 
 func (l *Ledger) file() string { return filepath.Join(l.Root, "usage.ndjson") }
@@ -240,6 +241,22 @@ func (s *Spend) Spent(ctx context.Context, tenant, month string) (float64, error
 // Add implements budget.Meter. It returns the write error, so the guard can refuse.
 func (s *Spend) Add(_ context.Context, tenant, month string, usd float64) error {
 	return s.l.append(entry{At: s.l.Now().UTC(), Kind: "spend_usd", N: usd, Tenant: tenant, Month: month})
+}
+
+// AddSpace implements budget.SpaceMeter: one space's share of a call's spend.
+func (s *Spend) AddSpace(_ context.Context, tenant, space, month string, usd float64) error {
+	return s.l.append(entry{At: s.l.Now().UTC(), Kind: "space_usd", N: usd, Tenant: tenant, Month: month, Space: space})
+}
+
+// SpentBySpace implements budget.SpaceMeter.
+func (s *Spend) SpentBySpace(_ context.Context, tenant, month string) (map[string]float64, error) {
+	out := map[string]float64{}
+	err := s.l.each(tenant, func(e entry) {
+		if e.Kind == "space_usd" && e.Month == month && e.Space != "" {
+			out[e.Space] += e.N
+		}
+	})
+	return out, err
 }
 
 // First implements budget.Once with an exclusive create under ROOT, so across every

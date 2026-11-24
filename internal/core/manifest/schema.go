@@ -78,9 +78,13 @@ func JSONSchema() []byte {
 			"additionalProperties": map[string]any{
 				"type": "object", "additionalProperties": false, "required": []string{"members", "scope"},
 				"properties": map[string]any{
-					"template": map[string]any{"enum": keys(Templates)},
-					"parent":   map[string]any{"type": "string", "pattern": spaceNameRe},
-					"updates":  map[string]any{"type": "boolean"},
+					"template":         map[string]any{"enum": keys(Templates)},
+					"parent":           map[string]any{"type": "string", "pattern": spaceNameRe},
+					"updates":          map[string]any{"type": "boolean"},
+					"budget_usd_month": map[string]any{"type": "integer", "minimum": MinBudgetUSDMonth},
+					"requests": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"categories"},
+						"properties": map[string]any{"categories": map[string]any{"type": "array", "minItems": 1, "maxItems": MaxRequestCategories, "items": map[string]any{"type": "string", "pattern": categoryRe.String()}},
+							"due_days": map[string]any{"type": "integer", "minimum": 1, "maximum": MaxDueDays}}},
 					"brief": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"agent", "weekly"},
 						"properties": map[string]any{"agent": map[string]any{"enum": Agents}, "weekly": map[string]any{"enum": Weekdays}}},
 					"members":           map[string]any{"type": "array", "minItems": 1, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": groupRe}},

@@ -53,6 +53,8 @@ func (h Questions) Register(mux *http.ServeMux) {
 		mux.HandleFunc("GET /v1/spaces/{name}/people", h.people)
 	}
 	mux.HandleFunc("GET /v1/spaces/{name}/goals", h.goals)
+	mux.HandleFunc("GET /v1/spaces/{name}/requests", h.requestForm)
+	mux.HandleFunc("POST /v1/spaces/{name}/requests", h.request)
 	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
 	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
@@ -650,4 +652,37 @@ func (h Questions) caretaker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"doc": c.Doc, "email": c.Email})
+}
+
+// requestForm is a space's request categories for its members (SB-4104).
+func (h Questions) requestForm(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	f, err := h.Service.RequestFormOf(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", f)
+}
+
+// request sends a member's request to a space's stewards (SB-4104).
+func (h Questions) request(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct{ Category, Text string }
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a category and text."))
+		return
+	}
+	q, err := h.Service.Request(r.Context(), s, r.PathValue("name"), body.Category, body.Text)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"id": q.ID, "to": r.PathValue("name"), "category": q.Request.Category, "due": q.Request.Due})
 }

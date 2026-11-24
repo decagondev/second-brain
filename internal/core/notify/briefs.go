@@ -19,7 +19,65 @@ const (
 	BriefBudget    = "budget"
 	BriefNothing   = "nothing" // the agent found nothing it could cite
 	BriefKilled    = "killed"
+	// BriefSpaceBudget is a space whose branch has spent its own budget_usd_month (SB-4105).
+	BriefSpaceBudget = "space_budget"
 )
+
+// SpaceBudget is one space's budget this month: its key, the month (2027-03) and the
+// share of its budget its branch has spent.
+type SpaceBudget struct {
+	Space, Month string
+	Share        float64
+}
+
+// WarnShare is the share of a space's budget at which its stewards are told (SB-4105).
+const WarnShare = 0.8
+
+// budgets tells each space's stewards once a month when its branch passes WarnShare of its
+// budget, and once when it has spent it. Counts only: never what it was spent on.
+func (j Job) budgets(ctx context.Context, now time.Time) ([]outgoing, error) {
+	if j.SpaceBudgets == nil || j.Send == nil {
+		return nil, nil
+	}
+	bs, err := j.SpaceBudgets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("notify: budgets: %w", err)
+	}
+	var out []outgoing
+	for _, b := range bs {
+		var level, text string
+		name := strings.TrimPrefix(b.Space, "spc_")
+		switch {
+		case b.Share >= 1:
+			level, text = "100", fmt.Sprintf("The %s space has spent its monthly budget: its scheduled briefs and updates pause until next month, and asks carry on", name)
+		case b.Share >= WarnShare:
+			level, text = "80", fmt.Sprintf("The %s space has used %d%% of its monthly budget", name, int(b.Share*100+1e-9))
+		default:
+			continue
+		}
+		key := "budget-" + b.Space + "-" + b.Month + "-" + level
+		if _, found, err := j.Clock.Last(ctx, key); err != nil {
+			return nil, fmt.Errorf("notify: last budget: %w", err)
+		} else if found {
+			continue
+		}
+		groups, _, ok := j.Facts(b.Space)
+		if !ok {
+			continue
+		}
+		people, err := j.members(ctx, groups)
+		if err != nil {
+			return nil, err
+		}
+		if err := j.Clock.Mark(ctx, key, now); err != nil {
+			return nil, err
+		}
+		for _, p := range people {
+			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(b.Space)}})
+		}
+	}
+	return out, nil
+}
 
 // BriefDay is the latest day 08:00 in zone at or before now.
 func BriefDay(now time.Time, zone *time.Location, day time.Weekday) time.Time {
@@ -102,6 +160,8 @@ func briefText(why string) string {
 		return "This week's brief didn't run: the monthly model budget is spent"
 	case BriefNothing:
 		return "This week's brief found nothing it could cite, so there's no draft"
+	case BriefSpaceBudget:
+		return "This week's brief didn't run: the space's monthly budget is spent, so briefs pause until next month"
 	case BriefKilled:
 		return "This week's brief didn't run: its agent is switched off"
 	default:

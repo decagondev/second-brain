@@ -51,3 +51,43 @@ func TestBrief(t *testing.T) {
 		t.Errorf("no stewards: %s", format("m.yaml", ds))
 	}
 }
+
+// SB-4104, SB-4105: a space's request categories and its budget, which a team keeps
+// within its department's.
+func TestRequestsAndBudget(t *testing.T) {
+	src := strings.Replace(treeHead, "    review_after_days: 90\n", "    review_after_days: 90\n    requests: { categories: [Access, \"IT: laptop\"], due_days: 3 }\n    budget_usd_month: 40\n", 1)
+	m, ds := Check([]byte(src))
+	if len(ds) > 0 {
+		t.Fatalf("rejected:\n%s", format("m.yaml", ds))
+	}
+	f := m.Spaces["finance"]
+	if f.Requests == nil || len(f.Requests.Categories) != 2 || f.Requests.Categories[1] != "IT: laptop" || f.Requests.DueDays != 3 || f.BudgetUSDMonth != 40 {
+		t.Fatalf("finance = %+v %+v", f.Requests, f.BudgetUSDMonth)
+	}
+	again, ds := Check(Format(m))
+	if len(ds) > 0 || again.Spaces["finance"].Requests == nil || again.Spaces["finance"].Requests.DueDays != 3 || again.Spaces["finance"].BudgetUSDMonth != 40 {
+		t.Fatalf("format round trip: %v", ds)
+	}
+	if d := strings.Replace(src, ", due_days: 3", "", 1); true {
+		if m, ds := Check([]byte(d)); len(ds) > 0 || m.Spaces["finance"].Requests.DueDays != DefaultDueDays {
+			t.Fatalf("default due_days: %v", ds)
+		}
+	}
+	cases := map[string]string{
+		"listed twice":              "    requests: { categories: [Access, access] }\n",
+		"at least one category":     "    requests: { categories: [] }\n",
+		"unknown field in requests": "    requests: { categories: [Access], sla: 3 }\n",
+		"must be 1 to":              "    requests: { categories: [\"<b>\"] }\n",
+		"above the tenant's":        "    budget_usd_month: 100000000\n",
+	}
+	for want, line := range cases {
+		src := strings.Replace(treeHead, "    review_after_days: 90\n", "    review_after_days: 90\n"+line, 1)
+		if _, ds := Check([]byte(src)); !strings.Contains(format("m.yaml", ds), want) {
+			t.Errorf("%s: got %s", want, format("m.yaml", ds))
+		}
+	}
+	team := src + "  ap:\n    parent: finance\n    members: [group:ap]\n    budget_usd_month: 50\n    scope: { docs: [\"/Finance/AP/**\"] }\n"
+	if _, ds := Check([]byte(team)); !strings.Contains(format("m.yaml", ds), "above its parent finance's") {
+		t.Errorf("team over its department: %s", format("m.yaml", ds))
+	}
+}

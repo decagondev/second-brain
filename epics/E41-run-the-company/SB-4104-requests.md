@@ -13,7 +13,7 @@ summary: "Asking a department for something happens in another tool, away from i
 | Manual | [`sb-space(5)`](../../manual/sb-space.5.md), [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07, LAW-11 |
 | Depends on | SB-3904 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ Asking a department for something happens in another tool, away from its knowled
 
 ## Acceptance criteria
 
-- [ ] A space can set `requests`, at most 10 categories, with `due_days`
-- [ ] Ask the department sends a request with a category to the steward queue, as a steward question with a due date
-- [ ] Claims, replies and escalation up the tree work unchanged; notifications carry counts only
+- [x] A space can set `requests`, at most 10 categories, with `due_days`
+- [x] Ask the department sends a request with a category to the steward queue, as a steward question with a due date
+- [x] Claims, replies and escalation up the tree work unchanged; notifications carry counts only
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Manifest
-- [ ] Queue
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Manifest
+- [x] Queue
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-24: built. Space requests { categories, due_days } (at most 10); GET and POST /v1/spaces/NAME/requests; StewardQuestion.Request {category, due_days, due} with ask.AddWorkingDays; the queue marks it overdue past due; notify climbAfter takes each step up the tree after due_days, told with counts only; web Requests (Ask the department) and the category and due date on the Questions tab. Tests: TestRequestsClimbWhenOverdue, TestRequestsAndBudgetsThroughARunningCell.
 
 ## Definition of done
 

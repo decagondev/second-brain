@@ -33,14 +33,16 @@ type UpdatesResponse struct {
 	Hidden int `json:"hidden"`
 }
 
-// TeamUpdates are the latest published updates of space name's teams, for a member of it.
+// TeamUpdates are the latest published updates of space name and of its teams, for a
+// member of it.
 func (x Stewards) TeamUpdates(ctx context.Context, s tenancy.Scope, name string) (UpdatesResponse, error) {
 	if err := x.member(ctx, s, name); err != nil {
 		return UpdatesResponse{}, err
 	}
 	out := UpdatesResponse{Space: name, Updates: []TeamUpdate{}}
-	if x.Children == nil {
-		return out, nil
+	spaces := []string{name} // the space's own latest first, then its teams' (SB-4106)
+	if x.Children != nil {
+		spaces = append(spaces, x.Children(name)...)
 	}
 	lk, ok := x.Agent.Index.(ports.DocLookup)
 	if !ok {
@@ -50,7 +52,7 @@ func (x Stewards) TeamUpdates(ctx context.Context, s tenancy.Scope, name string)
 	if err != nil {
 		return out, err
 	}
-	for _, team := range x.Children(name) {
+	for _, team := range spaces {
 		cs, err := lk.Docs(ctx, x.Agent.Tenant, ports.DocQuery{Under: []ports.SourceRef{{Kind: noteKind, ID: "/notes/" + team + "/updates/"}}})
 		if err != nil {
 			return out, fmt.Errorf("%w: index: %v", ErrUnavailable, err)

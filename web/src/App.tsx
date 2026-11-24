@@ -9,7 +9,7 @@ import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged, WhosWho } from "./Start";
-import { Goals, PoliciesToRead, TeamUpdates } from "./Company";
+import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { MySessions, SignOutEverywhere } from "./Session";
 import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
@@ -294,12 +294,14 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
         ))}
       </div>
       <div role="tabpanel" id={`${base}-panel-answer`} aria-labelledby={`${base}-tab-answer`} hidden={tab !== "answer"}>
+        {/* A space's home (SB-4106): policies, goals, updates, requests and what changed, in that order; each hidden when empty. */}
         {space && turns.length === 0 && <PoliciesToRead space={space} fetcher={fetcher} />}
-        {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <Goals space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <TeamUpdates space={space} fetcher={fetcher} />}
-        {space && turns.length === 0 && <WhosWho space={space} fetcher={fetcher} />}
+        {space && turns.length === 0 && <Requests space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
+        {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
+        {space && turns.length === 0 && <WhosWho space={space} fetcher={fetcher} />}
         <section id="conversation" tabIndex={-1} aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
           {turns.map((x) => (
             <div className="turn" key={x.id}>

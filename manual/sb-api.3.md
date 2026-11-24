@@ -66,7 +66,7 @@ Every request is in one space or company-wide (sb-spaces(7)). A request names it
 
 `branch=true` with a department's `space` (SB-3903) adds the teams under it that the asker is a member of, each checked as its own space (sb-spaces(7), The tree). `GET /v1/spaces` lists the asker's spaces, `{ "spaces": [{ "name", "label", "parent"?, "teams"? }] }`: `parent` only when the asker is a member of the parent too, and `teams: true` on a space with at least one team the asker is in.
 
-Under a space (SB-4101 to SB-4103): `GET /v1/spaces/NAME/goals`, `GET /v1/spaces/NAME/updates`, and `POST|GET /v1/spaces/NAME/policies`, `POST /v1/spaces/NAME/policies/read` and `GET /v1/spaces/NAME/policies/status` (sb-ask(3), Goals, updates and policies). Each is `EPERM` (403) for someone who isn't a member of the space, and `POST …/policies` and `GET …/policies/status` for someone who isn't its steward.
+Under a space (SB-4101 to SB-4104): `GET /v1/spaces/NAME/goals`, `GET /v1/spaces/NAME/updates`, `GET|POST /v1/spaces/NAME/requests`, and `POST|GET /v1/spaces/NAME/policies`, `POST /v1/spaces/NAME/policies/read` and `GET /v1/spaces/NAME/policies/status` (sb-ask(3), Goals, updates and policies). Each is `EPERM` (403) for someone who isn't a member of the space, and `POST …/policies` and `GET …/policies/status` for someone who isn't its steward.
 
 ### Idempotency
 

@@ -7,13 +7,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
 
@@ -60,6 +63,104 @@ func (c *Cell) overBudget(ctx context.Context) (bool, error) {
 	return spent >= float64(m.BudgetUSDMonth), nil
 }
 
+// branchSpend is this month's model spend of each space's branch, by name: what ran in the
+// space and in its teams (SB-4105). A meter that can't be read is an error.
+func (c *Cell) branchSpend(ctx context.Context, m manifest.Tenant, month string) (map[string]float64, error) {
+	by, err := c.Usage.Spend().SpentBySpace(ctx, c.Config.Tenant, month)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]float64{}
+	for key, usd := range by {
+		name := strings.TrimPrefix(key, "spc_")
+		if _, ok := m.Spaces[name]; !ok {
+			continue
+		}
+		out[name] += usd
+		if p := m.Spaces[name].Parent; p != "" {
+			out[p] += usd
+		}
+	}
+	return out, nil
+}
+
+// spaceOver is whether space key's branch, or its department's, has spent its own
+// budget_usd_month this month; unreadable spend is an error, never under budget.
+func (c *Cell) spaceOver(ctx context.Context, key string) (bool, error) {
+	m := c.Manifest()
+	name := strings.TrimPrefix(key, "spc_")
+	sp, ok := m.Spaces[name]
+	if !ok || (sp.BudgetUSDMonth == 0 && (sp.Parent == "" || m.Spaces[sp.Parent].BudgetUSDMonth == 0)) {
+		return false, nil
+	}
+	spent, err := c.branchSpend(ctx, m, time.Now().UTC().Format("2006-01"))
+	if err != nil {
+		return false, err
+	}
+	for _, n := range []string{name, sp.Parent} {
+		if b := m.Spaces[n].BudgetUSDMonth; n != "" && b > 0 && spent[n] >= float64(b) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// spaceSpend is each space's spend in month, own and branch, with its budget and, for
+// the running month after costs.ForecastMinDays, a straight-line month-end forecast.
+func (c *Cell) spaceSpend(ctx context.Context, month string) ([]api.SpaceSpend, error) {
+	from, to, err := costs.ParseMonth(month)
+	if err != nil {
+		return nil, err
+	}
+	m := c.Manifest()
+	by, err := c.Usage.Spend().SpentBySpace(ctx, c.Config.Tenant, month)
+	if err != nil {
+		return nil, err
+	}
+	branch, err := c.branchSpend(ctx, m, month)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	gone := now.Sub(from)
+	out := []api.SpaceSpend{}
+	for _, name := range sortedSpaces(m) {
+		sp := m.Spaces[name]
+		row := api.SpaceSpend{Space: name, Parent: sp.Parent, OwnUSD: cents(by[ask.SpaceKey(name)]), SpentUSD: cents(branch[name]), BudgetUSD: sp.BudgetUSDMonth}
+		if now.Before(to) && gone >= costs.ForecastMinDays*24*time.Hour {
+			f := cents(branch[name] * float64(to.Sub(from)) / float64(gone))
+			row.ForecastUSD = &f
+		}
+		out = append(out, row)
+	}
+	return out, nil
+}
+
+func cents(v float64) float64 { return math.Round(v*100) / 100 }
+
+// spaceBudgets are the spaces with a budget and the share of it their branch spent this
+// month, for the notify job's warnings (SB-4105).
+func (c *Cell) spaceBudgets(ctx context.Context) ([]notify.SpaceBudget, error) {
+	m := c.Manifest()
+	month := time.Now().UTC().Format("2006-01")
+	var out []notify.SpaceBudget
+	var spent map[string]float64
+	for _, name := range sortedSpaces(m) {
+		b := m.Spaces[name].BudgetUSDMonth
+		if b <= 0 {
+			continue
+		}
+		if spent == nil {
+			var err error
+			if spent, err = c.branchSpend(ctx, m, month); err != nil {
+				return nil, err
+			}
+		}
+		out = append(out, notify.SpaceBudget{Space: ask.SpaceKey(name), Month: month, Share: spent[name] / float64(b)})
+	}
+	return out, nil
+}
+
 // firstSteward is the first active steward of space, by email, as a user id; "" is none.
 func (c *Cell) firstSteward(ctx context.Context, m manifest.Tenant, key string) (string, error) {
 	people, err := c.stewardPeople(m)(ctx, key)
@@ -87,6 +188,9 @@ func (c *Cell) runBrief(ctx context.Context, key string) (string, error) {
 	if !ok || sp.Brief == nil {
 		return "", nil // gone since the job was built
 	}
+	if over, err := c.spaceOver(ctx, key); err != nil || over {
+		return notify.BriefSpaceBudget, err
+	}
 	return c.runAs(ctx, key, ask.DraftBrief, "Weekly brief: "+sp.Brief.Agent, ask.Request{Question: ask.BriefQuestion, Agent: sp.Brief.Agent})
 }
 
@@ -94,6 +198,9 @@ func (c *Cell) runBrief(ctx context.Context, key string) (string, error) {
 func (c *Cell) runUpdate(ctx context.Context, key string) (string, error) {
 	if sp, ok := c.Manifest().Spaces[strings.TrimPrefix(key, "spc_")]; !ok || !sp.Updates {
 		return "", nil
+	}
+	if over, err := c.spaceOver(ctx, key); err != nil || over {
+		return notify.BriefSpaceBudget, err
 	}
 	return c.runAs(ctx, key, ask.DraftUpdate, "Update: week of "+time.Now().UTC().AddDate(0, 0, -7).Format(time.DateOnly),
 		ask.Request{Question: ask.UpdateQuestion, Agent: ask.AgentUpdate})
@@ -323,4 +430,14 @@ func (c *Cell) policyNotices(ctx context.Context) ([]ask.PolicyNotice, error) {
 	}
 	sort.Strings(names)
 	return c.Parts().Stewards.PolicyNotices(ctx, names)
+}
+
+// sortedSpaces are the manifest's space names, sorted.
+func sortedSpaces(m manifest.Tenant) []string {
+	out := make([]string, 0, len(m.Spaces))
+	for n := range m.Spaces {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out
 }

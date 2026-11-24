@@ -427,6 +427,14 @@ export interface MyQuestion {
   at: string;
   state: "open" | "answered";
   reply?: ReplyView;
+  // A request to a department (SB-4104): its category and when it is due.
+  request?: RequestMeta;
+}
+
+export interface RequestMeta {
+  category: string;
+  due_days: number;
+  due: string;
 }
 
 export interface QueueQuestion {
@@ -444,6 +452,8 @@ export interface QueueQuestion {
   // The question of the queue it looks like (SB-3402), and open 5 working days (SB-3404).
   like?: string;
   overdue?: boolean;
+  // A request to the department (SB-4104); overdue past its due date.
+  request?: RequestMeta;
   // A reported answer (SB-3606): who sent it, and only what the steward can open.
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.

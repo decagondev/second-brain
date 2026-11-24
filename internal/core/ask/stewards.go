@@ -80,6 +80,8 @@ type StewardQuestion struct {
 	Thread *SavedThread `json:"thread,omitempty"`
 	// Draft marks a draft a steward started from a found-nothing term (SB-3705).
 	Draft *NoteDraft `json:"draft,omitempty"`
+	// Request marks a request to a department, with its category and due date (SB-4104).
+	Request *RequestMeta `json:"request,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -155,6 +157,8 @@ type Stewards struct {
 	// Owner is the one active user with an email, ok false for none or several (SB-3706);
 	// nil asks no owner.
 	Owner func(ctx context.Context, email string) (id string, ok bool, err error)
+	// Requests are space name's request categories and due days, ok false for none (SB-4104).
+	Requests func(name string) (categories []string, dueDays int, ok bool)
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -177,6 +181,8 @@ type AskerItem struct {
 	At       time.Time  `json:"at"`
 	State    string     `json:"state"` // open or answered
 	Reply    *ReplyView `json:"reply,omitempty"`
+	// Request is a request's category and due date (SB-4104).
+	Request *RequestMeta `json:"request,omitempty"`
 }
 
 // StewardItem is a question as stewards see it: never who asked.
@@ -200,6 +206,8 @@ type StewardItem struct {
 	// Thread is a saved chat thread (SB-3703): it names who saved it.
 	Thread *ThreadView `json:"thread,omitempty"`
 	Draft  *NoteDraft  `json:"draft,omitempty"`
+	// Request is a request's category and due date (SB-4104); it is overdue past Due.
+	Request *RequestMeta `json:"request,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -269,7 +277,7 @@ func (x Stewards) Mine(ctx context.Context, s tenancy.Scope) ([]AskerItem, error
 	}
 	out := []AskerItem{}
 	for _, q := range qs {
-		it := AskerItem{ID: q.ID, Question: q.Question, Space: q.Space, At: q.At, State: "open"}
+		it := AskerItem{ID: q.ID, Question: q.Question, Space: q.Space, At: q.At, State: "open", Request: q.Request}
 		if q.Reply != nil {
 			it.State = "answered"
 			cites, dropped, err := x.Agent.CheckCites(ctx, s, q.Reply.Cites)
@@ -334,7 +342,7 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 				it.Thread.Text, it.Thread.Hidden = "", true
 			}
 		}
-		it.Draft = q.Draft
+		it.Draft, it.Request = q.Draft, q.Request
 		if waitedFor(q, SpaceKey(name)) {
 			it.FromSpace, it.Waited = strings.TrimPrefix(q.Space, "spc_"), q.Waited
 		}
@@ -347,6 +355,9 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 			return nil, err
 		} else {
 			it.Overdue = WorkingDays(q.At, now, x.Zone) >= OverdueAfter
+			if q.Request != nil {
+				it.Overdue = now.After(q.Request.Due)
+			}
 		}
 		out = append(out, it)
 	}

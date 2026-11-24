@@ -70,3 +70,25 @@ func TestFirstClaimWins(t *testing.T) {
 		t.Fatal("an unsafe key was claimed")
 	}
 }
+
+// SB-4105: spend by space is kept apart from the tenant's, by month.
+func TestSpendBySpace(t *testing.T) {
+	now := time.Date(2027, 3, 10, 12, 0, 0, 0, time.UTC)
+	l := &Ledger{Root: t.TempDir(), Tenant: "acme-logistics", Now: func() time.Time { return now }}
+	ctx := context.Background()
+	for _, e := range []struct {
+		space, month string
+		usd          float64
+	}{{"spc_finance", "2027-03", 1}, {"spc_finance", "2027-03", 0.5}, {"spc_ap", "2027-03", 2}, {"spc_ap", "2027-02", 9}} {
+		if err := l.Spend().AddSpace(ctx, "acme-logistics", e.space, e.month, e.usd); err != nil {
+			t.Fatal(err)
+		}
+	}
+	by, err := l.Spend().SpentBySpace(ctx, "acme-logistics", "2027-03")
+	if err != nil || len(by) != 2 || by["spc_finance"] != 1.5 || by["spc_ap"] != 2 {
+		t.Fatalf("by space %v %v", by, err)
+	}
+	if usd, _ := l.Spend().Spent(ctx, "acme-logistics", "2027-03"); usd != 0 {
+		t.Fatalf("space spend counted as the tenant's: %v", usd)
+	}
+}

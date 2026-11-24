@@ -601,6 +601,12 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		StartItems: func(name string) []string { return m.Effective(name).StartHere }, Members: c.noteReaders(m),
 		Children: m.Children, Policies: c.Traces, ScopeOf: c.ownerScope, ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays },
 		Parent: func(name string) string { return m.Spaces[name].Parent }, StewardPeople: c.stewardPeople(m),
+		Requests: func(name string) ([]string, int, bool) { // SB-4104
+			if r := m.Spaces[name].Requests; r != nil {
+				return r.Categories, r.DueDays, true
+			}
+			return nil, 0, false
+		},
 		Owner: func(ctx context.Context, email string) (string, bool, error) { // SB-3706: one active user, or no one
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
 			if err != nil {
@@ -648,7 +654,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
-		ActiveByEmail: c.activeByEmail, Notices: c.Traces}
+		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)

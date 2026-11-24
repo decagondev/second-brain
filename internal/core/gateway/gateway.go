@@ -91,7 +91,7 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 		if err == nil {
 			g.meter(resp.Usage)
 			if g.Budget != nil {
-				_ = g.Budget.Record(ctx, resp.Usage.Input, resp.Usage.Output)
+				_ = g.Budget.RecordIn(ctx, req.Space, resp.Usage.Input, resp.Usage.Output)
 			}
 			return resp, nil
 		}

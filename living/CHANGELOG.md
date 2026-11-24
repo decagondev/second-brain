@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Requests to a department, budgets per space with spend by space, and a home for each space (SB-4104 to SB-4106). W40 built.
 - Goals by space, weekly team updates and policies to read (SB-4101 to SB-4103).
 - Every agent in one place, weekly briefs, welcome briefs and transcript decisions as drafts, and the right department suggestion (SB-4004 to SB-4007).
 - Agents for People, Legal, Sales, Support, Marketing, Operations, Design and Executive (SB-4001 to SB-4003).

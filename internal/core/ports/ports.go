@@ -436,6 +436,7 @@ type ModelRequest struct {
 	MaxTokens int
 	JSON      bool
 	User      string // who the call is for (budget and rate limit); never sent to a provider
+	Space     string // the space it runs in, spc_NAME or "" (SB-4105); never sent to a provider
 }
 
 // Usage is the token count of one completion.
