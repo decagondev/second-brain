@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S33.1: Keep the good replies
+
+**Wave/slice:** W33 / S33.1 (SB-3401 to SB-3404) · **Status:** Done
+
+**What:** Publish as note can keep the question's text in the note, off by default. Every note now carries review_by 180 days ahead, so it comes up for review like any document, and a republish dates it again. A question sent to the stewards that looks like another of the queue from the last 90 days shows Looks like qs_N to the stewards, and Answer both replies to each. An open question is overdue from 5 working days and counted first in the stewards' digest; from 10, with no live claim, the company-wide answerers see it too.
+
+**Why this way:** The note names no asker, and the question goes in only when the steward chooses (LAW-07, LAW-11). The review date is front matter that ingest already read, so no new field or index column (LAW-13). Repeats use the embedder the cell already has and never reach an asker; no embedder links nothing (LAW-01). An old question stays in its own queue and is shown company-wide only after a definite 10 working days with no live claim, audited by id and counts only (LAW-07).
+
+**Learned:** Notes are never overwritten, which would have stopped a republish from moving its date. Comparing the note after its front matter keeps that rule for the text while letting the date move.
+
+**Laws:** LAW-01, LAW-07, LAW-11, LAW-13. Every law test is still green.
+
 ## 2026-11-24 S32.2: Know where to look
 
 **Wave/slice:** W32 / S32.2 (SB-3305 to SB-3307) · **Status:** Done

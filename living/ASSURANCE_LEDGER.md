@@ -186,3 +186,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-07 | Tested (extended) | SB-3207: a notice's audit rows hold its digest, never its text (TestNoticeToEveryone) |
 | 2026-11-24 | LAW-14 | Tested (extended) | SB-3303, SB-3304: a short answer and a disagreement mark keep every claim cited or uncited, and the mark needs two documents (TestShortAnswerAndOneDocumentDisagreement, TestDisagreeNeedsTwoDocuments, cite-008, cite-009) |
 | 2026-11-24 | LAW-19 | Tested (extended) | SB-3307: a space's suggested questions are read by its members only and set by its stewards only (TestSuggestedQuestionsThroughARunningCell) |
+| 2026-11-24 | LAW-07 | Tested (extended) | SB-3401, SB-3404: a note never names its asker, and the old-question messages and audit rows hold counts and ids only (TestNoteKeepsQuestionAndComesDue, TestOldQuestionsWaitThenGoCompanyWide) |

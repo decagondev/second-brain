@@ -171,3 +171,4 @@ button { font: inherit; padding: 0.5rem 1rem; min-height: 44px; justify-self: st
   font-size: 1rem;
   margin-bottom: 0.25rem;
 }
+.overdue { font-weight: 600; }

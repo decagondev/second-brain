@@ -107,8 +107,37 @@ func (c *Connector) create(rel string, b []byte) error {
 		if rerr == nil && bytes.Equal(have, b) {
 			return nil
 		}
+		if rerr == nil && !strings.HasSuffix(rel, ".acl") && bytes.Equal(afterFrontMatter(have), afterFrontMatter(b)) {
+			return c.redate(rel, b) // the same note republished: a new review_by date (SB-3403)
+		}
 		return fmt.Errorf("folder: %s is already a different note; notes are never overwritten", rel)
 	}
+	if err != nil {
+		return fmt.Errorf("folder: notes: %w", err)
+	}
+	if _, err := f.Write(b); err != nil {
+		_ = f.Close()
+		return fmt.Errorf("folder: notes: %w", err)
+	}
+	return f.Close()
+}
+
+// afterFrontMatter is a note's text after its front matter, or all of it without one.
+func afterFrontMatter(b []byte) []byte {
+	if !bytes.HasPrefix(b, []byte("---\n")) {
+		return b
+	}
+	end := bytes.Index(b[4:], []byte("\n---\n"))
+	if end < 0 {
+		return b
+	}
+	return b[4+end+5:]
+}
+
+// redate rewrites a note whose text after its front matter is unchanged: only its dates
+// differ, and the ACL file, which decides who reads it, isn't touched.
+func (c *Connector) redate(rel string, b []byte) error {
+	f, err := c.notes.OpenFile(rel, os.O_WRONLY|os.O_TRUNC, 0o644)
 	if err != nil {
 		return fmt.Errorf("folder: notes: %w", err)
 	}

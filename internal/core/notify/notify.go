@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/ports"
 )
 
@@ -187,6 +188,9 @@ type Job struct {
 	// Owned is, by user id, how many documents each active owner owns, can open now, and
 	// answers often cite while past review (SB-2806); nil tells no one.
 	Owned func(ctx context.Context, now time.Time) (map[string]int, error)
+	// Audit writes a row for each question shown to the company-wide answerers because it
+	// waited (SB-3404); nil shows none there.
+	Audit ask.Auditor
 }
 
 // The digest's limits.
@@ -227,11 +231,20 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 	if !found || from.After(now) {
 		from = now.Add(-FirstLookback)
 	}
+	moved, err := j.reroute(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
 	var out []outgoing
 	if j.Send != nil {
 		if out, err = j.plan(ctx, from, now); err != nil {
 			return Result{}, err
 		}
+		more, err := j.waited(ctx, moved)
+		if err != nil {
+			return Result{}, err
+		}
+		out = append(out, more...)
 	}
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
@@ -325,6 +338,77 @@ func (j Job) plan(ctx context.Context, from, now time.Time) ([]outgoing, error) 
 	out = append(out, more...)
 	toks, err := j.tokens(ctx, from, now)
 	return append(out, toks...), err
+}
+
+// reroute shows the company-wide answerers each question open RerouteAfter working days in
+// its space, with no live claim (SB-3404). It stays in its space's queue too. Each one is
+// audited, counts and ids only.
+func (j Job) reroute(ctx context.Context, now time.Time) (int, error) {
+	if j.Audit == nil || j.Facts == nil {
+		return 0, nil
+	}
+	if _, _, ok := j.Facts("company"); !ok {
+		return 0, nil
+	}
+	back := j.Lookback
+	if back <= 0 {
+		back = 400 * 24 * time.Hour
+	}
+	qs, err := j.Questions.StewardQuestionsBetween(ctx, j.Tenant, now.Add(-back), now)
+	if err != nil {
+		return 0, fmt.Errorf("notify: questions: %w", err)
+	}
+	due := func(q ask.StewardQuestion) bool {
+		return q.Space != "company" && q.Also == "" && q.Reply == nil && (q.Claim == nil || !now.Before(q.Claim.Until)) &&
+			ask.WorkingDays(q.At, now, j.Zone) >= ask.RerouteAfter
+	}
+	n := 0
+	for _, q := range qs {
+		if !due(q) {
+			continue
+		}
+		if _, err := j.Audit.Write(ctx, audit.Event{Actor: "sys_notify", Kind: "access", Subject: q.ID, State: "rerouted",
+			Reason: "open 10 working days", Space: q.Space}); err != nil {
+			return n, fmt.Errorf("notify: audit: %w", err)
+		}
+		moved := false
+		if _, err := j.Questions.UpdateStewardQuestion(ctx, j.Tenant, q.ID, func(q *ask.StewardQuestion) error {
+			if moved = due(*q); moved {
+				q.Also, q.Waited = "company", ask.WorkingDays(q.At, now, j.Zone)
+			}
+			return nil
+		}); err != nil {
+			return n, fmt.Errorf("notify: questions: %w", err)
+		}
+		if moved {
+			n++
+		}
+	}
+	return n, nil
+}
+
+// waited tells the company-wide answerers how many questions came to them this run.
+func (j Job) waited(ctx context.Context, n int) ([]outgoing, error) {
+	if n == 0 {
+		return nil, nil
+	}
+	groups, _, ok := j.Facts("company")
+	if !ok {
+		return nil, nil
+	}
+	people, err := j.members(ctx, groups)
+	if err != nil {
+		return nil, err
+	}
+	text := "1 question waited 10 working days in its space"
+	if n != 1 {
+		text = fmt.Sprintf("%d questions waited 10 working days in their spaces", n)
+	}
+	var out []outgoing
+	for _, p := range people {
+		out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink("company")}})
+	}
+	return out, nil
 }
 
 // tokens tells each token's owner once, TokenWarn before it expires: the tokens whose
@@ -655,8 +739,8 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 		return nil, nil, fmt.Errorf("notify: questions: %w", err)
 	}
 	type tally struct {
-		answered, open, nothing int
-		oldest                  time.Time
+		answered, open, nothing, overdue int
+		oldest                           time.Time
 	}
 	by := map[string]*tally{}
 	week := now.Add(-7 * 24 * time.Hour)
@@ -679,6 +763,9 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 		switch {
 		case q.Reply == nil:
 			t.open++
+			if ask.WorkingDays(q.At, now, j.Zone) >= ask.OverdueAfter {
+				t.overdue++
+			}
 			if t.oldest.IsZero() || q.At.Before(t.oldest) {
 				t.oldest = q.At
 			}
@@ -693,7 +780,12 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 	for sp := range by {
 		spaces = append(spaces, sp)
 	}
-	sort.Strings(spaces)
+	sort.SliceStable(spaces, func(a, b int) bool { // spaces with overdue questions first (SB-3404)
+		if (by[spaces[a]].overdue > 0) != (by[spaces[b]].overdue > 0) {
+			return by[spaces[a]].overdue > 0
+		}
+		return spaces[a] < spaces[b]
+	})
 	lines := map[string][]string{}
 	var people []Person
 	seen := map[string]bool{}
@@ -708,6 +800,9 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 			name = "Company-wide"
 		}
 		line := fmt.Sprintf("%s: %d answered this week, %d still open", name, t.answered, t.open)
+		if t.overdue > 0 {
+			line = fmt.Sprintf("%s: %d overdue, %d answered this week, %d still open", name, t.overdue, t.answered, t.open)
+		}
 		if t.open > 0 {
 			line += ", the oldest " + plural(int(now.Sub(t.oldest).Hours()/24), "day", "days") + " old"
 		}

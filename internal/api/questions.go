@@ -163,12 +163,13 @@ func (h Questions) reply(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Text  string   `json:"text"`
 		Cites []string `json:"cites"`
+		Both  bool     `json:"both"` // also to the question it looks like (SB-3402)
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with text and cites."))
 		return
 	}
-	q, err := h.Service.Reply(r.Context(), s, r.PathValue("name"), r.PathValue("id"), body.Text, body.Cites)
+	q, err := h.Service.ReplyBoth(r.Context(), s, r.PathValue("name"), r.PathValue("id"), body.Text, body.Cites, body.Both)
 	if err != nil {
 		h.fail(w, err)
 		return

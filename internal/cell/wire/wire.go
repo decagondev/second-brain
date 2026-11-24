@@ -539,7 +539,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
 	stewards := ask.Stewards{Agent: agent, Store: c.Traces, Audit: c.Audit, Policy: c.Policy, NewID: newID, Now: time.Now,
-		Unstewarded: c.unstewarded, Suggested: c.Traces,
+		Unstewarded: c.unstewarded, Suggested: c.Traces, Zone: workZone(m),
 		Facts: stewardFacts(m), Gone: func(ctx context.Context, email string) (bool, error) {
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
 			if err != nil {
@@ -932,4 +932,12 @@ func linker(conns map[string]ports.Connector) func(ports.Chunk) string {
 		defer cancel()
 		return l.Link(ctx, ch)
 	}
+}
+
+// workZone is the working week's time zone: the manifest's digest zone, or UTC (SB-3404).
+func workZone(m manifest.Tenant) *time.Location {
+	if z, _ := manifest.DigestZone(m.Digest); z != nil {
+		return z
+	}
+	return time.UTC
 }

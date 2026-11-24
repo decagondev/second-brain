@@ -367,8 +367,13 @@ export interface QueueQuestion {
   reply?: { by: string; text: string; cites: string[]; at: string; note?: string };
   // A steward's live claim (SB-2502): who, whether it is the caller's, and until when.
   claim?: { by: string; mine: boolean; until: string };
-  // Rerouted from a space with no active steward (SB-3102).
+  // Rerouted from a space with no active steward (SB-3102), or one that left it open
+  // `waited` working days (SB-3404).
   from_space?: string;
+  waited?: number;
+  // The question of the queue it looks like (SB-3402), and open 5 working days (SB-3404).
+  like?: string;
+  overdue?: boolean;
 }
 
 export interface NoteResult {
@@ -394,12 +399,13 @@ export async function stewardQueue(space: string, f: Fetch = fetch): Promise<Que
   return Array.isArray(data.items) ? data.items : [];
 }
 
-export function replyToQuestion(space: string, id: string, text: string, cites: string[], f: Fetch = fetch): Promise<unknown> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/reply`, post({ text, cites }), f);
+export function replyToQuestion(space: string, id: string, text: string, cites: string[], f: Fetch = fetch, both = false): Promise<unknown> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/reply`, post(both ? { text, cites, both } : { text, cites }), f);
 }
 
-export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch): Promise<NoteResult> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title } : { title, confirm }), f);
+export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch, keepQuestion = false): Promise<NoteResult> {
+  const keep = keepQuestion ? { keep_question: true } : {};
+  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title, ...keep } : { title, confirm, ...keep }), f);
 }
 
 // Stewards' tools (sb-ask(3); SB-2501 to SB-2503).

@@ -7,11 +7,13 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"example.com/second-brain/internal/adapters/oidc/oidctest"
 	"example.com/second-brain/internal/cell/ingestsvc"
 	"example.com/second-brain/internal/cell/wire"
 	"example.com/second-brain/internal/cell/wire/celltest"
+	"example.com/second-brain/internal/core/ask"
 )
 
 const notesManifest = `tenant: acme-logistics
@@ -89,7 +91,9 @@ func TestAnswerOnceThroughARunningCell(t *testing.T) {
 	if code != 200 || !strings.Contains(body, `"state":"Ran"`) || !strings.Contains(body, "@sha256:") {
 		t.Fatalf("publish: %d %s", code, body)
 	}
-	if b, err := os.ReadFile(share + "/notes/company/" + id + ".md"); err != nil || !strings.Contains(string(b), "3pm on weekdays") {
+	// SB-3401, SB-3403: the reply with a review date, and not the question it wasn't asked to keep.
+	if b, err := os.ReadFile(share + "/notes/company/" + id + ".md"); err != nil || !strings.Contains(string(b), "3pm on weekdays") ||
+		!strings.HasPrefix(string(b), "---\nreview_by: "+time.Now().UTC().Add(ask.NoteReviewIn).Format("2006-01-02")) || strings.Contains(string(b), q) {
 		t.Fatalf("the note on the share: %q %v", b, err)
 	}
 

@@ -45,6 +45,8 @@ type StewardReply struct {
 	NoteTitle string `json:"note_title,omitempty"`
 	// NoteAt is when it was first published as a note, so the asker is told once (SB-2102).
 	NoteAt time.Time `json:"note_at,omitzero"`
+	// NoteQuestion is whether the steward kept the question's text in the note (SB-3401).
+	NoteQuestion bool `json:"note_question,omitempty"`
 }
 
 // StewardQuestion is one question sent to the people who know.
@@ -62,6 +64,12 @@ type StewardQuestion struct {
 	// FromSpace is the space it was sent from when that space had no active steward, so
 	// it went to the company queue (SB-3102), by name.
 	FromSpace string `json:"from_space,omitempty"`
+	// Like is the question of the same queue it looks like when it was sent (SB-3402).
+	Like string `json:"like,omitempty"`
+	// Also is company when the company-wide answerers see it too, because it waited
+	// Waited working days in its space (SB-3404).
+	Also   string `json:"also,omitempty"`
+	Waited int    `json:"waited,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -117,6 +125,8 @@ type Stewards struct {
 	// Unstewarded says whether a space (spc_NAME) has no active steward now (none), and
 	// whether the directory could tell (known) (SB-3102); nil never reroutes.
 	Unstewarded func(ctx context.Context, space string) (none, known bool, err error)
+	// Zone is the working week's time zone (SB-3404); nil is UTC.
+	Zone *time.Location
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -149,8 +159,14 @@ type StewardItem struct {
 	State    string        `json:"state"`
 	Reply    *StewardReply `json:"reply,omitempty"`
 	Claim    *ClaimView    `json:"claim,omitempty"`
-	// FromSpace is the space with no active steward it came from (SB-3102).
+	// FromSpace is the space with no active steward it came from (SB-3102), or the space
+	// that left it open Waited working days (SB-3404).
 	FromSpace string `json:"from_space,omitempty"`
+	Waited    int    `json:"waited,omitempty"`
+	// Like is the question of the queue it looks like (SB-3402), and Overdue an open
+	// question OverdueAfter working days old (SB-3404).
+	Like    string `json:"like,omitempty"`
+	Overdue bool   `json:"overdue,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -198,6 +214,7 @@ func (x Stewards) Send(ctx context.Context, s tenancy.Scope, text, trace string)
 			}
 		}
 	}
+	sq.Like = x.repeat(ctx, sq)
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "access", Subject: sq.ID, State: "asked",
 		PayloadSHA256: hashOf(q), Reason: "question to stewards", Space: auditSpace(sq.Space)}); err != nil {
 		return StewardQuestion{}, fmt.Errorf("%w: audit: %v", ErrUnavailable, err)
@@ -261,18 +278,23 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 	if err != nil {
 		return nil, err
 	}
-	qs, err := x.Store.StewardQueue(ctx, x.Agent.Tenant, SpaceKey(name))
+	qs, err := x.queue(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
+		return nil, err
 	}
 	out := []StewardItem{}
 	now := x.Now().UTC()
 	for _, q := range qs {
-		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace}
+		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs)}
+		if waitedFor(q, SpaceKey(name)) {
+			it.FromSpace, it.Waited = strings.TrimPrefix(q.Space, "spc_"), q.Waited
+		}
 		if q.Reply != nil {
 			it.State = "answered"
 		} else if it.Claim, err = x.claimView(ctx, s, q.Claim, stewards, now); err != nil {
 			return nil, err
+		} else {
+			it.Overdue = WorkingDays(q.At, now, x.Zone) >= OverdueAfter
 		}
 		out = append(out, it)
 	}
@@ -285,12 +307,35 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 	return out, nil
 }
 
+// queue is the space's questions, newest first: on the company-wide queue, with those
+// that waited in their space (SB-3404).
+func (x Stewards) queue(ctx context.Context, name string) ([]StewardQuestion, error) {
+	qs, err := x.Store.StewardQueue(ctx, x.Agent.Tenant, SpaceKey(name))
+	if err != nil {
+		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
+	}
+	if SpaceKey(name) != "company" {
+		return qs, nil
+	}
+	all, err := x.Store.StewardQuestionsBetween(ctx, x.Agent.Tenant, time.Time{}, x.Now().UTC().Add(time.Minute))
+	if err != nil {
+		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
+	}
+	for _, q := range all {
+		if q.Space != "company" && waitedFor(q, "company") {
+			qs = append(qs, q)
+		}
+	}
+	sort.SliceStable(qs, func(i, j int) bool { return qs[i].At.After(qs[j].At) })
+	return qs, nil
+}
+
 func (x Stewards) question(ctx context.Context, name, id string) (StewardQuestion, error) {
 	q, found, err := x.Store.GetStewardQuestion(ctx, x.Agent.Tenant, id)
 	if err != nil {
 		return q, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 	}
-	if !found || q.Space != SpaceKey(name) {
+	if !found || (q.Space != SpaceKey(name) && !waitedFor(q, SpaceKey(name))) {
 		return q, ErrNotSteward // another space's question looks like none
 	}
 	return q, nil
@@ -298,6 +343,29 @@ func (x Stewards) question(ctx context.Context, name, id string) (StewardQuestio
 
 // Reply records a steward's answer. Every cite must be one the steward can open now.
 func (x Stewards) Reply(ctx context.Context, s tenancy.Scope, name, id, text string, cites []string) (StewardQuestion, error) {
+	return x.ReplyBoth(ctx, s, name, id, text, cites, false)
+}
+
+// ReplyBoth is Reply; with both, the same reply also goes to the open question id looks
+// like (SB-3402), each its own reply and audit row.
+func (x Stewards) ReplyBoth(ctx context.Context, s tenancy.Scope, name, id, text string, cites []string, both bool) (StewardQuestion, error) {
+	q, err := x.reply(ctx, s, name, id, text, cites)
+	if err != nil || !both {
+		return q, err
+	}
+	qs, err := x.queue(ctx, name)
+	if err != nil {
+		return q, err
+	}
+	if other := partner(q, qs); other != "" {
+		if _, err := x.reply(ctx, s, name, other, text, cites); err != nil && !errors.Is(err, ErrInvalid) {
+			return q, err // already answered is fine: Answer both answers what's still open
+		}
+	}
+	return q, nil
+}
+
+func (x Stewards) reply(ctx context.Context, s tenancy.Scope, name, id, text string, cites []string) (StewardQuestion, error) {
 	if _, _, err := x.steward(ctx, s, name); err != nil {
 		return StewardQuestion{}, err
 	}
@@ -412,6 +480,9 @@ func (a Agent) who(ctx context.Context, s tenancy.Scope) (ports.UserRef, error) 
 type NoteRequest struct {
 	Title   string   `json:"title"`
 	Readers []string `json:"readers,omitempty"`
+	// KeepQuestion puts the question's text in the note (SB-3401); a republish keeps what
+	// the first publish chose.
+	KeepQuestion bool `json:"keep_question,omitempty"`
 	// Confirm is the count of narrower cites the steward saw and accepts; nil previews.
 	Confirm *int `json:"confirm,omitempty"`
 }
@@ -459,6 +530,9 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if q.Reply == nil {
 		return NoteResult{}, fmt.Errorf("%w: reply first; a note is a reply", ErrInvalid)
 	}
+	if waitedFor(q, SpaceKey(name)) {
+		return NoteResult{}, fmt.Errorf("%w: publish this note from its own space, %s", ErrInvalid, strings.TrimPrefix(q.Space, "spc_"))
+	}
 	// A reply that is a note already is republished: the same text to fewer readers, the
 	// note's readers now that are still members, or fewer (SB-2004). Never wider.
 	republish := q.Reply.Note != ""
@@ -503,7 +577,15 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if republish && was.Owner != "" { // the same note: its owner stays, whoever republishes it
 		owner = strings.ToLower(was.Owner)
 	}
-	payload, _ := json.Marshal(NotePayload{Markdown: noteText(title, q.Reply), Readers: readers, Owner: owner, Label: label})
+	keep := req.KeepQuestion
+	if republish {
+		keep = q.Reply.NoteQuestion
+	}
+	asked := ""
+	if keep {
+		asked = q.Question
+	}
+	payload, _ := json.Marshal(NotePayload{Markdown: noteText(title, q.Reply, asked, x.Now().UTC().Add(NoteReviewIn)), Readers: readers, Owner: owner, Label: label})
 	var groups []string
 	for _, g := range s.Groups() {
 		groups = append(groups, "group:"+g)
@@ -519,7 +601,7 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 			if q.Reply.Note == "" {
 				q.Reply.NoteAt = x.Now().UTC()
 			}
-			q.Reply.Note, q.Reply.NoteTitle = a.Receipt, title
+			q.Reply.Note, q.Reply.NoteTitle, q.Reply.NoteQuestion = a.Receipt, title, keep
 			return nil
 		}); err != nil {
 			return out, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
@@ -640,10 +722,19 @@ func (x Stewards) narrower(ctx context.Context, cites, readers []string) (int, e
 	return len(narrow), nil
 }
 
-// noteText is the note's Markdown: the steward's title and reply, and the cites they gave.
-func noteText(title string, r *StewardReply) string {
+// NoteReviewIn is how far ahead a note's review_by is when it is published (SB-3403).
+const NoteReviewIn = 180 * 24 * time.Hour
+
+// noteText is the note's Markdown: front matter with its review_by date, the steward's
+// title, the question when they kept it, the reply, and the cites they gave. Never the asker.
+func noteText(title string, r *StewardReply, question string, due time.Time) string {
 	var b strings.Builder
-	b.WriteString("# " + title + "\n\n" + r.Text + "\n")
+	b.WriteString("---\nreview_by: " + due.UTC().Format("2006-01-02") + "\n---\n")
+	b.WriteString("# " + title + "\n\n")
+	if question != "" {
+		b.WriteString("Question: " + question + "\n\n")
+	}
+	b.WriteString(r.Text + "\n")
 	if len(r.Cites) > 0 {
 		b.WriteString("\nSources:\n\n")
 		for _, c := range r.Cites {

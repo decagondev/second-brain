@@ -116,3 +116,35 @@ func TestNoteNarrows(t *testing.T) {
 		t.Fatalf("bob after narrowing: %v", vs)
 	}
 }
+
+// SB-3403: a note republished with only a new review_by date is rewritten; a different
+// text is still never written over it, and its ACL file is untouched.
+func TestNoteRedates(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	c, err := Open(dir, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close() }()
+	if err := c.EnableNotes(dir); err != nil {
+		t.Fatal(err)
+	}
+	at := "notes/support/qs_2.md"
+	if _, err := c.Act(ctx, ports.Action{Target: at, Payload: notePay(`---\nreview_by: 2027-01-01\n---\n# Refunds`)}, "k"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Act(ctx, ports.Action{Target: at, Payload: notePay(`---\nreview_by: 2027-06-01\n---\n# Refunds`)}, "k2"); err != nil {
+		t.Fatalf("republish with a new date: %v", err)
+	}
+	b, _ := os.ReadFile(filepath.Join(dir, "notes", "support", "qs_2.md"))
+	if string(b) != "---\nreview_by: 2027-06-01\n---\n# Refunds" {
+		t.Fatalf("note %q", b)
+	}
+	if _, err := c.Act(ctx, ports.Action{Target: at, Payload: notePay(`---\nreview_by: 2027-07-01\n---\n# Other`)}, "k3"); err == nil {
+		t.Fatal("a different note was written over it")
+	}
+	if acl, _ := os.ReadFile(filepath.Join(dir, "notes", "support", "qs_2.md.acl")); string(acl) != "owner sam@acme.example\nread ann@acme.example\nlabel internal\n" {
+		t.Fatalf("acl %q", acl)
+	}
+}

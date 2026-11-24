@@ -13,7 +13,7 @@ summary: "An open question to the stewards can wait forever."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07 |
 | Depends on | SB-2502 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ An open question to the stewards can wait forever.
 
 ## Acceptance criteria
 
-- [ ] The notify job marks a question open 5 working days overdue and lists it first in the stewards' digest
-- [ ] At 10 working days it goes to the company-wide answerers with how long it waited
-- [ ] A claimed question waits for its claim to lapse
+- [x] The notify job marks a question open 5 working days overdue and lists it first in the stewards' digest
+- [x] At 10 working days it goes to the company-wide answerers with how long it waited
+- [x] A claimed question waits for its claim to lapse
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Notify job
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Notify job
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Done 2026-11-24. Working days are Monday to Friday in the digest zone. An open question is `overdue` from 5 (marked on the steward screen, counted first in the digest line, those spaces first). From 10, with no live claim, the notify job shows it to the company-wide answerers too (`also`, `waited`), audited as `rerouted` by `sys_notify`, and tells them a count; it stays in its own queue, and a note of it is published from its own space only. Tests: `TestOldQuestionsWaitThenGoCompanyWide`, `TestDigestOverdueFirst`, `TestWorkingDays`, `TestOverdueAndWaitedOnTheQueue`.
 
 ## Definition of done
 

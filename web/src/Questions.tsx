@@ -224,6 +224,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   const [cites, setCites] = useState<Record<string, string>>({});
   const [title, setTitle] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<Record<string, NoteResult>>({});
+  const [keep, setKeep] = useState<Record<string, boolean>>({});
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
   const [steward, setSteward] = useState(false);
   const ids = useId();
@@ -245,10 +246,10 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [space]);
 
-  async function reply(id: string) {
+  async function reply(id: string, both = false) {
     try {
       const cs = (cites[id] ?? "").split(/[\s,]+/).filter(Boolean);
-      await replyToQuestion(space, id, text[id] ?? "", cs, fetcher);
+      await replyToQuestion(space, id, text[id] ?? "", cs, fetcher, both);
       setStatus(t("Replied. The asker sees each cite only if they can open it."));
       await load();
     } catch (e) {
@@ -269,7 +270,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   async function note(id: string) {
     try {
       const p = preview[id];
-      const r = await publishNote(space, id, title[id] ?? "", p?.narrower, fetcher);
+      const r = await publishNote(space, id, title[id] ?? "", p?.narrower, fetcher, keep[id] ?? false);
       if (!p) {
         setPreview((x) => ({ ...x, [id]: r }));
         setStatus(t("The note will have {readers} readers. {narrower} of its cites some of them can't open. Publish to confirm.", { readers: r.readers, narrower: r.narrower }));
@@ -300,7 +301,13 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
           {items.map((q, i) => (
             <li key={q.id}>
               <p className="question">{q.question}</p>
-              {q.from_space && <p className="meta">{t("{space} has no active steward", { space: q.from_space })}</p>}
+              {q.from_space && (
+                <p className="meta">
+                  {q.waited ? t("{space} hasn't answered this in {n} working days", { space: q.from_space, n: q.waited }) : t("{space} has no active steward", { space: q.from_space })}
+                </p>
+              )}
+              {q.state === "open" && q.overdue && <p className="meta overdue">{t("Overdue")}</p>}
+              {q.like && <p className="meta">{t("Looks like {id}", { id: q.like })}</p>}
               {q.state === "open" ? (
                 <div className="decide">
                   <p className="meta">
@@ -348,6 +355,11 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
                   <button type="button" onClick={() => reply(q.id)}>
                     {t("Send reply")}
                   </button>
+                  {q.like && items.some((o) => o.id === q.like && o.state === "open") && (
+                    <button type="button" onClick={() => reply(q.id, true)}>
+                      {t("Answer both")}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="decide">
@@ -358,6 +370,9 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
                     <>
                       <label htmlFor={`${ids}-t${i}`}>{t("Note title for: {question}", { question: q.question })}</label>
                       <input id={`${ids}-t${i}`} type="text" maxLength={200} value={title[q.id] ?? ""} onChange={(e) => setTitle((x) => ({ ...x, [q.id]: e.target.value }))} />
+                      <label>
+                        <input type="checkbox" checked={keep[q.id] ?? false} onChange={(e) => setKeep((x) => ({ ...x, [q.id]: e.target.checked }))} /> {t("Keep the question in the note")}
+                      </label>
                       <button type="button" onClick={() => note(q.id)}>
                         {preview[q.id] ? t("Publish, accepting {n} narrower cites", { n: preview[q.id]!.narrower }) : t("Publish as note")}
                       </button>
