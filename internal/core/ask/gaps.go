@@ -231,3 +231,59 @@ func (x Stewards) conflicts(ctx context.Context, s tenancy.Scope, space string, 
 	}
 	return out, hidden, nil
 }
+
+// Question trends (SB-3704): the terms asked most in a space, counts only.
+const (
+	TrendMinAsks = 5
+	MaxTrends    = 5
+)
+
+// TermCount is a glossary term and how many asks used it.
+type TermCount struct {
+	Term  string
+	Count int
+}
+
+// TrendsBySpace is, per space, the glossary terms of the asks between from and to with at
+// least TrendMinAsks asks each, most first, at most MaxTrends; a space with none is absent.
+func TrendsBySpace(traces []Trace, from, to time.Time) map[string][]TermCount {
+	uses := map[string]map[string]int{}
+	for _, t := range traces {
+		if t.Response.Agent != "" && t.Response.Agent != "ask" || t.At.Before(from) || !t.At.Before(to) {
+			continue
+		}
+		seen := map[string]bool{}
+		for _, term := range t.Response.Terms {
+			if seen[term.Term] {
+				continue
+			}
+			seen[term.Term] = true
+			if uses[t.Space] == nil {
+				uses[t.Space] = map[string]int{}
+			}
+			uses[t.Space][term.Term]++
+		}
+	}
+	out := map[string][]TermCount{}
+	for sp, by := range uses {
+		var tc []TermCount
+		for term, n := range by {
+			if n >= TrendMinAsks {
+				tc = append(tc, TermCount{Term: term, Count: n})
+			}
+		}
+		sort.Slice(tc, func(i, j int) bool {
+			if tc[i].Count != tc[j].Count {
+				return tc[i].Count > tc[j].Count
+			}
+			return tc[i].Term < tc[j].Term
+		})
+		if len(tc) > MaxTrends {
+			tc = tc[:MaxTrends]
+		}
+		if len(tc) > 0 {
+			out[sp] = tc
+		}
+	}
+	return out
+}

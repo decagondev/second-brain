@@ -45,6 +45,8 @@ type App struct {
 	// ActionURL is the cell's POST /chat/mattermost/actions, for the Share button
 	// (SB-2105); "" shows no button.
 	ActionURL string
+	// Thread reads a post's thread for Save to the brain (SB-3703); nil saves none.
+	Thread func(ctx context.Context, post string) ([]Post, error)
 }
 
 // Message is a slash command response (Mattermost's response_type, text and attachments).
@@ -139,6 +141,14 @@ func (a *App) command(w http.ResponseWriter, r *http.Request) {
 	}
 	reply(w, Message{ResponseType: "ephemeral", Text: slackapp.MsgLooking})
 	user, channel := form.Get("user_id"), form.Get("channel_name")
+	if post, ok := postOf(question); ok { // SB-3703
+		a.run(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), slackapp.AnswerTimeout)
+			defer cancel()
+			_ = a.post(ctx, responseURL, Message{ResponseType: "ephemeral", Text: a.save(ctx, user, form.Get("channel_id"), channel, post)})
+		})
+		return
+	}
 	a.run(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), slackapp.AnswerTimeout)
 		defer cancel()

@@ -151,7 +151,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	}
 	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
-		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Audit: c.Audit, Reviews: c.reviewList,
+		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Trends: c.trends, Audit: c.Audit, Reviews: c.reviewList,
 		Failed: func(kind string) {
 			c.Metrics.Add("sb_notify_failed_total", "Notifications that couldn't be sent, by kind (sb-ask(3)).", map[string]string{"kind": kind}, 1)
 		}}
@@ -432,6 +432,15 @@ func (c *Cell) foundNothing(ctx context.Context, from, to time.Time) (map[string
 		return nil, err
 	}
 	return ask.FoundNothingBySpace(ts, from, to), nil
+}
+
+// trends are, per space, the terms asked most in the window (SB-3704).
+func (c *Cell) trends(ctx context.Context, from, to time.Time) (map[string][]ask.TermCount, error) {
+	ts, err := c.Traces.Between(ctx, c.Config.Tenant, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return ask.TrendsBySpace(ts, from, to), nil
 }
 
 // reviewList is the cell's access reviews, for the stewards' notices (SB-3504).

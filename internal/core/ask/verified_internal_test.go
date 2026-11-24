@@ -104,3 +104,48 @@ func TestVerifiedCount(t *testing.T) {
 		t.Fatal("a count without cites")
 	}
 }
+
+// SB-3702: a section headed Decision(s), or front matter type: decision on the first chunk.
+func TestIsDecision(t *testing.T) {
+	for _, c := range []ports.Chunk{
+		{Section: "Decisions", Start: 400},
+		{Section: " decision ", Start: 400},
+		{Text: "Carrier switch\n\n---\nowner: ann\ntype: decision\n---\nWe move to beta-freight.", Start: 0},
+	} {
+		if !isDecision(c) {
+			t.Fatalf("not a decision: %+v", c)
+		}
+	}
+	for _, c := range []ports.Chunk{
+		{Section: "Decision log template", Start: 0},
+		{Text: "x\n\n---\ntype: decision\n---", Start: 300},
+		{Text: "We made a decision: type: decision is a joke.", Start: 0},
+	} {
+		if isDecision(c) {
+			t.Fatalf("a decision: %+v", c)
+		}
+	}
+}
+
+// SB-3704: terms with 5 asks or more, most first, at most 5; each ask counts a term once.
+func TestTrendsBySpace(t *testing.T) {
+	now := time.Date(2027, 3, 1, 0, 0, 0, 0, time.UTC)
+	var ts []Trace
+	add := func(space string, n int, terms ...string) {
+		for i := 0; i < n; i++ {
+			var tm []Term
+			for _, x := range terms {
+				tm = append(tm, Term{Term: x}, Term{Term: x})
+			}
+			ts = append(ts, Trace{Space: space, At: now.Add(-time.Hour), Response: Response{Agent: "ask", Terms: tm}})
+		}
+	}
+	add("spc_ops", 6, "cutoff")
+	add("spc_ops", 5, "PO", "cutoff")
+	add("spc_ops", 4, "SLA")
+	add("spc_hr", 4, "leave")
+	got := TrendsBySpace(ts, now.Add(-7*24*time.Hour), now)
+	if len(got) != 1 || len(got["spc_ops"]) != 2 || got["spc_ops"][0] != (TermCount{"cutoff", 11}) || got["spc_ops"][1] != (TermCount{"PO", 5}) {
+		t.Fatalf("%+v", got)
+	}
+}

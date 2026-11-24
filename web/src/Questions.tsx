@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import { AskError, addEvalCase, discardThread, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, Conflict, PinItem, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
@@ -252,11 +252,21 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
   async function reply(id: string, both = false) {
     try {
       const cs = (cites[id] ?? "").split(/[\s,]+/).filter(Boolean);
-      await replyToQuestion(space, id, text[id] ?? "", cs, fetcher, both);
+      await replyToQuestion(space, id, text[id] ?? items.find((q) => q.id === id)?.thread?.text ?? "", cs, fetcher, both);
       setStatus(t("Replied. The asker sees each cite only if they can open it."));
       await load();
     } catch (e) {
       setStatus(errMsg(e, t("The reply couldn't be sent.")));
+    }
+  }
+
+  async function discard(id: string) {
+    try {
+      await discardThread(space, id, fetcher);
+      setStatus(t("Discarded."));
+      await load();
+    } catch (e) {
+      setStatus(errMsg(e, t("The thread couldn't be discarded.")));
     }
   }
 
@@ -312,6 +322,21 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
               {q.state === "open" && q.overdue && <p className="meta overdue">{t("Overdue")}</p>}
               {q.like && <p className="meta">{t("Looks like {id}", { id: q.like })}</p>}
               {q.report && <ReportedAnswer r={q.report} />}
+              {q.thread && (
+                <div className="report" role="group" aria-label={t("Saved from chat")}>
+                  <p className="meta">
+                    <strong>{t("Saved from chat")}</strong> · {t("Sent by {who}", { who: q.thread.by })} ·{" "}
+                    <a href={q.thread.link} target="_blank" rel="noopener noreferrer">
+                      {t("Open the thread")}
+                    </a>
+                  </p>
+                  {q.state === "open" && (
+                    <button type="button" onClick={() => discard(q.id)}>
+                      {t("Discard")}
+                    </button>
+                  )}
+                </div>
+              )}
               {q.state === "open" ? (
                 <div className="decide">
                   <p className="meta">
@@ -353,7 +378,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
                     </>
                   )}
                   <label htmlFor={`${ids}-r${i}`}>{t("Reply to: {question}", { question: q.question })}</label>
-                  <textarea id={`${ids}-r${i}`} rows={3} maxLength={4000} value={text[q.id] ?? ""} onChange={(e) => setText((x) => ({ ...x, [q.id]: e.target.value }))} />
+                  <textarea id={`${ids}-r${i}`} rows={3} maxLength={4000} value={text[q.id] ?? q.thread?.text ?? ""} onChange={(e) => setText((x) => ({ ...x, [q.id]: e.target.value }))} />
                   <label htmlFor={`${ids}-c${i}`}>{t("Cites, from your own search (optional)")}</label>
                   <input id={`${ids}-c${i}`} type="text" value={cites[q.id] ?? ""} onChange={(e) => setCites((x) => ({ ...x, [q.id]: e.target.value }))} />
                   <button type="button" onClick={() => reply(q.id)}>

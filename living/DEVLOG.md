@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S36.1: From meetings and chat
+
+**Wave/slice:** W36 / S36.1 (SB-3701 to SB-3704) · **Status:** Done
+
+**What:** Meeting transcripts in the share (.vtt and .srt) are read cue by cue, each with its start time and speaker, so answers can cite them. Decisions get their own type: a Decisions filter, and in a space a list of its decisions with no query. A Slack shortcut or a Mattermost command saves a chat thread to the space's stewards, who publish it as a note or discard it. The stewards' digest says which terms were asked most.
+
+**Why this way:** Much of what a company decides is said in meetings and chat and never written down, so the brain reads the transcripts people keep and lets anyone hand a thread to the stewards. A saved thread is never published by the save: only a steward's reply and note publish it, through the existing note flow. The thread is read only where the person pressed the shortcut or typed the command, so nobody saves a thread from a channel they weren't in. Trends show counts and the space's own glossary terms, never a question (LAW-07).
+
+**Learned:** A cue's start time as a Markdown heading makes it the chunk's section with no change to ingest, but a short transcript's first chunk starts at the title, so its time shows in the passage rather than the section. A decision heading is often inside a chunk rather than at its start, so a chunk holding one counts too. Mattermost slash commands don't say which thread they were typed in, so the command takes the message's link and checks its channel.
+
+**Laws:** LAW-01, LAW-07, LAW-09, LAW-11, LAW-12, LAW-16. Every law test is still green.
+
 ## 2026-11-24 S35.2: When an answer goes wrong
 
 **Wave/slice:** W35 / S35.2 (SB-3605 to SB-3607) · **Status:** Done

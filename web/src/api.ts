@@ -405,6 +405,13 @@ export interface QueueQuestion {
   overdue?: boolean;
   // A reported answer (SB-3606): who sent it, and only what the steward can open.
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
+  // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
+  thread?: { by: string; link: string; text: string };
+}
+
+// Discard a saved chat thread (SB-3703).
+export function discardThread(space: string, id: string, f: Fetch = fetch): Promise<unknown> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
 }
 
 export interface NoteResult {

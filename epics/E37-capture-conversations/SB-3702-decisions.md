@@ -13,7 +13,7 @@ summary: "Decisions are buried in documents with no way to list them."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-ingest(7)`](../../manual/sb-ingest.7.md) |
 | Laws | LAW-01 |
 | Depends on | SB-2404 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Decisions are buried in documents with no way to list them.
 
 ## Acceptance criteria
 
-- [ ] A section headed Decision or Decisions, or front matter `type: decision`, is typed decision
-- [ ] `GET /v1/search?type=decision` lists them newest first; Documents gets a Decisions filter
-- [ ] Other documents are unchanged
+- [x] A section headed Decision or Decisions, or front matter `type: decision`, is typed decision
+- [x] `GET /v1/search?type=decision` lists them newest first; Documents gets a Decisions filter
+- [x] Other documents are unchanged
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Ingest
-- [ ] Search and UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Ingest
+- [x] Search and UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Decision chunks typed decision; type=decision newest first, listed with no query in a space; Decisions filter
 
 ## Definition of done
 

@@ -46,7 +46,8 @@ type SearchRequest struct {
 // Types are the document types search filters by (SB-2404), from a file's extension.
 var Types = map[string][]string{
 	"pdf": {".pdf"}, "doc": {".docx", ".doc", ".odt", ".rtf"}, "sheet": {".xlsx", ".xls", ".ods", ".csv"},
-	"slides": {".pptx", ".ppt", ".odp"}, "web": {".html", ".htm"}, "text": {".txt", ".md"}, "other": nil,
+	"slides": {".pptx", ".ppt", ".odp"}, "web": {".html", ".htm"}, "text": {".txt", ".md"}, "transcript": {".vtt", ".srt"},
+	"decision": nil, "other": nil,
 }
 
 // MaxSinceDays bounds since=.
@@ -76,7 +77,7 @@ func (r SearchRequest) keep(c ports.Chunk, now time.Time) bool {
 		want := TypeOf(c)
 		found := false
 		for _, t := range r.Types {
-			found = found || t == want
+			found = found || t == want || (t == "decision" && isDecision(c))
 		}
 		if !found {
 			return false
@@ -125,7 +126,8 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	if req.Owner != "" && (len(req.Owner) > 254 || !strings.Contains(req.Owner, "@")) {
 		return SearchResponse{}, fmt.Errorf("%w: owner is an email", ErrInvalid)
 	}
-	if (q == "" && req.Owner == "") || utf8.RuneCountInString(q) > MaxQuestion {
+	listDecisions := q == "" && req.Owner == "" && wantsDecisions(req.Types) && s.Space() != "" && s.Space() != "company" // SB-3702
+	if (q == "" && req.Owner == "" && !listDecisions) || utf8.RuneCountInString(q) > MaxQuestion {
 		return SearchResponse{}, fmt.Errorf("%w: q must be 1 to %d characters", ErrInvalid, MaxQuestion)
 	}
 	for _, k := range req.Sources {
@@ -135,7 +137,7 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	}
 	for _, t := range req.Types {
 		if _, ok := Types[t]; !ok {
-			return SearchResponse{}, fmt.Errorf("%w: unknown type %q (pdf, doc, sheet, slides, web, text, other)", ErrInvalid, t)
+			return SearchResponse{}, fmt.Errorf("%w: unknown type %q (pdf, doc, sheet, slides, web, text, transcript, decision, other)", ErrInvalid, t)
 		}
 	}
 	if req.SinceDays < 0 || req.SinceDays > MaxSinceDays {
@@ -147,9 +149,12 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	var res retrieve.Result
 	var terms []Term
 	var err error
-	if q == "" {
+	switch {
+	case listDecisions:
+		res, err = a.spaceDecisions(ctx, s)
+	case q == "":
 		res, err = a.ownerDocs(ctx, s, req.Owner)
-	} else {
+	default:
 		res, terms, err = a.retrieve(withVerified(ctx, req.Verified), s, q, req.Sources, retrieve.Candidates)
 	}
 	if err != nil {
@@ -157,6 +162,9 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	}
 	if q == "" && req.Verified {
 		res.Context = a.onlyVerified(ctx, res.Context) // SB-3602
+	}
+	if wantsDecisions(req.Types) {
+		sort.SliceStable(res.Context, func(i, j int) bool { return res.Context[i].Seen.After(res.Context[j].Seen) }) // newest first
 	}
 	trace := a.NewID("tr_")
 	out := SearchResponse{Trace: trace, Release: a.Release, Results: []Result{}, Refused: res.Refused, Terms: terms}
@@ -294,6 +302,48 @@ func (a Agent) ownerDocs(ctx context.Context, s tenancy.Scope, owner string) (re
 		return retrieve.Result{}, err
 	}
 	res, err := retrieve.Allowed(ctx, s, who, a.Auth, chunks, len(chunks))
+	if err != nil {
+		return retrieve.Result{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
+	}
+	return res, nil
+}
+
+// spaceDecisions is the decisions the asker's space holds, newest version of each document,
+// checked live as the asker like any search (SB-3702).
+func (a Agent) spaceDecisions(ctx context.Context, s tenancy.Scope) (retrieve.Result, error) {
+	lk, ok := a.Index.(ports.DocLookup)
+	if !ok {
+		return retrieve.Result{}, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+	}
+	chunks, err := lk.Docs(ctx, a.Tenant, ports.DocQuery{Space: s.Space()})
+	if err != nil {
+		return retrieve.Result{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	top := map[string]int{}
+	for _, c := range chunks {
+		if k := c.Kind + ":" + c.SourceID; c.Version > top[k] {
+			top[k] = c.Version
+		}
+	}
+	var picked []ports.Chunk
+	seen := map[string]bool{}
+	for _, c := range chunks {
+		k := c.Kind + ":" + c.SourceID
+		if c.Version != top[k] || seen[k] || !isDecision(c) {
+			continue
+		}
+		seen[k] = true
+		picked = append(picked, c)
+	}
+	sort.SliceStable(picked, func(i, j int) bool { return picked[i].Seen.After(picked[j].Seen) })
+	if len(picked) > MaxDecisions {
+		picked = picked[:MaxDecisions]
+	}
+	who, err := a.who(ctx, s)
+	if err != nil {
+		return retrieve.Result{}, err
+	}
+	res, err := retrieve.Allowed(ctx, s, who, a.Auth, picked, len(picked))
 	if err != nil {
 		return retrieve.Result{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}

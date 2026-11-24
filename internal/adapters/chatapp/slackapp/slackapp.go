@@ -65,6 +65,9 @@ type App struct {
 	// Notice is the cell's notice to everyone as a first line, "Notice: …", or "" when none
 	// stands (SB-3207); nil is none.
 	Notice func(ctx context.Context) string
+	// Saver keeps saved threads, and Thread reads one (SB-3703); nil saves none.
+	Saver  Saver
+	Thread func(ctx context.Context, channel, ts string) ([]RawMessage, error)
 }
 
 // NoticeLine is the first line every answer starts with while an admin's notice stands.
@@ -401,16 +404,27 @@ func (a *App) interaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var p struct {
+		Type        string              `json:"type"`
+		CallbackID  string              `json:"callback_id"`
 		Team        struct{ ID string } `json:"team"`
 		User        struct{ ID string } `json:"user"`
 		ResponseURL string              `json:"response_url"`
-		Actions     []struct {
+		Channel     struct{ ID, Name string }
+		Message     struct {
+			TS       string `json:"ts"`
+			ThreadTS string `json:"thread_ts"`
+		} `json:"message"`
+		Actions []struct {
 			ActionID string `json:"action_id"`
 			Value    string `json:"value"`
 		} `json:"actions"`
 	}
 	if json.Unmarshal([]byte(form.Get("payload")), &p) != nil || p.Team.ID != a.TeamID || a.TeamID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if p.Type == "message_action" && p.CallbackID == SaveCallback { // SB-3703
+		a.saveAction(w, p.User.ID, p.Channel.ID, p.Channel.Name, p.Message.TS, p.Message.ThreadTS, p.ResponseURL)
 		return
 	}
 	if len(p.Actions) != 1 || p.Actions[0].ActionID != "share" || !slackURL(p.ResponseURL) {

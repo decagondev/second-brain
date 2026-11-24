@@ -152,3 +152,29 @@ func versionOf(cite string) int {
 	n, _ := strconv.Atoi(v)
 	return n
 }
+
+// MaxDecisions is the most decisions a search without a query lists (SB-3702).
+const MaxDecisions = 50
+
+var decisionHeadRe = regexp.MustCompile(`(?mi)^#{1,3} +decisions? *$`)
+
+var frontDecisionRe = regexp.MustCompile(`(?s)\A(?:[^\n]*\n\n)?---\n(?:[^\n]*\n){0,30}?type:\s*decision\s*\n(?:[^\n]*\n){0,30}?---`)
+
+// isDecision reports whether chunk c is a decision (SB-3702): it is under or holds a heading
+// Decision or Decisions, or it opens a document whose front matter says type: decision.
+func isDecision(c ports.Chunk) bool {
+	if s := strings.ToLower(strings.TrimSpace(c.Section)); s == "decision" || s == "decisions" || decisionHeadRe.MatchString(c.Text) {
+		return true
+	}
+	return c.Start == 0 && frontDecisionRe.MatchString(c.Text)
+}
+
+// wantsDecisions reports whether types asks for decisions.
+func wantsDecisions(types []string) bool {
+	for _, t := range types {
+		if t == "decision" {
+			return true
+		}
+	}
+	return false
+}

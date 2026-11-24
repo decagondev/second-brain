@@ -72,6 +72,8 @@ type StewardQuestion struct {
 	Waited int    `json:"waited,omitempty"`
 	// Report marks a report of the answer Trace by its asker (SB-3606).
 	Report *AnswerReport `json:"report,omitempty"`
+	// Thread marks a chat thread saved to the stewards (SB-3703).
+	Thread *SavedThread `json:"thread,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -173,6 +175,8 @@ type StewardItem struct {
 	Overdue bool   `json:"overdue,omitempty"`
 	// Report is a reported answer as the steward may see it (SB-3606): it names its asker.
 	Report *ReportView `json:"report,omitempty"`
+	// Thread is a saved chat thread (SB-3703): it names who saved it.
+	Thread *ThreadView `json:"thread,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -291,7 +295,13 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 	out := []StewardItem{}
 	now := x.Now().UTC()
 	for _, q := range qs {
+		if q.Thread != nil && q.Thread.Discarded {
+			continue
+		}
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs)}
+		if q.Thread != nil {
+			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text}
+		}
 		if waitedFor(q, SpaceKey(name)) {
 			it.FromSpace, it.Waited = strings.TrimPrefix(q.Space, "spc_"), q.Waited
 		}

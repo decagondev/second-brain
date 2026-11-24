@@ -74,7 +74,7 @@ func (c *Connector) Close() error {
 func (c *Connector) APIVersion() int { return ports.ConnectorAPIVersion }
 
 // Document reports whether a path names a document: a .txt, .md, .pdf, .docx, .pptx,
-// .odt, .html, .htm, .xlsx, .ods or .csv file, with no part of its path starting with a dot.
+// .odt, .html, .htm, .xlsx, .ods, .csv, .vtt or .srt file, with no part of its path starting with a dot.
 func Document(p string) bool {
 	if !fs.ValidPath(p) || p == "." {
 		return false
@@ -85,7 +85,7 @@ func Document(p string) bool {
 		}
 	}
 	switch strings.ToLower(path.Ext(p)) {
-	case ".txt", ".md", ".pdf", ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv":
+	case ".txt", ".md", ".pdf", ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv", ".vtt", ".srt":
 		return true
 	}
 	return false
@@ -219,6 +219,8 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 	switch strings.ToLower(path.Ext(ref.ID)) {
 	case ".pdf":
 		doc.Text = PDFText(b)
+	case ".vtt", ".srt": // SB-3701
+		doc.Text, _ = TranscriptText(b)
 	case ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv":
 		doc.Text = OfficeText(ref.ID, b)
 		if e := strings.ToLower(path.Ext(ref.ID)); e == ".docx" || e == ".pptx" {

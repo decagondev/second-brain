@@ -16,6 +16,8 @@ const types: { id: string; name: string }[] = [
   { id: "slides", name: msg("Slides") },
   { id: "web", name: msg("Web pages") },
   { id: "text", name: msg("Text files") },
+  { id: "transcript", name: msg("Meeting transcripts") },
+  { id: "decision", name: msg("Decisions") },
   { id: "other", name: msg("Everything else") },
 ];
 const ages: { days: number; name: string }[] = [
@@ -61,7 +63,8 @@ export function DocumentsView({
 
   async function run(text: string, filters: Filters = { type, since, owner: ownerOf, verified }, whole = wide) {
     const want = text.trim();
-    if ((!want && !filters.owner) || busy) return;
+    const decisions = filters.type === "decision" && !!space && !whole; // a space's decisions need no query (SB-3702)
+    if ((!want && !filters.owner && !decisions) || busy) return;
     setBusy(true);
     setError(undefined);
     const where = whole ? undefined : space;

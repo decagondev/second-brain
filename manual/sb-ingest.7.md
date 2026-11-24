@@ -105,7 +105,7 @@ Embeddings come through the `Embedder` port. By default cells use a deterministi
 
 ### Sections (SB-3002)
 
-Each chunk records its **section**: the text of the nearest heading line at or above the chunk's start, at most 120 characters, or nothing when there is none. A heading line is a Markdown heading of level 1 to 3 (`#`, `##` or `###` and a space). The folder connector writes the headings of the files it reads as such lines: Word paragraphs styled Heading 1 to 3 (and Title), OpenDocument headings (`text:h`), and HTML `h1` to `h3`. A section is data: it is shown on the cite and never changes routing, ranking or any check (LAW-09). It is computed from the text, so a rebuild fills it in for every document (LAW-13).
+Each chunk records its **section**: the text of the nearest heading line at or above the chunk's start, at most 120 characters, or nothing when there is none. A heading line is a Markdown heading of level 1 to 3 (`#`, `##` or `###` and a space). The folder connector writes the headings of the files it reads as such lines: Word paragraphs styled Heading 1 to 3 (and Title), OpenDocument headings (`text:h`), and HTML `h1` to `h3`, and a meeting transcript's cue start times (`### 00:12:40`; SB-3701). A section is data: it is shown on the cite and never changes routing, ranking or any check (LAW-09). It is computed from the text, so a rebuild fills it in for every document (LAW-13).
 
 ### Spaces and labels (SB-1005)
 

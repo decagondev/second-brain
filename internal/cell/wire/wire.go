@@ -523,23 +523,28 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /callback", c.Auth.Callback)
 	public.Handle("/scim/v2/", (&scim.Endpoint{Tenant: tenant, Directory: c.Directory, Sessions: c.Sessions, Token: secret("scim")}).Handler())
 	api.Verifier{Release: c.Release, Metrics: c.metricsHandler(), ControlPlane: c.controlPlane, Attest: c.attestor(), TargetFor: c.VerifyTarget}.Register(public)
+	var savers []*slackapp.App // their Saver is the stewards' service, below (SB-3703)
 	if sc, ok := conns["chat"].(*slack.Connector); ok {
 		public.Handle("POST /connectors/slack/events", sc.EventsHandler(time.Now))
 		creds := secret("connectors/chat")
 		app := &slackapp.App{Tenant: tenant, TeamID: cfg.Chat.TeamID, Secret: slackField(creds, "signing_secret"),
 			Email: slackapp.WebEmail(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second}),
 			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now,
-			Language: func() string { return c.Manifest().Language }, Notice: c.noticeLine}
+			Language: func() string { return c.Manifest().Language }, Notice: c.noticeLine,
+			Thread: slackapp.WebThread(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second})}
 		app.Register(public)
+		savers = append(savers, app)
 	}
 	if mm := cfg.Mattermost; mm.Base != "" {
 		creds := secret("mattermost")
 		client := &http.Client{Timeout: 10 * time.Second}
-		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"),
-			Rules: &slackapp.App{Tenant: tenant, Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Spaces: c.Spaces,
-				Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client), Language: func() string { return c.Manifest().Language },
-				Notice: c.noticeLine},
-			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions"}).Register(public)
+		rules := &slackapp.App{Tenant: tenant, Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Spaces: c.Spaces,
+			Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client), Language: func() string { return c.Manifest().Language },
+			Notice: c.noticeLine}
+		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"), Rules: rules,
+			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions",
+			Thread: mmapp.APIThread(mm.Base, slackField(creds, "bot_token"), client)}).Register(public)
+		savers = append(savers, rules)
 	}
 	if cfg.Web != "" {
 		api.Web{Files: os.DirFS(cfg.Web), Language: func() string { return c.Manifest().Language }}.Register(public)
@@ -565,6 +570,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		StartItems: func(name string) []string { return m.Spaces[name].StartHere }, Members: c.noteReaders(m)}
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
+	}
+	for _, app := range savers {
+		app.Saver = stewards
 	}
 	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces,
 		ReviewAfter: func(name string) int { return m.Spaces[name].ReviewAfterDays }}.Register(mux)

@@ -13,7 +13,7 @@ summary: "A thread that settles something in chat is lost to the brain."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-cell(5)`](../../manual/sb-cell.5.md) |
 | Laws | LAW-11, LAW-12, LAW-16 |
 | Depends on | SB-1705 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A thread that settles something in chat is lost to the brain.
 
 ## Acceptance criteria
 
-- [ ] A Slack or Mattermost message action, Save to the brain, sends the thread to the space's stewards as a draft note
-- [ ] Publish as a note runs the note flow; Discard drops it
-- [ ] Only people the cell knows can send one; audited
+- [x] A Slack or Mattermost message action, Save to the brain, sends the thread to the space's stewards as a draft note
+- [x] Publish as a note runs the note flow; Discard drops it
+- [x] Only people the cell knows can send one; audited
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Chat apps
-- [ ] Queue and steward screen
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Chat apps
+- [x] Queue and steward screen
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Save to the brain from a Slack shortcut or /brain save LINK; the stewards reply and publish, or discard
 
 ## Definition of done
 

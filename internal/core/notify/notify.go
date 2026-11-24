@@ -160,10 +160,13 @@ type Job struct {
 	// FoundNothing counts, per space, the asks in a window that found nothing, for the
 	// stewards' line (SB-3101); nil adds nothing.
 	FoundNothing func(ctx context.Context, from, to time.Time) (map[string]int, error)
-	Prefs        PrefStore
-	Send         Sender // nil sends nothing
-	Clock        Clock
-	Now          func() time.Time
+	// Trends are, per space, the terms asked most in a window, each with at least 5 asks
+	// (SB-3704); nil adds none.
+	Trends func(ctx context.Context, from, to time.Time) (map[string][]ask.TermCount, error)
+	Prefs  PrefStore
+	Send   Sender // nil sends nothing
+	Clock  Clock
+	Now    func() time.Time
 	// Lookback is how far back a question can be and still have its reply told; the
 	// tenant's retention, since older questions are gone.
 	Lookback time.Duration
@@ -822,6 +825,7 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 	type tally struct {
 		answered, open, nothing, overdue int
 		oldest                           time.Time
+		trends                           []ask.TermCount
 	}
 	by := map[string]*tally{}
 	week := now.Add(-7 * 24 * time.Hour)
@@ -834,6 +838,18 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 			if n > 0 {
 				by[sp] = &tally{nothing: n}
 			}
+		}
+	}
+	if j.Trends != nil { // SB-3704: counts and the space's own terms, never a question
+		trends, err := j.Trends(ctx, week, now)
+		if err != nil {
+			return nil, nil, fmt.Errorf("notify: traces: %w", err)
+		}
+		for sp, tc := range trends {
+			if by[sp] == nil {
+				by[sp] = &tally{}
+			}
+			by[sp].trends = tc
 		}
 	}
 	for _, q := range qs {
@@ -889,6 +905,13 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 		}
 		if t.nothing > 0 {
 			line += ", " + plural(t.nothing, "question", "questions") + " found nothing"
+		}
+		if len(t.trends) > 0 {
+			var parts []string
+			for _, tc := range t.trends {
+				parts = append(parts, fmt.Sprintf("%s %d", tc.Term, tc.Count))
+			}
+			line += ", asked most: " + strings.Join(parts, ", ")
 		}
 		ps, err := j.members(ctx, groups)
 		if err != nil {

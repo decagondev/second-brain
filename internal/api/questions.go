@@ -31,6 +31,7 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/questions", h.mine)
 	mux.HandleFunc("GET /v1/spaces/{name}/questions", h.queue)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/reply", h.reply)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/questions/{id}", h.discard)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/note", h.note)
 	if h.Reviews != nil {
 		mux.HandleFunc("GET /v1/spaces/{name}/review", h.review)
@@ -519,6 +520,19 @@ func (h Questions) unpin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "removed": true})
+}
+
+// discard drops an open saved chat thread (SB-3703).
+func (h Questions) discard(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	if err := h.Service.Discard(r.Context(), s, r.PathValue("name"), r.PathValue("id")); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "discarded": true})
 }
 
 // caretaker names or removes a document's caretaker (SB-3405).
