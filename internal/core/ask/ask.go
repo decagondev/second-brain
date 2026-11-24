@@ -183,6 +183,8 @@ type Response struct {
 	SeeAlso []SeeAlso `json:"see_also,omitempty"`
 	// Pinned is the stewards' verified answer to a question like this one (SB-3601).
 	Pinned *Pinned `json:"pinned,omitempty"`
+	// Verified counts the cited documents and those someone has checked (SB-3607).
+	Verified *VerifiedCount `json:"verified,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -447,6 +449,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.NoticeSingle = oneDocument(claims)
 		resp.NoticeSync = a.syncNotices(ctx, claims)
 		resp.SeeAlso = seeAlso(claims, res.Context, a.Now())
+		resp.Verified = a.verifiedCount(ctx, claims, res.Context)
 	}
 
 	if probe {

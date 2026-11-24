@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W34 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A pinned answer shows only with every cite checked again as the asker
-- [ ] Verified only only narrows, and a mark at an old version never counts
-- [ ] A report reaches the stewards only by the asker's click
-- [ ] Conflicts name only documents the steward can open
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A pinned answer shows only with every cite checked again as the asker
+- [x] Verified only only narrows, and a mark at an old version never counts
+- [x] A report reaches the stewards only by the asker's click
+- [x] Conflicts name only documents the steward can open
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

@@ -13,7 +13,7 @@ summary: "Answers mark when sources disagree, but nobody sees which documents ke
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-07 |
 | Depends on | SB-3304 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Answers mark when sources disagree, but nobody sees which documents keep disagre
 
 ## Acceptance criteria
 
-- [ ] The review list's Conflicts names pairs of documents answers marked as disagreeing this month, with a count, most first
-- [ ] Only pairs the steward can open both of are named; the rest are counted
-- [ ] Counts only; no asker or question
+- [x] The review list's Conflicts names pairs of documents answers marked as disagreeing this month, with a count, most first
+- [x] Only pairs the steward can open both of are named; the rest are counted
+- [x] Counts only; no asker or question
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Review list
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Review list
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Conflicts on the review list: pairs of documents disagreeing claims cited this month, named only when the steward can open both
 
 ## Definition of done
 

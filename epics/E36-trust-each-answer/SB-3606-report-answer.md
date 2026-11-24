@@ -13,7 +13,7 @@ summary: "A steward can't see a bad answer unless someone retypes it."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-07, LAW-11 |
 | Depends on | SB-1704 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A steward can't see a bad answer unless someone retypes it.
 
 ## Acceptance criteria
 
-- [ ] Under an unhelpful rating the asker can Send to the stewards, with an optional note; it joins the space's queue as a report
-- [ ] The steward sees the question, the answer, and each document by title only if they can open it, the rest counted
-- [ ] Nothing is sent without the asker's click; audited
+- [x] Under an unhelpful rating the asker can Send to the stewards, with an optional note; it joins the space's queue as a report
+- [x] The steward sees the question, the answer, and each document by title only if they can open it, the rest counted
+- [x] Nothing is sent without the asker's click; audited
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] Steward screen and UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] Steward screen and UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Report this answer: Send to the stewards after Not helpful, by the asker's click, named; the steward sees only what they can open
 
 ## Definition of done
 

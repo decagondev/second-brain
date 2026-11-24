@@ -2,11 +2,13 @@ package ask
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/ports"
 )
 
@@ -51,16 +53,62 @@ func (a Agent) onlyVerified(ctx context.Context, cs []ports.Chunk) []ports.Chunk
 	now := a.Now()
 	out := cs[:0:0]
 	for _, c := range cs {
-		if isNote(c) {
-			out = append(out, c)
-			continue
-		}
-		m, ok := marks.reviewed(ctx, a.Tenant, c)
-		if ok && now.Sub(m.At) <= time.Duration(markAfter(m, a.reviewAfter(c.Spaces)))*24*time.Hour && !pastReviewBy(c, now) {
+		if a.checked(ctx, marks, c, now) {
 			out = append(out, c)
 		}
 	}
 	return out
+}
+
+// checked says whether chunk c is a note or has a live mark at its version: younger than
+// its interval, and the document not past its own review-by date.
+func (a Agent) checked(ctx context.Context, marks *marksCache, c ports.Chunk, now time.Time) bool {
+	if isNote(c) {
+		return true
+	}
+	m, ok := marks.reviewed(ctx, a.Tenant, c)
+	return ok && now.Sub(m.At) <= time.Duration(markAfter(m, a.reviewAfter(c.Spaces)))*24*time.Hour && !pastReviewBy(c, now)
+}
+
+// VerifiedCount is how many of an answer's cited documents someone has checked (SB-3607).
+type VerifiedCount struct {
+	Of     int `json:"of"`
+	Marked int `json:"marked"`
+}
+
+// verifiedCount counts the distinct documents claims cite, and those checked at the cited
+// version; nil when no claim has a cite.
+func (a Agent) verifiedCount(ctx context.Context, claims []answer.Claim, chunks []ports.Chunk) *VerifiedCount {
+	byCite := map[string]ports.Chunk{}
+	for _, c := range chunks {
+		byCite[c.Cite] = c
+	}
+	marks := &marksCache{store: a.Marks, by: map[string]map[string]ReviewMark{}}
+	now := a.Now()
+	seen := map[string]bool{}
+	var v VerifiedCount
+	for _, cl := range claims {
+		for _, ci := range cl.Cites {
+			k := docKey(ci.Cite)
+			if seen[k] {
+				continue
+			}
+			seen[k] = true
+			v.Of++
+			if c, ok := byCite[ci.Cite]; ok && a.checked(ctx, marks, c, now) {
+				v.Marked++
+			}
+		}
+	}
+	if v.Of == 0 {
+		return nil
+	}
+	return &v
+}
+
+// VerifiedLine is the words under an answer for its count (SB-3607).
+func VerifiedLine(v VerifiedCount) string {
+	return fmt.Sprintf("%d of %d sources verified.", v.Marked, v.Of)
 }
 
 // unhelpfulSince counts, by document, the Not helpful ratings after its mark of answers

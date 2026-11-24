@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Conflicts (SB-3605); Report this answer (SB-3606); how sure the answer is (SB-3607).
 - Verified answers (SB-3601); Verified only (SB-3602); review intervals (SB-3603); unhelpful ratings clear a mark (SB-3604).
 - Access review notices and Still needs it (SB-3504); month-end cost forecast and early budget warning (SB-3505); usage by space (SB-3506).
 - Download my data (SB-3501); forget my questions (SB-3502); where I'm signed in (SB-3503).

@@ -70,6 +70,8 @@ type StewardQuestion struct {
 	// Waited working days in its space (SB-3404).
 	Also   string `json:"also,omitempty"`
 	Waited int    `json:"waited,omitempty"`
+	// Report marks a report of the answer Trace by its asker (SB-3606).
+	Report *AnswerReport `json:"report,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -169,6 +171,8 @@ type StewardItem struct {
 	// question OverdueAfter working days old (SB-3404).
 	Like    string `json:"like,omitempty"`
 	Overdue bool   `json:"overdue,omitempty"`
+	// Report is a reported answer as the steward may see it (SB-3606): it names its asker.
+	Report *ReportView `json:"report,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -290,6 +294,9 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs)}
 		if waitedFor(q, SpaceKey(name)) {
 			it.FromSpace, it.Waited = strings.TrimPrefix(q.Space, "spc_"), q.Waited
+		}
+		if it.Report, err = x.reportView(ctx, s, q); err != nil {
+			return nil, err
 		}
 		if q.Reply != nil {
 			it.State = "answered"

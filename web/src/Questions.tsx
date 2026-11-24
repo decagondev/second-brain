@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, addEvalCase, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, PinItem, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import type { AskResponse, Conflict, PinItem, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
-import { errorText, msg, t, tn } from "./i18n";
+import { errorText, msg, t, tj, tn } from "./i18n";
 
 const askable = new Set(["no_sources", "no_access", "most_uncited"]);
 
@@ -311,6 +311,7 @@ export function StewardQuestions({ space, fetcher }: { space: string; fetcher?: 
               )}
               {q.state === "open" && q.overdue && <p className="meta overdue">{t("Overdue")}</p>}
               {q.like && <p className="meta">{t("Looks like {id}", { id: q.like })}</p>}
+              {q.report && <ReportedAnswer r={q.report} />}
               {q.state === "open" ? (
                 <div className="decide">
                   <p className="meta">
@@ -905,6 +906,66 @@ function FoundNothingLine({ f }: { f: FoundNothing }) {
 }
 
 // The space's feedback this month and last, and what unhelpful answers cited (SB-3104).
+function DocName({ d }: { d: SearchResult }) {
+  return d.url ? (
+    <a href={d.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: d.title ?? d.cite, cite: d.cite })}>
+      {d.title ?? d.cite}
+    </a>
+  ) : (
+    <span>{d.title ?? d.cite}</span>
+  );
+}
+
+// A reported answer on the queue (SB-3606): only the claims and documents the steward can open.
+function ReportedAnswer({ r }: { r: NonNullable<QueueQuestion["report"]> }) {
+  return (
+    <div className="report" role="group" aria-label={t("Report")}>
+      <p className="meta">
+        <strong>{t("Report")}</strong> · {t("Sent by {who}", { who: r.by })}
+      </p>
+      {r.note && <p>{r.note}</p>}
+      {r.claims.length > 0 && (
+        <ul>
+          {r.claims.map((c, i) => (
+            <li key={i}>{c}</li>
+          ))}
+        </ul>
+      )}
+      {r.documents.length > 0 && (
+        <p className="meta">
+          {r.documents.map((d, i) => (
+            <span key={d.cite}>
+              {i > 0 && ", "}
+              <DocName d={d} />
+            </span>
+          ))}
+        </p>
+      )}
+      {r.hidden > 0 && <p className="meta">{tn(r.hidden, "{n} more you can't open", "{n} more you can't open")}</p>}
+    </div>
+  );
+}
+
+// Pairs of documents that disagreed in answers this month (SB-3605).
+function ConflictsLine({ items, hidden }: { items: Conflict[]; hidden: number }) {
+  if (items.length === 0 && hidden === 0) return null;
+  return (
+    <section aria-label={t("Conflicts")}>
+      <h3>{t("Conflicts")}</h3>
+      <ul className="saved-list">
+        {items.map((c) => (
+          <li key={c.a.cite + " " + c.b.cite}>
+            {c.answers === 1
+              ? tj("{a} and {b} disagreed in {n} answer", { a: <DocName d={c.a} />, b: <DocName d={c.b} /> }, { n: c.answers })
+              : tj("{a} and {b} disagreed in {n} answers", { a: <DocName d={c.a} />, b: <DocName d={c.b} /> }, { n: c.answers })}
+          </li>
+        ))}
+      </ul>
+      {hidden > 0 && <p className="meta">{tn(hidden, "{n} more pair you can't open", "{n} more pairs you can't open")}</p>}
+    </section>
+  );
+}
+
 function FeedbackLine({ f }: { f: StewardFeedback }) {
   const any = f.this_month.helpful + f.this_month.not_helpful + f.last_month.helpful + f.last_month.not_helpful > 0;
   if (!any) return null;
@@ -1251,6 +1312,7 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
         </p>
       )}
       {list.feedback && <FeedbackLine f={list.feedback} />}
+      <ConflictsLine items={list.conflicts ?? []} hidden={list.conflicts_hidden ?? 0} />
       <StartHereStale items={list.start_here ?? []} hidden={list.start_here_hidden ?? 0} />
       {list.evals_to_check && list.evals_to_check.length > 0 && (
         <section aria-label={t("Eval cases to check")}>

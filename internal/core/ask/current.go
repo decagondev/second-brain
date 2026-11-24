@@ -192,6 +192,20 @@ type ReviewResponse struct {
 	// its ratings and the documents unhelpful answers cited (SB-3104).
 	FoundNothing FoundNothing    `json:"found_nothing"`
 	Feedback     StewardFeedback `json:"feedback"`
+	// Conflicts are the pairs of documents disagreeing claims cited this month, and
+	// ConflictsHidden the pairs the steward can't open both of (SB-3605).
+	Conflicts       []Conflict `json:"conflicts,omitempty"`
+	ConflictsHidden int        `json:"conflicts_hidden,omitempty"`
+}
+
+// answerFacts fills what the list reads from the space's answers and their ratings.
+func (x Stewards) answerFacts(ctx context.Context, s tenancy.Scope, space string, all []Trace, months []Feedback, now time.Time, out *ReviewResponse) error {
+	var err error
+	if out.Feedback, err = x.stewardFeedback(ctx, s, space, all, months, now); err != nil {
+		return err
+	}
+	out.Conflicts, out.ConflictsHidden, err = x.conflicts(ctx, s, space, all, now)
+	return err
 }
 
 // reviewTraces reads the traces once: the review window's, and the space's stale-answer
@@ -255,7 +269,7 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 	unhelpful := unhelpfulSince(traces, fbs, marks)
 	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh, FoundNothing: foundNothing(all, SpaceKey(name), now),
 		Usage: ownUsage(all, fbs, name, now)}
-	if out.Feedback, err = x.stewardFeedback(ctx, s, SpaceKey(name), all, months, now); err != nil {
+	if err := x.answerFacts(ctx, s, SpaceKey(name), all, months, now, &out); err != nil {
 		return out, err
 	}
 	if x.Agent.Glossary != nil {

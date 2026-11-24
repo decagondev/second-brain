@@ -191,3 +191,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3501: a person's own export leaves out a cite they can no longer open, and the claim it backed (TestOwnDataThroughARunningCell) |
 | 2026-11-24 | LAW-07 | Tested (extended) | SB-3506: usage by space shows no shares under 5 asks (TestUsageBySpace, TestUsageBySpaceLine) |
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3601: a pin with one cite the asker can't open isn't shown (TestTrustEachAnswerThroughARunningCell) |
+| 2026-11-24 | LAW-01 | Tested (extended) | SB-3605, SB-3606: conflicts and reported answers show the steward only documents they can open (TestTrustEachAnswerThroughARunningCell) |

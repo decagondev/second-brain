@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S35.2: When an answer goes wrong
+
+**Wave/slice:** W35 / S35.2 (SB-3605 to SB-3607) · **Status:** Done
+
+**What:** The review list names the pairs of documents that answers marked as disagreeing this month. An asker who rates an answer Not helpful can send it to the stewards with a note, and the stewards see it in their queue. Each answer says how many of its sources someone has checked, on screen and in chat.
+
+**Why this way:** Sources disagree was shown to askers one answer at a time, so nobody fixed the documents; counting pairs over a month points the steward at the two to reconcile. A report carries the answer, so it shows the steward only the claims and documents they can open themselves (LAW-01), and it names the asker only because they chose to send it. The verified count uses the same live check as Verified only, so a mark at an old version or past its interval never counts.
+
+**Learned:** The extractive model already flags disagreement whenever two documents open with the same words, so conflicts showed up in the cell test without a planted trace. A report's uncited claims are counted, not shown, since nothing the steward can open stands behind them.
+
+**Laws:** LAW-01, LAW-07, LAW-11, LAW-14. Every law test is still green.
+
 ## 2026-11-24 S35.1: Answers people can rely on
 
 **Wave/slice:** W35 / S35.1 (SB-3601 to SB-3604) · **Status:** Done

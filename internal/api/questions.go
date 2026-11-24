@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -8,6 +9,7 @@ import (
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/kill"
+	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/core/toolbus"
 	"example.com/second-brain/internal/errs"
 )
@@ -117,12 +119,21 @@ func (h Questions) send(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var body struct{ Question, Trace string }
+	var body struct {
+		Question, Trace, Note string
+		Report                bool
+	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a question and its trace."))
 		return
 	}
-	q, err := h.Service.Send(r.Context(), s, body.Question, body.Trace)
+	send := h.Service.Send
+	if body.Report { // SB-3606
+		send = func(ctx context.Context, s tenancy.Scope, text, trace string) (ask.StewardQuestion, error) {
+			return h.Service.Report(ctx, s, text, trace, body.Note)
+		}
+	}
+	q, err := send(r.Context(), s, body.Question, body.Trace)
 	if err != nil {
 		h.fail(w, err)
 		return

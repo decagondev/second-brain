@@ -142,3 +142,92 @@ func (x Stewards) stewardFeedback(ctx context.Context, s tenancy.Scope, space st
 	out.Documents, out.DocumentsHidden = docs, hidden
 	return out, nil
 }
+
+// MaxConflicts is the most pairs of disagreeing documents the review list names.
+const MaxConflicts = 10
+
+// Conflict is a pair of documents claims marked Sources disagree cited together (SB-3605).
+type Conflict struct {
+	A       Result `json:"a"`
+	B       Result `json:"b"`
+	Answers int    `json:"answers"`
+}
+
+// conflicts are the pairs of documents that disagreeing claims of answers asked in space
+// this calendar month cited, by how many answers did, checked as the steward: a pair is
+// named only when they can open both, and hidden counts the rest. Counts only (LAW-07).
+func (x Stewards) conflicts(ctx context.Context, s tenancy.Scope, space string, traces []Trace, now time.Time) ([]Conflict, int, error) {
+	type pair struct{ a, b string } // cites, a's document before b's
+	count := map[[2]string]int{}
+	cites := map[[2]string]pair{}
+	var order [][2]string
+	for _, t := range traces {
+		if t.Space != space || t.At.Before(MonthStart(now)) || t.At.After(now) {
+			continue
+		}
+		seen := map[[2]string]bool{}
+		for _, c := range t.Response.Answer.Claims {
+			if !c.Disagree {
+				continue
+			}
+			docs := map[string]string{} // document -> its first cite in the claim
+			var keys []string
+			for _, ci := range c.Cites {
+				if k := docKey(ci.Cite); docs[k] == "" {
+					docs[k] = ci.Cite
+					keys = append(keys, k)
+				}
+			}
+			sort.Strings(keys)
+			for i := range keys {
+				for j := i + 1; j < len(keys); j++ {
+					k := [2]string{keys[i], keys[j]}
+					if seen[k] {
+						continue
+					}
+					seen[k] = true
+					if count[k] == 0 {
+						order = append(order, k)
+						cites[k] = pair{docs[keys[i]], docs[keys[j]]}
+					}
+					count[k]++
+				}
+			}
+		}
+	}
+	if len(order) == 0 {
+		return nil, 0, nil
+	}
+	sort.SliceStable(order, func(i, j int) bool { return count[order[i]] > count[order[j]] })
+	var all []string
+	asked := map[string]bool{}
+	for _, k := range order {
+		for _, c := range []string{cites[k].a, cites[k].b} {
+			if !asked[c] {
+				asked[c] = true
+				all = append(all, c)
+			}
+		}
+	}
+	docs, _, err := x.Agent.CheckCites(ctx, s, all)
+	if err != nil {
+		return nil, 0, fmt.Errorf("conflicts: %w", err)
+	}
+	open := map[string]Result{}
+	for _, r := range docs {
+		open[r.Cite] = r
+	}
+	var out []Conflict
+	hidden := 0
+	for _, k := range order {
+		a, okA := open[cites[k].a]
+		b, okB := open[cites[k].b]
+		switch {
+		case !okA || !okB:
+			hidden++
+		case len(out) < MaxConflicts:
+			out = append(out, Conflict{A: a, B: b, Answers: count[k]})
+		}
+	}
+	return out, hidden, nil
+}

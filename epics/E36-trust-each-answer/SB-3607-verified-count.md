@@ -13,7 +13,7 @@ summary: "An answer doesn't say how many of its sources someone has checked."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-14 |
 | Depends on | SB-2702 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ An answer doesn't say how many of its sources someone has checked.
 
 ## Acceptance criteria
 
-- [ ] The response's `verified` counts the cited documents and those with a live mark at the cited version
-- [ ] The UI shows N of M sources verified, and chat says it
-- [ ] No cites, no line; a stale mark doesn't count
+- [x] The response's `verified` counts the cited documents and those with a live mark at the cited version
+- [x] The UI shows N of M sources verified, and chat says it
+- [x] No cites, no line; a stale mark doesn't count
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Agent
-- [ ] UI and chat
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Agent
+- [x] UI and chat
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+The response's verified count, N of M sources verified in the UI and the chat apps
 
 ## Definition of done
 

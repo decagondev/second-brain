@@ -1,6 +1,8 @@
 package ask
 
 import (
+	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -61,5 +63,44 @@ func TestUnhelpfulSinceTheMark(t *testing.T) {
 func TestIsNote(t *testing.T) {
 	if !isNote(ports.Chunk{Kind: "docs", SourceID: "notes/ops/qs_1.md"}) || isNote(ports.Chunk{Kind: "docs", SourceID: "Ops/notes/qs_1.md"}) || isNote(ports.Chunk{Kind: "chat", SourceID: "notes/ops/qs_1.md"}) {
 		t.Fatal("isNote")
+	}
+}
+
+type marksOf []ReviewMark
+
+func (m marksOf) PutReviewMark(context.Context, ReviewMark) error { return nil }
+func (m marksOf) ReviewMarks(context.Context, string, string) ([]ReviewMark, error) {
+	return m, nil
+}
+
+// SB-3607: each cited document counts once; a live mark at the cited version or a note is
+// verified, a mark at another version or past its interval isn't, and no cites is no count.
+func TestVerifiedCount(t *testing.T) {
+	now := time.Date(2027, 3, 1, 0, 0, 0, 0, time.UTC)
+	a := Agent{Tenant: "acme-logistics", Now: func() time.Time { return now }, Marks: marksOf{
+		{Doc: "docs:a", Version: 3, At: now.AddDate(0, 0, -10), Days: 30},
+		{Doc: "docs:b", Version: 1, At: now.AddDate(0, 0, -10), Days: 30},
+		{Doc: "docs:c", Version: 2, At: now.AddDate(0, 0, -40), Days: 30},
+	}}
+	ch := func(id string, v int) ports.Chunk {
+		return ports.Chunk{Kind: "docs", SourceID: id, Version: v, Cite: "docs:" + id + "@" + strconv.Itoa(v), Spaces: []string{"spc_ops"}, Seen: now}
+	}
+	chunks := []ports.Chunk{ch("a", 3), ch("b", 2), ch("c", 2), ch("notes/ops/qs_1.md", 1)}
+	cl := func(cs ...string) answer.Claim {
+		var out []answer.Cite
+		for _, c := range cs {
+			out = append(out, answer.Cite{Cite: c})
+		}
+		return answer.Claim{Text: "x", Cites: out}
+	}
+	v := a.verifiedCount(context.Background(), []answer.Claim{cl("docs:a@3", "docs:b@2"), cl("docs:a@3", "docs:c@2"), cl("docs:notes/ops/qs_1.md@1")}, chunks)
+	if v == nil || v.Of != 4 || v.Marked != 2 {
+		t.Fatalf("count %+v", v)
+	}
+	if VerifiedLine(*v) != "2 of 4 sources verified." {
+		t.Fatal(VerifiedLine(*v))
+	}
+	if a.verifiedCount(context.Background(), []answer.Claim{{Text: "x", Uncited: true}}, chunks) != nil {
+		t.Fatal("a count without cites")
 	}
 }

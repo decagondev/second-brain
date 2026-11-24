@@ -106,6 +106,8 @@ export interface AskResponse {
   see_also?: SeeAlso[];
   // The stewards' verified answer to a question like this one (SB-3601).
   pinned?: Pinned;
+  // The cited documents and how many someone has checked (SB-3607).
+  verified?: { of: number; marked: number };
 }
 
 // A verified answer, every cite checked again as the asker (SB-3601).
@@ -401,6 +403,8 @@ export interface QueueQuestion {
   // The question of the queue it looks like (SB-3402), and open 5 working days (SB-3404).
   like?: string;
   overdue?: boolean;
+  // A reported answer (SB-3606): who sent it, and only what the steward can open.
+  report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
 }
 
 export interface NoteResult {
@@ -410,6 +414,11 @@ export interface NoteResult {
   action?: string;
   state?: string;
   receipt?: string;
+}
+
+// Report this answer (SB-3606): only by the asker's click, and it names them.
+export function reportAnswer(question: string, trace: string, note: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
+  return call(inSpace("/v1/questions", space), post({ question, trace, report: true, ...(note.trim() ? { note: note.trim() } : {}) }), f);
 }
 
 export function sendToStewards(question: string, trace: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
@@ -569,7 +578,16 @@ export async function retireMany(space: string, cites: string[], reason: string,
   return Array.isArray(d.items) ? d.items : [];
 }
 
+// A pair of documents disagreeing claims cited this month (SB-3605).
+export interface Conflict {
+  a: SearchResult;
+  b: SearchResult;
+  answers: number;
+}
+
 export interface ReviewData {
+  conflicts?: Conflict[];
+  conflicts_hidden?: number;
   found_nothing?: FoundNothing;
   feedback?: StewardFeedback;
   items: ReviewItem[];
@@ -645,6 +663,8 @@ export async function reviewList(
       start_here_hidden?: number;
       found_nothing?: FoundNothing;
       feedback?: StewardFeedback;
+      conflicts?: Conflict[];
+      conflicts_hidden?: number;
       terms?: DefinedTerm[];
       usage?: SpaceUsage;
     }>(
@@ -666,6 +686,8 @@ export async function reviewList(
       feedback: d.feedback && typeof d.feedback.this_month?.helpful === "number" && Array.isArray(d.feedback.documents) ? d.feedback : undefined,
       terms: Array.isArray(d.terms) ? d.terms.filter((x) => typeof x.term === "string" && typeof x.meaning === "string") : undefined,
       usage: d.usage && typeof d.usage.space === "string" ? d.usage : undefined,
+      conflicts: Array.isArray(d.conflicts) ? d.conflicts.filter((c) => c.a && c.b && typeof c.answers === "number") : undefined,
+      conflicts_hidden: typeof d.conflicts_hidden === "number" ? d.conflicts_hidden : undefined,
     };
   } catch {
     return { items: [], hidden: [] };

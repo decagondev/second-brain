@@ -278,6 +278,9 @@ func Render(question string, r ask.Response) Message {
 		}
 		b.WriteString("_Ask " + escape(who) + "_\n")
 	}
+	if v := r.Verified; v != nil { // SB-3607
+		b.WriteString("_" + ask.VerifiedLine(*v) + "_\n")
+	}
 	if r.Notice != nil {
 		b.WriteString("\n_" + notices[*r.Notice] + "_\n")
 	}

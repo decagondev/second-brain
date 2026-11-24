@@ -39,7 +39,7 @@ summary: Epics, waves, slices and tickets.
 | W32 Ask Better | 7 | 0 | 0 | Planned 2026-11-24 with the user (E33): see also, glossary where it's used, short or full answer, sources disagree, download the conversation, their other documents, suggested questions ([15-ask-capture-trust.md](../docs/15-ask-capture-trust.md)) |
 | W33 Capture Knowledge | 7 | 0 | 0 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
 | W34 Trust and Control | 6 | 0 | 0 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
-| W35 Trust Each Answer | 4 | 0 | 3 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
+| W35 Trust Each Answer | 7 | 0 | 0 | Planned 2026-11-24 with the user (E36): verified answers, verified only, review every N days, unhelpful clears the mark, conflicts, report this answer, how sure the answer is ([16-trust-capture-reach.md](../docs/16-trust-capture-reach.md)) |
 | W36 Capture Conversations | 0 | 0 | 7 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
 | W37 Work Where People Are | 0 | 0 | 6 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -678,9 +678,9 @@ flowchart LR
 | [SB-3602](E36-trust-each-answer/SB-3602-verified-only.md) | S35.1 | E36 | Verified only | Done |
 | [SB-3603](E36-trust-each-answer/SB-3603-review-interval.md) | S35.1 | E36 | Review every N days | Done |
 | [SB-3604](E36-trust-each-answer/SB-3604-unhelpful-clears-mark.md) | S35.1 | E36 | Unhelpful clears the mark | Done |
-| [SB-3605](E36-trust-each-answer/SB-3605-conflicts.md) | S35.2 | E36 | Conflicts | Open |
-| [SB-3606](E36-trust-each-answer/SB-3606-report-answer.md) | S35.2 | E36 | Report this answer | Open |
-| [SB-3607](E36-trust-each-answer/SB-3607-verified-count.md) | S35.2 | E36 | How sure the answer is | Open |
+| [SB-3605](E36-trust-each-answer/SB-3605-conflicts.md) | S35.2 | E36 | Conflicts | Done |
+| [SB-3606](E36-trust-each-answer/SB-3606-report-answer.md) | S35.2 | E36 | Report this answer | Done |
+| [SB-3607](E36-trust-each-answer/SB-3607-verified-count.md) | S35.2 | E36 | How sure the answer is | Done |
 
 ### W36 Capture Conversations
 

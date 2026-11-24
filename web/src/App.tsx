@@ -261,7 +261,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               {x.pending && <SourcesFirst sources={x.sources} />}
               {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} />}
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
-              {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
+              {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
               {x.answer && space && (x.answer.notice === "no_sources" || x.answer.notice === "no_access") && (
                 <button type="button" disabled={busy} onClick={() => askWholeCompany(x.question)}>
