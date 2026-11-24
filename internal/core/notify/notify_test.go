@@ -61,14 +61,14 @@ type clock struct {
 }
 
 func (c *clock) Last(_ context.Context, part string) (time.Time, bool, error) {
-	if part == "weekly" {
+	if part != "last" {
 		t, ok := c.weekly[part]
 		return t, ok, nil
 	}
 	return c.t, c.found, nil
 }
 func (c *clock) Mark(_ context.Context, part string, t time.Time) error {
-	if part == "weekly" {
+	if part != "last" {
 		c.weekly[part] = t
 		return nil
 	}

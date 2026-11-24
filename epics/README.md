@@ -38,7 +38,7 @@ summary: Epics, waves, slices and tickets.
 | W31 Run Without Surprises | 7 | 0 | 0 | Planned 2026-11-24 with the user (E32): why a sync fails, refresh one document, health in Prometheus, audit by person and date, answer time, disk runway, notice to everyone |
 | W32 Ask Better | 7 | 0 | 0 | Planned 2026-11-24 with the user (E33): see also, glossary where it's used, short or full answer, sources disagree, download the conversation, their other documents, suggested questions ([15-ask-capture-trust.md](../docs/15-ask-capture-trust.md)) |
 | W33 Capture Knowledge | 7 | 0 | 0 | Planned 2026-11-24 with the user (E34): reply to note, spot a repeat, notes come due, nudge old questions, take over a document, your documents helped, terms the documents define |
-| W34 Trust and Control | 3 | 0 | 3 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
+| W34 Trust and Control | 6 | 0 | 0 | Planned 2026-11-24 with the user (E35): what the brain keeps about me, forget my questions, where I'm signed in, access review, month-end forecast, usage by space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -654,6 +654,6 @@ flowchart LR
 | [SB-3501](E35-trust-and-control/SB-3501-my-data.md) | S34.1 | E35 | What the brain keeps about me | Done |
 | [SB-3502](E35-trust-and-control/SB-3502-forget-my-questions.md) | S34.1 | E35 | Forget my questions | Done |
 | [SB-3503](E35-trust-and-control/SB-3503-my-sessions.md) | S34.1 | E35 | Where I'm signed in | Done |
-| [SB-3504](E35-trust-and-control/SB-3504-access-review.md) | S34.2 | E35 | Access review | Open |
-| [SB-3505](E35-trust-and-control/SB-3505-cost-forecast.md) | S34.2 | E35 | Month-end forecast | Open |
-| [SB-3506](E35-trust-and-control/SB-3506-usage-by-space.md) | S34.2 | E35 | Usage by space | Open |
+| [SB-3504](E35-trust-and-control/SB-3504-access-review.md) | S34.2 | E35 | Access review | Done |
+| [SB-3505](E35-trust-and-control/SB-3505-cost-forecast.md) | S34.2 | E35 | Month-end forecast | Done |
+| [SB-3506](E35-trust-and-control/SB-3506-usage-by-space.md) | S34.2 | E35 | Usage by space | Done |

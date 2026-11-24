@@ -34,7 +34,7 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 | Freshness | p95 > 15 min | Sev-2 |
 | Unknown ratio | > 1% for 30 min on a connector | Sev-3 |
 | Budget pace | > 120% | Sev-3 |
-| Budget warning | this month's spend passes 80% of `budget_usd_month`, once a month (`budget_warning`, SB-1608) | Sev-3, to the tenant operator |
+| Budget warning | this month's spend passes 80% of `budget_usd_month`, or the month-end forecast passes the budget (SB-3505), once a month (`budget_warning`, SB-1608) | Sev-3, to the tenant operator |
 | Box check | a self-hosted machine's check fails: a disk over 90%, a certificate within 7 days, no dump for 50 hours, a service down (`box_check`, `where` the check, `ref` the day; SB-1802) | Sev-2, to the tenant operator, once a day per check |
 | An access review is overdue | `sb_access_review_overdue{space}` is 1: a review open 14 days (sb-spaces(7), Access reviews) | Sev-2, to the tenant operator |
 | A scheduled job missed its run | `sb_job_overdue{job}` is 1 | Sev-1 for `anchor`, `backup`, `access`, `review`; Sev-2 otherwise (sb-runtime(7), Schedules) |
@@ -135,6 +135,7 @@ Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report g
 | Input tokens per model call | (SB-2906) the 95th percentile of the input tokens of each model call this week, and last week's, from the usage ledger; marked **growing** when it is over 1.5 times last week's. Counts only |
 | Seconds per answer | (SB-3205) the 95th percentile of the seconds each answer took this week, and last week's, from the usage ledger, which records each answer's duration in milliseconds beside its tokens; marked **slower** when it is over 1.5 times last week's. Durations only, never a question |
 | Notifications | (SB-2607) the notify job's last run: when, the channel, and its counts sent, skipped and failed; never who |
+| Usage by space | (SB-3506) one row per space the week's asks were asked in, and `company`: its asks, the share that found nothing (`no_sources`, SB-3101) and the share rated helpful (the answer's latest feedback `up`). A space with fewer than 5 asks shows **fewer than 5** and no shares, so a small space can't be read as one person; the rows of the spaces with 5 or more add up to the totals less those. The steward screen shows its own space's row only, over the last 7 days (sb-ask(3), Documents to review) |
 
 The same numbers answer `GET /v1/admin/usage?week=2027-W10` (sb-admin(3)), which operators and approvers may read. The report is Markdown with no links to content, and delivery goes through the cell's notification adapter (email or chat). Exactly (SB-1608): the `report` job writes it to `state/reports/WEEK.md` and posts it as JSON, `{ "kind": "weekly_report", "tenant", "week", "markdown" }`, to `alerts.report_webhook`, or to `alerts.webhook` when that is the only one set (sb-cell(5)). A delivery that fails after its retries fails the run, so its missed finish raises `job_missed`; with neither webhook set the file is the delivery.
 

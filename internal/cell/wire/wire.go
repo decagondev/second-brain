@@ -188,6 +188,11 @@ func (u usage) LastNotify(context.Context) (notify.RunRecord, bool, error) {
 	return lastNotify(u.state)
 }
 
+// FeedbackBetween is the week's feedback, for usage by space (SB-3506).
+func (u usage) FeedbackBetween(ctx context.Context, tenant string, from, to time.Time) ([]ask.Feedback, error) {
+	return u.traces.FeedbackBetween(ctx, tenant, from, to)
+}
+
 func (u usage) StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error) {
 	return u.traces.StewardQuestionsBetween(ctx, tenant, from, to)
 }
@@ -364,6 +369,11 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.model = func(m manifest.Tenant) (ports.Model, error) {
 		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
 			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}, Once: c.Usage,
+			Forecast: func(ctx context.Context) (float64, bool) {
+				prices := map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}}
+				f, ok, err := costs.Forecast(ctx, c.Usage, tenant, prices, time.Now())
+				return f, ok && err == nil
+			},
 			// The warning goes through whichever alerter the cell has when it fires (SB-1608).
 			Warn: func(ctx context.Context, month string, _ float64) {
 				if c.Alerter != nil {

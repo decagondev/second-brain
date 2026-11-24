@@ -29,6 +29,11 @@ type QuestionSource interface {
 	StewardQuestions(ctx context.Context, tenant string, from, to time.Time) ([]ask.StewardQuestion, error)
 }
 
+// FeedbackSource is a source that also has feedback, for usage by space (SB-3506).
+type FeedbackSource interface {
+	FeedbackBetween(ctx context.Context, tenant string, from, to time.Time) ([]ask.Feedback, error)
+}
+
 // ChangeSource is a source that knows which documents changed, by space (SB-1708).
 type ChangeSource interface {
 	ChangedDocs(ctx context.Context, tenant string, from, to time.Time) (map[string]int, error)
@@ -56,11 +61,13 @@ type Report struct {
 	Changed         map[string]int `json:"changed,omitempty"`
 	CitedAnswerRate float64        `json:"cited_answer_rate"`
 	// Stale counts the cited answers that rested mostly on stale cites (SB-2807).
-	Stale           ask.StaleCount `json:"stale_answers"`
-	Gaps            map[string]int `json:"gaps"`
-	DraftsUsed      int            `json:"drafts_used"`
-	DraftsDiscarded int            `json:"drafts_discarded"`
-	Actions         map[string]int `json:"actions"`
+	Stale ask.StaleCount `json:"stale_answers"`
+	// Spaces is usage by space (SB-3506): fewer than 5 asks shows only that.
+	Spaces          []ask.SpaceUsage `json:"spaces,omitempty"`
+	Gaps            map[string]int   `json:"gaps"`
+	DraftsUsed      int              `json:"drafts_used"`
+	DraftsDiscarded int              `json:"drafts_discarded"`
+	Actions         map[string]int   `json:"actions"`
 	// Notify is the notify job's last run when the report was made (SB-2607); counts only.
 	Notify *notify.RunRecord `json:"notify,omitempty"`
 	// Prompt is the 95th percentile of input tokens per model call this week and the week
@@ -135,6 +142,13 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 		}
 	}
 	r.Stale = ask.StaleShare(traces, "")
+	if fs, ok := src.(FeedbackSource); ok {
+		fbs, err := fs.FeedbackBetween(ctx, tenant, from, to.Add(7*24*time.Hour))
+		if err != nil {
+			return r, err
+		}
+		r.Spaces = ask.UsageBySpace(traces, ask.Helpful(fbs))
+	}
 	if r.Asks > 0 {
 		r.CitedAnswerRate = float64(cited) / float64(r.Asks)
 	}
@@ -256,6 +270,17 @@ func (r Report) Markdown() string {
 		gaps = []string{"none"}
 	}
 	fmt.Fprintf(&b, "| Gaps | %s |\n", strings.Join(gaps, ", "))
+	if len(r.Spaces) > 0 {
+		parts := make([]string, len(r.Spaces))
+		for i, u := range r.Spaces {
+			if u.FewerThan5 {
+				parts[i] = u.Space + " fewer than 5 asks"
+				continue
+			}
+			parts[i] = fmt.Sprintf("%s %d asks, %.0f%% found nothing, %.0f%% helpful", u.Space, *u.Asks, 100**u.FoundNothing, 100**u.Helpful)
+		}
+		fmt.Fprintf(&b, "| Usage by space | %s |\n", strings.Join(parts, "; "))
+	}
 	if len(r.QuestionsAsked) > 0 {
 		sps := make([]string, 0, len(r.QuestionsAsked))
 		for k := range r.QuestionsAsked {

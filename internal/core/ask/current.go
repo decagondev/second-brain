@@ -168,6 +168,8 @@ type ReviewResponse struct {
 	Hidden []HiddenItem `json:"hidden"`
 	// Terms are the terms the space's documents define that its glossary lacks (SB-3407).
 	Terms []DefinedTerm `json:"terms"`
+	// Usage is the space's own row of usage by space, over the last 7 days (SB-3506).
+	Usage *SpaceUsage `json:"usage,omitempty"`
 	// Personal is how many documents the space holds with personal data, an IBAN or a
 	// card number (SB-1904): a count, never which.
 	Personal int `json:"personal_data"`
@@ -253,7 +255,8 @@ func (x Stewards) Review(ctx context.Context, s tenancy.Scope, name string, src 
 		return ReviewResponse{}, err
 	}
 	flaggedAt := lastFlags(fbs)
-	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh, FoundNothing: foundNothing(all, SpaceKey(name), now)}
+	out := ReviewResponse{Items: []ReviewItem{}, Hidden: []HiddenItem{}, Freshness: fresh, FoundNothing: foundNothing(all, SpaceKey(name), now),
+		Usage: ownUsage(all, fbs, name, now)}
 	if out.Feedback, err = x.stewardFeedback(ctx, s, SpaceKey(name), all, months, now); err != nil {
 		return out, err
 	}

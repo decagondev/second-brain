@@ -103,3 +103,40 @@ func TestBudgetWarningOnceAMonth(t *testing.T) {
 		Warn: func(context.Context, string, float64) { t.Fatal("a zero budget warned") }}
 	_ = z.Record(ctx, 5, 0)
 }
+
+// SB-3505: a month-end forecast over the budget sends the one warning early, well under
+// 80%; the forecast is read at most once an hour, and none (too early) warns nothing.
+func TestForecastWarnsEarly(t *testing.T) {
+	now := time.Date(2027, 3, 10, 9, 0, 0, 0, time.UTC)
+	var warned []string
+	reads, forecast, ok := 0, 90.0, true
+	g := &Guard{Tenant: "acme-logistics", MonthlyUSD: 100, Price: Price{InputPerM: 1e6, OutputPerM: 0}, Meter: &MemoryMeter{},
+		Now: func() time.Time { return now }, Once: &once{}, Warn: func(_ context.Context, month string, _ float64) { warned = append(warned, month) },
+		Forecast: func(context.Context) (float64, bool) { reads++; return forecast, ok }}
+	ctx := context.Background()
+	for i := 0; i < 10; i++ {
+		_ = g.Record(ctx, 1, 0)
+	}
+	if len(warned) != 0 || reads != 1 {
+		t.Fatalf("a forecast under budget: warned %v, read %d times", warned, reads)
+	}
+	forecast = 130
+	_ = g.Record(ctx, 1, 0)
+	if len(warned) != 0 || reads != 1 {
+		t.Fatalf("read again within the hour: %v, %d", warned, reads)
+	}
+	now = now.Add(time.Hour)
+	_ = g.Record(ctx, 1, 0)
+	if len(warned) != 1 || warned[0] != "2027-03" || reads != 2 {
+		t.Fatalf("over budget by forecast: %v, %d", warned, reads)
+	}
+	now = now.Add(2 * time.Hour)
+	_ = g.Record(ctx, 1, 0)
+	if len(warned) != 1 {
+		t.Fatalf("warned twice: %v", warned)
+	}
+	g2 := &Guard{Tenant: "beta-freight", MonthlyUSD: 100, Price: g.Price, Meter: &MemoryMeter{}, Now: g.Now, Once: &once{},
+		Warn:     func(context.Context, string, float64) { t.Fatal("no forecast warned") },
+		Forecast: func(context.Context) (float64, bool) { return 500, false }}
+	_ = g2.Record(ctx, 1, 0)
+}

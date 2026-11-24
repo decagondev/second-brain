@@ -68,7 +68,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `approval` | map workflow→principal | if `workflows` | | Principal is `group:NAME` from the IdP. Every workflow needs one |
 | `duties` | map workflow→`{ second: group:NAME, above: N }` | no | none | Segregation of duties ([sb-approvals(7)](sb-approvals.7.md)): actions with an `amount` above `N` (or no amount) need a second approver from `second`. `second` differs from the workflow's `approval` group; `N` is a whole number, at least 0 |
 | `retention_days` | int | no | `365` | 30–3650. Applies to traces (with their citations and decision lists), drafts, conversations, feedback and logs, never to audit or the index. See Retention and deletion |
-| `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
+| `budget_usd_month` | int | no | `1000` | At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with `EBUDGET`, never unmetered; a month-end forecast over it warns early (SB-3505) ([sb-observability(7)](sb-observability.7.md#budgets-and-rate-limits-sb-609)) |
 | `pilot_group` | string | no | | `group:NAME`. If set, only this group may sign in (days 1–14) |
 | `questions_to` | string | no | none | `group:NAME`: who answers questions sent from company-wide asks that nothing answered (sb-ask(3), Questions to the stewards; SB-1704). Without it, only a space's questions reach anyone |
 | `notes` | bool | no | `false` | Stewards may publish replies as notes into `notes/` of the `docs: folder` share (sb-connector(3); SB-1705). Needs `connectors: { docs: folder }` |

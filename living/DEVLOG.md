@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S34.2: See it before it goes wrong
+
+**Wave/slice:** W34 / S34.2 (SB-3504 to SB-3506) · **Status:** Done
+
+**What:** Stewards of a restricted space hear once when its access review opens and once when it becomes overdue, and the screen's buttons read Still needs it and Remove. The cost statement for the running month carries a month-end forecast, and a forecast over the budget sends the one budget warning early. The weekly report has a usage line per space, and the steward's review list shows their own space's week.
+
+**Why this way:** The reviews already existed (SB-1202); what was missing was telling the people who must act, so the notify job reads the reviews and marks each notice in its clock, never twice. The forecast is the month so far plus the last week's rate, with no number before 3 days, so a quiet first day never alarms anyone; the guard reads it at most once an hour. Usage shows no shares below 5 asks, so a small space can't be read person by person (LAW-07), and a steward sees only their own space's row.
+
+**Learned:** The notify clock is files named by part, so a review's notice part avoids colons. A label the screen shows must match its accessible name, so the aria label changed with the button.
+
+**Laws:** LAW-03, LAW-07, LAW-21. Every law test is still green.
+
 ## 2026-11-24 S34.1: Your own data
 
 **Wave/slice:** W34 / S34.1 (SB-3501 to SB-3503) · **Status:** Done

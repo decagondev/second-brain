@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W31 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] A person's export and erasure touch only their own records, and a legal hold still wins
-- [ ] Nobody sees another person's sessions
-- [ ] Access review changes no group; Remove asks the admin
-- [ ] No forecast from fewer than 3 days of data; no space row under 5 asks
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A person's export and erasure touch only their own records, and a legal hold still wins
+- [x] Nobody sees another person's sessions
+- [x] Access review changes no group; Remove asks the admin
+- [x] No forecast from fewer than 3 days of data; no space row under 5 asks
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

@@ -138,3 +138,23 @@ describe("eval cases and start here to check", () => {
     expect(await violations(container)).toEqual([]);
   });
 });
+
+// SB-3506
+describe("the space's own usage", () => {
+  it("shows the week's counts and shares, or that too few asked", async () => {
+    const usage = { space: "ops", asks: 12, found_nothing_share: 0.25, helpful_share: 0.5 };
+    const fetcher: Fetch = async (u) => {
+      if (u.endsWith("/retired")) return json({ items: [], hidden: 0 });
+      return json({ items: [], hidden: [], usage });
+    };
+    const { container, unmount } = render(<ReviewList space="ops" fetcher={fetcher} />);
+    await act(async () => {});
+    expect(container.textContent).toContain("Last 7 days: 12 questions, 25% found nothing, 50% rated helpful.");
+    expect(await violations(container)).toEqual([]);
+    unmount();
+    const few: Fetch = async (u) => (u.endsWith("/retired") ? json({ items: [], hidden: 0 }) : json({ items: [], hidden: [], usage: { space: "ops", fewer_than_5: true } }));
+    const r2 = render(<ReviewList space="ops" fetcher={few} />);
+    await act(async () => {});
+    expect(r2.container.textContent).toContain("Fewer than 5 questions were asked here in the last 7 days.");
+  });
+});

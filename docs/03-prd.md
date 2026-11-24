@@ -19,7 +19,7 @@ The control plane is a **factory**: it produces and runs every tenant's Second B
 
 After W7, waves **W8 to W12** (14 weeks) add **department brains**: each company's cell holds all its knowledge, split into department spaces (Engineering, People, Finance and so on) whose access can only narrow what each source allows (ADR-0020). W9 first runs cells for real on GCP (ADR-0021). The research and concept are in [08-department-brains.md](08-department-brains.md). The portfolio department grants first planned as W13 are parked while Q-01 stays no (2026-11-20).
 
-Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better** (built), **W33 Capture Knowledge** (built) and **W34 Trust and Control** add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)).
+Then **W13 Hardening** reviews, fuzzes and tidies the code and matches it to the manual, and **W14 Cell Runtime** runs every part of a cell together as real services, ending with a whole cell end to end. **W15 Self-hosted Cell** (built) puts a whole cell on one machine the company owns (ADR-0022). **W16 Team Knowledge** (built) adds ten small features for passing knowledge between people ([09-team-knowledge.md](09-team-knowledge.md)). **W17 Easy to Run**, **W18 Protect the Data** and **W19 Close the Loops** (all built) add twenty small features for operators, data protection and W16's gaps ([10-run-protect-close.md](10-run-protect-close.md)). **W20 Keep People in the Loop**, **W21 Keep Knowledge Owned** and **W22 Fit the Site** (all built) add twenty more: notifications, owned and right documents, and the site's languages, logs and storage ([11-loop-own-fit.md](11-loop-own-fit.md)). **W23 Easier to Ask**, **W24 Easier to Steward** and **W25 Easier to Operate** (all built) add twenty small quality-of-life features on what is built ([12-ask-steward-operate.md](12-ask-steward-operate.md)). **W26 Fresh Answers**, **W27 A Tidy Corpus** and **W28 A Focused Context** (all built) add twenty small features against stale data, document rot and context creep ([13-fresh-tidy-focused.md](13-fresh-tidy-focused.md)). **W29 Show the Evidence**, **W30 Fill the Gaps** and **W31 Run Without Surprises** (all built) add twenty small features: the evidence beside each answer, the gaps stewards can fill, and early warnings for operators ([14-evidence-gaps-surprises.md](14-evidence-gaps-surprises.md)). **W32 Ask Better** (built), **W33 Capture Knowledge** (built) and **W34 Trust and Control** (built) add twenty more: more from each answer, good replies kept for the next person, and people's control of their own data ([15-ask-capture-trust.md](15-ask-capture-trust.md)).
 
 ## Problem
 
@@ -986,11 +986,11 @@ gantt
 
 **Exit gate**
 
-- [ ] A person's export and erasure touch only their own records, and a legal hold still wins
-- [ ] Nobody sees another person's sessions
-- [ ] Access review changes no group; Remove asks the admin
-- [ ] No forecast from fewer than 3 days of data; no space row under 5 asks
-- [ ] Every law test still green; no new store, service or Go module
+- [x] A person's export and erasure touch only their own records, and a legal hold still wins
+- [x] Nobody sees another person's sessions
+- [x] Access review changes no group; Remove asks the admin
+- [x] No forecast from fewer than 3 days of data; no space row under 5 asks
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|

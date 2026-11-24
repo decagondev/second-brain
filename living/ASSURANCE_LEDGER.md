@@ -189,3 +189,4 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-24 | LAW-07 | Tested (extended) | SB-3401, SB-3404: a note never names its asker, and the old-question messages and audit rows hold counts and ids only (TestNoteKeepsQuestionAndComesDue, TestOldQuestionsWaitThenGoCompanyWide) |
 | 2026-11-24 | LAW-12 | Tested (extended) | SB-3405: a deprovisioned caretaker is shown as nobody to ask (TestCaretakersAndDefinedTermsThroughARunningCell) |
 | 2026-11-24 | LAW-01 | Tested (extended) | SB-3501: a person's own export leaves out a cite they can no longer open, and the claim it backed (TestOwnDataThroughARunningCell) |
+| 2026-11-24 | LAW-07 | Tested (extended) | SB-3506: usage by space shows no shares under 5 asks (TestUsageBySpace, TestUsageBySpaceLine) |

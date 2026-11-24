@@ -87,7 +87,7 @@ describe("steward screen", () => {
     const { container } = render(<StewardView space="finance" fetcher={s.fetcher} />);
     await screen.findByText("usr_bo");
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Certify usr_ann" }));
+      fireEvent.click(screen.getByRole("button", { name: "usr_ann still needs it" }));
     });
     expect(screen.getByRole("status").textContent).toMatch(/own access/);
     await act(async () => {

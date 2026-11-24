@@ -49,3 +49,39 @@ func TestStatement(t *testing.T) {
 		}
 	}
 }
+
+// windowed meters usage per hour: perHour input tokens of claude-x each hour of [from, to).
+type windowed struct{ perHour int }
+
+func (w windowed) Usage(_ context.Context, _ string, from, to time.Time) ([]Usage, error) {
+	return []Usage{{"anthropic", "claude-x", w.perHour * int(to.Sub(from).Hours()), 0}}, nil
+}
+
+// SB-3505: a steady rate forecasts the whole month; before 3 days there is no number, and a
+// past month has none.
+func TestForecast(t *testing.T) {
+	ctx := context.Background()
+	m := windowed{perHour: 1_000_000 / 24} // about $3 a day
+	now := time.Date(2027, 3, 11, 0, 0, 0, 0, time.UTC)
+	f, ok, err := Forecast(ctx, m, "gamma-parts", prices, now)
+	if err != nil || !ok || f < 92 || f > 93.5 { // 31 days at ~$3
+		t.Fatalf("forecast %v %v %v", f, ok, err)
+	}
+	st, err := Build(ctx, m, "gamma-parts", "2027-03", prices, 100, now)
+	if err != nil || st.ForecastUSD == nil || *st.ForecastUSD != f || st.Forecast != "" {
+		t.Fatalf("statement %+v %v", st, err)
+	}
+	early := time.Date(2027, 3, 2, 12, 0, 0, 0, time.UTC)
+	if _, ok, _ := Forecast(ctx, m, "gamma-parts", prices, early); ok {
+		t.Fatal("a forecast after a day and a half")
+	}
+	if st, _ := Build(ctx, m, "gamma-parts", "2027-03", prices, 100, early); st.ForecastUSD != nil || st.Forecast != NotEnough {
+		t.Fatalf("early statement %+v", st)
+	}
+	if st, _ := Build(ctx, m, "gamma-parts", "2027-02", prices, 100, now); st.ForecastUSD != nil || st.Forecast != "" {
+		t.Fatalf("a past month forecast %+v", st)
+	}
+	if _, _, err := Forecast(ctx, broken{}, "gamma-parts", prices, now); err == nil {
+		t.Fatal("an unreadable meter forecast")
+	}
+}

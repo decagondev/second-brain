@@ -45,6 +45,10 @@ type Statement struct {
 	Lines     []Line  `json:"lines"`
 	TotalUSD  float64 `json:"total_usd"`
 	BudgetUSD int     `json:"budget_usd_month"`
+	// ForecastUSD is the month-end forecast for the month still running (SB-3505); nil
+	// with Forecast "not enough data yet" before 3 days of it, nil for a past month.
+	ForecastUSD *float64 `json:"forecast_usd"`
+	Forecast    string   `json:"forecast,omitempty"`
 }
 
 // ParseMonth reads "2027-03" and returns its UTC bounds.
@@ -81,7 +85,66 @@ func Build(ctx context.Context, m Meter, tenant, month string, prices map[string
 		st.TotalUSD += l.CostUSD
 	}
 	st.TotalUSD = cents(st.TotalUSD)
+	if st.Partial && !now.Before(from) {
+		f, ok, err := Forecast(ctx, m, tenant, prices, now)
+		if err != nil {
+			return Statement{}, err
+		}
+		if ok {
+			st.ForecastUSD = &f
+		} else {
+			st.Forecast = NotEnough
+		}
+	}
 	return st, nil
+}
+
+// Month-end forecast (sb-admin(3), costs; SB-3505).
+const (
+	ForecastDays    = 7 // the rate is the last this many days'
+	ForecastMinDays = 3 // fewer days of the month gone give no forecast
+	NotEnough       = "not enough data yet"
+)
+
+// Forecast is the running month's spend so far plus the last ForecastDays' daily rate
+// (fewer in a younger month) times the days left; ok is false before ForecastMinDays.
+func Forecast(ctx context.Context, m Meter, tenant string, prices map[string]Price, now time.Time) (float64, bool, error) {
+	now = now.UTC()
+	from, to, _ := ParseMonth(now.Format("2006-01"))
+	gone := now.Sub(from)
+	if gone < ForecastMinDays*24*time.Hour {
+		return 0, false, nil
+	}
+	win := time.Duration(ForecastDays) * 24 * time.Hour
+	if gone < win {
+		win = gone
+	}
+	sofar, err := spend(ctx, m, tenant, prices, from, now)
+	if err != nil {
+		return 0, false, err
+	}
+	recent, err := spend(ctx, m, tenant, prices, now.Add(-win), now)
+	if err != nil {
+		return 0, false, err
+	}
+	rate := recent / win.Hours()
+	return cents(sofar + rate*to.Sub(now).Hours()), true, nil
+}
+
+func spend(ctx context.Context, m Meter, tenant string, prices map[string]Price, from, to time.Time) (float64, error) {
+	us, err := m.Usage(ctx, tenant, from, to)
+	if err != nil {
+		return 0, err
+	}
+	usd := 0.0
+	for _, u := range us {
+		p, ok := prices[u.Provider+"/"+u.Model]
+		if !ok {
+			return 0, fmt.Errorf("costs: no price for %s/%s in the release", u.Provider, u.Model)
+		}
+		usd += float64(u.TokensIn)/1e6*p.InPerM + float64(u.TokensOut)/1e6*p.OutPerM
+	}
+	return usd, nil
 }
 
 // CSV writes the statement's lines with a header row.

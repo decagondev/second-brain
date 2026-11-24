@@ -173,8 +173,8 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
                           t("{decision} by {by}", { decision: it.decision, by: it.by ?? "?" }) + (it.reason ? ": " + it.reason : "")
                         ) : (
                           <>
-                            <button type="button" onClick={() => decide(r.id, it.user, "certify")} aria-label={t("Certify {user}", { user: it.user })}>
-                              {t("Certify")}
+                            <button type="button" onClick={() => decide(r.id, it.user, "certify")} aria-label={t("{user} still needs it", { user: it.user })}>
+                              {t("Still needs it")}
                             </button>{" "}
                             <button type="button" onClick={() => decide(r.id, it.user, "remove", removing?.user === it.user ? reason : "")} aria-label={t("Remove {user}", { user: it.user })}>
                               {t("Remove")}

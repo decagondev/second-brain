@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Access review notices and Still needs it (SB-3504); month-end cost forecast and early budget warning (SB-3505); usage by space (SB-3506).
 - Download my data (SB-3501); forget my questions (SB-3502); where I'm signed in (SB-3503).
 - Document caretakers (SB-3405); your documents helped, in the owners' monthly note (SB-3406); terms the documents define (SB-3407).
 - Keep the question in a note (SB-3401); spot a repeat and Answer both (SB-3402); notes come due after 180 days (SB-3403); overdue and waited questions (SB-3404).

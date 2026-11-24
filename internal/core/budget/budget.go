@@ -47,6 +47,11 @@ type Guard struct {
 	// none.
 	Warn func(ctx context.Context, month string, spent float64)
 	Once Once
+	// Forecast is the month-end forecast and whether there is one (SB-3505); a forecast
+	// over the budget sends the warning early. It is read at most once an hour; nil reads none.
+	Forecast func(ctx context.Context) (float64, bool)
+
+	forecastAt time.Time
 
 	mu      sync.Mutex
 	buckets map[string]*bucket
@@ -104,12 +109,32 @@ func (g *Guard) warn(ctx context.Context, month string) {
 		return
 	}
 	spent, err := g.Meter.Spent(ctx, g.Tenant, month)
-	if err != nil || spent < WarnAt*g.MonthlyUSD {
+	if err != nil || spent < WarnAt*g.MonthlyUSD && !g.forecastOver(ctx) {
 		return
 	}
 	if first, err := g.Once.First(ctx, "budget-warning-"+g.Tenant+"-"+month); err == nil && first {
 		g.Warn(ctx, month, spent)
 	}
+}
+
+// forecastOver reports whether the month-end forecast passes the budget, reading it at
+// most once an hour.
+func (g *Guard) forecastOver(ctx context.Context) bool {
+	if g.Forecast == nil {
+		return false
+	}
+	g.mu.Lock()
+	now := g.Now()
+	due := g.forecastAt.IsZero() || now.Sub(g.forecastAt) >= time.Hour
+	if due {
+		g.forecastAt = now
+	}
+	g.mu.Unlock()
+	if !due {
+		return false
+	}
+	f, ok := g.Forecast(ctx)
+	return ok && f > g.MonthlyUSD
 }
 
 func (g *Guard) take(user string) bool {

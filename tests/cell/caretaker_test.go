@@ -56,7 +56,7 @@ func TestCaretakersAndDefinedTermsThroughARunningCell(t *testing.T) {
 	}
 
 	code, body := r.do(t, "GET", "/v1/spaces/ops/review", "")
-	if code != 200 || !strings.Contains(body, `"owner_gone":true`) {
+	if code != 200 || !strings.Contains(body, `"owner_gone":true`) || !strings.Contains(body, `"usage":{"space":"ops","fewer_than_5":true}`) {
 		t.Fatalf("review: %d %s", code, body)
 	}
 	var rv struct {

@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, addEvalCase, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
+import type { AskResponse, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, SpaceUsage, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
 import { errorText, msg, t, tn } from "./i18n";
@@ -894,6 +894,21 @@ function FreshnessLine({ f }: { f: Freshness }) {
   );
 }
 
+// The space's own usage this week (SB-3506): counts and shares, or too few to say.
+function UsageLine({ u }: { u: SpaceUsage }) {
+  if (u.fewer_than_5 || u.asks === undefined) return <p className="meta">{t("Fewer than 5 questions were asked here in the last 7 days.")}</p>;
+  const pct = (x?: number) => Math.round(100 * (x ?? 0));
+  return (
+    <p className="meta">
+      {t("Last 7 days: {asks} questions, {none}% found nothing, {up}% rated helpful.", {
+        asks: u.asks,
+        none: pct(u.found_nothing_share),
+        up: pct(u.helpful_share),
+      })}
+    </p>
+  );
+}
+
 // Documents to review on the steward's screen (SB-1709): relied-on documents gone stale, or
 // marked as wrong citations, each one the steward can open; the rest counted with an owner.
 // A note whose readers are wider than its space now (SB-2004): the count, never who, and a
@@ -1034,6 +1049,7 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
           {t("Download CSV")}
         </button>
       )}
+      {list.usage && <UsageLine u={list.usage} />}
       {list.freshness && <FreshnessLine f={list.freshness} />}
       <DefinedTerms terms={list.terms ?? []} onSuggest={onSuggestTerm} />
       {list.found_nothing && <FoundNothingLine f={list.found_nothing} />}

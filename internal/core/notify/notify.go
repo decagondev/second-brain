@@ -16,6 +16,7 @@ import (
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/reviews"
 )
 
 // Kinds a person can turn off.
@@ -194,6 +195,9 @@ type Job struct {
 	// Audit writes a row for each question shown to the company-wide answerers because it
 	// waited (SB-3404); nil shows none there.
 	Audit ask.Auditor
+	// Reviews are the access reviews (SB-3504): the stewards hear once when one opens and
+	// once when it becomes overdue; nil tells no one.
+	Reviews func(ctx context.Context) ([]reviews.Review, error)
 }
 
 // The digest's limits.
@@ -249,11 +253,18 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		}
 		out = append(out, more...)
 	}
+	revs, revMarks, err := j.reviews(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	if j.Send != nil {
+		out = append(out, revs...)
+	}
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err
 	}
-	var marks []func() error
+	marks := revMarks
 	if due {
 		more, mark, err := j.weekly(ctx, now)
 		if err != nil {
@@ -412,6 +423,57 @@ func (j Job) waited(ctx context.Context, n int) ([]outgoing, error) {
 		out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink("company")}})
 	}
 	return out, nil
+}
+
+// reviews tells each open review's stewards once when it opens and once when it becomes
+// overdue: counts and dates only. Each notice is marked in Clock after the run sends, so a
+// review is never told twice.
+func (j Job) reviews(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.Reviews == nil {
+		return nil, nil, nil
+	}
+	all, err := j.Reviews(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: reviews: %w", err)
+	}
+	sort.Slice(all, func(a, b int) bool { return all[a].ID < all[b].ID })
+	var out []outgoing
+	var marks []func() error
+	for _, r := range all {
+		if r.State != reviews.Open {
+			continue
+		}
+		due, err := time.Parse(time.RFC3339, r.Due)
+		if err != nil {
+			continue
+		}
+		name := strings.TrimPrefix(r.Space, "spc_")
+		notices := []struct{ part, text string }{
+			{"review-" + r.ID + "-open", fmt.Sprintf("The %s access review is open: %s, due %s", name, plural(len(r.Items), "person", "people"), due.UTC().Format(time.DateOnly))},
+		}
+		if !now.Before(due) {
+			notices = append(notices, struct{ part, text string }{"review-" + r.ID + "-overdue", "The " + name + " access review is overdue"})
+		}
+		for _, n := range notices {
+			_, told, err := j.Clock.Last(ctx, n.part)
+			if err != nil {
+				return nil, nil, fmt.Errorf("notify: reviews: %w", err)
+			}
+			if told {
+				continue
+			}
+			people, err := j.members(ctx, r.Stewards)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, p := range people {
+				out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: n.text, Link: j.stewardLink(r.Space)}})
+			}
+			part := n.part
+			marks = append(marks, func() error { return j.Clock.Mark(ctx, part, now) })
+		}
+	}
+	return out, marks, nil
 }
 
 // tokens tells each token's owner once, TokenWarn before it expires: the tokens whose

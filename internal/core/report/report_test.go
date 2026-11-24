@@ -95,3 +95,27 @@ func TestNotifyLine(t *testing.T) {
 		t.Fatal("a cell that keeps no notify runs has a notifications line")
 	}
 }
+
+type withFeedback struct{ src }
+
+func (withFeedback) FeedbackBetween(context.Context, string, time.Time, time.Time) ([]ask.Feedback, error) {
+	return []ask.Feedback{{Trace: "t1", Rating: "up"}}, nil
+}
+
+// SB-3506: usage by space in the weekly report, with fewer than 5 asks shown only as that.
+func TestUsageBySpaceLine(t *testing.T) {
+	from, to, _ := ParseWeek("2027-W10")
+	r, err := Build(context.Background(), withFeedback{}, "acme-logistics", from, to, Price{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Spaces) != 1 || !r.Spaces[0].FewerThan5 || r.Spaces[0].Space != "company" {
+		t.Fatalf("spaces %+v", r.Spaces)
+	}
+	if want := "| Usage by space | company fewer than 5 asks |"; !strings.Contains(r.Markdown(), want) {
+		t.Fatalf("lacks %q:\n%s", want, r.Markdown())
+	}
+	if r, _ := Build(context.Background(), src{}, "acme-logistics", from, to, Price{}); strings.Contains(r.Markdown(), "Usage by space") {
+		t.Fatal("a source without feedback has a usage line")
+	}
+}

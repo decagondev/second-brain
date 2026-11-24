@@ -13,7 +13,7 @@ summary: "The cost statement shows the month so far, not where it is heading."
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-tenant(5)`](../../manual/sb-tenant.5.md) |
 | Laws | LAW-03 |
 | Depends on | SB-709 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ The cost statement shows the month so far, not where it is heading.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/admin/costs` adds `forecast_usd` from the last 7 days' rate
-- [ ] Fewer than 3 days of data gives no number
-- [ ] A forecast over the budget fires budget_warning early, once a month
+- [x] `GET /v1/admin/costs` adds `forecast_usd` from the last 7 days' rate
+- [x] Fewer than 3 days of data gives no number
+- [x] A forecast over the budget fires budget_warning early, once a month
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Costs
-- [ ] Alert
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Costs
+- [x] Alert
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S34.2 with tests; make check green.
 
 ## Definition of done
 

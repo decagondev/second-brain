@@ -542,6 +542,17 @@ export interface ReviewData {
   start_here_hidden?: number;
   // Terms the space's documents define that its glossary lacks (SB-3407).
   terms?: DefinedTerm[];
+  // The space's own usage over the last 7 days (SB-3506).
+  usage?: SpaceUsage;
+}
+
+// One space's usage row (SB-3506): no shares with fewer than 5 asks.
+export interface SpaceUsage {
+  space: string;
+  asks?: number;
+  fewer_than_5?: boolean;
+  found_nothing_share?: number;
+  helpful_share?: number;
 }
 
 export interface DefinedTerm {
@@ -593,6 +604,7 @@ export async function reviewList(
       found_nothing?: FoundNothing;
       feedback?: StewardFeedback;
       terms?: DefinedTerm[];
+      usage?: SpaceUsage;
     }>(
       `/v1/spaces/${encodeURIComponent(space)}/review`,
       {},
@@ -611,6 +623,7 @@ export async function reviewList(
       found_nothing: d.found_nothing && typeof d.found_nothing.this_week === "number" && Array.isArray(d.found_nothing.terms) ? d.found_nothing : undefined,
       feedback: d.feedback && typeof d.feedback.this_month?.helpful === "number" && Array.isArray(d.feedback.documents) ? d.feedback : undefined,
       terms: Array.isArray(d.terms) ? d.terms.filter((x) => typeof x.term === "string" && typeof x.meaning === "string") : undefined,
+      usage: d.usage && typeof d.usage.space === "string" ? d.usage : undefined,
     };
   } catch {
     return { items: [], hidden: [] };
