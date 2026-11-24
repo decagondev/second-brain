@@ -13,7 +13,7 @@ summary: "A person can sign out everywhere but can't see where they are signed i
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-identity(7)`](../../manual/sb-identity.7.md) |
 | Laws | LAW-11, LAW-12 |
 | Depends on | SB-1906 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A person can sign out everywhere but can't see where they are signed in.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/me/sessions` lists the caller's sessions and API tokens by kind, start, last used day and expiry, never an address or a token
-- [ ] `DELETE /v1/me/sessions/{id}` ends one; the current one is marked
-- [ ] Nobody else's session is listed or ended
+- [x] `GET /v1/me/sessions` lists the caller's sessions and API tokens by kind, start, last used day and expiry, never an address or a token
+- [x] `DELETE /v1/me/sessions/{id}` ends one; the current one is marked
+- [x] Nobody else's session is listed or ended
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Done 2026-11-24. `GET /v1/me/sessions` lists the caller's live sessions and tokens by kind, start, last-used day and end, with a public id (`ses_` and 16 hex of the key's SHA-256), never the key or a token, and `current` on this browser's. `DELETE /v1/me/sessions/{id}` ends one, audited first; any other id is `EPERM`. **Where I'm signed in** at the foot of the page. Tests: `TestOwnDataThroughARunningCell`, web `owndata.test.tsx`.
 
 ## Definition of done
 

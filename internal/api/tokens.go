@@ -37,6 +37,8 @@ func (h Tokens) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/tokens", h.make)
 	mux.HandleFunc("GET /v1/tokens", h.list)
 	mux.HandleFunc("DELETE /v1/tokens/{id}", h.revoke)
+	mux.HandleFunc("GET /v1/me/sessions", h.sessions)
+	mux.HandleFunc("DELETE /v1/me/sessions/{id}", h.signOut)
 }
 
 func (h Tokens) make(w http.ResponseWriter, r *http.Request) {

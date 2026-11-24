@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { AskError, addEvalCase, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, BulkItem, DefinedTerm, DueItem, FoundNothing, StewardFeedback, Fetch, MyQuestion, NoteResult, NotifyPrefs, QueueQuestion, ReplyTemplate, Freshness, Retired, ReviewData, StartItem, ReviewItem, SameNameGroup, SearchResult } from "./api";
 import { placeOf } from "./Answer";
+import { MyData } from "./Session";
 import { errorText, msg, t, tn } from "./i18n";
 
 const askable = new Set(["no_sources", "no_access", "most_uncited"]);
@@ -115,6 +116,7 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
         </ul>
       )}
       <NotifySettings fetcher={fetcher} />
+      <MyData fetcher={fetcher} />
     </section>
   );
 }

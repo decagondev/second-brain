@@ -584,6 +584,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
+	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)

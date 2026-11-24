@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S34.1: Your own data
+
+**Wave/slice:** W34 / S34.1 (SB-3501 to SB-3503) · **Status:** Done
+
+**What:** Download my data gives a person a JSON file of their own records: answers with the cites they can still open, conversations, feedback, saved questions and shares, questions to stewards, settings and token names. Forget my questions erases their own history after they type the phrase, keeping and counting what a legal hold covers. Where I'm signed in lists their sessions and API tokens with Sign out on each.
+
+**Why this way:** The export is the operator's export run for the caller, so it reads exactly what an erasure would remove, and then every cite is checked again as them now: a document they lost isn't handed back through an old answer (LAW-01). Forget uses each store's own retention selection, so a hold keeps its records one at a time rather than refusing everything (SB-1207), and the audit holds counts only (LAW-07, LAW-11). A session's id is a hash of its key, never the key, so the list can't be used to take a session (LAW-12).
+
+**Learned:** The trace records keep no question text; the questions live in the conversations. The person's Forget had to differ from the operator's Erase, which refuses a held person outright: here a hold keeps only what it covers.
+
+**Laws:** LAW-01, LAW-07, LAW-11, LAW-12. Every law test is still green.
+
 ## 2026-11-24 S33.2: Keep someone on every document
 
 **Wave/slice:** W33 / S33.2 (SB-3405 to SB-3407) · **Status:** Done

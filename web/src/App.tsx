@@ -9,7 +9,7 @@ import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged } from "./Start";
-import { SignOutEverywhere } from "./Session";
+import { MySessions, SignOutEverywhere } from "./Session";
 import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
@@ -437,6 +437,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         {t("API tokens")}
       </button>
       {showTokens && <ApiTokens fetcher={fetcher} />}
+      <MySessions fetcher={fetcher} onSignedOut={forget} />
       <SignOutEverywhere fetcher={fetcher} onSignedOut={forget} />
     </main>
   );

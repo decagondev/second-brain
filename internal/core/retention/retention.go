@@ -335,3 +335,61 @@ func (e Export) Hash() string {
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
 }
+
+// Forgettable are the stores a person's Forget erases (sb-ask(3), Your own data; SB-3502):
+// feedback first, which takes its space from its trace.
+var Forgettable = []string{"feedback", "conversations", "traces", "saved questions", "shares"}
+
+// Forget erases user's own records from the stores named (Forgettable), of any age, on their
+// own request. Unlike Erase, a legal hold doesn't stop it: what a hold covers is kept, one
+// record at a time, and counted (SB-1207). It audits the request first and the counts after.
+func (j Job) Forget(ctx context.Context, user string) (Report, error) {
+	if !UserID.MatchString(user) {
+		return Report{}, fmt.Errorf("%w: a usr_ id is required", ErrInvalid)
+	}
+	subject := "forget:" + user
+	first, err := j.Audit.Write(ctx, audit.Event{Actor: user, Kind: "retention", Subject: subject, State: "requested", Reason: "forget my questions"})
+	if err != nil {
+		return Report{}, fmt.Errorf("%w, so nothing was erased: %v", ErrAudit, err)
+	}
+	// Every record of the user's, whatever its age: the selection is Expire's with the
+	// clock past now, and every record not the user's counted as held, so never touched.
+	end := j.Now().UTC().Add(time.Hour)
+	notMine := Held(func(_, u string) bool { return u != user })
+	keep := Held(func(space, u string) bool { return u != user || j.Held.Is(space, u) })
+	want := map[string]bool{}
+	for _, n := range Forgettable {
+		want[n] = true
+	}
+	rep := Report{Counts: map[string]int{}, Audit: []string{first.ID}}
+	for _, s := range j.Stores {
+		if !want[s.Name()] {
+			continue
+		}
+		mine, _, err := s.Plan(ctx, j.Tenant, end, notMine)
+		if err != nil {
+			rep.Failed = append(rep.Failed, s.Name())
+			continue
+		}
+		n, _, err := s.Expire(ctx, j.Tenant, end, keep)
+		if err != nil {
+			rep.Failed = append(rep.Failed, s.Name())
+			continue
+		}
+		rep.Counts[s.Name()] = n
+		rep.Held += mine - n
+	}
+	state := "done"
+	if len(rep.Failed) > 0 {
+		state = "failed"
+	}
+	last, err := j.Audit.Write(ctx, audit.Event{Actor: user, Kind: "retention", Subject: subject, State: state, Reason: summary(rep) + fmt.Sprintf(" held=%d", rep.Held)})
+	if err != nil {
+		return rep, fmt.Errorf("%w: the outcome row: %v", ErrAudit, err)
+	}
+	rep.Audit = append(rep.Audit, last.ID)
+	if len(rep.Failed) > 0 {
+		return rep, fmt.Errorf("%w: %s", ErrStore, strings.Join(rep.Failed, ", "))
+	}
+	return rep, nil
+}
