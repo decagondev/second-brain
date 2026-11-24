@@ -108,6 +108,8 @@ type Stewards struct {
 	Marks    MarkStore
 	Claimant Claimant
 	Replies  TemplateStore
+	// Suggested keeps each space's suggested questions (SB-3307); nil keeps none.
+	Suggested SuggestedStore
 	// StartItems is a space's start_here list by name, and Members the emails of its active
 	// members now (SB-2907); nil checks no start_here items.
 	StartItems func(name string) []string

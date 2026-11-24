@@ -136,6 +136,7 @@ export function StewardView({ space, fetcher = fetch }: { space: string; fetcher
         )}
       </section>
       <SuggestTerm base={base} fetcher={fetcher} />
+      <SuggestedEditor base={base} fetcher={fetcher} />
       <StewardQuestions space={space} fetcher={fetcher} />
       <ReviewList space={space} fetcher={fetcher} />
       <section aria-label={t("Access reviews")}>
@@ -248,6 +249,49 @@ function SuggestTerm({ base, fetcher }: { base: string; fetcher: Fetch }) {
         <input id={`${id}-s`} value={spellings} onChange={(e) => setSpellings(e.target.value)} />
         <button type="submit" disabled={term.trim() === "" || meaning.trim() === "" || list.length > 10}>
           {t("Suggest a term")}
+        </button>
+      </form>
+      {status && <p role="status">{status}</p>}
+    </section>
+  );
+}
+
+// SuggestedEditor is the space's suggested questions, one per line, at most 8 (SB-3307).
+function SuggestedEditor({ base, fetcher }: { base: string; fetcher: Fetch }) {
+  const id = useId();
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState("");
+  useEffect(() => {
+    let live = true;
+    call(fetcher, "GET", `${base}/suggested`).then(
+      (r) => live && Array.isArray(r.questions) && setText((r.questions as string[]).join("\n")),
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [base, fetcher]);
+  const lines = text
+    .split("\n")
+    .map((x) => x.trim())
+    .filter((x) => x !== "");
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    try {
+      await call(fetcher, "PUT", `${base}/suggested`, { questions: lines });
+      setStatus(t("Saved."));
+    } catch (err) {
+      setStatus((err as Error).message);
+    }
+  }
+  return (
+    <section aria-label={t("Suggested questions")}>
+      <h2>{t("Suggested questions")}</h2>
+      <form onSubmit={save}>
+        <label htmlFor={id}>{t("One question per line, at most 8, shown to the space's members when they start")}</label>
+        <textarea id={id} rows={4} value={text} onChange={(e) => setText(e.target.value)} />
+        <button type="submit" disabled={lines.length > 8 || lines.some((x) => x.length > 120)}>
+          {t("Save")}
         </button>
       </form>
       {status && <p role="status">{status}</p>}

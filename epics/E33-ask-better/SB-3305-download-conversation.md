@@ -13,7 +13,7 @@ summary: "A conversation can be copied one answer at a time, not as a whole."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-07, LAW-14 |
 | Depends on | SB-2401 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ A conversation can be copied one answer at a time, not as a whole.
 
 ## Acceptance criteria
 
-- [ ] Download conversation saves every turn as one Markdown file made in the browser, by SB-2401's Copy rules
-- [ ] Nothing is sent to the cell
-- [ ] Uncited claims keep their label; hidden sources are only the screen's count
+- [x] Download conversation saves every turn as one Markdown file made in the browser, by SB-2401's Copy rules
+- [x] Nothing is sent to the cell
+- [x] Uncited claims keep their label; hidden sources are only the screen's count
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+The UI's DownloadConversation saves every answered turn as conversation.md, made in the browser by conversationMarkdown with Copy as Markdown's rules, sent nowhere. Test: web knowwhere.test.tsx.
 
 ## Definition of done
 

@@ -44,6 +44,8 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/templates", h.saveTemplate)
 	mux.HandleFunc("PUT /v1/spaces/{name}/templates/{id}", h.saveTemplate)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/templates/{id}", h.deleteTemplate)
+	mux.HandleFunc("GET /v1/spaces/{name}/suggested", h.suggested)
+	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
 	mux.HandleFunc("POST /v1/spaces/{name}/evals", h.addEval)
 	mux.HandleFunc("GET /v1/spaces/{name}/evals", h.evals)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/evals/{id}", h.deleteEval)
@@ -59,6 +61,8 @@ func questionErr(err error) *errs.Error {
 	switch {
 	case errors.Is(err, ask.ErrNotSteward):
 		return errs.New(errs.EPERM, "Only the space's stewards can see or answer its questions.")
+	case errors.Is(err, ask.ErrNotMember):
+		return errs.New(errs.EPERM, "Only the space's members can see its suggested questions.")
 	case errors.Is(err, ask.ErrNotOwner):
 		return errs.New(errs.EPERM, "Only the document's current owner can mark it reviewed here.")
 	case errors.Is(err, kill.ErrKilled):
@@ -414,4 +418,38 @@ func (h Questions) restore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"document": body.Document, "restored": true})
+}
+
+// suggested is a space's suggested questions, for its members (SB-3307).
+func (h Questions) suggested(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	qs, err := h.Service.SuggestedFor(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"questions": qs})
+}
+
+func (h Questions) setSuggested(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Questions []string `json:"questions"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<14)).Decode(&body); err != nil {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	qs, err := h.Service.SetSuggested(r.Context(), s, r.PathValue("name"), body.Questions)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"questions": qs})
 }

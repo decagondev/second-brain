@@ -303,12 +303,14 @@ function inSpace(path: string, space?: string): string {
 export interface Filters {
   type?: string;
   since?: number;
+  owner?: string; // an owner's documents (SB-3306)
 }
 
 export function search(q: string, f: Fetch = fetch, space?: string, filters: Filters = {}): Promise<SearchResponse> {
   let path = `/v1/search?q=${encodeURIComponent(q)}`;
   if (filters.type) path += `&type=${encodeURIComponent(filters.type)}`;
   if (filters.since) path += `&since=${filters.since}d`;
+  if (filters.owner) path += `&owner=${encodeURIComponent(filters.owner)}`;
   return call<SearchResponse>(inSpace(path, space), {}, f);
 }
 
@@ -744,4 +746,18 @@ export function makeToken(name: string, days: number, f: Fetch = fetch): Promise
 
 export function revokeToken(id: string, f: Fetch = fetch): Promise<{ revoked: boolean }> {
   return call(`/v1/tokens/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+}
+
+// A space's suggested questions, for its members (SB-3307). A failure is none.
+export async function suggestedQuestions(space: string, f: Fetch = fetch): Promise<string[]> {
+  try {
+    const d = await call<{ questions?: unknown }>(`/v1/spaces/${encodeURIComponent(space)}/suggested`, {}, f);
+    return Array.isArray(d.questions) ? d.questions.filter((q): q is string => typeof q === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setSuggestedQuestions(space: string, questions: string[], f: Fetch = fetch): Promise<{ questions: string[] }> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/suggested`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ questions }) }, f);
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -35,6 +36,9 @@ type SearchRequest struct {
 	// Types and SinceDays narrow the results after every check (SB-2404); none is all.
 	Types     []string
 	SinceDays int
+	// Owner keeps only that owner's documents, after every check (SB-3306); with no Query
+	// it lists them.
+	Owner string
 }
 
 // Types are the document types search filters by (SB-2404), from a file's extension.
@@ -115,7 +119,11 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 		return SearchResponse{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
 	q := strings.TrimSpace(req.Query)
-	if q == "" || utf8.RuneCountInString(q) > MaxQuestion {
+	req.Owner = strings.ToLower(strings.TrimSpace(req.Owner))
+	if req.Owner != "" && (len(req.Owner) > 254 || !strings.Contains(req.Owner, "@")) {
+		return SearchResponse{}, fmt.Errorf("%w: owner is an email", ErrInvalid)
+	}
+	if (q == "" && req.Owner == "") || utf8.RuneCountInString(q) > MaxQuestion {
 		return SearchResponse{}, fmt.Errorf("%w: q must be 1 to %d characters", ErrInvalid, MaxQuestion)
 	}
 	for _, k := range req.Sources {
@@ -134,7 +142,14 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 	if a.Killed == nil || a.Killed(ctx) || spaceKilled(a.SpaceKilled, s) {
 		return SearchResponse{}, ErrKilled
 	}
-	res, terms, err := a.retrieve(ctx, s, q, req.Sources, retrieve.Candidates)
+	var res retrieve.Result
+	var terms []Term
+	var err error
+	if q == "" {
+		res, err = a.ownerDocs(ctx, s, req.Owner)
+	} else {
+		res, terms, err = a.retrieve(ctx, s, q, req.Sources, retrieve.Candidates)
+	}
 	if err != nil {
 		return SearchResponse{}, err
 	}
@@ -149,8 +164,11 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 		if shown[k] || len(out.Results) == MaxResults || !req.keep(c, now) {
 			continue
 		}
-		shown[k] = true
 		r := a.result(ctx, own, c)
+		if req.Owner != "" && (r.Owner == nil || !strings.EqualFold(r.Owner.Email, req.Owner)) {
+			continue // the owner as shown, so one who isn't one active user matches nothing
+		}
+		shown[k] = true
 		r.Mine = c.Owner != "" && mine[strings.ToLower(c.Owner)]
 		out.Results = append(out.Results, r)
 	}
@@ -243,4 +261,33 @@ func ageDays(seen, now time.Time) (int, bool) {
 		return 0, !seen.IsZero()
 	}
 	return int(now.Sub(seen) / (24 * time.Hour)), true
+}
+
+// ownerDocs is an owner's documents in the index, newest version of each, by title, checked
+// live as the asker like any search (SB-3306).
+func (a Agent) ownerDocs(ctx context.Context, s tenancy.Scope, owner string) (retrieve.Result, error) {
+	lk, ok := a.Index.(ports.DocLookup)
+	if !ok {
+		return retrieve.Result{}, fmt.Errorf("%w: the index can't look up documents", ErrUnavailable)
+	}
+	chunks, err := lk.Docs(ctx, a.Tenant, ports.DocQuery{Owners: []string{owner}})
+	if err != nil {
+		return retrieve.Result{}, fmt.Errorf("%w: index: %v", ErrUnavailable, err)
+	}
+	chunks = latest(chunks)
+	sort.SliceStable(chunks, func(i, j int) bool {
+		if chunks[i].Title != chunks[j].Title {
+			return chunks[i].Title < chunks[j].Title
+		}
+		return chunks[i].Cite < chunks[j].Cite
+	})
+	who, err := a.who(ctx, s)
+	if err != nil {
+		return retrieve.Result{}, err
+	}
+	res, err := retrieve.Allowed(ctx, s, who, a.Auth, chunks, len(chunks))
+	if err != nil {
+		return retrieve.Result{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
+	}
+	return res, nil
 }

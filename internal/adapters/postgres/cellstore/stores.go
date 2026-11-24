@@ -908,3 +908,15 @@ func (t Traces) Notice(ctx context.Context, tenant string) (ask.CellNotice, bool
 func (t Traces) DeleteNotice(ctx context.Context, tenant string) error {
 	return del(ctx, t.Pool, tenant, "notice", "cell")
 }
+
+var _ ask.SuggestedStore = Traces{}
+
+// PutSuggested implements ask.SuggestedStore (SB-3307): one list per space.
+func (t Traces) PutSuggested(ctx context.Context, x ask.Suggested) error {
+	return put(ctx, t.Pool, x.Tenant, "suggested", x.Space, meta{at: x.At, user: x.By, space: x.Space}, x, false)
+}
+
+// Suggested implements ask.SuggestedStore.
+func (t Traces) Suggested(ctx context.Context, tenant, space string) (ask.Suggested, bool, error) {
+	return get[ask.Suggested](ctx, t.Pool, tenant, "suggested", space, false)
+}

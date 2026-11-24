@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S32.2: Know where to look
+
+**Wave/slice:** W32 / S32.2 (SB-3305 to SB-3307) · **Status:** Done
+
+**What:** Download conversation saves every answered turn as one Markdown file, made in the browser. Who to ask has Their documents, which lists that owner's documents the asker can open, through GET /v1/search?owner=EMAIL with or without a query. A space's stewards keep up to 8 suggested questions, which the space's members see as buttons under an empty ask box.
+
+**Why this way:** The download is Copy as Markdown turn by turn, so it shows nothing the screen doesn't and sends nothing to the cell (LAW-07). The owner filter runs after every check, on the owner as shown, so it only narrows and an owner who isn't one active user matches nothing (LAW-01, LAW-12). Suggested questions are the stewards' own text, read only by the space's members and audited by digest (LAW-11, LAW-19).
+
+**Learned:** Listing an owner's documents needed no new index query: DocQuery already took owners for handover briefs. The owner filter had to check the owner as shown, not the chunk's raw owner field, or a deprovisioned owner's documents would still match.
+
+**Laws:** LAW-01, LAW-07, LAW-11, LAW-12, LAW-19. Every law test is still green.
+
 ## 2026-11-24 S32.1: More from each answer
 
 **Wave/slice:** W32 / S32.1 (SB-3301 to SB-3304) · **Status:** Done

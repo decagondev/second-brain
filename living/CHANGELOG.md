@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Download the conversation (SB-3305); their other documents (SB-3306); suggested questions (SB-3307).
 - See also (SB-3301); glossary where it's used (SB-3302); short answers (SB-3303); sources disagree (SB-3304).
 - Answer time watch (SB-3205); disk runway (SB-3206); a notice to everyone (SB-3207).
 - Why a sync fails (SB-3201); refresh one document (SB-3202); health on /metrics (SB-3203); audit by person and date (SB-3204).

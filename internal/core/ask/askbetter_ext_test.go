@@ -40,3 +40,34 @@ func TestDisagreeNeedsTwoDocuments(t *testing.T) {
 		t.Fatalf("%+v", res.Claims)
 	}
 }
+
+// SB-3306: owner= lists the owner's documents the asker can open, or narrows a search; an
+// owner who isn't one active user matches nothing.
+func TestTheirDocuments(t *testing.T) {
+	ctx := context.Background()
+	a, _ := setup(t, &model{})
+	ix := a.Index.(index)
+	ix[0].Owner, ix[1].Owner, ix[0].Title, ix[1].Title = "ann@acme.example", "ann@acme.example", "Refunds", "Salaries"
+	ix = append(ix, ports.Chunk{ID: "chk_old", Tenant: tenant, Kind: "docs", SourceID: "refunds", Version: 1, Cite: "docs:refunds@1", Text: "old", Owner: "ann@acme.example", Title: "Refunds"})
+	a.Index = ix
+	a.Owner = func(_ context.Context, email string) (answer.Person, bool) {
+		return answer.Person{Email: email}, email == "ann@acme.example"
+	}
+	got, err := a.Search(ctx, scope(t, "alice"), ask.SearchRequest{Owner: "Ann@acme.example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Results) != 1 || got.Results[0].Cite != "docs:refunds@2" || got.Refused != 1 {
+		t.Fatalf("listed %+v refused %d", got.Results, got.Refused)
+	}
+	if got, _ := a.Search(ctx, scope(t, "alice"), ask.SearchRequest{Query: "refund limit", Owner: "bob@acme.example"}); len(got.Results) != 0 {
+		t.Fatalf("someone else's: %+v", got.Results)
+	}
+	a.Owner = func(context.Context, string) (answer.Person, bool) { return answer.Person{}, false }
+	if got, _ := a.Search(ctx, scope(t, "alice"), ask.SearchRequest{Owner: "ann@acme.example"}); len(got.Results) != 0 {
+		t.Fatal("an owner who isn't one active user matches nothing")
+	}
+	if _, err := a.Search(ctx, scope(t, "alice"), ask.SearchRequest{Owner: "not-an-email"}); err == nil {
+		t.Fatal("owner must be an email")
+	}
+}

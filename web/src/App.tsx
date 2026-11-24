@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { ask, AskError, listSpaces, maxAbout, openShare, search, spaceName } from "./api";
+import { ask, AskError, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
 import type { About, ApiError, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
@@ -15,7 +15,7 @@ import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { NoticeBanner } from "./Notice";
-import { AnswerTools } from "./Copy";
+import { AnswerTools, DownloadConversation } from "./Copy";
 import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, shortAnswers } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
 
@@ -52,6 +52,8 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
   const [space, setSpace] = useState(""); // "" is the whole company
   const [tab, setTab] = useState<Tab>(tabs.find((x) => x.id === first)?.id ?? "answer");
   const [searchFor, setSearchFor] = useState<{ text: string; n: number }>();
+  const [ownerFor, setOwnerFor] = useState<{ email: string; n: number }>(); // SB-3306
+  const [suggested, setSuggested] = useState<string[]>([]); // SB-3307
   const [shared, setShared] = useState<SharedQuestion>();
   const [sharedError, setSharedError] = useState<string>();
   const inputId = useId();
@@ -87,6 +89,15 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [showTokens]);
+
+  useEffect(() => {
+    let live = true;
+    setSuggested([]);
+    if (space) suggestedQuestions(space, fetcher).then((q) => live && setSuggested(q));
+    return () => {
+      live = false;
+    };
+  }, [space, fetcher]);
 
   useEffect(() => {
     let live = true;
@@ -176,6 +187,11 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
     setTimeout(() => askBox.current?.focus(), 0);
   }
 
+  function theirDocuments(email: string) {
+    setOwnerFor((o) => ({ email, n: (o?.n ?? 0) + 1 }));
+    setTab("documents");
+  }
+
   function searchInstead(q: string) {
     setSearchFor((s) => ({ text: q, n: (s?.n ?? 0) + 1 }));
     setTab("documents");
@@ -242,7 +258,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
             <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
-              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} />}
+              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} />}
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
@@ -331,6 +347,23 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
               }
             }}
           />
+          {space && question === "" && suggested.length > 0 && (
+            <div className="suggested" role="group" aria-label={t("Suggested questions")}>
+              {suggested.map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  className="link"
+                  onClick={() => {
+                    setQuestion(x);
+                    askBox.current?.focus();
+                  }}
+                >
+                  {x}
+                </button>
+              ))}
+            </div>
+          )}
           <p className="keys" id={`${inputId}-keys`}>
             {t("Keyboard: / goes to the ask box, Ctrl+Enter (Cmd+Enter on a Mac) asks, Esc closes a panel.")}
           </p>
@@ -372,6 +405,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}
           </button>
+          <DownloadConversation turns={turns} />
           {conversation && (
             <button
               type="button"
@@ -388,7 +422,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
         <DraftPanel fetcher={fetcher} />
       </div>
       <div role="tabpanel" id={`${base}-panel-documents`} aria-labelledby={`${base}-tab-documents`} hidden={tab !== "documents"}>
-        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} onAsk={askInstead} onAbout={addAbout} />
+        <DocumentsView fetcher={fetcher} space={space || undefined} query={searchFor} onAsk={askInstead} onAbout={addAbout} owner={ownerFor} />
       </div>
       <div role="tabpanel" id={`${base}-panel-saved`} aria-labelledby={`${base}-tab-saved`} hidden={tab !== "saved"}>
         {tab === "saved" && <SavedView fetcher={fetcher} onAsk={askAgain} />}

@@ -32,13 +32,16 @@ export function DocumentsView({
   query,
   onAsk,
   onAbout,
+  owner,
 }: {
   fetcher?: Fetch;
   space?: string;
   query?: { text: string; n: number };
   onAsk?: (q: string) => void;
   onAbout?: (d: About) => void;
+  owner?: { email: string; n: number };
 }) {
+  const [ownerOf, setOwnerOf] = useState(""); // Their documents (SB-3306)
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
   const [since, setSince] = useState(0);
@@ -53,13 +56,13 @@ export function DocumentsView({
 
   useEffect(() => setWide(false), [space]);
 
-  async function run(text: string, filters: Filters = { type, since }, whole = wide) {
+  async function run(text: string, filters: Filters = { type, since, owner: ownerOf }, whole = wide) {
     const want = text.trim();
-    if (!want || busy) return;
+    if ((!want && !filters.owner) || busy) return;
     setBusy(true);
     setError(undefined);
     const where = whole ? undefined : space;
-    setRan({ text: want, filtered: !!filters.type || !!filters.since, inSpace: !!where });
+    setRan({ text: want, filtered: !!filters.type || !!filters.since || !!filters.owner, inSpace: !!where });
     try {
       setRes(await search(want, fetcher, where, filters));
     } catch (e) {
@@ -69,6 +72,15 @@ export function DocumentsView({
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (owner?.email) {
+      setOwnerOf(owner.email);
+      setQ("");
+      void run("", { type, since, owner: owner.email });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [owner?.n]);
 
   // An ask that failed offers the same text as a search (sb-ask(3), The web UI).
   useEffect(() => {
@@ -105,10 +117,25 @@ export function DocumentsView({
             </option>
           ))}
         </select>
-        <button type="submit" disabled={busy || q.trim() === ""}>
+        <button type="submit" disabled={busy || (q.trim() === "" && !ownerOf)}>
           {busy ? t("Searching…") : t("Search")}
         </button>
       </form>
+      {ownerOf && (
+        <p className="about" role="status">
+          {t("Documents owned by {person}", { person: ownerOf })}{" "}
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              setOwnerOf("");
+              setRes(undefined);
+            }}
+          >
+            {t("Clear")}
+          </button>
+        </p>
+      )}
       <div aria-live="polite" aria-busy={busy}>
         {error && (
           <div className="error" role="alert">
@@ -130,6 +157,7 @@ export function DocumentsView({
                 onClear={() => {
                   setType("");
                   setSince(0);
+                  setOwnerOf("");
                   void run(ran.text, {});
                 }}
                 onAsk={onAsk ? () => onAsk(ran.text) : undefined}

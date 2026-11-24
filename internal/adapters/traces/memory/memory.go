@@ -31,6 +31,7 @@ type Store struct {
 	retired  map[string]ask.Retirement    // tenant/space/doc
 	tmpls    map[string]ask.ReplyTemplate // tenant/space/id
 	notices  map[string]ask.CellNotice    // tenant
+	suggest  map[string]ask.Suggested     // tenant/space
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -46,7 +47,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}}
 }
 
 // PutTrace implements ask.Store.
@@ -705,4 +706,22 @@ func (s *Store) DeleteNotice(_ context.Context, tenant string) error {
 	defer s.mu.Unlock()
 	delete(s.notices, tenant)
 	return nil
+}
+
+var _ ask.SuggestedStore = (*Store)(nil)
+
+// PutSuggested implements ask.SuggestedStore (SB-3307): one list per space.
+func (s *Store) PutSuggested(_ context.Context, x ask.Suggested) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.suggest[x.Tenant+"/"+x.Space] = x
+	return nil
+}
+
+// Suggested implements ask.SuggestedStore.
+func (s *Store) Suggested(_ context.Context, tenant, space string) (ask.Suggested, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	x, ok := s.suggest[tenant+"/"+space]
+	return x, ok, nil
 }

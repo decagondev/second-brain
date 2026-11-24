@@ -217,7 +217,7 @@ export function PersonName({ person }: { person: Person }) {
 
 // Who to ask (SB-1702): each owner with the documents of theirs this answer cites, and
 // only those, since a cite is only ever a document the asker may open.
-export function PeopleView({ answer }: { answer: AskResponse }) {
+export function PeopleView({ answer, onOwner }: { answer: AskResponse; onOwner?: (email: string) => void }) {
   const people = answer.people ?? [];
   if (people.length === 0) return null;
   const owned = (email: string) => {
@@ -244,6 +244,14 @@ export function PeopleView({ answer }: { answer: AskResponse }) {
               </span>
             )),
           })}
+          {onOwner && (
+            <>
+              {" "}
+              <button type="button" className="link" aria-label={t("Documents of {person}", { person: p.email })} onClick={() => onOwner(p.email)}>
+                {t("Their documents")}
+              </button>
+            </>
+          )}
         </li>
       ))}
     </ul>
@@ -352,7 +360,17 @@ function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
   );
 }
 
-export function AnswerView({ answer, fetcher, onAbout }: { answer: AskResponse; fetcher?: Fetch; onAbout?: (d: About) => void }) {
+export function AnswerView({
+  answer,
+  fetcher,
+  onAbout,
+  onOwner,
+}: {
+  answer: AskResponse;
+  fetcher?: Fetch;
+  onAbout?: (d: About) => void;
+  onOwner?: (email: string) => void;
+}) {
   const nums = numberCites(answer);
   return (
     <article className="answer" aria-label={t("Answer")}>
@@ -368,7 +386,7 @@ export function AnswerView({ answer, fetcher, onAbout }: { answer: AskResponse; 
         ))}
       </ul>
       <SeeAlsoView answer={answer} fetcher={fetcher} onAbout={onAbout} />
-      <PeopleView answer={answer} />
+      <PeopleView answer={answer} onOwner={onOwner} />
       <TermsView terms={answer.terms} />
       {answer.refused > 0 && (
         <p className="refused">

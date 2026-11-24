@@ -73,6 +73,38 @@ export function answerMarkdown(question: string, answer: AskResponse): string {
   return lines.join("\n") + "\n";
 }
 
+// conversationMarkdown is every answered turn, in order, each as Copy as Markdown makes it
+// (SB-3305).
+export function conversationMarkdown(turns: { question: string; answer?: AskResponse }[]): string {
+  return turns
+    .filter((x) => x.answer)
+    .map((x) => answerMarkdown(x.question, x.answer!))
+    .join("\n---\n\n");
+}
+
+// DownloadConversation saves the conversation as one Markdown file, made in this browser and
+// sent nowhere (SB-3305).
+export function DownloadConversation({ turns }: { turns: { question: string; answer?: AskResponse }[] }) {
+  if (!turns.some((x) => x.answer)) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const url = URL.createObjectURL(new Blob([conversationMarkdown(turns)], { type: "text/markdown;charset=utf-8" }));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "conversation.md";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      }}
+    >
+      {t("Download conversation")}
+    </button>
+  );
+}
+
 // AnswerTools are Copy, Copy as Markdown and Print under an answer (SB-2401, SB-2402).
 export function AnswerTools({ question, answer }: { question: string; answer: AskResponse }) {
   const [state, setState] = useState<"" | "copied" | "failed">("");

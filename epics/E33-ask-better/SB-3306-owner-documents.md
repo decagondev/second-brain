@@ -13,7 +13,7 @@ summary: "Who to ask names an owner, but not what else they own."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-12 |
 | Depends on | SB-1702 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Who to ask names an owner, but not what else they own.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/search` takes `owner=EMAIL`, which keeps only that owner's results after the live check
-- [ ] Who to ask gets Their documents, which opens Documents with the filter
-- [ ] An owner who isn't exactly one active user returns nothing
+- [x] `GET /v1/search` takes `owner=EMAIL`, which keeps only that owner's results after the live check
+- [x] Who to ask gets Their documents, which opens Documents with the filter
+- [x] An owner who isn't exactly one active user returns nothing
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Search
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Search
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+GET /v1/search takes owner=EMAIL (ask.SearchRequest.Owner): it keeps only that owner's results after every check, as shown, and with no q lists their documents from the index (Agent.ownerDocs, latest versions by title, retrieve.Allowed); Who to ask has Their documents, which opens Documents with the filter and Clear. Tests: TestTheirDocuments, web knowwhere.test.tsx.
 
 ## Definition of done
 

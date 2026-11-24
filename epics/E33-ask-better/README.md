@@ -25,11 +25,11 @@ Proposed 2026-11-24 after W31 and accepted by the user the same day, with every 
 
 ## Exit gate
 
-- [ ] See also lists only documents the asker can open, never as claims
-- [ ] A disagreement mark needs two documents the asker can open
-- [ ] A short answer still has every claim cited or marked uncited
-- [ ] Suggested questions reach only the space's members
-- [ ] Every law test still green; no new store, service or Go module
+- [x] See also lists only documents the asker can open, never as claims
+- [x] A disagreement mark needs two documents the asker can open
+- [x] A short answer still has every claim cited or marked uncited
+- [x] Suggested questions reach only the space's members
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

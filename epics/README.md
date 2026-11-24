@@ -631,9 +631,9 @@ flowchart LR
 | [SB-3302](E33-ask-better/SB-3302-glossary-in-place.md) | S32.1 | E33 | Glossary where it's used | Done |
 | [SB-3303](E33-ask-better/SB-3303-short-answer.md) | S32.1 | E33 | Short or full answer | Done |
 | [SB-3304](E33-ask-better/SB-3304-sources-disagree.md) | S32.1 | E33 | Sources disagree | Done |
-| [SB-3305](E33-ask-better/SB-3305-download-conversation.md) | S32.2 | E33 | Download the conversation | Open |
-| [SB-3306](E33-ask-better/SB-3306-owner-documents.md) | S32.2 | E33 | Their other documents | Open |
-| [SB-3307](E33-ask-better/SB-3307-suggested-questions.md) | S32.2 | E33 | Suggested questions | Open |
+| [SB-3305](E33-ask-better/SB-3305-download-conversation.md) | S32.2 | E33 | Download the conversation | Done |
+| [SB-3306](E33-ask-better/SB-3306-owner-documents.md) | S32.2 | E33 | Their other documents | Done |
+| [SB-3307](E33-ask-better/SB-3307-suggested-questions.md) | S32.2 | E33 | Suggested questions | Done |
 
 ### W33 Capture Knowledge
 
