@@ -38,6 +38,10 @@ Laws and models prove what the **code** does. But some behaviour depends on the 
 | `template-NAME`, one per template | 0 failures: the template's citations work in its space, its sensitive content never leaves it, and its internal content still answers the company (below, Template suites; SB-1107) |
 | `agent-incident-summary`, `agent-spec-digest`, `agent-close-checklist`, `agent-runbook-answer` | 0 failures: each department agent answers in its own space with every claim cited, and is refused elsewhere (SB-1102) |
 
+### Answers in another language (SB-3003)
+
+The `citation` suite has cases that ask with `language: de` and `language: fr` (sb-eval(5), Case fields). They must cite exactly what the same question cites without a language: asking for another language never changes what an answer rests on. The gate runs them with the rest of the suite.
+
 ### Template suites (SB-1107)
 
 Every template of the catalogue but `custom` names a suite, `template-NAME` (sb-departments(7)), in `evals/suites/`, over one shared world, `evals/fixtures/templates/world.yaml`: a space made from each template, a member of each, and an outsider whom the source wrongly lets open every document. Each suite checks that a member asking in the space cites the space's guide and its sensitive plan, that the outsider asking company-wide never cites the plan (LAW-20), and that the guide, which is `internal`, still answers the outsider; `template-executive` checks instead that a barrier keeps even that from the outsider (LAW-22). The gate holds every template's suite to zero failures, and a law test fails if any template's suite is missing from the gate or from `evals/suites/`, so a template or agent change can't reach a tenant without its department's suite passing.

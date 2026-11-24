@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { AskResponse, Cite, Claim, Fetch, Notice, Person, Term } from "./api";
-import { isCited, requestAccess } from "./api";
+import type { AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Term } from "./api";
+import { AskError, citeName, isCited, passage, requestAccess } from "./api";
 import { msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 
@@ -27,7 +27,7 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   const replaces = cite.replaces ? t("Replaces {title}", { title: cite.replaces }) : "";
   const label = [
     t("Source {cite}", { cite: cite.cite }),
-    cite.title ?? "",
+    cite.title !== undefined ? citeName(cite) : "",
     place,
     age,
     replaces,
@@ -39,7 +39,7 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   const href = cite.url ?? `/v1/traces/${encodeURIComponent(trace)}`;
   return (
     <a className="chip" href={href} target={cite.url ? "_blank" : undefined} rel={cite.url ? "noopener noreferrer" : undefined} aria-label={label}>
-      <span>{cite.title ?? cite.cite}</span>
+      <span>{citeName(cite)}</span>
       {place && <span className="place">{place}</span>}
       {age && <span className="place">{age}</span>}
       {replaces && <span className="place">{replaces}</span>}
@@ -48,7 +48,49 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
   );
 }
 
-export function ClaimView({ claim, trace, nums }: { claim: Claim; trace: string; nums?: { cite: Cite; n: number }[] }) {
+// PassageView is Show passage under a chip: the cited text, fetched and checked live as the
+// asker each time it is opened, shown as plain text in a quote (SB-3001, LAW-09).
+export function PassageView({ cite, trace, fetcher }: { cite: Cite; trace: string; fetcher?: Fetch }) {
+  const [open, setOpen] = useState(false);
+  const [p, setP] = useState<Passage | null>(null);
+  const [err, setErr] = useState("");
+  const show = async () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    setP(null);
+    setErr("");
+    try {
+      setP(await passage(trace, cite.cite, cite.span[0], fetcher));
+    } catch (e) {
+      const code = e instanceof AskError ? e.error.code : "EUNAVAIL";
+      setErr(code === "EPERM" ? t("You can't open this source now.") : t("The passage can't be shown right now."));
+    }
+  };
+  return (
+    <span className="passage">
+      <button type="button" className="link" aria-expanded={open} onClick={() => void show()}>
+        {open ? t("Hide passage") : t("Show passage")}
+      </button>
+      {open && (
+        <span className="passage-body" role="region" aria-label={t("Passage from {title}", { title: citeName(cite) })}>
+          {err && <span className="notice">{err}</span>}
+          {p?.gone && <span className="notice">{t("This version is no longer indexed.")}</span>}
+          {p?.text && (
+            <blockquote>
+              {p.text}
+              <cite>{citeName(cite)}</cite>
+            </blockquote>
+          )}
+        </span>
+      )}
+    </span>
+  );
+}
+
+export function ClaimView({ claim, trace, nums, fetcher }: { claim: Claim; trace: string; nums?: { cite: Cite; n: number }[]; fetcher?: Fetch }) {
   if (!isCited(claim)) {
     return (
       <li className="claim uncited" title={t("No source you can open supports this.")}>
@@ -61,7 +103,10 @@ export function ClaimView({ claim, trace, nums }: { claim: Claim; trace: string;
       <span>{claim.text}</span>{" "}
       <span className="chips">
         {claim.cites.map((c, i) => (
-          <CitationChip key={`${c.cite}-${i}`} cite={c} trace={trace} />
+          <span key={`${c.cite}-${i}`} className="cite-with-passage">
+            <CitationChip cite={c} trace={trace} />
+            {trace.startsWith("tr_") && <PassageView cite={c} trace={trace} fetcher={fetcher} />}
+          </span>
         ))}
       </span>
       {nums && <span className="print-only"> {claim.cites.map((c) => `[${numberOf(nums, c.cite)}]`).join(" ")}</span>}
@@ -201,7 +246,7 @@ function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
       <ol>
         {nums.map(({ cite, n }) => (
           <li key={cite.cite} value={n}>
-            {cite.title ?? cite.cite}
+            {citeName(cite)}
             {cite.url ? `, ${cite.url}` : ""}
             {cite.age_days !== undefined ? `, ${tn(cite.age_days, "{n} day old", "{n} days old")}` : ""}
           </li>
@@ -223,7 +268,7 @@ export function AnswerView({ answer, fetcher }: { answer: AskResponse; fetcher?:
       )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (
-          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} />
+          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} />
         ))}
       </ul>
       <PeopleView answer={answer} />

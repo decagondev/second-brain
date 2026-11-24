@@ -121,6 +121,9 @@ func partOrder(n string) int {
 type xmlText struct {
 	text, block, skip map[string]bool // by local name
 	breaks            map[string]string
+	// heading is what to write at an element that starts a heading, as a Markdown heading
+	// line's "# " (SB-3002); nil writes nothing.
+	heading func(t xml.StartElement) string
 }
 
 func (x xmlText) read(r io.Reader) (string, error) {
@@ -143,6 +146,11 @@ func (x xmlText) read(r io.Reader) (string, error) {
 				skipping++
 			case x.text[n]:
 				inText++
+				if x.heading != nil {
+					out.WriteString(x.heading(t))
+				}
+			case x.heading != nil && x.heading(t) != "":
+				out.WriteString(x.heading(t))
 			case x.breaks[n] != "":
 				out.WriteString(x.breaks[n])
 			}
@@ -170,11 +178,29 @@ func (x xmlText) read(r io.Reader) (string, error) {
 // Word: runs' text (w:t) in paragraphs (w:p); embedded objects, drawings' alternate
 // content and deleted text are skipped.
 var docx = xmlText{
-	text:   map[string]bool{"t": true},
-	block:  map[string]bool{"p": true},
-	skip:   map[string]bool{"object": true, "pict": true, "Fallback": true, "delText": true, "instrText": true},
-	breaks: map[string]string{"tab": "\t", "br": "\n", "cr": "\n"},
+	text:    map[string]bool{"t": true},
+	block:   map[string]bool{"p": true},
+	skip:    map[string]bool{"object": true, "pict": true, "Fallback": true, "delText": true, "instrText": true},
+	breaks:  map[string]string{"tab": "\t", "br": "\n", "cr": "\n"},
+	heading: wordHeading,
 }.read
+
+// wordHeading marks a paragraph styled Title or Heading 1 to 3 (w:pStyle in w:pPr, which
+// comes before the paragraph's runs).
+func wordHeading(t xml.StartElement) string {
+	if t.Name.Local != "pStyle" {
+		return ""
+	}
+	for _, a := range t.Attr {
+		if a.Name.Local == "val" {
+			switch strings.ToLower(strings.ReplaceAll(a.Value, " ", "")) {
+			case "title", "heading1", "heading2", "heading3":
+				return "# "
+			}
+		}
+	}
+	return ""
+}
 
 // PowerPoint: a slide's text (a:t) in paragraphs (a:p).
 var pptx = xmlText{
@@ -191,6 +217,12 @@ var odt = xmlText{
 	block:  map[string]bool{"p": true, "h": true},
 	skip:   map[string]bool{"scripts": true, "script": true, "forms": true, "object": true, "object-ole": true, "annotation": true, "tracked-changes": true},
 	breaks: map[string]string{"tab": "\t", "line-break": "\n", "s": " "},
+	heading: func(t xml.StartElement) string {
+		if t.Name.Local == "h" {
+			return "# "
+		}
+		return ""
+	},
 }.read
 
 // htmlSkip are the elements whose content is never text: scripts, styles, embedded
@@ -251,6 +283,8 @@ func htmlText(b []byte) (string, error) {
 			}
 		case htmlSkip[name] && !closing && !self:
 			skipName, skipDepth = name, 1
+		case !closing && (name == "h1" || name == "h2" || name == "h3"):
+			out.WriteString("\n# ")
 		case name == "br" || htmlBlock[name]:
 			out.WriteString("\n")
 		}

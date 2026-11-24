@@ -3,6 +3,8 @@
 export interface Cite {
   cite: string;
   title?: string;
+  // The nearest heading above the cited chunk (SB-3002).
+  section?: string;
   span: [number, number];
   url?: string;
   flags: string[];
@@ -94,9 +96,40 @@ export class AskError extends Error {
 
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
-export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch, space?: string): Promise<AskResponse> {
+// citeName is a cite as people read it: "Title › Section", the title alone, or the cite (SB-3002).
+export function citeName(c: { cite: string; title?: string; section?: string }): string {
+  const title = c.title ?? c.cite;
+  return c.section ? `${title} › ${c.section}` : title;
+}
+
+// Passage is one cite's own text, checked live as the asker (SB-3001).
+export interface Passage {
+  cite: string;
+  text?: string;
+  cut?: boolean;
+  gone?: boolean;
+}
+
+export async function passage(trace: string, cite: string, start: number, f: Fetch = fetch): Promise<Passage> {
+  const q = `cite=${encodeURIComponent(cite)}&start=${encodeURIComponent(String(start))}`;
+  let res: Response;
+  try {
+    res = await f(`/v1/traces/${encodeURIComponent(trace)}/passage?${q}`, { credentials: "same-origin" });
+  } catch {
+    throw new AskError({ code: "EUNAVAIL", message: "Answers are unavailable right now.", trace, remedy: "Try again in a minute." });
+  }
+  const data: unknown = await res.json().catch(() => null);
+  if (!res.ok) {
+    const e = (data as { error?: ApiError } | null)?.error;
+    throw new AskError(e ?? { code: "EUNAVAIL", message: "Answers are unavailable right now.", trace, remedy: "Try again in a minute." });
+  }
+  return data as Passage;
+}
+
+export async function ask(question: string, conversation: string | undefined, f: Fetch = fetch, space?: string, language?: string): Promise<AskResponse> {
   const body: Record<string, string> = { question };
   if (conversation) body.conversation = conversation;
+  if (language) body.language = language;
   const url = space ? `/v1/ask?space=${encodeURIComponent(space)}` : "/v1/ask";
   let res: Response;
   try {

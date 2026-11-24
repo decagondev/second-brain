@@ -27,6 +27,11 @@ type Asker interface {
 	Trace(ctx context.Context, s tenancy.Scope, id string) (ask.Trace, error)
 }
 
+// Passager returns a cite's passage, checked live (SB-3001).
+type Passager interface {
+	Passage(ctx context.Context, s tenancy.Scope, trace, cite string, start int) (ask.Passage, error)
+}
+
 // FeedbackGiver stores feedback on a trace (SB-310).
 type FeedbackGiver interface {
 	Give(ctx context.Context, s tenancy.Scope, req ask.FeedbackRequest) error
@@ -44,6 +49,9 @@ type Ask struct {
 func (h Ask) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/ask", h.ask)
 	mux.HandleFunc("GET /v1/traces/{id}", h.trace)
+	if _, ok := h.Agent.(Passager); ok {
+		mux.HandleFunc("GET /v1/traces/{id}/passage", h.passage)
+	}
 	if h.Feedback != nil {
 		mux.HandleFunc("POST /v1/feedback", h.feedback)
 	}
@@ -110,6 +118,39 @@ func (h Ask) trace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.ok(w, t.ID, traceBody{Response: t.Response, Decisions: t.Decisions})
+}
+
+func (h Ask) passage(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		h.fail(w, "", errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	cite := r.URL.Query().Get("cite")
+	start := -1
+	if v := r.URL.Query().Get("start"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			h.fail(w, "", errs.New(errs.EINVAL, "start must be a whole number."))
+			return
+		}
+		start = n
+	}
+	if cite == "" {
+		h.fail(w, "", errs.New(errs.EINVAL, "Name the cite."))
+		return
+	}
+	id := r.PathValue("id")
+	p, err := h.Agent.(Passager).Passage(r.Context(), s, id, cite, start)
+	if errors.Is(err, ask.ErrSourceDenied) {
+		h.fail(w, id, errs.New(errs.EPERM, "You can't open this source now."))
+		return
+	}
+	if err != nil {
+		h.fail(w, id, mapErr(err))
+		return
+	}
+	h.ok(w, id, p)
 }
 
 // mapErr turns agent errors into sb-errors(7) codes with user-safe messages.

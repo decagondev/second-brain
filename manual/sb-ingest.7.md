@@ -101,6 +101,10 @@ Each chunk's id is derived from tenant, `cite` and span, so ingesting the same `
 
 Embeddings come through the `Embedder` port. By default cells use a deterministic local embedder (feature hashing, 64 dimensions) that needs no network. A cell can instead embed with an OpenAI-compatible embeddings endpoint (`embed` in sb-cell(5); SB-1710), such as the model server on a self-hosted cell's own machine. **Changing the embedder rebuilds the index from the sources:** the ingest service records the embedder's id and dimensions under the cell's state, and when they differ at start it drops the index and starts every connector's sync again from the beginning, so no chunk is ever searched with vectors from two embedders; the Postgres index changes its vector column's size when it is empty (LAW-13). Chunks are written through the `Index` port; the in-memory index serves development and tests, and the Postgres/pgvector adapter comes with the retrieval work.
 
+### Sections (SB-3002)
+
+Each chunk records its **section**: the text of the nearest heading line at or above the chunk's start, at most 120 characters, or nothing when there is none. A heading line is a Markdown heading of level 1 to 3 (`#`, `##` or `###` and a space). The folder connector writes the headings of the files it reads as such lines: Word paragraphs styled Heading 1 to 3 (and Title), OpenDocument headings (`text:h`), and HTML `h1` to `h3`. A section is data: it is shown on the cite and never changes routing, ranking or any check (LAW-09). It is computed from the text, so a rebuild fills it in for every document (LAW-13).
+
 ### Spaces and labels (SB-1005)
 
 In a cell with spaces (sb-spaces(7)), ingest **routes** every document version before it writes a chunk, so nothing is ever indexed without knowing which spaces hold it and how sensitive it is:

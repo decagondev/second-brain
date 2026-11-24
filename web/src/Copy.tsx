@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { AskResponse, Cite } from "./api";
-import { isCited } from "./api";
+import { citeName, isCited } from "./api";
 import { t, tn } from "./i18n";
 
 // The answer's cites, each once, numbered in the order the answer first uses them: the same
@@ -37,7 +37,7 @@ export function answerText(question: string, answer: AskResponse): string {
   }
   if (nums.length > 0) {
     lines.push("", t("Sources"));
-    for (const { cite, n } of nums) lines.push(`[${n}] ${[cite.title ?? cite.cite, cite.url ?? ""].filter((x) => x !== "").join(", ")}`);
+    for (const { cite, n } of nums) lines.push(`[${n}] ${[citeName(cite), cite.url ?? ""].filter((x) => x !== "").join(", ")}`);
   }
   const r = refusedLine(answer);
   if (r) lines.push("", r);
@@ -64,7 +64,7 @@ export function answerMarkdown(question: string, answer: AskResponse): string {
   if (nums.length > 0) {
     lines.push("", `**${md(t("Sources"))}**`, "");
     for (const { cite, n } of nums) {
-      const name = md(cite.title ?? cite.cite);
+      const name = md(citeName(cite));
       lines.push(`${n}. ${cite.url && /^https?:\/\//.test(cite.url) ? `[${name}](${mdURL(cite.url)})` : name}`);
     }
   }

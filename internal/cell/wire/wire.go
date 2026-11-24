@@ -501,7 +501,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		creds := secret("connectors/chat")
 		app := &slackapp.App{Tenant: tenant, TeamID: cfg.Chat.TeamID, Secret: slackField(creds, "signing_secret"),
 			Email: slackapp.WebEmail(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second}),
-			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now}
+			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now,
+			Language: func() string { return c.Manifest().Language }}
 		app.Register(public)
 	}
 	if mm := cfg.Mattermost; mm.Base != "" {
@@ -509,7 +510,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		client := &http.Client{Timeout: 10 * time.Second}
 		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"),
 			Rules: &slackapp.App{Tenant: tenant, Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Spaces: c.Spaces,
-				Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client)},
+				Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client), Language: func() string { return c.Manifest().Language }},
 			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions"}).Register(public)
 	}
 	if cfg.Web != "" {

@@ -330,6 +330,8 @@ type Chunk struct {
 	// TextSHA256 is the SHA-256 of the document's normalised text, without its title, the
 	// same on every chunk of the version, "" for no text: copies share it (SB-2202).
 	TextSHA256 string
+	// Section is the nearest heading at or above the chunk, or "" (SB-3002).
+	Section string
 	// ReviewBy is the document's own review-by or expires date (SB-2705); zero for none.
 	// A cite is stale from it, if that is sooner than its age makes it.
 	ReviewBy time.Time

@@ -28,6 +28,7 @@ POST /v1/ask
 | `question` | string, ≤ 4,000 chars | yes | The user's question |
 | `conversation` | string `cv_…` | no | Continue a conversation; earlier turns are re-authorised too |
 | `sources` | list of kinds | no | Restrict to e.g. `["docs"]` |
+| `language` | `en`, `de` or `fr` | no | (SB-3003) The language to write the answer's claims in. The web UI sends the person's chosen language; the chat apps send the manifest's `language` (sb-tenant(5)). Any other value is ignored, and without it the model writes as it does today |
 | `agent` | string | no | `ask` (default), or a department agent in its own template's space: `incident-summary`, `spec-digest`, `close-checklist`, `runbook-answer` (sb-agents(7), Department agents) |
 
 In a cell with spaces, the space to ask in is the query parameter `?space=NAME` (sb-api(3), Spaces), never a body field: `POST /v1/ask?space=finance`. Without it the ask is company-wide.
@@ -46,6 +47,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
           {
             "cite": "docs:4f2a9c11@17",
             "title": "Refund policy",
+            "section": "Refunds over the limit",
             "owner": { "email": "ann@acme-logistics.example", "title": "Support lead" },
             "span": [1840, 2615],
             "url": "https://…/refund-policy?version=17",
@@ -79,6 +81,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `notice` | `null`, `"most_uncited"`, `"no_access"` or `"no_sources"` |
 | `conversation` | The conversation this turn belongs to, `cv_…` |
 | `claims[].cites[].title` | The cited document's title at the source, as indexed |
+| `claims[].cites[].section` | (SB-3002) The nearest heading above the cited chunk in its document, at most 120 characters, as indexed (sb-ingest(7), Sections). Omitted for a chunk with no heading above it. The UI shows the cite as "Title › Section" |
 | `claims[].cites[].owner` | The cited document's owner at the source: their `email` and job `title` from the directory, only when exactly one **active** directory user has that email. Omitted otherwise (SB-1702) |
 | `terms` | The space's glossary entries the question used (Glossary, below; SB-2203). Omitted when none |
 | `notice_stale` | (SB-2701) `{ "stale": N, "of": M, "oldest_days": D }` when more than half of the answer's cited documents (each counted once) are `stale`, below; `oldest_days` is the oldest of the stale ones. Only cites in the answer are counted, so a document the asker can't open changes nothing. Omitted otherwise |
@@ -93,11 +96,15 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
    **Fair share** (SB-2305): each person may ask `asks_per_minute` times in any minute (sb-tenant(5), default 6), counted by the cell in its memory over a sliding minute. One more is `ERATE` (HTTP 429, with `Retry-After` and `retry_after`, the whole seconds until the oldest of the minute's asks is a minute old), with no model call, and is stored as a trace of agent `limited` with no question, so the weekly report counts it. The chat apps reply with the same wait. Search, saved questions, `sb tenant verify`'s sampled asks and everything else are not limited; a restart forgets the minute.
 2. **Retrieve and check live** as in sb-permissions(7). With `sources`, candidates of other kinds are dropped before the live check. In a cell with spaces, every candidate first passes the space, label and barrier checks (sb-permissions(7), Spaces, labels and barriers) with the asker's read context; only the chunks they allow go into the live ACL batch, and the ACL still decides each of those. An ask in a space uses only what that space holds. A company-wide ask uses the union of the asker's spaces, plus `public` and `internal` content from spaces they aren't in; `confidential` and `restricted` content comes only from spaces they're a member of (SB-1006).
 3. **No allowed context:** the model is **not** called. The answer is one uncited claim saying nothing the user can open answers this, with `notice` `no_access` if any candidate was refused, or `no_sources` if there were none.
-4. **Compose:** the bundled `answer` prompt, the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as `citation_spoof` with the trace id and the label, never the claim text.
+4. **Compose:** the bundled `answer` prompt (with `language`, one more line: "Write each claim's text in German. Keep every label exactly as given.", or English or French), the allowed chunks as data blocks and the question go through the model gateway (sb-agents(7), MODEL GATEWAY). The composer decides citations (sb-citations(7)). Each stripped label is logged as `citation_spoof` with the trace id and the label, never the claim text.
 5. **Notice:** `most_uncited` when more than half the claims are uncited; `notice_stale` and `notice_sync` as above, beside it.
 6. **Trace:** every answer gets a new trace id `tr_…`, returned in the body and in `X-SB-Trace`, and stored with the answer and its decision list for 30 days.
 
 **Conversations.** A request without `conversation` starts one, and the response carries its `cv_…` id in `conversation`. A later turn sends only the user's **earlier questions** to the model, never earlier answers or chunks: everything cited is retrieved and checked live again, so an earlier turn can't carry content the user has since lost access to. A `cv_…` id that isn't this user's is `EINVAL`, the same as one that doesn't exist. **Short conversations** (SB-2901): a later turn sends at most the **last 8** earlier questions, oldest first; any before them are left out of the prompt, and the response says how many in `earlier_dropped`. Nothing is removed from the stored conversation, and the trace keeps the turn's place in it. The web UI then says the earliest questions weren't used and offers **Start fresh**, which starts a new conversation.
+
+**Answers in the asker's language** (SB-3003). `language` changes only the language the claims are written in. Retrieval, the live checks, the citations, the titles, sections and passages are the same as without it, and stay in the source's own language. An uncited claim is marked in every language (LAW-14). The language isn't stored with the question; the trace keeps the answer as written.
+
+**The cited passage** (SB-3001). `GET /v1/traces/{id}/passage?cite=CITE&start=N` returns the text of one cite of that answer: `{ "cite": "docs:4f2a9c11@17", "text": "…", "cut": false }`. Only the person who asked (or an auditor, as for the trace) may call it, only for a cite that is in the trace's answer (`start` picks the span when the answer cites a document more than once; without it, the first), and every call checks the person's access to that document **again, now and as them** (sb-permissions(7)), so an old trace or a share can't show text they have lost access to. `text` is the cited chunk's text at that version, at most **600 characters**, cut after the last full sentence that fits (`cut` is then `true`). It is `EPERM` ("You can't open this source now.") when the live check denies or can't decide (LAW-01, LAW-03), and `200` with `"gone": true` and no `text` when the index no longer holds that version, which the UI shows as "This version is no longer indexed." A cite that isn't in the answer is `EINVAL`. Nothing is stored, and the text is never in a log (LAW-07). The web UI shows it as plain text in a block quote, never as markup (LAW-09).
 
 **One document, three chunks** (SB-2902): of the chunks that pass every check and the one-copy rule (Copies, below), at most **3 of one document** go into what the model reads for an answer or a draft, its best-ranked ones, in rank order; the rest of the budget goes to other documents. Search results (`GET /v1/search`) are unchanged.
 
@@ -282,6 +289,8 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 | `notice_sync` | (SB-2704) One line above the answer for each kind: "docs last synced at 14:05; newer changes may be missing.", or "docs: when it last synced is unknown; newer changes may be missing." |
 | Feedback | Under an answer, **Helpful** and **Not helpful**, a comment, and two choices of the answer's cites: **Wrong citation** and **Out of date** (SB-2703) |
 | Space switcher | In a cell with spaces, a labelled select, "Ask in", lists "Whole company" and the spaces from `GET /v1/spaces`, and nothing else. The chosen space goes on the ask as `?space=`. Changing it starts a new conversation. A cell without spaces shows no switcher |
+| Passage | (SB-3001) Each citation chip is followed by **Show passage**, a button that opens the cited text under the chip as a quote, with "Hide passage" to close it. A refusal shows "You can't open this source now." and no text |
+| Section | (SB-3002) A chip with a `section` shows "Title › Section"; copied and printed cites do the same |
 | Space and label | Each chip also shows the spaces that hold the source and its label, in words (for example "Finance · restricted"), as part of the chip's accessible name |
 | Errors | The error's `message` and `remedy`, with the trace id to quote to support. An ask that fails with `EUNAVAIL` or `EBUDGET` also offers "Search documents instead", which runs the same text as a search |
 | Tabs | One page with tabs: **Answer**, **Documents** (search), **Saved** and **Questions**, a labelled `tablist` usable by keyboard |

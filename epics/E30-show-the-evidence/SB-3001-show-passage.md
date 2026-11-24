@@ -13,7 +13,7 @@ summary: "A cite gives a title and an age, but not the sentences it rests on."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-citations(7)`](../../manual/sb-citations.7.md) |
 | Laws | LAW-01, LAW-07, LAW-09 |
 | Depends on | — |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A cite gives a title and an age, but not the sentences it rests on.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/traces/{id}/passage?cite=` checks the asker's access again and returns the cited span's text at that version, at most 600 characters cut at a sentence
-- [ ] The UI shows it as a quote, never as markup; a source the asker can't open now says so and shows nothing
-- [ ] Revoking access after the answer refuses the passage; HTML in a source shows as text; axe
+- [x] `GET /v1/traces/{id}/passage?cite=` checks the asker's access again and returns the cited span's text at that version, at most 600 characters cut at a sentence
+- [x] The UI shows it as a quote, never as markup; a source the asker can't open now says so and shows nothing
+- [x] Revoking access after the answer refuses the passage; HTML in a source shows as text; axe
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+Built in S29.1; tested in internal/core/ask/evidence_test.go, internal/core/ingest/section_test.go, internal/adapters/connectors/folder/office_test.go (TestOfficeHeadings), web/src/evidence.test.tsx and the citation suite's cite-006 and cite-007.
 
 ## Definition of done
 

@@ -25,3 +25,13 @@ cases:
     as: usr_fin
     ask: "What were the quarterly bonus amounts for finance?"
     expect: { cites_any: ["docs:fin-bonus@1"], faithful_min: 0.9, cites_none: ["docs:shipping-sla@1"] }
+  - id: cite-006
+    as: usr_alice
+    ask: "What approval do refunds over 500 need?"
+    language: de
+    expect: { cites_any: ["docs:refund-policy@1"], faithful_min: 0.9, cites_none: ["docs:fin-bonus@1"] }
+  - id: cite-007
+    as: usr_bob
+    ask: "How long do standard shipments take to arrive?"
+    language: fr
+    expect: { cites_any: ["docs:shipping-sla@1"], faithful_min: 0.9 }

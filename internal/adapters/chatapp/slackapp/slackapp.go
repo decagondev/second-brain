@@ -59,6 +59,17 @@ type App struct {
 	// Go runs the answer after the acknowledgement; nil means a goroutine.
 	Go  func(func())
 	Now func() time.Time
+	// Language is the manifest's language, which answers are written in (SB-3003); nil
+	// leaves it to the model.
+	Language func() string
+}
+
+// AnswerLanguage is the language chat answers are asked in.
+func (a *App) AnswerLanguage() string {
+	if a == nil || a.Language == nil {
+		return ""
+	}
+	return a.Language()
 }
 
 // Message is a response_url payload.
@@ -181,7 +192,7 @@ func (a *App) answer(ctx context.Context, slackUser, channel, question string) M
 	if msg != "" {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: msg}
 	}
-	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question})
+	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question, Language: a.AnswerLanguage()})
 	if err != nil {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: ErrText(err)}
 	}

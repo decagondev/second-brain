@@ -172,7 +172,7 @@ describe("saved and shared questions", () => {
       fireEvent.click(screen.getByRole("button", { name: "Ask this question" }));
     });
     // Not a member of support, so the recipient asks company-wide, under their own access.
-    expect(asked).toEqual([`/v1/ask {"question":"who approves refunds?"}`]);
+    expect(asked).toEqual([`/v1/ask {"question":"who approves refunds?","language":"en"}`]); // the asker's language (SB-3003)
     expect(await violations(container)).toEqual([]);
   });
 

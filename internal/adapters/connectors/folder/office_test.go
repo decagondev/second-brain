@@ -205,3 +205,26 @@ func TestOfficeReviewBy(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 }
+
+// SB-3002: headings come out as Markdown heading lines, so ingest can name a chunk's section.
+func TestOfficeHeadings(t *testing.T) {
+	word := `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>` +
+		`<w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>Lost cards</w:t></w:r></w:p>` +
+		`<w:p><w:pPr><w:pStyle w:val="Normal"/></w:pPr><w:r><w:t>Report it the same day.</w:t></w:r></w:p>` +
+		`<w:p><w:pPr><w:pStyle w:val="Heading4"/></w:pPr><w:r><w:t>Deep</w:t></w:r></w:p></w:body></w:document>`
+	for _, c := range []struct {
+		name string
+		b    []byte
+		want string
+		not  string
+	}{
+		{"card.docx", archive(t, "word/document.xml", word), "# Lost cards\nReport it the same day.", "# Deep"},
+		{"bay.odt", archive(t, "content.xml", odtContent), "# Loading bay\nBays open at six.", "# Bays"},
+		{"night.html", []byte(page), "# Night shift\nDoors lock", "# Badge"},
+	} {
+		got := OfficeText(c.name, c.b)
+		if !strings.Contains(got, c.want) || strings.Contains(got, c.not) {
+			t.Errorf("%s: %q", c.name, got)
+		}
+	}
+}

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S29.1: See what it rests on
+
+**Wave/slice:** W29 / S29.1 (SB-3001 to SB-3003) · **Status:** Done
+
+**What:** GET /v1/traces/{id}/passage returns one cite's own text, at most 600 characters cut at a sentence, only to whoever may read the trace, only for a cite in its answer, and checked live as them each time; the web UI's Show passage shows it as plain text in a quote. Each chunk records the nearest heading at or above it (Markdown levels 1 to 3, which the folder connector now writes for Word, OpenDocument and HTML headings) in a new section column, and cites, copies and printed footnotes read Title › Section. POST /v1/ask takes language (en, de or fr), which adds one line to the answer prompt; the web UI sends the chosen language and the chat apps send the manifest's.
+
+**Why this way:** The answer already holds each cite's span, so the passage is a lookup, not a new store, and the live check runs on every open so an old trace can't show text the person has lost (LAW-01; Unknown refuses, LAW-03). A heading is only shown, never ranked or routed (LAW-09), and it is computed from the text so a rebuild fills it in (LAW-13). The language line goes in the system prompt so cites and labels are untouched, and the eval cases prove a language never changes what an answer cites.
+
+**Learned:** There is no not-found error code, and a gone version isn't an error the person made: a passage of a version the index lost is a 200 with gone set, which the UI words as no longer indexed.
+
+**Laws:** LAW-01, LAW-03, LAW-07, LAW-09, LAW-13, LAW-14. Every law test is still green.
+
 ## 2026-11-23 S28.2: Watch for creep
 
 **Wave/slice:** W28 / S28.2 (SB-2904 to SB-2907) · **Status:** Done

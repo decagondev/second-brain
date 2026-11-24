@@ -14,11 +14,13 @@ import (
 
 // Cite is one citation on a claim.
 type Cite struct {
-	Cite  string   `json:"cite"`
-	Title string   `json:"title,omitempty"`
-	Span  [2]int   `json:"span"`
-	URL   string   `json:"url,omitempty"` // opens the source at this version, when the connector can link
-	Flags []string `json:"flags"`
+	Cite  string `json:"cite"`
+	Title string `json:"title,omitempty"`
+	// Section is the nearest heading above the chunk (SB-3002), or "".
+	Section string   `json:"section,omitempty"`
+	Span    [2]int   `json:"span"`
+	URL     string   `json:"url,omitempty"` // opens the source at this version, when the connector can link
+	Flags   []string `json:"flags"`
 	// In a cell with spaces (SB-1007): the spaces that hold the cited document, by name,
 	// and its label.
 	Spaces []string `json:"spaces,omitempty"`
@@ -124,7 +126,7 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 				title = ch.Title
 			}
 			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: title, Span: [2]int{ch.Start, ch.End}, Flags: flags,
-				Spaces: held, Label: ch.Label})
+				Spaces: held, Label: ch.Label, Section: ch.Section})
 		}
 		c.Uncited = len(c.Cites) == 0
 		res.Claims = append(res.Claims, c)

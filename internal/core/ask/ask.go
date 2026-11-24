@@ -44,6 +44,21 @@ type Request struct {
 	Conversation string   `json:"conversation,omitempty"`
 	Sources      []string `json:"sources,omitempty"`
 	Agent        string   `json:"agent,omitempty"` // "" or ask, or a department agent (SB-1102)
+	// Language is the language to write the claims in: en, de or fr (SB-3003). Anything
+	// else is ignored.
+	Language string `json:"language,omitempty"`
+}
+
+// Languages are the languages an answer can be asked for, as the prompt names them.
+var Languages = map[string]string{"en": "English", "de": "German", "fr": "French"}
+
+// LanguageLine is the answer prompt's extra line for a language, or "" for none.
+func LanguageLine(code string) string {
+	name, ok := Languages[code]
+	if !ok {
+		return ""
+	}
+	return "\n\nWrite each claim's text in " + name + ". Keep every label exactly as given."
 }
 
 // Answer is the claims of a response.
@@ -286,7 +301,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		if dept != nil {
 			prompt, lead = dept.Prompt, dept.Lead
 		}
-		claims, err := a.composeWith(withTerms(withUser(ctx, s.User()), terms), prompt, lead, trace, q, sent, res.Context)
+		claims, err := a.composeWith(withLanguage(withTerms(withUser(ctx, s.User()), terms), req.Language), prompt, lead, trace, q, sent, res.Context)
 		if err != nil {
 			return Response{}, err
 		}
@@ -346,7 +361,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
 	msgs = append(msgs, ports.Message{Role: "user", Content: glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
-	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text, Messages: msgs, JSON: true, User: a.user(ctx)})
+	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)), Messages: msgs, JSON: true, User: a.user(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {
 			return nil, fmt.Errorf("%w: %v", ErrBudget, err)
@@ -402,6 +417,18 @@ func spaceKilled(killed func(string) bool, s tenancy.Scope) bool {
 }
 
 type userKey struct{}
+
+type languageKey struct{}
+
+// withLanguage carries the ask's language to the model call (SB-3003).
+func withLanguage(ctx context.Context, code string) context.Context {
+	return context.WithValue(ctx, languageKey{}, code)
+}
+
+func languageOf(ctx context.Context) string {
+	c, _ := ctx.Value(languageKey{}).(string)
+	return c
+}
 
 // withUser carries the asker to the model call for the budget's rate limit.
 func withUser(ctx context.Context, user string) context.Context {

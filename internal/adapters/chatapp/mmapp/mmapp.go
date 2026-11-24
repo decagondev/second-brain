@@ -169,7 +169,7 @@ func (a *App) answer(ctx context.Context, user, channel, question string) answer
 	if msg != "" {
 		return answered{Message: Message{ResponseType: "ephemeral", Text: msg}}
 	}
-	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question})
+	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question, Language: a.Rules.AnswerLanguage()})
 	if err != nil {
 		return answered{Message: Message{ResponseType: "ephemeral", Text: slackapp.ErrText(err)}}
 	}

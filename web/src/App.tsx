@@ -16,7 +16,7 @@ import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { AnswerTools } from "./Copy";
 import { forgetQuestions, recentQuestions, rememberQuestion } from "./recent";
-import { errorText, msg, t, tj, tn } from "./i18n";
+import { errorText, lang, msg, t, tj, tn } from "./i18n";
 
 interface Turn {
   id: number;
@@ -121,7 +121,7 @@ export function App({ fetcher, share, tab: first }: { fetcher?: Fetch; share?: s
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang());
       setConversation(a.conversation);
       settle({ id, question: q, answer: a });
       setQuestion("");

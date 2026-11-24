@@ -193,6 +193,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 	text := Normalise(clean)
 	spans := Chunks(text)
 	rs := []rune(text)
+	hs := headings(text)
 	cite := Cite(ref, doc.Version)
 	acl := append([]string(nil), doc.ACLPrefilter...)
 	sort.Strings(acl)
@@ -240,7 +241,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(merge(docFlags, p.Sanitiser.Flag(t)), personal(pii, sp)),
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
-			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy})
+			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy, Section: sectionAt(hs, sp.Start)})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)

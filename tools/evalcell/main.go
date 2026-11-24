@@ -87,12 +87,14 @@ type input struct {
 	Model    string `json:"model"`
 	Policies string `json:"policies"`
 	Cases    []struct {
-		Key    string `json:"key"`
-		As     string `json:"as"`
-		Ask    string `json:"ask"`
-		Space  string `json:"space"` // "" or "company" is company-wide
-		Agent  string `json:"agent"` // "" is ask
-		Inject struct {
+		Key   string `json:"key"`
+		As    string `json:"as"`
+		Ask   string `json:"ask"`
+		Space string `json:"space"` // "" or "company" is company-wide
+		Agent string `json:"agent"` // "" is ask
+		// Language is the ask's language (SB-3003).
+		Language string `json:"language"`
+		Inject   struct {
 			ACL string `json:"acl"` // "timeout", "500" or "404" for the docs connector, this case only
 		} `json:"inject"`
 	} `json:"cases"`
@@ -296,7 +298,7 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 			}, agent.Auth.Policy)
 			resp = ask.Response{Answer: h.Answer, Dropped: h.Dropped}
 		} else {
-			resp, err = agent.Ask(ctx, s, ask.Request{Question: c.Ask, Agent: c.Agent})
+			resp, err = agent.Ask(ctx, s, ask.Request{Question: c.Ask, Agent: c.Agent, Language: c.Language})
 		}
 		src.InjectFault(mock.FaultNone)
 		if err != nil {

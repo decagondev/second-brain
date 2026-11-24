@@ -38,6 +38,7 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `inject` | Faults, e.g. `{ connector: chat, acl: timeout }` |
 | `space` | The space the ask is in, or `company` for a company-wide ask (default). The local cell resolves it as the auth middleware does, so a space the asker isn't a member of is an `ESPACE` error; a world without spaces ignores it |
 | `agent` | The agent to ask: `ask` (default) or a department agent (sb-agents(7)). The world's top-level `agents` list says which agents its manifest enables, and each space may name its `template` and `agents` |
+| `language` | (SB-3003) `en`, `de` or `fr`: the ask's `language` (sb-ask(3)). The local cell passes it on; a case with it expects the same cites as the question without it |
 | `expect` | One or more checks (below) |
 
 ### Expectations
