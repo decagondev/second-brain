@@ -335,7 +335,7 @@ profiles=$SB_IDP
 mv "$DIR/compose.env.new" "$DIR/compose.env"
 
 # --- Fill the volumes: each vault owned by the service user (65532) with no access for others.
-for v in vault-api vault-ingest vault-jobs vault-updater releases state idp-data caddy worm-data pgdata; do
+for v in vault-api vault-ingest vault-jobs vault-updater releases state idp-data run-idp run-wormsetup caddy worm-data pgdata; do
   "$DOCKER" volume inspect "sb-selfhost_$v" >/dev/null 2>&1 ||
     "$DOCKER" volume create --label com.docker.compose.project=sb-selfhost --label com.docker.compose.volume=$v "sb-selfhost_$v" >/dev/null
 done
@@ -349,6 +349,25 @@ fill releases "$DIR/releases"
   sh -c 'cp /src/tenant.yaml /dst/tenant.yaml && mkdir -p /dst/iam /dst/backups && cp /src/iam/*.json /dst/iam/ &&
          chown -R 65532:65532 /dst && chmod 700 /dst' >/dev/null
 "$DOCKER" run --rm -u 0 -v sb-selfhost_idp-data:/dst "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 700 /dst' >/dev/null
+# The one-file secrets of the IdP and wormsetup: vault files are owner-only on the host
+# (SB-2604), so a bind mount is unreadable to 65532 unless the host user happens to be
+# 65532. Copy each into the service's own volume, owned by 65532, no access for others.
+seal() { # volume name=vault-file...
+  local vol=$1 p; shift
+  local mounts=()
+  for p; do [ ! -f "${p#*=}" ] || mounts+=(-v "$(hostpath "${p#*=}"):/src/${p%%=*}:ro"); done
+  "$DOCKER" run --rm -u 0 -v "sb-selfhost_$vol:/dst" "${mounts[@]}" "$HELPER" \
+    sh -c 'rm -rf /dst/* && { [ ! -d /src ] || cp /src/* /dst/; } && chown -R 65532:65532 /dst && chmod 700 /dst && chmod -R go= /dst' >/dev/null
+}
+IDPV=$V/api/vault/tenants/$SB_TENANT
+seal run-idp "oidc=$IDPV/oidc" "scim=$IDPV/scim"
+seal run-wormsetup "worm-creds=$V/jobs/vault/tenants/$SB_TENANT/worm"
+# The demo's stand-in off-box directory: the jobs service (65532) writes the backup's copy
+# there, as install.sh arranges for a real SB_OFFSITE.
+if [ "$SB_OFFSITE" = "$DIR/.offsite" ]; then
+  mkdir -p "$SB_OFFSITE"
+  "$DOCKER" run --rm -u 0 -v "$(hostpath "$SB_OFFSITE"):/dst" "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 755 /dst' >/dev/null
+fi
 # Stewards' notes (SB-1705): written by api alone, read by ingest; on a real install SB_NOTES
 # names the share's own notes/ folder, given to 65532 by install.sh.
 [ -n "${SB_NOTES:-}" ] || "$DOCKER" run --rm -u 0 -v sb-selfhost_notes:/dst "$HELPER" sh -c 'chown 65532:65532 /dst && chmod 755 /dst' >/dev/null

@@ -451,3 +451,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** When the services don't come up and the api says `unknown field`, the install keeps the pinned digests and their attested references for one rollback (`previous.env`), drops the pins and starts the install's own images, as a first install does; the upgrade that `install.sh` runs next pins the admitted release again. The strict parser stays: a typo in `cell.json` is still a refusal.
 
 **Caught by now:** Re-running the install over a running demo box after a configuration change, which each self-hosted slice now does. No law was broken: an unadmitted configuration never ran, the cell refused it.
+
+## BUG-0030 The self-hosted cell failed in CI: the IdP and wormsetup couldn't read their secrets
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-24, the `selfhost` CI job on a GitHub runner | Medium | SB-2604 | Fixed |
+
+**Symptom:** On a Linux host whose user isn't 65532, `make selfhost` stopped with `wormsetup: --endpoint and a readable --creds-file are required`, and the IdP restarted forever with `sb-idp: the client secret can't be read`, so the proxy answered 502 for `/idp` and api, ingest and jobs couldn't find their sign-in. Past that, `make selfhost-update` refused with `the secret worm isn't in the vault`, and the smoke test failed on the backup's off-box copy and on the share's mounts.
+
+**Root cause:** SB-2604 made every vault file owner-only on the host, but the IdP, the dev IdP and wormsetup bind-mounted single vault files and run as 65532, which only worked where the host user is 65532 or the Docker host ignores modes (Docker Desktop). `update.sh` checked `cell.json` against the api vault alone, while the worm key lives in the jobs vault. The demo's stand-in off-box directory was created by Docker as root, so the jobs service couldn't write the copy. Two smoke checks were stale: off-box copies are sealed by default since SB-1901 (`audit.ndjson.sealed`), and `LC_ALL=C sort` puts `/srv/share/notes` before `/srv/share`.
+
+**Fix:** `selfhost.sh` copies the IdP's `oidc` and `scim` and wormsetup's worm key into their own volumes (`run-idp`, `run-wormsetup`), owned by 65532 with no access for others, mounted at `/run/sb` read-only, so the paths the services and runbooks use don't change. `sb cell check-config` takes `--vault` more than once, and `update.sh` names the api and jobs vaults. `selfhost.sh` gives the demo's `.offsite` to 65532, as `install.sh` does for a real `SB_OFFSITE`. The smoke test looks for the sealed copy and expects the sorted mount order.
+
+**Caught by now:** The `selfhost` CI job, which runs as a non-65532 user on Linux; `TestCellCheckConfig` covers two vaults.

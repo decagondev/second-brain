@@ -344,18 +344,21 @@ func safeWord(s string) string {
 }
 
 // cellCheckConfig checks a cell's configuration before a restart (SB-2604): `sb cell
-// check-config FILE [--vault DIR]`. It runs the services' own check, then confirms each
-// secret the configuration needs is in the vault with owner-only permissions, without
-// reading it. A failure names the line at fault.
+// check-config FILE [--vault DIR]...`. It runs the services' own check, then confirms each
+// secret the configuration needs is in a vault with owner-only permissions, without
+// reading it. A cell whose services each hold their own vault (sb-selfhost(7)) names every
+// one: a secret may be in any of them, and a copy others can read anywhere is refused. A
+// failure names the line at fault.
 func (e *env) cellCheckConfig(args []string) int {
 	const cmd = "sb cell check-config"
-	const use = "usage: sb cell check-config FILE [--vault DIR]"
+	const use = "usage: sb cell check-config FILE [--vault DIR]..."
 	args = e.localArgs(args)
-	var file, vault string
+	var file string
+	var vaults []string
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
 		case a == "--vault" && i+1 < len(args):
-			vault = args[i+1]
+			vaults = append(vaults, args[i+1])
 			i++
 		case file == "" && a != "" && a[0] != '-':
 			file = a
@@ -374,14 +377,26 @@ func (e *env) cellCheckConfig(args []string) int {
 	if err != nil {
 		return e.fail(cmd, errs.New(errs.EINVAL, "%s%s: %v", file, lineOf(b, err), err))
 	}
-	if vault == "" {
-		vault = cfg.Vault
+	if len(vaults) == 0 {
+		vaults = []string{cfg.Vault}
 	}
-	d := localvault.Dir{Root: vault}
 	required, optional := cfg.Secrets()
 	var problems, ok []string
 	check := func(p string, need bool) {
-		err := d.Check("vault://tenants/" + cfg.Tenant + "/" + p)
+		// Found owner-only in one vault is enough; exposed in any is not.
+		err := os.ErrNotExist
+		for _, v := range vaults {
+			e := localvault.Dir{Root: v}.Check("vault://tenants/" + cfg.Tenant + "/" + p)
+			switch {
+			case errors.Is(e, localvault.ErrExposed):
+				err = e
+			case errors.Is(err, localvault.ErrExposed):
+			case e == nil:
+				err = nil
+			case err != nil && !errors.Is(e, os.ErrNotExist):
+				err = e
+			}
+		}
 		switch {
 		case err == nil:
 			ok = append(ok, p)

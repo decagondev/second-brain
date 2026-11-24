@@ -67,7 +67,7 @@ check "a file with no ACL file is never cited" "! ask 'what is the example share
 for svc in api ingest jobs; do
   want=false; [ "$svc" = api ] && want=true
   check "$svc mounts the share read-only and notes/ writable=$want (SB-1705)" \
-    "[ \"\$(\"$DOCKER\" inspect -f '{{range .Mounts}}{{.Destination}}={{.RW}} {{end}}' sb-selfhost-$svc-1 | tr ' ' '\n' | grep -E '^/srv/share(/notes)?=' | LC_ALL=C sort | tr '\n' ' ' | tr -d '\r')\" = '/srv/share=false /srv/share/notes=$want ' ]"
+    "[ \"\$(\"$DOCKER\" inspect -f '{{range .Mounts}}{{.Destination}}={{.RW}} {{end}}' sb-selfhost-$svc-1 | tr ' ' '\n' | grep -E '^/srv/share(/notes)?=' | LC_ALL=C sort | tr '\n' ' ' | tr -d '\r')\" = '/srv/share/notes=$want /srv/share=false ' ]"
 done
 # S16.5: with the model profile, both model servers sit on the data network alone, publish
 # nothing, run as the service user on a read-only root, and the cell answers through them.
@@ -109,7 +109,8 @@ compose run --rm jobs --config /etc/sb/cell.json run backup >/dev/null 2>&1 || t
 night=acme-logistics/$(date -u +%F)
 check "tonight's backup is on the box" "\"$DOCKER\" run --rm -v sb-selfhost_state:/s:ro $HELPER test -s /s/backups/$night/audit.ndjson"
 check "and in the write-once store" "[ -n \"\$(\"$DOCKER\" run --rm -v sb-selfhost_worm-data:/d:ro $HELPER find /d/objects/sb-worm/$night -type f | tr -d '\r')\" ]"
-check "and off the box (SB-1605)" "\"$DOCKER\" run --rm -v \"$(win "$(pwd)/build/selfhost/.offsite"):/o:ro\" $HELPER test -s /o/$night/audit.ndjson"
+# Off-box copies are sealed to the recovery key by default (SB-1901): NAME.sealed.
+check "and off the box (SB-1605)" "\"$DOCKER\" run --rm -v \"$(win "$(pwd)/build/selfhost/.offsite"):/o:ro\" $HELPER sh -c 'test -s /o/$night/audit.ndjson.sealed || test -s /o/$night/audit.ndjson'"
 check "the access job leaves a statement (LAW-17 on one machine)" "compose run --rm jobs --config /etc/sb/cell.json run access && \"$DOCKER\" run --rm -v sb-selfhost_state:/s:ro $HELPER sh -c 'ls /s/access/statement-*.json'"
 # sb tenant verify against the running cell, from a container on its edge network, trusting
 # the proxy's CA and holding only the control plane's identity (sb-tenant(1), SB-1605).

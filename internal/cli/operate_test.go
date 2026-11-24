@@ -181,4 +181,21 @@ func TestCellCheckConfig(t *testing.T) {
 	if strings.Contains(out+errOut, "SECRETVALUE") {
 		t.Fatal("a secret was printed")
 	}
+	// A box's services each hold their own vault: worm is in the jobs vault, the rest in api's.
+	_ = os.Chmod(filepath.Join(sec, "database"), 0o600)
+	write(strings.Replace(goodConfig, `"model": { "provider": "extractive" },`, `"model": { "provider": "extractive" }, "worm": { "endpoint": "http://worm:7070", "bucket": "sb-worm" },`, 1))
+	jobs := filepath.Join(dir, "jobs")
+	jsec := filepath.Join(jobs, "vault", "tenants", "acme-logistics")
+	_ = os.MkdirAll(jsec, 0o700)
+	if code, _, errOut := run("cell", "check-config", cfg, "--vault", vault, "--vault", jobs); code == 0 || !strings.Contains(errOut, "the secret worm isn't in the vault") {
+		t.Fatalf("worm in no vault: %d %q", code, errOut)
+	}
+	_ = os.WriteFile(filepath.Join(jsec, "worm"), []byte("SECRETVALUE-worm"), 0o600)
+	if code, out, errOut := run("cell", "check-config", cfg, "--vault", vault, "--vault", jobs); code != 0 || !strings.Contains(out, "7 secrets") {
+		t.Fatalf("two vaults: %d %q %q", code, out, errOut)
+	}
+	_ = os.WriteFile(filepath.Join(jsec, "oidc"), []byte("SECRETVALUE-oidc"), 0o644)
+	if code, _, errOut := run("cell", "check-config", cfg, "--vault", vault, "--vault", jobs); code == 0 || !strings.Contains(errOut, "the secret oidc is readable by others") {
+		t.Fatalf("an exposed copy in the second vault: %d %q", code, errOut)
+	}
 }

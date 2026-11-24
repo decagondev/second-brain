@@ -36,7 +36,7 @@ sb selfhost check-dsn FILE [--service OUT]
 sb selfhost check-email HOST:PORT [--ca FILE]
 sb selfhost check-notify --to EMAIL (--cell URL | --tenant T)
 sb selfhost check-chat --slack TOKENFILE [--api URL] | --mattermost URL --token-file FILE [--team ID]
-sb cell check-config FILE [--vault DIR]
+sb cell check-config FILE [--vault DIR]...
 sb selfhost retire-statement --tenant T --export FILE (--anchor-seed FILE --check | --cell-key KEY --host H --destroyed TEXT... [--kept TEXT]... --out FILE)
 sb selfhost verify-retirement FILE --key ed25519:KEY
 sb secrets scan [--known PATH]... PATH...   (sb-observability(7))

@@ -32,7 +32,7 @@ die() { echo "selfhost-update: $*; nothing changed" >&2; exit 1; }
 # secret or one others can read stops here. Files an older install wrote are made owner-only once.
 checkconfig() {
   if [ ! -f "$DIR/.vault-private" ]; then chmod -R go= "$DIR/vault" 2>/dev/null || true; : >"$DIR/.vault-private"; fi
-  bash tools/selfhost/sb.sh cell check-config "$DIR/cell.json" --vault "$DIR/vault/api" >/dev/null ||
+  bash tools/selfhost/sb.sh cell check-config "$DIR/cell.json" --vault "$DIR/vault/api" --vault "$DIR/vault/jobs" >/dev/null ||
     die "the configuration or its secrets are wrong (above)"
 }
 MODE=update BUNDLE=

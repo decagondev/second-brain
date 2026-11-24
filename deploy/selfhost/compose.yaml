@@ -125,7 +125,9 @@ services:
     restart: "no"
     command: ["--endpoint", "http://worm:7070", "--bucket", "sb-worm", "--creds-file", "/run/sb/worm-creds"]
     volumes:
-      - ../../build/selfhost/vault/jobs/vault/tenants/${SB_TENANT:-acme-logistics}/worm:/run/sb/worm-creds:ro
+      # Its own copy of the jobs vault's worm key, owned by 65532 (selfhost.sh fills it): a
+      # bind mount of the owner-only vault file can't be read by the service user.
+      - run-wormsetup:/run/sb:ro
     networks: [data]
     depends_on: [worm]
 
@@ -156,8 +158,8 @@ services:
               "--redirect", "${SB_BASE_URL:-https://cell.localhost:8443}/callback", "--behind-proxy"]
     volumes:
       - idp-data:/var/lib/sb-idp
-      - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/oidc:/run/sb/oidc:ro
-      - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/scim:/run/sb/scim:ro
+      # oidc and scim, copied from the api vault into a volume owned by 65532 (selfhost.sh).
+      - run-idp:/run/sb:ro
     networks: [edge]
 
   # A model on the box (SB-1710, profile model): llama.cpp's server, one image pinned by
@@ -187,7 +189,7 @@ services:
               "--tenant", "${SB_TENANT:-acme-logistics}", "--client", "sb-${SB_TENANT:-acme-logistics}", "--secret-file", "/run/sb/oidc"]
     ports: ["127.0.0.1:8081:8081"]
     volumes:
-      - ../../build/selfhost/vault/api/vault/tenants/${SB_TENANT:-acme-logistics}/oidc:/run/sb/oidc:ro
+      - run-idp:/run/sb:ro
     networks:
       egress: { aliases: [idp.localhost] }
 
@@ -205,6 +207,8 @@ volumes:
   releases: {}
   worm-data: {}
   idp-data: {}
+  run-idp: {}        # the IdP's two secrets, out of the api vault (selfhost.sh)
+  run-wormsetup: {}  # wormsetup's worm key, out of the jobs vault (selfhost.sh)
   pgdata: {}
   caddy: {}
   models: {}  # the model profile's weights, copied in by tools/selfhost/model.sh (SB-1710)

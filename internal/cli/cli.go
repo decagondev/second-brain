@@ -64,7 +64,7 @@ commands:
   factory status|handoff|detach        custody and hand-off (factory operators)
   selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|retire-statement|verify-retirement
                                        a self-hosted box's checks, bundles, settings and retirement (sb-selfhost(7))
-  cell    check-config FILE [--vault DIR]   a cell's configuration and its secrets, before a restart
+  cell    check-config FILE [--vault DIR]...   a cell's configuration and its secrets, before a restart
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
   backup  keygen|seal|open             seal off-box copies to the recovery key
   backup  push|pull|list|check         sealed copies to and from an off-box S3 bucket
