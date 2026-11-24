@@ -13,6 +13,7 @@ import (
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/proposals"
 	"example.com/second-brain/internal/core/release"
+	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
@@ -29,12 +30,18 @@ type Stewards struct {
 	Now       func() time.Time
 	// Change is the steward rule; nil is manifest.StewardChange, the only one a cell ships.
 	Change func(t manifest.Tenant, space string, proposed json.RawMessage) (manifest.Tenant, []manifest.Diag, error)
+	// Runs, AgentKilled and EvalHeld show a steward their space's agents (SB-4004).
+	Runs        report.Source
+	AgentKilled func(agent string) bool
+	EvalHeld    func() (bool, error)
 }
 
 // Register mounts the endpoints.
 func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals", h.propose)
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/term", h.proposeTerm)
+	mux.HandleFunc("GET /v1/spaces/{name}/agents", h.spaceAgents)
+	mux.HandleFunc("POST /v1/spaces/{name}/proposals/agents", h.proposeAgents)
 	mux.HandleFunc("GET /v1/admin/proposals", h.list)
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/approve", h.decide(true))
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))

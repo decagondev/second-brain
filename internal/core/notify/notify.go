@@ -28,6 +28,7 @@ const (
 	KindAccess    = "access"    // someone asked for access to a document (SB-2205)
 	KindTokens    = "tokens"    // a read-only API token expires in TokenWarn (SB-2606)
 	KindOwned     = "owned"     // an owner's often-cited documents are past review, monthly (SB-2806)
+	KindWelcome   = "welcome"   // a new member's welcome brief (SB-4006)
 )
 
 // TokenWarn is how long before a token expires its owner is told.
@@ -47,7 +48,7 @@ const KindTest = "test"
 const TestText = "This is a test from Second Brain. Its notifications reach you here."
 
 // Kinds are every kind, for validating a person's settings.
-var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true}
+var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true}
 
 // Person is one recipient: a directory user and the email the chat finds them by.
 type Person struct {
@@ -213,6 +214,17 @@ type Job struct {
 	// Reviews are the access reviews (SB-3504): the stewards hear once when one opens and
 	// once when it becomes overdue; nil tells no one.
 	Reviews func(ctx context.Context) ([]reviews.Review, error)
+	// Briefs are the spaces' scheduled agents' days, by space key, and RunBrief runs one,
+	// returning why it didn't ("" when it did) (SB-4005); nil runs none.
+	Briefs   map[string]time.Weekday
+	RunBrief func(ctx context.Context, space string) (why string, err error)
+	// Welcomes are the welcome briefs waiting, and Welcomed marks one sent (SB-4006); nil
+	// sends none. Transcripts are the transcripts first seen in a window, and RunDecisions
+	// drafts one's decisions to its space's stewards; nil drafts none.
+	Welcomes     func(ctx context.Context) ([]Welcome, error)
+	Welcomed     func(ctx context.Context, w Welcome) error
+	Transcripts  func(ctx context.Context, from, to time.Time) ([]NewDoc, error)
+	RunDecisions func(ctx context.Context, d NewDoc) (why string, err error)
 }
 
 // The digest's limits.
@@ -275,11 +287,22 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 	if j.Send != nil {
 		out = append(out, revs...)
 	}
+	briefs, err := j.briefs(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, briefs...)
+	trig, trigMarks, err := j.triggers(ctx, from, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, trig...)
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err
 	}
 	marks := revMarks
+	marks = append(marks, trigMarks...)
 	if due {
 		more, mark, err := j.weekly(ctx, now)
 		if err != nil {

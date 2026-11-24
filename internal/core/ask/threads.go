@@ -27,6 +27,10 @@ type SavedThread struct {
 	Link      string `json:"link"`
 	Text      string `json:"text"`
 	Discarded bool   `json:"discarded,omitempty"`
+	// Agent and Kind mark a draft an agent wrote on a schedule or a trigger (SB-4005,
+	// SB-4006): the agent, and brief or decisions. It ran as Asker, so only they see Text.
+	Agent string `json:"agent,omitempty"`
+	Kind  string `json:"kind,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -34,6 +38,11 @@ type ThreadView struct {
 	By   string `json:"by"`
 	Link string `json:"link"`
 	Text string `json:"text"`
+	// Agent and Kind: an agent's draft (SB-4005, SB-4006). Hidden is a draft that ran as
+	// another steward: its text is theirs to see alone, checked as them (LAW-12).
+	Agent  string `json:"agent,omitempty"`
+	Kind   string `json:"kind,omitempty"`
+	Hidden bool   `json:"hidden,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

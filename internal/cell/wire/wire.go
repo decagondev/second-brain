@@ -148,7 +148,9 @@ type Parts struct {
 	Agent      ask.Agent
 	Bus        *toolbus.Bus
 	Retention  retention.Job
-	handler    http.Handler
+	// Stewards is the questions-to-stewards service, where agent drafts wait (SB-4005).
+	Stewards ask.Stewards
+	handler  http.Handler
 }
 
 // Parts returns the parts built from the manifest the cell runs now.
@@ -458,7 +460,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
-		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
+		AgentKilled:  func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
+		Departmental: departmental(m),
 		ReviewAfter: func(ids []string) int {
 			least := 0
 			for _, id := range ids {
@@ -548,7 +551,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	})
 	public.HandleFunc("GET /login", c.Auth.Login)
 	public.HandleFunc("GET /callback", c.Auth.Callback)
-	public.Handle("/scim/v2/", (&scim.Endpoint{Tenant: tenant, Directory: c.Directory, Sessions: c.Sessions, Token: secret("scim")}).Handler())
+	public.Handle("/scim/v2/", (&scim.Endpoint{Tenant: tenant, Directory: c.Directory, Sessions: c.Sessions, Token: secret("scim"), Joined: c.joined}).Handler())
 	api.Verifier{Release: c.Release, Metrics: c.metricsHandler(), ControlPlane: c.controlPlane, Attest: c.attestor(), TargetFor: c.VerifyTarget}.Register(public)
 	var savers []*slackapp.App // their Saver is the stewards' service, below (SB-3703)
 	if sc, ok := conns["chat"].(*slack.Connector); ok {
@@ -642,7 +645,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
 		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
-		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail, Index: indexReports{c},
+		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
+		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces}
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
@@ -654,7 +658,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
-	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now}.Register(mux)
+	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now,
+		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld}.Register(mux)
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)
 	api.Holds{Tenant: tenant, Policy: c.Policy, Manifests: man, Service: holds.Service{Store: c.Holds, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
@@ -664,7 +669,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /v1/cell/audit/export", c.auditExport)
 	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
-	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, handler: public}, nil
+	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards, handler: public}, nil
 }
 
 // Ready reports whether every part was built (GET /readyz).

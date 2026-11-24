@@ -129,6 +129,7 @@ const kinds: { id: string; name: string }[] = [
   { id: "watch", name: msg("Changes to my watched questions' sources") },
   { id: "tokens", name: msg("My API tokens about to expire") },
   { id: "owned", name: msg("My often-cited documents past review, monthly") },
+  { id: "welcome", name: msg("A welcome when I join a space") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
@@ -343,7 +344,21 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                   <strong>{t("Draft")}</strong> · {q.draft.comment}
                 </p>
               )}
-              {q.thread && (
+              {q.thread?.agent && (
+                <div className="report" role="group" aria-label={t("Drafted by an agent")}>
+                  <p className="meta">
+                    <strong>{q.thread.kind === "decisions" ? t("Decisions drafted by {agent}", { agent: q.thread.agent }) : t("Weekly brief by {agent}", { agent: q.thread.agent })}</strong> ·{" "}
+                    {t("Ran as {who}", { who: q.thread.by })}
+                  </p>
+                  {q.thread.hidden && <p>{t("Only {who} sees its text: it was checked as them.", { who: q.thread.by })}</p>}
+                  {q.state === "open" && (
+                    <button type="button" onClick={() => discard(q.id)}>
+                      {t("Discard")}
+                    </button>
+                  )}
+                </div>
+              )}
+              {q.thread && !q.thread.agent && (
                 <div className="report" role="group" aria-label={t("Saved from chat")}>
                   <p className="meta">
                     <strong>{t("Saved from chat")}</strong> · {t("Sent by {who}", { who: q.thread.by })} ·{" "}

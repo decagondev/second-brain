@@ -22,7 +22,7 @@ type Adoption struct {
 func askers(traces []ask.Trace) (map[string]bool, map[string]map[string]bool) {
 	all, by := map[string]bool{}, map[string]map[string]bool{}
 	for _, t := range traces {
-		if t.Response.Agent == ask.AgentSearch || t.Response.Agent == ask.AgentLimited || t.User == "" {
+		if t.Response.Agent == ask.AgentSearch || t.Response.Agent == ask.AgentLimited || t.Response.Agent == ask.AgentWelcome || t.User == "" {
 			continue
 		}
 		all[t.User] = true

@@ -71,6 +71,10 @@ type Admin struct {
 	// Notices keeps the cell's one notice to everyone (SB-3207); nil is EUNAVAIL to set it
 	// and no notice to read.
 	Notices ask.NoticeStore
+	// AgentKilled and EvalHeld make the agent registry (SB-4004); a hold that can't be
+	// read is an error, never no hold.
+	AgentKilled func(agent string) bool
+	EvalHeld    func() (bool, error)
 }
 
 // IndexReports are the operator's reports on the index: counts and locations only.
@@ -102,6 +106,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/index/prune", h.guard(h.prune))
 	mux.HandleFunc("POST /v1/admin/index/refresh", h.guard(h.refresh))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
+	mux.HandleFunc("GET /v1/admin/agents", h.guard(h.agents))
 	mux.HandleFunc("GET /v1/admin/tokens", h.guard(h.listTokens))
 	mux.HandleFunc("DELETE /v1/admin/tokens/{id}", h.guard(h.revokeToken))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))

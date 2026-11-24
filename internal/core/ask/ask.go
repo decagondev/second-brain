@@ -169,6 +169,8 @@ type Response struct {
 	// EarlierDropped is how many earlier questions of the conversation the model didn't
 	// read: only the last MaxEarlier are sent (SB-2901).
 	EarlierDropped int `json:"earlier_dropped"`
+	// Suggest is the one department space whose agent could answer this better (SB-4007).
+	Suggest *Suggestion `json:"suggest,omitempty"`
 	// People is who to ask: the owners of the answer's cited documents (SB-1702).
 	People []PersonRef `json:"people"`
 	// Terms are the space's glossary entries the question used (SB-2203).
@@ -298,6 +300,9 @@ type Agent struct {
 	Enabled     func(agent string) bool
 	SpaceOf     func(ctx context.Context, id string) (ports.Space, bool, error)
 	AgentKilled func(agent string) bool
+	// Departmental are the spaces the scope's user is a member of that run a department
+	// agent, for the right-department suggestion (SB-4007); nil suggests none.
+	Departmental func(ctx context.Context, s tenancy.Scope) []DeptSpace
 	// Owner finds the one active directory user with an email (SB-1702; ActiveOwner); nil
 	// shows no owners.
 	Owner func(ctx context.Context, email string) (answer.Person, bool)
@@ -444,6 +449,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.Agent, resp.Conversation = AgentEval, ""
 	} else if dept == nil {
 		resp.Pinned = a.pinned(ctx, s, q)
+		resp.Suggest = a.suggest(ctx, s, q, req)
 	}
 	if len(res.Context) == 0 {
 		n := NoticeNoSources

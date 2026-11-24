@@ -56,6 +56,22 @@ Agents are **definitions in the release bundle**: a prompt, a tool list and limi
 
 They are asked through `POST /v1/ask` with `"agent": "NAME"` (sb-ask(3)), are killed like any agent (`sb kill agent NAME`), and each has an eval suite, `evals/suites/agent-NAME.yaml`.
 
+### The registry (SB-4004)
+
+`GET /v1/admin/agents` lists every agent the manifest enables, and `handover`: its department, the spaces that can run it, its runs and the answers rated unhelpful in the last 30 days, its eval result and whether it is killed (sb-admin(3)). A steward sees the same for their space's agents with `GET /v1/spaces/NAME/agents`, and changes which department agents the space lists with a proposal, which an operator approves as a manifest diff. The list is counted from the manifest and the traces, and holds no question or answer.
+
+### Scheduled and triggered agents (SB-4005, SB-4006)
+
+An agent runs on its own only in these three ways. Each runs on the `ask` agent's path as one person, with every check a search makes, writes a trace and an audit row, has no tools, and **sends and publishes nothing**: its answer waits in a steward queue as a draft, and a steward replies with it and publishes it as a note, or discards it (sb-spaces(7)).
+
+| When | Runs | As | Leaves |
+|---|---|---|---|
+| A space's `brief` day (sb-space(5)), once a week from 08:00 | The space's `brief.agent`, on the fixed question "What happened in this space this week, and what is still open?" | The space's first active steward, by email | A draft titled "Weekly brief: AGENT" in the space's queue |
+| The notify job first sees a transcript (`.vtt`, `.srt`, sb-connector(3)) in a space | `ask`, on "What did this meeting decide, and who owns each action?", narrowed to that transcript | The same | A draft titled "Decisions: TITLE", once per transcript and space |
+| SCIM adds someone to a group that is a member of a space | No model: the space's start-here list, with its department's (sb-spaces(7), The tree) | The new member, each item checked as them now | One `welcome` notification: "Welcome to finance. Start here: …", the titles they can open, at most 10 and how many more; once per person and space, ever |
+
+A draft's text is the answer's cited claims, one line each with the titles they cite; an uncited claim is left out, and an answer with nothing cited leaves no draft. It ran as one steward, so **only that steward sees its text**: the others see that it waits, who it ran as, and "Only … sees its text" (LAW-12). A brief or a decisions draft runs nothing when its agent is killed, when the month's model spend has reached `budget_usd_month` (sb-tenant(5)), or when the space has no active steward to run it as; for a brief, the space's stewards are told why ("This week's brief didn't run: …"). The welcome is a notification kind a person can turn off (sb-ask(3), Notifications), writes a trace with agent `welcome` that no report counts as an ask, and an audit row (`welcomed`).
+
 ### The tool bus
 
 Every tool call takes the same path, in this order:

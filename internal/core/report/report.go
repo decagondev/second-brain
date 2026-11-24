@@ -123,7 +123,7 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 	}
 	active := map[string]bool{}
 	cited := 0
-	for _, t := range traces {
+	for _, t := range withoutWelcomes(traces) {
 		if t.Response.Agent == ask.AgentSearch {
 			r.Searches++
 			active[t.User] = true
@@ -390,4 +390,15 @@ func usageBySpace(src Source, traces []ask.Trace, fbs []ask.Feedback) []ask.Spac
 		rows = ask.Nest(rows, ts.ParentOf)
 	}
 	return rows
+}
+
+// withoutWelcomes leaves out welcome briefs' traces: no model ran, so they are no ask (SB-4006).
+func withoutWelcomes(ts []ask.Trace) []ask.Trace {
+	out := make([]ask.Trace, 0, len(ts))
+	for _, t := range ts {
+		if t.Response.Agent != ask.AgentWelcome {
+			out = append(out, t)
+		}
+	}
+	return out
 }

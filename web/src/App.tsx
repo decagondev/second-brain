@@ -153,7 +153,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
   }
 
   // remember is false for a shared question asked from its link (SB-2405).
-  async function run(q: string, inSpace: string, conv: string | undefined, remember = true) {
+  async function run(q: string, inSpace: string, conv: string | undefined, remember = true, agent?: string) {
     setBusy(true);
     if (remember) setRecent(rememberQuestion(q));
     const id = nextTurn.current++;
@@ -166,7 +166,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent);
       setConversation(a.conversation);
       dropFile();
       settle({ id, question: q, answer: a });
@@ -185,6 +185,15 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
     const q = question.trim();
     if (!q || busy) return;
     await run(q, branch && space ? space + BRANCH : space, conversation);
+  }
+
+  // The right department (SB-4007): the same question, asked in the suggested space of the
+  // asker's own, to its agent, as a new conversation.
+  async function askThere(q: string, sp: string, agent: string) {
+    setSpace(sp);
+    setBranch(false);
+    setConversation(undefined);
+    await run(q, sp, undefined, false, agent);
   }
 
   // Asking a saved or shared question again starts a new conversation, live.
@@ -292,7 +301,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
             <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
-              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} />}
+              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} />}
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}

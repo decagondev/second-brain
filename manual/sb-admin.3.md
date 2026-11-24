@@ -34,11 +34,14 @@ GET  /v1/admin/index/leftovers
 POST /v1/admin/index/refresh
 POST /v1/admin/index/prune
 POST /v1/admin/sessions/revoke
+GET  /v1/admin/agents
 GET  /v1/admin/tokens
 DELETE /v1/admin/tokens/ID
 POST /v1/admin/notifications/test
 POST /v1/spaces/NAME/proposals                 (stewards)
 POST /v1/spaces/NAME/proposals/term            (stewards)
+GET  /v1/spaces/NAME/agents                    (stewards)
+POST /v1/spaces/NAME/proposals/agents          (stewards)
 GET  /v1/admin/proposals
 POST /v1/admin/proposals/ID/approve
 POST /v1/admin/proposals/ID/reject
@@ -91,6 +94,10 @@ The console (`/?admin`) is a client of this API and has no other powers. It open
 The nightly `retention` job counts the leftovers and keeps the counts, and **`GET /v1/admin/health`** carries `"index": { "at", "gone", "unheld", "warning" }`, `warning` true above zero or when the count is missing or older than two days. It also carries `"prompt": { "p95", "p95_before", "warning" }` (SB-2906): the 95th percentile of the input tokens of each model call in the last seven days and the seven before, from the usage ledger, with `warning` true when this week's is over 1.5 times the week before's. Counts only. It also carries `"answer_time": { "p95_seconds", "p95_seconds_before", "warning" }` (SB-3205), the same for the seconds each answer took, from the duration the usage ledger records for each answer; `warning` is true when this week's is over 1.5 times the week before's, and absent when the ledger has no durations.
 
 **Spaces with no steward left (SB-3102).** Health also carries `"spaces_unstewarded": { "spaces": ["finance"], "unknown": ["legal"], "warning": true }`: the spaces whose steward groups have no active member in the directory now (`spaces`), and those the directory couldn't answer for (`unknown`), read at the moment health is asked. Either list warns: a directory that can't answer is never "has a steward" (LAW-03). The console shows it under Health. A deprovisioned steward stops counting at once, as everywhere (LAW-12). Questions sent to such a space go to the company-wide answerers (sb-spaces(7), Stewards).
+
+**`GET /v1/admin/agents`** (SB-4004) is every agent in one place: `{ "agents": [{ "name", "department", "spaces": [], "runs", "rated", "unhelpful", "eval": "passed" | "held", "suite", "killed" }], "days": 30 }`, in name order. It lists each agent the manifest's `agents` enables, and `handover`, which every cell has. `department` is the template a department agent belongs to (sb-departments(7)), left out for an agent that runs in every space, and `spaces` are the spaces that can run it. `runs` counts its answers in the last 30 days from the traces, and `rated` and `unhelpful` the feedback on those answers and how much of it was a thumbs down; searches, eval runs and refused rate limits are no agent's run. `eval` is `passed` because a release runs only after its eval gate passed, or `held` while a tenant eval case holds the release (sb-evals(7)); `suite` is the agent's own suite, `agent-NAME`, or `gate` for the whole gate. A hold that can't be read is `EUNAVAIL`, never `passed`. `killed` is the agent's kill switch now (sb-kill(8)). Counts only: never a question, an answer or who asked. The admin console's **Agents** shows the table.
+
+**`GET /v1/spaces/NAME/agents`** (SB-4004) is the same for a space's stewards: the rows of the agents that space can run, counted in that space only, with `listed`, the department agents its `agents` lists, and `can_list`, the ones its template could list. **`POST /v1/spaces/NAME/proposals/agents`** `{ "agents": ["incident-summary"] }` is a steward proposal of the space as applied with that `agents` list, checked, recorded and audited as any proposal, so an operator approves the exact manifest diff. The steward screen's **Agents** has the table and **Propose these agents**.
 
 **`GET /v1/admin/tokens`** (SB-3803) lists every live read-only API token of the tenant (sb-api(3), Read-only API tokens): `{ "items": [{ "id": "tok_…", "owner": "usr_…", "name", "created", "last_used": "YYYY-MM-DD", "expires" }] }`, oldest unused first: the ones never used, then by the day they were last used. `last_used` is the day the token was last checked against the directory on a use, which happens at most once a minute; it is left out for a token never used. Never the token, and never its hash. **`DELETE /v1/admin/tokens/ID`** `{ "reason": "…" }` revokes one at once: a `kind: access` audit row (subject `token:tok_…`, state `token_revoked`, the reason, the admin as actor) is written first, and if it can't be, nothing is revoked (`EUNAVAIL`). A missing reason, or no such live token, is `EINVAL`. The admin console's **API tokens** lists them with **Revoke**.
 

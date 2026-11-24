@@ -29,7 +29,7 @@ func UsageBySpace(traces []Trace, helpful map[string]bool) []SpaceUsage {
 	type tally struct{ asks, nothing, up int }
 	by := map[string]*tally{}
 	for _, t := range traces {
-		if t.Response.Agent == AgentSearch || t.Response.Agent == AgentLimited {
+		if t.Response.Agent == AgentSearch || t.Response.Agent == AgentLimited || t.Response.Agent == AgentWelcome {
 			continue
 		}
 		sp := strings.TrimPrefix(t.Space, "spc_")

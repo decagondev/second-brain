@@ -213,3 +213,22 @@ func TestManagerForms(t *testing.T) {
 		t.Fatalf("remove: %d %q", code, u.Manager)
 	}
 }
+
+// SB-4006: a group write tells Joined only the members it added, after the write.
+func TestJoinedHearsNewMembersOnly(t *testing.T) {
+	var heard []string
+	f := fixture{dir: dirmem.New(), sessions: sessmem.New()}
+	f.h = (&Endpoint{Tenant: "acme-logistics", Directory: f.dir, Sessions: f.sessions,
+		Token:  func(context.Context) (string, error) { return "tok", nil },
+		Joined: func(_ context.Context, g string, us []string) { heard = append(heard, g+":"+strings.Join(us, ",")) }}).Handler()
+	ann, bob, cat := f.user(t, "ann"), f.user(t, "bob"), f.user(t, "cat")
+	_, v := f.do(t, "POST", "/scim/v2/Groups", `{"displayName":"finance","members":[{"value":"`+ann+`"}]}`)
+	gid := v["id"].(string)
+	f.do(t, "PATCH", "/scim/v2/Groups/"+gid, `{"Operations":[{"op":"add","path":"members","value":[{"value":"`+ann+`"},{"value":"`+bob+`"}]}]}`)
+	f.do(t, "PATCH", "/scim/v2/Groups/"+gid, `{"Operations":[{"op":"remove","path":"members[value eq \"`+ann+`\"]"}]}`)
+	f.do(t, "PUT", "/scim/v2/Groups/"+gid, `{"displayName":"finance","members":[{"value":"`+bob+`"},{"value":"`+cat+`"}]}`)
+	want := []string{"finance:" + ann, "finance:" + bob, "finance:" + cat}
+	if !reflect.DeepEqual(heard, want) {
+		t.Fatalf("heard %v, want %v", heard, want)
+	}
+}

@@ -238,6 +238,45 @@
             "type": "array",
             "uniqueItems": true
           },
+          "brief": {
+            "additionalProperties": false,
+            "properties": {
+              "agent": {
+                "enum": [
+                  "ask",
+                  "draft-reply",
+                  "incident-summary",
+                  "spec-digest",
+                  "close-checklist",
+                  "runbook-answer",
+                  "policy-answer",
+                  "clause-finder",
+                  "account-brief",
+                  "case-brief",
+                  "brand-check",
+                  "sop-steps",
+                  "design-rationale",
+                  "exec-brief"
+                ]
+              },
+              "weekly": {
+                "enum": [
+                  "monday",
+                  "tuesday",
+                  "wednesday",
+                  "thursday",
+                  "friday",
+                  "saturday",
+                  "sunday"
+                ]
+              }
+            },
+            "required": [
+              "agent",
+              "weekly"
+            ],
+            "type": "object"
+          },
           "channels": {
             "items": {
               "pattern": "^#[a-z0-9][a-z0-9_-]{0,79}$",

@@ -121,6 +121,8 @@ export interface AskResponse {
   pinned?: Pinned;
   // The cited documents and how many someone has checked (SB-3607).
   verified?: { of: number; marked: number };
+  // The one department space whose agent could answer this better (SB-4007).
+  suggest?: { space: string; agent: string; terms: string[] };
 }
 
 // A verified answer, every cite checked again as the asker (SB-3601).
@@ -240,8 +242,10 @@ export async function ask(
   short?: boolean,
   verified?: boolean,
   file?: AskFile,
+  agent?: string,
 ): Promise<AskResponse> {
   const body: Record<string, string | string[] | boolean | AskFile> = { question };
+  if (agent) body.agent = agent; // a department agent (SB-4007)
   if (file) body.file = file; // SB-3802
   if (short) body.length = "short"; // SB-3303
   if (verified) body.verified = true; // SB-3602
@@ -443,7 +447,8 @@ export interface QueueQuestion {
   // A reported answer (SB-3606): who sent it, and only what the steward can open.
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
-  thread?: { by: string; link: string; text: string };
+  // agent, kind and hidden: a draft an agent wrote on a schedule or a trigger (SB-4005, SB-4006).
+  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean };
   // A note a steward started from a found-nothing term (SB-3705).
   draft?: { title: string; comment: string };
 }

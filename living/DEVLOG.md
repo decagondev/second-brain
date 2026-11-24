@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-24 S39.2: Agents that run themselves
+
+**Wave/slice:** W39 / S39.2 (SB-4004 to SB-4007) · **Status:** Done
+
+**What:** Admins see every agent in one place (GET /v1/admin/agents), with its department, spaces, 30-day runs and unhelpful ratings, eval result and kill state, and stewards see their space's agents and propose changes as a manifest diff. A space can set brief: { agent, weekly } so its agent answers a fixed weekly question as the first active steward; a new transcript drafts its decisions; a person SCIM adds to a space's group gets one welcome brief. A company-wide ask that uses a member space's glossary suggests that space's agent.
+
+**Why this way:** Agents that wait to be asked help only the people who remember to ask. Running them on a schedule or a trigger, as one steward and into the steward queue, keeps every existing check and the rule that nothing is published by itself.
+
+**Learned:** A background run must be issued in the space's key (spc_NAME), not its name, or every chunk is refused as space_denied. A draft that ran as one steward can show its text only to that steward, because another steward may not be able to open what it cites.
+
+**Laws:** LAW-07, LAW-10, LAW-12, LAW-16. Every law test is still green.
+
 ## 2026-11-24 S39.1: The catalogue
 
 **Wave/slice:** W39 / S39.1 (SB-4001 to SB-4003) · **Status:** Done

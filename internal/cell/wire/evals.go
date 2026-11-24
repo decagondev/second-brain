@@ -116,3 +116,12 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	}
 	return nil, writeHold(c.Config.State, nil)
 }
+
+// evalHeld is whether a tenant eval hold holds this cell's release (SB-4004).
+func (c *Cell) evalHeld() (bool, error) {
+	_, found, err := ReadHold(c.Config.State)
+	return found, err
+}
+
+// agentKilled is whether agent is killed now (SB-4004).
+func (c *Cell) agentKilled(agent string) bool { return c.Kill.AgentKilled(agent)(context.Background()) }

@@ -148,6 +148,8 @@ const MaxStart = 10
 // Handover (sb-agents(7), Handover; SB-1707).
 const (
 	AgentHandover = "handover"
+	// AgentWelcome marks a welcome brief's trace (SB-4006): no model ran.
+	AgentWelcome = "welcome"
 	// HandoverDocs is the most of the person's documents briefed, newest first.
 	HandoverDocs = retrieve.Budget
 )

@@ -325,7 +325,10 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		}
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs)}
 		if q.Thread != nil {
-			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text}
+			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind}
+			if q.Thread.Agent != "" && q.Asker != s.User() {
+				it.Thread.Text, it.Thread.Hidden = "", true
+			}
 		}
 		it.Draft = q.Draft
 		if waitedFor(q, SpaceKey(name)) {

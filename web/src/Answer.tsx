@@ -406,11 +406,14 @@ export function AnswerView({
   onOwner,
   question,
   space,
+  onSuggest,
 }: {
   answer: AskResponse;
   fetcher?: Fetch;
   onAbout?: (d: About) => void;
   onOwner?: (email: string) => void;
+  // Ask the suggested department's agent there (SB-4007).
+  onSuggest?: (space: string, agent: string) => void;
   // The question asked and its space, for Ask them (SB-3706).
   question?: string;
   space?: string;
@@ -419,6 +422,14 @@ export function AnswerView({
   return (
     <article className="answer" aria-label={t("Answer")}>
       {answer.pinned && <PinnedView pin={answer.pinned} />}
+      {answer.suggest && onSuggest && (
+        <p className="notice" role="note">
+          {t("{space} has an agent for this: {agent}.", { space: answer.suggest.space, agent: answer.suggest.agent })}{" "}
+          <button type="button" onClick={() => onSuggest(answer.suggest!.space, answer.suggest!.agent)}>
+            {t("Ask {agent} in {space}", { space: answer.suggest.space, agent: answer.suggest.agent })}
+          </button>
+        </p>
+      )}
       <Freshness answer={answer} />
       {answer.notice && (
         <p className="notice" role="note">

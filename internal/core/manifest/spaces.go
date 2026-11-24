@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -35,6 +36,28 @@ type Space struct {
 	Glossary map[string]string `json:"glossary,omitempty"`
 	// Parent is the department space this team space sits under, "" for none (SB-3901).
 	Parent string `json:"parent,omitempty"`
+	// Brief is the space's one scheduled agent (SB-4005), nil for none.
+	Brief *Brief `json:"brief,omitempty"`
+}
+
+// Brief runs Agent once a week, on Weekly (monday to sunday), as the space's first active
+// steward; its answer waits in the steward queue as a draft (sb-space(5), brief).
+type Brief struct {
+	Agent  string `json:"agent"`
+	Weekly string `json:"weekly"`
+}
+
+// Weekdays are the days a brief can run on, lower case.
+var Weekdays = []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+
+// Weekday is a brief's day as a time.Weekday.
+func (b Brief) Weekday() time.Weekday {
+	for i, d := range Weekdays {
+		if d == b.Weekly {
+			return time.Weekday((i + 1) % 7)
+		}
+	}
+	return time.Monday
 }
 
 // MaxGlossary is the most terms a space keeps, and MaxTerm and MaxMeaning their lengths.
@@ -131,16 +154,16 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention, fields, label, parent *node
-	set                                                      map[string]bool
-	start                                                    []*node
+	members, scope, agents, retention, fields, label, parent, brief *node
+	set                                                             map[string]bool
+	start                                                           []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -266,6 +289,8 @@ func (c *checker) space(name string, n *node, p string) {
 			c.startHere(v, f, &s, &sn)
 		case "glossary":
 			s.Glossary = c.glossary(v, f)
+		case "brief":
+			s.Brief, sn.brief = c.brief(v, f), v
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -424,6 +449,7 @@ func (c *checker) spaceChecks() {
 			}
 		}
 		c.spaceAgents(&s, sn, p, tpl, par, hasParent)
+		c.spaceBrief(s, sn, p)
 		c.spaceRetention(&s, sn, p, tpl, par, hasParent)
 		c.t.Spaces[name] = s
 	}
@@ -585,6 +611,48 @@ func subset(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// brief reads a space's brief, { agent: NAME, weekly: DAY } (SB-4005).
+func (c *checker) brief(v *node, f string) *Brief {
+	if !c.mapOf(v, f, `{ agent: incident-summary, weekly: monday }`) {
+		return nil
+	}
+	b := &Brief{}
+	for j, k := range v.keys {
+		fk := f + "." + k.value
+		val, ok := c.scalar(v.vals[j], fk)
+		switch {
+		case !ok:
+		case k.value == "agent":
+			b.Agent = val
+		case k.value == "weekly":
+			if !contains(Weekdays, val) {
+				c.add(v.vals[j], fk, "%q is not a day; use %s", val, orList(Weekdays))
+			}
+			b.Weekly = val
+		default:
+			c.add(k, fk, "unknown field in a brief; use agent or weekly")
+		}
+	}
+	if b.Agent == "" || b.Weekly == "" {
+		c.add(v, f, "a brief needs an agent and a weekly day")
+		return nil
+	}
+	return b
+}
+
+// spaceBrief checks a brief against the space's agents and stewards, once both are known.
+func (c *checker) spaceBrief(s Space, sn spaceNodes, p string) {
+	switch b := s.Brief; {
+	case b == nil:
+	case b.Agent == "draft-reply":
+		c.add(sn.brief, p+".brief.agent", "draft-reply drafts replies to a ticket; a brief runs an agent that answers")
+	case b.Agent != "ask" && !contains(s.Agents, b.Agent):
+		c.add(sn.brief, p+".brief.agent", "%q isn't one of this space's agents", b.Agent)
+	case len(s.Stewards) == 0:
+		c.add(sn.brief, p+".brief", "a brief needs stewards; its draft waits for them")
+	}
 }
 
 // glossary reads a space's glossary, TERM: MEANING (SB-2203).

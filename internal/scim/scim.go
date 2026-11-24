@@ -30,6 +30,9 @@ type Endpoint struct {
 	Sessions  ports.Sessions
 	// Token returns the SCIM bearer token from vault://tenants/TENANT/scim at call time.
 	Token func(ctx context.Context) (string, error)
+	// Joined is told the users a group write added to group (by its name), after the write
+	// (SB-4006); nil tells no one. It never fails the write.
+	Joined func(ctx context.Context, group string, users []string)
 }
 
 // Handler routes the SCIM requests in sb-identity(7).
@@ -355,6 +358,7 @@ func (e *Endpoint) createGroup(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusServiceUnavailable, "directory unavailable")
 		return
 	}
+	e.joined(r.Context(), ports.Group{}, g)
 	d.Schemas, d.ID = []string{groupSchema}, g.ID
 	reply(w, http.StatusCreated, d)
 }
@@ -380,8 +384,11 @@ func (e *Endpoint) replaceGroup(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "displayName is required")
 		return
 	}
+	before := g
 	g.Name, g.Members = d.DisplayName, members(d)
-	e.putGroup(w, r, g)
+	if e.putGroup(w, r, g) {
+		e.joined(r.Context(), before, g)
+	}
 }
 
 func (e *Endpoint) patchGroup(w http.ResponseWriter, r *http.Request) {
@@ -389,6 +396,7 @@ func (e *Endpoint) patchGroup(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	before := ports.Group{Members: append([]string{}, g.Members...)}
 	var body struct{ Operations []patchOp }
 	if !read(r, &body) || len(body.Operations) == 0 {
 		fail(w, http.StatusBadRequest, "Operations are required")
@@ -438,13 +446,31 @@ func (e *Endpoint) patchGroup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	e.putGroup(w, r, g)
+	if e.putGroup(w, r, g) {
+		e.joined(r.Context(), before, g)
+	}
 }
 
-func (e *Endpoint) putGroup(w http.ResponseWriter, r *http.Request, g ports.Group) {
+// joined tells Joined the members after has that before hadn't.
+func (e *Endpoint) joined(ctx context.Context, before, after ports.Group) {
+	if e.Joined == nil {
+		return
+	}
+	var added []string
+	for _, m := range after.Members {
+		if !contains(before.Members, m) && !contains(added, m) {
+			added = append(added, m)
+		}
+	}
+	if len(added) > 0 {
+		e.Joined(ctx, after.Name, added)
+	}
+}
+
+func (e *Endpoint) putGroup(w http.ResponseWriter, r *http.Request, g ports.Group) bool {
 	if err := e.Directory.PutGroup(r.Context(), g); err != nil {
 		fail(w, http.StatusServiceUnavailable, "directory unavailable")
-		return
+		return false
 	}
 	d := groupDoc{Schemas: []string{groupSchema}, ID: g.ID, DisplayName: g.Name}
 	for _, m := range g.Members {
@@ -453,6 +479,7 @@ func (e *Endpoint) putGroup(w http.ResponseWriter, r *http.Request, g ports.Grou
 		}{m})
 	}
 	reply(w, http.StatusOK, d)
+	return true
 }
 
 func (e *Endpoint) deleteGroup(w http.ResponseWriter, r *http.Request) {

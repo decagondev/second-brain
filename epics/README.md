@@ -43,7 +43,7 @@ summary: Epics, waves, slices and tickets.
 | W36 Capture Conversations | 7 | 0 | 0 | Planned 2026-11-24 with the user (E37): meeting transcripts, decisions, save a chat thread, question trends, write the missing document, ask the owner, already written? |
 | W37 Work Where People Are | 6 | 0 | 0 | Planned 2026-11-24 with the user (E38): use the brain from other AI tools, ask about a file, every token in one place, adoption, daily brief, search from the address bar |
 | W38 One Org, Many Levels | 7 | 0 | 0 | Planned 2026-11-24 with the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
-| W39 An Agent for Every Department | 3 | 0 | 4 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
+| W39 An Agent for Every Department | 7 | 0 | 0 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
 | W40 Run the Company | 0 | 0 | 6 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -736,10 +736,10 @@ flowchart LR
 | [SB-4001](E40-agent-for-every-department/SB-4001-people-legal-agents.md) | S39.1 | E40 | People and Legal agents | Done |
 | [SB-4002](E40-agent-for-every-department/SB-4002-sales-support-marketing-agents.md) | S39.1 | E40 | Sales, Support and Marketing agents | Done |
 | [SB-4003](E40-agent-for-every-department/SB-4003-ops-design-exec-agents.md) | S39.1 | E40 | Operations, Design and Executive agents | Done |
-| [SB-4004](E40-agent-for-every-department/SB-4004-agent-registry.md) | S39.2 | E40 | Every agent in one place | Open |
-| [SB-4005](E40-agent-for-every-department/SB-4005-scheduled-agents.md) | S39.2 | E40 | Agents on a schedule | Open |
-| [SB-4006](E40-agent-for-every-department/SB-4006-triggered-agents.md) | S39.2 | E40 | Agents when something happens | Open |
-| [SB-4007](E40-agent-for-every-department/SB-4007-right-department.md) | S39.2 | E40 | The right department | Open |
+| [SB-4004](E40-agent-for-every-department/SB-4004-agent-registry.md) | S39.2 | E40 | Every agent in one place | Done |
+| [SB-4005](E40-agent-for-every-department/SB-4005-scheduled-agents.md) | S39.2 | E40 | Agents on a schedule | Done |
+| [SB-4006](E40-agent-for-every-department/SB-4006-triggered-agents.md) | S39.2 | E40 | Agents when something happens | Done |
+| [SB-4007](E40-agent-for-every-department/SB-4007-right-department.md) | S39.2 | E40 | The right department | Done |
 
 ### W40 Run the Company
 

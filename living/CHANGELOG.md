@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Every agent in one place, weekly briefs, welcome briefs and transcript decisions as drafts, and the right department suggestion (SB-4004 to SB-4007).
 - Agents for People, Legal, Sales, Support, Marketing, Operations, Design and Executive (SB-4001 to SB-4003).
 - Escalate up the tree (SB-3904); roll-ups for leaders (SB-3905); who's who (SB-3906); LAW-24 (SB-3907). W38 built.
 - Parent spaces (SB-3901); settings flow down (SB-3902); ask across a branch (SB-3903).

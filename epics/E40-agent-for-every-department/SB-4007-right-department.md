@@ -13,7 +13,7 @@ summary: "A company-wide ask doesn't know a department's agent could answer it b
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01 |
 | Depends on | SB-3704 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A company-wide ask doesn't know a department's agent could answer it better.
 
 ## Acceptance criteria
 
-- [ ] A company-wide ask that matches a department's glossary suggests that space's agent, with a button to ask it there
-- [ ] Only spaces the asker is a member of, at most one
-- [ ] It's a suggestion only; a non-member never sees the space named
+- [x] A company-wide ask that matches a department's glossary suggests that space's agent, with a button to ask it there
+- [x] Only spaces the asker is a member of, at most one
+- [x] It's a suggestion only; a non-member never sees the space named
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Agent
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Agent
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+A company-wide ask using a member space's glossary suggests its department agent, at most one, with Ask AGENT in SPACE
 
 ## Definition of done
 

@@ -1077,11 +1077,11 @@ gantt
 
 **Exit gate**
 
-- [ ] Every new agent has an eval suite that passes the gate, and is refused outside its template's spaces
-- [ ] No new agent has a tool
-- [ ] A scheduled or triggered run is a draft until a steward publishes it, or a message to the person themselves
-- [ ] A space with no active steward runs nothing
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Every new agent has an eval suite that passes the gate, and is refused outside its template's spaces
+- [x] No new agent has a tool
+- [x] A scheduled or triggered run is a draft until a steward publishes it, or a message to the person themselves
+- [x] A space with no active steward runs nothing
+- [x] Every law test still green; no new store, service or Go module
 
 | Slice | Name | Delivers | Tickets |
 |---|---|---|---|
