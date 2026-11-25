@@ -95,7 +95,7 @@ A document can say when it should be reviewed or when it expires. Ingest reads o
 
 ### Goals (SB-4101)
 
-A goal is a Markdown document whose front matter (as in Review-by dates, above) says `type: goal`, with `owner: EMAIL`, `quarter: YYYY-Qn`, `status:` one of `on_track`, `at_risk`, `off_track` or `done`, and, optionally, `parent_goal:` the title or source id of a goal in the space above. A goal without a valid `quarter` or `status` is indexed as an ordinary document and listed as no goal. The fields are read at query time from the document's first chunk; nothing about a goal is stored apart from the document, so a goal is checked like any document (sb-ask(3), Goals, updates and policies).
+A goal is a Markdown document whose front matter (as in Review-by dates, above) says `type: goal`, with `owner: EMAIL`, `quarter: YYYY-Qn`, `status:` one of `on_track`, `at_risk`, `off_track` or `done`, and, optionally, `parent_goal:` the title or source id of a goal in the space above. A goal without a valid `quarter` or `status` is indexed as an ordinary document and listed as no goal. The fields are read at query time from the document's first chunk; nothing about a goal is stored apart from the document, so a goal is checked like any document (sb-ask(3), Goals, updates and policies). A goal that waits on another department says so with `waiting_on: SPACE`, `waiting_reason:` (one line) and `waiting_until: YYYY-MM-DD`, read the same way; it is cleared by removing them (SB-4504; sb-ask(3), Work across departments).
 
 ### Action items (SB-4203)
 

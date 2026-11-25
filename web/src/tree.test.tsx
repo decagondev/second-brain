@@ -47,10 +47,10 @@ describe("ask across a branch", () => {
 describe("leaders and who's who", () => {
   it("shows a department's teams as counts, with too few asks said so", async () => {
     const { TeamsTable } = await import("./Questions");
-    render(<TeamsTable teams={[{ space: "ap", to_review: 2, overdue: 1, open_questions: 3, asks: 9, found_nothing: 2 }, { space: "fpa", to_review: 0, overdue: 0, open_questions: 0, fewer_than_5: true }]} />);
+    render(<TeamsTable teams={[{ space: "ap", to_review: 2, overdue: 1, open_questions: 3, waiting: 4, asks: 9, found_nothing: 2 }, { space: "fpa", to_review: 0, overdue: 0, open_questions: 0, fewer_than_5: true }]} />);
     const rows = screen.getAllByRole("row").map((r) => r.textContent);
-    expect(rows[1]).toBe("ap2319, 2 found nothing");
-    expect(rows[2]).toBe("fpa000fewer than 5");
+    expect(rows[1]).toBe("ap23149, 2 found nothing");
+    expect(rows[2]).toBe("fpa0000fewer than 5");
   });
 
   it("shows a space's stewards, owners and member count", async () => {

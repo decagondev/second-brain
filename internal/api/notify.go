@@ -73,7 +73,7 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 	if body.Prep != nil {
 		prep = *body.Prep
 	}
-	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil, Digest: digest, Prep: prep}.Check()
+	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil, Digest: digest, Prep: prep, PausedAt: old.PausedAt, CatchUpOffered: old.CatchUpOffered}.Check()
 	if errors.Is(err, notify.ErrDigest) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The digest is daily or weekly."))
 		return

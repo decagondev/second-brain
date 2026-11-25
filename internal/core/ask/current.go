@@ -208,6 +208,7 @@ type TeamRollup struct {
 	ToReview     int    `json:"to_review"`
 	Overdue      int    `json:"overdue"`
 	Open         int    `json:"open_questions"`
+	Waiting      int    `json:"waiting"` // items waiting on another space (SB-4504)
 	FoundNothing *int   `json:"found_nothing,omitempty"`
 	Asks         *int   `json:"asks,omitempty"`
 	FewerThan5   bool   `json:"fewer_than_5,omitempty"`
@@ -291,6 +292,9 @@ func (x Stewards) teams(ctx context.Context, s tenancy.Scope, name string, src R
 					row.Overdue++
 				}
 			}
+		}
+		if row.Waiting, err = x.waitingCount(ctx, team); err != nil {
+			return nil, err
 		}
 		if r.Usage == nil || r.Usage.FewerThan5 || r.Usage.Asks == nil {
 			row.FewerThan5 = true

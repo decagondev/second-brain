@@ -100,6 +100,7 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 		Trace: resp.Trace, At: x.Now().UTC(), Thread: &SavedThread{Text: text, Agent: agent, Kind: kind}}
 	if kind == DraftDecisions && len(req.Documents) == 1 { // SB-4203: the meeting's action items, for this steward
 		sq.Thread.Doc = req.Documents[0]
+		sq.Thread.Supersede = supersedeSuggestions(resp.Answer.Claims, req.Documents[0]) // SB-4505
 		if x.ActionsOf != nil {
 			acts, err := x.ActionsOf(ctx, s, req.Documents[0])
 			if err != nil {

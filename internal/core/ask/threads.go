@@ -37,6 +37,9 @@ type SavedThread struct {
 	Actions []DraftAction `json:"actions,omitempty"`
 	// Goal is a check-in's goal (KIND:ID; SB-4207).
 	Goal string `json:"goal,omitempty"`
+	// Supersede are older decisions a decisions draft suggests it replaces, for Asker to
+	// confirm one when publishing (SB-4505).
+	Supersede []Result `json:"supersede,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -51,6 +54,8 @@ type ThreadView struct {
 	Hidden bool   `json:"hidden,omitempty"`
 	// Actions are a decisions draft's action items (SB-4203), for the steward it ran as.
 	Actions []DraftAction `json:"actions,omitempty"`
+	// Supersede are the decisions it may replace (SB-4505), for the steward it ran as.
+	Supersede []Result `json:"supersede,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

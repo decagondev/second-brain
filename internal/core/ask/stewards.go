@@ -84,6 +84,10 @@ type StewardQuestion struct {
 	Request *RequestMeta `json:"request,omitempty"`
 	// Shared are the cites its sender shared with a request (SB-4502).
 	Shared []SharedCite `json:"shared,omitempty"`
+	// Waiting is a request waiting on another space (SB-4504).
+	Waiting *Wait `json:"waiting,omitempty"`
+	// FirstClaim is when a steward first claimed it, which a reply doesn't end (SB-4507).
+	FirstClaim time.Time `json:"first_claim,omitzero"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -167,6 +171,8 @@ type Stewards struct {
 	// ActionsOf are a transcript's action items as a scope reads them (SB-4203); nil reads
 	// none.
 	ActionsOf func(ctx context.Context, s tenancy.Scope, doc string) ([]DraftAction, error)
+	// Actions keeps confirmed action items, for their waits (SB-4504); nil reads none.
+	Actions ActionStore
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -220,6 +226,8 @@ type StewardItem struct {
 	// many they can't (SB-4502).
 	Shared       []SharedCite `json:"shared,omitempty"`
 	SharedHidden int          `json:"shared_hidden,omitempty"`
+	// Waiting is a request's wait on another space (SB-4504).
+	Waiting *Wait `json:"waiting,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -347,11 +355,11 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		if q.Thread != nil && q.Thread.Discarded {
 			continue
 		}
-		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs)}
+		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs), Waiting: q.Waiting}
 		if q.Thread != nil {
-			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions}
+			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions, Supersede: q.Thread.Supersede}
 			if q.Thread.Agent != "" && q.Asker != s.User() {
-				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions = "", true, nil
+				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede = "", true, nil, nil
 			}
 		}
 		it.Draft, it.Request = q.Draft, q.Request
@@ -563,6 +571,9 @@ type NoteRequest struct {
 	KeepQuestion bool `json:"keep_question,omitempty"`
 	// Confirm is the count of narrower cites the steward saw and accepts; nil previews.
 	Confirm *int `json:"confirm,omitempty"`
+	// Supersedes is the older decision (KIND:ID) a decisions draft's note replaces, which
+	// the steward confirms (SB-4505).
+	Supersedes string `json:"supersedes,omitempty"`
 }
 
 // NotePreview is what the steward confirms before a note is published.
@@ -652,6 +663,10 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if p.Narrower, err = x.narrower(ctx, q.Reply.Cites, readers); err != nil {
 		return NoteResult{}, err
 	}
+	front, err := x.noteFront(ctx, s, q, req.Supersedes) // SB-4505
+	if err != nil {
+		return NoteResult{}, err
+	}
 	if req.Confirm == nil {
 		p.Similar = x.similar(ctx, s, name, q.Reply.Text) // SB-3707: a warning only
 		return NoteResult{NotePreview: p}, nil
@@ -675,7 +690,7 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if keep {
 		asked = q.Question
 	}
-	payload, _ := json.Marshal(NotePayload{Markdown: noteText(title, q.Reply, asked, x.Now().UTC().Add(NoteReviewIn)), Readers: readers, Owner: owner, Label: label})
+	payload, _ := json.Marshal(NotePayload{Markdown: noteText(title, q.Reply, asked, x.Now().UTC().Add(NoteReviewIn), front...), Readers: readers, Owner: owner, Label: label})
 	var groups []string
 	for _, g := range s.Groups() {
 		groups = append(groups, "group:"+g)
@@ -817,9 +832,13 @@ const NoteReviewIn = 180 * 24 * time.Hour
 
 // noteText is the note's Markdown: front matter with its review_by date, the steward's
 // title, the question when they kept it, the reply, and the cites they gave. Never the asker.
-func noteText(title string, r *StewardReply, question string, due time.Time) string {
+func noteText(title string, r *StewardReply, question string, due time.Time, front ...string) string {
 	var b strings.Builder
-	b.WriteString("---\nreview_by: " + due.UTC().Format("2006-01-02") + "\n---\n")
+	b.WriteString("---\nreview_by: " + due.UTC().Format("2006-01-02") + "\n")
+	for _, l := range front {
+		b.WriteString(l + "\n")
+	}
+	b.WriteString("---\n")
 	b.WriteString("# " + title + "\n\n")
 	if question != "" {
 		b.WriteString("Question: " + question + "\n\n")

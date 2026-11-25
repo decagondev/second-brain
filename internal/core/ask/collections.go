@@ -139,6 +139,9 @@ func (a Agent) readCollection(ctx context.Context, s tenancy.Scope, store Collec
 
 // collectionOr is docs, or with none, the documents of collection id when there is one.
 func (a Agent) collectionOr(ctx context.Context, s tenancy.Scope, id string, docs []string) ([]string, error) {
+	if d := catchUpDocs(ctx); len(d) > 0 && len(docs) == 0 {
+		return d, nil // a catch-up's changed documents (SB-4506)
+	}
 	if id == "" || len(docs) > 0 {
 		return docs, nil
 	}

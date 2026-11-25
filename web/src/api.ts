@@ -20,6 +20,8 @@ export interface Cite {
   reviewed?: string;
   // The title of the document a steward retired for this one, when the asker can open it (SB-2801).
   replaces?: string;
+  // The newer decision that replaces this one, when the asker can open it (SB-4505).
+  replaced_by?: { cite: string; title?: string };
 }
 
 export interface Person {
@@ -495,7 +497,9 @@ export interface QueueQuestion {
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
   // agent, kind and hidden: a draft an agent wrote on a schedule or a trigger (SB-4005, SB-4006).
-  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[] };
+  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[]; supersede?: { cite: string; title?: string }[] };
+  // A request waiting on another space (SB-4504).
+  waiting?: { on: string; reason: string; until: string };
   // A note a steward started from a found-nothing term (SB-3705).
   draft?: { title: string; comment: string };
 }
@@ -648,8 +652,8 @@ export function replyToQuestion(space: string, id: string, text: string, cites: 
   return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/reply`, post(both ? { text, cites, both } : { text, cites }), f);
 }
 
-export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch, keepQuestion = false): Promise<NoteResult> {
-  const keep = keepQuestion ? { keep_question: true } : {};
+export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch, keepQuestion = false, supersedes = ""): Promise<NoteResult> {
+  const keep = { ...(keepQuestion ? { keep_question: true } : {}), ...(supersedes ? { supersedes } : {}) };
   return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title, ...keep } : { title, confirm, ...keep }), f);
 }
 
@@ -824,6 +828,7 @@ export interface TeamRollup {
   to_review: number;
   overdue: number;
   open_questions: number;
+  waiting?: number; // items waiting on another space (SB-4504)
   found_nothing?: number;
   asks?: number;
   fewer_than_5?: boolean;
@@ -1150,6 +1155,8 @@ export interface Inbox {
   failed: InboxItem[];
   done: InboxItem[];
   counts: { needs_you: number; failed: number; done: number };
+  // Catch me up, offered once after a notification pause ends (SB-4506).
+  catch_up?: { since: string };
 }
 
 export async function myInbox(f: Fetch = fetch): Promise<Inbox> {
@@ -1157,7 +1164,7 @@ export async function myInbox(f: Fetch = fetch): Promise<Inbox> {
   const needs_you = d.needs_you ?? [];
   const failed = d.failed ?? [];
   const done = d.done ?? [];
-  return { needs_you, failed, done, counts: { needs_you: needs_you.length, failed: failed.length, done: done.length } };
+  return { needs_you, failed, done, counts: { needs_you: needs_you.length, failed: failed.length, done: done.length }, ...(d.catch_up ? { catch_up: d.catch_up } : {}) };
 }
 
 // Memory I control (SB-4303): lines I wrote about myself, sent with my own asks only.

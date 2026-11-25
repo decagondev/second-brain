@@ -37,6 +37,15 @@ type Cite struct {
 	// Replaces is the title of a document a steward retired in favour of this one, shown
 	// only when the asker can open it too (SB-2801).
 	Replaces string `json:"replaces,omitempty"`
+	// ReplacedBy is the newer decision that replaces a cited one, shown only when the
+	// asker can open it too (SB-4505).
+	ReplacedBy *Newer `json:"replaced_by,omitempty"`
+}
+
+// Newer is a document that replaces a cited one: its cite and title.
+type Newer struct {
+	Cite  string `json:"cite"`
+	Title string `json:"title,omitempty"`
 }
 
 // Person is a document owner as an asker sees them: their email and job title, nothing else.

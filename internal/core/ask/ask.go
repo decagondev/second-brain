@@ -533,7 +533,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			n := NoticeMostUncited
 			resp.Notice = &n
 		}
-		if err := a.markReplaces(ctx, s, claims, res.Context); err != nil {
+		if err := a.markLinks(ctx, s, claims, res.Context); err != nil {
 			return Response{}, err
 		}
 		resp.NoticeStale = staleNotice(claims)

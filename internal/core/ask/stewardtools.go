@@ -196,6 +196,9 @@ func (x Stewards) Claim(ctx context.Context, s tenancy.Scope, name, id string, r
 			}
 		case mine || q.Claim == nil || !q.Claim.Until.After(now):
 			q.Claim = &StewardClaim{By: s.User(), Until: now.Add(ClaimFor)}
+			if q.FirstClaim.IsZero() {
+				q.FirstClaim = now // the first reply, for service levels (SB-4507)
+			}
 		default:
 			// someone else's claim: check it still stands below, and leave it as it is
 		}

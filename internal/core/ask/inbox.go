@@ -55,6 +55,8 @@ type Inbox struct {
 	Failed   []InboxItem `json:"failed"`
 	Done     []InboxItem `json:"done"`
 	Counts   InboxCounts `json:"counts"`
+	// CatchUp offers Catch me up once after a notification pause ends (SB-4506).
+	CatchUp *CatchUpOffer `json:"catch_up,omitempty"`
 }
 
 func queueLink(name string) string {
@@ -66,8 +68,13 @@ func queueLink(name string) string {
 
 func spaceName(key string) string { return strings.TrimPrefix(key, "spc_") }
 
-// Inbox is what waits on s now, in every space.
+// Inbox is what waits on s now, in every space, with the offer to catch up once after a
+// notification pause (SB-4506).
 func (l Legwork) Inbox(ctx context.Context, s tenancy.Scope) (Inbox, error) {
+	return l.inbox(ctx, s, true)
+}
+
+func (l Legwork) inbox(ctx context.Context, s tenancy.Scope, offer bool) (Inbox, error) {
 	if err := l.check(s); err != nil {
 		return Inbox{}, err
 	}
@@ -120,6 +127,15 @@ func (l Legwork) Inbox(ctx context.Context, s tenancy.Scope) (Inbox, error) {
 	newest(in.Failed)
 	newest(in.Done)
 	in.Counts = InboxCounts{NeedsYou: len(in.NeedsYou), Failed: len(in.Failed), Done: len(in.Done)}
+	if offer && l.CatchUpOffer != nil {
+		since, ok, err := l.CatchUpOffer(ctx, s.User())
+		if err != nil {
+			return Inbox{}, fmt.Errorf("%w: settings: %v", ErrUnavailable, err)
+		}
+		if ok {
+			in.CatchUp = &CatchUpOffer{Since: since.In(zoneOr(l.Zone)).Format("2006-01-02")}
+		}
+	}
 	return in, nil
 }
 

@@ -59,6 +59,20 @@ func (x Stewards) teamCounts(ctx context.Context, name string) (string, error) {
 			}
 		}
 		fmt.Fprintf(&b, "\n- %s: %d open requests (%d overdue), %d open questions", team, reqs, late, open)
+		waiting, err := x.waitingCount(ctx, team) // SB-4504
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintf(&b, ", %d waiting on another space", waiting)
+		closedLate, ok, err := x.lateCount(ctx, team) // SB-4507
+		if err != nil {
+			return "", err
+		}
+		if ok {
+			fmt.Fprintf(&b, ", %d closed late in 12 weeks", closedLate)
+		} else {
+			b.WriteString(", fewer than 5 sent in 12 weeks")
+		}
 		if x.BudgetShare != nil {
 			share, ok, err := x.BudgetShare(ctx, team)
 			if err != nil {

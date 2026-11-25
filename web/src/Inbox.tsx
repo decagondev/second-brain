@@ -1,8 +1,9 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, agentRuns, ask, caseCandidates, collections, decideCase, forgetMemory, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
+import { AskError, agentRuns, ask, caseCandidates, collections, decideCase, forgetMemory, listSpaces, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
 import type { AgentRun, AskResponse, CaseCandidate, Collection, Fetch, Inbox, InboxItem, MemoryLine } from "./api";
 import { errorText, msg, t } from "./i18n";
+import { CatchUp } from "./Across";
 
 const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
 
@@ -66,6 +67,7 @@ export function InboxView({ fetcher }: { fetcher?: Fetch }) {
           {error}
         </p>
       )}
+      {inbox?.catch_up && <CatchUpOffer since={inbox.catch_up.since} fetcher={fetcher} />}
       {inbox && (
         <>
           <Items items={inbox.needs_you} label={t("Needs you")} empty={t("Nothing waits on you.")} />
@@ -456,6 +458,38 @@ export function CollectionsView({ fetcher }: { fetcher?: Fetch }) {
         </button>
       </form>
       {status && <p role="status">{status}</p>}
+    </section>
+  );
+}
+
+// After a notification pause ends, the inbox offers Catch me up once, from the day it began
+// (SB-4506), in one of the person's spaces.
+function CatchUpOffer({ since, fetcher }: { since: string; fetcher?: Fetch }) {
+  const [spaces, setSpaces] = useState<string[]>([]);
+  const [space, setSpace] = useState("");
+  const id = useId();
+  useEffect(() => {
+    listSpaces(fetcher).then((xs) => {
+      setSpaces(xs.map((x) => x.name));
+      setSpace(xs[0]?.name ?? "");
+    }, () => undefined);
+  }, [fetcher]);
+  return (
+    <section aria-label={t("Welcome back")} className="notice">
+      <p>{t("Your notification pause has ended. Catch up on a space since {since}?", { since })}</p>
+      {spaces.length > 0 && (
+        <>
+          <label htmlFor={id}>{t("Space")}</label>{" "}
+          <select id={id} value={space} onChange={(e) => setSpace(e.target.value)}>
+            {spaces.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          {space && <CatchUp key={space} space={space} since={since} fetcher={fetcher} />}
+        </>
+      )}
     </section>
   );
 }

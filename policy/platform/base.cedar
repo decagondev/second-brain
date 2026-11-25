@@ -29,13 +29,13 @@ when {
    resource.name == "update" || resource.name == "leader-week")
 };
 
-// The legwork agents (SB-4201, SB-4202, SB-4204 to SB-4207): read-only, of no template, in any space or
+// The legwork agents (SB-4201, SB-4202, SB-4204 to SB-4207, SB-4506): read-only, of no template, in any space or
 // company-wide; tenant policies may narrow them by group or space.
 permit (principal, action == Action::"use_agent", resource is Agent)
 when {
   principal.tenant == resource.tenant && resource has enabled && resource.enabled && !resource.consequential &&
   (resource.name == "research" || resource.name == "meeting-prep" || resource.name == "incident-brief" || resource.name == "voc" ||
-   resource.name == "fix-draft" || resource.name == "goal-check-in")
+   resource.name == "fix-draft" || resource.name == "goal-check-in" || resource.name == "catch-up")
 };
 
 // Stewards (SB-1201): a member of one of a space's stewards groups may propose a change to

@@ -48,7 +48,7 @@ summary: Epics, waves, slices and tickets.
 | W41 Agents That Do the Legwork | 7 | 0 | 0 | Planned 2026-11-24 with the user (E42), W41 built: research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W42 Work That Comes to You | 7 | 0 | 0 | Planned 2026-11-24 with the user (E43), W42 built: one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W43 Govern Every Agent | 6 | 0 | 0 | Planned 2026-11-24 with the user (E44), W43 built: feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
-| W44 Departments Work Together | 3 | 0 | 4 | Planned 2026-11-25 with the user (E45), S44.1 built: ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
+| W44 Departments Work Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E45), built: ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W45 Agents You Can Shape | 0 | 0 | 6 | Planned 2026-11-25 with the user (E46): skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W46 Every Agent Accountable | 0 | 0 | 7 | Planned 2026-11-25 with the user (E47): agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -818,10 +818,10 @@ flowchart LR
 | [SB-4501](E45-departments-work-together/SB-4501-ask-each-department.md) | S44.1 | E45 | Ask each department | Done |
 | [SB-4502](E45-departments-work-together/SB-4502-hand-off.md) | S44.1 | E45 | Hand off to a department | Done |
 | [SB-4503](E45-departments-work-together/SB-4503-leaders-week.md) | S44.1 | E45 | The leader's week | Done |
-| [SB-4504](E45-departments-work-together/SB-4504-waiting-on.md) | S44.2 | E45 | Waiting on another department | Open |
-| [SB-4505](E45-departments-work-together/SB-4505-superseded-decisions.md) | S44.2 | E45 | Decisions that replace decisions | Open |
-| [SB-4506](E45-departments-work-together/SB-4506-catch-me-up.md) | S44.2 | E45 | Catch me up | Open |
-| [SB-4507](E45-departments-work-together/SB-4507-service-levels.md) | S44.2 | E45 | Department service levels | Open |
+| [SB-4504](E45-departments-work-together/SB-4504-waiting-on.md) | S44.2 | E45 | Waiting on another department | Done |
+| [SB-4505](E45-departments-work-together/SB-4505-superseded-decisions.md) | S44.2 | E45 | Decisions that replace decisions | Done |
+| [SB-4506](E45-departments-work-together/SB-4506-catch-me-up.md) | S44.2 | E45 | Catch me up | Done |
+| [SB-4507](E45-departments-work-together/SB-4507-service-levels.md) | S44.2 | E45 | Department service levels | Done |
 
 ### W45 Agents You Can Shape
 

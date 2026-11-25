@@ -33,6 +33,7 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/actions", h.spaceActions)
 	mux.HandleFunc("POST /v1/spaces/{name}/review/fix", h.fix)
 	mux.HandleFunc("GET /v1/me/inbox", h.inbox)
+	mux.HandleFunc("POST /v1/catch-up", h.catchUp)
 	mux.HandleFunc("GET /v1/me/agent-runs", h.agentRuns)
 	mux.HandleFunc("GET /v1/agents/cases", h.cases)
 	mux.HandleFunc("POST /v1/agents/cases/{id}", h.decideCase)
@@ -283,4 +284,23 @@ func (h Legwork) spaceActions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"actions": as, "hidden": hidden})
+}
+
+// catchUp is Catch me up in the scope's space, branch or a collection (SB-4506).
+func (h Legwork) catchUp(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body ask.CatchUpRequest
+	if r.ContentLength != 0 && !decode(r, &body) {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	out, err := h.Service.CatchUp(r.Context(), s, body)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", out)
 }

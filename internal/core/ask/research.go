@@ -123,6 +123,9 @@ type Legwork struct {
 	// Approvals are the actions waiting for the person's approval group, as they may see
 	// them now, for the inbox (SB-4301); nil lists none.
 	Approvals func(ctx context.Context, s tenancy.Scope) ([]InboxItem, error)
+	// CatchUpOffer is, once after a person's notification pause ended, the day it began, and
+	// marks it offered (SB-4506); nil offers none.
+	CatchUpOffer func(ctx context.Context, user string) (since time.Time, ok bool, err error)
 }
 
 // ResearchItem is one report or brief as its owner's list shows it.

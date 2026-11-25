@@ -42,6 +42,7 @@ POST /v1/spaces/NAME/proposals                 (stewards)
 POST /v1/spaces/NAME/proposals/term            (stewards)
 GET  /v1/spaces/NAME/agents                    (stewards)
 POST /v1/spaces/NAME/proposals/agents          (stewards)
+GET  /v1/spaces/NAME/service                   (stewards)
 GET  /v1/admin/proposals
 POST /v1/admin/proposals/ID/approve
 POST /v1/admin/proposals/ID/reject
@@ -110,6 +111,8 @@ The nightly `retention` job counts the leftovers and keeps the counts, and **`GE
 **`GET /v1/admin/costs?month=2027-03`** returns the month's cost statement (sb-tenant(5), Model billing and cost statements): `{ "tenant", "month", "partial", "lines": [{ "provider", "model", "tokens_in", "tokens_out", "price_in_per_m", "price_out_per_m", "cost_usd", "tier"? }], "total_usd", "budget_usd_month", "forecast_usd", "forecast"? }`. For the month still running, `forecast_usd` is the month's spend so far plus the last 7 days' daily rate (fewer when the month is younger) times the days left, to the cent; with fewer than 3 days of the month gone it is `null` with `"forecast": "not enough data yet"`, and for a past month it is `null` (SB-3505). The model's budget guard checks the same forecast at most once an hour, and a forecast over `budget_usd_month` sends the month's one `budget_warning` early (sb-observability(7)). With `&format=csv` it is `text/csv` with the same columns, one row per line. A month that isn't `YYYY-MM` is `EINVAL`. Operators and approvers may read it.
 
 **`GET /v1/admin/costs/spaces?month=2027-03`** (SB-4105) is the month's spend by space, each with its own spend, its branch's (with its teams'), its `budget_usd_month` and, for the running month, a forecast (sb-observability(7), Spend by space). Readable by the same people as `costs`; amounts only. The console shows it as **Spend by space**.
+
+**`GET /v1/spaces/NAME/service`** (SB-4507), for a space's stewards, is 12 weeks of the space's service levels by category and week: time to first reply, time to close and the share closed late, and each team's counts, every row under 5 shown only as `fewer_than_5` (sb-ask(3), Department service levels). Counts and medians only: never a question, a request's text or who sent it. The space's home shows it as **Service**.
 
 **`GET /v1/admin/guardrails`** (SB-4406), for operators, returns 12 weeks of counts, newest first (sb-observability(7), Guardrail insights): `{ "weeks": [{ "week": "2027-W10", "flags": [{ "source", "space", "count" }], "flagged_uploads", "refused_tools", "denied_tools", "dropped_uncited" }], "doubled": ["SOURCE"…] }`. Each count is a number, or `"fewer than 5"` when it is 1 to 4. No chunk text, title, question or person appears.
 

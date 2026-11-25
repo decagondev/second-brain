@@ -46,6 +46,8 @@ type Action struct {
 	By     string     `json:"by"`
 	At     time.Time  `json:"at"`
 	DoneAt *time.Time `json:"done_at,omitempty"`
+	// Waiting is an item waiting on another space (SB-4504).
+	Waiting *Wait `json:"waiting,omitempty"`
 }
 
 // ActionStore keeps confirmed action items.

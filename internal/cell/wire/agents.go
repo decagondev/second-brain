@@ -725,3 +725,21 @@ func (c *Cell) ownerActive(ctx context.Context, owner string) bool {
 	}
 	return false
 }
+
+// catchUpOffer is, once after a person's notification pause ended, when it began, marking
+// it offered so the inbox offers Catch me up once (SB-4506).
+func (c *Cell) catchUpOffer(ctx context.Context, user string) (time.Time, bool, error) {
+	p, err := c.Traces.NotifyPrefs(ctx, c.Config.Tenant, user)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	since, ok := p.CatchUpDue(time.Now())
+	if !ok {
+		return time.Time{}, false, nil
+	}
+	p.CatchUpOffered = true
+	if err := c.Traces.PutNotifyPrefs(ctx, c.Config.Tenant, user, p); err != nil {
+		return time.Time{}, false, err
+	}
+	return since, true, nil
+}

@@ -70,6 +70,8 @@ Under a space (SB-4101 to SB-4104): `GET /v1/spaces/NAME/goals`, `GET /v1/spaces
 
 The legwork agents (SB-4201 to SB-4203): `POST|GET /v1/research`, `GET /v1/research/{id}`, `POST /v1/research/{id}/run`, `POST /v1/prepare`, `GET /v1/me/events`, `GET /v1/me/actions`, `POST /v1/me/actions/{id}/done`, and `POST|GET /v1/spaces/NAME/actions` (sb-ask(3), Research, meeting prep and action items), and `POST /v1/spaces/NAME/review/fix` (SB-4206; sb-ask(3), Follow-ups). Each is for the signed-in person only, and a stored result is checked again as them when it is read (LAW-26).
 
+Work across departments (SB-4504 to SB-4507): `PUT /v1/spaces/NAME/waits`, `DELETE /v1/spaces/NAME/waits` and `GET /v1/spaces/NAME/waits`, `GET /v1/spaces/NAME/decisions` (the trail), `POST /v1/catch-up` and `GET /v1/spaces/NAME/service` (sb-ask(3), Work across departments). Waits and the trail are for members of the space, with each item checked as the caller and the rest counted; catch-up is an ask as the caller; service levels are for its stewards, counts only.
+
 Work that comes to you (SB-4301 to SB-4303): `GET /v1/me/inbox`, `PUT /v1/saved/{id}/routine`, `GET|POST|DELETE /v1/me/memory` and `DELETE /v1/me/memory/{id}` (sb-ask(3), Work that comes to you). Each is for the signed-in person only; the inbox lists and never acts, and each item is checked as them when it is listed (LAW-26). A memory is never sent with anyone else's ask (LAW-25).
 
 Context for the work (SB-4304 to SB-4307): `GET|POST /v1/collections`, `PUT|DELETE /v1/collections/{id}`, the ask's `collection` and `table`, and `GET /v1/me/agent-runs` (sb-ask(3), Context for the work). A collection keeps ids only and shows each reader only what they can open; agent runs keep no record of their own.

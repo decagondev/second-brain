@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"example.com/second-brain/internal/core/ask"
 )
 
 // The follow-up agents' messages (sb-ask(3), Notifications; SB-4204 to SB-4207): an
@@ -109,4 +111,50 @@ func (j Job) checkins(ctx context.Context, now time.Time) ([]outgoing, error) {
 		}
 	}
 	return out, nil
+}
+
+// waitKinds are how a wait's item is named in a message: a kind, never its text.
+var waitKinds = map[string]string{ask.WaitRequest: "a request", ask.WaitAction: "an action item", ask.WaitGoal: "a goal"}
+
+// waits tells, once per wait and date, the stewards of the spaces each overdue wait goes to
+// (SB-4504): who waits on whom since when, never the item's text or reason.
+func (j Job) waits(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.Waits == nil {
+		return nil, nil, nil
+	}
+	ws, err := j.Waits(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: waits: %w", err)
+	}
+	var out []outgoing
+	var marks []func() error
+	for _, w := range ws {
+		k := "wait-" + w.Key
+		if _, done, err := j.Clock.Last(ctx, k); err != nil || done {
+			if err != nil {
+				return nil, nil, err
+			}
+			continue
+		}
+		marks = append(marks, func() error { return j.Clock.Mark(ctx, k, now) })
+		if j.Send == nil {
+			continue
+		}
+		text := fmt.Sprintf("%s has waited on %s since %s (%s)", w.From, w.On, w.Until, waitKinds[w.Kind])
+		for _, to := range w.To {
+			key := ask.SpaceKey(to)
+			groups, _, ok := j.Facts(key)
+			if !ok {
+				continue
+			}
+			people, err := j.members(ctx, groups)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, p := range people {
+				out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(key)}})
+			}
+		}
+	}
+	return out, marks, nil
 }

@@ -56,6 +56,11 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/requests", h.requestForm)
 	mux.HandleFunc("POST /v1/spaces/{name}/requests", h.request)
 	mux.HandleFunc("POST /v1/spaces/{name}/handoff", h.handoff)
+	mux.HandleFunc("PUT /v1/spaces/{name}/waits", h.setWait)
+	mux.HandleFunc("DELETE /v1/spaces/{name}/waits", h.clearWait)
+	mux.HandleFunc("GET /v1/spaces/{name}/waits", h.waits)
+	mux.HandleFunc("GET /v1/spaces/{name}/decisions", h.trail)
+	mux.HandleFunc("GET /v1/spaces/{name}/service", h.service)
 	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
 	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
@@ -709,4 +714,79 @@ func (h Questions) handoff(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", d)
+}
+
+// setWait marks a request or action item of the space as waiting on another (SB-4504).
+func (h Questions) setWait(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body ask.WaitMark
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"kind": "request", "id": "qs_…", "on": "legal", "reason": "…", "until": "2026-12-01"}.`))
+		return
+	}
+	wt, err := h.Service.SetWait(r.Context(), s, r.PathValue("name"), body)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", wt)
+}
+
+// clearWait ends one wait, from either side.
+func (h Questions) clearWait(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	q := r.URL.Query()
+	if err := h.Service.ClearWait(r.Context(), s, r.PathValue("name"), q.Get("kind"), q.Get("id")); err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"cleared": true})
+}
+
+// waits are what the space waits on and what waits on it, for a member.
+func (h Questions) waits(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	ws, err := h.Service.Waits(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", ws)
+}
+
+// trail is a topic's decisions in the space, for a member (SB-4505).
+func (h Questions) trail(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	t, err := h.Service.Trail(r.Context(), s, r.PathValue("name"), r.URL.Query().Get("topic"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", t)
+}
+
+// service is the space's service levels, for its stewards (SB-4507).
+func (h Questions) service(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	sv, err := h.Service.Service(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", sv)
 }

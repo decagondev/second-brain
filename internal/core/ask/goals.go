@@ -25,6 +25,8 @@ var quarterRe = regexp.MustCompile(`^\d{4}-Q[1-4]$`)
 // GoalMeta is what a goal's front matter says.
 type GoalMeta struct {
 	Owner, Quarter, Status, Parent string
+	// Waiting is waiting_on, waiting_reason and waiting_until (SB-4504).
+	Waiting *Wait
 }
 
 // frontMatter is the key: value lines of a document's front matter, keys lower case: the
@@ -62,7 +64,7 @@ func ParseGoal(text string) (GoalMeta, bool) {
 	if !strings.EqualFold(fm["type"], "goal") {
 		return GoalMeta{}, false
 	}
-	g := GoalMeta{Owner: strings.ToLower(fm["owner"]), Quarter: strings.ToUpper(fm["quarter"]), Status: strings.ToLower(fm["status"]), Parent: fm["parent_goal"]}
+	g := GoalMeta{Owner: strings.ToLower(fm["owner"]), Quarter: strings.ToUpper(fm["quarter"]), Status: strings.ToLower(fm["status"]), Parent: fm["parent_goal"], Waiting: goalWait(fm)}
 	if !quarterRe.MatchString(g.Quarter) {
 		g.Quarter = ""
 	}
@@ -88,10 +90,12 @@ type Goal struct {
 	Quarter string `json:"quarter,omitempty"`
 	Status  string `json:"status,omitempty"`
 	// Silent is a goal with no check-in published for three weeks (SB-4207).
-	Silent bool   `json:"silent,omitempty"`
-	Goals  []Goal `json:"goals,omitempty"`
-	parent string
-	key    string
+	Silent bool `json:"silent,omitempty"`
+	// Waiting is the goal's wait on another space, from its front matter (SB-4504).
+	Waiting *Wait  `json:"waiting,omitempty"`
+	Goals   []Goal `json:"goals,omitempty"`
+	parent  string
+	key     string
 }
 
 // GoalQuarter is one quarter's goals, the top of each tree.
@@ -162,7 +166,7 @@ func (x Stewards) Goals(ctx context.Context, s tenancy.Scope, name string) (Goal
 		seen[k] = true
 		m, _ := ParseGoal(c.Text)
 		r := x.Agent.result(ctx, nil, c)
-		g := &Goal{Cite: c.Cite, Title: r.Title, URL: r.URL, Space: spaceOf[k], Owner: m.Owner, Quarter: m.Quarter, Status: m.Status, parent: m.Parent, key: k}
+		g := &Goal{Cite: c.Cite, Title: r.Title, URL: r.URL, Space: spaceOf[k], Owner: m.Owner, Quarter: m.Quarter, Status: m.Status, Waiting: m.Waiting, parent: m.Parent, key: k}
 		if m.Status != "done" && x.Store != nil && x.Now != nil {
 			sp := SpaceKey(spaceOf[k])
 			if _, ok := queues[sp]; !ok {

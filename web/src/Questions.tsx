@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { AskError, addEvalCase, confirmActions, draftFix, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
 import { placeOf } from "./Answer";
+import { WaitForm } from "./Across";
 import { MyData } from "./Session";
 import { AboutMe, AgentCases, AgentRuns, CollectionsView, InboxView } from "./Inbox";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -272,6 +273,7 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
   const [preview, setPreview] = useState<Record<string, NoteResult>>({});
   const [pinsBump, setPinsBump] = useState(0);
   const [keep, setKeep] = useState<Record<string, boolean>>({});
+  const [supersede, setSupersede] = useState<Record<string, string>>({});
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
   const [steward, setSteward] = useState(false);
   const ids = useId();
@@ -327,7 +329,7 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
   async function note(id: string) {
     try {
       const p = preview[id];
-      const r = await publishNote(space, id, title[id] ?? "", p?.narrower, fetcher, keep[id] ?? false);
+      const r = await publishNote(space, id, title[id] ?? "", p?.narrower, fetcher, keep[id] ?? false, supersede[id] ?? "");
       if (!p) {
         setPreview((x) => ({ ...x, [id]: r }));
         setStatus(t("The note will have {readers} readers. {narrower} of its cites some of them can't open. Publish to confirm.", { readers: r.readers, narrower: r.narrower }));
@@ -360,6 +362,8 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
             <li key={q.id}>
               <p className="question">{q.question}</p>
               {q.request && <p className="meta">{t("Request: {category}, due {due}", { category: q.request.category, due: q.request.due.slice(0, 10) })}</p>}
+              {q.waiting && <p className="meta">{t("Waiting on {space} until {until}: {reason}", { space: q.waiting.on, until: q.waiting.until, reason: q.waiting.reason })}</p>}
+              {q.request && q.state === "open" && !own && <WaitForm space={space} kind="request" id={q.id} fetcher={fetcher} />}
               {q.shared && q.shared.length > 0 && (
                 <ul className="meta" aria-label={t("Shared sources")}>
                   {q.shared.map((c) => (
@@ -388,6 +392,16 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                     {t("Ran as {who}", { who: q.thread.by })}
                   </p>
                   {q.thread.hidden && <p>{t("Only {who} sees its text: it was checked as them.", { who: q.thread.by })}</p>}
+                  {q.thread.kind === "decisions" && (q.thread.supersede?.length ?? 0) > 0 && (
+                    <fieldset>
+                      <legend>{t("Does this replace an earlier decision?")}</legend>
+                      {[{ cite: "", title: t("No") }, ...q.thread.supersede!].map((d) => (
+                        <label key={d.cite || "none"}>
+                          <input type="radio" name={`${ids}-sup${i}`} checked={(supersede[q.id] ?? "") === d.cite} onChange={() => setSupersede((x) => ({ ...x, [q.id]: d.cite }))} /> {d.title ?? d.cite}
+                        </label>
+                      ))}
+                    </fieldset>
+                  )}
                   {q.state === "open" && q.thread.kind === "decisions" && (q.thread.actions?.length ?? 0) > 0 && (
                     <ConfirmActions space={space} draft={q.id} items={q.thread.actions!} fetcher={fetcher} />
                   )}
@@ -1216,6 +1230,7 @@ export function TeamsTable({ teams }: { teams: TeamRollup[] }) {
             <th scope="col">{t("To review")}</th>
             <th scope="col">{t("Open questions")}</th>
             <th scope="col">{t("Overdue")}</th>
+            <th scope="col">{t("Waiting on others")}</th>
             <th scope="col">{t("Asks this week")}</th>
           </tr>
         </thead>
@@ -1226,6 +1241,7 @@ export function TeamsTable({ teams }: { teams: TeamRollup[] }) {
               <td>{x.to_review}</td>
               <td>{x.open_questions}</td>
               <td>{x.overdue}</td>
+              <td>{x.waiting ?? 0}</td>
               <td>{x.fewer_than_5 || x.asks === undefined ? t("fewer than 5") : t("{asks}, {none} found nothing", { asks: x.asks, none: x.found_nothing ?? 0 })}</td>
             </tr>
           ))}

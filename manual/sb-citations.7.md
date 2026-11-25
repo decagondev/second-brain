@@ -66,6 +66,9 @@ A citation can be opened as its passage: the cited chunk's own text at the cited
 
 A claim marked `disagree` cites every source it rests on, so the asker can open each one and judge. The mark is the model's word, kept by code only when two different documents survived the live check for this asker; a document the asker can't open never makes a disagreement and is never hinted at. The citation suite has a case whose documents disagree and one whose documents agree (sb-evals(7)).
 
+### Replaced decisions (SB-4505)
+
+A decision can name the one it replaces (`supersedes:`, sb-ask(3), Work across departments). A cite of the older decision is still a cite of what that document says: it is kept, and carries `replaced_by` with the newer decision's cite and title only when the asker can open the newer one now, checked live like any cite (LAW-01). The composer never swaps one for the other, and a newer decision the asker can't open is neither named nor hinted at. Nothing is linked by the model: a link comes from a decision's own front matter, or from a steward confirming it when publishing a decisions draft.
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

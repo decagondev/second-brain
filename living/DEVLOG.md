@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S44.2: Work across departments
+
+**Wave/slice:** W44 / S44.2 (SB-4504 to SB-4507) · **Status:** Done
+
+**What:** A request, an action item or a goal can say it waits on another space, with a reason and a date: both homes list it, each item named only to someone who can see it and counted for the rest, either side clears it in one click, a department's roll-up counts its teams' waits, and one still waiting a working day past its date goes once to the stewards of the nearest common parent. A decision can name the one it replaces with `supersedes:`; a cite of the older decision carries the newer one when the asker can open it, a topic shows its trail, and a decisions draft suggests what it may replace for the steward to confirm when publishing. **Catch me up** summarises what changed in a space, branch or collection since a day, as the person, and the inbox offers it once after a notification pause. And stewards see 12 weeks of service levels by category, with teams as counts and every small row masked.
+
+**Why this way:** Every new thing is a field on a record the cell already keeps (a question, an action item, a goal's front matter, a note's front matter, the notification settings), so there is no new store. Waits and the trail are listed by checking each item as the reader at read time, the way goals and policies are, so nothing widens what anyone sees; a steward of the space waited on sees a request's category and the marker's reason, never its text, so they can act. Catch-up is an ordinary ask narrowed to the changed documents, so retrieval's live check is the one that leaves out a lost document, and the count it reports is checked the same way. Service levels read the queue's records; the first claim is kept on the question because a reply clears the claim.
+
+**Learned:** A branch catch-up must check each changed document in its own space's scope: checked in the department's scope, a team's documents were refused, and the index's space filter alone wasn't enough to keep another space's documents out.
+
+**Laws:** LAW-01, LAW-07, LAW-14, LAW-24, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S44.1: Agents across the tree
 
 **Wave/slice:** W44 / S44.1 (SB-4501 to SB-4503) · **Status:** Done

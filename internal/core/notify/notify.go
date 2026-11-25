@@ -81,6 +81,10 @@ type Prefs struct {
 	Digest string `json:"digest,omitempty"`
 	// Prep makes a brief before each meeting with an agenda (SB-4202).
 	Prep bool `json:"prep,omitempty"`
+	// PausedAt is when the last pause began, and CatchUpOffered whether the inbox has
+	// offered Catch me up since it ended (SB-4506).
+	PausedAt       *time.Time `json:"paused_at,omitempty"`
+	CatchUpOffered bool       `json:"catch_up_offered,omitempty"`
 }
 
 // MaxPauseDays is the longest pause.
@@ -96,10 +100,19 @@ func (p Prefs) Pause(days int, now time.Time) (Prefs, error) {
 	}
 	p.PausedUntil = nil
 	if days > 0 {
-		u := now.UTC().Add(time.Duration(days) * 24 * time.Hour)
-		p.PausedUntil = &u
+		u, at := now.UTC().Add(time.Duration(days)*24*time.Hour), now.UTC()
+		p.PausedUntil, p.PausedAt, p.CatchUpOffered = &u, &at, false
 	}
 	return p, nil
+}
+
+// CatchUpDue reports whether a pause has ended at now and the inbox hasn't offered Catch me
+// up since (SB-4506), with when the pause began.
+func (p Prefs) CatchUpDue(now time.Time) (time.Time, bool) {
+	if p.PausedAt == nil || p.CatchUpOffered || p.Paused(now) || now.Sub(*p.PausedAt) > 90*24*time.Hour {
+		return time.Time{}, false
+	}
+	return *p.PausedAt, true
 }
 
 // Paused reports whether everything is paused at now.
@@ -123,7 +136,7 @@ var ErrKind = errors.New("notify: EINVAL not a notification kind")
 // Check validates settings and returns them sorted, each kind once.
 func (p Prefs) Check() (Prefs, error) {
 	seen := map[string]bool{}
-	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil, Prep: p.Prep}
+	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil, Prep: p.Prep, PausedAt: p.PausedAt, CatchUpOffered: p.CatchUpOffered}
 	switch p.Digest {
 	case "", DigestWeekly:
 	case DigestDaily:
@@ -257,6 +270,8 @@ type Job struct {
 	// Routines asks the saved questions due as routines, as their owners, and returns those
 	// it ran (SB-4302); nil asks none.
 	Routines func(ctx context.Context) ([]ask.Finished, error)
+	// Waits are the waits a working day past their date (SB-4504); nil tells nobody.
+	Waits func(ctx context.Context) ([]ask.OverdueWait, error)
 }
 
 // The digest's limits.
@@ -355,12 +370,18 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	out = append(out, rts...)
+	wts, wtMarks, err := j.waits(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, wts...)
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err
 	}
 	marks := revMarks
 	marks = append(marks, trigMarks...)
+	marks = append(marks, wtMarks...)
 	if due {
 		more, mark, err := j.weekly(ctx, now)
 		if err != nil {

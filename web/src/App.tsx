@@ -11,6 +11,7 @@ import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
+import { CatchUp, ServiceCard, Trail, WaitsCard, markVisit } from "./Across";
 import { MySessions, SignOutEverywhere } from "./Session";
 import { LegworkView } from "./Legwork";
 import { HandoverView } from "./Handover";
@@ -111,6 +112,10 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
 
   // Keyboard first (SB-2403): "/" goes to the ask box and Esc closes the API tokens panel,
   // never while the person is typing in a field.
+  // The day of this visit, so Catch me up can start from it next time (SB-4506).
+  useEffect(() => {
+    if (space) markVisit(space);
+  }, [space]);
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
       const el = e.target as HTMLElement | null;
@@ -305,6 +310,10 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
         {space && turns.length === 0 && <Goals space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <TeamUpdates space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <Requests space={space} fetcher={fetcher} />}
+        {space && turns.length === 0 && <WaitsCard space={space} fetcher={fetcher} />}
+        {space && turns.length === 0 && <ServiceCard space={space} fetcher={fetcher} />}
+        {space && turns.length === 0 && <CatchUp key={space + String(branch)} space={space} branch={branch} fetcher={fetcher} />}
+        {space && turns.length === 0 && <Trail space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <WhosWho space={space} fetcher={fetcher} />}

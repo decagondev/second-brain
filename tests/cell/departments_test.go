@@ -173,7 +173,7 @@ func TestDepartmentsWorkTogetherThroughARunningCell(t *testing.T) {
 			week = it.Thread
 		}
 	}
-	if week == nil || week.Agent != ask.AgentLeaderWeek || !strings.Contains(week.Text, "By team (counts only):\n- fleet: 0 open requests (0 overdue), 0 open questions\n- returns:") ||
+	if week == nil || week.Agent != ask.AgentLeaderWeek || !strings.Contains(week.Text, "By team (counts only):\n- fleet: 0 open requests (0 overdue), 0 open questions, 0 waiting on another space, fewer than 5 sent in 12 weeks\n- returns:") ||
 		strings.Contains(week.Text, "MOT") {
 		t.Fatalf("leader's week: %s", out)
 	}

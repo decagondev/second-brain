@@ -26,6 +26,7 @@ var legworkAgents = map[string]Department{
 	AgentVoC:      {Name: AgentVoC, Prompt: "voc", Lead: "Theme: "},
 	AgentFix:      {Name: AgentFix, Prompt: "fix-draft", Lead: "Change: "},
 	AgentCheckin:  {Name: AgentCheckin, Prompt: "goal-check-in", Lead: "Goal: "},
+	AgentCatchUp:  {Name: AgentCatchUp, Prompt: "catch-up", Lead: "Change: "},
 }
 
 // vocTemplates are the templates whose spaces run voc (SB-4205).

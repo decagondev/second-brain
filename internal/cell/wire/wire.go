@@ -634,6 +634,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Children: m.Children, Policies: c.Traces, ScopeOf: c.ownerScope, ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays },
 		Parent: func(name string) string { return m.Spaces[name].Parent }, StewardPeople: c.stewardPeople(m),
 		BudgetShare: c.budgetShare, // SB-4503
+		Actions:     c.Traces,      // SB-4504
 		Requests: func(name string) ([]string, int, bool) { // SB-4104
 			if r := m.Spaces[name].Requests; r != nil {
 				return r.Categories, r.DueDays, true
@@ -729,6 +730,7 @@ func (c *Cell) legwork(m manifest.Tenant, agent ask.Agent, stewards ask.Stewards
 	zone, _ := manifest.DigestZone(m.Digest)
 	l := ask.Legwork{Agent: agent, Stewards: stewards, Research: c.Traces, Actions: c.Traces, Audit: c.Audit, Routines: c.Traces, Zone: zone,
 		NewID: c.NewID, Now: time.Now, ResearchUSD: func() float64 { return m.ResearchUSD }, ScopeIn: c.ScopeAs, Tell: c.tell,
+		CatchUpOffer: c.catchUpOffer, // SB-4506
 		Known: func(ctx context.Context, email string) bool {
 			ids, err := c.activeByEmail(ctx, email)
 			return err == nil && len(ids) == 1 // unknown, or two people: no one (LAW-12)
