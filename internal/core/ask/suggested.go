@@ -21,7 +21,7 @@ import (
 
 // Bounds.
 const (
-	MaxSuggested     = 8
+	MaxSuggested     = 12 // SB-4906: starter questions; 8 before
 	MaxSuggestedText = 120
 )
 

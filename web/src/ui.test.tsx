@@ -153,8 +153,8 @@ describe("conversation", () => {
         fireEvent.click(screen.getByRole("button", { name: "Ask" }));
       });
     }
-    expect(JSON.parse(bodies[0]!)).toEqual({ question: "one", language: "en" });
-    expect(JSON.parse(bodies[1]!)).toEqual({ question: "two", conversation: "cv_1", language: "en" });
+    expect(JSON.parse(bodies[0]!)).toEqual({ question: "one", clarify: true, language: "en" });
+    expect(JSON.parse(bodies[1]!)).toEqual({ question: "two", conversation: "cv_1", clarify: true, language: "en" });
   });
 });
 

@@ -45,6 +45,7 @@ POST /v1/spaces/NAME/proposals                 (stewards)
 POST /v1/spaces/NAME/proposals/term            (stewards)
 GET  /v1/spaces/NAME/agents                    (stewards)
 POST /v1/spaces/NAME/proposals/agents          (stewards)
+POST /v1/spaces/NAME/proposals/ID/scenarios    (stewards)
 POST /v1/spaces/NAME/agents/AGENT/pause        (stewards, the agent's owner)
 POST /v1/spaces/NAME/agents/AGENT/resume       (stewards, the agent's owner)
 GET  /v1/spaces/NAME/service                   (stewards)
@@ -146,7 +147,7 @@ Roles are Cedar policies, not code: the base policy permits `admin` on the tenan
 
 **`POST /v1/spaces/NAME/proposals`** is for the space's stewards (Cedar `propose_space`; sb-spaces(7), Delegated changes). The body is the space's whole new definition, `{ "space": { "members": [...], "scope": {...}, ... } }`, in the fields of sb-space(5). The response is `{ "id": "prop_…", "space": "NAME", "base": "<sha256 of the applied manifest>", "hash": "<sha256 of the proposed manifest>", "diff": [...], "plan": "…" }`, and nothing changes yet. Every diff in this page writes a nested line with its full path, such as `- spaces.finance.label: restricted`, so a change in one space can't hide behind the same text in another (SB-1401).
 
-**`GET /v1/admin/proposals`** lists the open proposals. **`POST /v1/admin/proposals/ID/approve`** takes `{ "hash": "…" }` and needs the `operator` role (Cedar `approve_space`, forbidden for the proposal's own steward). It returns `{ "id", "manifest": "<the YAML to apply>", "approved": true }`. A hash that isn't the proposal's is `EINVAL`; an applied manifest that changed since the proposal is `EDRIFT`, and the proposal is closed as `stale` with its own audit row. **`…/reject`** takes `{ "reason": "…" }`. Every proposal, approval, rejection and closing is a `kind: config` audit row with the space, written before it is stored, and a proposal takes one decision only: a second decision made at the same time finds it no longer open (SB-1401).
+**`GET /v1/admin/proposals`** lists the open proposals; one a steward ran scenarios on carries `"scenarios": [{ "question", "current", "proposed" }]`, whether each passed as applied and as proposed, and `"scenarios_by"`, never an answer (SB-4904; sb-agents(7), Scenarios before you approve). **`POST /v1/admin/proposals/ID/approve`** takes `{ "hash": "…" }` and needs the `operator` role (Cedar `approve_space`, forbidden for the proposal's own steward). It returns `{ "id", "manifest": "<the YAML to apply>", "approved": true }`. A hash that isn't the proposal's is `EINVAL`; an applied manifest that changed since the proposal is `EDRIFT`, and the proposal is closed as `stale` with its own audit row. **`…/reject`** takes `{ "reason": "…" }`. Every proposal, approval, rejection and closing is a `kind: config` audit row with the space, written before it is stored, and a proposal takes one decision only: a second decision made at the same time finds it no longer open (SB-1401).
 
 ### Access reviews (SB-1202)
 

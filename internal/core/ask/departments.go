@@ -75,7 +75,11 @@ func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (De
 	if err != nil {
 		return Department{}, fmt.Errorf("%w: spaces: %v", ErrUnavailable, err)
 	}
-	if !found || sp.Template != d.Template || !contains(sp.Agents, name) {
+	listed := sp.Agents
+	if v, ok := scenarioOf(ctx); ok { // SB-4904: a scenario runs with its version's agents
+		listed = v.Agents
+	}
+	if !found || sp.Template != d.Template || !contains(listed, name) {
 		return Department{}, fmt.Errorf("%w: agent %s runs only in a %s space that lists it", ErrInvalid, name, d.Template)
 	}
 	if d.Restricted && sp.Label != "restricted" {

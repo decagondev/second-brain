@@ -35,6 +35,9 @@ type MCP struct {
 	}
 	// Skills are the skills of the person's spaces, listed as prompts (SB-4601); nil lists none.
 	Skills func(ctx context.Context, s tenancy.Scope) ([]ask.SpaceSkill, error)
+	// Starters are the starter questions of the person's spaces, listed as prompts with no
+	// arguments (SB-4906); nil lists none.
+	Starters func(ctx context.Context, s tenancy.Scope) ([]ask.SpaceStarter, error)
 }
 
 // MCPVersion is the protocol revision the endpoint speaks.
@@ -150,21 +153,23 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 }
 
 // prompts answers prompts/list and prompts/get with the skills of the person's spaces
-// (SB-4601): a prompt runs nothing; the client calls a tool, as the person.
+// (SB-4601) and their starter questions (SB-4906): a prompt runs nothing; the client calls
+// a tool, as the person, so a starter's answer is composed fresh for whoever asks it.
 func (h MCP) prompts(w http.ResponseWriter, r *http.Request, s tenancy.Scope, req rpcReq) {
-	skills := []ask.SpaceSkill{}
-	if h.Skills != nil {
-		var err error
-		if skills, err = h.Skills(r.Context(), s); err != nil {
-			rpc(w, req.ID, nil, &rpcErr{Code: -32603, Message: "the prompts can't be listed now; try again"})
-			return
-		}
+	skills, starters, err := h.promptSources(r.Context(), s)
+	if err != nil {
+		rpc(w, req.ID, nil, &rpcErr{Code: -32603, Message: "the prompts can't be listed now; try again"})
+		return
 	}
 	if req.Method == "prompts/list" {
 		out := []map[string]any{}
 		for _, sk := range skills {
 			out = append(out, map[string]any{"name": sk.Space + "/" + sk.Name, "description": "The " + sk.Name + " skill of " + sk.Space + ": " + sk.Instruction,
 				"arguments": []map[string]any{{"name": "question", "description": "The question to ask", "required": true}}})
+		}
+		for _, st := range starters {
+			out = append(out, map[string]any{"name": starterPrompt(st), "description": "A starter question of " + st.Space + ": " + st.Question,
+				"arguments": []map[string]any{}})
 		}
 		rpc(w, req.ID, map[string]any{"prompts": out}, nil)
 		return
@@ -188,7 +193,36 @@ func (h MCP) prompts(w http.ResponseWriter, r *http.Request, s tenancy.Scope, re
 			"messages": []map[string]any{{"role": "user", "content": map[string]string{"type": "text", "text": text}}}}, nil)
 		return
 	}
+	for _, st := range starters {
+		if starterPrompt(st) != p.Name {
+			continue
+		}
+		text := "Use the ask tool, with ?space=" + st.Space + ", to ask: " + st.Question + "\n\nThen give the answer, keeping every cite."
+		rpc(w, req.ID, map[string]any{"description": "A starter question of " + st.Space,
+			"messages": []map[string]any{{"role": "user", "content": map[string]string{"type": "text", "text": text}}}}, nil)
+		return
+	}
 	rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such prompt: see prompts/list"})
+}
+
+// starterPrompt is a starter question's prompt name: SPACE/start-N.
+func starterPrompt(st ask.SpaceStarter) string { return fmt.Sprintf("%s/start-%d", st.Space, st.N) }
+
+// promptSources are the skills and starter questions of the person's spaces.
+func (h MCP) promptSources(ctx context.Context, s tenancy.Scope) ([]ask.SpaceSkill, []ask.SpaceStarter, error) {
+	skills, starters := []ask.SpaceSkill{}, []ask.SpaceStarter{}
+	var err error
+	if h.Skills != nil {
+		if skills, err = h.Skills(ctx, s); err != nil {
+			return nil, nil, err
+		}
+	}
+	if h.Starters != nil {
+		if starters, err = h.Starters(ctx, s); err != nil {
+			return nil, nil, err
+		}
+	}
+	return skills, starters, nil
 }
 
 var errNoTool = errors.New("api: no such MCP tool")

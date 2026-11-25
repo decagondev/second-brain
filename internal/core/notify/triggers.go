@@ -52,6 +52,11 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		return nil, nil, err
 	}
 	out, marks = append(out, pol...), append(marks, polMarks...)
+	if j.SourceChanged != nil {
+		if err := j.SourceChanged(ctx, from, now); err != nil {
+			return nil, nil, fmt.Errorf("notify: sources changed: %w", err)
+		}
+	}
 	if j.Transcripts == nil || j.RunDecisions == nil {
 		return out, marks, nil
 	}

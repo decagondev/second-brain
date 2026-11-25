@@ -33,7 +33,7 @@ func TestSuggestedQuestionsThroughARunningCell(t *testing.T) {
 	if code, _ := r.do(t, "GET", "/login", ""); code != http.StatusNotFound {
 		t.Fatalf("sign-in: %d", code)
 	}
-	if code, _ := r.do(t, "PUT", "/v1/spaces/ops/suggested", `{"questions":["1","2","3","4","5","6","7","8","9"]}`); code != http.StatusBadRequest {
+	if code, _ := r.do(t, "PUT", "/v1/spaces/ops/suggested", `{"questions":["1","2","3","4","5","6","7","8","9","10","11","12","13"]}`); code != http.StatusBadRequest {
 		t.Fatalf("a ninth question: %d", code)
 	}
 	if code, body := r.do(t, "PUT", "/v1/spaces/ops/suggested", `{"questions":[" When is the zebra cutoff? ","Who owns the rota?"]}`); code != 200 {

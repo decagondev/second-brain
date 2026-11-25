@@ -444,6 +444,16 @@
               "main"
             ]
           },
+          "on": {
+            "items": {
+              "enum": [
+                "source-changed"
+              ]
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
           "onboarding": {
             "default": true,
             "type": "boolean"

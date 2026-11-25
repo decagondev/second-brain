@@ -65,6 +65,7 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
 	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
+	mux.HandleFunc("GET /v1/spaces/{name}/suggested/candidates", h.starterCandidates) // SB-4906
 	mux.HandleFunc("GET /v1/spaces/{name}/pins", h.pins)
 	mux.HandleFunc("POST /v1/spaces/{name}/pins", h.pin)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/pins/{id}", h.unpin)
@@ -538,6 +539,21 @@ func (h Questions) setSuggested(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"questions": qs})
+}
+
+// starterCandidates are the questions the cell suggests the space's stewards publish as
+// starter questions (SB-4906): never an asker's name.
+func (h Questions) starterCandidates(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	cs, err := h.Service.StarterCandidates(r.Context(), s, r.PathValue("name"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"items": cs})
 }
 
 // pins lists the space's verified answers for its stewards (SB-3601).

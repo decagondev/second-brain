@@ -60,7 +60,16 @@ type Space struct {
 	Rhythms map[string]Rhythm `json:"rhythms,omitempty"`
 	// Onboarding false turns off the onboarding rhythm for the space (SB-4802); nil is on.
 	Onboarding *bool `json:"onboarding,omitempty"`
+	// On are the space's opt-in triggers (SB-4905), from SpaceTriggers; nil for none.
+	On []string `json:"on,omitempty"`
 }
+
+// SpaceTriggers are the triggers a space's `on` may list: source-changed redrafts what an
+// agent drafted from a document that has a new version (SB-4905).
+var SpaceTriggers = []string{"source-changed"}
+
+// Watches says whether the space lists trigger t in `on`.
+func (s Space) Watches(t string) bool { return contains(s.On, t) }
 
 // Skill is one way of writing an answer: an instruction on format and steps only, and the
 // eval cases that hold it, question to the expected document (KIND:ID).
@@ -215,7 +224,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -335,7 +344,7 @@ func (c *checker) space(name string, n *node, p string) {
 			s.IncidentLabels = c.incidentLabels(v, f)
 		case "skills": // SB-4601
 			s.Skills, sn.skills = c.skills(v, f), v
-		case "rhythms", "onboarding": // SB-4801, SB-4802
+		case "rhythms", "onboarding", "on": // SB-4801, SB-4802, SB-4905
 			c.rhythmField(k.value, v, f, &s)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
@@ -778,6 +787,30 @@ func (c *checker) incidentLabels(v *node, f string) []string {
 		default:
 			out = append(out, strings.ToLower(l))
 		}
+	}
+	return out
+}
+
+// spaceOn reads a space's opt-in triggers, each one of SpaceTriggers, once.
+func (c *checker) spaceOn(v *node, f string) []string {
+	vs, ns, ok := c.list(v, f, "[source-changed]")
+	if !ok {
+		return nil
+	}
+	out := []string{}
+	for m, t := range vs {
+		fm := fmt.Sprintf("%s[%d]", f, m)
+		switch {
+		case !contains(SpaceTriggers, t):
+			c.add(ns[m], fm, "%q is not a trigger; use %s", t, orList(SpaceTriggers))
+		case contains(out, t):
+			c.add(ns[m], fm, "%q is listed twice", t)
+		default:
+			out = append(out, t)
+		}
+	}
+	if len(out) == 0 {
+		return nil
 	}
 	return out
 }

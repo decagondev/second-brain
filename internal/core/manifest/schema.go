@@ -123,6 +123,7 @@ func JSONSchema() []byte {
 								"cases": map[string]any{"type": "object", "minProperties": MinSkillCases, "maxProperties": MaxSkillCases,
 									"additionalProperties": map[string]any{"type": "string", "pattern": skillDocRe.String()}}}}},
 					"onboarding": map[string]any{"type": "boolean", "default": true},
+					"on":         map[string]any{"type": "array", "minItems": 1, "uniqueItems": true, "items": map[string]any{"enum": SpaceTriggers}},
 					"rhythms": map[string]any{"type": "object", "maxProperties": MaxRhythms, "propertyNames": map[string]any{"pattern": rhythmNameRe.String()},
 						"additionalProperties": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"subject", "steps"},
 							"properties": map[string]any{"subject": map[string]any{"enum": RhythmSubjects}, "plan": map[string]any{"enum": RhythmPlans},

@@ -32,6 +32,8 @@ Each connector of a cell is synced by a scheduler every 60 seconds, with up to 1
 
 On GCP that scheduler is Cloud Scheduler, every minute, and a missed run alerts (sb-runtime(7), Schedules).
 
+A changed document is ingested as a **new version**, first seen at that sync; a rebuild's versions are never new (Rebuild). In a space with `on: [source-changed]` (sb-space(5)), a new version of a document an agent draft drew on redrafts that draft for review, once a day at most, and republishes nothing (SB-4905; sb-agents(7), When a source changes).
+
 Freshness is measured per connector as the age of the last successful sync, exported as `sb_ingest_last_success_age_seconds{tenant, connector}`. It stays well under the 15-minute target while syncs succeed, and an alert fires when it passes 15 minutes. Failures are counted in `sb_ingest_sync_failures_total{tenant, connector}`.
 
 ### Content is data

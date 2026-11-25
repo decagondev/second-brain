@@ -52,7 +52,11 @@ func (a Agent) loadSkill(ctx context.Context, s tenancy.Scope, q string) (contex
 	if !strings.HasPrefix(s.Space(), "spc_") || a.Skills == nil {
 		return ctx, q, "", fmt.Errorf("%w: skills are a space's; ask in the space that has /%s", ErrInvalid, name)
 	}
-	for _, sk := range a.Skills(space) {
+	skills := a.Skills(space)
+	if v, ok := scenarioOf(ctx); ok { // SB-4904: a scenario runs with its version's skills
+		skills = v.Skills
+	}
+	for _, sk := range skills {
 		if sk.Name == name {
 			return context.WithValue(ctx, skillKey{}, sk), rest, name, nil
 		}

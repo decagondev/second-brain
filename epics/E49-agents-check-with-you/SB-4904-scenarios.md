@@ -13,7 +13,7 @@ summary: "A steward approves a skill or agent change without seeing how it answe
 | Manual | [`sb-evals(7)`](../../manual/sb-evals.7.md), [`sb-agents(7)`](../../manual/sb-agents.7.md) |
 | Laws | LAW-01, LAW-06 |
 | Depends on | SB-4601, SB-4401 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ A steward approves a skill or agent change without seeing how it answers their o
 
 ## Acceptance criteria
 
-- [ ] A manifest diff that changes a skill or agent can carry up to 10 scenarios, run against the current and proposed versions side by side
-- [ ] Scenarios run as the steward only
-- [ ] A kept scenario joins the eval suite and runs in the gate
+- [x] A manifest diff that changes a skill or agent can carry up to 10 scenarios, run against the current and proposed versions side by side
+- [x] Scenarios run as the steward only
+- [x] A kept scenario joins the eval suite and runs in the gate
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Scenario format
-- [ ] Run scenarios in the diff review
-- [ ] Keep as eval case
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Scenario format
+- [x] Run scenarios in the diff review
+- [x] Keep as eval case
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [20-rhythms-check-run.md](../../docs/20-rhythms-check-run.md).
+2026-11-25: built. `internal/core/ask/scenarios.go`: a scenario is a question, an optional department agent, and at least one of `cites` (KIND:ID), `says` and `never`, one line of at most 300 characters each, at most 10 a run. `POST /v1/spaces/NAME/proposals/{id}/scenarios` runs each one twice as the steward who sends it, in the space, through `Agent.ProbeAs` (a trace, no conversation): once with the space's `agents` and skills as applied and once as the open proposal would make them (`withScenario` overrides only those two). The answer shows both sides with pass, why and the answer's lines and cites, for that steward only; the proposal keeps each question with pass or fail per side and who ran them, which `GET /v1/admin/proposals` shows the operator, and the run is audited. `keep` turns a scenario that passed on the proposal and names `cites` into an eval case run as that steward, counted toward the 50. Tested in TestScenariosSourcesAndStartersThroughARunningCell and TestScenariosAreCheckedAndJudged. Scenarios are over the API; the steward screen has no editor for them yet.
 
 ## Definition of done
 

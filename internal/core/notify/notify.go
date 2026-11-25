@@ -255,6 +255,9 @@ type Job struct {
 	// PolicyNotices are the policies' current versions and who to tell (SB-4103); each is
 	// told once. nil tells no one.
 	PolicyNotices func(ctx context.Context) ([]ask.PolicyNotice, error)
+	// SourceChanged notes the documents with a new version in [from, now) on the agent
+	// drafts that drew on them, and makes the day's redrafts (SB-4905); nil does neither.
+	SourceChanged func(ctx context.Context, from, now time.Time) error
 	// Research runs the queued research reports and returns those it finished (SB-4201);
 	// Actions are the action items confirmed since a time (SB-4203); PrepDue makes a
 	// person's briefs of the events starting in a window (SB-4202). nil does none.

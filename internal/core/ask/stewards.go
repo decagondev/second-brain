@@ -378,10 +378,11 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 			if q.Thread.Agent != "" {
 				it.Thread.Trace = q.Trace
 				it.Thread.Sections, it.Thread.Comments = DraftSections(q.Thread.Text), roundComments(q.Thread) // SB-4902
+				it.Thread.Changed = q.Thread.Changed                                                           // SB-4905
 			}
 			if q.Thread.Agent != "" && q.Asker != s.User() {
 				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede, it.Thread.Trace = "", true, nil, nil, ""
-				it.Thread.Versions, it.Thread.Diff, it.Thread.Sections, it.Thread.Comments = nil, nil, nil, nil
+				it.Thread.Versions, it.Thread.Diff, it.Thread.Sections, it.Thread.Comments, it.Thread.Changed = nil, nil, nil, nil, nil
 			}
 		}
 		it.Draft, it.Request, it.Rhythm, it.Project = q.Draft, q.Request, q.Rhythm, q.Project

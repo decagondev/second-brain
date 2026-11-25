@@ -467,11 +467,16 @@ function SuggestTerm({
   );
 }
 
-// SuggestedEditor is the space's suggested questions, one per line, at most 8 (SB-3307).
+// SuggestedEditor is the space's starter questions, one per line, at most 12 (SB-3307,
+// SB-4906), with the questions the cell suggests: verified answers' and asks people found
+// helpful, never who asked.
 function SuggestedEditor({ base, fetcher }: { base: string; fetcher: Fetch }) {
   const id = useId();
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
+  const [cands, setCands] = useState<{ question: string; people?: number }[]>(
+    [],
+  );
   useEffect(() => {
     let live = true;
     call(fetcher, "GET", `${base}/suggested`).then(
@@ -479,6 +484,13 @@ function SuggestedEditor({ base, fetcher }: { base: string; fetcher: Fetch }) {
         live &&
         Array.isArray(r.questions) &&
         setText((r.questions as string[]).join("\n")),
+      () => {},
+    );
+    call(fetcher, "GET", `${base}/suggested/candidates`).then(
+      (r) =>
+        live &&
+        Array.isArray(r.items) &&
+        setCands(r.items as { question: string; people?: number }[]),
       () => {},
     );
     return () => {
@@ -504,7 +516,7 @@ function SuggestedEditor({ base, fetcher }: { base: string; fetcher: Fetch }) {
       <form onSubmit={save}>
         <label htmlFor={id}>
           {t(
-            "One question per line, at most 8, shown to the space's members when they start",
+            "One question per line, at most 12, shown to the space's members when they start",
           )}
         </label>
         <textarea
@@ -515,11 +527,29 @@ function SuggestedEditor({ base, fetcher }: { base: string; fetcher: Fetch }) {
         />
         <button
           type="submit"
-          disabled={lines.length > 8 || lines.some((x) => x.length > 120)}
+          disabled={lines.length > 12 || lines.some((x) => x.length > 120)}
         >
           {t("Save")}
         </button>
       </form>
+      {cands.length > 0 && (
+        <ul aria-label={t("Questions people found helpful")}>
+          {cands
+            .filter((c) => !lines.includes(c.question))
+            .map((c) => (
+              <li key={c.question}>
+                {c.question}{" "}
+                <button
+                  type="button"
+                  disabled={lines.length >= 12}
+                  onClick={() => setText(lines.concat(c.question).join("\n"))}
+                >
+                  {t("Add")}
+                </button>
+              </li>
+            ))}
+        </ul>
+      )}
       {status && <p role="status">{status}</p>}
     </section>
   );

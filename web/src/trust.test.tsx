@@ -54,7 +54,7 @@ describe("trust each answer", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Ask" }));
     });
-    expect(JSON.parse(bodies[0]!)).toEqual({ question: "cutoff?", verified: true, language: "en" });
+    expect(JSON.parse(bodies[0]!)).toEqual({ question: "cutoff?", clarify: true, verified: true, language: "en" });
     cleanup();
     render(<App fetcher={fetcher} />);
     expect((screen.getAllByRole("checkbox", { name: "Verified only" })[0] as HTMLInputElement).checked).toBe(true);

@@ -3,11 +3,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
@@ -39,6 +42,13 @@ type Stewards struct {
 	EvalHeld    func() (bool, error)
 	// PausedIn are the spaces an agent is paused in (SB-4702); nil shows none.
 	PausedIn func(agent string) []string
+	// Scenarios runs and keeps a proposal's scenarios, as the steward in the space ScopeIn
+	// makes (SB-4904); nil serves none.
+	Scenarios interface {
+		RunScenarios(ctx context.Context, s tenancy.Scope, name string, scs []ask.Scenario, cur, next ask.ScenarioVersion) ([]ask.ScenarioResult, error)
+		KeepScenario(ctx context.Context, s tenancy.Scope, name string, r ask.ScenarioResult) (ask.EvalCase, error)
+	}
+	ScopeIn func(ctx context.Context, user, space string) (tenancy.Scope, error)
 }
 
 // Register mounts the endpoints.
@@ -47,6 +57,7 @@ func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/term", h.proposeTerm)
 	mux.HandleFunc("GET /v1/spaces/{name}/agents", h.spaceAgents)
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/agents", h.proposeAgents)
+	mux.HandleFunc("POST /v1/spaces/{name}/proposals/{id}/scenarios", h.scenarios) // SB-4904
 	mux.HandleFunc("GET /v1/admin/proposals", h.list)
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/approve", h.decide(true))
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))
@@ -188,6 +199,96 @@ func (h Stewards) submit(w http.ResponseWriter, r *http.Request, s tenancy.Scope
 	}
 	pl, _ := plan.Make(next, plan.Desired(cur), true)
 	writeJSON(w, map[string]any{"id": p.ID, "space": name, "base": p.Base, "hash": p.Hash, "diff": p.Diff, "plan": pl.Text()})
+}
+
+// scenarioVersion is space name as manifest t makes it, for a scenario (SB-4904).
+func scenarioVersion(t manifest.Tenant, name string) ask.ScenarioVersion {
+	v := ask.ScenarioVersion{Agents: append([]string{}, t.Spaces[name].Agents...), Skills: []ask.Skill{}}
+	for n, sk := range t.Effective(name).Skills {
+		v.Skills = append(v.Skills, ask.Skill{Name: n, Instruction: sk.Instruction})
+	}
+	sort.Slice(v.Skills, func(i, j int) bool { return v.Skills[i].Name < v.Skills[j].Name })
+	return v
+}
+
+// scenarios runs a steward's scenarios against space name as applied and as open proposal
+// id would make it, as the steward, and keeps the ones asked for as eval cases (SB-4904).
+// The proposal keeps each scenario's pass or fail, never an answer.
+func (h Stewards) scenarios(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	s, cur, ok := h.stewardOf(w, r, name)
+	if !ok {
+		return
+	}
+	if h.Scenarios == nil || h.ScopeIn == nil {
+		fail(w, errs.New(errs.EUNAVAIL, "This cell can't run scenarios."))
+		return
+	}
+	var req struct {
+		Scenarios []ask.Scenario `json:"scenarios"`
+		Keep      []int          `json:"keep"`
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil {
+		fail(w, errs.New(errs.EINVAL, `The body must be JSON such as {"scenarios": [{"question": "…", "cites": "docs:…", "never": "…"}], "keep": [1]}.`))
+		return
+	}
+	p, found, err := h.Proposals.Get(r.Context(), r.PathValue("id"))
+	switch {
+	case err != nil:
+		fail(w, errs.New(errs.EUNAVAIL, "Proposals can't be read."))
+		return
+	case !found || p.State != proposals.Open || p.Space != name:
+		fail(w, errs.New(errs.EINVAL, "No open proposal %q for space %s.", r.PathValue("id"), name))
+		return
+	}
+	next, ds := manifest.Check([]byte(p.Manifest))
+	if len(ds) > 0 {
+		fail(w, errs.New(errs.EMANIFEST, "The proposal's manifest no longer checks."))
+		return
+	}
+	in, err := h.ScopeIn(r.Context(), s.User(), "spc_"+name)
+	if err != nil {
+		fail(w, errs.New(errs.EPERM, "You can't ask in space %s now.", name))
+		return
+	}
+	res, err := h.Scenarios.RunScenarios(r.Context(), in, name, req.Scenarios, scenarioVersion(cur, name), scenarioVersion(next, name))
+	if err != nil {
+		fail(w, questionErr(err))
+		return
+	}
+	for _, k := range req.Keep {
+		if k < 1 || k > len(res) {
+			fail(w, errs.New(errs.EINVAL, "keep lists scenarios by number, from 1 to %d.", len(res)))
+			return
+		}
+		ec, err := h.Scenarios.KeepScenario(r.Context(), in, name, res[k-1])
+		if err != nil {
+			fail(w, questionErr(err))
+			return
+		}
+		res[k-1].Kept = ec.ID
+	}
+	marks, passed := make([]proposals.ScenarioMark, 0, len(res)), 0
+	for _, x := range res {
+		marks = append(marks, proposals.ScenarioMark{Question: x.Question, Current: x.Current.Pass, Proposed: x.Proposed.Pass})
+		if x.Proposed.Pass {
+			passed++
+		}
+	}
+	if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "config", Subject: p.ID, State: "scenarios",
+		Reason: fmt.Sprintf("%d of %d scenarios pass on the proposal", passed, len(res)), Space: "spc_" + name}); err != nil {
+		fail(w, errs.New(errs.EUNAVAIL, "The run couldn't be audited."))
+		return
+	}
+	if _, err := h.Proposals.Update(r.Context(), p.ID, func(x *proposals.Proposal) error {
+		x.Scenarios, x.ScenariosBy = marks, s.User()
+		return nil
+	}); err != nil {
+		fail(w, errs.New(errs.EUNAVAIL, "The proposal couldn't be stored."))
+		return
+	}
+	writeJSON(w, map[string]any{"id": p.ID, "results": res, "passed": passed, "of": len(res)})
 }
 
 func (h Stewards) operator(w http.ResponseWriter, r *http.Request) (tenancy.Scope, bool) {

@@ -67,7 +67,7 @@ describe("ask better (SB-3301 to SB-3304)", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Ask" }));
     });
-    expect(JSON.parse(bodies[0]!)).toEqual({ question: "returns?", length: "short", language: "en" });
+    expect(JSON.parse(bodies[0]!)).toEqual({ question: "returns?", clarify: true, length: "short", language: "en" });
     cleanup();
     render(<App fetcher={fetcher} />);
     expect((screen.getByRole("checkbox", { name: "Short answer" }) as HTMLInputElement).checked).toBe(true);

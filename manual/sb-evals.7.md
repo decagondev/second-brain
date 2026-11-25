@@ -71,6 +71,10 @@ An answer of a named agent that its asker rated **Not helpful**, or reported (sb
 
 Each skill of a space (sb-space(5), `skills`; sb-agents(7), Skills) carries at least 3 cases, `"QUESTION": KIND:ID`. The evals job turns them into cases of the tenant's own set, `"id": "sk_…"`, with the question `/NAME QUESTION` and `expect` the document, run in the space as its **first active steward** on every release the cell starts, like any other case (above): a case **passes** when the answer with the skill cites the expected document. They don't count toward the 50, aren't added or deleted by hand, and change only with the manifest: a skill removed from it takes its cases with it. A skill case that passed and then fails holds the release, so a release can't break the way a space asked to be written for (LAW-06). A space with no active steward runs none, and holds nothing.
 
+### Cases from scenarios (SB-4904)
+
+A steward who ran scenarios on a proposal (sb-agents(7), Scenarios before you approve) may keep one that passed on the proposal and names the document to cite. It becomes a case of the tenant's own set like any other (above): its question, its agent, `expect` the document, run as that steward in the space, counted toward the 50. The evals job runs it against the manifest the cell runs: until the proposal is approved it may fail, and a case that has never passed holds nothing; once it passes it protects the space like any case (LAW-06).
+
 ### Model tiers (SB-4405)
 
 With sb-cell(5) `model.small`, an ask goes to the small model when **all** of these hold: it has no agent (or `ask`), no file, no chosen documents and no collection; the question is at most 120 characters; it is the first question of its conversation; its space doesn't pin `model: main` (sb-space(5)); and the small tier isn't held. Every other call (agents, research, files, follow-ups, long asks, tables, check-ins) uses the main model. The answer's trace records `tier` `small` or `main`, and nothing is chosen by the model itself.

@@ -717,14 +717,15 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		api.MCP{Agent: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
 			Agents: func(ctx context.Context, s tenancy.Scope) (map[string][]string, error) {
 				return agent.UsableAgents(ctx, s, c.ScopeAs)
-			}, Skills: agent.UsableSkills}.Register(mux) // SB-4601
+			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters}.Register(mux) // SB-4601, SB-4906
 	}
 	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now,
-		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive, PausedIn: c.Kill.PausedIn}.Register(mux)
+		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive, PausedIn: c.Kill.PausedIn,
+		Scenarios: stewards, ScopeIn: c.ScopeAs}.Register(mux) // SB-4904
 	api.AgentControl{Value: c.ownerValue, Pause: c.pauseAgent, Shadow: stewards.ShadowsFor}.Register(mux) // SB-4701, SB-4702, SB-4704
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)

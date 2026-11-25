@@ -34,6 +34,17 @@ type Proposal struct {
 	State     string    `json:"state"`
 	At        time.Time `json:"at"`
 	DecidedBy string    `json:"decided_by,omitempty"`
+	// Scenarios are the last scenario run on it (SB-4904): each question with whether it
+	// passed as applied and as proposed, and who ran them. Never an answer's text.
+	Scenarios   []ScenarioMark `json:"scenarios,omitempty"`
+	ScenariosBy string         `json:"scenarios_by,omitempty"`
+}
+
+// ScenarioMark is one scenario's result on a proposal, pass or fail on each side.
+type ScenarioMark struct {
+	Question string `json:"question"`
+	Current  bool   `json:"current"`
+	Proposed bool   `json:"proposed"`
 }
 
 // Hash identifies a manifest: SHA-256 of its canonical text.

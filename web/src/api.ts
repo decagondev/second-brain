@@ -640,6 +640,7 @@ export interface QueueQuestion {
     diff?: string[];
     trace?: string;
     mark?: { agent: string; version?: string };
+    changed?: string[]; // the sources a source-changed redraft was made for (SB-4905)
   }; // SB-4602, SB-4606, SB-4706
   // A request waiting on another space (SB-4504).
   waiting?: { on: string; reason: string; until: string };

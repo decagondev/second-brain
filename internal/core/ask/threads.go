@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"example.com/second-brain/internal/core/audit"
@@ -52,6 +53,13 @@ type SavedThread struct {
 	Comments []SectionComment `json:"comments,omitempty"`
 	// Release is the release the agent ran under, its version (SB-4706).
 	Release string `json:"release,omitempty"`
+	// When a source changes (SB-4905): Pending are the changed sources (KIND:ID) waiting for
+	// the day's redraft, Redrafted when it was last redrafted for one, and Next the redraft
+	// that took over watching it. Changed are the sources a redraft was made for.
+	Pending   []string  `json:"pending,omitempty"`
+	Redrafted time.Time `json:"redrafted,omitzero"`
+	Next      string    `json:"next,omitempty"`
+	Changed   []string  `json:"changed,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -82,6 +90,9 @@ type ThreadView struct {
 	Trace string `json:"trace,omitempty"`
 	// Mark is which agent and version wrote a draft (SB-4706, LAW-28), shown to everyone.
 	Mark *Mark `json:"mark,omitempty"`
+	// Changed are the sources a source-changed redraft was made for (SB-4905), for the
+	// steward it ran as.
+	Changed []string `json:"changed,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

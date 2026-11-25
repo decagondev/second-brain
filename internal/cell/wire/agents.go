@@ -478,6 +478,40 @@ func (c *Cell) newTranscripts(ctx context.Context, from, to time.Time) ([]notify
 	return out, nil
 }
 
+// sourceChanged notes the documents with a new version first seen in [from, to) on the
+// agent drafts of the spaces that list on: [source-changed], then makes the day's redrafts
+// (SB-4905). Only a version first seen after a draft was made is a change to it.
+func (c *Cell) sourceChanged(ctx context.Context, from, to time.Time) error {
+	m := c.Manifest()
+	var spaces []string
+	for _, n := range sortedSpaces(m) {
+		if m.Spaces[n].Watches(ask.SourceChanged) {
+			spaces = append(spaces, ask.SpaceKey(n))
+		}
+	}
+	if len(spaces) == 0 {
+		return nil
+	}
+	if lk, ok := c.Index.(ports.DocLookup); ok {
+		chunks, err := lk.Docs(ctx, c.Config.Tenant, ports.DocQuery{SeenSince: from})
+		if err != nil {
+			return err
+		}
+		changed := map[string]time.Time{}
+		for _, ch := range chunks {
+			ref := ch.Kind + ":" + ch.SourceID
+			if ch.Seen.Before(to) && ch.Seen.After(changed[ref]) {
+				changed[ref] = ch.Seen
+			}
+		}
+		if _, err := c.Parts().Stewards.NoteSourceChanges(ctx, spaces, changed); err != nil {
+			return err
+		}
+	}
+	_, err := c.Parts().Stewards.RedraftChanged(ctx, spaces)
+	return err
+}
+
 // runDecisions drafts a new transcript's decisions as its space's first active steward.
 func (c *Cell) runDecisions(ctx context.Context, d notify.NewDoc) (string, error) {
 	if _, ok := c.Manifest().Spaces[strings.TrimPrefix(d.Space, "spc_")]; !ok {

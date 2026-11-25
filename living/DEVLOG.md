@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S48.2: Agents that keep up
+
+**Wave/slice:** W48 / S48.2 (SB-4904 to SB-4906) · **Status:** Done
+
+**What:** A steward who proposes a change to a space's skills or agents can run up to 10 scenarios against it first: a question, what it should cite or say and what it must never say, each run as the steward against the space as applied and as proposed, side by side. The operator sees each scenario's pass or fail beside the diff, never an answer, and a passing scenario that names a document can be kept as an eval case. A space that lists `on: [source-changed]` has its agent drafts of the last 90 days watch their sources: a new version of a document a draft cited or was narrowed to redrafts it, once a day at most, as its approver and from the same sources, into a new draft whose diff shows the change; an approver who lost the space or the document drops it, and nothing republishes. Suggested questions become starter questions: up to 12, with candidates for the stewards from verified answers and from asks at least two people found helpful, nobody named, listed over MCP as prompts and answered fresh as whoever asks.
+
+**Why this way:** Scenarios run through the eval probe, so they keep no conversation and skip the asks-per-minute limit like any case, and a version of the space is only its `agents` and skills put on the context; nothing else of the proposal can change an answer, so nothing else is overridden. Source changes are noted when the notify job sees them and redrafted from the pending list, so a day's many changes become one redraft, and the approver's access is checked before every redraft, waiting or not, so a lost source drops it at once. A redraft is a new draft rather than an edit of the first, so a published note is never touched and the steward decides again. Starter questions reuse the suggested questions of SB-3307, so the Answer tab, its store and its audit row needed nothing new; candidates count people, never keep them, and need two.
+
+**Learned:** A finance space lists its template's agents unless it says otherwise, so the scenario test sets `agents: []` to see a proposal that adds one. A document's first sync is no change to a draft made after it, so a change counts only when its version was first seen after the draft. S48.1 changed three web tests' expected ask bodies (`clarify: true`) that `make check` doesn't run; `make web` caught them here and they are fixed.
+
+**Laws:** LAW-01, LAW-06, LAW-07, LAW-14, LAW-16, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S48.1: Check before acting
 
 **Wave/slice:** W48 / S48.1 (SB-4901 to SB-4903) · **Status:** Done

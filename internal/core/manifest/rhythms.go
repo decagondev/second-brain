@@ -128,16 +128,23 @@ func RhythmProblem(r Rhythm) string {
 
 // rhythmField reads a space's rhythms or onboarding.
 func (c *checker) rhythmField(key string, v *node, f string, s *Space) {
-	if key == "onboarding" {
+	switch key {
+	case "onboarding":
 		s.Onboarding = c.boolOf(v, f)
+		return
+	case "on": // SB-4905
+		s.On = c.spaceOn(v, f)
 		return
 	}
 	s.Rhythms = c.rhythms(v, f)
 }
 
-// formatWays is a space's onboarding and rhythms lines, "" for neither.
+// formatWays is a space's onboarding, rhythms and on lines, "" for none.
 func formatWays(sp Space, nl string) string {
 	out := ""
+	if len(sp.On) > 0 { // SB-4905
+		out += fmt.Sprintf("    on: %s%s", flowList(sp.On, false), nl)
+	}
 	if sp.Onboarding != nil {
 		out += fmt.Sprintf("    onboarding: %t%s", *sp.Onboarding, nl)
 	}

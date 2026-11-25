@@ -717,6 +717,12 @@ export function StewardQuestions({
                         fetcher={fetcher}
                       />
                     )}
+                  {q.thread.changed && q.thread.changed.length > 0 && (
+                    <p>
+                      {t("Redrafted because these sources changed:")}{" "}
+                      {q.thread.changed.join(", ")}
+                    </p>
+                  )}
                   {q.thread.trace && (
                     <HowThisWasMade trace={q.thread.trace} fetcher={fetcher} />
                   )}
