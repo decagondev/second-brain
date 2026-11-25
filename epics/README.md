@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-51 epics, 145 user stories and 391 tickets across 50 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+54 epics, 151 user stories and 411 tickets across 53 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -54,6 +54,9 @@ summary: Epics, waves, slices and tickets.
 | W47 Ways of Working | 7 | 0 | 0 | Planned 2026-11-25 with the user (E48), built: rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W48 Agents That Check With You | 6 | 0 | 0 | Planned 2026-11-25 with the user (E49), built: ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W49 Run AI Like a Business | 7 | 0 | 0 | Planned 2026-11-25 with the user (E50), built: AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
+| W50 Guard What Goes In | 0 | 0 | 7 | Planned 2026-11-25 with the user (E51): suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
+| W51 Write It Down Together | 0 | 0 | 7 | Planned 2026-11-25 with the user (E52): suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
+| W52 Agents That Act Carefully | 0 | 0 | 6 | Planned 2026-11-25 with the user (E53): start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -187,6 +190,12 @@ flowchart LR
   E47 --> E48
   E48 --> E49
   E49 --> E50
+  E51["E51 Guard What Goes In"]
+  E52["E52 Write It Down Together"]
+  E53["E53 Agents That Act Carefully"]
+  E50 --> E51
+  E51 --> E52
+  E52 --> E53
 ```
 
 ## Epics
@@ -244,6 +253,9 @@ flowchart LR
 | [E48 Ways of Working](E48-ways-of-working/README.md) | The company's recurring moments (a new joiner, a project, a quarter, a reorg, a 1:1) start the right drafts at the right time, without a steward remembering each step. | W47 | 7 |
 | [E49 Agents That Check With You](E49-agents-check-with-you/README.md) | Agents ask before they guess, take comments where they belong, show a plan before a long run, and notice when their sources change. | W48 | 6 |
 | [E50 Run AI Like a Business](E50-run-ai-like-a-business/README.md) | An admin sees what AI is used for and what it costs in one place, chooses how much model each task deserves, limits a person as well as an agent, gives agents targets, and learns whether a change actually helped. | W49 | 7 |
+| [E51 Guard What Goes In](E51-guard-what-goes-in/README.md) | Nothing a source says can steer an agent or leak through it, a new feature reaches a pilot before everyone, and anyone can see how an agent changed. | W50 | 7 |
+| [E52 Write It Down Together](E52-write-it-down-together/README.md) | What the brain learns flows back to the sources, drafts are written together, and every answer points to exactly where it came from. | W51 | 7 |
+| [E53 Agents That Act Carefully](E53-agents-act-carefully/README.md) | Agents start on the work events that matter, can be tried before they're turned on, can borrow access for one run with a named lender, and draft the next action for a person to send. | W52 | 6 |
 
 ## All tickets by wave
 
@@ -892,3 +904,38 @@ flowchart LR
 | [SB-5005](E50-run-ai-like-a-business/SB-5005-did-it-help.md) | S49.2 | E50 | Did it help? | Done |
 | [SB-5006](E50-run-ai-like-a-business/SB-5006-admins-week.md) | S49.2 | E50 | The admin's week | Done |
 | [SB-5007](E50-run-ai-like-a-business/SB-5007-inventory-export.md) | S49.2 | E50 | Inventory export | Done |
+
+### W50 Guard What Goes In
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5101](E51-guard-what-goes-in/SB-5101-suspect-passages.md) | S50.1 | E51 | Suspect passages | Open |
+| [SB-5102](E51-guard-what-goes-in/SB-5102-nothing-sensitive-out.md) | S50.1 | E51 | Nothing sensitive goes out | Open |
+| [SB-5103](E51-guard-what-goes-in/SB-5103-guardrail-export.md) | S50.1 | E51 | Guardrail export | Open |
+| [SB-5104](E51-guard-what-goes-in/SB-5104-agent-history.md) | S50.2 | E51 | Agent history | Open |
+| [SB-5105](E51-guard-what-goes-in/SB-5105-branch-moderators.md) | S50.2 | E51 | Branch moderators | Open |
+| [SB-5106](E51-guard-what-goes-in/SB-5106-feature-rollouts.md) | S50.2 | E51 | Feature rollouts | Open |
+| [SB-5107](E51-guard-what-goes-in/SB-5107-pause-from-notice.md) | S50.2 | E51 | Pause from the notice | Open |
+
+### W51 Write It Down Together
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5201](E52-write-it-down-together/SB-5201-suggested-edits.md) | S51.1 | E52 | Suggested edits to the source | Open |
+| [SB-5202](E52-write-it-down-together/SB-5202-edit-together.md) | S51.1 | E52 | Edit a draft together | Open |
+| [SB-5203](E52-write-it-down-together/SB-5203-agent-in-comment.md) | S51.1 | E52 | Ask an agent in a comment | Open |
+| [SB-5204](E52-write-it-down-together/SB-5204-who-made-it.md) | S51.1 | E52 | Who made it | Open |
+| [SB-5205](E52-write-it-down-together/SB-5205-page-or-slide.md) | S51.2 | E52 | Cite the page or slide | Open |
+| [SB-5206](E52-write-it-down-together/SB-5206-branch-conversation.md) | S51.2 | E52 | Branch a conversation | Open |
+| [SB-5207](E52-write-it-down-together/SB-5207-at-and-slash.md) | S51.2 | E52 | `@` and `/` in the ask box | Open |
+
+### W52 Agents That Act Carefully
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5301](E53-agents-act-carefully/SB-5301-work-events.md) | S52.1 | E53 | Start on a work event | Open |
+| [SB-5302](E53-agents-act-carefully/SB-5302-try-a-trigger.md) | S52.1 | E53 | Try a trigger first | Open |
+| [SB-5303](E53-agents-act-carefully/SB-5303-borrow-access.md) | S52.1 | E53 | Borrow access for one run | Open |
+| [SB-5304](E53-agents-act-carefully/SB-5304-draft-next-action.md) | S52.2 | E53 | Draft the next action | Open |
+| [SB-5305](E53-agents-act-carefully/SB-5305-managed-mcp.md) | S52.2 | E53 | Managed MCP access | Open |
+| [SB-5306](E53-agents-act-carefully/SB-5306-meet-transcripts.md) | S52.2 | E53 | Meeting transcripts from Drive | Open |
