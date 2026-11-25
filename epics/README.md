@@ -52,7 +52,7 @@ summary: Epics, waves, slices and tickets.
 | W45 Agents You Can Shape | 6 | 0 | 0 | Planned 2026-11-25 with the user (E46), built: skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W46 Every Agent Accountable | 7 | 0 | 0 | Planned 2026-11-25 with the user (E47), built: agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W47 Ways of Working | 7 | 0 | 0 | Planned 2026-11-25 with the user (E48), built: rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
-| W48 Agents That Check With You | 0 | 0 | 6 | Planned 2026-11-25 with the user (E49): ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
+| W48 Agents That Check With You | 3 | 0 | 3 | Planned 2026-11-25 with the user (E49), S48.1 built: ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W49 Run AI Like a Business | 0 | 0 | 7 | Planned 2026-11-25 with the user (E50): AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -874,9 +874,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-4901](E49-agents-check-with-you/SB-4901-ask-before-guessing.md) | S48.1 | E49 | Ask before guessing | Open |
-| [SB-4902](E49-agents-check-with-you/SB-4902-section-comments.md) | S48.1 | E49 | Comments on a section | Open |
-| [SB-4903](E49-agents-check-with-you/SB-4903-long-research.md) | S48.1 | E49 | Long research with checkpoints | Open |
+| [SB-4901](E49-agents-check-with-you/SB-4901-ask-before-guessing.md) | S48.1 | E49 | Ask before guessing | Done |
+| [SB-4902](E49-agents-check-with-you/SB-4902-section-comments.md) | S48.1 | E49 | Comments on a section | Done |
+| [SB-4903](E49-agents-check-with-you/SB-4903-long-research.md) | S48.1 | E49 | Long research with checkpoints | Done |
 | [SB-4904](E49-agents-check-with-you/SB-4904-scenarios.md) | S48.2 | E49 | Scenarios before you approve | Open |
 | [SB-4905](E49-agents-check-with-you/SB-4905-source-changed.md) | S48.2 | E49 | When a source changes | Open |
 | [SB-4906](E49-agents-check-with-you/SB-4906-starter-questions.md) | S48.2 | E49 | Starter questions | Open |

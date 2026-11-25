@@ -537,6 +537,11 @@ function Freshness({ answer }: { answer: AskResponse }) {
   const s = answer.notice_stale;
   return (
     <>
+      {answer.assumed && (
+        <p className="notice" role="note">
+          {answer.assumed}
+        </p>
+      )}
       {answer.notice_single && (
         <p className="notice" role="note">
           {t("This answer rests on one document. Check it if it matters.")}

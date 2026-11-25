@@ -114,7 +114,17 @@ export interface SeeAlso {
 
 export type Notice = "most_uncited" | "no_access" | "no_sources" | null;
 
+// Clarify is the one question an ambiguous ask gets instead of an answer (SB-4901).
+export interface Clarify {
+  kind: "term" | "space" | "period";
+  question: string;
+  choices: string[];
+}
+
 export interface AskResponse {
+  // SB-4901: a clarifying question instead of an answer, or the assumption an answer made.
+  clarify?: Clarify;
+  assumed?: string;
   trace: string;
   release: string;
   answer: { claims: Claim[] };
@@ -308,11 +318,15 @@ export async function ask(
   agent?: string,
   collection?: string,
   consult?: boolean,
+  clarify?: boolean,
+  choice?: string,
 ): Promise<AskResponse> {
   const body: Record<string, string | string[] | boolean | AskFile> = {
     question,
   };
   if (consult) body.consult = true; // SB-4501: with branch=true only
+  if (clarify) body.clarify = true; // SB-4901: this caller shows one clarifying question
+  if (choice) body.choice = choice;
   if (collection) body.collection = collection; // SB-4304
   if (agent) body.agent = agent; // a department agent (SB-4007)
   if (file) body.file = file; // SB-3802

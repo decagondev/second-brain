@@ -71,6 +71,8 @@ type Research struct {
 	// a kind with one agent (ResearchAgent).
 	Agent   string `json:"agent,omitempty"`
 	Release string `json:"release,omitempty"`
+	// Long is a long run in stages with checkpoints (SB-4903).
+	Long *LongRun `json:"long,omitempty"`
 }
 
 // ResearchAgent is the agent that wrote a report of kind (SB-4706).
@@ -97,6 +99,8 @@ type Section struct {
 	Claims    []answer.Claim `json:"claims"`
 	Decisions []answer.Cite  `json:"decisions,omitempty"`
 	Questions *int           `json:"questions,omitempty"`
+	// Assumed is what an unattended ask took its question to mean (SB-4901).
+	Assumed string `json:"assumed,omitempty"`
 }
 
 // Attendee is one attendee of a brief: known is one active user now, and owns the cited
@@ -186,6 +190,8 @@ type ResearchView struct {
 	Mark    *Mark         `json:"mark,omitempty"`
 	Changed *int          `json:"changed,omitempty"`
 	Account *AccountFacts `json:"account,omitempty"`
+	// Long is a long run's stages, checkpoint, estimate and ceiling (SB-4903).
+	Long *LongView `json:"long,omitempty"`
 }
 
 func (l Legwork) now() time.Time { return l.Now().UTC() }
@@ -219,6 +225,15 @@ func cut(s string, n int) string {
 
 // Plan asks the research agent for a plan of q, in s's space, and keeps it, unrun.
 func (l Legwork) Plan(ctx context.Context, s tenancy.Scope, q string, docs []string) (ResearchView, error) {
+	return l.plan(ctx, s, q, docs, false)
+}
+
+// PlanLong is Plan for a long run in stages, with its estimate and ceiling (SB-4903).
+func (l Legwork) PlanLong(ctx context.Context, s tenancy.Scope, q string, docs []string) (ResearchView, error) {
+	return l.plan(ctx, s, q, docs, true)
+}
+
+func (l Legwork) plan(ctx context.Context, s tenancy.Scope, q string, docs []string, long bool) (ResearchView, error) {
 	if err := l.check(s); err != nil {
 		return ResearchView{}, err
 	}
@@ -246,6 +261,9 @@ func (l Legwork) Plan(ctx context.Context, s tenancy.Scope, q string, docs []str
 	}
 	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, User: s.User(), Kind: KindResearch, Question: q, Space: s.Space(),
 		Documents: keys, Steps: steps, State: StatePlanned, At: l.now()}
+	if long {
+		r.Long = l.longPlan(len(steps))
+	}
 	if err := l.audit(ctx, s.User(), r, StatePlanned, hashOf(q)); err != nil {
 		return ResearchView{}, err
 	}
@@ -443,7 +461,7 @@ func (l Legwork) keepCites(ctx context.Context, s tenancy.Scope, cs []answer.Cit
 func view(r Research, secs []Section, dropped int) ResearchView {
 	v := ResearchView{ID: r.ID, Kind: r.Kind, Question: r.Question, Space: r.Space, State: r.State, Why: r.Why, Steps: r.Steps, At: r.At,
 		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped, Changed: r.Changed, Account: r.Account,
-		Mark: &Mark{Agent: ResearchAgent(r), Version: r.Release}}
+		Mark: &Mark{Agent: ResearchAgent(r), Version: r.Release}, Long: longView(r)}
 	if v.Steps == nil {
 		v.Steps = []string{}
 	}
@@ -480,21 +498,34 @@ func (l Legwork) RunQueued(ctx context.Context) ([]Finished, error) {
 		return nil, fmt.Errorf("%w: reports: %v", ErrUnavailable, err)
 	}
 	sort.SliceStable(qs, func(i, j int) bool { return qs[i].At.Before(qs[j].At) })
-	if len(qs) > ResearchPerRun {
-		qs = qs[:ResearchPerRun]
-	}
 	var out []Finished
+	now := l.now()
+	ran := 0
 	for _, r := range qs {
+		if waiting(r, now) {
+			continue // SB-4903: at a checkpoint, for the asker until it goes on by itself
+		}
+		if ran == ResearchPerRun {
+			break
+		}
+		ran++
 		r, err := l.runOne(ctx, r)
 		if err != nil {
 			return out, err
 		}
-		out = append(out, Finished{ID: r.ID, User: r.User, State: r.State})
+		st := r.State
+		if r.Long != nil && r.Long.Checkpoint != nil {
+			st = StateCheckpoint // SB-4903: its owner is told it waits for them
+		}
+		out = append(out, Finished{ID: r.ID, User: r.User, State: st})
 	}
 	return out, nil
 }
 
 func (l Legwork) runOne(ctx context.Context, r Research) (Research, error) {
+	if r.Long != nil {
+		return l.runStage(ctx, r)
+	}
 	r.State = StateRunning
 	if err := l.Research.PutResearch(ctx, r); err != nil {
 		return r, fmt.Errorf("%w: reports: %v", ErrUnavailable, err)
@@ -532,7 +563,7 @@ func (l Legwork) runOne(ctx context.Context, r Research) (Research, error) {
 			break
 		}
 		if claims, _ := citedOnly(resp.Answer.Claims); !claims[0].Uncited {
-			r.Sections = append(r.Sections, Section{Question: step, Trace: resp.Trace, Claims: claims})
+			r.Sections = append(r.Sections, Section{Question: step, Trace: resp.Trace, Claims: claims, Assumed: resp.Assumed})
 		}
 	}
 	r.CostUSD = tally.USD()

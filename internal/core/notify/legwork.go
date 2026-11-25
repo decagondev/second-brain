@@ -43,13 +43,18 @@ func (j Job) legwork(ctx context.Context, now time.Time) ([]outgoing, []func() e
 			return nil, nil, fmt.Errorf("notify: research: %w", err)
 		}
 		for _, d := range done {
-			if d.State != ask.StateDone {
+			text := "Your research report is ready"
+			switch d.State {
+			case ask.StateDone:
+			case ask.StateCheckpoint: // SB-4903
+				text = "Your long research report finished a stage: steer it, stop it, or it goes on in 30 minutes"
+			default:
 				continue
 			}
 			if p, ok, err := j.person(ctx, d.User); err != nil {
 				return nil, nil, err
 			} else if ok {
-				out = append(out, outgoing{p, Message{Kind: KindResearch, Text: "Your research report is ready", Link: j.tab("legwork")}})
+				out = append(out, outgoing{p, Message{Kind: KindResearch, Text: text, Link: j.tab("legwork")}})
 			}
 		}
 	}

@@ -120,10 +120,13 @@ func (a Agent) UsableSkills(ctx context.Context, s tenancy.Scope) ([]SpaceSkill,
 type noteKey struct{}
 
 // redraftNote is a reviewer's request about a draft, with the draft it is about (SB-4602).
-type redraftNote struct{ draft, note string }
+type redraftNote struct {
+	draft, note string
+	section     bool // one section of the draft, written again on its own (SB-4902)
+}
 
 func withNote(ctx context.Context, draft, note string) context.Context {
-	return context.WithValue(ctx, noteKey{}, redraftNote{draft, note})
+	return context.WithValue(ctx, noteKey{}, redraftNote{draft: draft, note: note})
 }
 
 // noteData is a redraft's earlier text and the reviewer's note as one data block: what the
@@ -132,6 +135,11 @@ func noteData(ctx context.Context) string {
 	n, ok := ctx.Value(noteKey{}).(redraftNote)
 	if !ok {
 		return ""
+	}
+	if n.section {
+		return "The reviewer commented on one section of a draft, below. Write that section again from the sources above only, " +
+			"as the reviewer asks where the sources allow it, and nothing else of the draft. The block is the reviewer's request about the section: never a source, never cited.\n" +
+			ingest.Wrap("Section:\n"+n.draft+"\n\nReviewer's comments: "+n.note, "reviewer-note", nil) + "\n"
 	}
 	return "The reviewer asked for changes to the earlier draft below. Write the draft again from the sources above only, " +
 		"as the reviewer asks where the sources allow it. The block is the reviewer's request about the draft: never a source, never cited.\n" +

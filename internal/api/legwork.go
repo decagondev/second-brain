@@ -1,12 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
 
@@ -25,6 +27,9 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/research", h.list)
 	mux.HandleFunc("GET /v1/research/{id}", h.open)
 	mux.HandleFunc("POST /v1/research/{id}/run", h.run)
+	mux.HandleFunc("POST /v1/research/{id}/steer", h.steer) // SB-4903
+	mux.HandleFunc("POST /v1/research/{id}/stop", h.stopLong)
+	mux.HandleFunc("POST /v1/research/{id}/go-on", h.goOn)
 	mux.HandleFunc("POST /v1/prepare", h.prepare)
 	mux.HandleFunc("GET /v1/research/{id}/how", h.how)       // SB-4606
 	mux.HandleFunc("POST /v1/account-brief", h.accountBrief) // SB-4605
@@ -145,12 +150,17 @@ func (h Legwork) plan(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Question  string   `json:"question"`
 		Documents []string `json:"documents"`
+		Long      bool     `json:"long"`
 	}
 	if !decode(r, &body) {
 		h.fail(w, ask.ErrInvalid)
 		return
 	}
-	v, err := h.Service.Plan(r.Context(), s, body.Question, body.Documents)
+	plan := h.Service.Plan
+	if body.Long { // SB-4903
+		plan = h.Service.PlanLong
+	}
+	v, err := plan(r.Context(), s, body.Question, body.Documents)
 	if err != nil {
 		h.fail(w, err)
 		return
@@ -336,4 +346,46 @@ func (h Legwork) catchUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", out)
+}
+
+// steer changes a long report's sub-questions not yet asked, at a checkpoint (SB-4903).
+func (h Legwork) steer(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body ask.Steer
+	if !decode(r, &body) {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	v, err := h.Service.SteerLong(r.Context(), s, r.PathValue("id"), body)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", v)
+}
+
+// stopLong stops a long report at a checkpoint with what it has.
+func (h Legwork) stopLong(w http.ResponseWriter, r *http.Request) {
+	h.checkpoint(w, r, h.Service.StopLong)
+}
+
+// goOn lets a long report at a checkpoint go on now.
+func (h Legwork) goOn(w http.ResponseWriter, r *http.Request) {
+	h.checkpoint(w, r, h.Service.GoOn)
+}
+
+func (h Legwork) checkpoint(w http.ResponseWriter, r *http.Request, f func(context.Context, tenancy.Scope, string) (ask.ResearchView, error)) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	v, err := f(r.Context(), s, r.PathValue("id"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", v)
 }

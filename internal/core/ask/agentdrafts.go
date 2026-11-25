@@ -140,6 +140,9 @@ func (x Stewards) draftAnswer(ctx context.Context, s tenancy.Scope, kind string,
 		}
 	}
 	text := DraftText(resp.Answer)
+	if resp.Assumed != "" { // SB-4901: a scheduled or triggered run says what it took the question to mean
+		text = resp.Assumed + "\n" + text
+	}
 	if text == "" {
 		return Response{}, "", fmt.Errorf("%w: nothing %s could cite", ErrInvalid, agent)
 	}

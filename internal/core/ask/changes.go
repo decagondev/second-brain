@@ -27,6 +27,8 @@ type RedraftResponse struct {
 	Versions []string `json:"versions"`
 	Rounds   int      `json:"rounds"`
 	Diff     []string `json:"diff"`
+	// Sections is the diff of each section redrafted for its comments (SB-4902).
+	Sections []SectionDiff `json:"sections,omitempty"`
 }
 
 // draftSources are the documents a draft cited or offered (See also), as KIND:ID, in order.
@@ -68,7 +70,7 @@ func lines(s string) []string {
 // couldn't (LAW-14); a fourth round is ErrInvalid.
 func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, note string) (RedraftResponse, error) {
 	note = strings.Join(strings.Fields(note), " ")
-	if note == "" || utf8.RuneCountInString(note) > MaxChangeNote || !printableText(note) {
+	if utf8.RuneCountInString(note) > MaxChangeNote || !printableText(note) {
 		return RedraftResponse{}, fmt.Errorf("%w: a note is 1 to %d characters", ErrInvalid, MaxChangeNote)
 	}
 	if _, _, err := x.steward(ctx, s, name); err != nil {
@@ -80,6 +82,10 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 	}
 	if err := changeable(q, s.User()); err != nil {
 		return RedraftResponse{}, err
+	}
+	comments := roundComments(q.Thread)
+	if note == "" && len(comments) == 0 {
+		return RedraftResponse{}, fmt.Errorf("%w: a note is 1 to %d characters, or comment on a section first", ErrInvalid, MaxChangeNote)
 	}
 	if x.Agent.pausedIn(q.Thread.Agent, s) { // SB-4702
 		return RedraftResponse{}, fmt.Errorf("%w: %s is paused in this space", ErrKilled, q.Thread.Agent)
@@ -99,7 +105,14 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 	if len(req.Documents) == 0 {
 		rctx = withOnly(rctx, t.Sources) // the same sources, never more
 	}
-	resp, text, err := x.draftAnswer(withNote(rctx, t.Text, note), in, t.Kind, req)
+	var resp Response
+	var text string
+	var diffs []SectionDiff
+	if len(comments) > 0 { // SB-4902: only the commented sections, the rest byte for byte
+		resp, text, diffs, err = x.redraftSections(rctx, in, t, req, comments, note)
+	} else {
+		resp, text, err = x.draftAnswer(withNote(rctx, t.Text, note), in, t.Kind, req)
+	}
 	if err != nil {
 		return RedraftResponse{}, err
 	}
@@ -124,7 +137,7 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 		return RedraftResponse{}, err
 	}
 	th := out.Thread
-	return RedraftResponse{ID: id, Text: th.Text, Versions: th.Versions, Rounds: th.Rounds, Diff: threadDiff(th)}, nil
+	return RedraftResponse{ID: id, Text: th.Text, Versions: th.Versions, Rounds: th.Rounds, Diff: threadDiff(th), Sections: diffs}, nil
 }
 
 // changeable says whether a question is an open agent draft user may ask changes of.

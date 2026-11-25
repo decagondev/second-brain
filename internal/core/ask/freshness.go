@@ -176,9 +176,12 @@ func SyncLine(n SyncNotice) string {
 	return n.Kind + " last synced at " + n.LastSuccess.UTC().Format("15:04 UTC") + "; newer changes may be missing."
 }
 
-// Warnings are the answer's stale and sync lines, in order, for the chat apps.
+// Warnings are the answer's assumption, stale and sync lines, in order, for the chat apps.
 func Warnings(r Response) []string {
 	var out []string
+	if r.Assumed != "" { // SB-4901: what an answer that couldn't ask took the question to mean
+		out = append(out, r.Assumed)
+	}
 	if r.NoticeSingle {
 		out = append(out, SingleLine)
 	}

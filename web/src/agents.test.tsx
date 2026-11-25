@@ -94,6 +94,6 @@ describe("Agents", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Ask close-checklist in finance" }));
     });
-    expect(calls[1]).toBe(`/v1/ask?space=finance {"question":"Is the AP close done?","agent":"close-checklist","language":"en"}`);
+    expect(calls[1]).toBe(`/v1/ask?space=finance {"question":"Is the AP close done?","clarify":true,"agent":"close-checklist","language":"en"}`);
   });
 });

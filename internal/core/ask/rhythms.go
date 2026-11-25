@@ -684,7 +684,7 @@ func (x Rhythms) draft(ctx context.Context, rp *RhythmRun, st RhythmRunStep, s t
 	default:
 		var resp Response
 		if resp, err = x.Stewards.Agent.Ask(ctx, s, Request{Question: st.Ask}); err == nil {
-			text, agent = DraftText(resp.Answer), "ask"
+			text, agent = strings.TrimPrefix(resp.Assumed+"\n", "\n")+DraftText(resp.Answer), "ask"
 		}
 	}
 	if err != nil {

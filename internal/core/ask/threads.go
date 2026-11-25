@@ -48,6 +48,8 @@ type SavedThread struct {
 	Sources  []string `json:"sources,omitempty"`
 	Versions []string `json:"versions,omitempty"`
 	Rounds   int      `json:"rounds,omitempty"`
+	// Comments are reviewers' comments on the draft's sections (SB-4902), every round's.
+	Comments []SectionComment `json:"comments,omitempty"`
 	// Release is the release the agent ran under, its version (SB-4706).
 	Release string `json:"release,omitempty"`
 }
@@ -71,6 +73,10 @@ type ThreadView struct {
 	Versions []string `json:"versions,omitempty"`
 	Rounds   int      `json:"rounds,omitempty"`
 	Diff     []string `json:"diff,omitempty"`
+	// Sections are the draft's sections, and Comments the comments on them this round
+	// (SB-4902), for the steward it ran as.
+	Sections []string         `json:"sections,omitempty"`
+	Comments []SectionComment `json:"comments,omitempty"`
 	// Trace is an agent draft's trace, for How this was made (SB-4606), for the steward it
 	// ran as.
 	Trace string `json:"trace,omitempty"`

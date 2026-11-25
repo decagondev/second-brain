@@ -10,6 +10,7 @@ import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
 import { RhythmsCard, ProjectsCard } from "./Rhythms";
+import { ClarifyView } from "./Clarify";
 import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { CatchUp, ServiceCard, Trail, WaitsCard, markVisit } from "./Across";
@@ -34,6 +35,11 @@ interface Turn {
   // While the answer is written: search's allowed documents, shown first (SB-2304).
   pending?: boolean;
   sources?: SearchResult[];
+}
+
+// answered is a turn with an answer, not a clarifying question (SB-4901).
+function answered(x: Turn): x is Turn & { answer: AskResponse } {
+  return !!x.answer && !x.answer.clarify;
 }
 
 type Tab = "answer" | "documents" | "saved" | "legwork" | "questions" | "handover";
@@ -167,7 +173,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
   }
 
   // remember is false for a shared question asked from its link (SB-2405).
-  async function run(q: string, inSpace: string, conv: string | undefined, remember = true, agent?: string) {
+  async function run(q: string, inSpace: string, conv: string | undefined, remember = true, agent?: string, choice?: string) {
     setBusy(true);
     if (remember) setRecent(rememberQuestion(q));
     const id = nextTurn.current++;
@@ -180,7 +186,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH));
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH), true, choice);
       setConversation(a.conversation);
       dropFile();
       settle({ id, question: q, answer: a });
@@ -327,20 +333,21 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
             <div className="turn" key={x.id}>
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
-              {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} />}
-              {x.answer && <DepartmentsView answer={x.answer} fetcher={fetcher} />}
-              {x.answer && <HandoffView answer={x.answer} question={x.question} fetcher={fetcher} />}
-              {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
-              {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
-              {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
-              {x.answer && <RememberBox fetcher={fetcher} />}
-              {x.answer && space && (x.answer.notice === "no_sources" || x.answer.notice === "no_access") && (
+              {x.answer?.clarify && <ClarifyView clarify={x.answer.clarify} busy={busy} onChoose={(c) => { setTurns((ts) => ts.filter((y) => y.id !== x.id)); void run(x.question, branch && space ? space + BRANCH : space, conversation, false, undefined, c); }} />}
+              {answered(x) && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} />}
+              {answered(x) && <DepartmentsView answer={x.answer} fetcher={fetcher} />}
+              {answered(x) && <HandoffView answer={x.answer} question={x.question} fetcher={fetcher} />}
+              {answered(x) && <AnswerTools question={x.question} answer={x.answer} />}
+              {answered(x) && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
+              {answered(x) && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
+              {answered(x) && <RememberBox fetcher={fetcher} />}
+              {answered(x) && space && (x.answer.notice === "no_sources" || x.answer.notice === "no_access") && (
                 <button type="button" disabled={busy} onClick={() => askWholeCompany(x.question)}>
                   {t("Ask the whole company")}
                 </button>
               )}
-              {x.answer && <AskStewards question={x.question} answer={x.answer} space={space || undefined} fetcher={fetcher} />}
-              {x.answer && (x.answer.earlier_dropped ?? 0) > 0 && x.id === turns[turns.length - 1]?.id && (
+              {answered(x) && <AskStewards question={x.question} answer={x.answer} space={space || undefined} fetcher={fetcher} />}
+              {answered(x) && (x.answer.earlier_dropped ?? 0) > 0 && x.id === turns[turns.length - 1]?.id && (
                 <p className="meta">
                   {tn(
                     x.answer.earlier_dropped!,

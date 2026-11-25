@@ -241,7 +241,7 @@ func (l Legwork) runRoutine(ctx context.Context, q SavedQuestion, now time.Time)
 		n := len(isNew)
 		r.Changed = &n
 		if !claims[0].Uncited {
-			r.Sections = []Section{{Question: q.Question, Trace: resp.Trace, Claims: claims}}
+			r.Sections = []Section{{Question: q.Question, Trace: resp.Trace, Claims: claims, Assumed: resp.Assumed}}
 		}
 		if seen == nil {
 			seen = []string{}

@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Agents that check with you: an ambiguous question (a term with two meanings, several departments, no period) gets one clarifying question in the web UI, and other callers state what they assumed; reviewers comment on a section of an agent draft and Ask for changes rewrites only those sections; long research shows its plan, estimate and ceiling, then runs in up to 6 stages with checkpoints to steer, stop or go on (SB-4901 to SB-4903)
 - Ways of working: quarterly planning drafts next quarter's goals for each space two weeks before the quarter ends, rolled up for the department with overlaps flagged; `sb tree move|merge --plan` and `GET /v1/admin/tree/plan` show what a reorg would change before anything moves; 1:1 prep gives a manager and their report the same weekly brief from the report's published goals and action items (SB-4805 to SB-4807, LAW-30)
 - Ways of working: rhythms, playbooks of dated steps in a space's manifest that each wait for a named person (four built in); a new joiner's first 90 days started by SCIM; Start a project with a shared collection, goal draft, decision log and a kickoff brief of similar past projects; Close project with a read-only archive, lessons proposed to the stewards and a cited retrospective (SB-4801 to SB-4804, LAW-29)
 

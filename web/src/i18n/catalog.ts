@@ -58,6 +58,8 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Ask its stewards for membership, or ask company-wide.": { de: "Bitten Sie die Verantwortlichen um Mitgliedschaft oder fragen Sie unternehmensweit.", fr: "Demandez l'adhésion à ses responsables, ou posez la question à toute l'entreprise." },
   "Ask the owner for access.": { de: "Bitten Sie den Eigentümer um Zugriff.", fr: "Demandez l'accès à son propriétaire." },
   "Ask the owners for access": { de: "Die Eigentümer um Zugriff bitten", fr: "Demander l'accès aux propriétaires" },
+  "Before answering": { de: "Vor der Antwort", fr: "Avant de répondre" },
+  "Just answer": { de: "Einfach antworten", fr: "Répondre directement" },
   "Ask the whole company": { de: "Im ganzen Unternehmen fragen", fr: "Demander à toute l'entreprise" },
   "ask their owners: {owners}": { de: "fragen Sie die Eigentümer: {owners}", fr: "demandez à leurs propriétaires : {owners}" },
   "Ask them": { de: "Fragen", fr: "Leur demander" },

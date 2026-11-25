@@ -60,6 +60,10 @@ type Request struct {
 	// Consult also asks the department agents of the branch's teams (SB-4501): a branch
 	// ask only, never inside a consultation (LAW-27).
 	Consult bool `json:"consult,omitempty"`
+	// Clarify says the caller can show one clarifying question, and Choice is the asker's
+	// answer to it (SB-4901).
+	Clarify bool   `json:"clarify,omitempty"`
+	Choice  string `json:"choice,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -204,6 +208,10 @@ type Response struct {
 	Handoff *Handoff `json:"handoff,omitempty"`
 	// Skill is the skill the question loaded (SB-4601).
 	Skill string `json:"skill,omitempty"`
+	// Clarify is the one question an ambiguous ask gets instead of an answer, and Assumed
+	// the line an answer that couldn't ask starts with (SB-4901).
+	Clarify *Clarify `json:"clarify,omitempty"`
+	Assumed string   `json:"assumed,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -470,6 +478,11 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
+	choice, assumed, early, err := a.clarified(ctx, s, q, req, len(earlier), probe, dept) // SB-4901
+	if early != nil {
+		return *early, err
+	}
+	ctx = withChoice(ctx, choice)
 	tier := a.tierFor(ctx, s.Space(), req, q, len(docs), len(earlier)) // SB-4405
 	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe))     // SB-4303: the asker's own, ask agent only (LAW-25)
 	capped := len(docs) == 0
@@ -494,19 +507,11 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	trace := a.NewID("tr_")
 	turn := len(earlier)
 	sent, left := recent(earlier)
-	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left, Skill: skill}
+	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left, Skill: skill, Assumed: assumed}
 	if capped { // chosen documents aren't capped (SB-3004); a collection's are
 		res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
 	}
-	if dept != nil {
-		resp.Agent = dept.Name
-	}
-	if probe {
-		resp.Agent, resp.Conversation = AgentEval, ""
-	} else if dept == nil {
-		resp.Pinned = a.pinned(ctx, s, q)
-		resp.Suggest = a.suggest(ctx, s, q, req)
-	}
+	a.whoAnswers(ctx, s, q, req, dept, probe, &resp)
 	if len(res.Context) == 0 {
 		n := NoticeNoSources
 		if res.Refused > 0 {
@@ -572,7 +577,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return resp, nil
 	}
 	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD()}
-	if err := a.keep(ctx, s, conv, q, t); err != nil {
+	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}
 	return resp, nil
@@ -653,7 +658,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "user", Content: e})
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
-	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + noteData(ctx) + "\n" + lead + q})
+	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + noteData(ctx) + "\n" + lead + q + choiceLine(ctx)})
 	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx) + skillLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {
@@ -804,4 +809,18 @@ func mostUncited(claims []answer.Claim) bool {
 		}
 	}
 	return uncited*2 > len(claims)
+}
+
+// whoAnswers names the agent of an answer, and for the ask agent's own answer finds its pin
+// and the right department.
+func (a Agent) whoAnswers(ctx context.Context, s tenancy.Scope, q string, req Request, dept *Department, probe bool, resp *Response) {
+	if dept != nil {
+		resp.Agent = dept.Name
+	}
+	if probe {
+		resp.Agent, resp.Conversation = AgentEval, ""
+	} else if dept == nil {
+		resp.Pinned = a.pinned(ctx, s, q)
+		resp.Suggest = a.suggest(ctx, s, q, req)
+	}
 }

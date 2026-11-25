@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S48.1: Check before acting
+
+**Wave/slice:** W48 / S48.1 (SB-4901 to SB-4903) · **Status:** Done
+
+**What:** An ask now looks for one ambiguity before it searches: a glossary term two spaces in scope define differently, a company-wide question about several departments, or an amount or a trend with no period. The web UI gets one question with up to 4 choices and **Just answer**, and nothing is composed until the asker picks; the choice goes into the question the conversation keeps. Every caller that can't show a question (the chat apps, MCP, routines, research steps, scheduled and triggered agents) takes the first choice and says `Assumed: …` at the top. Agent drafts split into sections; the steward a draft ran as comments on a section, and **Ask for changes** writes only the commented sections again, from the same sources, leaving the rest byte for byte, with a diff per section. Research gains `long: true`: the plan shows an estimate and a ceiling ($5, or `research_usd`), and after Run it goes in up to 6 stages over at most 4 hours, waiting at a checkpoint after each for its owner to steer, stop or let it go on (30 minutes, then it goes on), each stage re-checking what came before as the owner now.
+
+**Why this way:** The clarifying question is a property of the request (`clarify: true`), not of the caller's channel, so every caller that can't show one behaves the same way and says what it assumed, and the default for an API client stays "answer". Keeping the choice in the question text means the conversation, the trace and later turns all see it without a new store, and memory is never touched. Section redrafts ask the same agent once per commented section with a section-only note, rather than splicing a whole new draft, so the uncommented sections can't drift. Long runs reuse the report record and the notify job: a checkpoint is a queued report the job skips until its owner answers or 30 minutes pass, so there is no new job or table, and `research_usd` doubles as the long ceiling so there is no new setting.
+
+**Learned:** Research steps count against the owner's asks per minute, so a stage that finds them spent now waits for the next run instead of failing the report; the cell test sets `asks_per_minute` higher. The ask path's `take` runs before the clarifying check, so a question asked back costs one ask.
+
+**Laws:** LAW-01, LAW-09, LAW-14, LAW-16, LAW-25, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S47.2: Plan and reorganise
 
 **Wave/slice:** W47 / S47.2 (SB-4805 to SB-4807) · **Status:** Done

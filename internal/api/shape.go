@@ -11,6 +11,7 @@ import (
 func (h Questions) registerShape(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/skills", h.skills)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/changes", h.changes)
+	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/comments", h.comment) // SB-4902
 	mux.HandleFunc("GET /v1/spaces/{name}/routines", h.sharedRoutines)
 	mux.HandleFunc("PUT /v1/spaces/{name}/routines/{id}", h.shareRoutine)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/routines/{id}", h.shareRoutine)
@@ -94,4 +95,26 @@ func (h Questions) joinRoutine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"id": q.ID, "from": r.PathValue("id"), "joined": on, "routine": q.Routine})
+}
+
+// comment adds the reviewer's comment on one section of an agent draft (SB-4902).
+func (h Questions) comment(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Section int    `json:"section"`
+		Text    string `json:"text"`
+	}
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"section": 2, "text": "Say when it starts."}.`))
+		return
+	}
+	cs, err := h.Service.CommentSection(r.Context(), s, r.PathValue("name"), r.PathValue("id"), body.Section, body.Text)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"comments": cs})
 }

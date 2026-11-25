@@ -40,6 +40,7 @@ idp: oidc://login.acme.example
 region: eu
 connectors: { docs: folder }
 agents: [ask]
+asks_per_minute: 60
 spaces:
   finance:
     template: finance
@@ -136,5 +137,88 @@ spaces:
 	}
 	if code, out = r.do(t, "POST", "/v1/me/actions/"+mine.Actions[0].ID+"/done", ""); code != 200 || !strings.Contains(out, "done_at") {
 		t.Fatalf("done: %d %s", code, out)
+	}
+	// SB-4903: a long report shows its plan and runs nothing until Run, then in stages with a
+	// checkpoint after each, steered, re-checked as its owner, and stopped at its ceiling.
+	code, out = r.do(t, "POST", "/v1/research?space=finance", `{"question":"When does the quokka close move?","long":true}`)
+	if err := json.Unmarshal([]byte(out), &rv); err != nil || code != 200 || rv.State != ask.StatePlanned || rv.Long == nil || rv.Long.LimitUSD != ask.DefaultLongUSD || rv.Long.EstimateUSD <= 0 {
+		t.Fatalf("long plan: %d %s", code, out)
+	}
+	ctx := context.Background()
+	stored, _, err := r.cell.Traces.GetResearch(ctx, "acme-logistics", rv.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored.Steps = []string{"When does the quokka close move?", "Is the AP review open?", "What did standup decide?", "Who sends the quokka report?"}
+	stored.Long.PerStage = 1
+	if err := r.cell.Traces.PutResearch(ctx, stored); err != nil {
+		t.Fatal(err)
+	}
+	told = &agentsTold{}
+	if _, err := r.cell.NotifyJob(told).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, out = r.do(t, "GET", "/v1/research/"+rv.ID+"?space=finance", ""); !strings.Contains(out, `"state":"planned"`) || strings.Contains(out, `"cite":"docs:`) {
+		t.Fatalf("a long plan ran before Run: %s", out)
+	}
+	if code, out = r.do(t, "POST", "/v1/research/"+rv.ID+"/run?space=finance", ""); code != 200 {
+		t.Fatalf("run: %d %s", code, out)
+	}
+	if _, err := r.cell.NotifyJob(told).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	code, out = r.do(t, "GET", "/v1/research/"+rv.ID+"?space=finance", "")
+	if err := json.Unmarshal([]byte(out), &rv); err != nil || rv.Long == nil || rv.Long.Stage != 1 || rv.Long.Checkpoint == nil || rv.Long.GoesOnAt == nil || len(rv.Sections) != 1 {
+		t.Fatalf("after stage 1: %d %s", code, out)
+	}
+	if !strings.Contains(strings.Join(told.got, "\n"), "finished a stage") {
+		t.Fatalf("not told of the checkpoint: %v", told.got)
+	}
+	if _, err := r.cell.NotifyJob(told).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, out = r.do(t, "GET", "/v1/research/"+rv.ID+"?space=finance", ""); !strings.Contains(out, `"stage":1`) {
+		t.Fatalf("it went on before its owner answered or 30 minutes passed: %s", out)
+	}
+	if code, out = r.do(t, "POST", "/v1/research/"+rv.ID+"/steer?space=finance", `{"drop":[0]}`); code != http.StatusBadRequest {
+		t.Fatalf("dropped a sub-question already asked: %d %s", code, out)
+	}
+	if code, out = r.do(t, "POST", "/v1/research/"+rv.ID+"/steer?space=finance", `{"drop":[3],"add":["When is the AP review due?"]}`); code != 200 || !strings.Contains(out, "When is the AP review due?") || strings.Contains(out, "Who sends the quokka report?") {
+		t.Fatalf("steer: %d %s", code, out)
+	}
+	if code, out = r.do(t, "POST", "/v1/research/"+rv.ID+"/go-on?space=finance", ""); code != 200 {
+		t.Fatalf("go on: %d %s", code, out)
+	}
+	// LAW-26: the owner loses the documents before stage 2; its check drops stage 1's section.
+	write("Finance/.acl", "read lee@acme.example\n")
+	if _, err := r.cell.NotifyJob(told).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	stored, _, err = r.cell.Traces.GetResearch(ctx, "acme-logistics", rv.ID)
+	if err != nil || stored.Long.Stage != 2 || len(stored.Sections) != 0 || stored.Long.Dropped == 0 {
+		t.Fatalf("stage 2 kept what its owner lost: %v %+v", err, stored.Long)
+	}
+	write("Finance/.acl", "read domain:acme.example\n")
+	if code, out = r.do(t, "POST", "/v1/research/"+rv.ID+"/go-on?space=finance", ""); code != 200 {
+		t.Fatalf("go on: %d %s", code, out)
+	}
+	if _, err := r.cell.NotifyJob(told).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	// The ceiling: nothing more is asked once the run has spent it.
+	stored, _, _ = r.cell.Traces.GetResearch(ctx, "acme-logistics", rv.ID)
+	stored.Long.LimitUSD, stored.Long.Checkpoint = 0, nil
+	if err := r.cell.Traces.PutResearch(ctx, stored); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.cell.NotifyJob(told).Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+	code, out = r.do(t, "GET", "/v1/research/"+rv.ID+"?space=finance", "")
+	if err := json.Unmarshal([]byte(out), &rv); err != nil || rv.State != ask.StateDone || rv.Stopped != "cap" || len(rv.Sections) != 1 {
+		t.Fatalf("stopped at its ceiling with what it has: %d %s", code, out)
+	}
+	if code, out = r.do(t, "POST", "/v1/research/"+rv.ID+"/stop?space=finance", ""); code != http.StatusBadRequest {
+		t.Fatalf("stopped a finished report: %d %s", code, out)
 	}
 }
