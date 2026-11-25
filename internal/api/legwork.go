@@ -32,6 +32,21 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/actions", h.confirm)
 	mux.HandleFunc("GET /v1/spaces/{name}/actions", h.spaceActions)
 	mux.HandleFunc("POST /v1/spaces/{name}/review/fix", h.fix)
+	mux.HandleFunc("GET /v1/me/inbox", h.inbox)
+}
+
+// inbox is what waits on the caller across every space (sb-ask(3), One inbox; SB-4301).
+func (h Legwork) inbox(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	in, err := h.Service.Inbox(r.Context(), s)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", in)
 }
 
 func (h Legwork) fix(w http.ResponseWriter, r *http.Request) {

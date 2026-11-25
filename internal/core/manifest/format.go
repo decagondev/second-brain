@@ -42,21 +42,7 @@ func Format(t Tenant) []byte {
 	if t.ResearchUSD != 0 {
 		line("research_usd", strconv.FormatFloat(t.ResearchUSD, 'f', -1, 64))
 	}
-	if t.PilotGroup != "" {
-		line("pilot_group", t.PilotGroup)
-	}
-	if t.QuestionsTo != "" {
-		line("questions_to", t.QuestionsTo)
-	}
-	if t.Notes {
-		line("notes", "true")
-	}
-	if t.Digest != "" {
-		line("digest", t.Digest)
-	}
-	if t.Language != "" {
-		line("language", t.Language)
-	}
+	formatSettings(t, line)
 	if len(t.Exclude) > 0 {
 		keys := sorted(t.Exclude)
 		parts := make([]string, len(keys))
@@ -180,4 +166,26 @@ func sorted[V any](m map[string]V) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// formatSettings writes the optional one-line settings, in sb-tenant(5) order.
+func formatSettings(t Tenant, line func(k, v string)) {
+	if t.PilotGroup != "" {
+		line("pilot_group", t.PilotGroup)
+	}
+	if t.QuestionsTo != "" {
+		line("questions_to", t.QuestionsTo)
+	}
+	if t.Notes {
+		line("notes", "true")
+	}
+	if t.Digest != "" {
+		line("digest", t.Digest)
+	}
+	if t.Language != "" {
+		line("language", t.Language)
+	}
+	if t.Memory == "off" {
+		line("memory", "off")
+	}
 }

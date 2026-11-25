@@ -334,6 +334,14 @@ export interface SavedQuestion {
   space: string;
   at: string;
   watch?: boolean;
+  routine?: Routine;
+}
+
+// A saved question asked on a schedule (SB-4302).
+export interface Routine {
+  every: "daily" | "weekly";
+  day?: string;
+  last?: string;
 }
 
 export interface SharedQuestion {
@@ -530,6 +538,7 @@ export interface Research {
   sections: ResearchSection[];
   attendees?: { email: string; known: boolean; owns?: Cite[] }[];
   dropped: number;
+  changed?: number; // a routine's sources new since its last run (SB-4302)
 }
 
 export interface ResearchItem {
@@ -1083,4 +1092,61 @@ export async function suggestedQuestions(space: string, f: Fetch = fetch): Promi
 
 export function setSuggestedQuestions(space: string, questions: string[], f: Fetch = fetch): Promise<{ questions: string[] }> {
   return call(`/v1/spaces/${encodeURIComponent(space)}/suggested`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ questions }) }, f);
+}
+
+// Make a saved question a routine, or stop it (SB-4302): every is daily, weekly or off.
+export function setRoutine(id: string, every: string, day: string | undefined, f: Fetch = fetch): Promise<SavedQuestion> {
+  return call(
+    `/v1/saved/${encodeURIComponent(id)}/routine`,
+    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(day ? { every, day } : { every }) },
+    f,
+  );
+}
+
+// One inbox (SB-4301): what waits on me in every space, checked as me when listed.
+export interface InboxItem {
+  kind: string; // draft, question, request, policy, approval, action, fix, research, routine
+  id: string;
+  space?: string;
+  title: string;
+  at?: string;
+  due?: string;
+  overdue?: boolean;
+  why?: string;
+  link: string;
+}
+
+export interface Inbox {
+  needs_you: InboxItem[];
+  failed: InboxItem[];
+  done: InboxItem[];
+  counts: { needs_you: number; failed: number; done: number };
+}
+
+export async function myInbox(f: Fetch = fetch): Promise<Inbox> {
+  const d = await call<Partial<Inbox>>("/v1/me/inbox", {}, f);
+  const needs_you = d.needs_you ?? [];
+  const failed = d.failed ?? [];
+  const done = d.done ?? [];
+  return { needs_you, failed, done, counts: { needs_you: needs_you.length, failed: failed.length, done: done.length } };
+}
+
+// Memory I control (SB-4303): lines I wrote about myself, sent with my own asks only.
+export interface MemoryLine {
+  id: string;
+  text: string;
+  at: string;
+}
+
+export async function myMemory(f: Fetch = fetch): Promise<{ on: boolean; lines: MemoryLine[] }> {
+  const d = await call<{ on?: boolean; lines?: MemoryLine[] }>("/v1/me/memory", {}, f);
+  return { on: d.on !== false, lines: d.lines ?? [] };
+}
+
+export function remember(text: string, f: Fetch = fetch): Promise<MemoryLine> {
+  return call("/v1/me/memory", post({ text }), f);
+}
+
+export function forgetMemory(id: string | undefined, f: Fetch = fetch): Promise<{ removed: number }> {
+  return call(id ? `/v1/me/memory/${encodeURIComponent(id)}` : "/v1/me/memory", { method: "DELETE" }, f);
 }

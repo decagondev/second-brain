@@ -46,7 +46,7 @@ summary: Epics, waves, slices and tickets.
 | W39 An Agent for Every Department | 7 | 0 | 0 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
 | W40 Run the Company | 6 | 0 | 0 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
 | W41 Agents That Do the Legwork | 7 | 0 | 0 | Planned 2026-11-24 with the user (E42), W41 built: research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
-| W42 Work That Comes to You | 0 | 0 | 7 | Planned 2026-11-24 with the user (E43): one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W42 Work That Comes to You | 3 | 0 | 4 | Planned 2026-11-24 with the user (E43), S42.1 built: one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W43 Govern Every Agent | 0 | 0 | 6 | Planned 2026-11-24 with the user (E44): feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -780,9 +780,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-4301](E43-work-comes-to-you/SB-4301-one-inbox.md) | S42.1 | E43 | One inbox | Open |
-| [SB-4302](E43-work-comes-to-you/SB-4302-routines.md) | S42.1 | E43 | My routines | Open |
-| [SB-4303](E43-work-comes-to-you/SB-4303-memory.md) | S42.1 | E43 | Memory I control | Open |
+| [SB-4301](E43-work-comes-to-you/SB-4301-one-inbox.md) | S42.1 | E43 | One inbox | Done |
+| [SB-4302](E43-work-comes-to-you/SB-4302-routines.md) | S42.1 | E43 | My routines | Done |
+| [SB-4303](E43-work-comes-to-you/SB-4303-memory.md) | S42.1 | E43 | Memory I control | Done |
 | [SB-4304](E43-work-comes-to-you/SB-4304-collections.md) | S42.2 | E43 | Collections | Open |
 | [SB-4305](E43-work-comes-to-you/SB-4305-agent-runs.md) | S42.2 | E43 | What agents did as me | Open |
 | [SB-4306](E43-work-comes-to-you/SB-4306-agents-over-mcp.md) | S42.2 | E43 | Agents over MCP | Open |

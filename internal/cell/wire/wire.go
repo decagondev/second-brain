@@ -458,7 +458,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	}
 	agent := ask.Agent{Tenant: tenant, Release: c.Release, Index: c.Index, Embedder: c.Embedder, Auth: authz,
 		Model: model, Store: c.Traces, Emails: emails, Killed: c.Kill.AgentKilled("ask"), SpaceKilled: c.Kill.SpaceKilled,
-		NewID: newID, Now: time.Now, Metrics: c.askMeter(), Enabled: func(a string) bool { return contains(m.Agents, a) },
+		NewID: newID, Now: time.Now, Metrics: c.askMeter(), Enabled: func(a string) bool { return contains(m.Agents, a) }, Audit: c.Audit,
 		Link: linker(authz.Connectors), Caretaker: ask.CaretakerOf(c.Traces, tenant),
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
@@ -503,6 +503,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			}
 			return out
 		}}
+	if m.MemoryOn() { // SB-4303: memory: off keeps and sends none
+		agent.Memory = c.Traces
+	}
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -630,6 +633,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}
 	legwork := c.legwork(m, agent, stewards)
+	legwork.Approvals = inboxApprovals(bus)   // SB-4301
 	stewards.ActionsOf = legwork.DraftActions // a decisions draft carries its action items (SB-4203)
 	for _, app := range savers {
 		app.Saver = stewards
@@ -690,7 +694,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 // SB-4203). Every run is as the person, with a scope read from the directory now.
 func (c *Cell) legwork(m manifest.Tenant, agent ask.Agent, stewards ask.Stewards) ask.Legwork {
 	tenant := c.Config.Tenant
-	l := ask.Legwork{Agent: agent, Stewards: stewards, Research: c.Traces, Actions: c.Traces, Audit: c.Audit,
+	zone, _ := manifest.DigestZone(m.Digest)
+	l := ask.Legwork{Agent: agent, Stewards: stewards, Research: c.Traces, Actions: c.Traces, Audit: c.Audit, Routines: c.Traces, Zone: zone,
 		NewID: c.NewID, Now: time.Now, ResearchUSD: func() float64 { return m.ResearchUSD }, ScopeIn: c.ScopeAs, Tell: c.tell,
 		Known: func(ctx context.Context, email string) bool {
 			ids, err := c.activeByEmail(ctx, email)

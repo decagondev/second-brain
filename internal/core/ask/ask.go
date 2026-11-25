@@ -334,6 +334,10 @@ type Agent struct {
 	Retired RetireStore
 	// Pins are the stewards' verified answers (SB-3601); nil is none.
 	Pins PinStore
+	// Memory keeps what each person wrote about themselves (SB-4303); nil is a cell with
+	// memory: off. Audit writes a row for each change to it.
+	Memory MemoryStore
+	Audit  Auditor
 }
 
 // Ask answers one question for the scope's user.
@@ -423,6 +427,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
+	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe)) // SB-4303: the asker's own, ask agent only (LAW-25)
 
 	res, terms, err := a.retrieve(withVerified(withDocs(ctx, docs), req.Verified), s, q, req.Sources, retrieve.Budget)
 	if err != nil {
@@ -530,7 +535,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "user", Content: e})
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
-	msgs = append(msgs, ports.Message{Role: "user", Content: glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
+	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
 	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S42.1: One inbox, routines and memory
+
+**Wave/slice:** W42 / S42.1 (SB-4301 to SB-4303) · **Status:** Done
+
+**What:** GET /v1/me/inbox lists what waits on a person in every space under Needs you, Failed and Done: drafts, questions and requests in the queues they answer, policies to read, approvals for their group, their action items, suggested edits, research plans and finished or failed runs, each with a link to where it is acted on. The Questions tab is now Inbox. A saved question can be a routine, daily on working mornings or weekly on a weekday, at most 5 a person: the notify job asks it as them and keeps the answer like a report, with the claims citing new sources first, and a spent budget pauses it. A person can keep up to 20 lines about themselves, sent with their own asks to the ask agent only; a line that repeats a passage they can open is refused.
+
+**Why this way:** The inbox calls the same functions each tab calls, as the caller, at the moment it is shown, so it can never show more or less than the tabs, and it needs no store of its own. A routine's answer is a stored result like a report, so LAW-26 checks it again when read and the notification still carries only a count. Memory is a data block marked as the asker's own words, so composition can't cite it, and only the ask agent reads it, so drafts and probes never carry it.
+
+**Learned:** Forget runs on Expire with a far clock, which can't touch a store that retention never expires, so memory is erased whole by name instead. Searching for the line as the person is enough to catch a pasted passage without ever telling them about a document they can't open.
+
+**Laws:** LAW-01, LAW-03, LAW-07, LAW-09, LAW-12, LAW-14, LAW-22, LAW-25 (new, tested), LAW-26. Every law test is still green.
+
 ## 2026-11-25 S41.2: Incident briefs, customer themes, fixes and check-ins
 
 **Wave/slice:** W41 / S41.2 (SB-4204 to SB-4207) · **Status:** Done

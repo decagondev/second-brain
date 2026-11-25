@@ -61,6 +61,7 @@ func (h Knowledge) Register(mux *http.ServeMux) {
 		mux.HandleFunc("GET /v1/saved", h.saved)
 		mux.HandleFunc("DELETE /v1/saved/{id}", h.unsave)
 		mux.HandleFunc("PUT /v1/saved/{id}/watch", h.watch)
+		mux.HandleFunc("PUT /v1/saved/{id}/routine", h.routine)
 		mux.HandleFunc("POST /v1/shares", h.share)
 		mux.HandleFunc("GET /v1/shares/{id}", h.openShare)
 	}
@@ -257,6 +258,28 @@ func (h Knowledge) watch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.out().ok(w, "", map[string]any{"id": q.ID, "watch": q.Watch})
+}
+
+// routine makes a saved question a routine, or stops it (sb-ask(3), My routines; SB-4302).
+func (h Knowledge) routine(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Every string `json:"every"`
+		Day   string `json:"day"`
+	}
+	if !readJSON(r, &body) || body.Every == "" {
+		h.out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"every": "weekly", "day": "monday"}.`))
+		return
+	}
+	q, err := h.Questions.SetRoutine(r.Context(), s, r.PathValue("id"), body.Every, body.Day)
+	if err != nil {
+		h.qfail(w, err)
+		return
+	}
+	h.out().ok(w, "", q)
 }
 
 func (h Knowledge) share(w http.ResponseWriter, r *http.Request) {

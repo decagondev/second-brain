@@ -13,7 +13,7 @@ summary: "What waits on a person is spread over tabs in every space, so things a
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-api(3)`](../../manual/sb-api.3.md) |
 | Laws | LAW-01, LAW-07, LAW-26 |
 | Depends on | SB-4104 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ What waits on a person is spread over tabs in every space, so things are missed.
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/me/inbox` and the **Inbox** tab list, across spaces, what waits on me under Needs you, Failed and Done
-- [ ] Each item is checked as me when shown (LAW-26); notifications carry counts only
-- [ ] Each item links to where it's acted on; the inbox itself doesn't act
+- [x] `GET /v1/me/inbox` and the **Inbox** tab list, across spaces, what waits on me under Needs you, Failed and Done
+- [x] Each item is checked as me when shown (LAW-26); notifications carry counts only
+- [x] Each item links to where it's acted on; the inbox itself doesn't act
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md).
+2026-11-25: built. ask.Legwork.Inbox, GET /v1/me/inbox: steward queues (company, every space, the person's own), policies to read, approvals (toolbus.Bus.Pending, wire inboxApprovals), own action items whose transcript they can open, suggested fixes, research plans, failed and finished runs, each from the call its own tab makes, as the caller, now (LAW-26). The Questions tab is now Inbox (web Inbox.tsx), and ?space= opens the app in a space. Tests: TestWorkComesToYouThroughARunningCell, inbox.test.tsx.
 
 ## Definition of done
 

@@ -205,7 +205,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Trends: c.trends, Audit: c.Audit, Reviews: c.reviewList,
 		Briefs: briefDays(m), RunBrief: c.runBrief, Updates: updateSpaces(m), RunUpdate: c.runUpdate, Welcomes: c.welcomes, Welcomed: c.welcomed, Transcripts: c.newTranscripts, RunDecisions: c.runDecisions, PolicyNotices: c.policyNotices, SpaceBudgets: c.spaceBudgets,
 		Research: c.Parts().Legwork.RunQueued, PrepDue: c.Parts().Legwork.PrepDue,
-		Incidents: c.newIncidents, RunIncident: c.runIncident, Checkins: c.runCheckins,
+		Incidents: c.newIncidents, RunIncident: c.runIncident, Checkins: c.runCheckins, Routines: c.Parts().Legwork.RunRoutines,
 		Actions: func(ctx context.Context, since time.Time) ([]ask.Action, error) {
 			return c.Traces.ActionsSince(ctx, c.Config.Tenant, since)
 		},

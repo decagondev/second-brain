@@ -1,7 +1,18 @@
 import { useEffect, useState } from "react";
-import { AskError, listSaved, removeSaved, saveQuestion, shareQuestion, watchSaved } from "./api";
+import { AskError, listSaved, removeSaved, saveQuestion, setRoutine, shareQuestion, watchSaved } from "./api";
 import type { Fetch, SavedQuestion } from "./api";
-import { errorText, t } from "./i18n";
+import { errorText, msg, t } from "./i18n";
+
+// A routine's choices (SB-4302): off, each working morning, or one weekday.
+const routines: { value: string; name: string }[] = [
+  { value: "off", name: msg("Off") },
+  { value: "daily", name: msg("Every working morning") },
+  { value: "monday", name: msg("Mondays") },
+  { value: "tuesday", name: msg("Tuesdays") },
+  { value: "wednesday", name: msg("Wednesdays") },
+  { value: "thursday", name: msg("Thursdays") },
+  { value: "friday", name: msg("Fridays") },
+];
 
 // Save and Share on one answered turn (sb-ask(3), Saved and shared questions; SB-1703).
 // Only the question is kept or passed on, never the answer.
@@ -87,6 +98,15 @@ export function SavedView({ fetcher, onAsk }: { fetcher?: Fetch; onAsk: (questio
     }
   }
 
+  async function routine(id: string, v: string) {
+    try {
+      await setRoutine(id, v === "off" || v === "daily" ? v : "weekly", v === "off" || v === "daily" ? undefined : v, fetcher);
+      await load();
+    } catch (e) {
+      setError(e instanceof AskError ? errorText(e.error).message : t("The routine couldn't be set."));
+    }
+  }
+
   return (
     <section aria-label={t("Saved questions")} className="saved">
       {error && (
@@ -109,6 +129,20 @@ export function SavedView({ fetcher, onAsk }: { fetcher?: Fetch; onAsk: (questio
               <label>
                 <input type="checkbox" aria-label={t("Watch: {question}", { question: q.question })} checked={!!q.watch} onChange={(e) => watch(q.id, e.target.checked)} />{" "}
                 {t("Watch")}
+              </label>{" "}
+              <label>
+                {t("Routine")}{" "}
+                <select
+                  aria-label={t("Routine: {question}", { question: q.question })}
+                  value={!q.routine ? "off" : q.routine.every === "daily" ? "daily" : (q.routine.day ?? "monday")}
+                  onChange={(e) => routine(q.id, e.target.value)}
+                >
+                  {routines.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {t(r.name)}
+                    </option>
+                  ))}
+                </select>
               </label>
             </li>
           ))}

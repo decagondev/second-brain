@@ -133,7 +133,7 @@ func (p Prefs) Check() (Prefs, error) {
 	}
 	for _, k := range p.Off {
 		if !Kinds[k] {
-			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep, action)", ErrKind, k)
+			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep, action, incident, fix, checkin, routine)", ErrKind, k)
 		}
 		if !seen[k] {
 			seen[k] = true
@@ -250,6 +250,9 @@ type Job struct {
 	Incidents   func(ctx context.Context, from, to time.Time) ([]NewDoc, error)
 	RunIncident func(ctx context.Context, d NewDoc) (why string, err error)
 	Checkins    func(ctx context.Context) ([]SilentGoal, error)
+	// Routines asks the saved questions due as routines, as their owners, and returns those
+	// it ran (SB-4302); nil asks none.
+	Routines func(ctx context.Context) ([]ask.Finished, error)
 }
 
 // The digest's limits.
@@ -343,6 +346,11 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	out = append(out, chk...)
+	rts, err := j.routines(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, rts...)
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err

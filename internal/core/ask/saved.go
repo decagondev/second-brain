@@ -36,6 +36,8 @@ type SavedQuestion struct {
 	// question's search results as them, changes. No result is kept.
 	Watch   bool   `json:"watch"`
 	Sources string `json:"-"`
+	// Routine asks it for its owner on a schedule (SB-4302).
+	Routine *Routine `json:"routine,omitempty"`
 }
 
 // WatchStore changes and lists watched saved questions (SB-2104).

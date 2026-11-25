@@ -62,7 +62,7 @@ describe("asking the stewards", () => {
     });
     expect(posts).toEqual([["/v1/questions", { question: "zebra cutoff?", trace: "tr_7" }]]);
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: "Questions" }));
+      fireEvent.click(screen.getByRole("tab", { name: "Inbox" }));
     });
     const panel = screen.getByRole("region", { name: "Questions to stewards" });
     expect(panel.textContent).toContain("3pm on weekdays.");
@@ -285,7 +285,7 @@ describe("notifications", () => {
     };
     const { container } = render(<App fetcher={fetcher} tab="questions" />);
     await act(async () => {});
-    expect(screen.getByRole("tab", { name: "Questions" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: "Inbox" }).getAttribute("aria-selected")).toBe("true");
     const box = screen.getByLabelText("Replies to my questions") as HTMLInputElement;
     expect(box.checked).toBe(true);
     expect(await violations(container)).toEqual([]);

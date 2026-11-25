@@ -151,3 +151,52 @@ func (b *Bus) Edit(ctx context.Context, s tenancy.Scope, id string, payload json
 		return nil
 	})
 }
+
+// Lister lists a tenant's actions; both action stores have it.
+type Lister interface {
+	All(ctx context.Context, tenant string) ([]approvals.Action, error)
+}
+
+// Pending are the actions waiting now on s's decision, for their inbox (sb-ask(3), One
+// inbox; SB-4301): PendingApproval and not expired, the group whose turn it is is one of
+// s's groups, s neither requested nor first approved it, and the requester isn't across a
+// barrier from s. It decides nothing: Approve checks everything again. A store that can't
+// list actions lists none.
+func (b *Bus) Pending(ctx context.Context, s tenancy.Scope) ([]approvals.Action, error) {
+	if err := s.Check(); err != nil || s.Tenant() != b.Tenant {
+		return nil, fmt.Errorf("%w: no valid scope for this cell", ErrPerm)
+	}
+	l, ok := b.Actions.(Lister)
+	if !ok {
+		return nil, nil
+	}
+	all, err := l.All(ctx, b.Tenant)
+	if err != nil {
+		return nil, err
+	}
+	groups := map[string]bool{}
+	for _, g := range s.Groups() {
+		groups[g] = true
+	}
+	now := b.Now()
+	var out []approvals.Action
+	for _, a := range all {
+		group := a.Approvers
+		if a.Needs == 2 && a.FirstApprovedBy != "" {
+			group = a.SecondApprovers
+		}
+		if a.State != approvals.PendingApproval || !now.Before(a.ExpiresAt) || !groups[group] ||
+			a.Requester == s.User() || a.FirstApprovedBy == s.User() {
+			continue
+		}
+		if b.Barriers != nil {
+			actx, err := b.Barriers.Approval(ctx, s, a.Requester)
+			if err != nil || acrossBarrier(actx) {
+				continue // can't be placed, or across a barrier: not shown (LAW-22)
+			}
+		}
+		out = append(out, a)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ExpiresAt.Before(out[j].ExpiresAt) })
+	return out, nil
+}

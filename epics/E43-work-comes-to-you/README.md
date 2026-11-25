@@ -25,8 +25,8 @@ Planned 2026-11-24 after W40, with the user. The concept is in [18-legwork-inbox
 
 ## Exit gate
 
-- [ ] Every inbox item, routine answer and collection item is checked as the reader when shown
-- [ ] A memory never holds document text or reaches another person's ask (LAW-25 green)
+- [ ] Every inbox item, routine answer and collection item is checked as the reader when shown (inbox and routines done in S42.1)
+- [x] A memory never holds document text or reaches another person's ask (LAW-25 green)
 - [ ] Every run made as a person appears on their Agent runs
 - [ ] A computed number in an answer always comes from the table tool, with its cells cited
 - [ ] Every law test still green; no new store, service or Go module

@@ -340,6 +340,10 @@ func (e Export) Hash() string {
 // feedback first, which takes its space from its trace.
 var Forgettable = []string{"feedback", "conversations", "traces", "saved questions", "shares"}
 
+// ForgetErased are the stores a person's Forget erases whole, since no hold covers them and
+// retention never expires them: their memory (SB-4303).
+var ForgetErased = []string{"memory"}
+
 // Forget erases user's own records from the stores named (Forgettable), of any age, on their
 // own request. Unlike Erase, a legal hold doesn't stop it: what a hold covers is kept, one
 // record at a time, and counted (SB-1207). It audits the request first and the counts after.
@@ -362,7 +366,20 @@ func (j Job) Forget(ctx context.Context, user string) (Report, error) {
 		want[n] = true
 	}
 	rep := Report{Counts: map[string]int{}, Audit: []string{first.ID}}
+	erase := map[string]bool{}
+	for _, n := range ForgetErased {
+		erase[n] = true
+	}
 	for _, s := range j.Stores {
+		if erase[s.Name()] {
+			n, err := s.Erase(ctx, j.Tenant, user)
+			if err != nil {
+				rep.Failed = append(rep.Failed, s.Name())
+				continue
+			}
+			rep.Counts[s.Name()] = n
+			continue
+		}
 		if !want[s.Name()] {
 			continue
 		}

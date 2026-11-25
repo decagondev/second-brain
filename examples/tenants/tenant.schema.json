@@ -182,6 +182,14 @@
       ],
       "type": "string"
     },
+    "memory": {
+      "description": "Whether people may keep lines about themselves for their own asks (SB-4303). Default on.",
+      "enum": [
+        "on",
+        "off"
+      ],
+      "type": "string"
+    },
     "notes": {
       "default": false,
       "description": "Stewards may publish replies as notes into the docs: folder share (SB-1705).",

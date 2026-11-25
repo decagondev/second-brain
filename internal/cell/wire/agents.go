@@ -15,10 +15,12 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/api"
+	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
+	"example.com/second-brain/internal/core/toolbus"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
@@ -598,4 +600,21 @@ func (c *Cell) tell(ctx context.Context, user, kind, text string) error {
 	}
 	return send.Send(ctx, notify.Person{ID: u.ID, Email: u.Emails[0]}, notify.Message{Kind: kind, Text: text,
 		Link: strings.TrimSuffix(c.Config.BaseURL, "/") + "/?tab=legwork"})
+}
+
+// inboxApprovals are the actions waiting on a person's approval group, for their inbox
+// (SB-4301): the workflow's name and a link to the approval page, nothing of the payload.
+func inboxApprovals(bus *toolbus.Bus) func(ctx context.Context, s tenancy.Scope) ([]ask.InboxItem, error) {
+	return func(ctx context.Context, s tenancy.Scope) ([]ask.InboxItem, error) {
+		as, err := bus.Pending(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		out := []ask.InboxItem{}
+		for _, a := range as {
+			out = append(out, ask.InboxItem{Kind: ask.InboxApproval, ID: a.ID, Space: strings.TrimPrefix(a.Space, "spc_"),
+				Title: a.Workflow, At: a.ExpiresAt.Add(-approvals.TTL), Due: a.ExpiresAt.UTC().Format(time.DateOnly), Link: "/?action=" + a.ID})
+		}
+		return out, nil
+	}
 }

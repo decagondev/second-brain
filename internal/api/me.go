@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
@@ -35,6 +37,74 @@ const ForgetPhrase = "forget my questions"
 func (h Me) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/export", h.export)
 	mux.HandleFunc("POST /v1/me/forget", h.forget)
+	mux.HandleFunc("GET /v1/me/memory", h.memory)
+	mux.HandleFunc("POST /v1/me/memory", h.remember)
+	mux.HandleFunc("DELETE /v1/me/memory", h.forgetMemory)
+	mux.HandleFunc("DELETE /v1/me/memory/{id}", h.forgetMemory)
+}
+
+// Memory I control (sb-ask(3); SB-4303): the caller's own lines only.
+
+func (h Me) memoryErr(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ask.ErrMemoryOff):
+		fail(w, errs.New(errs.EUNAVAIL, "Memory is off for your organisation."))
+	case errors.Is(err, ask.ErrFromDocument):
+		fail(w, errs.New(errs.EINVAL, "That reads like a document, not something about you."))
+	case errors.Is(err, ask.ErrInvalid):
+		fail(w, errs.New(errs.EINVAL, "%s", strings.TrimPrefix(err.Error(), ask.ErrInvalid.Error()+": ")))
+	default:
+		fail(w, errs.New(errs.EUNAVAIL, "Your memory can't be read or changed right now; nothing was changed."))
+	}
+}
+
+func (h Me) memory(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		fail(w, errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	v, err := h.Agent.MemoryFor(r.Context(), s)
+	if err != nil {
+		h.memoryErr(w, err)
+		return
+	}
+	writeJSON(w, v)
+}
+
+func (h Me) remember(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		fail(w, errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	var body struct {
+		Text string `json:"text"`
+	}
+	if !readJSON(r, &body) {
+		fail(w, errs.New(errs.EINVAL, `The body must be JSON such as {"text": "I work in finance"}.`))
+		return
+	}
+	l, err := h.Agent.Remember(r.Context(), s, body.Text)
+	if err != nil {
+		h.memoryErr(w, err)
+		return
+	}
+	writeJSON(w, l)
+}
+
+func (h Me) forgetMemory(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		fail(w, errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	n, err := h.Agent.ForgetLine(r.Context(), s, r.PathValue("id"))
+	if err != nil {
+		h.memoryErr(w, err)
+		return
+	}
+	writeJSON(w, map[string]any{"removed": n})
 }
 
 type ownToken struct {

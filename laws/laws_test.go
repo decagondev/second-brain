@@ -316,6 +316,10 @@ func TestLAW24_TheTreeNeverWidens(t *testing.T) {
 	Check(t, "LAW-24", runs, func(r *rand.Rand) error { return law24(r, NewTreeSystem()) })
 }
 
+func TestLAW25_AMemoryIsItsPersonsOwn(t *testing.T) {
+	Check(t, "LAW-25", runs, func(r *rand.Rand) error { return law25(r, RealMemory{}) })
+}
+
 func TestLAW26_AStoredResultIsCheckedWhenRead(t *testing.T) {
 	Check(t, "LAW-26", runs, func(r *rand.Rand) error { return law26(r, NewStoredSystem()) })
 }

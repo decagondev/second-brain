@@ -41,7 +41,9 @@ type Tenant struct {
 	// Digest is the weekly digest's time zone, "off", or "" for UTC (SB-2103).
 	Digest string `json:"digest"`
 	// Language is the web UI's default language, "" for English (SB-2301).
-	Language string              `json:"language"`
+	Language string `json:"language"`
+	// Memory is "off" for a cell that keeps no memory, "" or "on" otherwise (SB-4303).
+	Memory   string              `json:"memory"`
 	Exclude  map[string][]string `json:"exclude"`
 	Groups   map[string][]string `json:"groups"`
 	Spaces   map[string]Space    `json:"spaces"`
@@ -190,6 +192,15 @@ var fields = []field{
 				c.add(n, "language", "must be one of %s", strings.Join(Languages, ", "))
 			} else {
 				c.t.Language = v
+			}
+		}
+	}},
+	{"memory", false, func(c *checker, n *node) { // SB-4303
+		if v, ok := c.scalar(n, "memory"); ok {
+			if v != "on" && v != "off" {
+				c.add(n, "memory", "must be on or off")
+			} else {
+				c.t.Memory = v
 			}
 		}
 	}},
@@ -752,3 +763,6 @@ func DigestZone(v string) (*time.Location, error) {
 	}
 	return time.LoadLocation(v)
 }
+
+// MemoryOn reports whether people may keep a memory (SB-4303): on unless memory: off.
+func (t Tenant) MemoryOn() bool { return t.Memory != "off" }

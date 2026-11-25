@@ -13,6 +13,7 @@ import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { MySessions, SignOutEverywhere } from "./Session";
 import { LegworkView } from "./Legwork";
 import { HandoverView } from "./Handover";
+import { RememberBox } from "./Inbox";
 import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
@@ -37,7 +38,7 @@ const tabs: { id: Tab; name: string }[] = [
   { id: "documents", name: msg("Documents") },
   { id: "saved", name: msg("Saved") },
   { id: "legwork", name: msg("Legwork") },
-  { id: "questions", name: msg("Questions") },
+  { id: "questions", name: msg("Inbox") },
   { id: "handover", name: msg("Handover") },
 ];
 
@@ -46,14 +47,15 @@ const searchable = new Set(["EUNAVAIL", "EBUDGET"]);
 
 // tab opens the app on a tab, from a notification's link (?tab=questions; SB-2102).
 // q is a search from the address bar (SB-3806): with tab documents, it runs at once.
-export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetch; share?: string; tab?: string; q?: string }) {
+// space opens it in a space, from an inbox item's link (?space=finance; SB-4301).
+export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: { fetcher?: Fetch; share?: string; tab?: string; q?: string; space?: string }) {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
   const [about, setAbout] = useState<About[]>([]); // SB-3004
   const [busy, setBusy] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
-  const [space, setSpace] = useState(""); // "" is the whole company
+  const [space, setSpace] = useState(inSpace ?? ""); // "" is the whole company
   const [branch, setBranch] = useState(false); // this department and its teams (SB-3903)
   const [tab, setTab] = useState<Tab>(tabs.find((x) => x.id === first)?.id ?? "answer");
   const [searchFor, setSearchFor] = useState<{ text: string; n: number } | undefined>(() =>
@@ -313,6 +315,7 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
+              {x.answer && <RememberBox fetcher={fetcher} />}
               {x.answer && space && (x.answer.notice === "no_sources" || x.answer.notice === "no_access") && (
                 <button type="button" disabled={busy} onClick={() => askWholeCompany(x.question)}>
                   {t("Ask the whole company")}

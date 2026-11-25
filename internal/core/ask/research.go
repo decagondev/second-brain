@@ -63,6 +63,8 @@ type Research struct {
 	Sections  []Section `json:"sections,omitempty"`
 	// Attendees are a brief's attendees (SB-4202).
 	Attendees []Attendee `json:"attendees,omitempty"`
+	// Changed is how many of a routine's sources are new since its last run (SB-4302).
+	Changed *int `json:"changed,omitempty"`
 }
 
 // Section is one step's answer: its question, trace and cited claims, and for a brief the
@@ -114,6 +116,13 @@ type Legwork struct {
 	// Tell sends one person one notification of kind, as the notify job would; nil tells
 	// no one (SB-4206).
 	Tell func(ctx context.Context, user, kind, text string) error
+	// Routines are the saved questions asked on a schedule, and Zone their time zone
+	// (SB-4302); nil runs none, and nil Zone is UTC.
+	Routines RoutineStore
+	Zone     *time.Location
+	// Approvals are the actions waiting for the person's approval group, as they may see
+	// them now, for the inbox (SB-4301); nil lists none.
+	Approvals func(ctx context.Context, s tenancy.Scope) ([]InboxItem, error)
 }
 
 // ResearchItem is one report or brief as its owner's list shows it.
@@ -145,6 +154,7 @@ type ResearchView struct {
 	Sections  []Section      `json:"sections"`
 	Attendees []Attendee     `json:"attendees,omitempty"`
 	Dropped   int            `json:"dropped"`
+	Changed   *int           `json:"changed,omitempty"`
 }
 
 func (l Legwork) now() time.Time { return l.Now().UTC() }
@@ -392,7 +402,7 @@ func (l Legwork) keepCites(ctx context.Context, s tenancy.Scope, cs []answer.Cit
 
 func view(r Research, secs []Section, dropped int) ResearchView {
 	v := ResearchView{ID: r.ID, Kind: r.Kind, Question: r.Question, Space: r.Space, State: r.State, Why: r.Why, Steps: r.Steps, At: r.At,
-		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped}
+		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped, Changed: r.Changed}
 	if v.Steps == nil {
 		v.Steps = []string{}
 	}
@@ -415,6 +425,8 @@ func view(r Research, secs []Section, dropped int) ResearchView {
 // Finished is one report the notify job finished, to tell its owner about.
 type Finished struct {
 	ID, User, State string
+	// Changed is how many of a routine's sources are new since its last run (SB-4302).
+	Changed int
 }
 
 // RunQueued runs up to ResearchPerRun queued reports, oldest first, each as its owner.

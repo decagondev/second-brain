@@ -12,7 +12,7 @@ import (
 
 // OwnStores are the retention stores a person's own export holds.
 var OwnStores = map[string]bool{"traces": true, "conversations": true, "feedback": true, "saved questions": true, "shares": true,
-	"steward questions": true, "notification settings": true}
+	"steward questions": true, "notification settings": true, "memory": true}
 
 // OwnTrace is a trace as its asker's own export holds it: the answer's claims with the
 // cites the asker can open now. The questions are the conversations' records.

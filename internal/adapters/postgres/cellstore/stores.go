@@ -304,7 +304,7 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}, view{t, "retirement"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}, view{t, "retirement"}, view{t, "memory"}}
 }
 
 var _ notify.PrefStore = Traces{}
@@ -498,6 +498,33 @@ func (t Traces) UpdateSaved(ctx context.Context, tenant, user, id string, f func
 	return err == nil, err
 }
 
+// Routines implements ask.RoutineStore: oldest first.
+func (t Traces) Routines(ctx context.Context, tenant string) ([]ask.SavedQuestion, error) {
+	rs, err := list[savedRec](ctx, t.Pool, tenant, "saved", "body->'routine' IS NOT NULL", "at, id")
+	var out []ask.SavedQuestion
+	for _, r := range rs {
+		if r.Routine != nil {
+			out = append(out, r.full())
+		}
+	}
+	return out, err
+}
+
+var _ ask.MemoryStore = Traces{}
+
+// MemoryOf implements ask.MemoryStore: one record per person, by their id.
+func (t Traces) MemoryOf(ctx context.Context, tenant, user string) (ask.Memory, bool, error) {
+	return get[ask.Memory](ctx, t.Pool, tenant, "memory", user, false)
+}
+
+// PutMemory implements ask.MemoryStore; a memory with no lines is removed.
+func (t Traces) PutMemory(ctx context.Context, m ask.Memory) error {
+	if len(m.Lines) == 0 {
+		return del(ctx, t.Pool, m.Tenant, "memory", m.User)
+	}
+	return put(ctx, t.Pool, m.Tenant, "memory", m.User, meta{at: m.At, user: m.User}, m, false)
+}
+
 // Watched implements ask.WatchStore: oldest first.
 func (t Traces) Watched(ctx context.Context, tenant string) ([]ask.SavedQuestion, error) {
 	rs, err := list[savedRec](ctx, t.Pool, tenant, "saved", "", "at, id")
@@ -529,7 +556,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates", "retirement": "retirements"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates", "retirement": "retirements", "memory": "memory"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one
@@ -577,7 +604,7 @@ func (v view) records(ctx context.Context, tenant string, before *time.Time, use
 
 // Expire implements retention.Store: records older than before, except held ones.
 func (v view) Expire(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	if v.kind == "pref" { // settings are kept until changed or erased
+	if v.kind == "pref" || v.kind == "memory" { // settings and memory are kept until changed or erased
 		return 0, 0, nil
 	}
 	rs, err := v.records(ctx, tenant, &before, "")
@@ -600,7 +627,7 @@ func (v view) Expire(ctx context.Context, tenant string, before time.Time, held 
 
 // Plan implements retention.Store: Expire's selection, deleting nothing.
 func (v view) Plan(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	if v.kind == "pref" {
+	if v.kind == "pref" || v.kind == "memory" {
 		return 0, 0, nil
 	}
 	rs, err := v.records(ctx, tenant, &before, "")
