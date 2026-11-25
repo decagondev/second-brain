@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-48 epics, 139 user stories and 371 tickets across 47 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+51 epics, 145 user stories and 391 tickets across 50 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -51,6 +51,9 @@ summary: Epics, waves, slices and tickets.
 | W44 Departments Work Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E45), built: ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W45 Agents You Can Shape | 6 | 0 | 0 | Planned 2026-11-25 with the user (E46), built: skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W46 Every Agent Accountable | 7 | 0 | 0 | Planned 2026-11-25 with the user (E47), built: agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
+| W47 Ways of Working | 0 | 0 | 7 | Planned 2026-11-25 with the user (E48): rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
+| W48 Agents That Check With You | 0 | 0 | 6 | Planned 2026-11-25 with the user (E49): ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
+| W49 Run AI Like a Business | 0 | 0 | 7 | Planned 2026-11-25 with the user (E50): AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -178,6 +181,12 @@ flowchart LR
   E44 --> E45
   E45 --> E46
   E46 --> E47
+  E48["E48 Ways of Working"]
+  E49["E49 Agents That Check With You"]
+  E50["E50 Run AI Like a Business"]
+  E47 --> E48
+  E48 --> E49
+  E49 --> E50
 ```
 
 ## Epics
@@ -232,6 +241,9 @@ flowchart LR
 | [E45 Departments Work Together](E45-departments-work-together/README.md) | A question or a piece of work that spans departments reaches the right ones, as the asker, and leaders see the week across their branch without assembling it. | W44 | 7 |
 | [E46 Agents You Can Shape](E46-agents-you-can-shape/README.md) | Stewards and owners shape what agents produce, without building agents in the browser, and anyone can see how an answer or draft was made. | W45 | 6 |
 | [E47 Every Agent Accountable](E47-every-agent-accountable/README.md) | Every agent's use is measured, any steward can stop it where it speaks, its cost is capped, its changes are tried before they ship, and its record can be handed to an auditor. | W46 | 7 |
+| [E48 Ways of Working](E48-ways-of-working/README.md) | The company's recurring moments (a new joiner, a project, a quarter, a reorg, a 1:1) start the right drafts at the right time, without a steward remembering each step. | W47 | 7 |
+| [E49 Agents That Check With You](E49-agents-check-with-you/README.md) | Agents ask before they guess, take comments where they belong, show a plan before a long run, and notice when their sources change. | W48 | 6 |
+| [E50 Run AI Like a Business](E50-run-ai-like-a-business/README.md) | An admin sees what AI is used for and what it costs in one place, chooses how much model each task deserves, limits a person as well as an agent, gives agents targets, and learns whether a change actually helped. | W49 | 7 |
 
 ## All tickets by wave
 
@@ -845,3 +857,38 @@ flowchart LR
 | [SB-4705](E47-every-agent-accountable/SB-4705-agent-access-review.md) | S46.2 | E47 | Agent access review | Done |
 | [SB-4706](E47-every-agent-accountable/SB-4706-marked-as-ai.md) | S46.2 | E47 | Marked as AI | Done |
 | [SB-4707](E47-every-agent-accountable/SB-4707-agent-record.md) | S46.2 | E47 | An agent's record | Done |
+
+### W47 Ways of Working
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4801](E48-ways-of-working/SB-4801-rhythms.md) | S47.1 | E48 | Rhythms | Open |
+| [SB-4802](E48-ways-of-working/SB-4802-first-90-days.md) | S47.1 | E48 | A new joiner's first 90 days | Open |
+| [SB-4803](E48-ways-of-working/SB-4803-project-kickoff.md) | S47.1 | E48 | Project kickoff | Open |
+| [SB-4804](E48-ways-of-working/SB-4804-project-close-out.md) | S47.1 | E48 | Project close-out | Open |
+| [SB-4805](E48-ways-of-working/SB-4805-quarterly-planning.md) | S47.2 | E48 | Quarterly planning | Open |
+| [SB-4806](E48-ways-of-working/SB-4806-reorg-dry-run.md) | S47.2 | E48 | Reorg dry run | Open |
+| [SB-4807](E48-ways-of-working/SB-4807-one-on-one-prep.md) | S47.2 | E48 | 1:1 prep | Open |
+
+### W48 Agents That Check With You
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4901](E49-agents-check-with-you/SB-4901-ask-before-guessing.md) | S48.1 | E49 | Ask before guessing | Open |
+| [SB-4902](E49-agents-check-with-you/SB-4902-section-comments.md) | S48.1 | E49 | Comments on a section | Open |
+| [SB-4903](E49-agents-check-with-you/SB-4903-long-research.md) | S48.1 | E49 | Long research with checkpoints | Open |
+| [SB-4904](E49-agents-check-with-you/SB-4904-scenarios.md) | S48.2 | E49 | Scenarios before you approve | Open |
+| [SB-4905](E49-agents-check-with-you/SB-4905-source-changed.md) | S48.2 | E49 | When a source changes | Open |
+| [SB-4906](E49-agents-check-with-you/SB-4906-starter-questions.md) | S48.2 | E49 | Starter questions | Open |
+
+### W49 Run AI Like a Business
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5001](E50-run-ai-like-a-business/SB-5001-ai-command-centre.md) | S49.1 | E50 | AI command centre | Open |
+| [SB-5002](E50-run-ai-like-a-business/SB-5002-routing-policies.md) | S49.1 | E50 | Routing policies | Open |
+| [SB-5003](E50-run-ai-like-a-business/SB-5003-personal-limits.md) | S49.1 | E50 | Personal limits | Open |
+| [SB-5004](E50-run-ai-like-a-business/SB-5004-agent-goals.md) | S49.1 | E50 | Agent goals | Open |
+| [SB-5005](E50-run-ai-like-a-business/SB-5005-did-it-help.md) | S49.2 | E50 | Did it help? | Open |
+| [SB-5006](E50-run-ai-like-a-business/SB-5006-admins-week.md) | S49.2 | E50 | The admin's week | Open |
+| [SB-5007](E50-run-ai-like-a-business/SB-5007-inventory-export.md) | S49.2 | E50 | Inventory export | Open |
