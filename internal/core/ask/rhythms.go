@@ -73,6 +73,9 @@ type RhythmRun struct {
 	// ShareName is the subject's yes to their name going with the gaps the stewards get
 	// (SB-4802); without it a gap reaches them unnamed.
 	ShareName bool `json:"share_name,omitempty"`
+	// Proposed are a quarterly planning run's proposed goals, for the parent's roll-up
+	// (SB-4805): titles and cites only.
+	Proposed []ProposedGoal `json:"proposed,omitempty"`
 }
 
 // RhythmRunStep is one step of a run: its definition, when it is due, and the queue item
@@ -84,6 +87,8 @@ type RhythmRunStep struct {
 	Queue string    `json:"queue,omitempty"` // PersonKey(user) or a space key
 	Item  string    `json:"item,omitempty"`
 	Why   string    `json:"why,omitempty"`
+	// Copy is the subject's own copy of a one-on-one brief (SB-4807, LAW-30).
+	Copy string `json:"copy,omitempty"`
 }
 
 // RhythmRef marks a queue item a rhythm offered: its run and step.
@@ -134,6 +139,8 @@ type Rhythms struct {
 	Members func(ctx context.Context, space string) ([]string, error)
 	// TracesOf are a person's answers from a time on (SB-4802's gaps).
 	TracesOf func(ctx context.Context, user string, from time.Time) ([]Trace, error)
+	// Glossary is a space's glossary as it takes effect (SB-4805's overlaps).
+	Glossary func(space string) map[string]string
 }
 
 func (x Rhythms) now() time.Time { return x.Stewards.Now().UTC() }
@@ -195,8 +202,12 @@ func (x Rhythms) audit(ctx context.Context, actor string, r RhythmRun, state, wh
 
 // Start starts rhythm req.Rhythm in space for its subject, as one of the space's stewards.
 func (x Rhythms) Start(ctx context.Context, s tenancy.Scope, space string, req RhythmStart) (RhythmView, error) {
-	if _, _, err := x.Stewards.steward(ctx, s, space); err != nil {
-		return RhythmView{}, err
+	if req.Rhythm != OneOnOne { // a manager starts one-on-one prep for a report (SB-4807)
+		if _, _, err := x.Stewards.steward(ctx, s, space); err != nil {
+			return RhythmView{}, err
+		}
+	} else if err := s.Check(); err != nil {
+		return RhythmView{}, ErrNotSteward
 	}
 	d, err := x.def(space, req.Rhythm)
 	if err != nil {
@@ -218,6 +229,11 @@ func (x Rhythms) Start(ctx context.Context, s tenancy.Scope, space string, req R
 			return RhythmView{}, fmt.Errorf("%w: %s isn't one active person", ErrInvalid, subject)
 		}
 		subject = id
+		if req.Rhythm == OneOnOne {
+			if err := x.isManager(ctx, s.User(), id); err != nil {
+				return RhythmView{}, err
+			}
+		}
 	case "collection":
 		if _, err := x.Stewards.Agent.readCollection(ctx, s, x.Stewards.Agent.Collections, subject); err != nil {
 			return RhythmView{}, err
@@ -599,11 +615,12 @@ func (x Rhythms) offer(ctx context.Context, r *RhythmRun, i int) error {
 	if err != nil {
 		return err
 	}
-	queue, as := r.Space, "" // a queue by name
-	if to != "steward" {
+	queue, as := r.Space, r.Starter // a queue by name; a steward's step is drafted as the steward who started it
+	switch {
+	case to != "steward":
 		queue, as = PersonKey(to), to
-	} else if r.Starter != RhythmSystem {
-		as = r.Starter // a steward's step is drafted as the steward who started it
+	case r.Starter == RhythmSystem:
+		as = x.firstSteward(ctx, r.Space) // a system start: drafted as one steward, theirs to read
 	}
 	var s tenancy.Scope
 	if as != "" && x.ScopeIn != nil {
@@ -613,7 +630,7 @@ func (x Rhythms) offer(ctx context.Context, r *RhythmRun, i int) error {
 		}
 	}
 	title := fmt.Sprintf("%s, day %d: %s", r.Rhythm, st.Day, st.Ask)
-	thread, err := x.draft(ctx, *r, *st, s, as != "")
+	thread, err := x.draft(ctx, r, *st, s, as != "")
 	if err != nil {
 		st.State, st.Why = StepSkipped, "nothing to draft: "+err.Error()
 		return x.audit(ctx, RhythmSystem, *r, "rhythm_step_skipped", fmt.Sprintf("day %d: nothing to draft", st.Day))
@@ -623,12 +640,18 @@ func (x Rhythms) offer(ctx context.Context, r *RhythmRun, i int) error {
 		return err
 	}
 	st.State, st.Queue, st.Item = StepOffered, queue, item
+	if st.Agent == AgentOneOnOne && thread != nil { // LAW-30: the report gets the same brief, at the same time
+		if st.Copy, err = x.put(ctx, *r, i, PersonKey(r.Subject), title, &SavedThread{Text: thread.Text, Kind: DraftRhythm}, r.Subject); err != nil {
+			return err
+		}
+	}
 	return x.audit(ctx, RhythmSystem, *r, "rhythm_step_offered", fmt.Sprintf("day %d %s to its approver", st.Day, st.Kind))
 }
 
 // draft is a step's draft text, or nil for a step that is only a prompt (a routine, a
 // check-in, or a request with no agent).
-func (x Rhythms) draft(ctx context.Context, r RhythmRun, st RhythmRunStep, s tenancy.Scope, scoped bool) (*SavedThread, error) {
+func (x Rhythms) draft(ctx context.Context, rp *RhythmRun, st RhythmRunStep, s tenancy.Scope, scoped bool) (*SavedThread, error) {
+	r := *rp
 	if st.Kind != "draft" && st.Agent != "gaps" {
 		return nil, nil
 	}
@@ -654,6 +677,10 @@ func (x Rhythms) draft(ctx context.Context, r RhythmRun, st RhythmRunStep, s ten
 		text, err = x.kickoffBrief(ctx, s, r)
 	case "retrospective":
 		text, err = x.retrospective(ctx, s, r)
+	case AgentGoalPlan:
+		text, rp.Proposed, err = x.goalPlan(ctx, s, r)
+	case AgentOneOnOne:
+		text, err = x.oneOnOne(ctx, s, r)
 	default:
 		var resp Response
 		if resp, err = x.Stewards.Agent.Ask(ctx, s, Request{Question: st.Ask}); err == nil {
@@ -817,6 +844,9 @@ func (x Rhythms) view(r RhythmRun, user string) RhythmView {
 // step whose day has come. It returns how many steps it offered.
 func (x Rhythms) Tick(ctx context.Context) (int, error) {
 	if err := x.joiners(ctx); err != nil {
+		return 0, err
+	}
+	if err := x.quarterly(ctx); err != nil {
 		return 0, err
 	}
 	runs, err := x.Store.RhythmRuns(ctx, x.Stewards.Agent.Tenant)

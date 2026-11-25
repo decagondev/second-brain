@@ -30,6 +30,7 @@ import (
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/plan"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/reorg"
 	"example.com/second-brain/internal/core/verify"
 	"example.com/second-brain/internal/errs"
 	"example.com/second-brain/internal/version"
@@ -212,12 +213,16 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.recoverySplit(args), true
 	case "recovery join":
 		return e.recoveryJoin(args), true
+	case "tree move":
+		return e.treePlan(reorg.OpMove, args), true
+	case "tree merge":
+		return e.treePlan(reorg.OpMerge, args), true
 	}
 	return 0, false
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
+	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" || cmd == "tree" {
 		return true
 	}
 	for k := range planned {

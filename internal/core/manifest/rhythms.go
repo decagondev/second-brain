@@ -26,7 +26,7 @@ var (
 	RhythmApprovers = []string{"subject", "starter", "manager", "steward"}
 	RhythmSubjects  = []string{"person", "collection", "space"}
 	RhythmPlans     = []string{"manager", "steward"}
-	RhythmAgents    = []string{"ask", "start-here", "catch-up", "kickoff-brief", "retrospective", "gaps"}
+	RhythmAgents    = []string{"ask", "start-here", "catch-up", "kickoff-brief", "retrospective", "gaps", "goal-plan", "one-on-one"}
 )
 
 var rhythmNameRe = regexp.MustCompile(`^[a-z][a-z0-9-]{0,39}$`)
@@ -50,7 +50,6 @@ type RhythmStep struct {
 }
 
 // BuiltinRhythms are the rhythms every space has unless it defines one of the same name.
-// One-on-one prep (SB-4807) joins them with S47.2.
 var BuiltinRhythms = map[string]Rhythm{
 	"onboarding": {Subject: "person", Plan: "manager", Steps: []RhythmStep{ // SB-4802
 		{Day: 0, Kind: "draft", Agent: "start-here", Approver: "subject", Ask: "Where to start in this space, and the people to meet"},
@@ -69,10 +68,21 @@ var BuiltinRhythms = map[string]Rhythm{
 		{Day: 0, Kind: "draft", Agent: "retrospective", Approver: "starter", Ask: "Retrospective: goals, decisions, open waits and lessons"},
 		{Day: 7, Kind: "request", Approver: "steward", Ask: "Lessons the project proposed, for the stewards to review"},
 	}},
-	"quarterly-planning": {Subject: "space", Steps: []RhythmStep{ // SB-4805 fills in its drafts
-		{Day: 0, Kind: "draft", Approver: "steward", Ask: "Which goals carry over, which are at risk, and what did requests ask for this quarter?"},
+	"quarterly-planning": {Subject: "space", Steps: []RhythmStep{ // SB-4805
+		{Day: 0, Kind: "draft", Agent: "goal-plan", Approver: "steward", Ask: "Next quarter's goals: what carries over, what is at risk, and what requests asked for"},
 		{Day: 7, Kind: "checkin", Approver: "steward", Ask: "Propose next quarter's goals"},
 	}},
+	"one-on-one": {Subject: "person", Steps: oneOnOneSteps()}, // SB-4807
+}
+
+// oneOnOneSteps are a weekly 1:1 brief for 12 weeks, each for the manager, the report
+// seeing the same one (LAW-30).
+func oneOnOneSteps() []RhythmStep {
+	var out []RhythmStep
+	for w := 0; w < MaxRhythmSteps; w++ {
+		out = append(out, RhythmStep{Day: 7 * w, Kind: "draft", Agent: "one-on-one", Approver: "manager", Ask: "1:1 prep from what they published"})
+	}
+	return out
 }
 
 // RhythmProblem is why a rhythm is refused, "" when it isn't: more than MaxRhythmSteps

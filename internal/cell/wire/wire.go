@@ -62,6 +62,7 @@ import (
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/proposals"
+	"example.com/second-brain/internal/core/reorg"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/retrieve"
@@ -708,6 +709,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
 		AgentRecord: c.AgentRecord} // SB-4707
+	admin.InFlight = c.inFlight(m) // SB-4806
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
@@ -1185,6 +1187,7 @@ func (c *Cell) rhythms(m manifest.Tenant, stewards ask.Stewards, legwork ask.Leg
 			}
 			return out
 		},
+		Glossary: func(space string) map[string]string { return m.Effective(space).Glossary }, // SB-4805
 		Spaces: func() []string {
 			out := make([]string, 0, len(m.Spaces))
 			for name := range m.Spaces {
@@ -1224,5 +1227,64 @@ func (c *Cell) rhythms(m manifest.Tenant, stewards ask.Stewards, legwork ask.Leg
 			}
 			return out, nil
 		},
+	}
+}
+
+// inFlight counts what is under way in each space a reorg touches (SB-4806): counts only.
+func (c *Cell) inFlight(m manifest.Tenant) func(ctx context.Context, spaces []string) (map[string]reorg.InFlight, error) {
+	tenant := c.Config.Tenant
+	return func(ctx context.Context, spaces []string) (map[string]reorg.InFlight, error) {
+		runs, err := c.Traces.RhythmRuns(ctx, tenant)
+		if err != nil {
+			return nil, err
+		}
+		projects, err := c.Traces.Projects(ctx, tenant)
+		if err != nil {
+			return nil, err
+		}
+		routines, err := c.Traces.Routines(ctx, tenant)
+		if err != nil {
+			return nil, err
+		}
+		out := map[string]reorg.InFlight{}
+		for _, sp := range spaces {
+			in := reorg.InFlight{Triggered: []string{}}
+			for _, r := range runs {
+				if r.Space == sp && (r.State == ask.RhythmRunning || r.State == ask.RhythmProposed) {
+					in.Rhythms++
+				}
+			}
+			for _, p := range projects {
+				if p.Space == sp && p.State == ask.ProjectOpen {
+					in.Projects++
+				}
+			}
+			for _, q := range routines {
+				if q.Space == sp || q.Space == ask.SpaceKey(sp) {
+					in.Routines++
+				}
+			}
+			qs, err := c.Traces.StewardQueue(ctx, tenant, ask.SpaceKey(sp))
+			if err != nil {
+				return nil, err
+			}
+			for _, q := range qs {
+				if q.Reply == nil && (q.Thread == nil || !q.Thread.Discarded) {
+					in.Open++
+					if q.Waiting != nil {
+						in.Waiting++
+					}
+				}
+			}
+			e := m.Effective(sp)
+			if e.Brief != nil {
+				in.Triggered = append(in.Triggered, "brief")
+			}
+			if e.Updates {
+				in.Triggered = append(in.Triggered, "update")
+			}
+			out[sp] = in
+		}
+		return out, nil
 	}
 }

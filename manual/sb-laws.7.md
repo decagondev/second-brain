@@ -27,7 +27,7 @@ LAW-21 moves revoke fast                     LAW-22 barriers hold
 LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 LAW-25 a memory is its person's own          LAW-26 a stored result is checked when read
 LAW-27 a consultation is the asker's own    LAW-28 an agent's writing says so
-LAW-29 a rhythm only drafts                  
+LAW-29 a rhythm only drafts                  LAW-30 a brief about a person is theirs to read
 ```
 
 ## DESCRIPTION
@@ -218,6 +218,12 @@ Anything an agent wrote says which agent and which version wrote it wherever it 
 Every step a rhythm offers is a draft or a prompt that waits, unanswered, in the queue of the one person it names (its subject, its starter, the subject's manager) or of the space's stewards, and nothing a rhythm does publishes a note, sends a message or answers a step on its own. A rhythm stops at once when its subject leaves the space, its collection closes or goes, or its starter, its subject or a steward stops it: the next read of the space's rhythms shows it stopped, and no step is offered after that (sb-departments(7), Rhythms).
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW29_ARhythmOnlyDraftsAndStopsWithItsSubject`: random rhythms of up to 12 steps over up to 120 days, with random approvers, a clock that jumps, and the subject leaving at a random moment, through the real rhythms service, steward queues, folder connector and index; SB-4801) · Selftest (`TestSelf_LAW29CatchesARhythmThatActsOrOutlivesItsSubject`: a rhythm that ignores leaving, and one that answers its own steps, each go red).
+
+### LAW-30: A brief about a person draws only on what they published, and they can read it {#law-30}
+
+A brief the platform makes about one person for someone else (the 1:1 prep a manager gets for a report) holds only what that person published: goals they own and their check-ins, and action items assigned to them, each line cited to something both the reader and the person can open. Nothing from the person's asks, inbox, memory, routines or unpublished drafts appears in it, no line rates or scores them, and the person gets the same text at the same time (sb-agents(7), 1:1 prep).
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW30_ABriefAboutAPersonDrawsOnlyOnWhatTheyPublished`: random published goals and action items, some in documents only one of the two can open, beside random private asks, memory entries and routines with unique markers, through the real rhythms service, folder connector and index; every brief line is published and openable by both, no private marker appears, and the two copies are identical; SB-4807) · Selftest (`TestSelf_LAW30CatchesABriefThatLeaksAPrivateItem`: a brief that adds the report's latest ask goes red).
 
 ### External review (SB-612)
 

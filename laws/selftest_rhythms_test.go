@@ -19,3 +19,15 @@ func TestSelf_LAW29CatchesARhythmThatActsOrOutlivesItsSubject(t *testing.T) {
 		}
 	}
 }
+
+// LAW-30's test goes red when a 1:1 brief draws on the report's asks.
+func TestSelf_LAW30CatchesABriefThatLeaksAPrivateItem(t *testing.T) {
+	dir := t.TempDir()
+	caught := false
+	for seed := int64(1); seed <= 10 && !caught; seed++ {
+		caught = law30(rand.New(rand.NewSource(seed)), dir, RealBriefs{LeakAsk: true}) != nil
+	}
+	if !caught {
+		t.Error("LAW-30 stayed green with a brief that holds the report's latest ask")
+	}
+}

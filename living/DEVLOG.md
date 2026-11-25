@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S47.2: Plan and reorganise
+
+**Wave/slice:** W47 / S47.2 (SB-4805 to SB-4807) · **Status:** Done
+
+**What:** Two weeks before a quarter ends, each space's `quarterly-planning` rhythm drafts next quarter's goals for its stewards: this quarter's unfinished goals carried over, the ones at risk flagged, each cited, and the quarter's requests counted by category. `GET /v1/spaces/NAME/planning` rolls a department's and its teams' proposed goals up for its stewards, counting the ones they can't open and flagging overlaps on a glossary term. `sb tree move|merge FILE … --plan` and `GET /v1/admin/tree/plan` are the reorg dry run: the manifest the change would leave, checked, and for each affected space the escalation path, roll-up and inherited settings before and after, with what is under way there; a change that would widen access is refused with its path. The built-in `one-on-one` rhythm, started by a report's SCIM manager, puts the same weekly brief in both their queues from the report's own goals and open action items, each line one both can open; the report can add a line. LAW-30 is new: a brief about a person draws only on what they published, and they can read it.
+
+**Why this way:** Planning, the 1:1 brief and the tree plan are built by code from records already checked as the reader, so they need no new agent, prompt or eval suite and can't cite what either reader can't open. Keeping a 1:1 line only when both can open its cite is what makes the two copies identical without a second pass. The tree plan formats the changed manifest and runs the full manifest check on it, so the dry run refuses exactly what `sb tenant check` would, and the label and retention checks on top refuse a widening even where the check allows it. Overlaps are flags only; nothing merges goals.
+
+**Learned:** LAW-30's first run caught `AddLine` writing a queue item with `Put`, which refuses an existing id; it now uses `UpdateStewardQuestion`. A folder's `owner` can always read, so the law's fixture gives each folder its own owner. A team inherits its parent's template and so its label; the manifest check already refuses a team that would keep more than its new parent.
+
+**Laws:** LAW-30 (new, tested), LAW-01, LAW-16, LAW-24, LAW-29. Every law test is still green.
+
 ## 2026-11-25 S47.1: Rhythms
 
 **Wave/slice:** W47 / S47.1 (SB-4801 to SB-4804) · **Status:** Done

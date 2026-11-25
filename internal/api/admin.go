@@ -19,6 +19,7 @@ import (
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/release"
+	"example.com/second-brain/internal/core/reorg"
 	"example.com/second-brain/internal/core/report"
 	"example.com/second-brain/internal/core/retention"
 	"example.com/second-brain/internal/core/route"
@@ -33,6 +34,9 @@ type Manifests interface {
 
 // Admin serves sb-admin(3). The console is a client of this API and has no other powers.
 type Admin struct {
+	// InFlight counts what is under way in each space a reorg touches (SB-4806); nil
+	// counts nothing.
+	InFlight  func(ctx context.Context, spaces []string) (map[string]reorg.InFlight, error)
 	Tenant    string
 	Policy    policy.Kernel
 	Manifests Manifests
@@ -117,6 +121,7 @@ type IndexReports interface {
 // Register mounts the endpoints.
 func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/manifest", h.guard(h.manifest))
+	mux.HandleFunc("GET /v1/admin/tree/plan", h.guard(h.treePlan)) // SB-4806
 	mux.HandleFunc("POST /v1/admin/manifest/diff", h.guard(h.diff))
 	mux.HandleFunc("POST /v1/admin/kill", h.guard(h.kill(true)))
 	mux.HandleFunc("POST /v1/admin/unkill", h.guard(h.kill(false)))
@@ -283,6 +288,49 @@ func (h Admin) manifest(w http.ResponseWriter, r *http.Request, _ tenancy.Scope)
 		return
 	}
 	h.ok(w, map[string]any{"manifest": string(manifest.Format(m)), "commit": commit})
+}
+
+// treePlan is a reorg's dry run on the applied manifest (sb-space(1), tree; SB-4806):
+// ?op=move&space=S&to=P or ?op=merge&space=A&to=B. It changes nothing; the proposed
+// manifest goes through the usual review.
+func (h Admin) treePlan(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	m, _, err := h.Manifests.Applied(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The applied manifest can't be read."))
+		return
+	}
+	q := r.URL.Query()
+	var p reorg.TreePlan
+	switch q.Get("op") {
+	case reorg.OpMove:
+		p, err = reorg.Move(m, q.Get("space"), q.Get("to"))
+	case reorg.OpMerge:
+		p, err = reorg.Merge(m, q.Get("space"), q.Get("to"))
+	default:
+		err = reorg.ErrTree
+	}
+	if errors.Is(err, reorg.ErrWiden) {
+		h.fail(w, errs.New(errs.EPERM, "%s", strings.TrimPrefix(err.Error(), reorg.ErrWiden.Error()+": ")))
+		return
+	}
+	if err != nil {
+		h.fail(w, errs.New(errs.EINVAL, "%v", err))
+		return
+	}
+	out := map[string]any{"plan": p, "manifest": string(manifest.Format(p.After))}
+	if h.InFlight != nil {
+		var spaces []string
+		for _, e := range p.Spaces {
+			spaces = append(spaces, e.Space)
+		}
+		in, err := h.InFlight(r.Context(), spaces)
+		if err != nil {
+			h.fail(w, errs.New(errs.EUNAVAIL, "What is under way can't be counted right now."))
+			return
+		}
+		out["in_flight"] = in
+	}
+	h.ok(w, out)
 }
 
 func (h Admin) diff(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {

@@ -21,6 +21,8 @@ sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
 sb space   templates
 sb space   diff FILE --idp-snapshot SNAPSHOT [--json]
 sb space   scope-report (--cell URL | --tenant T) [--json]
+sb tree    move FILE SPACE --to PARENT --plan [--write OUT]   (sb-space(1), tree)
+sb tree    merge FILE FROM INTO --plan [--write OUT]
 sb index   prune [--dry-run] [--reason TEXT] (--cell URL | --tenant T)   (sb-admin(3), index leftovers)
 sb index   refresh CITE --reason TEXT (--cell URL | --tenant T)      (sb-admin(3), index refresh)
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT

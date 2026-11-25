@@ -507,7 +507,9 @@
                           "catch-up",
                           "kickoff-brief",
                           "retrospective",
-                          "gaps"
+                          "gaps",
+                          "goal-plan",
+                          "one-on-one"
                         ]
                       },
                       "approver": {

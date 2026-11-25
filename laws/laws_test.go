@@ -334,6 +334,11 @@ func TestLAW29_ARhythmOnlyDraftsAndStopsWithItsSubject(t *testing.T) {
 	Check(t, "LAW-29", runs, func(r *rand.Rand) error { return law29(r, dir, RealRhythms{}) })
 }
 
+func TestLAW30_ABriefAboutAPersonDrawsOnlyOnWhatTheyPublished(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-30", runs, func(r *rand.Rand) error { return law30(r, dir, RealBriefs{}) })
+}
+
 func TestLAW27_AConsultationIsTheAskersOwn(t *testing.T) {
 	Check(t, "LAW-27", runs, func(r *rand.Rand) error { return law27(r, NewConsultSystem()) })
 }

@@ -22,6 +22,8 @@ func (h Rhythms) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/rhythms/{id}/approve", h.approve)
 	mux.HandleFunc("POST /v1/rhythms/{id}/stop", h.stop)
 	mux.HandleFunc("POST /v1/rhythms/{id}/consent", h.consent)
+	mux.HandleFunc("POST /v1/rhythms/{id}/line", h.line)
+	mux.HandleFunc("GET /v1/spaces/{name}/planning", h.planning)
 	mux.HandleFunc("GET /v1/spaces/{name}/projects", h.projects)
 	mux.HandleFunc("POST /v1/spaces/{name}/projects", h.startProject)
 	mux.HandleFunc("GET /v1/projects/{id}", h.project)
@@ -152,4 +154,23 @@ func (h Rhythms) close(w http.ResponseWriter, r *http.Request) {
 	}
 	var in ask.CloseInput
 	do(h, w, r, &in, func() (ask.ProjectView, error) { return h.Service.CloseProject(r.Context(), s, r.PathValue("id"), in) })
+}
+
+func (h Rhythms) line(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.lw().k().scope(w, r)
+	if !ok {
+		return
+	}
+	var in struct {
+		Text string `json:"text"`
+	}
+	do(h, w, r, &in, func() (ask.RhythmView, error) { return h.Service.AddLine(r.Context(), s, r.PathValue("id"), in.Text) })
+}
+
+func (h Rhythms) planning(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.lw().k().scope(w, r)
+	if !ok {
+		return
+	}
+	do(h, w, r, nil, func() (ask.PlanningResponse, error) { return h.Service.Planning(r.Context(), s, r.PathValue("name")) })
 }
