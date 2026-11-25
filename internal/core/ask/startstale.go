@@ -47,7 +47,7 @@ func (x Stewards) evalsToCheck(ctx context.Context, name string) ([]EvalCheck, e
 		return nil, fmt.Errorf("%w: eval cases: %v", ErrUnavailable, err)
 	}
 	var mine []EvalCase
-	for _, c := range all {
+	for _, c := range ActiveCases(all) {
 		if c.Space == SpaceKey(name) {
 			mine = append(mine, c)
 		}

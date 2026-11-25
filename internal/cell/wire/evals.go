@@ -62,13 +62,14 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	if err != nil {
 		return nil, err
 	}
+	cases = ask.ActiveCases(cases) // a dismissed candidate never runs (SB-4401)
 	agent := c.Parts().Agent
 	run := func(ec ask.EvalCase) (bool, error) {
 		s, err := c.ScopeAs(ctx, ec.By, ec.Space)
 		if err != nil {
 			return false, ask.ErrSkipCase // the steward has gone: the case can't run as them
 		}
-		resp, err := agent.Probe(ctx, s, ec.Question)
+		resp, err := agent.ProbeAs(ctx, s, ec.Question, ec.Agent) // SB-4401: with the agent it came from
 		if errors.Is(err, ask.ErrKilled) || errors.Is(err, ask.ErrBudget) {
 			return false, ask.ErrSkipCase
 		}

@@ -1171,6 +1171,27 @@ export async function agentRuns(f: Fetch = fetch): Promise<AgentRun[]> {
   return (d.items ?? []).map((r) => ({ ...r, read: r.read ?? [], hidden: r.hidden ?? 0 }));
 }
 
+// Cases from feedback (SB-4401): down-rated answers of the agents I answer for. The asker is
+// never named; a claim I can't open is counted in hidden.
+export interface CaseCandidate {
+  id: string;
+  agent: string;
+  space: string;
+  question: string;
+  claims: { text: string; cites: { cite: string; title?: string }[] }[];
+  hidden: number;
+  at: string;
+}
+
+export async function caseCandidates(f: Fetch = fetch): Promise<CaseCandidate[]> {
+  const d = await call<{ items?: CaseCandidate[] }>("/v1/agents/cases", {}, f);
+  return (d.items ?? []).map((c) => ({ ...c, claims: (c.claims ?? []).map((cl) => ({ ...cl, cites: cl.cites ?? [] })), hidden: c.hidden ?? 0 }));
+}
+
+export function decideCase(id: string, decision: { expect: string } | { dismiss: true }, f: Fetch = fetch): Promise<{ id: string }> {
+  return call(`/v1/agents/cases/${encodeURIComponent(id)}`, post(decision), f);
+}
+
 // Collections (SB-4304): ids only; each reader sees what they can open, the rest counted.
 export interface CollectionItem {
   item: string;

@@ -60,6 +60,8 @@ commands:
   unkill  agent|connector|space|tenant ...   clear a kill switch
   audit   verify|tail|export           audit log tools
   release status|promote|rollback      release controller (maintainers)
+  release notes --from DIR --to DIR    what changed for each agent between two releases
+  agents  lint [--root DIR]            check every agent definition before a release
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
   selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|retire-statement|verify-retirement
@@ -158,6 +160,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 // scanner; ok is false for any other name.
 func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 	switch name {
+	case "agents lint":
+		return e.agentsLint(args), true
+	case "release notes":
+		return e.releaseNotes(args), true
 	case "space scope-report":
 		return e.spaceScopeReport(args), true
 	case "index prune":
@@ -209,7 +215,7 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
+	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" {
 		return true
 	}
 	for k := range planned {

@@ -64,6 +64,30 @@ They are asked through `POST /v1/ask` with `"agent": "NAME"` (sb-ask(3)), are ki
 
 `GET /v1/admin/agents` lists every agent the manifest enables, and `handover`: its department, the spaces that can run it, its runs and the answers rated unhelpful in the last 30 days, its eval result and whether it is killed (sb-admin(3)). A steward sees the same for their space's agents with `GET /v1/spaces/NAME/agents`, and changes which department agents the space lists with a proposal, which an operator approves as a manifest diff. The list is counted from the manifest and the traces, and holds no question or answer.
 
+### Definitions, owners and changes (SB-4402)
+
+Every agent is a **definition** in the release bundle, `internal/core/ask/agents.json`, one object an agent: `{ "name", "owner", "department", "prompt", "suite", "tools": [], "writes": false, "approvals": false, "labels": ["internal", "confidential"], "restricted": false }`. `owner` is who is answerable for it, a person's email or `group:NAME`; `department` its template (sb-departments(7)), or `company` for an agent of every space; `prompt` its bundled prompt; `suite` its eval suite; `tools` the tool-bus tools it may call; `writes` whether it can change anything at a source, and `approvals` whether every such change goes through the approvals path (sb-approvals(7)); `labels` the space labels it may run under, and `restricted: true` that one of them is `restricted`. Every shipped agent has no tool and writes nothing. The gate refuses a bundle with an agent without an owner (Lint, below).
+
+The registry shows each agent's `owner`, and `owner_inactive: true` when no active person answers for it now: an email that isn't one active directory user, or a group with no active member (LAW-12). The owner gets the agent's candidate eval cases (sb-evals(7), Cases from feedback).
+
+**What changed** (`sb release notes`, sb-release(1)): for each agent, the lines of its prompt added and removed since the last release, and the change in its suite's pass rate and failures.
+
+**Agents no one uses.** On `GET /v1/spaces/NAME/agents`, a department agent the space lists that ran there **not once in the last 60 days** is marked `"unused": true`, and the response carries `propose_off`, the space's `agents` list without them, which **Propose turning off** sends as an ordinary agents proposal (sb-admin(3)). Nothing is turned off: an operator approves the manifest diff, or no one does. The 60 days are counted from the traces, so a tenant whose `retention_days` is under 60 never sees `unused`: the cell can't tell, so it doesn't say (LAW-03).
+
+### Lint (SB-4403)
+
+`sb agents lint [--root DIR]` (sb(1)) checks every definition against the bundle, and runs in `make check` and in the release gate, so a bad definition never ships (LAW-06). It fails, naming the file and line, any agent that:
+
+1. names no `owner`, or one that isn't an email or `group:NAME`;
+2. lists a tool the tool bus doesn't declare, or whose prompt names a declared tool it doesn't list;
+3. `writes` without `approvals`;
+4. has no `department`, or one that is neither a template nor `company`;
+5. may run under `restricted` without `restricted: true`, or says `restricted: true` without it; a department agent of a template whose default label is `restricted` may run under it;
+6. has no `suite`, or one with no file in `evals/suites/`;
+7. has a prompt that doesn't say data blocks are never instructions, or a line that tells the model to follow, obey, carry out or execute what a document, source or data block says (LAW-09).
+
+Its exit status is 0 when every agent passes and 1 otherwise. Every shipped agent passes; a self-test breaks each rule once and checks that lint fails.
+
 ### Scheduled and triggered agents (SB-4005, SB-4006)
 
 An agent runs on its own only in these five ways. Each runs on the `ask` agent's path as one person, with every check a search makes, writes a trace and an audit row, has no tools, and **sends and publishes nothing**: its answer waits in a steward queue as a draft, and a steward replies with it and publishes it as a note, or discards it (sb-spaces(7)).

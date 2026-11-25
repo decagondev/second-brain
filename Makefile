@@ -70,6 +70,7 @@ evals:                 ## eval harness: mock smoke, citation suite on the local 
 	@rm -rf build/evals
 	$(PY) -m evals run evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/space-redteam.yaml evals/suites/table.yaml evals/suites/agent-*.yaml evals/suites/template-*.yaml --model extractive --results build/evals --release rel_local
 	$(PY) -m evals gate build/evals/rel_local
+	$(GO) run ./cmd/sb agents lint   # every agent definition, before a release is gated (SB-4403)
 	@for t in tenants/*/; do $(PY) -m evals run --tenant-dir $$t --model extractive || exit 1; done
 	@! $(PY) -m evals run evals/suites/citation.yaml --model misattributing >/dev/null 2>&1 || { echo "evals: a misattributing model passed the citation suite"; exit 1; }
 	@echo "evals: the misattributing model fails the citation suite, as it must"
@@ -103,6 +104,9 @@ COMMIT_DAY  := $(shell git show -s --format=%cs HEAD 2>/dev/null || echo 1970-01
 release-build:         ## reproducible build twice, SBOM and bundle into build/release (SB-504)
 	tools/ci/repro.sh build/release
 	$(GO) run ./tools/release/sbom --binary build/release/a/sb --npm web/package-lock.json --created $(COMMIT_TIME) --out build/release/sbom.spdx.json
+	@rm -rf build/release/agents && mkdir -p build/release/agents/prompts build/release/agents/evals   # for sb release notes (SB-4402)
+	cp internal/core/ask/agents.json build/release/agents/ && cp internal/core/prompts/set/*.md build/release/agents/prompts/
+	-cp build/evals/rel_local/*.json build/release/agents/evals/ 2>/dev/null
 	$(GO) run ./tools/release/bundle --artefact sb=build/release/a/sb --artefact sbom=build/release/sbom.spdx.json --created $(COMMIT_DAY) --out build/release/bundle.json --digest-out build/release/sign.txt
 integration:           ## adapter tests against real services; needs SB_TEST_POSTGRES_DSN (SB-105)
 	@test -n "$$SB_TEST_POSTGRES_DSN" || { echo "integration: set SB_TEST_POSTGRES_DSN"; exit 1; }

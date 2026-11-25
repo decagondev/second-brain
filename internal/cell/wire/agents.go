@@ -618,3 +618,27 @@ func inboxApprovals(bus *toolbus.Bus) func(ctx context.Context, s tenancy.Scope)
 		return out, nil
 	}
 }
+
+// ownerActive says whether an agent's owner has an active person (SB-4402): an email is
+// one active user, group:NAME any active member. A directory error is not active.
+func (c *Cell) ownerActive(ctx context.Context, owner string) bool {
+	name, isGroup := strings.CutPrefix(strings.TrimSpace(owner), "group:")
+	if owner == "" {
+		return false
+	}
+	if !isGroup {
+		ids, err := c.activeByEmail(ctx, owner)
+		return err == nil && len(ids) == 1
+	}
+	ids, err := c.Directory.Members(ctx, c.Config.Tenant, name)
+	if err != nil {
+		return false
+	}
+	for _, id := range ids {
+		u, found, err := c.Directory.User(ctx, c.Config.Tenant, id)
+		if err == nil && found && u.Active {
+			return true
+		}
+	}
+	return false
+}

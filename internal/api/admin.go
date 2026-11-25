@@ -75,6 +75,9 @@ type Admin struct {
 	// read is an error, never no hold.
 	AgentKilled func(agent string) bool
 	EvalHeld    func() (bool, error)
+	// OwnerActive says whether an agent's owner, an email or group:NAME, has an active
+	// person (SB-4402); nil flags no owner.
+	OwnerActive func(ctx context.Context, owner string) bool
 	// SpaceSpend is each space's branch spend in a month (SB-4105); nil is EUNAVAIL.
 	SpaceSpend func(ctx context.Context, month string) ([]SpaceSpend, error)
 }

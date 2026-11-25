@@ -25,8 +25,8 @@ Planned 2026-11-24 after W40, with the user. The concept is in [18-legwork-inbox
 
 ## Exit gate
 
-- [ ] Every shipped agent has an owner and passes `sb agents lint`
-- [ ] An accepted candidate case runs in the next gate, and the asker is never named
+- [x] Every shipped agent has an owner and passes `sb agents lint`
+- [x] An accepted candidate case runs in the next gate, and the asker is never named
 - [ ] An event body carries ids only
 - [ ] A model tier that fails its evals takes no asks
 - [ ] Every law test still green; no new store, service or Go module

@@ -41,6 +41,8 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `language` | (SB-3003) `en`, `de` or `fr`: the ask's `language` (sb-ask(3)). The local cell passes it on; a case with it expects the same cites as the question without it |
 | `expect` | One or more checks (below) |
 
+A tenant's own cases, from wrong citations (SB-2204) and from feedback on a named agent (SB-4401), are kept in the cell, not in suite files; each runs as the person who added it, with the agent it was made from (sb-evals(7)).
+
 ### Expectations
 
 | Check | Passes when |

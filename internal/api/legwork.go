@@ -34,6 +34,42 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/review/fix", h.fix)
 	mux.HandleFunc("GET /v1/me/inbox", h.inbox)
 	mux.HandleFunc("GET /v1/me/agent-runs", h.agentRuns)
+	mux.HandleFunc("GET /v1/agents/cases", h.cases)
+	mux.HandleFunc("POST /v1/agents/cases/{id}", h.decideCase)
+}
+
+// cases are the caller's candidate cases from feedback (sb-evals(7), Cases from feedback;
+// SB-4401).
+func (h Legwork) cases(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	cs, err := h.Service.Stewards.CaseCandidates(r.Context(), s)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"items": cs})
+}
+
+// decideCase accepts a candidate with an expect, or dismisses it.
+func (h Legwork) decideCase(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body ask.CaseDecision
+	if !decode(r, &body) || (body.Dismiss == (body.Expect != "")) {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	c, err := h.Service.Stewards.DecideCase(r.Context(), s, r.PathValue("id"), body)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", c)
 }
 
 // agentRuns are the runs agents made as the caller (sb-ask(3), What agents did as me; SB-4305).

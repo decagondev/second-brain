@@ -21,7 +21,7 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 
 ### Bundles
 
-A release is a signed **bundle**. Anything that changes behaviour is inside it and hashed into the release id, including prompts and the model version (ADR-0013). A prompt change is a release.
+A release is a signed **bundle**. Anything that changes behaviour is inside it and hashed into the release id, including prompts and the model version (ADR-0013). A prompt change is a release. Every agent in it is a definition with an owner (sb-agents(7), Definitions), and `sb agents lint` passing is part of the gate: a bundle with a definition that fails lint is never gated (sb-agents(7), Lint; SB-4403).
 
 The bundle manifest, `bundle.json` (SB-503):
 

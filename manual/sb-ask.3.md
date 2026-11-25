@@ -329,6 +329,7 @@ These are the legwork agents (sb-agents(7), The legwork agents). Each runs on th
 | `fix` | Suggested edits to one of their documents, while `suggested`, whose document they can open now (SB-4206) | |
 | `research` | A plan waiting for **Run** | A finished report or brief |
 | `routine` | | A routine's answer (below) |
+| `case` | A candidate eval case of an agent they answer for (sb-evals(7), Cases from feedback; SB-4401) | |
 
 **Failed** holds their research reports and routine runs that `failed`, each with `why`. An item whose space they left, whose queue they no longer answer, or whose document they can no longer open is simply not there, never counted. `title` is a question as it was sent, a draft's or policy's title, an action item's text or a workflow's name; `link` is where it is acted on (`/?steward=NAME`, `/?space=NAME`, `/?action=ID`, `/?tab=legwork` or `/?tab=questions`). **The inbox only lists: every action happens on that page**, through its own call and checks. Its counts are the lengths of the lists, so they match the tabs; notifications still say only counts (Notifications, below).
 

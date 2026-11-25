@@ -105,6 +105,9 @@ func (l Legwork) Inbox(ctx context.Context, s tenancy.Scope) (Inbox, error) {
 	if err := l.inboxResults(ctx, s, now, &in); err != nil {
 		return Inbox{}, err
 	}
+	if err := l.inboxCases(ctx, s, &in); err != nil { // SB-4401
+		return Inbox{}, err
+	}
 	newest := func(xs []InboxItem) {
 		sort.SliceStable(xs, func(i, j int) bool {
 			if xs[i].Overdue != xs[j].Overdue {

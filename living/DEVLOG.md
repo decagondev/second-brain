@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S43.1: Owners and evals
+
+**Wave/slice:** W43 / S43.1 (SB-4401 to SB-4403) · **Status:** Done
+
+**What:** Every agent now has a one-line definition in the release bundle (`internal/core/ask/agents.json`) naming its owner, department, prompt, eval suite, tools, writes and labels. `sb agents lint` checks each definition and its prompt against what the code ships and runs in `make evals`, so a bad definition stops the gate. The registry shows each agent's owner and flags one with no active person; a space's agent list proposes off a department agent no one ran there in 60 days. `sb release notes` lists each agent's prompt diff and eval change between two release bundles. A down-rated or reported answer of `ask` or a department agent becomes a candidate case in its owners' inbox; accepted with the document it should have cited, it is a case the evals job runs with that agent.
+
+**Why this way:** Definitions are data in the bundle, so the lint, the registry and release notes all read the same file and can't disagree. Candidates are built when asked for from feedback and traces already kept, so there is no new store; a decided candidate is an eval case, dismissed ones keeping no question. Each claim is shown only if the owner can open every cite, and a candidate with anything hidden can't be accepted, so an owner never judges what they can't see.
+
+**Learned:** Only answers can be rerun as cases: drafts, briefs and reports are not answers to one question, so their owners get no candidates.
+
+**Laws:** LAW-01, LAW-04, LAW-06, LAW-07, LAW-09, LAW-16. Every law test is still green.
+
 ## 2026-11-25 S42.2: Context for the work
 
 **Wave/slice:** W42 / S42.2 (SB-4304 to SB-4307) · **Status:** Done

@@ -36,6 +36,62 @@ type AdminAgent struct {
 	Eval   string `json:"eval"`
 	Suite  string `json:"suite"`
 	Killed bool   `json:"killed"`
+	// Owner answers for the agent (SB-4402), from its definition; OwnerInactive flags one
+	// with no active person now.
+	Owner         string `json:"owner"`
+	OwnerInactive bool   `json:"owner_inactive,omitempty"`
+	// Unused marks a listed department agent with no run in the space in UnusedWindow.
+	Unused bool `json:"unused,omitempty"`
+}
+
+// UnusedWindow is how long a space's agent goes without a run before it is offered off
+// (SB-4402); a tenant keeping traces for less can't tell.
+const UnusedWindow = 60 * 24 * time.Hour
+
+// withOwners sets each row's owner from the bundle, flagging one with no active person.
+func withOwners(ctx context.Context, rows []AdminAgent, active func(ctx context.Context, owner string) bool) []AdminAgent {
+	for i := range rows {
+		rows[i].Owner = ask.AgentOwner(rows[i].Name)
+		rows[i].OwnerInactive = active != nil && !active(ctx, rows[i].Owner)
+	}
+	return rows
+}
+
+// unused marks the listed department agents of a space with no run there since from, and
+// returns its agents list without them; nothing when the traces don't reach back that far.
+func unused(ctx context.Context, src report.Source, m manifest.Tenant, tenant, space string, rows []AdminAgent, now time.Time) ([]string, error) {
+	if m.RetentionDays < int(UnusedWindow/(24*time.Hour)) || src == nil {
+		return nil, nil
+	}
+	traces, err := src.Traces(ctx, tenant, now.Add(-UnusedWindow), now)
+	if err != nil {
+		return nil, err
+	}
+	ran := map[string]bool{}
+	for _, t := range traces {
+		if t.Space == "spc_"+space {
+			ran[agentOf(t)] = true
+		}
+	}
+	listed := m.Spaces[space].Agents
+	keep := []string{}
+	off := false
+	for _, a := range listed {
+		if _, dept := ask.Departments[a]; dept && !ran[a] {
+			off = true
+			for i := range rows {
+				if rows[i].Name == a {
+					rows[i].Unused = true
+				}
+			}
+			continue
+		}
+		keep = append(keep, a)
+	}
+	if !off {
+		return nil, nil
+	}
+	return keep, nil
 }
 
 // agentOf is the agent a trace counts for: "" is ask; searches, evals and refused rate
@@ -169,7 +225,7 @@ func (h Admin) agents(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 			return
 		}
 	}
-	h.ok(w, map[string]any{"agents": AgentRegistry(m, "", traces, fb, h.AgentKilled, held), "days": 30})
+	h.ok(w, map[string]any{"agents": withOwners(r.Context(), AgentRegistry(m, "", traces, fb, h.AgentKilled, held), h.OwnerActive), "days": 30})
 }
 
 // spaceAgents is GET /v1/spaces/NAME/agents: the registry's rows for the agents one space
@@ -203,8 +259,17 @@ func (h Stewards) spaceAgents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	sort.Strings(can)
-	writeJSON(w, map[string]any{"space": name, "agents": AgentRegistry(cur, name, traces, fb, h.AgentKilled, held),
-		"listed": nonNil(cur.Spaces[name].Agents), "can_list": can, "days": 30})
+	rows := withOwners(r.Context(), AgentRegistry(cur, name, traces, fb, h.AgentKilled, held), h.OwnerActive)
+	off, err := unused(r.Context(), h.Runs, cur, h.Tenant, name, rows, now())
+	if err != nil {
+		fail(w, errs.New(errs.EUNAVAIL, "Runs can't be read right now."))
+		return
+	}
+	body := map[string]any{"space": name, "agents": rows, "listed": nonNil(cur.Spaces[name].Agents), "can_list": can, "days": 30}
+	if off != nil {
+		body["propose_off"] = map[string][]string{"agents": off} // SB-4402: a proposal, never a change
+	}
+	writeJSON(w, body)
 }
 
 func nonNil(xs []string) []string {

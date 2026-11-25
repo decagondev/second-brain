@@ -40,6 +40,23 @@ type EvalCase struct {
 	LastRelease string `json:"last_release,omitempty"`
 	LastPassed  bool   `json:"last_passed"`
 	PassedOn    string `json:"passed_on,omitempty"`
+	// Agent is the agent a case from feedback runs with (SB-4401); "" is ask. From is the
+	// answer's trace it was made from, and Dismissed a candidate its owner turned down: a
+	// dismissed case keeps no question and never runs.
+	Agent     string `json:"agent,omitempty"`
+	From      string `json:"from,omitempty"`
+	Dismissed bool   `json:"dismissed,omitempty"`
+}
+
+// ActiveCases are the cases that run: every one but the dismissed.
+func ActiveCases(cs []EvalCase) []EvalCase {
+	out := make([]EvalCase, 0, len(cs))
+	for _, c := range cs {
+		if !c.Dismissed {
+			out = append(out, c)
+		}
+	}
+	return out
 }
 
 // EvalStore keeps a tenant's cases.
@@ -86,7 +103,7 @@ func (x Stewards) AddEvalCase(ctx context.Context, s tenancy.Scope, name, report
 	if err != nil {
 		return EvalCase{}, fmt.Errorf("%w: eval cases: %v", ErrUnavailable, err)
 	}
-	if len(all) >= MaxEvalCases {
+	if len(ActiveCases(all)) >= MaxEvalCases {
 		return EvalCase{}, fmt.Errorf("%w: a tenant has at most %d eval cases", ErrInvalid, MaxEvalCases)
 	}
 	f, found, err := x.Feedback.GetFeedback(ctx, x.Agent.Tenant, report)
@@ -215,7 +232,7 @@ func (x Stewards) EvalCasesOf(ctx context.Context, s tenancy.Scope, name string)
 		return nil, fmt.Errorf("%w: eval cases: %v", ErrUnavailable, err)
 	}
 	out := []EvalCase{}
-	for _, c := range all {
+	for _, c := range ActiveCases(all) {
 		if c.Space == SpaceKey(name) {
 			out = append(out, c)
 		}
@@ -266,6 +283,15 @@ func (a Agent) Probe(ctx context.Context, s tenancy.Scope, q string) (Response, 
 	return a.ask(ctx, s, Request{Question: q}, true)
 }
 
+// ProbeAs is Probe with an agent: a case from feedback runs with the agent whose answer it
+// was made from (SB-4401).
+func (a Agent) ProbeAs(ctx context.Context, s tenancy.Scope, q, agent string) (Response, error) {
+	if agent == "ask" {
+		agent = ""
+	}
+	return a.ask(ctx, s, Request{Question: q, Agent: agent}, true)
+}
+
 // Passes is a case's verdict on an answer: it cites the expected document and not the
 // wrong one.
 func (c EvalCase) Passes(r Response) bool {
@@ -308,7 +334,7 @@ func RunCases(cases []EvalCase, release string, run func(EvalCase) (bool, error)
 	out := make([]EvalCase, 0, len(cases))
 	var hold *Hold
 	for _, c := range cases {
-		if c.LastRelease == release {
+		if c.LastRelease == release || c.Dismissed {
 			out = append(out, c)
 			continue
 		}

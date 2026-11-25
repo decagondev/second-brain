@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -33,6 +34,8 @@ type Stewards struct {
 	// Runs, AgentKilled and EvalHeld show a steward their space's agents (SB-4004).
 	Runs        report.Source
 	AgentKilled func(agent string) bool
+	// OwnerActive is whether an agent's owner has an active person now (SB-4402).
+	OwnerActive func(ctx context.Context, owner string) bool
 	EvalHeld    func() (bool, error)
 }
 

@@ -1,8 +1,11 @@
 package api
 
 import (
+	"context"
 	"testing"
+	"time"
 
+	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
 )
@@ -52,5 +55,49 @@ func TestAgentRegistry(t *testing.T) {
 		if a.Name == "close-checklist" || len(a.Spaces) != 1 || a.Spaces[0] != "eng" {
 			t.Fatalf("eng sees %+v", a)
 		}
+	}
+}
+
+// runsOnly is a report source with traces only.
+type runsOnly []ask.Trace
+
+func (r runsOnly) Traces(context.Context, string, time.Time, time.Time) ([]ask.Trace, error) {
+	return r, nil
+}
+func (runsOnly) Drafts(context.Context, string, time.Time, time.Time) (int, int, error) {
+	return 0, 0, nil
+}
+func (runsOnly) Actions(context.Context, string, time.Time, time.Time) ([]approvals.Action, error) {
+	return nil, nil
+}
+func (runsOnly) Seats(context.Context, string) (int, error) { return 0, nil }
+func (runsOnly) Tokens(context.Context, string, time.Time, time.Time) (int, int, error) {
+	return 0, 0, nil
+}
+
+// SB-4402: each agent shows its owner from the bundle, flagged when no one active answers
+// for it; a department agent no one ran in a space for 60 days is proposed off, and only
+// when traces reach back that far.
+func TestAgentOwnersAndUnused(t *testing.T) {
+	rows := withOwners(context.Background(), []AdminAgent{{Name: "ask"}, {Name: "incident-summary"}},
+		func(_ context.Context, owner string) bool { return owner == "group:brain-agents" })
+	if rows[0].Owner != "group:brain-agents" || rows[0].OwnerInactive || rows[1].Owner == "" || !rows[1].OwnerInactive {
+		t.Fatalf("owners: %+v", rows)
+	}
+	if rows := withOwners(context.Background(), []AdminAgent{{Name: "ask"}}, nil); rows[0].OwnerInactive {
+		t.Fatal("no directory flagged an owner")
+	}
+	m := manifest.Tenant{RetentionDays: 90, Agents: []string{"ask", "incident-summary", "spec-digest"}, Spaces: map[string]manifest.Space{
+		"eng": {Template: "engineering", Agents: []string{"incident-summary", "spec-digest"}},
+	}}
+	src := runsOnly{{ID: "t1", Space: "spc_eng", Response: ask.Response{Agent: "spec-digest"}}}
+	rows = []AdminAgent{{Name: "incident-summary"}, {Name: "spec-digest"}}
+	keep, err := unused(context.Background(), src, m, "acme-logistics", "eng", rows, time.Now())
+	if err != nil || len(keep) != 1 || keep[0] != "spec-digest" || !rows[0].Unused || rows[1].Unused {
+		t.Fatalf("unused: %v %v %+v", keep, err, rows)
+	}
+	m.RetentionDays = 30
+	if keep, err := unused(context.Background(), src, m, "acme-logistics", "eng", rows, time.Now()); err != nil || keep != nil {
+		t.Fatalf("traces kept 30 days proposed something: %v %v", keep, err)
 	}
 }

@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App";
-import { AgentRuns, CollectionsView } from "./Inbox";
+import { AgentCases, AgentRuns, CollectionsView } from "./Inbox";
 import { SavedView } from "./Saved";
 import type { Fetch } from "./api";
 
@@ -150,5 +150,39 @@ describe("collections and agent runs", () => {
     expect(screen.getByText(/The close moves to Tuesday/)).toBeTruthy();
     const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
     expect(r.violations.map((v) => v.id)).toEqual([]);
+  });
+});
+
+// SB-4401
+describe("cases from feedback", () => {
+  it("lists a down-rated answer of my agent, adds it with the document it should cite, or dismisses it", async () => {
+    const bodies: { url: string; body: unknown }[] = [];
+    let items: unknown[] = [
+      { id: "tr_1", agent: "ask", space: "spc_finance", question: "When does the close move?", claims: [{ text: "The close moves to Monday.", cites: [{ cite: "docs:old.md@2", title: "Old plan" }, { cite: "docs:close.md@3", title: "Close plan" }] }], hidden: 0, at: "2026-11-24T08:00:00Z" },
+      { id: "tr_2", agent: "ask", space: "spc_finance", question: "Who signs off?", claims: [], hidden: 2, at: "2026-11-23T08:00:00Z" },
+    ];
+    const fetcher: Fetch = async (u, init) => {
+      if (init?.method === "POST") {
+        bodies.push({ url: u, body: JSON.parse(String(init.body)) });
+        items = items.slice(1);
+        return json({ id: "ev_1" });
+      }
+      return json({ items });
+    };
+    const { container } = render(<AgentCases fetcher={fetcher} />);
+    expect(await screen.findByText("2 claims cite what you can't open, so this can't be a case.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Add case: Who signs off?" })).toBeNull();
+    const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+    expect(r.violations.map((v) => v.id)).toEqual([]);
+    fireEvent.change(screen.getByLabelText("Should cite: When does the close move?"), { target: { value: "docs:close.md" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Add case: When does the close move?" }));
+    });
+    expect(bodies[0]).toEqual({ url: "/v1/agents/cases/tr_1", body: { expect: "docs:close.md" } });
+    expect(await screen.findByText("Case added.")).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Dismiss: Who signs off?" }));
+    });
+    expect(bodies[1]).toEqual({ url: "/v1/agents/cases/tr_2", body: { dismiss: true } });
   });
 });

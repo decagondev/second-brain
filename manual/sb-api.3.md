@@ -74,6 +74,8 @@ Work that comes to you (SB-4301 to SB-4303): `GET /v1/me/inbox`, `PUT /v1/saved/
 
 Context for the work (SB-4304 to SB-4307): `GET|POST /v1/collections`, `PUT|DELETE /v1/collections/{id}`, the ask's `collection` and `table`, and `GET /v1/me/agent-runs` (sb-ask(3), Context for the work). A collection keeps ids only and shows each reader only what they can open; agent runs keep no record of their own.
 
+Governing agents (SB-4401, SB-4402): `GET /v1/agents/cases` and `POST /v1/agents/cases/{id}` (sb-evals(7), Cases from feedback), for an agent's owners only; the registry's `owner` (sb-admin(3)).
+
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.

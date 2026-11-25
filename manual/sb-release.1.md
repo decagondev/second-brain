@@ -16,6 +16,7 @@ sb-release — see what runs where, promote a release to stable, roll back
 sb release status   [--tenant T]
 sb release promote  REL --to stable
 sb release rollback [--reason TEXT]
+sb release notes    --from DIR --to DIR
 ```
 
 ## DESCRIPTION
@@ -30,7 +31,9 @@ sb release rollback [--reason TEXT]
 
 **rollback** makes the previous stable current, marks the bad release `Revoked`, and redeploys every cell running it. Target: under 10 minutes for all cells. A revoked release can never be promoted or redeployed.
 
-Only maintainers can run these commands. Company operators see the same information read-only in the console.
+**notes** (SB-4402) says what changed for each agent between two releases. `DIR` is a release's agent bundle as `make release-build` writes it to `build/release/agents/`: `agents.json`, `prompts/NAME.md` and `evals/SUITE.json`, the gate's results. For each agent in either, it prints its owner, `added` or `removed` if it is only in one, the prompt's lines added (`+`) and removed (`-`), and its suite's pass rate and failures before and after, or `no results` when a side has none. It reads files only, and needs no control plane.
+
+Only maintainers can run status, promote and rollback. Company operators see the same information read-only in the console.
 
 **How the controller decides, exactly (SB-507, SB-508).** The controller is `internal/core/rollout`. Its state and moves are those of `proofs/tla/Rollout.tla`, and after every move it checks the model's invariants (`OnlyGatedRuns`, `OneBehindMax`, `StableNotAhead`, `StableNotRevoked`, `RevokedOnlyWhileDraining`, `DrainingOnlyRevoked`). A move that would break one is refused.
 

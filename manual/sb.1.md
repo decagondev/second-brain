@@ -26,7 +26,8 @@ sb index   refresh CITE --reason TEXT (--cell URL | --tenant T)      (sb-admin(3
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
-sb release status|promote|rollback       (maintainers)
+sb release status|promote|rollback|notes   (maintainers; notes: --from DIR --to DIR)
+sb agents  lint [--root DIR]             (sb-agents(7), Lint)
 sb factory status|handoff|access|detach|verify-export  (factory operators and tenant owners, sb-factory(1))
 sb eval    run|gate|diff
 sb selfhost doctor [--facts FILE]        (a self-hosted box, sb-selfhost(7))

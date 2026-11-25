@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, agentRuns, ask, collections, forgetMemory, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
-import type { AgentRun, AskResponse, Collection, Fetch, Inbox, InboxItem, MemoryLine } from "./api";
+import { AskError, agentRuns, ask, caseCandidates, collections, decideCase, forgetMemory, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
+import type { AgentRun, AskResponse, CaseCandidate, Collection, Fetch, Inbox, InboxItem, MemoryLine } from "./api";
 import { errorText, msg, t } from "./i18n";
 
 const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
@@ -17,6 +17,7 @@ const kinds: Record<string, string> = {
   fix: msg("Suggested edits"),
   research: msg("Research report"),
   routine: msg("Routine"),
+  case: msg("Eval case to decide"),
 };
 
 function Items({ items, label, empty }: { items: InboxItem[]; label: string; empty: string }) {
@@ -243,6 +244,94 @@ export function AgentRuns({ fetcher }: { fetcher?: Fetch }) {
               <a href={r.link} aria-label={t("Open: {title}", { title: r.title })}>
                 {t("Open")}
               </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Cases from feedback (sb-evals(7); SB-4401): a down-rated answer of an agent I answer for,
+// shown only as far as I can open it. Accepting picks the document it should have cited.
+export function AgentCases({ fetcher }: { fetcher?: Fetch }) {
+  const [items, setItems] = useState<CaseCandidate[]>();
+  const [status, setStatus] = useState<string>();
+  const [expect, setExpect] = useState<Record<string, string>>({});
+  async function load() {
+    try {
+      setItems(await caseCandidates(fetcher));
+    } catch (e) {
+      setStatus(errMsg(e, t("Candidate cases are unavailable right now.")));
+    }
+  }
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const docs = (c: CaseCandidate) => {
+    const seen = new Map<string, string>();
+    for (const cl of c.claims) for (const ci of cl.cites) seen.set(ci.cite.split("@")[0], ci.title || ci.cite);
+    return [...seen.entries()];
+  };
+  async function decide(c: CaseCandidate, dismiss: boolean) {
+    try {
+      const pick = expect[c.id] ?? docs(c)[0]?.[0] ?? "";
+      await decideCase(c.id, dismiss ? { dismiss: true } : { expect: pick }, fetcher);
+      setStatus(dismiss ? t("Candidate dismissed.") : t("Case added."));
+      await load();
+    } catch (e) {
+      setStatus(errMsg(e, t("That candidate couldn't be decided.")));
+    }
+  }
+  if (items && items.length === 0 && !status) return null;
+  return (
+    <section aria-label={t("Candidate cases")} className="inbox-list">
+      <h2>{t("Candidate cases")}</h2>
+      {status && <p role="status">{status}</p>}
+      {items && items.length > 0 && (
+        <ul className="saved-list">
+          {items.map((c) => (
+            <li key={c.id}>
+              <span className="meta">{c.agent}</span> {c.question}{" "}
+              <span className="meta">
+                ({c.space.replace(/^spc_/, "") || t("company-wide")}, {c.at.slice(0, 10)})
+              </span>
+              <ul>
+                {c.claims.map((cl, i) => (
+                  <li key={i}>
+                    {cl.text} <span className="meta">{cl.cites.map((ci) => ci.title || ci.cite).join("; ")}</span>
+                  </li>
+                ))}
+              </ul>
+              {c.hidden > 0 ? (
+                <p className="meta">{t("{n} claims cite what you can't open, so this can't be a case.", { n: String(c.hidden) })}</p>
+              ) : (
+                docs(c).length > 0 && (
+                  <label>
+                    {t("Should cite")}{" "}
+                    <select
+                      aria-label={t("Should cite: {question}", { question: c.question })}
+                      value={expect[c.id] ?? docs(c)[0][0]}
+                      onChange={(e) => setExpect({ ...expect, [c.id]: e.target.value })}
+                    >
+                      {docs(c).map(([k, title]) => (
+                        <option key={k} value={k}>
+                          {title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )
+              )}{" "}
+              {c.hidden === 0 && docs(c).length > 0 && (
+                <button type="button" onClick={() => void decide(c, false)} aria-label={t("Add case: {question}", { question: c.question })}>
+                  {t("Add case")}
+                </button>
+              )}{" "}
+              <button type="button" onClick={() => void decide(c, true)} aria-label={t("Dismiss: {question}", { question: c.question })}>
+                {t("Dismiss")}
+              </button>
             </li>
           ))}
         </ul>
