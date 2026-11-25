@@ -202,6 +202,8 @@ type Response struct {
 	NotConsulted []NotConsulted `json:"not_consulted,omitempty"`
 	// Handoff is the space whose request category the question names (SB-4502).
 	Handoff *Handoff `json:"handoff,omitempty"`
+	// Skill is the skill the question loaded (SB-4601).
+	Skill string `json:"skill,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -368,6 +370,8 @@ type Agent struct {
 	Requests func(space string) []string
 	// LeaderWeek says whether a space, by name, gets the leader's week (SB-4503); nil is none.
 	LeaderWeek func(space string) bool
+	// Skills are a space's skills by name, its department's with them (SB-4601); nil is none.
+	Skills func(space string) []Skill
 }
 
 // Ask answers one question for the scope's user.
@@ -431,7 +435,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
-	if err := a.checkExtras(ctx, s, req); err != nil {
+	ctx, q, skill, err := a.checkExtras(ctx, s, req, q)
+	if err != nil {
 		return Response{}, err
 	}
 	if a.Killed == nil || a.Killed(ctx) {
@@ -481,7 +486,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	trace := a.NewID("tr_")
 	turn := len(earlier)
 	sent, left := recent(earlier)
-	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left}
+	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left, Skill: skill}
 	if capped { // chosen documents aren't capped (SB-3004); a collection's are
 		res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
 	}
@@ -580,12 +585,16 @@ func (a Agent) keep(ctx context.Context, s tenancy.Scope, conv, q string, t Trac
 	return nil
 }
 
-// checkExtras checks an ask's file (SB-3802) and its consult (SB-4501, LAW-27).
-func (a Agent) checkExtras(ctx context.Context, s tenancy.Scope, req Request) error {
+// checkExtras checks an ask's file (SB-3802) and its consult (SB-4501, LAW-27), and takes
+// its skill off the question (SB-4601): the rest is what is searched.
+func (a Agent) checkExtras(ctx context.Context, s tenancy.Scope, req Request, q string) (context.Context, string, string, error) {
 	if err := a.checkFile(req.File); err != nil {
-		return err
+		return ctx, q, "", err
 	}
-	return checkConsult(ctx, s, req)
+	if err := checkConsult(ctx, s, req); err != nil {
+		return ctx, q, "", err
+	}
+	return a.loadSkill(ctx, s, q)
 }
 
 // alongside is what an answer carries beside its claims: the consulted teams' sections
@@ -614,8 +623,8 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "user", Content: e})
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
-	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + "\n" + lead + q})
-	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx)})
+	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + noteData(ctx) + "\n" + lead + q})
+	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx) + skillLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {
 			return nil, fmt.Errorf("%w: %v", ErrBudget, err)

@@ -59,6 +59,25 @@ func ActiveCases(cs []EvalCase) []EvalCase {
 	return out
 }
 
+// IsSkillCase says whether a case is a skill's (SB-4601): made from the manifest, never by hand.
+func IsSkillCase(id string) bool { return strings.HasPrefix(id, "sk_") }
+
+// handCases are the active cases stewards and owners added: the ones MaxEvalCases counts.
+func handCases(cs []EvalCase) []EvalCase {
+	out := []EvalCase{}
+	for _, c := range ActiveCases(cs) {
+		if !IsSkillCase(c.ID) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// SkillCaseID is the id of a skill's case: the same for the same space, skill and question.
+func SkillCaseID(space, skill, question string) string {
+	return "sk_" + hashOf("skill\x00" + space + "\x00" + skill + "\x00" + question)[:24]
+}
+
 // EvalStore keeps a tenant's cases.
 type EvalStore interface {
 	PutEvalCase(ctx context.Context, c EvalCase) error
@@ -103,7 +122,7 @@ func (x Stewards) AddEvalCase(ctx context.Context, s tenancy.Scope, name, report
 	if err != nil {
 		return EvalCase{}, fmt.Errorf("%w: eval cases: %v", ErrUnavailable, err)
 	}
-	if len(ActiveCases(all)) >= MaxEvalCases {
+	if len(handCases(all)) >= MaxEvalCases {
 		return EvalCase{}, fmt.Errorf("%w: a tenant has at most %d eval cases", ErrInvalid, MaxEvalCases)
 	}
 	f, found, err := x.Feedback.GetFeedback(ctx, x.Agent.Tenant, report)
@@ -252,6 +271,9 @@ func (x Stewards) DeleteEvalCase(ctx context.Context, s tenancy.Scope, name, id 
 	cs, err := x.EvalCasesOf(ctx, s, name)
 	if err != nil {
 		return err
+	}
+	if IsSkillCase(id) {
+		return fmt.Errorf("%w: a skill's cases change with the manifest; propose the skill's change", ErrInvalid)
 	}
 	for _, c := range cs {
 		if c.ID == id {

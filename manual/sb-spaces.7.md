@@ -174,6 +174,10 @@ Each space can hold its **goals** (documents with `type: goal`, sb-ingest(7)), w
 
 **Requests, budgets and a home (SB-4104 to SB-4106).** A space can take **requests** in up to 10 categories, each due in a number of working days; a request waits in the steward queue like a question and climbs the tree once it is past due. A space can have its own **monthly budget**, which its teams spend from: at 80% its stewards are told, and at 100% its scheduled briefs and updates pause until the month ends while asks carry on. And the Answer tab is each space's **home**: policies to read, goals, the latest updates, open requests and what changed this week, each checked as the reader and left out when empty (sb-ask(3), The web UI).
 
+### Shape the work (SB-4601 to SB-4603)
+
+A space's stewards shape what its agents write without building agents. **Skills** are named ways of writing ("weekly-update"), kept in the space's manifest with their eval cases and proposed like any change (Delegated changes, above), loaded by `/NAME` and inherited by its teams (sb-space(5), `skills`; sb-agents(7), Skills). **Ask for changes** sends an agent's draft back with a note, up to 3 rounds, from the same sources (sb-agents(7)). A **shared routine** is a steward's own routine shared with the space: each member who opts in gets their own copy, run as them; the stewards see only how many opted in, and a member who leaves the space has theirs stopped (sb-ask(3), Shared routines). None of them widens what anyone sees (LAW-19).
+
 ### Reorg preview (SB-1206)
 
 Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.

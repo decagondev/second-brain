@@ -1184,9 +1184,9 @@ gantt
 
 **Exit gate**
 
-- [ ] Every skill passes `sb agents lint` and its eval cases run in the gate
-- [ ] A redraft cites only what its first draft could
-- [ ] A shared routine runs as each member and its steward never sees their answers
+- [x] Every skill passes `sb agents lint` and its eval cases run in the gate
+- [x] A redraft cites only what its first draft could
+- [x] A shared routine runs as each member and its steward never sees their answers
 - [ ] Every new agent has an eval suite that passes the gate and calls no tool
 - [ ] Every law test still green; no new store, service or Go module
 

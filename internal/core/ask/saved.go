@@ -38,6 +38,10 @@ type SavedQuestion struct {
 	Sources string `json:"-"`
 	// Routine asks it for its owner on a schedule (SB-4302).
 	Routine *Routine `json:"routine,omitempty"`
+	// Shared is the space (by name) a steward shared this routine with, and From the shared
+	// routine a member's copy was made from (SB-4603).
+	Shared string `json:"shared,omitempty"`
+	From   string `json:"from,omitempty"`
 }
 
 // WatchStore changes and lists watched saved questions (SB-2104).

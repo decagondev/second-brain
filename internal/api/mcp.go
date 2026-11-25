@@ -33,6 +33,8 @@ type MCP struct {
 		Plan(ctx context.Context, s tenancy.Scope, q string, docs []string) (ask.ResearchView, error)
 		Open(ctx context.Context, s tenancy.Scope, id string) (ask.ResearchView, error)
 	}
+	// Skills are the skills of the person's spaces, listed as prompts (SB-4601); nil lists none.
+	Skills func(ctx context.Context, s tenancy.Scope) ([]ask.SpaceSkill, error)
 }
 
 // MCPVersion is the protocol revision the endpoint speaks.
@@ -108,7 +110,7 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		if p.ProtocolVersion != "" && p.ProtocolVersion < MCPVersion {
 			v = p.ProtocolVersion // an older client gets its own revision; the tools are the same
 		}
-		rpc(w, req.ID, map[string]any{"protocolVersion": v, "capabilities": map[string]any{"tools": map[string]any{"listChanged": false}},
+		rpc(w, req.ID, map[string]any{"protocolVersion": v, "capabilities": map[string]any{"tools": map[string]any{"listChanged": false}, "prompts": map[string]any{"listChanged": false}},
 			"serverInfo":   map[string]any{"name": "second-brain", "version": h.Release},
 			"instructions": "Read-only. Every result is checked live as you; cite the sources you use."}, nil)
 	case "ping":
@@ -140,9 +142,53 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		b, _ := json.Marshal(out)
 		rpc(w, req.ID, map[string]any{"content": []map[string]string{{"type": "text", "text": string(b)}}, "structuredContent": out}, nil)
+	case "prompts/list", "prompts/get":
+		h.prompts(w, r, s, req)
 	default:
 		rpc(w, req.ID, nil, &rpcErr{Code: -32601, Message: "no such method"})
 	}
+}
+
+// prompts answers prompts/list and prompts/get with the skills of the person's spaces
+// (SB-4601): a prompt runs nothing; the client calls a tool, as the person.
+func (h MCP) prompts(w http.ResponseWriter, r *http.Request, s tenancy.Scope, req rpcReq) {
+	skills := []ask.SpaceSkill{}
+	if h.Skills != nil {
+		var err error
+		if skills, err = h.Skills(r.Context(), s); err != nil {
+			rpc(w, req.ID, nil, &rpcErr{Code: -32603, Message: "the prompts can't be listed now; try again"})
+			return
+		}
+	}
+	if req.Method == "prompts/list" {
+		out := []map[string]any{}
+		for _, sk := range skills {
+			out = append(out, map[string]any{"name": sk.Space + "/" + sk.Name, "description": "The " + sk.Name + " skill of " + sk.Space + ": " + sk.Instruction,
+				"arguments": []map[string]any{{"name": "question", "description": "The question to ask", "required": true}}})
+		}
+		rpc(w, req.ID, map[string]any{"prompts": out}, nil)
+		return
+	}
+	var p struct {
+		Name      string            `json:"name"`
+		Arguments map[string]string `json:"arguments"`
+	}
+	if json.Unmarshal(req.Params, &p) != nil {
+		rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "prompts/get takes a name and string arguments"})
+		return
+	}
+	for _, sk := range skills {
+		if sk.Space+"/"+sk.Name != p.Name {
+			continue
+		}
+		q := strings.TrimSpace(p.Arguments["question"])
+		text := "Use the ask tool, with ?space=" + sk.Space + ", to ask: /" + sk.Name + " " + q +
+			"\n\nThen give the answer the way the skill says, keeping every cite: " + sk.Instruction
+		rpc(w, req.ID, map[string]any{"description": "The " + sk.Name + " skill of " + sk.Space,
+			"messages": []map[string]any{{"role": "user", "content": map[string]string{"type": "text", "text": text}}}}, nil)
+		return
+	}
+	rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such prompt: see prompts/list"})
 }
 
 var errNoTool = errors.New("api: no such MCP tool")

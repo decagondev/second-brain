@@ -507,6 +507,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		}),
 		Glossary: func(name string) map[string]string { return m.Effective(name).Glossary },
+		Skills:   func(name string) []ask.Skill { return spaceSkills(m, name) }, // SB-4601
 		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
 		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
 		Climb: func(ctx context.Context, space string) []ask.PersonRef { // SB-3906: up to the department's stewards
@@ -635,6 +636,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Parent: func(name string) string { return m.Spaces[name].Parent }, StewardPeople: c.stewardPeople(m),
 		BudgetShare: c.budgetShare, // SB-4503
 		Actions:     c.Traces,      // SB-4504
+		Rescope:     c.rescope,     // SB-4602
+		Saved:       c.Traces,      // SB-4603
 		Requests: func(name string) ([]string, int, bool) { // SB-4104
 			if r := m.Spaces[name].Requests; r != nil {
 				return r.Categories, r.DueDays, true
@@ -702,7 +705,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		api.MCP{Agent: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
 			Agents: func(ctx context.Context, s tenancy.Scope) (map[string][]string, error) {
 				return agent.UsableAgents(ctx, s, c.ScopeAs)
-			}}.Register(mux)
+			}, Skills: agent.UsableSkills}.Register(mux) // SB-4601
 	}
 	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)

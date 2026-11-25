@@ -59,15 +59,16 @@ type CatchUpOffer struct {
 	Since string `json:"since"`
 }
 
-type catchUpKey struct{}
+type onlyKey struct{}
 
-// withCatchUp carries a catch-up's documents to the ask, past MaxDocuments.
-func withCatchUp(ctx context.Context, docs []string) context.Context {
-	return context.WithValue(ctx, catchUpKey{}, docs)
+// withOnly narrows an ask to these documents, past MaxDocuments: a catch-up's changed ones
+// (SB-4506), or a redraft's first sources (SB-4602).
+func withOnly(ctx context.Context, docs []string) context.Context {
+	return context.WithValue(ctx, onlyKey{}, docs)
 }
 
-func catchUpDocs(ctx context.Context) []string {
-	d, _ := ctx.Value(catchUpKey{}).([]string)
+func onlyDocs(ctx context.Context) []string {
+	d, _ := ctx.Value(onlyKey{}).([]string)
 	return d
 }
 
@@ -161,7 +162,7 @@ func (l Legwork) CatchUp(ctx context.Context, s tenancy.Scope, req CatchUpReques
 		out.Response = Response{Answer: Answer{Claims: []answer.Claim{}}, People: []PersonRef{}, Agent: AgentCatchUp}
 		return out, nil
 	}
-	resp, err := l.Agent.Ask(withCatchUp(ctx, docs), s, Request{Question: CatchUpQuestion(day), Agent: AgentCatchUp, Language: req.Language})
+	resp, err := l.Agent.Ask(withOnly(ctx, docs), s, Request{Question: CatchUpQuestion(day), Agent: AgentCatchUp, Language: req.Language})
 	if err != nil {
 		return CatchUpResponse{}, err
 	}

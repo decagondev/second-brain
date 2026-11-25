@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"time"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/canary"
@@ -62,7 +64,10 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	if err != nil {
 		return nil, err
 	}
-	cases = ask.ActiveCases(cases) // a dismissed candidate never runs (SB-4401)
+	cases = ask.ActiveCases(cases)                             // a dismissed candidate never runs (SB-4401)
+	if cases, err = c.withSkillCases(ctx, cases); err != nil { // SB-4601
+		return nil, err
+	}
 	agent := c.Parts().Agent
 	ran, smallFailed := 0, 0
 	probe := func(ctx context.Context, ec ask.EvalCase) (bool, error) {
@@ -168,4 +173,66 @@ func writeSmallHeld(state string, held bool) error {
 func (c *Cell) smallHeld() bool {
 	_, err := os.Stat(SmallHeldPath(c.Config.State))
 	return !errors.Is(err, os.ErrNotExist)
+}
+
+// withSkillCases is cases with every skill's cases of the manifest, as the tenant's own set
+// keeps them (SB-4601): a skill case already kept keeps its results while its question and
+// document stay the same, a new one is added, and one whose skill is gone is deleted. Each
+// runs in its space as the space's first active steward; with none, it can't run.
+func (c *Cell) withSkillCases(ctx context.Context, cases []ask.EvalCase) ([]ask.EvalCase, error) {
+	m := c.Manifest()
+	want := map[string]ask.EvalCase{}
+	names := make([]string, 0, len(m.Spaces))
+	for name := range m.Spaces {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		sp := m.Spaces[name]
+		if len(sp.Skills) == 0 {
+			continue
+		}
+		key := ask.SpaceKey(name)
+		by, err := c.firstSteward(ctx, m, key)
+		if err != nil {
+			return nil, err
+		}
+		for skill, sk := range sp.Skills {
+			for q, doc := range sk.Cases {
+				id := ask.SkillCaseID(key, skill, q)
+				want[id] = ask.EvalCase{ID: id, Tenant: c.Config.Tenant, Space: key, Question: "/" + skill + " " + q, Expect: doc, By: by}
+			}
+		}
+	}
+	out := make([]ask.EvalCase, 0, len(cases)+len(want))
+	for _, ec := range cases {
+		if !ask.IsSkillCase(ec.ID) {
+			out = append(out, ec)
+			continue
+		}
+		w, ok := want[ec.ID]
+		if !ok {
+			if err := c.Traces.DeleteEvalCase(ctx, c.Config.Tenant, ec.ID); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		delete(want, ec.ID)
+		if ec.Question != w.Question || ec.Expect != w.Expect {
+			ec.LastRelease, ec.LastPassed, ec.PassedOn = "", false, "" // a changed case starts again
+		}
+		ec.Question, ec.Expect, ec.By, ec.Space = w.Question, w.Expect, w.By, w.Space
+		out = append(out, ec)
+	}
+	ids := make([]string, 0, len(want))
+	for id := range want {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		ec := want[id]
+		ec.At = time.Now().UTC()
+		out = append(out, ec)
+	}
+	return out, nil
 }

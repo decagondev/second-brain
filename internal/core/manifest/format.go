@@ -122,6 +122,17 @@ func Format(t Tenant) []byte {
 				}
 				fmt.Fprintf(&b, "    glossary: { %s }%s", strings.Join(gp, ", "), nl)
 			}
+			if len(sp.Skills) > 0 { // SB-4601
+				sk := make([]string, 0, len(sp.Skills))
+				for _, k := range sorted(sp.Skills) {
+					cs := make([]string, 0, len(sp.Skills[k].Cases))
+					for _, q := range sorted(sp.Skills[k].Cases) {
+						cs = append(cs, strconv.Quote(q)+": "+strconv.Quote(sp.Skills[k].Cases[q]))
+					}
+					sk = append(sk, k+": { instruction: "+strconv.Quote(sp.Skills[k].Instruction)+", cases: { "+strings.Join(cs, ", ")+" } }")
+				}
+				fmt.Fprintf(&b, "    skills: { %s }%s", strings.Join(sk, ", "), nl)
+			}
 			parts := make([]string, 0, len(sp.Scope))
 			for _, k := range sorted(sp.Scope) {
 				parts = append(parts, k+": "+flowList(sp.Scope[k], true))

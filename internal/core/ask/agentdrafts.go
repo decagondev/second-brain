@@ -75,29 +75,14 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	if agent == "" {
 		agent = "ask"
 	}
-	resp, err := x.Agent.Ask(ctx, s, req)
+	resp, text, err := x.draftAnswer(ctx, s, kind, req)
 	if err != nil {
 		return StewardQuestion{}, err
 	}
-	if agent == AgentVoC { // SB-4205: at most 8 themes, 3 cites each, counted from their dates
-		if resp.Answer.Claims, err = x.Agent.vocThemes(ctx, resp.Answer.Claims, x.Now()); err != nil {
-			return StewardQuestion{}, err
-		}
-	}
-	text := DraftText(resp.Answer)
-	if text == "" {
-		return StewardQuestion{}, fmt.Errorf("%w: nothing %s could cite", ErrInvalid, agent)
-	}
-	if kind == DraftLeaderWeek { // SB-4503: each team's counts after the cited lines
-		counts, err := x.teamCounts(ctx, strings.TrimPrefix(s.Space(), "spc_"))
-		if err != nil {
-			return StewardQuestion{}, err
-		}
-		text = withCounts(text, counts)
-	}
 	title = firstLine(title)
 	sq := StewardQuestion{ID: x.NewID("qs_"), Tenant: x.Agent.Tenant, Asker: s.User(), Question: title, Space: s.Space(),
-		Trace: resp.Trace, At: x.Now().UTC(), Thread: &SavedThread{Text: text, Agent: agent, Kind: kind}}
+		Trace: resp.Trace, At: x.Now().UTC(), Thread: &SavedThread{Text: text, Agent: agent, Kind: kind,
+			Asked: req.Question, AskDocs: req.Documents, Sources: draftSources(resp)}} // SB-4602: what a redraft asks again
 	if kind == DraftDecisions && len(req.Documents) == 1 { // SB-4203: the meeting's action items, for this steward
 		sq.Thread.Doc = req.Documents[0]
 		sq.Thread.Supersede = supersedeSuggestions(resp.Answer.Claims, req.Documents[0]) // SB-4505
@@ -128,6 +113,36 @@ func firstLine(s string) string {
 		s = string(rs[:MaxQuestion-1]) + "…"
 	}
 	return s
+}
+
+// draftAnswer asks req as s for a draft of kind, and its text: a voc brief's themes counted
+// (SB-4205), a leader's week's counts after its lines (SB-4503). Nothing cited is ErrInvalid.
+func (x Stewards) draftAnswer(ctx context.Context, s tenancy.Scope, kind string, req Request) (Response, string, error) {
+	agent := req.Agent
+	if agent == "" {
+		agent = "ask"
+	}
+	resp, err := x.Agent.Ask(ctx, s, req)
+	if err != nil {
+		return Response{}, "", err
+	}
+	if agent == AgentVoC { // SB-4205: at most 8 themes, 3 cites each, counted from their dates
+		if resp.Answer.Claims, err = x.Agent.vocThemes(ctx, resp.Answer.Claims, x.Now()); err != nil {
+			return Response{}, "", err
+		}
+	}
+	text := DraftText(resp.Answer)
+	if text == "" {
+		return Response{}, "", fmt.Errorf("%w: nothing %s could cite", ErrInvalid, agent)
+	}
+	if kind == DraftLeaderWeek { // SB-4503: each team's counts after the cited lines
+		counts, err := x.teamCounts(ctx, strings.TrimPrefix(s.Space(), "spc_"))
+		if err != nil {
+			return Response{}, "", err
+		}
+		text = withCounts(text, counts)
+	}
+	return resp, text, nil
 }
 
 // DecisionsQuestion is the fixed question of a new transcript's draft (SB-4006).

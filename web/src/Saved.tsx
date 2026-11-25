@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AskError, listSaved, removeSaved, saveQuestion, setRoutine, shareQuestion, watchSaved } from "./api";
 import type { Fetch, SavedQuestion } from "./api";
 import { errorText, msg, t } from "./i18n";
+import { ShareRoutine } from "./Shape";
 
 // A routine's choices (SB-4302): off, each working morning, or one weekday.
 const routines: { value: string; name: string }[] = [
@@ -143,7 +144,8 @@ export function SavedView({ fetcher, onAsk }: { fetcher?: Fetch; onAsk: (questio
                     </option>
                   ))}
                 </select>
-              </label>
+              </label>{" "}
+              <ShareRoutine q={q} fetcher={fetcher} onChange={() => void load()} />
             </li>
           ))}
         </ul>

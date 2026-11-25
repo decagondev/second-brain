@@ -173,6 +173,11 @@ type Stewards struct {
 	ActionsOf func(ctx context.Context, s tenancy.Scope, doc string) ([]DraftAction, error)
 	// Actions keeps confirmed action items, for their waits (SB-4504); nil reads none.
 	Actions ActionStore
+	// Rescope is user as a scope in space now, with their branch scopes for a branch draft,
+	// for a redraft (SB-4602); nil redrafts nothing.
+	Rescope func(ctx context.Context, user, space string, branch bool) (context.Context, tenancy.Scope, error)
+	// Saved are the saved questions, for shared routines (SB-4603); nil shares none.
+	Saved SharedStore
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -357,9 +362,11 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		}
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs), Waiting: q.Waiting}
 		if q.Thread != nil {
-			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions, Supersede: q.Thread.Supersede}
+			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions, Supersede: q.Thread.Supersede,
+				Versions: q.Thread.Versions, Rounds: q.Thread.Rounds, Diff: threadDiff(q.Thread)}
 			if q.Thread.Agent != "" && q.Asker != s.User() {
 				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede = "", true, nil, nil
+				it.Thread.Versions, it.Thread.Diff = nil, nil
 			}
 		}
 		it.Draft, it.Request = q.Draft, q.Request

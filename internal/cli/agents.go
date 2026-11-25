@@ -18,17 +18,21 @@ import (
 // definition checked against the bundle in a source tree, each failure with its line.
 func (e *env) agentsLint(args []string) int {
 	const cmd = "sb agents lint"
-	root := "."
+	root, man := ".", ""
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--root":
+		case "--root", "--manifest":
 			if i+1 >= len(args) {
-				return e.fail(cmd, errs.New(errs.EUSAGE, "--root needs a directory"))
+				return e.fail(cmd, errs.New(errs.EUSAGE, "%s needs a value", args[i]))
 			}
-			root = args[i+1]
+			if args[i] == "--root" {
+				root = args[i+1]
+			} else {
+				man = args[i+1]
+			}
 			i++
 		default:
-			return e.fail(cmd, errs.New(errs.EUSAGE, "usage: sb agents lint [--root DIR]"))
+			return e.fail(cmd, errs.New(errs.EUSAGE, "usage: sb agents lint [--root DIR] [--manifest FILE]"))
 		}
 	}
 	defs, err := os.ReadFile(filepath.Join(root, "internal", "core", "ask", "agents.json"))
@@ -36,6 +40,13 @@ func (e *env) agentsLint(args []string) int {
 		return e.fail(cmd, errs.New(errs.EINVAL, "no agent definitions under %s: %v", root, err))
 	}
 	probs := ask.LintAgents(SourceBundle(root, defs))
+	if man != "" { // SB-4601: the manifest's skills, with their lines
+		src, err := os.ReadFile(man)
+		if err != nil {
+			return e.fail(cmd, errs.New(errs.EINVAL, "can't read %s: %v", man, err))
+		}
+		probs = append(probs, SkillProblems(man, src)...)
+	}
 	if e.g.JSON {
 		ps := []string{}
 		for _, p := range probs {
@@ -57,6 +68,19 @@ func (e *env) agentsLint(args []string) int {
 	return 0
 }
 
+// SkillProblems are a tenant manifest's problems with its spaces' skills (SB-4601), each
+// at its line: the manifest check's own rules for skills.
+func SkillProblems(file string, src []byte) []ask.LintProblem {
+	var out []ask.LintProblem
+	_, ds := manifest.Check(src)
+	for _, d := range ds {
+		if d.Field == "syntax" || strings.Contains(d.Field, ".skills") {
+			out = append(out, ask.LintProblem{File: file, Line: d.Line, Rule: "skill", Msg: d.Field + ": " + d.Msg})
+		}
+	}
+	return out
+}
+
 // SourceBundle is the lint bundle of a source tree: its prompts and suites, the tools the
 // tool bus declares, the template catalogue and every agent the code runs.
 func SourceBundle(root string, defs []byte) ask.LintBundle {
@@ -69,7 +93,8 @@ func SourceBundle(root string, defs []byte) ask.LintBundle {
 		tpls[n] = t.Label
 	}
 	agents := append([]string{ask.AgentHandover, ask.AgentUpdate}, manifest.Agents...)
-	agents = append(agents, ask.AgentResearch, ask.AgentPrep, ask.AgentIncident, ask.AgentVoC, ask.AgentFix, ask.AgentCheckin)
+	agents = append(agents, ask.AgentResearch, ask.AgentPrep, ask.AgentIncident, ask.AgentVoC, ask.AgentFix, ask.AgentCheckin,
+		ask.AgentCatchUp, ask.AgentLeaderWeek)
 	return ask.LintBundle{Defs: defs, Tools: tools, Templates: tpls, Agents: agents,
 		Prompt: func(name string) ([]byte, bool) {
 			b, err := os.ReadFile(filepath.Join(root, "internal", "core", "prompts", "set", name+".md"))
@@ -209,36 +234,5 @@ func suiteResult(dir, suite string) string {
 	return fmt.Sprintf("%.0f%% passed, %d failures", r.PassRate*100, r.Failures)
 }
 
-// lineDiff is the lines removed ("- ") and added ("+ ") from a to b, by their longest
-// common subsequence, in order.
-func lineDiff(a, b []string) []string {
-	n, m := len(a), len(b)
-	lcs := make([][]int, n+1)
-	for i := range lcs {
-		lcs[i] = make([]int, m+1)
-	}
-	for i := n - 1; i >= 0; i-- {
-		for j := m - 1; j >= 0; j-- {
-			if a[i] == b[j] {
-				lcs[i][j] = lcs[i+1][j+1] + 1
-			} else {
-				lcs[i][j] = max(lcs[i+1][j], lcs[i][j+1])
-			}
-		}
-	}
-	out := []string{}
-	i, j := 0, 0
-	for i < n || j < m {
-		switch {
-		case i < n && j < m && a[i] == b[j]:
-			i, j = i+1, j+1
-		case j < m && (i == n || lcs[i][j+1] >= lcs[i+1][j]):
-			out = append(out, "+ "+b[j])
-			j++
-		default:
-			out = append(out, "- "+a[i])
-			i++
-		}
-	}
-	return out
-}
+// lineDiff is ask.LineDiff (SB-4402).
+func lineDiff(a, b []string) []string { return ask.LineDiff(a, b) }

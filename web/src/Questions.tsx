@@ -4,6 +4,7 @@ import { AskError, addEvalCase, confirmActions, draftFix, discardThread, draftNo
 import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
 import { placeOf } from "./Answer";
 import { WaitForm } from "./Across";
+import { AskForChanges } from "./Shape";
 import { MyData } from "./Session";
 import { AboutMe, AgentCases, AgentRuns, CollectionsView, InboxView } from "./Inbox";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -404,6 +405,19 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                   )}
                   {q.state === "open" && q.thread.kind === "decisions" && (q.thread.actions?.length ?? 0) > 0 && (
                     <ConfirmActions space={space} draft={q.id} items={q.thread.actions!} fetcher={fetcher} />
+                  )}
+                  {q.state === "open" && !q.thread.hidden && (
+                    <AskForChanges
+                      space={space}
+                      id={q.id}
+                      rounds={q.thread.rounds}
+                      diff={q.thread.diff}
+                      fetcher={fetcher}
+                      onDone={(next) => {
+                        setText((x) => ({ ...x, [q.id]: next }));
+                        void load();
+                      }}
+                    />
                   )}
                   {q.state === "open" && (
                     <button type="button" onClick={() => discard(q.id)}>

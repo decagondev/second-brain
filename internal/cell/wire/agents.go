@@ -743,3 +743,38 @@ func (c *Cell) catchUpOffer(ctx context.Context, user string) (time.Time, bool, 
 	}
 	return since, true, nil
 }
+
+// spaceSkills are space name's skills with its department's (SB-4601), by name; From names
+// the department of an inherited one.
+func spaceSkills(m manifest.Tenant, name string) []ask.Skill {
+	sp, ok := m.Spaces[name]
+	if !ok {
+		return nil
+	}
+	eff := m.Effective(name)
+	out := make([]ask.Skill, 0, len(eff.Skills))
+	for n, sk := range eff.Skills {
+		from := ""
+		if _, own := sp.Skills[n]; !own {
+			from = sp.Parent
+		}
+		out = append(out, ask.Skill{Name: n, Instruction: sk.Instruction, From: from})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
+
+// rescope is user as a scope in space now, with their branch scopes for a branch draft, for
+// a redraft (SB-4602).
+func (c *Cell) rescope(ctx context.Context, user, space string, branch bool) (context.Context, tenancy.Scope, error) {
+	s, err := c.ScopeAs(ctx, user, space)
+	if err != nil {
+		return ctx, tenancy.Scope{}, err
+	}
+	if branch {
+		if ctx, err = c.branchOf(ctx, user, space); err != nil {
+			return ctx, tenancy.Scope{}, err
+		}
+	}
+	return ctx, s, nil
+}

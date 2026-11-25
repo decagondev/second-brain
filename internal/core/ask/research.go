@@ -208,7 +208,11 @@ func (l Legwork) Plan(ctx context.Context, s tenancy.Scope, q string, docs []str
 	if _, err := l.Agent.legworkDept(ctx, s, AgentResearch); err != nil {
 		return ResearchView{}, err
 	}
-	steps, err := l.steps(ctx, s, q)
+	_, plain, _, err := l.Agent.loadSkill(ctx, s, q) // SB-4601: planned from the question alone
+	if err != nil {
+		return ResearchView{}, err
+	}
+	steps, err := l.steps(ctx, s, plain)
 	if err != nil {
 		return ResearchView{}, err
 	}
@@ -468,12 +472,20 @@ func (l Legwork) runOne(ctx context.Context, r Research) (Research, error) {
 	}
 	tctx, tally := budget.WithTally(ctx)
 	limit := l.researchUSD()
+	skill := ""
+	if r.Kind == KindResearch {
+		skill, _ = SkillName(r.Question) // SB-4601: each step is asked with the report's skill
+	}
 	for _, step := range r.Steps {
 		if tally.USD() >= limit {
 			r.Stopped = "cap"
 			break
 		}
-		resp, err := l.Agent.Ask(tctx, s, Request{Question: step, Agent: AgentResearch, Documents: r.Documents})
+		asked := step
+		if skill != "" {
+			asked = "/" + skill + " " + step
+		}
+		resp, err := l.Agent.Ask(tctx, s, Request{Question: asked, Agent: AgentResearch, Documents: r.Documents})
 		switch {
 		case errors.Is(err, ErrBudget):
 			r.Stopped = "budget"

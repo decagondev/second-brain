@@ -149,9 +149,16 @@ func (l Legwork) RunRoutines(ctx context.Context) ([]Finished, error) {
 	now := l.now()
 	var due []SavedQuestion
 	for _, q := range qs {
-		if q.Routine != nil && RoutineDue(*q.Routine, now, l.Zone) {
-			due = append(due, q)
+		if q.Routine == nil || !RoutineDue(*q.Routine, now, l.Zone) {
+			continue
 		}
+		if q.From != "" && !stillShared(qs, q) { // SB-4603: its steward stopped sharing it
+			if err := l.stopRoutine(ctx, q); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		due = append(due, q)
 	}
 	sort.SliceStable(due, func(i, j int) bool { return due[i].Routine.Last.Before(due[j].Routine.Last) })
 	if len(due) > RoutinesPerRun {
@@ -187,6 +194,14 @@ func (l Legwork) runRoutine(ctx context.Context, q SavedQuestion, now time.Time)
 	}
 	s, err := l.ScopeIn(ctx, q.User, q.Space)
 	if err != nil { // not active now: nothing is asked or kept (LAW-12)
+		return nil, mark(nil)
+	}
+	if left, err := l.leftSpace(ctx, s, q.Space); err != nil {
+		return nil, err
+	} else if left { // no longer a member: nothing is asked, and a shared copy stops (SB-4603)
+		if q.From != "" {
+			return nil, l.stopRoutine(ctx, q)
+		}
 		return nil, mark(nil)
 	}
 	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, User: q.User, Kind: KindRoutine, Question: q.Question, Space: q.Space,
@@ -268,4 +283,35 @@ func newFirst(claims []answer.Claim, isNew map[string]bool) []answer.Claim {
 		}
 	}
 	return out
+}
+
+// stillShared says whether a member's copy's routine is still shared with its space.
+func stillShared(qs []SavedQuestion, cp SavedQuestion) bool {
+	for _, q := range qs {
+		if q.ID == cp.From {
+			return q.Shared != "" && SpaceKey(q.Shared) == cp.Space && q.Routine != nil
+		}
+	}
+	return false
+}
+
+// stopRoutine stops a shared routine's copy: its schedule goes, and nothing is asked.
+func (l Legwork) stopRoutine(ctx context.Context, q SavedQuestion) error {
+	if _, err := l.Routines.UpdateSaved(ctx, l.Agent.Tenant, q.User, q.ID, func(sq *SavedQuestion) { sq.Routine = nil }); err != nil {
+		return fmt.Errorf("%w: saved: %v", ErrUnavailable, err)
+	}
+	return nil
+}
+
+// leftSpace says whether s is no longer a member of space (spc_NAME) now; a company-wide
+// routine, or a cell without spaces, never left one.
+func (l Legwork) leftSpace(ctx context.Context, s tenancy.Scope, space string) (bool, error) {
+	if !strings.HasPrefix(space, "spc_") || l.Stewards.Agent.Auth.Spaces == nil {
+		return false, nil
+	}
+	err := l.Stewards.member(ctx, s, strings.TrimPrefix(space, "spc_"))
+	if errors.Is(err, ErrNotMember) {
+		return true, nil
+	}
+	return false, err
 }

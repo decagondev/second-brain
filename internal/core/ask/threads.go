@@ -40,6 +40,14 @@ type SavedThread struct {
 	// Supersede are older decisions a decisions draft suggests it replaces, for Asker to
 	// confirm one when publishing (SB-4505).
 	Supersede []Result `json:"supersede,omitempty"`
+	// Asked, AskDocs and Sources are what an agent draft asked, the documents it was
+	// narrowed to and those it cited or offered (KIND:ID): a redraft asks again from them
+	// alone. Versions are its earlier texts, oldest first, and Rounds its redrafts (SB-4602).
+	Asked    string   `json:"asked,omitempty"`
+	AskDocs  []string `json:"ask_docs,omitempty"`
+	Sources  []string `json:"sources,omitempty"`
+	Versions []string `json:"versions,omitempty"`
+	Rounds   int      `json:"rounds,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -56,6 +64,11 @@ type ThreadView struct {
 	Actions []DraftAction `json:"actions,omitempty"`
 	// Supersede are the decisions it may replace (SB-4505), for the steward it ran as.
 	Supersede []Result `json:"supersede,omitempty"`
+	// Versions, Rounds and Diff are an agent draft's earlier texts, its rounds of changes and
+	// the line diff from the last to now (SB-4602), for the steward it ran as.
+	Versions []string `json:"versions,omitempty"`
+	Rounds   int      `json:"rounds,omitempty"`
+	Diff     []string `json:"diff,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

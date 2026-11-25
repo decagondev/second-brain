@@ -45,6 +45,8 @@ These names are identical in code, in the API and in [`proofs/tla/Approvals.tla`
 5. **Receipt or it didn't happen.** Only a target receipt makes `Ran` (LAW-05).
 6. **At most once.** The approval id is the idempotency key for `Act`.
 
+An agent's draft in a steward queue is not an action and has no approval: it publishes only when a steward replies with it and publishes it as a note (sb-spaces(7)). **Ask for changes** (SB-4602; sb-agents(7)) sends a draft back for a redraft, at most 3 rounds, before that; a redraft is still a draft, and nothing it says is published, sent or run until the steward publishes it (LAW-16).
+
 ### The `ticket-update` workflow
 
 The first gated workflow (SB-410). Enabling it takes `workflows: [ticket-update]` and `approval: { ticket-update: group:<name> }` in the manifest, the `tickets` connector, and a passing eval record (sb-tenant(1)).

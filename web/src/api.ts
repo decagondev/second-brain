@@ -130,6 +130,7 @@ export interface AskResponse {
   not_consulted?: { space?: string; why: string; count?: number }[];
   // Hand off (SB-4502): the space whose request category the question names.
   handoff?: { space: string; category: string };
+  skill?: string; // the skill the question loaded with /NAME (SB-4601)
 }
 
 // One consulted team's section of an answer (SB-4501).
@@ -363,6 +364,8 @@ export interface SavedQuestion {
   at: string;
   watch?: boolean;
   routine?: Routine;
+  shared?: string; // the space a steward shared this routine with (SB-4603)
+  from?: string; // the shared routine a member's copy was made from
 }
 
 // A saved question asked on a schedule (SB-4302).
@@ -497,7 +500,8 @@ export interface QueueQuestion {
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
   // agent, kind and hidden: a draft an agent wrote on a schedule or a trigger (SB-4005, SB-4006).
-  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[]; supersede?: { cite: string; title?: string }[] };
+  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[]; supersede?: { cite: string; title?: string }[];
+    versions?: string[]; rounds?: number; diff?: string[] }; // SB-4602
   // A request waiting on another space (SB-4504).
   waiting?: { on: string; reason: string; until: string };
   // A note a steward started from a found-nothing term (SB-3705).

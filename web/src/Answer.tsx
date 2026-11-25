@@ -444,6 +444,7 @@ export function AnswerView({
           <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} onAbout={onAbout} terms={answer.terms} />
         ))}
       </ul>
+      {answer.skill && <p className="meta skill">{t("Written with the skill /{name}", { name: answer.skill })}</p>}
       {answer.verified && answer.verified.of > 0 && (
         <p className="meta verified-count">{t("{marked} of {of} sources verified", { marked: answer.verified.marked, of: answer.verified.of })}</p>
       )}

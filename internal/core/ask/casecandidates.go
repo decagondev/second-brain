@@ -231,7 +231,7 @@ func (x Stewards) acceptCase(ctx context.Context, s tenancy.Scope, c CaseCandida
 	if err != nil {
 		return EvalCase{}, fmt.Errorf("%w: eval cases: %v", ErrUnavailable, err)
 	}
-	if len(ActiveCases(all)) >= MaxEvalCases {
+	if len(handCases(all)) >= MaxEvalCases {
 		return EvalCase{}, fmt.Errorf("%w: a tenant has at most %d eval cases", ErrInvalid, MaxEvalCases)
 	}
 	version, err := x.openNow(ctx, s, expect)

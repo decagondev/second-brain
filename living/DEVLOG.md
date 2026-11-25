@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S45.1: Shape the work
+
+**Wave/slice:** W45 / S45.1 (SB-4601 to SB-4603) · **Status:** Done
+
+**What:** A space can name up to 10 skills in its manifest (an instruction on format and steps, and at least 3 eval cases), proposed by a steward like any change and inherited by its teams; `/NAME` at the start of an ask, a research question or a routine loads one, the answer says which, the MCP server lists them as prompts, and their cases run in the tenant's eval gate as `sk_` cases. The steward an agent draft ran as can **Ask for changes** with a note of at most 500 characters: the agent redrafts from the first draft's sources, keeps every version, shows the diff, and stops at 3 rounds. A steward can share one of their routines with the space; each member who opts in gets their own copy, run as them; the steward sees only how many opted in, and a copy stops when its member leaves or its steward stops sharing.
+
+**Why this way:** A skill is taken off the question before anything else runs, so the search, the live checks and the glossary see exactly what they would without it, and its instruction only ever follows the agent's own prompt; the manifest check refuses one that names a tool or an action, widens the search or tells the model to obey a document, so a skill can't become a back door to tools or scope (LAW-06, LAW-09). A redraft reuses the first draft's code path, narrowed with the catch-up hook to the documents it cited or offered, so it can't reach a new source (LAW-14), and the note travels as a data block that is never cited. A shared routine is a copy owned by the member, so it runs, counts and pauses exactly as their own routines do; no new store was needed, because every store already lists the tenant's routines.
+
+**Learned:** Routines had never checked that their owner was still a member of the routine's space: the scope was issued without it. The run now asks nothing for someone who left, which matters most once a steward's routine is copied to many members.
+
+**Laws:** LAW-01, LAW-04, LAW-06, LAW-09, LAW-12, LAW-14, LAW-16, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S44.2: Work across departments
 
 **Wave/slice:** W44 / S44.2 (SB-4504 to SB-4507) · **Status:** Done

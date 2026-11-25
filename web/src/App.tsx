@@ -12,6 +12,7 @@ import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { CatchUp, ServiceCard, Trail, WaitsCard, markVisit } from "./Across";
+import { SharedRoutines, SkillHint } from "./Shape";
 import { MySessions, SignOutEverywhere } from "./Session";
 import { LegworkView } from "./Legwork";
 import { HandoverView } from "./Handover";
@@ -316,6 +317,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
         {space && turns.length === 0 && <Trail space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
+        {space && !space.endsWith(BRANCH) && turns.length === 0 && <SharedRoutines space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <WhosWho space={space} fetcher={fetcher} />}
         <section id="conversation" tabIndex={-1} aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">
           {turns.map((x) => (
@@ -419,6 +421,15 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
                 e.preventDefault();
                 e.currentTarget.form?.requestSubmit();
               }
+            }}
+          />
+          <SkillHint
+            space={space}
+            question={question}
+            fetcher={fetcher}
+            onPick={(x) => {
+              setQuestion(x);
+              askBox.current?.focus();
             }}
           />
           {space && question === "" && suggested.length > 0 && (

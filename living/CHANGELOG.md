@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Shape the work: skills in a space's manifest, loaded with `/NAME` on an ask, research or routine, checked by `sb agents lint --manifest`, listed over MCP and held by their eval cases in the gate; Ask for changes on an agent draft, up to 3 rounds from the same sources, with the diff; and routines a steward shares with the space, run as each member who opts in (SB-4601 to SB-4603).
 - Work across departments: waits between departments on requests, action items and goals, listed on both homes and raised to the nearest common parent a working day late; decisions that say what they replace, shown on cites and as a topic's trail; Catch me up on a space, branch or collection since a day, offered once after a notification pause; and 12 weeks of department service levels for stewards (SB-4504 to SB-4507).
 - Ask each department: a branch ask can consult the department agents of up to 6 teams the asker is in, as the asker, with a section per team; Hand off drafts a request to the department whose category the question names, sent only by the asker with the sources they choose; and the leader's week drafts a department's week for its stewards every Monday, cited lines then counts per team (SB-4501 to SB-4503). LAW-27: a consultation is the asker's own.
 - Signed events out with ids only, a small model tier for short plain asks with its own eval gate and spend line, and 12 weeks of guardrail counts for operators (SB-4404 to SB-4406). W43 built.

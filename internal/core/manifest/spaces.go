@@ -53,6 +53,15 @@ type Space struct {
 	// IncidentLabels are the ticket labels that draft an incident brief for the stewards
 	// (SB-4204); nil is DefaultIncidentLabels.
 	IncidentLabels []string `json:"incident_labels,omitempty"`
+	// Skills are the space's named ways of writing an answer (SB-4601), by name; nil for none.
+	Skills map[string]Skill `json:"skills,omitempty"`
+}
+
+// Skill is one way of writing an answer: an instruction on format and steps only, and the
+// eval cases that hold it, question to the expected document (KIND:ID).
+type Skill struct {
+	Instruction string            `json:"instruction"`
+	Cases       map[string]string `json:"cases"`
 }
 
 // DefaultIncidentLabels are incident_labels when a space leaves it out (SB-4204).
@@ -201,16 +210,16 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention, fields, label, parent, brief, updates, budget *node
-	set                                                                              map[string]bool
-	start                                                                            []*node
+	members, scope, agents, retention, fields, label, parent, brief, updates, budget, skills *node
+	set                                                                                      map[string]bool
+	start                                                                                    []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -319,6 +328,8 @@ func (c *checker) space(name string, n *node, p string) {
 			s.BudgetUSDMonth, sn.budget = c.intIn(v, f, MinBudgetUSDMonth, 0), v
 		case "incident_labels":
 			s.IncidentLabels = c.incidentLabels(v, f)
+		case "skills": // SB-4601
+			s.Skills, sn.skills = c.skills(v, f), v
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -328,6 +339,7 @@ func (c *checker) space(name string, n *node, p string) {
 		}
 	}
 	c.startKinds(s, sn, p)
+	c.skillKinds(s, sn, p)
 	for _, req := range []string{"members", "scope"} {
 		if !sn.set[req] {
 			c.add(n, p+"."+req, "required field is missing")
@@ -990,7 +1002,7 @@ func (t Tenant) Up(name string) []string {
 
 // Effective is a space with what flows down from its parent filled in (SB-3902): a team
 // with no glossary, start-here list or review interval of its own takes its department's.
-// Glossaries merge, the team's own term winning; start-here lists join, the department's
+// Glossaries and skills merge, the team's own winning; start-here lists join, the department's
 // first, at most MaxStartHere. Label, retention and agents are settled by Check already.
 func (t Tenant) Effective(name string) Space {
 	s := t.Spaces[name]
@@ -1013,6 +1025,16 @@ func (t Tenant) Effective(name string) Space {
 			g[k] = v
 		}
 		s.Glossary = g
+	}
+	if len(par.Skills) > 0 { // SB-4601: the team's own skill of a name wins
+		sk := map[string]Skill{}
+		for k, v := range par.Skills {
+			sk[k] = v
+		}
+		for k, v := range s.Skills {
+			sk[k] = v
+		}
+		s.Skills = sk
 	}
 	if len(par.StartHere) > 0 {
 		joined := append([]string{}, par.StartHere...)
