@@ -45,6 +45,25 @@ type Space struct {
 	// BudgetUSDMonth is the space's monthly model budget, 0 for none (SB-4105): at
 	// BudgetWarnAt its stewards are told, and at it its scheduled runs pause.
 	BudgetUSDMonth int `json:"budget_usd_month,omitempty"`
+	// IncidentLabels are the ticket labels that draft an incident brief for the stewards
+	// (SB-4204); nil is DefaultIncidentLabels.
+	IncidentLabels []string `json:"incident_labels,omitempty"`
+}
+
+// DefaultIncidentLabels are incident_labels when a space leaves it out (SB-4204).
+var DefaultIncidentLabels = []string{"sev-1"}
+
+// MaxIncidentLabels is the most incident_labels a space lists.
+const MaxIncidentLabels = 10
+
+var incidentLabelRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,39}$`)
+
+// Incidents are the space's incident labels, its own or the default.
+func (s Space) Incidents() []string {
+	if s.IncidentLabels == nil {
+		return DefaultIncidentLabels
+	}
+	return s.IncidentLabels
 }
 
 // Requests are a space's request categories and how many working days one is due in.
@@ -177,7 +196,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "requests", "budget_usd_month"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "requests", "budget_usd_month", "incident_labels"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -285,6 +304,8 @@ func (c *checker) space(name string, n *node, p string) {
 			s.Requests = c.requests(v, f)
 		case "budget_usd_month":
 			s.BudgetUSDMonth, sn.budget = c.intIn(v, f, MinBudgetUSDMonth, 0), v
+		case "incident_labels":
+			s.IncidentLabels = c.incidentLabels(v, f)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -692,7 +713,9 @@ func (c *checker) spaceBrief(s Space, sn spaceNodes, p string) {
 	case b == nil:
 	case b.Agent == "draft-reply":
 		c.add(sn.brief, p+".brief.agent", "draft-reply drafts replies to a ticket; a brief runs an agent that answers")
-	case b.Agent != "ask" && !contains(s.Agents, b.Agent):
+	case b.Agent == "voc" && s.Template != "product" && s.Template != "support":
+		c.add(sn.brief, p+".brief.agent", "voc runs only in a product or support space (SB-4205)")
+	case b.Agent != "ask" && b.Agent != "voc" && !contains(s.Agents, b.Agent):
 		c.add(sn.brief, p+".brief.agent", "%q isn't one of this space's agents", b.Agent)
 	case len(s.Stewards) == 0:
 		c.add(sn.brief, p+".brief", "a brief needs stewards; its draft waits for them")
@@ -703,6 +726,30 @@ func (c *checker) spaceBrief(s Space, sn spaceNodes, p string) {
 }
 
 // requests reads a space's requests, { categories: [Access, Laptop], due_days: 5 } (SB-4104).
+// incidentLabels checks incident_labels: 1 to MaxIncidentLabels labels, none twice.
+func (c *checker) incidentLabels(v *node, f string) []string {
+	vs, ns, ok := c.list(v, f, "[sev-1, sev-2]")
+	if !ok {
+		return nil
+	}
+	if len(vs) == 0 || len(vs) > MaxIncidentLabels {
+		c.add(v, f, "1 to %d labels", MaxIncidentLabels)
+	}
+	out := []string{}
+	for m, l := range vs {
+		fm := fmt.Sprintf("%s[%d]", f, m)
+		switch {
+		case !incidentLabelRe.MatchString(l):
+			c.add(ns[m], fm, "%q must be 1 to 40 letters, digits, spaces or _ . : / -", l)
+		case containsFold(out, l):
+			c.add(ns[m], fm, "%q is listed twice", l)
+		default:
+			out = append(out, strings.ToLower(l))
+		}
+	}
+	return out
+}
+
 func (c *checker) requests(v *node, f string) *Requests {
 	if !c.mapOf(v, f, `{ categories: [Access, Laptop], due_days: 5 }`) {
 		return nil

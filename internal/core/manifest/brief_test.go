@@ -91,3 +91,32 @@ func TestRequestsAndBudget(t *testing.T) {
 		t.Errorf("team over its department: %s", format("m.yaml", ds))
 	}
 }
+
+// SB-4204, SB-4205: incident_labels, its default, and voc only in a product or support space.
+func TestIncidentLabelsAndVoC(t *testing.T) {
+	src := strings.Replace(treeHead, "    review_after_days: 90\n", "    review_after_days: 90\n    incident_labels: [Sev-1, sev-2]\n", 1)
+	m, ds := Check([]byte(src))
+	if len(ds) > 0 {
+		t.Fatalf("rejected:\n%s", format("m.yaml", ds))
+	}
+	if got := m.Spaces["finance"].Incidents(); len(got) != 2 || got[0] != "sev-1" {
+		t.Fatalf("labels = %v", got)
+	}
+	again, ds := Check(Format(m))
+	if len(ds) > 0 || len(again.Spaces["finance"].IncidentLabels) != 2 {
+		t.Fatalf("format round trip: %v", ds)
+	}
+	if d := (Space{}).Incidents(); len(d) != 1 || d[0] != "sev-1" {
+		t.Fatalf("default = %v", d)
+	}
+	for want, line := range map[string]string{
+		"is listed twice":          "    incident_labels: [sev-1, SEV-1]\n",
+		"1 to 10 labels":           "    incident_labels: []\n",
+		"product or support space": "    brief: { agent: voc, weekly: monday }\n",
+	} {
+		src := strings.Replace(treeHead, "    review_after_days: 90\n", "    review_after_days: 90\n"+line, 1)
+		if _, ds := Check([]byte(src)); !strings.Contains(format("m.yaml", ds), want) {
+			t.Errorf("%s: got %s", want, format("m.yaml", ds))
+		}
+	}
+}

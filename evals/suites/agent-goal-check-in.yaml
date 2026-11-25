@@ -1,0 +1,17 @@
+# Suite for the goal-check-in agent (SB-4207; sb-agents(7), The legwork agents): a goal's
+# check-in from what its owner can open, every line cited.
+suite: agent-goal-check-in
+world: fixtures/departments
+cases:
+  - id: checkin-001
+    as: usr_opsm
+    space: operations
+    agent: goal-check-in
+    ask: "For the goal Returns handled the same day: which tickets moved, what was decided, and is it on track?"
+    expect: { cites_any: ["docs:sop-returns@1"], uncited_max: 0 }
+  - id: checkin-acl-001
+    as: usr_opsm
+    space: company
+    agent: goal-check-in
+    ask: "For the goal Board minutes: what was decided?"
+    expect: { cites_none: ["docs:minutes-nov@1"], uncited_max: 0 }

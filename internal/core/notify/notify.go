@@ -244,6 +244,12 @@ type Job struct {
 	Research func(ctx context.Context) ([]ask.Finished, error)
 	Actions  func(ctx context.Context, since time.Time) ([]ask.Action, error)
 	PrepDue  func(ctx context.Context, user string, from, to time.Time, done func(event string) bool) ([]ask.PrepMade, error)
+	// Incidents are the incident tickets first seen in a window, by space, and RunIncident
+	// drafts one's brief (SB-4204); Checkins drafts the week's goal check-ins and returns
+	// the goals gone three weeks without one (SB-4207). nil does none.
+	Incidents   func(ctx context.Context, from, to time.Time) ([]NewDoc, error)
+	RunIncident func(ctx context.Context, d NewDoc) (why string, err error)
+	Checkins    func(ctx context.Context) ([]SilentGoal, error)
 }
 
 // The digest's limits.
@@ -327,6 +333,16 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 	}
 	out = append(out, leg...)
 	trigMarks = append(trigMarks, legMarks...)
+	inc, err := j.incidents(ctx, from, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, inc...)
+	chk, err := j.checkins(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, chk...)
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err

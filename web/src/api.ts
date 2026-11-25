@@ -543,6 +543,11 @@ export interface ResearchItem {
   done_at?: string;
 }
 
+// Draft a fix (SB-4206): a suggested edit of a document, kept for its owner and told to them.
+export function draftFix(space: string, doc: string, f: Fetch = fetch): Promise<{ id?: string; owner: string; changes: number; told: boolean }> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/review/fix`, post({ doc }), f);
+}
+
 // Plan a research report: nothing runs until runResearch.
 export function planResearch(question: string, f: Fetch = fetch, space?: string): Promise<Research> {
   return call(inSpace("/v1/research", space), post({ question }), f);

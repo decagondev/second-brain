@@ -22,12 +22,31 @@ const (
 var legworkAgents = map[string]Department{
 	AgentResearch: {Name: AgentResearch, Prompt: "answer", Lead: "Finding: "},
 	AgentPrep:     {Name: AgentPrep, Prompt: "meeting-prep", Lead: "Item: "},
+	AgentIncident: {Name: AgentIncident, Prompt: "incident-brief", Lead: "Incident: "},
+	AgentVoC:      {Name: AgentVoC, Prompt: "voc", Lead: "Theme: "},
+	AgentFix:      {Name: AgentFix, Prompt: "fix-draft", Lead: "Change: "},
+	AgentCheckin:  {Name: AgentCheckin, Prompt: "goal-check-in", Lead: "Goal: "},
 }
+
+// vocTemplates are the templates whose spaces run voc (SB-4205).
+var vocTemplates = []string{"product", "support"}
 
 // legworkDept checks that a legwork agent may run for this scope: not killed, and allowed
 // by the policy kernel.
 func (a Agent) legworkDept(ctx context.Context, s tenancy.Scope, name string) (Department, error) {
 	d := legworkAgents[name]
+	if name == AgentVoC {
+		if s.Space() == "company" || a.SpaceOf == nil {
+			return Department{}, fmt.Errorf("%w: agent voc runs only in a product or support space", ErrInvalid)
+		}
+		sp, found, err := a.SpaceOf(ctx, s.Space())
+		if err != nil {
+			return Department{}, fmt.Errorf("%w: spaces: %v", ErrUnavailable, err)
+		}
+		if !found || !contains(vocTemplates, sp.Template) {
+			return Department{}, fmt.Errorf("%w: agent voc runs only in a product or support space", ErrInvalid)
+		}
+	}
 	if a.AgentKilled == nil || a.AgentKilled(name) {
 		return Department{}, ErrKilled // no kill-switch reader is treated as killed
 	}

@@ -691,7 +691,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 func (c *Cell) legwork(m manifest.Tenant, agent ask.Agent, stewards ask.Stewards) ask.Legwork {
 	tenant := c.Config.Tenant
 	l := ask.Legwork{Agent: agent, Stewards: stewards, Research: c.Traces, Actions: c.Traces, Audit: c.Audit,
-		NewID: c.NewID, Now: time.Now, ResearchUSD: func() float64 { return m.ResearchUSD }, ScopeIn: c.ScopeAs,
+		NewID: c.NewID, Now: time.Now, ResearchUSD: func() float64 { return m.ResearchUSD }, ScopeIn: c.ScopeAs, Tell: c.tell,
 		Known: func(ctx context.Context, email string) bool {
 			ids, err := c.activeByEmail(ctx, email)
 			return err == nil && len(ids) == 1 // unknown, or two people: no one (LAW-12)

@@ -86,6 +86,8 @@ func JSONSchema() []byte {
 					"parent":           map[string]any{"type": "string", "pattern": spaceNameRe},
 					"updates":          map[string]any{"type": "boolean"},
 					"budget_usd_month": map[string]any{"type": "integer", "minimum": MinBudgetUSDMonth},
+					"incident_labels": map[string]any{"type": "array", "minItems": 1, "maxItems": MaxIncidentLabels, "uniqueItems": true,
+						"items": map[string]any{"type": "string", "pattern": incidentLabelRe.String()}, "default": DefaultIncidentLabels},
 					"requests": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"categories"},
 						"properties": map[string]any{"categories": map[string]any{"type": "array", "minItems": 1, "maxItems": MaxRequestCategories, "items": map[string]any{"type": "string", "pattern": categoryRe.String()}},
 							"due_days": map[string]any{"type": "integer", "minimum": 1, "maximum": MaxDueDays}}},

@@ -622,6 +622,9 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if q.Thread != nil && q.Thread.Kind == DraftUpdate {
 		path = "notes/" + name + "/updates/" + id + ".md" // a status update (SB-4102)
 	}
+	if q.Thread != nil && q.Thread.Kind == DraftCheckin {
+		path = "notes/" + name + "/goals/" + id + ".md" // a goal's check-in (SB-4207)
+	}
 	var was ports.Chunk
 	if republish {
 		if was, err = x.noteNow(ctx, path); err != nil {

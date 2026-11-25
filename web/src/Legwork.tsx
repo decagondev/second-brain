@@ -17,7 +17,11 @@ const states: Record<string, string> = {
   done: msg("done"),
   stopped: msg("stopped"),
   failed: msg("failed"),
+  suggested: msg("suggested"),
+  applied: msg("applied"),
 };
+
+const kindName = (k: string) => (k === "prep" ? t("Brief") : k === "fix" ? t("Suggested edits") : t("Report"));
 
 const unavailable = (): ApiError => ({ code: "EUNAVAIL", message: t("Something went wrong."), trace: "", remedy: t("Try again.") });
 
@@ -55,7 +59,7 @@ export function LegworkView({ fetcher, space }: { fetcher?: Fetch; space?: strin
                   {r.question}
                 </button>{" "}
                 <span className="meta">
-                  {r.kind === "prep" ? t("Brief") : t("Report")} · {t(states[r.state] ?? r.state)}
+                  {kindName(r.kind)} · {t(states[r.state] ?? r.state)}
                 </span>
               </li>
             ))}
@@ -144,7 +148,7 @@ function ResearchShown({ r, fetcher, space, onChange, onError }: { r: Research; 
     <article className="answer" aria-label={r.question} aria-live="polite">
       <h3>{r.question}</h3>
       <p className="meta">
-        {r.kind === "prep" ? t("Brief") : t("Report")} · {t(states[r.state] ?? r.state)}
+        {kindName(r.kind)} · {t(states[r.state] ?? r.state)}
       </p>
       {r.state === "planned" && (
         <>

@@ -1,0 +1,17 @@
+# Suite for the fix-draft agent (SB-4206; sb-agents(7), The legwork agents): suggested
+# edits cite what the owner can open, never another space's documents.
+suite: agent-fix-draft
+world: fixtures/departments
+cases:
+  - id: fix-001
+    as: usr_cs
+    space: support
+    agent: fix-draft
+    ask: "What do newer sources say that the document Case 4411 tracking not updating has wrong or out of date?"
+    expect: { cites_any: ["docs:case-4411@1"], uncited_max: 0 }
+  - id: fix-acl-001
+    as: usr_cs
+    space: company
+    agent: fix-draft
+    ask: "What do newer sources say that the document Leave policy has wrong or out of date?"
+    expect: { cites_none: ["docs:leave-policy@1"], uncited_max: 0 }

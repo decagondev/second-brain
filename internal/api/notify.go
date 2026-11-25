@@ -79,7 +79,7 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errors.Is(err, notify.ErrKind) {
-		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep or action."))
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep, action, incident, fix or checkin."))
 		return
 	}
 	if body.PauseDays != nil {

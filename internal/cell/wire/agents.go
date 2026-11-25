@@ -441,3 +441,161 @@ func sortedSpaces(m manifest.Tenant) []string {
 	sort.Strings(out)
 	return out
 }
+
+// newIncidents are the incident tickets first seen in [from, to): a first chunk whose
+// "Labels:" line names one of a space's incident_labels, once for each such space that
+// holds it (SB-4204).
+func (c *Cell) newIncidents(ctx context.Context, from, to time.Time) ([]notify.NewDoc, error) {
+	lk, ok := c.Index.(ports.DocLookup)
+	if !ok {
+		return nil, nil
+	}
+	chunks, err := lk.Docs(ctx, c.Config.Tenant, ports.DocQuery{SeenSince: from})
+	if err != nil {
+		return nil, err
+	}
+	m := c.Manifest()
+	seen := map[string]bool{}
+	var out []notify.NewDoc
+	for _, ch := range chunks {
+		if ch.Start != 0 || !ch.Seen.Before(to) || len(ask.IncidentLabels(ch.Text)) == 0 {
+			continue
+		}
+		ref := ch.Kind + ":" + ch.SourceID
+		for _, sp := range ch.Spaces {
+			s, ok := m.Spaces[strings.TrimPrefix(sp, "spc_")]
+			if !ok || seen[sp+"|"+ref] || !ask.IsIncident(ch.Text, s.Incidents()) {
+				continue
+			}
+			seen[sp+"|"+ref] = true
+			title := ch.Title
+			if title == "" {
+				title = ch.SourceID
+			}
+			out = append(out, notify.NewDoc{Space: sp, Ref: ref, Title: title})
+		}
+	}
+	return out, nil
+}
+
+// runIncident drafts an incident's brief as its space's first active steward (SB-4204).
+func (c *Cell) runIncident(ctx context.Context, d notify.NewDoc) (string, error) {
+	if _, ok := c.Manifest().Spaces[strings.TrimPrefix(d.Space, "spc_")]; !ok {
+		return "", nil
+	}
+	return c.runAs(ctx, d.Space, ask.DraftIncident, "Incident: "+d.Title,
+		ask.Request{Question: ask.IncidentQuestion(d.Title), Agent: ask.AgentIncident})
+}
+
+// runCheckins drafts, for each goal not done whose owner is one active user and a steward
+// of its space, the week's check-in as that owner; it returns the goals gone three weeks
+// without a published check-in (SB-4207).
+func (c *Cell) runCheckins(ctx context.Context) ([]notify.SilentGoal, error) {
+	lk, ok := c.Index.(ports.DocLookup)
+	if !ok {
+		return nil, nil
+	}
+	m := c.Manifest()
+	var silent []notify.SilentGoal
+	for _, name := range sortedSpaces(m) {
+		key := ask.SpaceKey(name)
+		chunks, err := lk.Docs(ctx, c.Config.Tenant, ports.DocQuery{Space: key})
+		if err != nil {
+			return nil, err
+		}
+		stewards, err := c.stewardPeople(m)(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		queue, err := c.Traces.StewardQueue(ctx, c.Config.Tenant, key)
+		if err != nil {
+			return nil, err
+		}
+		for _, ch := range latest(chunks) {
+			g, isGoal := ask.ParseGoal(ch.Text)
+			if ch.Start != 0 || !isGoal || g.Status == "done" || g.Owner == "" {
+				continue
+			}
+			steward := false
+			for _, p := range stewards {
+				steward = steward || strings.EqualFold(p.Email, g.Owner)
+			}
+			ids, err := c.activeByEmail(ctx, g.Owner)
+			if err != nil {
+				return nil, err
+			}
+			if len(ids) != 1 || !steward {
+				continue // no one owner who could publish it: nothing drafted, nobody told
+			}
+			goal := ch.Kind + ":" + ch.SourceID
+			if ask.Silent(ch.Seen, ask.LastCheckin(queue, goal), time.Now()) {
+				silent = append(silent, notify.SilentGoal{Owner: ids[0], Space: key, Goal: goal})
+			}
+			if c.agentKilled(ask.AgentCheckin) {
+				continue
+			}
+			if over, err := c.spaceOver(ctx, key); err != nil || over {
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+			s, err := c.ScopeAs(ctx, ids[0], key)
+			if err != nil {
+				continue
+			}
+			title := ch.Title
+			if title == "" {
+				title = ch.SourceID
+			}
+			_, err = c.Parts().Stewards.AgentDraftFor(ctx, s, ask.DraftCheckin, "Check-in: "+title,
+				ask.Request{Question: ask.CheckinQuestion(title), Agent: ask.AgentCheckin}, goal)
+			if err != nil && !errors.Is(err, ask.ErrInvalid) && !errors.Is(err, ask.ErrKilled) && !errors.Is(err, ask.ErrBudget) {
+				return nil, err
+			}
+		}
+	}
+	return silent, nil
+}
+
+// latest keeps each document's newest version's chunks.
+func latest(chunks []ports.Chunk) []ports.Chunk {
+	newest := map[string]int{}
+	for _, c := range chunks {
+		k := c.Kind + ":" + c.SourceID
+		if c.Version > newest[k] {
+			newest[k] = c.Version
+		}
+	}
+	var out []ports.Chunk
+	for _, c := range chunks {
+		if c.Version == newest[c.Kind+":"+c.SourceID] {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// tell sends one person one notification of kind, if they want that kind (SB-4206).
+func (c *Cell) tell(ctx context.Context, user, kind, text string) error {
+	send := c.Send
+	if send == nil {
+		send = c.Notifier()
+	}
+	if send == nil {
+		return errors.New("wire: the cell has nothing to send notifications through")
+	}
+	u, found, err := c.Directory.User(ctx, c.Config.Tenant, user)
+	if err != nil || !found || !u.Active || len(u.Emails) == 0 {
+		return fmt.Errorf("wire: no one active to tell: %v", err)
+	}
+	p, err := c.Traces.NotifyPrefs(ctx, c.Config.Tenant, user)
+	if err != nil {
+		return err
+	}
+	if !p.Wants(kind) || p.Paused(time.Now()) {
+		return nil
+	}
+	return send.Send(ctx, notify.Person{ID: u.ID, Email: u.Emails[0]}, notify.Message{Kind: kind, Text: text,
+		Link: strings.TrimSuffix(c.Config.BaseURL, "/") + "/?tab=legwork"})
+}

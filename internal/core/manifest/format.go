@@ -101,6 +101,9 @@ func Format(t Tenant) []byte {
 			if sp.BudgetUSDMonth > 0 {
 				fmt.Fprintf(&b, "    budget_usd_month: %d%s", sp.BudgetUSDMonth, nl)
 			}
+			if sp.IncidentLabels != nil {
+				fmt.Fprintf(&b, "    incident_labels: %s%s", flowList(sp.IncidentLabels, true), nl)
+			}
 			if sp.Brief != nil {
 				fmt.Fprintf(&b, "    brief: { agent: %s, weekly: %s }%s", sp.Brief.Agent, sp.Brief.Weekly, nl)
 			}

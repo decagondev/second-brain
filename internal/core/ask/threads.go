@@ -35,6 +35,8 @@ type SavedThread struct {
 	// only by Asker until they confirm them (SB-4203).
 	Doc     string        `json:"doc,omitempty"`
 	Actions []DraftAction `json:"actions,omitempty"`
+	// Goal is a check-in's goal (KIND:ID; SB-4207).
+	Goal string `json:"goal,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.

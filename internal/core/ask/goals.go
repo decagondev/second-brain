@@ -87,9 +87,11 @@ type Goal struct {
 	Owner   string `json:"owner,omitempty"`
 	Quarter string `json:"quarter,omitempty"`
 	Status  string `json:"status,omitempty"`
-	Goals   []Goal `json:"goals,omitempty"`
-	parent  string
-	key     string
+	// Silent is a goal with no check-in published for three weeks (SB-4207).
+	Silent bool   `json:"silent,omitempty"`
+	Goals  []Goal `json:"goals,omitempty"`
+	parent string
+	key    string
 }
 
 // GoalQuarter is one quarter's goals, the top of each tree.
@@ -151,6 +153,7 @@ func (x Stewards) Goals(ctx context.Context, s tenancy.Scope, name string) (Goal
 	}
 	var goals []*Goal
 	seen := map[string]bool{}
+	queues := map[string][]StewardQuestion{}
 	for _, c := range res.Context {
 		k := c.Kind + ":" + c.SourceID
 		if seen[k] {
@@ -159,7 +162,19 @@ func (x Stewards) Goals(ctx context.Context, s tenancy.Scope, name string) (Goal
 		seen[k] = true
 		m, _ := ParseGoal(c.Text)
 		r := x.Agent.result(ctx, nil, c)
-		goals = append(goals, &Goal{Cite: c.Cite, Title: r.Title, URL: r.URL, Space: spaceOf[k], Owner: m.Owner, Quarter: m.Quarter, Status: m.Status, parent: m.Parent, key: k})
+		g := &Goal{Cite: c.Cite, Title: r.Title, URL: r.URL, Space: spaceOf[k], Owner: m.Owner, Quarter: m.Quarter, Status: m.Status, parent: m.Parent, key: k}
+		if m.Status != "done" && x.Store != nil && x.Now != nil {
+			sp := SpaceKey(spaceOf[k])
+			if _, ok := queues[sp]; !ok {
+				q, err := x.Store.StewardQueue(ctx, x.Agent.Tenant, sp)
+				if err != nil {
+					return out, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
+				}
+				queues[sp] = q
+			}
+			g.Silent = Silent(c.Seen, LastCheckin(queues[sp], k), x.Now())
+		}
+		goals = append(goals, g)
 	}
 	out.Hidden = len(cand) - len(goals)
 	out.Quarters = nestGoals(goals)

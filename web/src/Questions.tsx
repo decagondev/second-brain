@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, confirmActions, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import { AskError, addEvalCase, confirmActions, draftFix, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
 import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
@@ -10,6 +10,15 @@ const askable = new Set(["no_sources", "no_access", "most_uncited"]);
 
 // A question's state, in words.
 const states: Record<string, string> = { open: msg("open"), answered: msg("answered") };
+
+// An agent draft's heading, by kind (SB-4005, SB-4006, SB-4102, SB-4204, SB-4207).
+const draftKinds: Record<string, string> = {
+  brief: msg("Weekly brief by {agent}"),
+  decisions: msg("Decisions drafted by {agent}"),
+  update: msg("Weekly update by {agent}"),
+  incident: msg("Incident brief by {agent}"),
+  checkin: msg("Goal check-in by {agent}"),
+};
 
 const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
 
@@ -134,6 +143,9 @@ const kinds: { id: string; name: string }[] = [
   { id: "policy", name: msg("A policy to read") },
   { id: "research", name: msg("My research reports when they're ready") },
   { id: "action", name: msg("Action items from meetings given to me") },
+  { id: "incident", name: msg("Incident briefs for spaces I steward") },
+  { id: "fix", name: msg("Edits suggested to my documents") },
+  { id: "checkin", name: msg("My goals gone 3 weeks without a check-in") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
@@ -356,7 +368,7 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
               {q.thread?.agent && (
                 <div className="report" role="group" aria-label={t("Drafted by an agent")}>
                   <p className="meta">
-                    <strong>{q.thread.kind === "decisions" ? t("Decisions drafted by {agent}", { agent: q.thread.agent }) : t("Weekly brief by {agent}", { agent: q.thread.agent })}</strong> ·{" "}
+                    <strong>{t(draftKinds[q.thread.kind ?? ""] ?? draftKinds.brief!, { agent: q.thread.agent })}</strong> ·{" "}
                     {t("Ran as {who}", { who: q.thread.by })}
                   </p>
                   {q.thread.hidden && <p>{t("Only {who} sees its text: it was checked as them.", { who: q.thread.by })}</p>}
@@ -1279,6 +1291,26 @@ function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fet
 }
 
 // Add to evals (SB-2204): the steward names the document the reported answer should cite.
+// Draft a fix (SB-4206): the fix-draft agent's suggested edit goes to the document's owner;
+// nothing is written to the source.
+function DraftFix({ space, cite, fetcher }: { space: string; cite: string; fetcher?: Fetch }) {
+  const [done, setDone] = useState("");
+  const draft = async () => {
+    try {
+      const r = await draftFix(space, cite.split("@")[0]!, fetcher);
+      setDone(r.told ? t("Sent {n} suggested changes to {owner}.", { n: r.changes, owner: r.owner }) : t("Kept {n} suggested changes for {owner}.", { n: r.changes, owner: r.owner }));
+    } catch (e) {
+      setDone(errMsg(e, t("No fix could be drafted.")));
+    }
+  };
+  if (done) return <p role="status">{done}</p>;
+  return (
+    <button type="button" onClick={draft}>
+      {t("Draft a fix")}
+    </button>
+  );
+}
+
 // A decisions draft's action items (SB-4203): the steward edits and confirms them, and only
 // then is each owner told.
 function ConfirmActions({ space, draft, items: first, fetcher }: { space: string; draft: string; items: DraftAction[]; fetcher?: Fetch }) {
@@ -1472,6 +1504,7 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
                 <MarkReviewed space={space} item={r} fetcher={fetcher} onDone={() => setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== r.cite) }))} />
               )}
               {!r.question && <Retire space={space} cite={r.cite} name={r.title ?? r.cite} fetcher={fetcher} onDone={() => retired(r.cite)} />}
+              {!r.question && <DraftFix space={space} cite={r.cite} fetcher={fetcher} />}
               {r.reports && r.reports.length > 0 && <AddToEvals space={space} item={r} fetcher={fetcher} />}
             </li>
           ))}

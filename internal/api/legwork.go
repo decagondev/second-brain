@@ -31,6 +31,27 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/me/actions/{id}/done", h.done)
 	mux.HandleFunc("POST /v1/spaces/{name}/actions", h.confirm)
 	mux.HandleFunc("GET /v1/spaces/{name}/actions", h.spaceActions)
+	mux.HandleFunc("POST /v1/spaces/{name}/review/fix", h.fix)
+}
+
+func (h Legwork) fix(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Doc string `json:"doc"`
+	}
+	if !decode(r, &body) {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	out, err := h.Service.DraftFix(r.Context(), s, r.PathValue("name"), body.Doc)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", out)
 }
 
 func (h Legwork) k() Knowledge { return Knowledge{Release: h.Release, NewID: h.NewID} }

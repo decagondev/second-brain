@@ -1,0 +1,23 @@
+# Suite for the voc agent (SB-4205; sb-agents(7), The legwork agents): customer themes,
+# cited, only in a product or support space.
+suite: agent-voc
+world: fixtures/departments
+cases:
+  - id: voc-support-001
+    as: usr_cs
+    space: support
+    agent: voc
+    ask: "What are this week's customer themes from tickets and account notes, and how often does each come up?"
+    expect: { cites_any: ["docs:case-4411@1"], uncited_max: 0 }
+  - id: voc-other-space-001         # a finance space: refused
+    as: usr_fin
+    space: finance
+    agent: voc
+    ask: "What are this week's customer themes?"
+    expect: { error: "EINVAL" }
+  - id: voc-company-001             # company-wide: refused
+    as: usr_cs
+    space: company
+    agent: voc
+    ask: "What are this week's customer themes?"
+    expect: { error: "EINVAL" }

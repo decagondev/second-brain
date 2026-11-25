@@ -71,7 +71,7 @@ func (e *gqlError) HTTPStatus() int {
 // Operations, sent by name; the fake and the real API both accept them.
 const (
 	opIssue = `query IssueByID($id: String!) { issue(id: $id) { id identifier title description updatedAt archivedAt trashed
-  team { id key private members(first: 250) { nodes { id email } } } comments(first: 100) { nodes { body } } } }`
+  team { id key private members(first: 250) { nodes { id email } } } labels(first: 50) { nodes { name } } comments(first: 100) { nodes { body } } } }`
 	opComment     = `mutation CommentCreate($input: CommentCreateInput!) { commentCreate(input: $input) { success comment { id } } }`
 	opCommentByID = `query CommentByID($id: String!) { comment(id: $id) { id } }`
 	opUser        = `query UserByEmail($email: String!) { users(filter: { email: { eq: $email } }) { nodes { id active guest } } }`
@@ -166,6 +166,11 @@ type issue struct {
 			Body string `json:"body"`
 		} `json:"nodes"`
 	} `json:"comments"`
+	Labels struct {
+		Nodes []struct {
+			Name string `json:"name"`
+		} `json:"nodes"`
+	} `json:"labels"`
 }
 
 func (i issue) gone() bool { return i.ArchivedAt != nil || i.Trashed }
@@ -205,6 +210,13 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 		return ports.Document{}, fmt.Errorf("linear: bad updatedAt on %s", ref.ID)
 	}
 	var b strings.Builder
+	if len(is.Labels.Nodes) > 0 { // SB-4204: the first line names the labels, so an incident is seen
+		var ls []string
+		for _, l := range is.Labels.Nodes {
+			ls = append(ls, l.Name)
+		}
+		b.WriteString("Labels: " + strings.Join(ls, ", ") + "\n\n")
+	}
 	b.WriteString(is.Description)
 	for _, cm := range is.Comments.Nodes {
 		b.WriteString("\n\n" + cm.Body)

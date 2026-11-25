@@ -14,6 +14,8 @@ export interface GoalRow {
   owner?: string;
   quarter?: string;
   status?: string;
+  // No check-in published for three weeks (SB-4207).
+  silent?: boolean;
   goals?: GoalRow[];
 }
 
@@ -36,6 +38,7 @@ function GoalList({ goals }: { goals: GoalRow[] }) {
             {g.status && ` · ${t(statuses[g.status] ?? g.status)}`}
             {g.owner && ` · ${g.owner}`}
           </span>
+          {g.silent && <span className="meta overdue"> · {t("No check-in for 3 weeks")}</span>}
           {g.goals && g.goals.length > 0 && <GoalList goals={g.goals} />}
         </li>
       ))}

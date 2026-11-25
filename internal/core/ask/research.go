@@ -111,6 +111,9 @@ type Legwork struct {
 	Known func(ctx context.Context, email string) bool
 	// Users are the tenant's active users now, to match an action item's owner (SB-4203).
 	Users func(ctx context.Context) ([]ports.User, error)
+	// Tell sends one person one notification of kind, as the notify job would; nil tells
+	// no one (SB-4206).
+	Tell func(ctx context.Context, user, kind, text string) error
 }
 
 // ResearchItem is one report or brief as its owner's list shows it.
@@ -308,7 +311,7 @@ func (l Legwork) List(ctx context.Context, s tenancy.Scope) ([]ResearchItem, err
 	sort.SliceStable(rs, func(i, j int) bool { return rs[i].At.After(rs[j].At) })
 	out := []ResearchItem{}
 	for _, r := range rs {
-		it := ResearchItem{ID: r.ID, Kind: r.Kind, Question: r.Question, Space: r.Space, State: r.State, Steps: len(r.Steps), At: r.At}
+		it := ResearchItem{ID: r.ID, Kind: r.Kind, Question: r.Question, Space: r.Space, State: l.fixState(ctx, r), Steps: len(r.Steps), At: r.At}
 		if !r.DoneAt.IsZero() {
 			d := r.DoneAt
 			it.DoneAt = &d
@@ -325,6 +328,7 @@ func (l Legwork) Open(ctx context.Context, s tenancy.Scope, id string) (Research
 	if err != nil {
 		return ResearchView{}, err
 	}
+	r.State = l.fixState(ctx, r) // SB-4206: a suggestion is applied once its source changes
 	return l.recheck(ctx, s, r)
 }
 

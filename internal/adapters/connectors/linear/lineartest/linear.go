@@ -57,6 +57,7 @@ type membership struct {
 type Issue struct {
 	ID, Identifier, Title, Description, Team string
 	Comments                                 []string
+	Labels                                   []string // SB-4204
 	UpdatedAt                                time.Time
 	Archived, Trashed                        bool
 }
@@ -360,7 +361,11 @@ func (f *Fake) issueJSON(is *Issue) map[string]any {
 	for _, c := range is.Comments {
 		comments = append(comments, map[string]any{"body": c})
 	}
-	return map[string]any{"id": is.ID, "identifier": is.Identifier, "title": is.Title, "description": is.Description,
+	labels := []any{}
+	for _, l := range is.Labels {
+		labels = append(labels, map[string]any{"name": l})
+	}
+	return map[string]any{"id": is.ID, "identifier": is.Identifier, "labels": map[string]any{"nodes": labels}, "title": is.Title, "description": is.Description,
 		"updatedAt": ts(is.UpdatedAt), "archivedAt": archived(is), "trashed": is.Trashed,
 		"team":     map[string]any{"id": t.ID, "key": t.Key, "private": t.Private, "members": map[string]any{"nodes": members}},
 		"comments": map[string]any{"nodes": comments}}

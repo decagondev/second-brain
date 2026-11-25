@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S41.2: Incident briefs, customer themes, fixes and check-ins
+
+**Wave/slice:** W41 / S41.2 (SB-4204 to SB-4207) · **Status:** Done
+
+**What:** A ticket whose Labels line names one of a space's incident_labels (sev-1 by default) drafts one incident brief for the stewards and tells them it waits. A product or support space can make voc its weekly brief: at most 8 themes, each with three cites and counts for this week and the four before. Draft a fix on the review list runs as the document's owner and keeps only the changes that cite a newer source, for the owner to make. Each Monday a goal gets a check-in drafted as its owner, and a goal three weeks without a published one is flagged.
+
+**Why this way:** All four reuse the paths that already hold: agent drafts in a steward queue, the notify job's once-only clock, stored results checked again on reading, and notes for publishing. Running a fix as the owner means it can only use what the owner can open. The voc counts come from the cited documents' dates, so the model never states a number.
+
+**Learned:** Linear's labels weren't in the document text, so nothing could see an incident; a Labels line at the top makes any ticket source work the same way. A suggestion needs no "done" button: a newer version of the source is the proof it was applied.
+
+**Laws:** LAW-01, LAW-07, LAW-09, LAW-14, LAW-16, LAW-24, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S41.1: Research, meeting prep and action items
 
 **Wave/slice:** W41 / S41.1 (SB-4201 to SB-4203) · **Status:** Done

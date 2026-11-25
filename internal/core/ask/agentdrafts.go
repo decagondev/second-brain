@@ -19,7 +19,9 @@ import (
 const (
 	DraftBrief     = "brief"
 	DraftDecisions = "decisions"
-	DraftUpdate    = "update" // a weekly status update, published under notes/SPACE/updates/ (SB-4102)
+	DraftUpdate    = "update"   // a weekly status update, published under notes/SPACE/updates/ (SB-4102)
+	DraftIncident  = "incident" // an incident brief for the on-call stewards (SB-4204)
+	DraftCheckin   = "checkin"  // a goal's weekly check-in, published under notes/SPACE/goals/ (SB-4207)
 )
 
 // UpdateQuestion is the fixed question of a weekly status update (SB-4102).
@@ -57,10 +59,15 @@ func DraftText(a Answer) string {
 // in s's space, and puts its answer in that space's steward queue as a draft of kind,
 // audited first. An answer with nothing cited puts nothing, and is ErrInvalid.
 func (x Stewards) AgentDraft(ctx context.Context, s tenancy.Scope, kind, title string, req Request) (StewardQuestion, error) {
+	return x.AgentDraftFor(ctx, s, kind, title, req, "")
+}
+
+// AgentDraftFor is AgentDraft for one goal (KIND:ID), a check-in's (SB-4207).
+func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, title string, req Request, goal string) (StewardQuestion, error) {
 	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant || s.Space() == "" || s.Space() == "company" {
 		return StewardQuestion{}, fmt.Errorf("%w: an agent draft runs in a space", ErrInvalid)
 	}
-	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate {
+	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate && kind != DraftIncident && kind != DraftCheckin {
 		return StewardQuestion{}, fmt.Errorf("%w: no draft kind %q", ErrInvalid, kind)
 	}
 	agent := req.Agent
@@ -70,6 +77,11 @@ func (x Stewards) AgentDraft(ctx context.Context, s tenancy.Scope, kind, title s
 	resp, err := x.Agent.Ask(ctx, s, req)
 	if err != nil {
 		return StewardQuestion{}, err
+	}
+	if agent == AgentVoC { // SB-4205: at most 8 themes, 3 cites each, counted from their dates
+		if resp.Answer.Claims, err = x.Agent.vocThemes(ctx, resp.Answer.Claims, x.Now()); err != nil {
+			return StewardQuestion{}, err
+		}
 	}
 	text := DraftText(resp.Answer)
 	if text == "" {
@@ -87,6 +99,9 @@ func (x Stewards) AgentDraft(ctx context.Context, s tenancy.Scope, kind, title s
 			}
 			sq.Thread.Actions = acts
 		}
+	}
+	if kind == DraftCheckin {
+		sq.Thread.Goal = goal
 	}
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "access", Subject: sq.ID, State: "drafted",
 		PayloadSHA256: hashOf(text), Reason: "agent " + agent + " drafted a " + kind, Space: auditSpace(s.Space())}); err != nil {

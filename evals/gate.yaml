@@ -34,3 +34,7 @@ agent-design-rationale: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-exec-brief: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-research: { failures_max: 0 }   # SB-4201
 agent-meeting-prep: { failures_max: 0 }   # SB-4202
+agent-incident-brief: { failures_max: 0 }   # SB-4204
+agent-voc: { failures_max: 0 }   # SB-4205
+agent-fix-draft: { failures_max: 0 }   # SB-4206
+agent-goal-check-in: { failures_max: 0 }   # SB-4207
