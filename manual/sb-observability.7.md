@@ -108,6 +108,17 @@ The numbers a check compares (sb-agents(7), Did it help?) and the admin's week (
 
 Every trace keeps `cost_usd`, the model spend of its one ask counted by the gateway at the configured prices, a consultation's within it, and **How this was made** shows it to the person who asked (sb-ask(3)). A report's cost is its own `cost_usd`. It is a count from the gateway, never from the model, and it is the same spend the budgets count (Budgets and rate limits, above).
 
+### Guardrail events (SB-5103)
+
+Each guardrail event is an audit row of kind `guardrail` (sb-audit(5)), written by `sys_guard`, so the audit stream (sb-audit(7), SB-2302) carries each once:
+
+| Event | Subject | State | Space, reason |
+|---|---|---|---|
+| A suspect passage of a kept answer (sb-ingest(7), Suspect passages) | `suspect:CITE` | `skipped` or `monitored` | the answer's space; reason `agent=NAME` |
+| A response, notice or chat reply with something masked on its way out (sb-ingest(7), Nothing sensitive goes out) | `masked:WAY` (`api`, `notify`, `slack`, `mattermost`) | `masked` | reason `strings=N` |
+
+Never the asker, the question or any text. `GET /v1/admin/guardrails/events?since=7d` (sb-admin(3)) lists these with tool calls refused by an approver and denied by the policy kernel, oldest first, at most 10,000: `{ "events": [{ "at", "kind", "space", "agent", "document", "count" }] }`, `kind` one of `suspect`, `masked`, `refused` or `denied`. `since` is `Nd` (1 to 90) or an RFC 3339 time, default 7 days; `format=csv` gives the same columns as CSV. An eval run's answers write no events.
+
 ### Guardrail insights, exactly (SB-4406)
 
 `GET /v1/admin/guardrails` (sb-admin(3)) and the **Guardrails** card on the admin console show, for each of the last 12 ISO weeks (UTC):

@@ -61,6 +61,7 @@ GET  /v1/admin/checks/ID
 GET  /v1/spaces/NAME/checks                    (stewards)
 GET  /v1/admin/inventory?format=csv
 GET  /v1/admin/guardrails
+GET  /v1/admin/guardrails/events
 GET  /v1/admin/tree/plan?op=move|merge&space=NAME&to=NAME
 GET  /v1/spaces/NAME/reviews                   (stewards)
 POST /v1/spaces/NAME/reviews/ID/decide         (stewards)
@@ -144,6 +145,8 @@ On the notify job's first run from Monday 08:00 in the `digest` time zone (sb-te
 **`GET /v1/spaces/NAME/service`** (SB-4507), for a space's stewards, is 12 weeks of the space's service levels by category and week: time to first reply, time to close and the share closed late, and each team's counts, every row under 5 shown only as `fewer_than_5` (sb-ask(3), Department service levels). Counts and medians only: never a question, a request's text or who sent it. The space's home shows it as **Service**.
 
 **`GET /v1/admin/tree/plan?op=move&space=support&to=customer`** (SB-4806) is the reorg dry run of `sb tree move` and `sb tree merge` (sb-space(1), tree) against the cell's applied manifest, for admins: `{ "plan": { "op", "space", "to", "spaces": [{ "space", "parent_before", "parent_after", "escalate_now", "escalate_after", "rolls_up_now", "rolls_up_after", "settings": [{ "setting", "gains", "loses" }], "gone"? }] }, "manifest": "…", "in_flight": { "SPACE": { "rhythms", "open", "waiting", "projects", "routines", "triggered": [] } } }`. `op=merge` folds `space` into `to`. `manifest` is the manifest the change would leave, to propose through the usual review; nothing is applied. `in_flight` counts what is under way in each affected space now: running rhythms, open queue items and those waiting on another space, open projects, routines asked in the space, and the agents with a schedule or trigger there. Counts only. A change that would widen access (a label that loosens, a retention that grows, a merge whose member groups differ) is `EPERM` with the setting named (LAW-24); an unknown space, or a result `sb tenant check` refuses, is `EINVAL`.
+
+**`GET /v1/admin/guardrails/events`** (SB-5103), for operators, lists guardrail events since `since` (`Nd`, 1 to 90, or an RFC 3339 time; default `7d`), oldest first, at most 10,000: `{ "events": [{ "at", "kind", "space", "agent", "document", "count" }] }`, `kind` one of `suspect`, `masked`, `refused` or `denied` (sb-observability(7), Guardrail events). `format=csv` returns the same as `text/csv`. Ids and counts only; never text or the asker. A bad `since` is `EINVAL`.
 
 **`GET /v1/admin/guardrails`** (SB-4406), for operators, returns 12 weeks of counts, newest first (sb-observability(7), Guardrail insights): `{ "weeks": [{ "week": "2027-W10", "flags": [{ "source", "space", "count" }], "flagged_uploads", "refused_tools", "denied_tools", "dropped_uncited" }], "doubled": ["SOURCE"…] }`. Each count is a number, or `"fewer than 5"` when it is 1 to 4. No chunk text, title, question or person appears.
 

@@ -138,6 +138,8 @@ export interface AskResponse {
   notice_sync?: { kind: string; last_success: string | null }[];
   // Every cite is one document (SB-3005).
   notice_single?: boolean;
+  // Passages kept out of the prompt because they read like instructions (SB-5101).
+  skipped?: number;
   // How many earlier questions of the conversation the model didn't read (SB-2901).
   earlier_dropped?: number;
   see_also?: SeeAlso[];

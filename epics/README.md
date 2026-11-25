@@ -54,7 +54,7 @@ summary: Epics, waves, slices and tickets.
 | W47 Ways of Working | 7 | 0 | 0 | Planned 2026-11-25 with the user (E48), built: rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W48 Agents That Check With You | 6 | 0 | 0 | Planned 2026-11-25 with the user (E49), built: ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W49 Run AI Like a Business | 7 | 0 | 0 | Planned 2026-11-25 with the user (E50), built: AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
-| W50 Guard What Goes In | 0 | 0 | 7 | Planned 2026-11-25 with the user (E51): suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
+| W50 Guard What Goes In | 3 | 0 | 4 | Planned 2026-11-25 with the user (E51), S50.1 built: suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W51 Write It Down Together | 0 | 0 | 7 | Planned 2026-11-25 with the user (E52): suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W52 Agents That Act Carefully | 0 | 0 | 6 | Planned 2026-11-25 with the user (E53): start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -909,9 +909,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-5101](E51-guard-what-goes-in/SB-5101-suspect-passages.md) | S50.1 | E51 | Suspect passages | Open |
-| [SB-5102](E51-guard-what-goes-in/SB-5102-nothing-sensitive-out.md) | S50.1 | E51 | Nothing sensitive goes out | Open |
-| [SB-5103](E51-guard-what-goes-in/SB-5103-guardrail-export.md) | S50.1 | E51 | Guardrail export | Open |
+| [SB-5101](E51-guard-what-goes-in/SB-5101-suspect-passages.md) | S50.1 | E51 | Suspect passages | Done |
+| [SB-5102](E51-guard-what-goes-in/SB-5102-nothing-sensitive-out.md) | S50.1 | E51 | Nothing sensitive goes out | Done |
+| [SB-5103](E51-guard-what-goes-in/SB-5103-guardrail-export.md) | S50.1 | E51 | Guardrail export | Done |
 | [SB-5104](E51-guard-what-goes-in/SB-5104-agent-history.md) | S50.2 | E51 | Agent history | Open |
 | [SB-5105](E51-guard-what-goes-in/SB-5105-branch-moderators.md) | S50.2 | E51 | Branch moderators | Open |
 | [SB-5106](E51-guard-what-goes-in/SB-5106-feature-rollouts.md) | S50.2 | E51 | Feature rollouts | Open |

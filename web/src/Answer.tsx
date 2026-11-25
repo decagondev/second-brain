@@ -542,6 +542,15 @@ function Freshness({ answer }: { answer: AskResponse }) {
           {answer.assumed}
         </p>
       )}
+      {(answer.skipped ?? 0) > 0 && (
+        <p className="notice" role="note">
+          {tn(
+            answer.skipped!,
+            "{n} passage was skipped because it looked like instructions to the AI.",
+            "{n} passages were skipped because they looked like instructions to the AI.",
+          )}
+        </p>
+      )}
       {answer.notice_single && (
         <p className="notice" role="note">
           {t("This answer rests on one document. Check it if it matters.")}

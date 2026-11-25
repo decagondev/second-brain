@@ -65,6 +65,20 @@ type Space struct {
 	// Routing is the space's routing policy (SB-5002), one of RoutingPolicies; "" is
 	// balanced, or its department's.
 	Routing string `json:"routing,omitempty"`
+	// Suspect is what happens to a passage that reads like instructions (SB-5101), one
+	// of SuspectModes; "" is skip, or its department's.
+	Suspect string `json:"suspect,omitempty"`
+}
+
+// SuspectModes are the values of a space's suspect (SB-5101).
+var SuspectModes = []string{"skip", "monitor"}
+
+// SuspectOf is space name's suspect mode: its own, else its department's, else skip.
+func (t Tenant) SuspectOf(name string) string {
+	if m := t.Effective(name).Suspect; m != "" {
+		return m
+	}
+	return "skip"
 }
 
 // RoutingPolicies are the routing policies, cheapest first (SB-5002).
@@ -254,7 +268,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -374,7 +388,7 @@ func (c *checker) space(name string, n *node, p string) {
 			s.IncidentLabels = c.incidentLabels(v, f)
 		case "skills": // SB-4601
 			s.Skills, sn.skills = c.skills(v, f), v
-		case "rhythms", "onboarding", "on", "routing": // SB-4801, SB-4802, SB-4905, SB-5002
+		case "rhythms", "onboarding", "on", "routing", "suspect": // SB-4801, SB-4802, SB-4905, SB-5002, SB-5101
 			c.rhythmField(k.value, v, f, &s)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
@@ -1124,6 +1138,9 @@ func (t Tenant) Effective(name string) Space {
 	}
 	if s.Routing == "" { // SB-5002
 		s.Routing = par.Routing
+	}
+	if s.Suspect == "" { // SB-5101
+		s.Suspect = par.Suspect
 	}
 	if len(par.StartHere) > 0 {
 		joined := append([]string{}, par.StartHere...)

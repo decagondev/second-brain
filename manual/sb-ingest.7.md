@@ -56,7 +56,21 @@ The rules, in order (`internal/core/ingest`, `Sanitise`):
 
 A spreadsheet's cells are content like any other (SB-2206): a cell that reads like an instruction is flagged, and a formula is never evaluated, only the value the file last saved is read, so a cell can't make ingest compute, fetch or run anything (sb-connector(3), `docs: folder`).
 
-Flags are per chunk and appear on its citation. A flagged chunk is still indexed and can be cited; it just can't steer the agent. The corpus in `evals/corpus/injection.json` (visible, hidden and benign look-alike cases) runs in `make check`. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).
+Flags are per chunk and appear on its citation. A flagged chunk is still indexed and found by search.
+
+**Suspect passages (SB-5101).** At read time, before a model sees it, every passage is checked again: a chunk flagged `instruction_like`, or whose text matches the instruction rules as they are now (so a chunk indexed before a rule was added is caught too), is **suspect**. By default a suspect passage is **skipped**: it never enters a prompt, is never quoted or cited, and the answer says how many were skipped (`skipped` in sb-ask(3)). Its cite is kept in the trace, never its text. This holds on every path that gives passages to a model: answers and department agents, research, briefs and drafts (they answer through the same composer), and tables (SB-4307). A space with `suspect: monitor` (sb-space(5)) lets suspect passages through as before, wrapped and flagged, and still records them. Stewards see the space's suspect documents on the review list (`section=suspect`, sb-ask(3)), and each document's owner is told once per document version. Hidden text that was stripped (`hidden_text_removed`) doesn't make a passage suspect: what's left is what a reader sees. The corpus in `evals/corpus/injection.json` (visible, hidden and benign look-alike cases) runs in `make check`. The agent-level injection suite (zero tool calls from poisoned sources) runs once the tool bus exists (SB-405, SB-501).
+
+### Nothing sensitive goes out (SB-5102)
+
+Ingest keeps credentials out of the index and masks personal data in what a model reads, but text can still reach someone another way: a model's own words, a steward's reply, a note, a file someone asked about, a notice. So **one filter** sits on every way text leaves the cell:
+
+| Way out | Where the filter is |
+|---|---|
+| Every API response: answers, drafts, briefs, search, reviews, exports, MCP results, the web app's data | the cell's HTTP handler masks every JSON string and every CSV, Markdown or plain-text body |
+| Notices, digests and briefs sent as chat messages or email | the `notify` job, before each message is sent |
+| Chat app replies (Slack, Mattermost) | the chat app, before each reply is posted |
+
+It replaces each credential the secret scanner knows (Secrets never stored, below) with `[removed]`, and masks each payment card, IBAN and national id but its last four characters, as Personal data does. The rest of the text, and every cite, are left as they were, so an answer with one masked number is still the answer. Two things pass as they are: `POST /v1/tokens`, which shows the caller their new token once, and `GET /metrics`, which holds numbers only. Masking can't be turned off, and each masked response or message is a guardrail event (sb-observability(7), Guardrail events). Each way out has its test (LAW-07): the API's (`TestMaskOutMiddleware`), the notify job's (`TestMaskingSender`) and each chat app's (`TestReplyIsMasked`), and a running cell gives back a key and a card number a person saved masked (`TestGuardWhatGoesInThroughARunningCell`).
 
 ### Fields (SB-1106)
 

@@ -85,6 +85,8 @@ type Admin struct {
 	OwnerActive func(ctx context.Context, owner string) bool
 	// Guardrails are the 12 weeks of guardrail counts (SB-4406); nil is EUNAVAIL.
 	Guardrails func(ctx context.Context, now time.Time) (report.Guardrails, error)
+	// GuardrailEvents are the guardrail events since a time (SB-5103); nil is EUNAVAIL.
+	GuardrailEvents func(ctx context.Context, since time.Time) ([]report.GuardrailEvent, error)
 	// Tiers names each "provider/model" of the cost statement main or small (SB-4405).
 	Tiers map[string]string
 	// SpaceSpend is each space's branch spend in a month (SB-4105); nil is EUNAVAIL.
@@ -139,6 +141,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
 	mux.HandleFunc("GET /v1/admin/costs/spaces", h.readers(h.spaceCosts))
 	mux.HandleFunc("GET /v1/admin/guardrails", h.guard(h.guardrails))
+	mux.HandleFunc("GET /v1/admin/guardrails/events", h.guard(h.guardrailEvents)) // SB-5103
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
 	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
 	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
@@ -241,6 +244,52 @@ func (h Admin) guardrails(w http.ResponseWriter, r *http.Request, _ tenancy.Scop
 		return
 	}
 	h.ok(w, g)
+}
+
+// guardrailEvents lists the guardrail events since since (sb-observability(7), Guardrail
+// events; SB-5103), as JSON or, with format=csv, CSV.
+func (h Admin) guardrailEvents(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.GuardrailEvents == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Guardrail events aren't available in this cell."))
+		return
+	}
+	now := time.Now()
+	if h.Now != nil {
+		now = h.Now()
+	}
+	since, ok := parseSince(r.URL.Query().Get("since"), now)
+	if !ok {
+		h.fail(w, errs.New(errs.EINVAL, "since must be like 7d (1 to 90 days) or an RFC 3339 time."))
+		return
+	}
+	es, err := h.GuardrailEvents(r.Context(), since)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The guardrail events can't be read right now."))
+		return
+	}
+	if r.URL.Query().Get("format") == "csv" {
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(report.GuardrailCSV(es))
+		return
+	}
+	h.ok(w, map[string]any{"events": es})
+}
+
+// parseSince reads since: "" is 7 days, Nd is N days (1 to 90), else an RFC 3339 time.
+func parseSince(v string, now time.Time) (time.Time, bool) {
+	if v == "" {
+		return now.AddDate(0, 0, -7), true
+	}
+	if d, ok := strings.CutSuffix(v, "d"); ok {
+		n, err := strconv.Atoi(d)
+		if err != nil || n < 1 || n > 90 {
+			return time.Time{}, false
+		}
+		return now.AddDate(0, 0, -n), true
+	}
+	t, err := time.Parse(time.RFC3339, v)
+	return t, err == nil
 }
 
 func (h Admin) spaceCosts(w http.ResponseWriter, r *http.Request) {

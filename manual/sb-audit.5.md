@@ -27,7 +27,7 @@ sb-audit — audit row fields, hash rules and the NDJSON export format
 | `at` | RFC 3339, ms, UTC | yes | Commit time |
 | `tenant` | string | yes | The cell's tenant |
 | `actor` | id | yes | `usr_…`, `svc_…` or `sys_…` |
-| `kind` | enum | yes | `tool_call`, `decision`, `approval`, `kill`, `config`, `release`, `access`, `custody`, `retention` |
+| `kind` | enum | yes | `tool_call`, `decision`, `approval`, `kill`, `config`, `release`, `access`, `custody`, `retention`, `guardrail` (SB-5103: a suspect passage or a masked output, sb-observability(7), Guardrail events) |
 | `subject` | id | yes | What the row is about (`tc_…`, `apr_…`, …) |
 | `state` | string | for state changes | e.g. `PendingApproval`, `Ran` |
 | `approval` | id | consequential tool calls | Approval id |

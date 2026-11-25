@@ -554,6 +554,8 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "There was nobody to ask.": { de: "Es gab niemanden zu fragen.", fr: "Il n'y avait personne à qui demander." },
   "These glossary terms read like instructions to the model, so they aren't used: {terms}. Propose a plain meaning for each.": { de: "Diese Glossarbegriffe lesen sich wie Anweisungen an das Modell und werden daher nicht verwendet: {terms}. Schlagen Sie für jeden eine schlichte Bedeutung vor.", fr: "Ces termes du glossaire ressemblent à des instructions pour le modèle et ne sont donc pas utilisés : {terms}. Proposez un sens simple pour chacun." },
   "This action couldn't be loaded.": { de: "Diese Aktion konnte nicht geladen werden.", fr: "Cette action n'a pas pu être chargée." },
+  "{n} passage was skipped because it looked like instructions to the AI.": { de: "{n} Abschnitt wurde übersprungen, weil er wie eine Anweisung an die KI aussah.", fr: "{n} passage a été ignoré parce qu'il ressemblait à des instructions pour l'IA." },
+  "{n} passages were skipped because they looked like instructions to the AI.": { de: "{n} Abschnitte wurden übersprungen, weil sie wie Anweisungen an die KI aussahen.", fr: "{n} passages ont été ignorés parce qu'ils ressemblaient à des instructions pour l'IA." },
   "This answer rests on one document. Check it if it matters.": { de: "Diese Antwort beruht auf einem einzigen Dokument. Prüfen Sie es, wenn es darauf ankommt.", fr: "Cette réponse repose sur un seul document. Vérifiez-le si c'est important." },
   "This belongs to another company.": { de: "Dies gehört zu einem anderen Unternehmen.", fr: "Ceci appartient à une autre entreprise." },
   "This browser": { de: "Dieser Browser", fr: "Ce navigateur" },

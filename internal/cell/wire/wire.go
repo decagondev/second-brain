@@ -513,8 +513,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		}),
 		Glossary: func(name string) map[string]string { return m.Effective(name).Glossary },
-		Skills:   func(name string) []ask.Skill { return spaceSkills(m, name) }, // SB-4601
-		Routing:  routing(m), PersonOver: c.personOver,                          // SB-5002, SB-5003
+		Skills:   func(name string) []ask.Skill { return spaceSkills(m, name) },                      // SB-4601
+		Routing:  routing(m), Suspect: suspectMode(m), Guard: c.guardEvent, PersonOver: c.personOver, // SB-5002, SB-5003
 		Rate: &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
 		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
 		Climb: func(ctx context.Context, space string) []ask.PersonRef { // SB-3906: up to the department's stewards
@@ -602,6 +602,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			Email: slackapp.WebEmail(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second}),
 			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now,
 			Language: func() string { return c.Manifest().Language }, Notice: c.noticeLine,
+			Masked: func(ctx context.Context, n int) { c.masked(ctx, "slack", n) }, // SB-5102
 			Thread: slackapp.WebThread(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second})}
 		app.Register(public)
 		savers = append(savers, app)
@@ -614,6 +615,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			Notice: c.noticeLine}
 		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"), Rules: rules,
 			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions",
+			Masked: func(ctx context.Context, n int) { c.masked(ctx, "mattermost", n) }, // SB-5102
 			Thread: mmapp.APIThread(mm.Base, slackField(creds, "bot_token"), client)}).Register(public)
 		savers = append(savers, rules)
 	}
@@ -704,7 +706,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
-		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails,
+		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails, GuardrailEvents: c.GuardrailEvents,
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
@@ -742,7 +744,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
 	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards,
-		Legwork: legwork, Rhythms: rhythms, handler: public}, nil
+		Legwork: legwork, Rhythms: rhythms, handler: api.MaskOut(public, c.maskedOut)}, nil
 }
 
 // legwork is the research, meeting-prep and action-item service (sb-ask(3); SB-4201 to

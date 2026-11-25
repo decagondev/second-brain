@@ -70,6 +70,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   },
   "pinned": { "id": "pin_01JD…", "question": "Who approves a refund over £500?", "text": "A team lead approves it.", "cites": ["docs:4f2a9c11@17"], "verified": "2027-03-02" },
   "refused": 2,
+  "skipped": 0,
   "verified": { "of": 2, "marked": 1 },
   "notice": null,
   "conversation": "cv_01JD3QB9…",
@@ -107,6 +108,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `see_also` | (SB-3301) At most 3 documents among the chunks the live check allowed for this answer that no claim cites, in the order retrieval ranked them, each once: `cite`, `title`, `section`, `span` and `age_days`, never their text. **Show passage** works on them as on a claim's cite. They are search results, not claims (LAW-14), and the chat apps leave them out. Omitted when there are none |
 | `pinned` | (SB-3601) A verified answer the space's stewards pinned to a question like this one: `{ "id": "pin_…", "question": "…", "text": "…", "cites": ["docs:…@17"], "verified": "YYYY-MM-DD" }`. It is shown first, above the model's claims, which follow as usual. Only for an ask in a space, only when the question's embedding has a cosine of 0.85 or more with the pin's question (the closest pin wins), only while the pin is younger than the space's `review_after_days`, and only when **every** cite of the pin is one the asker can open now, checked live as them (LAW-01): a pin with one cite they can't open isn't shown to them at all. A cell without an embedder shows no pins. Omitted otherwise |
 | `refused` | How many candidate documents were refused (deny or unknown). Never their titles |
+| `skipped` | (SB-5101) How many allowed passages were kept out of the prompt as suspect (sb-ingest(7), Suspect passages): they read like instructions to the model. Never their text or title; the web app says "1 passage was skipped because it looked like instructions to the AI". Omitted when 0 |
 | `notice` | `null`, `"most_uncited"`, `"no_access"` or `"no_sources"` |
 | `conversation` | The conversation this turn belongs to, `cv_…` |
 | `agent`, `release` | (SB-4706) Which agent wrote the answer and the release it ran under; the web app shows "Written by ask, version rel_…" under every answer, and the chat app ends with that line (sb-agents(7), Marked as AI; LAW-28) |
@@ -280,6 +282,8 @@ Every cite in an answer also carries `age_days` (whole days since the index firs
 **Conflicts (SB-3605).** The list carries `"conflicts": [{ "a": result, "b": result, "answers": N }], "conflicts_hidden": N`: the pairs of documents that claims marked **Sources disagree** (`disagree`, SB-3304) cited together in answers asked in the space this calendar month (UTC), with how many answers did, most first, at most 10. Each document is checked as the steward like the rest of the list: a pair is named only when they can open both, and `conflicts_hidden` counts the pairs they can't. Counts only: never who asked, the question or the claim. Omitted when there are none.
 
 **Several at once (SB-3103).** `POST /v1/spaces/NAME/review/marks` and `POST /v1/spaces/NAME/retired` also take `"cites": ["docs:…@17", …]` (at most 50) instead of `cite`, with one `reason` and no `replaced_by` for a retirement. Each cite is checked, decided and audited on its own, exactly as when it is sent alone, and the response is `{ "items": [{ "cite": "…", "ok": true } | { "cite": "…", "error": { "code": "EPERM", "message": "…" } }] }`, in the order sent: one that fails doesn't stop the others. More than 50 is `EINVAL`. The review list has a checkbox on each document and **Mark reviewed** and **Retire** for the selected ones.
+
+**Suspect passages (SB-5101).** `GET /v1/spaces/NAME/review?section=suspect` lists the documents the space holds with a suspect passage (sb-ingest(7), Suspect passages), newest version first, at most 100: `{ "items": [{ …result, "passages": N }], "hidden": [{ "owner": … }] }`, checked as the steward like the list. Never the passage's text: the steward opens the document in its source. An answer that skipped passages says so in `skipped` (a count, 0 when none).
 
 **Coming due (SB-3105).** `GET /v1/spaces/NAME/review?section=due` lists the documents the space holds that answers cited at least 5 times in the last 30 days, that aren't stale yet, and that turn stale in the next 14 days: `review_after_days` after their version was first seen, or after a **Reviewed, still right** mark at that version, or on their own review-by date (SB-2705), whichever is first. Soonest first, at most 100: `{ "items": [{ …result, "due_in_days": N }], "hidden": [{ "owner": … }] }`, checked as the steward like the list. **Reviewed, still right** works on them as on stale ones, and a mark moves the date on, except a document's own review-by date, which a mark doesn't lift. A document due in 10 days is listed; one due in 20 isn't.
 

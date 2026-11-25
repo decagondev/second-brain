@@ -29,7 +29,7 @@ func (pendingChain) Export() ([]byte, error) {
 }
 func (pendingChain) Verify([]byte) (bool, error) { return false, nil }
 
-var auditKinds = []string{"tool_call", "decision", "approval", "kill", "config", "release", "access", "custody", "retention"}
+var auditKinds = []string{"tool_call", "decision", "approval", "kill", "config", "release", "access", "custody", "retention", "guardrail"}
 
 func law11(r *rand.Rand, c AuditChain) error {
 	n := 2 + r.Intn(30)

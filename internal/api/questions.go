@@ -238,6 +238,15 @@ func (h Questions) review(w http.ResponseWriter, r *http.Request) {
 		h.k().out().ok(w, "", res)
 		return
 	}
+	if r.URL.Query().Get("section") == "suspect" { // SB-5101
+		res, err := h.Service.Suspect(r.Context(), s, name)
+		if err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", res)
+		return
+	}
 	if r.URL.Query().Get("section") == "uncited" { // SB-2803
 		res, err := h.Service.Uncited(r.Context(), s, name, h.Reviews)
 		if err != nil {

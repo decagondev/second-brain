@@ -22,6 +22,8 @@ import (
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/ask"
+
+	"example.com/second-brain/internal/core/ingest"
 )
 
 // App is one cell's Mattermost slash command.
@@ -40,6 +42,8 @@ type App struct {
 	Agent slackapp.Asker
 	// Post sends a message to a response_url; nil means a real HTTP POST.
 	Post func(ctx context.Context, responseURL string, msg Message) error
+	// Masked is told how many strings of a reply were masked (SB-5102); nil is told nothing.
+	Masked func(ctx context.Context, n int)
 	// Go runs the answer after the acknowledgement; nil means a goroutine.
 	Go func(func())
 	// ActionURL is the cell's POST /chat/mattermost/actions, for the Share button
@@ -362,6 +366,7 @@ func (a *App) run(f func()) {
 }
 
 func (a *App) post(ctx context.Context, responseURL string, m Message) error {
+	m = a.mask(ctx, m) // SB-5102: nothing sensitive goes out
 	if a.Post != nil {
 		return a.Post(ctx, responseURL, m)
 	}
@@ -427,4 +432,25 @@ func APIEmail(base string, token func(ctx context.Context) (string, error), clie
 		}
 		return out.Email, nil
 	}
+}
+
+// mask is m with every string masked by ingest.MaskOut (sb-ingest(7), Nothing sensitive goes
+// out; SB-5102), and Masked told how many changed.
+func (a *App) mask(ctx context.Context, m Message) Message {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return m
+	}
+	out, n := ingest.MaskJSON(b)
+	if n == 0 {
+		return m
+	}
+	var masked Message
+	if err := json.Unmarshal(out, &masked); err != nil {
+		return Message{ResponseType: m.ResponseType, Text: "This reply couldn't be sent safely."}
+	}
+	if a.Masked != nil {
+		a.Masked(ctx, n)
+	}
+	return masked
 }

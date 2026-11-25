@@ -136,6 +136,16 @@ describe("narrow it and say how thin it is", () => {
     expect(JSON.parse(bodies[2]!).documents).toBeUndefined();
   });
 
+  it("says how many passages were skipped as instructions (SB-5101)", async () => {
+    const skipped = { ...answer, skipped: 2 };
+    const f: Fetch = async (u) =>
+      new Response(JSON.stringify(u.startsWith("/v1/ask") ? skipped : { items: [], results: [], spaces: [] }), { status: 200 });
+    render(<App fetcher={f} />);
+    await act(async () => {});
+    await askOne();
+    expect(screen.getByText("2 passages were skipped because they looked like instructions to the AI.")).toBeTruthy();
+  });
+
   it("warns when the answer rests on one document", async () => {
     const single = { ...answer, notice_single: true };
     const f: Fetch = async (u) =>

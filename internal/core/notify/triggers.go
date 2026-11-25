@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -52,6 +53,11 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		return nil, nil, err
 	}
 	out, marks = append(out, pol...), append(marks, polMarks...)
+	sus, susMarks, err := j.suspects(ctx, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	out, marks = append(out, sus...), append(marks, susMarks...)
 	lim, limMarks, err := j.nearLimit(ctx, now)
 	if err != nil {
 		return nil, nil, err
@@ -151,6 +157,65 @@ func (j Job) policies(ctx context.Context, now time.Time) ([]outgoing, []func() 
 			}
 		}
 		marks = append(marks, func() error { return j.Clock.Mark(ctx, key, now) })
+	}
+	return out, marks, nil
+}
+
+// SuspectDoc is a document version with a suspect passage, its space and its owner's user
+// id (SB-5101). Never the passage.
+type SuspectDoc struct {
+	Cite  string // KIND:ID@VERSION
+	Space string
+	Owner string
+}
+
+// suspects tells each owner once per document version that it has a suspect passage, one
+// message a run with how many, marked after the run sends.
+func (j Job) suspects(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.Suspects == nil {
+		return nil, nil, nil
+	}
+	ds, err := j.Suspects(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: suspect passages: %w", err)
+	}
+	by := map[string]int{}
+	var owners []string
+	var marks []func() error
+	seen := map[string]bool{}
+	for _, d := range ds {
+		key := "suspect-" + d.Cite
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		if _, done, err := j.Clock.Last(ctx, key); err != nil || done {
+			if err != nil {
+				return nil, nil, err
+			}
+			continue
+		}
+		if by[d.Owner] == 0 {
+			owners = append(owners, d.Owner)
+		}
+		by[d.Owner]++
+		marks = append(marks, func() error { return j.Clock.Mark(ctx, key, now) })
+	}
+	sort.Strings(owners)
+	var out []outgoing
+	for _, id := range owners {
+		p, ok, err := j.person(ctx, id)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !ok || j.Send == nil {
+			continue
+		}
+		text := "One of your documents has a passage that reads like instructions to the AI. Please check it at its source; your space's stewards see which on their review list"
+		if n := by[id]; n > 1 {
+			text = fmt.Sprintf("%d of your documents have a passage that reads like instructions to the AI. Please check them at their source; your space's stewards see which on their review list", n)
+		}
+		out = append(out, outgoing{p, Message{Kind: KindSuspect, Text: text, Link: j.tab("documents")}})
 	}
 	return out, marks, nil
 }

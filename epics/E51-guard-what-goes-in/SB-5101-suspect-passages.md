@@ -13,7 +13,7 @@ summary: "The sanitiser treats documents as data at ingest, but a passage that r
 | Manual | [`sb-ingest(7)`](../../manual/sb-ingest.7.md), [`sb-citations(7)`](../../manual/sb-citations.7.md), [`sb-space(5)`](../../manual/sb-space.5.md) |
 | Laws | LAW-09, LAW-11 |
 | Depends on | SB-207, SB-4406 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ The sanitiser treats documents as data at ingest, but a passage that reads like 
 
 ## Acceptance criteria
 
-- [ ] A retrieved passage addressed to the model is skipped, never quoted, and the answer says how many were skipped
-- [ ] Stewards see suspect passages on the review list (`section=suspect`) and the owner gets one notice per document
-- [ ] `suspect: monitor` logs the same events without skipping; the default is `skip`
+- [x] A retrieved passage addressed to the model is skipped, never quoted, and the answer says how many were skipped
+- [x] Stewards see suspect passages on the review list (`section=suspect`) and the owner gets one notice per document
+- [x] `suspect: monitor` logs the same events without skipping; the default is `skip`
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Passage check at read time
-- [ ] Review list section and owner notice
-- [ ] Monitor setting
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Passage check at read time
+- [x] Review list section and owner notice
+- [x] Monitor setting
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-25: built. `ingest.Suspect` says a passage reads like instructions: flagged `instruction_like` at ingest, or matching the instruction rules now (`ingest.InstructionLike`), so a chunk indexed before a rule was added is caught; stripped hidden text alone isn't suspect. `ask.Agent.screenIn` runs on every allowed context before the table and the model, and `composeWith` screens again for drafts and handover briefs, so no path gives a suspect passage to a model. A per-answer collector (`withSkips`, shared with consultations) keeps each suspect cite once: `Response.Skipped` counts the skipped ones and `Trace.Suspect` keeps the cites, never the text. A context left empty calls no model. sb-space(5) `suspect: skip|monitor` (`manifest.SuspectOf`, inherited from the department); `monitor` lets passages through wrapped and flagged and still records them. `Stewards.Suspect` serves `GET /v1/spaces/NAME/review?section=suspect` (documents with `passages`, checked as the steward, no snippet), and the notify job tells each owner once per document version (`notify.KindSuspect`, `Job.Suspects`, `Cell.suspects`). Tested in TestSuspectPassagesAreSkipped, TestSuspectMonitorRecordsOnly, TestOnlySuspectPassagesCallNoModel, TestSpaceSuspect, TestSuspectsTellOwnersOnce and TestGuardWhatGoesInThroughARunningCell.
 
 ## Definition of done
 

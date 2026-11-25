@@ -595,3 +595,7 @@ func TestLAW11_TheSIEMGetsEveryRowInOrder(t *testing.T) {
 func TestLAW14_NumbersFromTablesComeFromTheTool(t *testing.T) {
 	Check(t, "LAW-14", runs, func(r *rand.Rand) error { return law14Tables(r, RealTables) })
 }
+
+func TestLAW07_NothingSensitiveGoesOut(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Out(r, RealOutFilter) })
+}

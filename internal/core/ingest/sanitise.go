@@ -134,3 +134,26 @@ func Wrap(text, cite string, flags []string) string {
 	}
 	return `<<data cite="` + esc(cite) + `" flags="` + esc(strings.Join(flags, ",")) + `">>` + "\n" + esc(text) + "\n<</data>>"
 }
+
+// InstructionLike says text matches the instruction rules as they are now, whatever flags
+// it was indexed with (SB-5101).
+func InstructionLike(text string) bool {
+	for _, re := range instructionLike {
+		if re.MatchString(text) {
+			return true
+		}
+	}
+	return false
+}
+
+// Suspect says a passage reads like instructions to the model: flagged instruction_like
+// at ingest, or matching the rules now (sb-ingest(7), Suspect passages; SB-5101). Hidden
+// text that was stripped doesn't make a passage suspect.
+func Suspect(text string, flags []string) bool {
+	for _, f := range flags {
+		if f == FlagInstruction {
+			return true
+		}
+	}
+	return InstructionLike(text)
+}

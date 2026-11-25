@@ -86,8 +86,17 @@ func parentOf(m manifest.Tenant) func(space string) string {
 }
 
 // Notifier is what notifications go through (sb-ask(3), Notifications): the Mattermost
-// bot when the cell has one, else the Slack bot, else email (SB-2307), else none.
+// bot when the cell has one, else the Slack bot, else email (SB-2307), else none. Every
+// message is masked on its way out (SB-5102).
 func (c *Cell) Notifier() notify.Sender {
+	s := c.sender()
+	if s == nil {
+		return nil
+	}
+	return notify.Masking{Next: s, Masked: func(ctx context.Context, n int) { c.masked(ctx, "notify", n) }}
+}
+
+func (c *Cell) sender() notify.Sender {
 	client := &http.Client{Timeout: 10 * time.Second}
 	if mm := c.Config.Mattermost; mm.Base != "" {
 		return mmapp.DM{Base: mm.Base, Token: slackField(c.Secret("mattermost"), "bot_token"), Client: client}
@@ -194,6 +203,9 @@ func (c *Cell) accessNote() ask.AccessNote {
 
 // NotifyJob is the cell's notify job, with the applied manifest.
 func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
+	if _, ok := send.(notify.Masking); send != nil && !ok {
+		send = notify.Masking{Next: send, Masked: func(ctx context.Context, n int) { c.masked(ctx, "notify", n) }} // SB-5102
+	}
 	m := c.Manifest()
 	zone, _ := manifest.DigestZone(m.Digest)
 	weekly := zone
@@ -203,7 +215,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m), Parent: parentOf(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
 		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Trends: c.trends, Audit: c.Audit, Reviews: c.reviewList,
-		Briefs: briefDays(m), RunBrief: c.runBrief, Updates: updateSpaces(m), RunUpdate: c.runUpdate, Leaders: leaderSpaces(m), RunLeader: c.runLeader, Welcomes: c.welcomes, Welcomed: c.welcomed, Transcripts: c.newTranscripts, RunDecisions: c.runDecisions, PolicyNotices: c.policyNotices, SourceChanged: c.sourceChanged, NearLimit: c.nearLimit, SpaceBudgets: c.spaceBudgets,
+		Briefs: briefDays(m), RunBrief: c.runBrief, Updates: updateSpaces(m), RunUpdate: c.runUpdate, Leaders: leaderSpaces(m), RunLeader: c.runLeader, Welcomes: c.welcomes, Welcomed: c.welcomed, Transcripts: c.newTranscripts, RunDecisions: c.runDecisions, PolicyNotices: c.policyNotices, SourceChanged: c.sourceChanged, NearLimit: c.nearLimit, Suspects: c.suspects, SpaceBudgets: c.spaceBudgets,
 		Research: c.Parts().Legwork.RunQueued, PrepDue: c.Parts().Legwork.PrepDue,
 		Incidents: c.newIncidents, RunIncident: c.runIncident, RunReview: c.runReview, Checkins: c.runCheckins, Routines: c.Parts().Legwork.RunRoutines,
 		Waits:        c.Parts().Stewards.OverdueWaits, // SB-4504
@@ -291,6 +303,50 @@ func (c *Cell) helpedOwners(ctx context.Context, now time.Time) (map[string]int,
 }
 
 // ownerScope is the scope of the one active user with email, company-wide, or false.
+// suspects are the documents of every space with a suspect passage, each with its owner's
+// user id when one active user has the owner's email (SB-5101).
+func (c *Cell) suspects(ctx context.Context) ([]notify.SuspectDoc, error) {
+	m := c.Manifest()
+	names := make([]string, 0, len(m.Spaces))
+	for n := range m.Spaces {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	ids := map[string]string{}
+	var out []notify.SuspectDoc
+	for _, n := range names {
+		by, err := c.Parts().Agent.SuspectOwners(ctx, n)
+		if err != nil {
+			return nil, err
+		}
+		emails := make([]string, 0, len(by))
+		for e := range by {
+			emails = append(emails, e)
+		}
+		sort.Strings(emails)
+		for _, e := range emails {
+			id, ok := ids[e]
+			if !ok {
+				s, found, err := c.ownerScope(ctx, e)
+				if err != nil {
+					return nil, err
+				}
+				if found {
+					id = s.User()
+				}
+				ids[e] = id
+			}
+			if id == "" {
+				continue // nobody single to tell
+			}
+			for _, cite := range by[e] {
+				out = append(out, notify.SuspectDoc{Cite: cite, Space: n, Owner: id})
+			}
+		}
+	}
+	return out, nil
+}
+
 func (c *Cell) ownerScope(ctx context.Context, email string) (tenancy.Scope, bool, error) {
 	us, err := c.Directory.UsersByEmail(ctx, c.Config.Tenant, email)
 	if err != nil {

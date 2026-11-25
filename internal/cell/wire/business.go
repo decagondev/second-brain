@@ -97,6 +97,18 @@ func routing(m manifest.Tenant) func(space string) string {
 	}
 }
 
+// suspectMode is a space's suspect mode by key (SB-5101): skip unless it, or its
+// department, says monitor.
+func suspectMode(m manifest.Tenant) func(space string) string {
+	return func(space string) string {
+		name := strings.TrimPrefix(space, "spc_")
+		if _, ok := m.Spaces[name]; !ok {
+			return ask.SuspectSkip
+		}
+		return m.SuspectOf(name)
+	}
+}
+
 // aiUsage is the AI command centre: 12 weeks of traces counted, with each space's budget and
 // this month's spend, each capped agent's spend and the personal limit's bands (SB-5001).
 func (c *Cell) aiUsage(ctx context.Context) (ask.AIUsage, error) {

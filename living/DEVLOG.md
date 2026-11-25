@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S50.1: Check what goes in and out
+
+**Wave/slice:** W50 / S50.1 (SB-5101 to SB-5103) · **Status:** Done
+
+**What:** A passage that reads like instructions to the model is now kept out of every prompt, not only wrapped and flagged: the answer says how many were skipped, the trace keeps their cites, the stewards see the documents on the review list and each owner hears once per version. A space can choose `suspect: monitor` to log them instead. Everything the cell sends (API responses, notices, chat replies) passes one filter that removes credentials and masks card, IBAN and national id numbers. Suspect passages and masked outputs are `guardrail` audit rows, streamed like any row and exported, with refused and denied tool calls, at `GET /v1/admin/guardrails/events`.
+
+**Why this way:** The check runs at read time, on the chunk's flag and on the rules as they are now, so a document indexed before a rule was added is caught without a rebuild. Screening happens once on the ask's whole context, before the table and the model, and again in the composer, so drafts and handover briefs can't miss it; a shared collector counts each cite once, consultations included. Masking sits where text leaves (the HTTP handler, the notify sender, the chat apps' post) rather than at each feature, so a new endpoint is covered without anyone remembering. JSON is masked string by string, so a response keeps its shape and its numbers.
+
+**Learned:** The one response that must carry a credential is `POST /v1/tokens`, which shows the new token once, so it passes as it is; so do the metrics, which hold only numbers and label names that look like `token=`. Hidden text that was stripped doesn't make a passage suspect: what is left is what a reader sees.
+
+**Laws:** LAW-07 (a new property: nothing sensitive goes out), LAW-09, LAW-11. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S49.2: Learn what works
 
 **Wave/slice:** W49 / S49.2 (SB-5005 to SB-5007) · **Status:** Done

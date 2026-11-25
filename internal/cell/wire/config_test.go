@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"example.com/second-brain/internal/adapters/smtpmail"
+	"example.com/second-brain/internal/core/notify"
 )
 
 const good = `{"tenant": "acme-logistics", "manifest": "/m.yaml", "state": "/s", "vault": "/v", "policies": "/p",
@@ -139,7 +140,7 @@ func TestEmailConfigAndNotifier(t *testing.T) {
 	if err := cell.Config.checkMattermost(); err != nil {
 		t.Fatal(err)
 	}
-	m, ok := cell.Notifier().(smtpmail.Mail)
+	m, ok := inner(cell.Notifier()).(smtpmail.Mail)
 	if !ok || m.Server != "mail.acme-logistics.example:587" {
 		t.Fatalf("notifier = %#v", cell.Notifier())
 	}
@@ -156,7 +157,15 @@ func TestEmailConfigAndNotifier(t *testing.T) {
 		t.Fatalf("%q %q %v", u, p, err)
 	}
 	cell.Config.Mattermost.Base = "https://chat.example"
-	if _, ok := cell.Notifier().(smtpmail.Mail); ok {
+	if _, ok := inner(cell.Notifier()).(smtpmail.Mail); ok {
 		t.Fatal("email was chosen over the cell's chat bot")
 	}
+}
+
+// inner is the sender a notifier masks for (SB-5102).
+func inner(s notify.Sender) notify.Sender {
+	if m, ok := s.(notify.Masking); ok {
+		return m.Next
+	}
+	return s
 }

@@ -165,10 +165,12 @@ type Answer struct {
 
 // Response is the 200 body of POST /v1/ask.
 type Response struct {
-	Trace        string  `json:"trace"`
-	Release      string  `json:"release"`
-	Answer       Answer  `json:"answer"`
-	Refused      int     `json:"refused"`
+	Trace   string `json:"trace"`
+	Release string `json:"release"`
+	Answer  Answer `json:"answer"`
+	Refused int    `json:"refused"`
+	// Skipped is how many allowed passages were kept out of the prompt as suspect (SB-5101).
+	Skipped      int     `json:"skipped,omitempty"`
 	Notice       *string `json:"notice"`
 	Conversation string  `json:"conversation"`
 	// Agent is the agent that answered, and Dropped the uncited claims a department agent
@@ -272,6 +274,9 @@ type Trace struct {
 	CostUSD float64 `json:",omitempty"`
 	// Feature is what asked it, one of Features or eval (SB-5001); "" is an older ask.
 	Feature string `json:",omitempty"`
+	// Suspect are the cites of the answer's suspect passages, skipped or monitored
+	// (SB-5101): never their text.
+	Suspect []string `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -344,7 +349,11 @@ type Agent struct {
 	AgentKilled func(agent string) bool
 	// Routing is a space's routing policy by key (SB-5002), nil for balanced everywhere;
 	// PersonOver says a person has reached their monthly limit (SB-5003), nil for none.
-	Routing    func(space string) string
+	Routing func(space string) string
+	// Suspect is a space's suspect mode by key (SB-5101), nil for skip everywhere; Guard
+	// records each answer's suspect passages as guardrail events (SB-5103), nil none.
+	Suspect    func(space string) string
+	Guard      func(ctx context.Context, e GuardEvent)
 	PersonOver func(ctx context.Context, user string) (bool, error)
 	// Departmental are the spaces the scope's user is a member of that run a department
 	// agent, for the right-department suggestion (SB-4007); nil suggests none.
@@ -453,6 +462,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
 	ctx, tally := budget.WithTally(ctx) // SB-4606: this answer's own cost
+	ctx, sk := withSkips(ctx)           // SB-5101: its suspect passages
 	q, docs, err := validate(req)
 	if err != nil {
 		return Response{}, err
@@ -519,6 +529,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
 	}
 	a.whoAnswers(ctx, s, q, req, dept, probe, &resp)
+	res.Context = a.screenIn(ctx, s.Space(), res.Context) // SB-5101: before the model and the table
 	if len(res.Context) == 0 {
 		n := NoticeNoSources
 		if res.Refused > 0 {
@@ -576,17 +587,19 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err := a.alongside(ctx, s, q, req, probe || dept != nil, &resp); err != nil {
 		return Response{}, err
 	}
+	resp.Skipped = sk.Skipped() // SB-5101, its consultations' too
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites()}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites()}
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}
+	a.guard(ctx, s.Space(), resp.Agent, t.Suspect)
 	return resp, nil
 }
 
@@ -658,6 +671,9 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 	p, err := prompts.Get(prompt)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUnavailable, err)
+	}
+	if chunks = a.screen(ctx, chunks); len(chunks) == 0 { // SB-5101: suspect passages never reach the model
+		return []answer.Claim{{Text: NothingToCite, Cites: []answer.Cite{}, Uncited: true}}, nil
 	}
 	actx := answer.NewContext(chunks)
 	var msgs []ports.Message

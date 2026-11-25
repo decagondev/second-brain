@@ -1,9 +1,11 @@
 package report
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -150,4 +152,78 @@ func Doubled(bySource map[string]map[string]int, now time.Time) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// Guardrail events (sb-observability(7), Guardrail events; SB-5103): ids and counts only.
+
+// MaxGuardrailEvents is the most events one export lists.
+const MaxGuardrailEvents = 10000
+
+// GuardrailEvent is one event: a suspect passage, a masked output, a tool call an approver
+// refused or the policy kernel denied.
+type GuardrailEvent struct {
+	At       string `json:"at"`
+	Kind     string `json:"kind"`
+	Space    string `json:"space,omitempty"`
+	Agent    string `json:"agent,omitempty"`
+	Document string `json:"document,omitempty"`
+	Count    int    `json:"count"`
+}
+
+// reasonValue is key's value in a row's reason, "k=v k2=v2" or "k=v".
+func reasonValue(reason, key string) string {
+	for _, f := range strings.FieldsFunc(reason, func(r rune) bool { return r == ' ' || r == ',' }) {
+		if k, v, ok := strings.Cut(f, "="); ok && k == key {
+			return v
+		}
+	}
+	return ""
+}
+
+// GuardrailEvents are the rows at or after since as events, oldest first, at most
+// MaxGuardrailEvents.
+func GuardrailEvents(rows []audit.Row, since time.Time) []GuardrailEvent {
+	out := []GuardrailEvent{}
+	for _, r := range rows {
+		at, err := time.Parse(time.RFC3339Nano, r.At)
+		if err != nil || at.Before(since) {
+			continue
+		}
+		e := GuardrailEvent{At: r.At, Space: strings.TrimPrefix(r.Space, "spc_"), Count: 1}
+		switch {
+		case r.Kind == "guardrail" && strings.HasPrefix(r.Subject, "suspect:"):
+			e.Kind, e.Document, e.Agent = "suspect", strings.TrimPrefix(r.Subject, "suspect:"), reasonValue(r.Reason, "agent")
+		case r.Kind == "guardrail" && strings.HasPrefix(r.Subject, "masked:"):
+			e.Kind = "masked"
+			if n, err := strconv.Atoi(reasonValue(r.Reason, "strings")); err == nil && n > 0 {
+				e.Count = n
+			}
+		case r.Kind == "approval" && r.State == "Rejected":
+			e.Kind = "refused"
+		case r.Kind == "decision" && r.State != "allow" && (strings.HasPrefix(r.Reason, "call_tool") || strings.HasPrefix(r.Reason, "propose")):
+			e.Kind = "denied"
+		default:
+			continue
+		}
+		if e.Space == "company" {
+			e.Space = ""
+		}
+		out = append(out, e)
+		if len(out) == MaxGuardrailEvents {
+			break
+		}
+	}
+	return out
+}
+
+// GuardrailCSV is events as CSV, with a header row.
+func GuardrailCSV(es []GuardrailEvent) []byte {
+	var b strings.Builder
+	w := csv.NewWriter(&b)
+	_ = w.Write([]string{"at", "kind", "space", "agent", "document", "count"})
+	for _, e := range es {
+		_ = w.Write([]string{e.At, e.Kind, e.Space, e.Agent, e.Document, strconv.Itoa(e.Count)})
+	}
+	w.Flush()
+	return []byte(b.String())
 }
