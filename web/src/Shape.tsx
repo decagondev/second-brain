@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import type { DraftSuggestion, Fetch, SavedQuestion } from "./api";
-import { BRANCH } from "./api";
+import { BRANCH, suggestedQuestions } from "./api";
 import { call } from "./Steward";
 import { t, tn } from "./i18n";
 
@@ -17,26 +17,39 @@ export interface Skill {
   from?: string;
 }
 
-// The space's skills while the question starts with "/": each loads with /NAME (SB-4601).
+// The space's skills while the question starts with "/": each loads with /NAME (SB-4601),
+// and its starter questions (SB-5207), each asked as it is.
 export function SkillHint({ space, question, fetcher = fetch, onPick }: { space?: string; question: string; fetcher?: Fetch; onPick: (q: string) => void }) {
   const [skills, setSkills] = useState<Skill[]>();
+  const [starters, setStarters] = useState<string[]>([]);
   const typing = question.startsWith("/") && !question.includes(" ");
   useEffect(() => {
     if (!space || !typing || skills) return;
     let live = true;
-    call(fetcher, "GET", `/v1/spaces/${enc(space.endsWith(BRANCH) ? space.slice(0, -BRANCH.length) : space)}/skills`)
+    const name = space.endsWith(BRANCH) ? space.slice(0, -BRANCH.length) : space;
+    call(fetcher, "GET", `/v1/spaces/${enc(name)}/skills`)
       .then((x) => live && setSkills((x.skills as Skill[]) ?? []))
       .catch(() => live && setSkills([]));
+    suggestedQuestions(name, fetcher).then((qs) => live && setStarters(qs)).catch(() => undefined);
     return () => {
       live = false;
     };
   }, [space, typing, skills, fetcher]);
-  if (!space || !typing || !skills || skills.length === 0) return null;
+  if (!space || !typing || !skills) return null;
   const want = question.slice(1);
   const shown = skills.filter((s) => s.name.startsWith(want));
-  if (shown.length === 0) return null;
+  const startShown = starters.filter((q) => q.toLowerCase().includes(want.toLowerCase())).slice(0, 5);
+  if (shown.length === 0 && startShown.length === 0) return null;
   return (
     <ul className="results" aria-label={t("Skills")}>
+      {startShown.map((q) => (
+        <li key={"q:" + q}>
+          <button type="button" onClick={() => onPick(q)}>
+            {q}
+          </button>{" "}
+          <span className="meta">{t("starter question")}</span>
+        </li>
+      ))}
       {shown.map((s) => (
         <li key={s.name}>
           <button type="button" onClick={() => onPick(`/${s.name} `)}>

@@ -217,6 +217,7 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 		return ports.Document{}, fmt.Errorf("folder: %w", err)
 	}
 	doc.Text, _ = Text(ref.ID, b)
+	doc.Pages = Pages(ref.ID, b) // SB-5205
 	if e := strings.ToLower(path.Ext(ref.ID)); e == ".docx" || e == ".pptx" {
 		doc.ReviewBy = OfficeReviewBy(b)
 	}

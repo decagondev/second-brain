@@ -40,7 +40,7 @@ Returns the document's text and structure, its **version** (monotonic per docume
 
 ### Location and label (SB-1005)
 
-`Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one. It also returns the document's **owner** at the source, as an email, where the source has one (Drive: the file's owner; a shared drive's files have none), for information barriers (sb-permissions(7), SB-1203). A source without owners returns none.
+`Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one. It also returns the document's **owner** at the source, as an email, where the source has one (Drive: the file's owner; a shared drive's files have none), for information barriers (sb-permissions(7), SB-1203). A source without owners returns none. A connector may also return **pages**, where each page of a PDF or slide of a deck starts in the text (SB-5205; sb-ingest(7), Pages and slides); the folder connector does for `.pdf` and `.pptx`.
 
 ### Fields (SB-1106)
 

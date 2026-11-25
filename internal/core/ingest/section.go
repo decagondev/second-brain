@@ -84,3 +84,15 @@ func lines(rs []rune, title, body string) func(int) int {
 
 // Section is the section of a chunk starting at start in normalised text (SB-3002).
 func Section(text string, start int) string { return sectionAt(headings(text), start) }
+
+// PageAt is the page (from 1) that rune offset start falls on, given where each page starts;
+// 0 when there are no pages (SB-5205).
+func PageAt(pages []int, start int) int {
+	n := 0
+	for i, p := range pages {
+		if p <= start {
+			n = i + 1
+		}
+	}
+	return n
+}

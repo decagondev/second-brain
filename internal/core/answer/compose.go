@@ -48,6 +48,8 @@ type Cite struct {
 	// AskedBy and EditedBy are who asked for a cited agent note and who edited it (SB-5204).
 	AskedBy  string `json:"asked_by,omitempty"`
 	EditedBy string `json:"edited_by,omitempty"`
+	// Page is the PDF page or deck slide the cited passage starts on (SB-5205).
+	Page int `json:"page,omitempty"`
 }
 
 // Newer is a document that replaces a cited one: its cite and title.
@@ -163,7 +165,7 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 				title = ch.Title
 			}
 			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: title, Span: [2]int{ch.Start, ch.End}, Flags: flags,
-				Spaces: held, Label: ch.Label, Section: ch.Section, GeneratedBy: ch.GeneratedBy, ApprovedBy: ch.ApprovedBy, Edited: ch.Edited, AskedBy: ch.AskedBy, EditedBy: ch.EditedBy})
+				Spaces: held, Label: ch.Label, Section: ch.Section, GeneratedBy: ch.GeneratedBy, ApprovedBy: ch.ApprovedBy, Edited: ch.Edited, AskedBy: ch.AskedBy, EditedBy: ch.EditedBy, Page: ch.Page})
 		}
 		c.Uncited = len(c.Cites) == 0
 		c.Disagree = pc.Disagree && TwoDocuments(c.Cites) // the model's word, kept only with two documents

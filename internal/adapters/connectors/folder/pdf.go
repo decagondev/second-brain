@@ -18,7 +18,15 @@ const maxStream = 16 << 20
 // as nothing, and the file is then indexed by name only. It never fails: what it can't read
 // it leaves out.
 func PDFText(b []byte) string {
+	text, _ := pdfPages(b)
+	return text
+}
+
+// pdfPages is PDFText and where each content stream's text starts in it, in runes: for the
+// PDFs office tools write, one stream is one page (SB-5205).
+func pdfPages(b []byte) (string, []int) {
 	var out strings.Builder
+	var starts []int
 	for len(b) > 0 {
 		i := bytes.Index(b, []byte("stream"))
 		if i < 0 {
@@ -60,11 +68,20 @@ func PDFText(b []byte) string {
 			continue // another filter: not read
 		}
 		if t := content(data); t != "" {
+			starts = append(starts, utf8.RuneCountInString(out.String()))
 			out.WriteString(t)
 			out.WriteString("\n")
 		}
 	}
-	return strings.TrimSpace(out.String())
+	raw := out.String()
+	text := strings.TrimSpace(raw)
+	lead := utf8.RuneCountInString(raw[:len(raw)-len(strings.TrimLeft(raw, " \t\r\n\f\v"))])
+	for i := range starts {
+		if starts[i] -= lead; starts[i] < 0 {
+			starts[i] = 0
+		}
+	}
+	return text, starts
 }
 
 // content reads one content stream's text operators.

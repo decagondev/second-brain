@@ -62,12 +62,18 @@ func slide(n string) bool { return slideName.MatchString(n) }
 
 // fromZip reads the parts want picks, in order (slides by number), through read.
 func fromZip(b []byte, want func(string) bool, read func(io.Reader) (string, error)) (string, error) {
+	s, _, err := fromZipParts(b, want, read)
+	return s, err
+}
+
+// fromZipParts is fromZip and where each part starts in its text, in runes (SB-5205).
+func fromZipParts(b []byte, want func(string) bool, read func(io.Reader) (string, error)) (string, []int, error) {
 	z, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if len(z.File) > MaxOfficeEntries {
-		return "", errTooBig
+		return "", nil, errTooBig
 	}
 	var parts []*zip.File
 	var total uint64
@@ -76,17 +82,18 @@ func fromZip(b []byte, want func(string) bool, read func(io.Reader) (string, err
 			continue
 		}
 		if total += f.UncompressedSize64; total > MaxOfficeText {
-			return "", errTooBig
+			return "", nil, errTooBig
 		}
 		parts = append(parts, f)
 	}
 	sort.SliceStable(parts, func(i, j int) bool { return partOrder(parts[i].Name) < partOrder(parts[j].Name) })
 	var out strings.Builder
+	var starts []int
 	left := int64(MaxOfficeText)
 	for _, f := range parts {
 		rc, err := f.Open()
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		// The sizes an archive declares can lie: the reader is bounded too, and a part that
 		// runs past what is left fails the whole file.
@@ -94,18 +101,19 @@ func fromZip(b []byte, want func(string) bool, read func(io.Reader) (string, err
 		s, err := read(lr)
 		_ = rc.Close()
 		if lr.N <= 0 {
-			return "", errTooBig
+			return "", nil, errTooBig
 		}
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		left = lr.N - 1
 		if out.Len() > 0 {
 			out.WriteString("\n\n")
 		}
+		starts = append(starts, utf8.RuneCountInString(out.String()))
 		out.WriteString(strings.TrimSpace(s))
 	}
-	return out.String(), nil
+	return out.String(), starts, nil
 }
 
 func partOrder(n string) int {
@@ -369,4 +377,27 @@ func OfficeReviewBy(b []byte) string {
 		return expires
 	}
 	return ""
+}
+
+// Pages are where each page of a PDF, or slide of a deck, starts in its Text, in runes; nil
+// for any other file (SB-5205).
+func Pages(name string, b []byte) []int {
+	switch strings.ToLower(path.Ext(name)) {
+	case ".pdf":
+		_, starts := pdfPages(b)
+		return starts
+	case ".pptx":
+		s, starts, err := fromZipParts(b, slide, pptx)
+		if err != nil || strings.TrimSpace(s) == "" {
+			return nil
+		}
+		lead := utf8.RuneCountInString(s[:len(s)-len(strings.TrimLeft(s, " \t\r\n"))])
+		for i := range starts {
+			if starts[i] -= lead; starts[i] < 0 {
+				starts[i] = 0
+			}
+		}
+		return starts
+	}
+	return nil
 }

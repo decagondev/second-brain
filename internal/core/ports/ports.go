@@ -50,6 +50,9 @@ type Document struct {
 	// ReviewBy is a review or expiry date the source keeps apart from the text, as written
 	// (an Office file's custom review-by property; SB-2705); ingest checks it. "" for none.
 	ReviewBy string
+	// Pages are where each page of a PDF, or slide of a deck, starts in Text, in runes, the
+	// first at 0 (SB-5205); nil for a document without pages.
+	Pages []int
 }
 
 // Field is one field a structured connector can return (sb-connector(3), Fields).
@@ -354,6 +357,9 @@ type Chunk struct {
 	// AskedBy is who asked for an agent's note and EditedBy who edited it, comma separated,
 	// from its front matter (SB-5204); "" for a document a person wrote.
 	AskedBy, EditedBy string
+	// Page is the PDF page or deck slide the chunk starts on, from 1; 0 for a document
+	// without pages (SB-5205).
+	Page int
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.

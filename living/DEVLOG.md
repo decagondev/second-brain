@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S51.2: Point precisely, ask freely
+
+**Wave/slice:** W51 / S51.2 (SB-5205 to SB-5207) · **Status:** Done
+
+**What:** Cites to a PDF or a deck name the page or slide the passage starts on. **Ask from here** on an earlier answer branches the conversation, and the one it left can be gone back to. In the ask box, `@WORD` offers spaces, people and documents to ask about, and `/` offers the space's starter questions beside its skills.
+
+**Why this way:** A connector says where pages start in the text it already returns, so ingest gives each chunk its page by offset, with no change to the text, its hashes or its chunks. A branch copies only the asker's own earlier questions into a new conversation, because the server keeps a conversation's questions and sends them with each turn; nothing about answers is copied, so every cite is checked again. The `@` and `/` hints use the endpoints the web app already calls, each checked as the asker, so they can't show more than those do.
+
+**Learned:** A PDF's content streams are pages only for the PDFs office tools write; that is the case the folder connector reads, and the manual says so.
+
+**Laws:** LAW-01, LAW-13, LAW-14. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S51.1: Fix the source
 
 **Wave/slice:** W51 / S51.1 (SB-5201 to SB-5204) · **Status:** Done

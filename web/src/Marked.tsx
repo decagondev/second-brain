@@ -16,6 +16,11 @@ export function markLine(agent?: string, version?: string): string {
     : t("Written by {agent}", { agent });
 }
 
+// pageName is a cite's title with the page or slide it starts on (SB-5205): a deck's is a slide.
+export function pageName(title: string, cite: string, page: number): string {
+  return /\.pptx@/i.test(cite) ? t("{title}, slide {n}", { title, n: page }) : t("{title}, page {n}", { title, n: page });
+}
+
 // citeMark is a cited note's mark; "" for a document a person wrote.
 export function citeMark(
   c: Pick<Cite, "generated_by" | "approved_by" | "edited" | "asked_by" | "edited_by">,

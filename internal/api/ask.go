@@ -41,6 +41,11 @@ type Passager interface {
 	Passage(ctx context.Context, s tenancy.Scope, trace, cite string, start int) (ask.Passage, error)
 }
 
+// Brancher starts a conversation from an earlier question of one (SB-5206).
+type Brancher interface {
+	Branch(ctx context.Context, s tenancy.Scope, conv string, at int) (string, error)
+}
+
 // FeedbackGiver stores feedback on a trace (SB-310).
 type FeedbackGiver interface {
 	Give(ctx context.Context, s tenancy.Scope, req ask.FeedbackRequest) error
@@ -67,6 +72,32 @@ func (h Ask) Register(mux *http.ServeMux) {
 	if h.Feedback != nil {
 		mux.HandleFunc("POST /v1/feedback", h.feedback)
 	}
+	if _, ok := h.Agent.(Brancher); ok {
+		mux.HandleFunc("POST /v1/conversations/{id}/branch", h.branch) // SB-5206
+	}
+}
+
+// branch is POST /v1/conversations/ID/branch {"at": N}: a new conversation with the first N
+// questions of ID (SB-5206).
+func (h Ask) branch(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		h.fail(w, "", errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	var body struct {
+		At int `json:"at"`
+	}
+	if b, err := io.ReadAll(io.LimitReader(r.Body, 1<<10)); err != nil || json.Unmarshal(b, &body) != nil {
+		h.fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"at": 2}.`))
+		return
+	}
+	next, err := h.Agent.(Brancher).Branch(r.Context(), s, r.PathValue("id"), body.At)
+	if err != nil {
+		h.fail(w, "", mapErr(err))
+		return
+	}
+	h.ok(w, "", map[string]any{"conversation": next, "from": r.PathValue("id"), "at": body.At})
 }
 
 func (h Ask) feedback(w http.ResponseWriter, r *http.Request) {

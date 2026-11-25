@@ -21,8 +21,10 @@ var ErrSourceDenied = errors.New("ask: the person can't open this source now")
 type Passage struct {
 	Cite string `json:"cite"`
 	Text string `json:"text,omitempty"`
-	Cut  bool   `json:"cut,omitempty"`
-	Gone bool   `json:"gone,omitempty"`
+	// Page is the PDF page or deck slide it starts on (SB-5205); 0 for none.
+	Page int  `json:"page,omitempty"`
+	Cut  bool `json:"cut,omitempty"`
+	Gone bool `json:"gone,omitempty"`
 }
 
 // Passage returns the text of one cite of a trace's answer, checked live as s: only a cite
@@ -68,7 +70,7 @@ func (a Agent) Passage(ctx context.Context, s tenancy.Scope, trace, cite string,
 		return Passage{}, ErrSourceDenied // denied or unknown: never shown (LAW-01, LAW-03)
 	}
 	text, cut := Excerpt(res.Context[0].Text, MaxPassage)
-	return Passage{Cite: cite, Text: text, Cut: cut}, nil
+	return Passage{Cite: cite, Text: text, Cut: cut, Page: res.Context[0].Page}, nil
 }
 
 func spanOf(r Response, cite string, start int) ([2]int, bool) {

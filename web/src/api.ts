@@ -1,6 +1,9 @@
+import { pageName } from "./Marked";
 // Types and calls for sb-ask(3). Clients ignore fields they don't know (sb-api(3)).
 
 export interface Cite {
+  // The PDF page or deck slide the passage starts on (SB-5205).
+  page?: number;
   cite: string;
   title?: string;
   // The nearest heading above the cited chunk (SB-3002).
@@ -224,8 +227,11 @@ export function citeName(c: {
   cite: string;
   title?: string;
   section?: string;
+  page?: number;
 }): string {
-  const title = c.title ?? c.cite;
+  let title = c.title ?? c.cite;
+  // The page or slide it starts on (SB-5205): a deck's is a slide.
+  if (c.page) title = pageName(title, c.cite, c.page);
   return c.section ? `${title} › ${c.section}` : title;
 }
 
@@ -233,6 +239,7 @@ export function citeName(c: {
 export interface Passage {
   cite: string;
   text?: string;
+  page?: number; // SB-5205
   cut?: boolean;
   gone?: boolean;
 }

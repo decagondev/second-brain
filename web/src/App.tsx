@@ -25,6 +25,9 @@ import { ApiTokens } from "./Tokens";
 import { NoticeBanner } from "./Notice";
 import { PauseHere } from "./Accountable";
 import { AnswerTools, DownloadConversation } from "./Copy";
+import { AskFromHere, OtherBranches, branchFrom } from "./Branch";
+import { AtHint, withoutAt } from "./AtHint";
+import type { Branch } from "./Branch";
 import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, setVerifiedOnly, shortAnswers, verifiedOnly } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
 
@@ -64,6 +67,8 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
+  const [branches, setBranches] = useState<Branch<Turn>[]>([]); // SB-5206: kept in this browser only
+  const [branchError, setBranchError] = useState<string>();
   const [about, setAbout] = useState<About[]>([]); // SB-3004
   const [busy, setBusy] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -349,6 +354,23 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               {answered(x) && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {answered(x) && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
               {answered(x) && <RememberBox fetcher={fetcher} />}
+              {answered(x) && conversation && x.id !== turns[turns.length - 1]?.id && (
+                <AskFromHere
+                  disabled={busy}
+                  onBranch={() => {
+                    const i = turns.findIndex((y) => y.id === x.id);
+                    const at = turns.slice(0, i + 1).filter((y) => answered(y) && !y.answer.clarify).length;
+                    setBranchError(undefined);
+                    branchFrom(fetcher ?? fetch, conversation, at)
+                      .then((next) => {
+                        setBranches((bs) => [...bs, { conversation, turns }]);
+                        setTurns(turns.slice(0, i + 1));
+                        setConversation(next);
+                      })
+                      .catch((e: unknown) => setBranchError(e instanceof Error && e.message ? e.message : t("The conversation couldn't be branched.")));
+                  }}
+                />
+              )}
               {answered(x) && space && (x.answer.notice === "no_sources" || x.answer.notice === "no_access") && (
                 <button type="button" disabled={busy} onClick={() => askWholeCompany(x.question)}>
                   {t("Ask the whole company")}
@@ -450,6 +472,25 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               askBox.current?.focus();
             }}
           />
+          <AtHint
+            question={question}
+            space={space && !space.endsWith(BRANCH) ? space : undefined}
+            spaces={spaces}
+            fetcher={fetcher}
+            onSpace={(name) => {
+              setQuestion((q) => withoutAt(q));
+              setSpace(name);
+              askBox.current?.focus();
+            }}
+            onDocument={(d) => {
+              setQuestion((q) => withoutAt(q));
+              addAbout(d);
+            }}
+            onPerson={(email) => {
+              setQuestion((q) => withoutAt(q));
+              theirDocuments(email);
+            }}
+          />
           {space && question === "" && suggested.length > 0 && (
             <div className="suggested" role="group" aria-label={t("Suggested questions")}>
               {suggested.map((x) => (
@@ -539,6 +580,16 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
             {busy ? t("Asking…") : t("Ask")}
           </button>
           <DownloadConversation turns={turns} />
+          {branchError && <span role="alert">{branchError}</span>}
+          <OtherBranches
+            branches={branches}
+            onOpen={(i) => {
+              const b = branches[i]!;
+              setBranches((bs) => [...bs.slice(0, i), { conversation, turns }, ...bs.slice(i + 1)]);
+              setTurns(b.turns);
+              setConversation(b.conversation);
+            }}
+          />
           {conversation && (
             <button
               type="button"
