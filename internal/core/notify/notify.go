@@ -147,7 +147,7 @@ func (p Prefs) Check() (Prefs, error) {
 	}
 	for _, k := range p.Off {
 		if !Kinds[k] {
-			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep, action, incident, fix, checkin, routine)", ErrKind, k)
+			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep, action, incident, fix, checkin, agent, routine, limit, check, adminweek)", ErrKind, k)
 		}
 		if !seen[k] {
 			seen[k] = true

@@ -100,6 +100,10 @@ Every trace carries the `feature` that asked it (`ask`, `research`, `brief`, `ro
 
 **Personal limits** (SB-5003). With `limits` in the manifest (sb-tenant(5)), each model call is metered for its person too (`person_usd` in the usage ledger: an amount, a month and the person's id, read only to compare with the limit and to count the bands). At 80% the person is told once that month (notification kind `limit`); at 100% their own asks, consultations and research use the small tier, and their routines pause, until the month turns or a steward lifts it (audited). A ledger that can't be read limits nobody: the tenant's budget still holds.
 
+### Checks and the admin's week (SB-5005, SB-5006)
+
+The numbers a check compares (sb-agents(7), Did it help?) and the admin's week (sb-admin(3)) are counted from the same traces, queues, feedback, audit rows and usage ledger as the pages above, at most once an hour, and keep no text: a check's file in `state/checks` holds its change, its counts and its verdict.
+
 ### Cost of one answer (SB-4606)
 
 Every trace keeps `cost_usd`, the model spend of its one ask counted by the gateway at the configured prices, a consultation's within it, and **How this was made** shows it to the person who asked (sb-ask(3)). A report's cost is its own `cost_usd`. It is a count from the gateway, never from the model, and it is the same spend the budgets count (Budgets and rate limits, above).

@@ -28,6 +28,9 @@ describe("Agents", () => {
     expect(container.textContent).toContain("25%");
     expect(container.textContent).toContain("held (agent-incident-summary)");
     expect(container.textContent).toContain("killed");
+    // SB-5007: the inventory, signed JSON and CSV.
+    expect(screen.getByRole("link", { name: "Download inventory" }).getAttribute("href")).toBe("/v1/admin/inventory");
+    expect(screen.getByRole("link", { name: "as CSV" }).getAttribute("href")).toBe("/v1/admin/inventory?format=csv");
     expect(await violations(container)).toEqual([]);
   });
 

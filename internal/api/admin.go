@@ -14,6 +14,7 @@ import (
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/ingest"
+	"example.com/second-brain/internal/core/inventory"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
@@ -96,6 +97,11 @@ type Admin struct {
 	AgentRecord func(ctx context.Context, name string) (ask.SignedRecord, error)
 	// AIUsage is the AI command centre (SB-5001); nil is EUNAVAIL.
 	AIUsage func(ctx context.Context) (ask.AIUsage, error)
+	// Checks are the kept "did it help?" checks of one space, or every space's for ""
+	// (SB-5005); nil is EUNAVAIL.
+	Checks func(space string) ([]ask.Check, error)
+	// Inventory is the signed AI inventory (SB-5007); nil is EUNAVAIL.
+	Inventory func(ctx context.Context) (inventory.Signed, error)
 }
 
 // SpaceSpend is one space's model spend in a month: its own and its teams' (the branch),
@@ -145,6 +151,9 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/agents/value", h.guard(h.agentValue))          // SB-4701
 	mux.HandleFunc("GET /v1/admin/agents/{name}/record", h.guard(h.agentRecord)) // SB-4707
 	mux.HandleFunc("GET /v1/admin/ai/usage", h.guard(h.aiUsage))                 // SB-5001
+	mux.HandleFunc("GET /v1/admin/checks", h.guard(h.checks))                    // SB-5005
+	mux.HandleFunc("GET /v1/admin/checks/{id}", h.guard(h.check))                // SB-5005
+	mux.HandleFunc("GET /v1/admin/inventory", h.guard(h.inventory))              // SB-5007
 	mux.HandleFunc("GET /v1/admin/tokens", h.guard(h.listTokens))
 	mux.HandleFunc("DELETE /v1/admin/tokens/{id}", h.guard(h.revokeToken))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))

@@ -305,7 +305,7 @@ func recordReviews(rs []reviews.Review, name string) []RecordReview {
 
 // recordSHA is the SHA-256 of the record's canonical JSON.
 func recordSHA(raw []byte) (string, error) {
-	c, err := canonjson.Encode(raw)
+	c, err := canonjson.EncodeDocument(raw)
 	if err != nil {
 		return "", err
 	}

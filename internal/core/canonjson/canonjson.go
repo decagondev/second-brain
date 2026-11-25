@@ -113,3 +113,51 @@ func utf16(s string) []uint16 {
 	}
 	return out
 }
+
+// EncodeDocument is Encode for a signed document (an agent's record, the AI inventory):
+// a number that isn't an integer within ±2^53, such as an amount in dollars or a rate, is
+// hashed as the string of its shortest decimal form ("0.6", "12.75"), so two
+// implementations hash the same bytes without agreeing on how to print a float.
+func EncodeDocument(raw []byte) ([]byte, error) {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.UseNumber()
+	var v any
+	if err := d.Decode(&v); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrUnsupported, err)
+	}
+	if d.More() {
+		return nil, fmt.Errorf("%w: trailing data", ErrUnsupported)
+	}
+	var b bytes.Buffer
+	if err := canon(&b, decimals(v)); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+// decimals turns every number outside the integer subset into its decimal string.
+func decimals(v any) any {
+	switch x := v.(type) {
+	case json.Number:
+		if i, err := strconv.ParseInt(string(x), 10, 64); err == nil && i <= 1<<53 && i >= -(1<<53) {
+			return x
+		}
+		f, err := strconv.ParseFloat(string(x), 64)
+		if err != nil {
+			return string(x)
+		}
+		if f == float64(int64(f)) && f <= 1<<53 && f >= -(1<<53) {
+			return json.Number(strconv.FormatInt(int64(f), 10))
+		}
+		return strconv.FormatFloat(f, 'f', -1, 64)
+	case []any:
+		for i := range x {
+			x[i] = decimals(x[i])
+		}
+	case map[string]any:
+		for k := range x {
+			x[k] = decimals(x[k])
+		}
+	}
+	return v
+}

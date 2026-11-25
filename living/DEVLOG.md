@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S49.2: Learn what works
+
+**Wave/slice:** W49 / S49.2 (SB-5005 to SB-5007) · **Status:** Done
+
+**What:** Four weeks after a change ships, the cell checks it: a steward proposal approved, a policy marked, a fix applied or an agent's new release is compared over the 4 weeks before and after, in its space or for its agent, on answers, answers that found nothing, helpful rate, discards and time to first reply. The result (better, worse, no clear change, or not enough data under 20 answers a side) is kept and sent to the space's stewards or the agent's owner, and nothing is undone. Each Monday the operators get the admin's week: changes and who approved them, caps and limits, pauses, guardrail trends, access reviews due, checks back and the top spaces by spend, each line with a link to its record; one operator can turn theirs off. The inventory export lists every agent, skill, rhythm, shared routine, trigger and starter question with owner, spaces, cap, targets, last run and last change, as CSV and as JSON signed with the anchor key, through the admin console, the API and `sb inventory export`.
+
+**Why this way:** A change is found where it is already recorded, in the audit log and the traces, so a check needs no new hook on every kind of change and matches the log exactly. Checks and the week are told through the same once-only alert path as the agents' alerts, with their own notification kinds so a person can turn them off, and are counted at most once an hour so the five-minute notify job stays light. The inventory reuses the registry's rows and the record's signing, so it matches what the console shows and verifies the same way.
+
+**Learned:** Signing the inventory showed that the canonical JSON refused any number that isn't an integer, so an agent's record (SB-4707) with any real cost, or with a target, couldn't be signed. Records and the inventory now hash those numbers as decimal strings (`canonjson.EncodeDocument`); approval payloads keep the strict subset. A proposal's own "numbers it should move" aren't stored yet, so checks use the default numbers.
+
+**Laws:** LAW-07, LAW-11, LAW-12. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S49.1: Spend with purpose
 
 **Wave/slice:** W49 / S49.1 (SB-5001 to SB-5004) · **Status:** Done

@@ -132,8 +132,6 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.auditVerify(rest[2:])
 	case "audit tail":
 		return e.auditTail(rest[2:])
-	case "agents record":
-		return e.agentsRecord(rest[2:])
 	case "audit export":
 		return e.auditExport(rest[2:])
 	case "factory handoff":
@@ -146,6 +144,9 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.spaceTemplates(rest[2:])
 	case "space diff":
 		return e.spaceDiff(rest[2:])
+	}
+	if code, ok := e.signedCommand(name, rest[2:]); ok {
+		return code
 	}
 	if code, ok := e.boxCommand(name, rest[2:]); ok {
 		return code
@@ -222,7 +223,7 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" || cmd == "tree" {
+	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" || cmd == "tree" || cmd == "inventory" {
 		return true
 	}
 	for k := range planned {
@@ -866,4 +867,16 @@ func firstTenant(b []byte) string {
 		}
 	}
 	return ""
+}
+
+// signedCommand runs the commands that fetch a signed document from a running cell: an
+// agent's record (SB-4707) and the AI inventory (SB-5007).
+func (e *env) signedCommand(name string, args []string) (int, bool) {
+	switch name {
+	case "agents record":
+		return e.agentsRecord(args), true
+	case "inventory export":
+		return e.inventoryExport(args), true
+	}
+	return 0, false
 }

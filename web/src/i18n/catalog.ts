@@ -1045,4 +1045,6 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Total": { de: "Gesamt", fr: "Total" },
   "Personal limit {limit} a month: {under} under 80%, {near} from 80%, {at} at the limit": { de: "Persönliches Limit {limit} im Monat: {under} unter 80 %, {near} ab 80 %, {at} am Limit", fr: "Limite personnelle de {limit} par mois : {under} sous 80 %, {near} à partir de 80 %, {at} à la limite" },
   "Download as CSV": { de: "Als CSV herunterladen", fr: "Télécharger en CSV" },
+  "Download inventory": { de: "Inventar herunterladen", fr: "Télécharger l'inventaire" },
+  "as CSV": { de: "als CSV", fr: "en CSV" },
 };

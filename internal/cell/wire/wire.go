@@ -709,7 +709,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
-		AIUsage:     c.aiUsage,     // SB-5001
+		AIUsage: c.aiUsage,                        // SB-5001
+		Checks:  c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007
 		AgentRecord: c.AgentRecord} // SB-4707
 	admin.InFlight = c.inFlight(m) // SB-4806
 	admin.Register(mux)
@@ -727,7 +728,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now,
 		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive, PausedIn: c.Kill.PausedIn,
-		Scenarios: stewards, ScopeIn: c.ScopeAs, Lift: c.lift}.Register(mux) // SB-4904, SB-5003
+		Scenarios: stewards, ScopeIn: c.ScopeAs, Lift: c.lift, Checks: c.Checks}.Register(mux) // SB-4904, SB-5003, SB-5005
 	api.AgentControl{Value: c.ownerValue, Pause: c.pauseAgent, Shadow: stewards.ShadowsFor}.Register(mux) // SB-4701, SB-4702, SB-4704
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)
@@ -737,6 +738,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /v1/cell/audit", c.auditRows)
 	public.HandleFunc("GET /v1/cell/audit/export", c.auditExport)
 	public.HandleFunc("GET /v1/cell/agents/{name}/record", c.agentRecordCP) // SB-4707
+	public.HandleFunc("GET /v1/cell/inventory", c.inventoryCP)              // SB-5007
 	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
 	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards,

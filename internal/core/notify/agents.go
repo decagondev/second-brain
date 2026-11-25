@@ -18,7 +18,18 @@ func init() { Kinds[KindAgent] = true }
 type AgentAlert struct {
 	Key, Text string
 	To        []string
+	// Kind is the notification kind, KindAgent when empty; KindCheck and KindAdminWeek
+	// are told the same way (SB-5005, SB-5006).
+	Kind string
 }
+
+// The kinds of the checks that come back and the admin's week (SB-5005, SB-5006).
+const (
+	KindCheck     = "check"
+	KindAdminWeek = "adminweek"
+)
+
+func init() { Kinds[KindCheck], Kinds[KindAdminWeek] = true, true }
 
 // agentAlerts tells each alert not yet sent, marking it once sent.
 func (j Job) agentAlerts(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
@@ -49,7 +60,14 @@ func (j Job) agentAlerts(ctx context.Context, now time.Time) ([]outgoing, []func
 				return nil, nil, err
 			}
 			if ok {
-				out = append(out, outgoing{p, Message{Kind: KindAgent, Text: a.Text, Link: j.tab("legwork")}})
+				kind, tab := KindAgent, "legwork"
+				switch a.Kind {
+				case KindCheck:
+					kind = KindCheck
+				case KindAdminWeek:
+					kind, tab = KindAdminWeek, "admin"
+				}
+				out = append(out, outgoing{p, Message{Kind: kind, Text: a.Text, Link: j.tab(tab)}})
 			}
 		}
 	}

@@ -100,6 +100,14 @@ export function AdminAgents({ fetcher = fetch }: { fetcher?: Fetch }) {
       ) : (
         <AgentsTable items={items} records />
       )}
+      <p>
+        <a href="/v1/admin/inventory" download="ai-inventory.json">
+          {t("Download inventory")}
+        </a>{" "}
+        <a href="/v1/admin/inventory?format=csv" download="ai-inventory.csv">
+          {t("as CSV")}
+        </a>
+      </p>
       <AgentValue admin fetcher={fetcher} />
     </section>
   );

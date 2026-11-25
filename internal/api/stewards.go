@@ -54,6 +54,8 @@ type Stewards struct {
 	// month (SB-5003), after audit has written its row; ask.ErrNotMember for no such member.
 	// nil serves none.
 	Lift func(ctx context.Context, space, email string, audit func(user, month string) error) (user, month string, err error)
+	// Checks are one space's kept "did it help?" checks (SB-5005); nil serves none.
+	Checks func(space string) ([]ask.Check, error)
 }
 
 // Register mounts the endpoints.
@@ -64,6 +66,7 @@ func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/agents", h.proposeAgents)
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/{id}/scenarios", h.scenarios) // SB-4904
 	mux.HandleFunc("POST /v1/spaces/{name}/limits/lift", h.lift)                   // SB-5003
+	mux.HandleFunc("GET /v1/spaces/{name}/checks", h.spaceChecks)                  // SB-5005
 	mux.HandleFunc("GET /v1/admin/proposals", h.list)
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/approve", h.decide(true))
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))
@@ -436,4 +439,21 @@ func (h Stewards) decide(approve bool) http.HandlerFunc {
 		}
 		writeJSON(w, out)
 	}
+}
+
+// spaceChecks is GET /v1/spaces/NAME/checks, for its stewards: the space's checks (SB-5005).
+func (h Stewards) spaceChecks(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if _, _, ok := h.stewardOf(w, r, name); !ok {
+		return
+	}
+	cs := []ask.Check{}
+	if h.Checks != nil {
+		var err error
+		if cs, err = h.Checks(name); err != nil {
+			fail(w, errs.New(errs.EUNAVAIL, "Checks can't be read right now."))
+			return
+		}
+	}
+	writeJSON(w, map[string]any{"checks": cs})
 }

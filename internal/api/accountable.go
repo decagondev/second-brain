@@ -146,3 +146,63 @@ func (h Admin) agentRecord(w http.ResponseWriter, r *http.Request, _ tenancy.Sco
 	w.Header().Set("Content-Disposition", `attachment; filename="`+sr.Record.Agent+`-record.json"`)
 	h.ok(w, sr)
 }
+
+// checks is GET /v1/admin/checks: every kept check, newest first (SB-5005).
+func (h Admin) checks(w http.ResponseWriter, _ *http.Request, _ tenancy.Scope) {
+	if h.Checks == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Checks can't be read in this cell."))
+		return
+	}
+	cs, err := h.Checks("")
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Checks can't be read right now."))
+		return
+	}
+	h.ok(w, map[string]any{"checks": cs})
+}
+
+// check is GET /v1/admin/checks/ID: one check.
+func (h Admin) check(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Checks == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Checks can't be read in this cell."))
+		return
+	}
+	cs, err := h.Checks("")
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Checks can't be read right now."))
+		return
+	}
+	for _, c := range cs {
+		if c.ID == r.PathValue("id") {
+			h.ok(w, c)
+			return
+		}
+	}
+	h.fail(w, errs.New(errs.EINVAL, "No check %q.", r.PathValue("id")))
+}
+
+// inventory is GET /v1/admin/inventory[?format=csv]: the signed AI inventory, or its CSV
+// (SB-5007).
+func (h Admin) inventory(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Inventory == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The inventory can't be made in this cell."))
+		return
+	}
+	inv, err := h.Inventory(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The inventory can't be made right now."))
+		return
+	}
+	day := inv.Inventory.Made
+	if len(day) >= 10 {
+		day = day[:10]
+	}
+	if r.URL.Query().Get("format") == "csv" {
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="ai-inventory-`+day+`.csv"`)
+		_, _ = w.Write(inv.Inventory.CSV())
+		return
+	}
+	w.Header().Set("Content-Disposition", `attachment; filename="ai-inventory-`+day+`.json"`)
+	h.ok(w, inv)
+}

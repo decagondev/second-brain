@@ -177,6 +177,11 @@ func (c *Cell) agentAlerts(ctx context.Context, now time.Time) ([]notify.AgentAl
 				Text: fmt.Sprintf("%s missed its %s target two weeks running", ms.Agent, strings.ReplaceAll(ms.Metric, "_", " "))})
 		}
 	}
+	learn, err := c.learnAlerts(ctx, now) // SB-5005, SB-5006
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, learn...)
 	if len(m.AgentCaps) == 0 {
 		return out, nil
 	}
