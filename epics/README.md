@@ -53,7 +53,7 @@ summary: Epics, waves, slices and tickets.
 | W46 Every Agent Accountable | 7 | 0 | 0 | Planned 2026-11-25 with the user (E47), built: agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W47 Ways of Working | 7 | 0 | 0 | Planned 2026-11-25 with the user (E48), built: rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W48 Agents That Check With You | 6 | 0 | 0 | Planned 2026-11-25 with the user (E49), built: ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
-| W49 Run AI Like a Business | 0 | 0 | 7 | Planned 2026-11-25 with the user (E50): AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
+| W49 Run AI Like a Business | 4 | 0 | 3 | Planned 2026-11-25 with the user (E50), S49.1 built: AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -885,10 +885,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-5001](E50-run-ai-like-a-business/SB-5001-ai-command-centre.md) | S49.1 | E50 | AI command centre | Open |
-| [SB-5002](E50-run-ai-like-a-business/SB-5002-routing-policies.md) | S49.1 | E50 | Routing policies | Open |
-| [SB-5003](E50-run-ai-like-a-business/SB-5003-personal-limits.md) | S49.1 | E50 | Personal limits | Open |
-| [SB-5004](E50-run-ai-like-a-business/SB-5004-agent-goals.md) | S49.1 | E50 | Agent goals | Open |
+| [SB-5001](E50-run-ai-like-a-business/SB-5001-ai-command-centre.md) | S49.1 | E50 | AI command centre | Done |
+| [SB-5002](E50-run-ai-like-a-business/SB-5002-routing-policies.md) | S49.1 | E50 | Routing policies | Done |
+| [SB-5003](E50-run-ai-like-a-business/SB-5003-personal-limits.md) | S49.1 | E50 | Personal limits | Done |
+| [SB-5004](E50-run-ai-like-a-business/SB-5004-agent-goals.md) | S49.1 | E50 | Agent goals | Done |
 | [SB-5005](E50-run-ai-like-a-business/SB-5005-did-it-help.md) | S49.2 | E50 | Did it help? | Open |
 | [SB-5006](E50-run-ai-like-a-business/SB-5006-admins-week.md) | S49.2 | E50 | The admin's week | Open |
 | [SB-5007](E50-run-ai-like-a-business/SB-5007-inventory-export.md) | S49.2 | E50 | Inventory export | Open |

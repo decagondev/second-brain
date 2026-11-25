@@ -26,17 +26,21 @@ type Tenant struct {
 	Agents     []string          `json:"agents"`
 	// AgentCaps are the agents' monthly model spend caps in USD, from the map form of
 	// agents (SB-4703).
-	AgentCaps      map[string]float64 `json:"-"`
-	Workflows      []string           `json:"workflows"`
-	Approval       map[string]string  `json:"approval"`
-	Duties         map[string]Duty    `json:"duties"`
-	RetentionDays  int                `json:"retention_days"`
-	BudgetUSDMonth int                `json:"budget_usd_month"`
+	AgentCaps map[string]float64 `json:"-"`
+	// AgentGoals are the agents' jobs and targets, from the map form of agents (SB-5004).
+	AgentGoals     map[string]AgentGoal `json:"-"`
+	Workflows      []string             `json:"workflows"`
+	Approval       map[string]string    `json:"approval"`
+	Duties         map[string]Duty      `json:"duties"`
+	RetentionDays  int                  `json:"retention_days"`
+	BudgetUSDMonth int                  `json:"budget_usd_month"`
 	// AsksPerMinute is how many questions one person may ask in a minute (SB-2305).
 	AsksPerMinute int `json:"asks_per_minute"`
 	// ResearchUSD is the most one research report may spend, 0 for the default (SB-4201).
 	ResearchUSD float64 `json:"research_usd"`
-	PilotGroup  string  `json:"pilot_group"`
+	// Limits are the per-person limits, nil for none (SB-5003).
+	Limits     *Limits `json:"limits"`
+	PilotGroup string  `json:"pilot_group"`
 	// QuestionsTo answers company-wide questions nothing answered (SB-1704); Notes lets
 	// stewards publish replies as notes into the docs: folder share (SB-1705).
 	QuestionsTo string `json:"questions_to"`
@@ -172,6 +176,7 @@ var fields = []field{
 		}
 		c.t.ResearchUSD = f
 	}},
+	{"limits", false, (*checker).limits}, // SB-5003
 	{"pilot_group", false, func(c *checker, n *node) { c.t.PilotGroup = c.group(n, "pilot_group") }},
 	{"questions_to", false, func(c *checker, n *node) { c.t.QuestionsTo = c.group(n, "questions_to") }},
 	{"notes", false, func(c *checker, n *node) {
@@ -531,7 +536,9 @@ func (c *checker) agentMap(n *node) {
 		}
 		for j, kk := range v.keys {
 			if kk.value != "monthly_usd" {
-				c.add(kk, f+"."+kk.value, "unknown field; use monthly_usd")
+				if !c.agentGoalField(k.value, kk, v.vals[j], f+"."+kk.value) { // SB-5004
+					c.add(kk, f+"."+kk.value, "unknown field; use monthly_usd, job or targets")
+				}
 				continue
 			}
 			x, ok := c.scalar(v.vals[j], f+".monthly_usd")
@@ -548,8 +555,8 @@ func (c *checker) agentMap(n *node) {
 			}
 			c.t.AgentCaps[k.value] = usd
 		}
-		if contains(CappedOnly, k.value) && c.t.AgentCaps[k.value] == 0 {
-			c.add(k, f, "%q runs without being listed; name it here only with monthly_usd", k.value)
+		if _, goal := c.t.AgentGoals[k.value]; contains(CappedOnly, k.value) && c.t.AgentCaps[k.value] == 0 && !goal {
+			c.add(k, f, "%q runs without being listed; name it here only with monthly_usd, job or targets", k.value)
 		}
 	}
 	if !at["ask"] {

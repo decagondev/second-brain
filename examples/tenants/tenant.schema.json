@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "properties": {
     "agents": {
-      "description": "Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703).",
+      "description": "Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703), and its job and targets (SB-5004).",
       "oneOf": [
         {
           "contains": {
@@ -35,10 +35,46 @@
           "additionalProperties": {
             "additionalProperties": false,
             "properties": {
+              "job": {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
               "monthly_usd": {
                 "maximum": 100000,
                 "minimum": 1,
                 "type": "number"
+              },
+              "targets": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "at_least": {
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "at_most": {
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "metric": {
+                      "enum": [
+                        "published_as_is",
+                        "discard_rate",
+                        "hours_to_publish",
+                        "helpful_rate",
+                        "cost_per_published_usd"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "metric"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 3,
+                "minItems": 1,
+                "type": "array"
               }
             },
             "type": "object"
@@ -259,6 +295,21 @@
         "fr"
       ],
       "type": "string"
+    },
+    "limits": {
+      "additionalProperties": false,
+      "description": "Per-person limits (SB-5003): at 80% the person is told, at 100% their own asks and research use the economy tier.",
+      "properties": {
+        "monthly_usd_per_person": {
+          "maximum": 10000,
+          "minimum": 1,
+          "type": "number"
+        }
+      },
+      "required": [
+        "monthly_usd_per_person"
+      ],
+      "type": "object"
     },
     "memory": {
       "description": "Whether people may keep lines about themselves for their own asks (SB-4303). Default on.",
@@ -580,6 +631,14 @@
               "pattern": "^[a-z][a-z0-9-]{0,39}$"
             },
             "type": "object"
+          },
+          "routing": {
+            "default": "balanced",
+            "enum": [
+              "economy",
+              "balanced",
+              "frontier"
+            ]
           },
           "scope": {
             "additionalProperties": {

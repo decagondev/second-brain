@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -49,6 +50,10 @@ type Stewards struct {
 		KeepScenario(ctx context.Context, s tenancy.Scope, name string, r ask.ScenarioResult) (ask.EvalCase, error)
 	}
 	ScopeIn func(ctx context.Context, user, space string) (tenancy.Scope, error)
+	// Lift lifts the personal limit of the member of space whose address is email for this
+	// month (SB-5003), after audit has written its row; ask.ErrNotMember for no such member.
+	// nil serves none.
+	Lift func(ctx context.Context, space, email string, audit func(user, month string) error) (user, month string, err error)
 }
 
 // Register mounts the endpoints.
@@ -58,6 +63,7 @@ func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/agents", h.spaceAgents)
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/agents", h.proposeAgents)
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/{id}/scenarios", h.scenarios) // SB-4904
+	mux.HandleFunc("POST /v1/spaces/{name}/limits/lift", h.lift)                   // SB-5003
 	mux.HandleFunc("GET /v1/admin/proposals", h.list)
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/approve", h.decide(true))
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))
@@ -289,6 +295,43 @@ func (h Stewards) scenarios(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, map[string]any{"id": p.ID, "results": res, "passed": passed, "of": len(res)})
+}
+
+// lift lifts one member's personal limit for the month, for a steward of the space, audited
+// first (SB-5003).
+func (h Stewards) lift(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	s, _, ok := h.stewardOf(w, r, name)
+	if !ok {
+		return
+	}
+	if h.Lift == nil {
+		fail(w, errs.New(errs.EUNAVAIL, "This cell has no personal limits to lift."))
+		return
+	}
+	var req struct {
+		Person string `json:"person"`
+		Reason string `json:"reason"`
+	}
+	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
+	if err != nil || json.Unmarshal(b, &req) != nil || strings.TrimSpace(req.Person) == "" || strings.TrimSpace(req.Reason) == "" {
+		fail(w, errs.New(errs.EINVAL, `The body must be {"person": "EMAIL", "reason": "…"}.`))
+		return
+	}
+	user, month, err := h.Lift(r.Context(), name, strings.TrimSpace(req.Person), func(user, month string) error {
+		_, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "access", Subject: "limit:" + user, State: "lifted",
+			Reason: "personal limit lifted for " + month + ": " + strings.TrimSpace(req.Reason), Space: "spc_" + name})
+		return err
+	})
+	switch {
+	case errors.Is(err, ask.ErrNotMember):
+		fail(w, errs.New(errs.EINVAL, "No active member of %s has that address.", name))
+		return
+	case err != nil:
+		fail(w, errs.New(errs.EUNAVAIL, "The limit can't be lifted right now; nothing was lifted."))
+		return
+	}
+	writeJSON(w, map[string]any{"user": user, "month": month, "lifted": true})
 }
 
 func (h Stewards) operator(w http.ResponseWriter, r *http.Request) (tenancy.Scope, bool) {

@@ -95,6 +95,10 @@ type AgentRecord struct {
 	Spend         []AgentSpend    `json:"spend"`
 	Reviews       []RecordReview  `json:"reviews"`
 	Reports       []RecordReport  `json:"reports"`
+	// Job and Targets are the agent's job and every target with its last ValueWeeks weeks
+	// (SB-5004); none without a goal.
+	Job     string       `json:"job,omitempty"`
+	Targets []TargetView `json:"targets"`
 }
 
 // SignedRecord is the record with its SHA-256 and the cell's signature.
@@ -120,6 +124,8 @@ type RecordInputs struct {
 	Audit           []audit.Row
 	Reviews         []reviews.Review
 	Caps            map[string]float64
+	// Goal is the agent's job and targets from the manifest, nil for none (SB-5004).
+	Goal *GoalDef
 }
 
 func quarterStart(t time.Time) time.Time {
@@ -132,7 +138,12 @@ func BuildRecord(in RecordInputs) AgentRecord {
 	name := in.Def.Name
 	r := AgentRecord{Agent: name, Tenant: in.Tenant, Made: in.Now.UTC().Format(time.RFC3339), Release: in.Release, Definition: in.Def,
 		Owner: in.Def.Owner, OwnerInactive: in.OwnerInactive, PromptSHA256: in.PromptSHA256, Eval: RecordEval{Suite: in.Def.Suite, Held: in.EvalHeld},
-		Versions: []RecordVersion{}, Value: []RecordQuarter{}, Pauses: []RecordPause{}, Spend: []AgentSpend{}, Reviews: []RecordReview{}, Reports: []RecordReport{}}
+		Versions: []RecordVersion{}, Value: []RecordQuarter{}, Pauses: []RecordPause{}, Spend: []AgentSpend{}, Reviews: []RecordReview{}, Reports: []RecordReport{},
+		Targets: []TargetView{}}
+	if in.Goal != nil { // SB-5004: every target, with its history
+		vs := GoalViews(map[string]GoalDef{name: *in.Goal}, in.Questions, in.Traces, in.Feedback, in.Now, ValueWeeks, nil)
+		r.Job, r.Targets = in.Goal.Job, vs[0].Targets
+	}
 	r.Versions = recordVersions(in.Traces, name)
 	r.Value = recordValue(in, name)
 	r.Spend = recordSpend(in, name)
@@ -376,6 +387,7 @@ func RecordMarkdown(sr SignedRecord) string {
 	for _, q := range r.Value {
 		fmt.Fprintf(&b, "| %s | %d | %d | %d | %d | %d | %d | %d | $%.2f |\n", q.Quarter, q.Drafts, q.Published, q.PublishedEdited, q.Discarded, q.Rounds, q.Rated, q.Helpful, q.CostUSD)
 	}
+	b.WriteString(targetsMarkdown(r))
 	b.WriteString("\n## Pauses and kill switches\n\n")
 	if len(r.Pauses) == 0 {
 		b.WriteString("None.\n")
@@ -418,4 +430,37 @@ func listOr(xs []string, none string) string {
 		return none
 	}
 	return strings.Join(xs, ", ")
+}
+
+// targetsMarkdown is the record's job and targets section, "" without a goal (SB-5004).
+func targetsMarkdown(r AgentRecord) string {
+	if r.Job == "" && len(r.Targets) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n## Job and targets\n\n")
+	if r.Job != "" {
+		fmt.Fprintf(&b, "Job: %s\n\n", r.Job)
+	}
+	for _, t := range r.Targets {
+		aim := ""
+		if t.AtLeast != nil {
+			aim = fmt.Sprintf("at least %g", *t.AtLeast)
+		} else if t.AtMost != nil {
+			aim = fmt.Sprintf("at most %g", *t.AtMost)
+		}
+		fmt.Fprintf(&b, "- %s %s:", t.Metric, aim)
+		for _, w := range t.Weeks {
+			switch {
+			case w.Value == nil:
+				fmt.Fprintf(&b, " %s none;", w.Week)
+			case w.Met != nil && *w.Met:
+				fmt.Fprintf(&b, " %s %.2f met;", w.Week, *w.Value)
+			default:
+				fmt.Fprintf(&b, " %s %.2f missed;", w.Week, *w.Value)
+			}
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
 }

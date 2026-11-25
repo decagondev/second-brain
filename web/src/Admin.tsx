@@ -4,7 +4,7 @@ import type { Review } from "./Steward";
 import { t, tj, tn, msg } from "./i18n";
 import { AdminTokens } from "./AdminTokens";
 import { AdminAgents } from "./Agents";
-import { AdminGuardrails, AdminSpend } from "./Company";
+import { AdminAIUsage, AdminGuardrails, AdminSpend } from "./Company";
 
 interface Proposal {
   id: string;
@@ -420,6 +420,7 @@ export function AdminConsole({ fetcher = fetch }: { fetcher?: Fetch }) {
       </section>
       <AdminAgents fetcher={fetcher} />
       <AdminSpend fetcher={fetcher} />
+      <AdminAIUsage fetcher={fetcher} />
       <AdminGuardrails fetcher={fetcher} />
       <AdminTokens fetcher={fetcher} />
       <section aria-label={t("Access reviews")}>

@@ -270,6 +270,8 @@ type Trace struct {
 	FlaggedFiles int `json:",omitempty"`
 	// CostUSD is this one answer's model spend, its consultations' within it (SB-4606).
 	CostUSD float64 `json:",omitempty"`
+	// Feature is what asked it, one of Features or eval (SB-5001); "" is an older ask.
+	Feature string `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -340,6 +342,10 @@ type Agent struct {
 	SmallHeld   func() bool
 	PinMain     func(space string) bool
 	AgentKilled func(agent string) bool
+	// Routing is a space's routing policy by key (SB-5002), nil for balanced everywhere;
+	// PersonOver says a person has reached their monthly limit (SB-5003), nil for none.
+	Routing    func(space string) string
+	PersonOver func(ctx context.Context, user string) (bool, error)
 	// Departmental are the spaces the scope's user is a member of that run a department
 	// agent, for the right-department suggestion (SB-4007); nil suggests none.
 	Departmental func(ctx context.Context, s tenancy.Scope) []DeptSpace
@@ -483,8 +489,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return *early, err
 	}
 	ctx = withChoice(ctx, choice)
-	tier := a.tierFor(ctx, s.Space(), req, q, len(docs), len(earlier)) // SB-4405
-	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe))     // SB-4303: the asker's own, ask agent only (LAW-25)
+	feature := featureFor(ctx, req, probe)                                                                        // SB-5001
+	tier := a.tierFor(WithFeature(a.atLimit(ctx, s.User()), feature), s.Space(), req, q, len(docs), len(earlier)) // SB-4405, SB-5002, SB-5003
+	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe))                                                // SB-4303: the asker's own, ask agent only (LAW-25)
 	capped := len(docs) == 0
 	if docs, err = a.collectionOr(ctx, s, req.Collection, docs); err != nil { // SB-4304
 		return Response{}, err
@@ -570,13 +577,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, err
 	}
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD()}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD()}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature}
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}

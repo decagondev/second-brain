@@ -377,6 +377,85 @@ export function AdminSpend({ fetcher = fetch, month = new Date().toISOString().s
   );
 }
 
+// The AI command centre (sb-admin(3); SB-5001): 12 weeks of answers and spend by feature,
+// the personal limit's bands, never who, and the rows as CSV.
+interface UsageTotal {
+  feature?: string;
+  uses: number;
+  usd: number;
+}
+interface AIUsage {
+  weeks: number;
+  from: string;
+  features: UsageTotal[];
+  total: UsageTotal;
+  limit?: { monthly_usd_per_person: number; under_80: string; from_80: string; at_limit: string };
+}
+
+const band = (b: string) => (b === "fewer than 5" ? t("fewer than 5") : b);
+
+export function AdminAIUsage({ fetcher = fetch }: { fetcher?: Fetch }) {
+  const [u, setU] = useState<AIUsage>();
+  const [error, setError] = useState<string>();
+  useEffect(() => {
+    call(fetcher, "GET", "/v1/admin/ai/usage")
+      .then((d) => {
+        const x = d as unknown as AIUsage;
+        if (x && x.total) setU(x);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [fetcher]);
+  return (
+    <section aria-label={t("AI use")}>
+      <h2>{t("AI use")}</h2>
+      {error && <p role="alert">{error}</p>}
+      {u && (
+        <>
+          <p className="meta">{t("{weeks} weeks from {from}", { weeks: String(u.weeks), from: u.from })}</p>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">{t("Feature")}</th>
+                <th scope="col">{t("Answers")}</th>
+                <th scope="col">{t("Spend")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(u.features ?? []).map((f) => (
+                <tr key={f.feature}>
+                  <th scope="row">{f.feature}</th>
+                  <td>{f.uses}</td>
+                  <td>{usd(f.usd)}</td>
+                </tr>
+              ))}
+              <tr>
+                <th scope="row">{t("Total")}</th>
+                <td>{u.total.uses}</td>
+                <td>{usd(u.total.usd)}</td>
+              </tr>
+            </tbody>
+          </table>
+          {u.limit && (
+            <p>
+              {t("Personal limit {limit} a month: {under} under 80%, {near} from 80%, {at} at the limit", {
+                limit: usd(u.limit.monthly_usd_per_person),
+                under: band(u.limit.under_80),
+                near: band(u.limit.from_80),
+                at: band(u.limit.at_limit),
+              })}
+            </p>
+          )}
+          <p>
+            <a href="/v1/admin/ai/usage?format=csv" download>
+              {t("Download as CSV")}
+            </a>
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
 // Guardrail insights (sb-observability(7); SB-4406): 12 weeks of counts, never text. A count
 // of 1 to 4 comes as "fewer than 5" and is shown in the reader's language.
 type GuardCount = number | string;

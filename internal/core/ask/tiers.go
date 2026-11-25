@@ -31,11 +31,18 @@ func (a Agent) tierFor(ctx context.Context, space string, req Request, q string,
 	if t, ok := ctx.Value(tierKey).(string); ok && (t == TierMain || t == TierSmall) {
 		return t
 	}
-	plain := (req.Agent == "" || req.Agent == "ask") && req.File == nil && docs == 0 && req.Collection == ""
-	short := utf8.RuneCountInString(q) <= SmallMaxRunes && earlier == 0
 	pinned := a.PinMain != nil && a.PinMain(space)
 	held := a.SmallHeld == nil || a.SmallHeld()
-	if plain && short && !pinned && !held {
+	feature, _ := ctx.Value(featureKey{}).(string)
+	if pinned {
+		return TierMain
+	}
+	if t := a.policyTier(ctx, space, feature, held); t != "" { // SB-5002, SB-5003
+		return t
+	}
+	plain := (req.Agent == "" || req.Agent == "ask") && req.File == nil && docs == 0 && req.Collection == ""
+	short := utf8.RuneCountInString(q) <= SmallMaxRunes && earlier == 0
+	if plain && short && !held {
 		return TierSmall
 	}
 	return TierMain

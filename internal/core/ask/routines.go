@@ -207,9 +207,12 @@ func (l Legwork) runRoutine(ctx context.Context, q SavedQuestion, now time.Time)
 	if l.Agent.runsStop(ctx, s, "ask") != nil { // paused here or at its cap: nothing is asked (SB-4702, SB-4703)
 		return nil, mark(nil)
 	}
+	if over, _ := l.Agent.atLimit(ctx, q.User).Value(economyKey{}).(bool); over { // SB-5003: paused until the month turns
+		return nil, mark(nil)
+	}
 	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, User: q.User, Kind: KindRoutine, Question: q.Question, Space: q.Space,
 		Steps: []string{q.Question}, State: StateDone, At: now}
-	resp, err := l.Agent.Ask(ctx, s, Request{Question: q.Question})
+	resp, err := l.Agent.Ask(WithFeature(ctx, FeatureRoutine), s, Request{Question: q.Question}) // SB-5001
 	switch {
 	case errors.Is(err, ErrBudget):
 		r.State, r.Why, r.Stopped = StateFailed, RoutinePaused, "budget"

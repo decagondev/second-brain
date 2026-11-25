@@ -107,7 +107,7 @@ func (l Legwork) AccountBrief(ctx context.Context, s tenancy.Scope, req AccountR
 		if len(g.docs) == 0 {
 			continue
 		}
-		resp, err := l.Agent.Ask(withOnly(ctx, g.docs), s, Request{Question: g.question, Agent: agent})
+		resp, err := l.Agent.Ask(WithFeature(withOnly(ctx, g.docs), FeatureResearch), s, Request{Question: g.question, Agent: agent})
 		if err != nil {
 			return ResearchView{}, err
 		}

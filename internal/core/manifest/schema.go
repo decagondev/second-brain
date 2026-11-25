@@ -37,13 +37,17 @@ func JSONSchema() []byte {
 			"additionalProperties": map[string]any{"type": "string", "pattern": vendorRe},
 		},
 		"agents": map[string]any{
-			"description": "Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703).",
+			"description": "Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703), and its job and targets (SB-5004).",
 			"oneOf": []any{
 				map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"enum": Agents}, "contains": map[string]any{"const": "ask"}},
 				map[string]any{"type": "object", "required": []string{"ask"},
 					"propertyNames": map[string]any{"enum": append(append([]string{}, Agents...), CappedOnly...)},
 					"additionalProperties": map[string]any{"type": "object", "additionalProperties": false,
-						"properties": map[string]any{"monthly_usd": map[string]any{"type": "number", "minimum": MinAgentUSD, "maximum": MaxAgentUSD}}}},
+						"properties": map[string]any{"monthly_usd": map[string]any{"type": "number", "minimum": MinAgentUSD, "maximum": MaxAgentUSD},
+							"job": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxJob},
+							"targets": map[string]any{"type": "array", "minItems": 1, "maxItems": MaxTargets, "items": map[string]any{"type": "object", "additionalProperties": false,
+								"required": []string{"metric"}, "properties": map[string]any{"metric": map[string]any{"enum": TargetMetrics},
+									"at_least": map[string]any{"type": "number", "minimum": 0}, "at_most": map[string]any{"type": "number", "minimum": 0}}}}}}},
 			},
 		},
 		"workflows": map[string]any{
@@ -77,6 +81,11 @@ func JSONSchema() []byte {
 		"asks_per_minute": map[string]any{
 			"type": "integer", "description": "Questions one person may ask in any minute; one more is ERATE (SB-2305).",
 			"minimum": 1, "maximum": MaxAsksPerMinute, "default": DefaultAsksPerMinute,
+		},
+		"limits": map[string]any{
+			"type": "object", "description": "Per-person limits (SB-5003): at 80% the person is told, at 100% their own asks and research use the economy tier.",
+			"additionalProperties": false, "required": []string{"monthly_usd_per_person"},
+			"properties": map[string]any{"monthly_usd_per_person": map[string]any{"type": "number", "minimum": MinPersonUSD, "maximum": MaxPersonUSD}},
 		},
 		"research_usd": map[string]any{
 			"type": "number", "description": "The most one research report may spend, in USD (SB-4201).",
@@ -124,6 +133,7 @@ func JSONSchema() []byte {
 									"additionalProperties": map[string]any{"type": "string", "pattern": skillDocRe.String()}}}}},
 					"onboarding": map[string]any{"type": "boolean", "default": true},
 					"on":         map[string]any{"type": "array", "minItems": 1, "uniqueItems": true, "items": map[string]any{"enum": SpaceTriggers}},
+					"routing":    map[string]any{"enum": RoutingPolicies, "default": DefaultRouting},
 					"rhythms": map[string]any{"type": "object", "maxProperties": MaxRhythms, "propertyNames": map[string]any{"pattern": rhythmNameRe.String()},
 						"additionalProperties": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"subject", "steps"},
 							"properties": map[string]any{"subject": map[string]any{"enum": RhythmSubjects}, "plan": map[string]any{"enum": RhythmPlans},

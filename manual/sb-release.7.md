@@ -68,6 +68,10 @@ The release controller holds every cell on the train with its custody. **Tenant-
 
 A tenant may **pause pulls** by withholding the pull token. While paused, the cell falls behind, and once it is more than one behind stable, the promote guard holds every promotion until it pulls again. A pause that should last becomes a **detach** (sb-factory(7), Detach; the runbook `docs/runbooks/pause-pulls.md`). A detached cell leaves the train: the controller drops it from the guard and never deploys to it again, and LAW-06 and LAW-08 stop applying to it, as sb-factory(7) says.
 
+### Routing policies and the gate (SB-5002)
+
+A space's `routing` (sb-space(5)) decides which model tier answers it, so the gate checks each space on its policy: on the cell, the evals job runs an `economy` space's cases on the small tier, a `frontier` space's on the main tier only, and a `balanced` space's on both (sb-evals(7), Routing policies). A case that fails on the tier its policy uses holds the small tier until a later run passes, so no policy keeps sending answers to a tier its own cases fail on. A manifest whose team chooses a policy above its department's is refused by `sb tenant check` (sb-tenant(5)).
+
 ### Channels
 
 Tenants choose `stable` or `testing`, never a version (ADR-0004). The release controller points each channel at one release in the store, `channels/stable` and `channels/testing`, each holding a release id; a cell's updater reads its channel's pointer with its pull token and admits the release it names like any other (SB-1505). A pointer to a release that fails admission changes nothing in the cell. A bundle names each service's image by digest as `image/api`, `image/ingest`, `image/jobs`, `image/updater` (and `image/web`); `make images` builds them and `tools/release/bundle --image NAME=sha256:…` records them (sb-selfhost(7)).

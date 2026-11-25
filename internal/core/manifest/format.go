@@ -188,6 +188,9 @@ func sorted[V any](m map[string]V) []string {
 
 // formatSettings writes the optional one-line settings, in sb-tenant(5) order.
 func formatSettings(t Tenant, line func(k, v string)) {
+	if l := limitsLine(t); l != "" { // SB-5003
+		line("limits", l)
+	}
 	if t.PilotGroup != "" {
 		line("pilot_group", t.PilotGroup)
 	}
@@ -213,7 +216,7 @@ func formatSettings(t Tenant, line func(k, v string)) {
 
 // agentsLine is the agents row: a list, or the map form when any agent has a cap (SB-4703).
 func agentsLine(t Tenant) string {
-	if len(t.AgentCaps) == 0 {
+	if len(t.AgentCaps) == 0 && len(t.AgentGoals) == 0 {
 		if len(t.Agents) == 0 {
 			return ""
 		}
@@ -226,13 +229,25 @@ func agentsLine(t Tenant) string {
 			extra = append(extra, a)
 		}
 	}
+	for a := range t.AgentGoals { // SB-5004
+		if !contains(t.Agents, a) && !contains(extra, a) {
+			extra = append(extra, a)
+		}
+	}
 	sort.Strings(extra)
 	names := append(append([]string{}, t.Agents...), extra...)
 	for _, a := range names {
+		var in []string
 		if usd, ok := t.AgentCaps[a]; ok {
-			parts = append(parts, a+": { monthly_usd: "+strconv.FormatFloat(usd, 'f', -1, 64)+" }")
-		} else {
+			in = append(in, "monthly_usd: "+strconv.FormatFloat(usd, 'f', -1, 64))
+		}
+		if g := goalPart(t.AgentGoals[a]); g != "" {
+			in = append(in, g)
+		}
+		if len(in) == 0 {
 			parts = append(parts, a+": {}")
+		} else {
+			parts = append(parts, a+": { "+strings.Join(in, ", ")+" }")
 		}
 	}
 	return "{ " + strings.Join(parts, ", ") + " }"

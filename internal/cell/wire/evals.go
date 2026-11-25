@@ -84,8 +84,17 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 		}
 		return ec.Passes(resp), nil
 	}
+	policy := routing(c.Manifest())
 	run := func(ec ask.EvalCase) (bool, error) {
+		if policy(ec.Space) == ask.RoutingEconomy && agent.Small != nil && ec.Agent != ask.AgentResearch {
+			// SB-5002: an economy space's case runs on the tier its policy uses, so a policy
+			// whose cases fail there holds the release like any regression.
+			return probe(ask.WithTier(ctx, ask.TierSmall), ec)
+		}
 		ok, err := probe(ask.WithTier(ctx, ask.TierMain), ec)
+		if policy(ec.Space) == ask.RoutingFrontier { // composing stays on main: no small run
+			return ok, err
+		}
 		if err != nil || !ok || agent.Small == nil {
 			return ok, err
 		}

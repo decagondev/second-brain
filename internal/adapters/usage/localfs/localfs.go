@@ -47,6 +47,7 @@ type entry struct {
 	Model    string    `json:"model,omitempty"`
 	Month    string    `json:"month,omitempty"` // spend_usd: the budget month
 	Space    string    `json:"space,omitempty"` // space_usd: the space it ran in, spc_NAME (SB-4105)
+	User     string    `json:"user,omitempty"`  // person_usd: who it ran for (SB-5003)
 }
 
 func (l *Ledger) file() string { return filepath.Join(l.Root, "usage.ndjson") }
@@ -254,6 +255,22 @@ func (s *Spend) SpentBySpace(_ context.Context, tenant, month string) (map[strin
 	err := s.l.each(tenant, func(e entry) {
 		if e.Kind == "space_usd" && e.Month == month && e.Space != "" {
 			out[e.Space] += e.N
+		}
+	})
+	return out, err
+}
+
+// AddPerson implements budget.PersonMeter: one person's share of a call's spend (SB-5003).
+func (s *Spend) AddPerson(_ context.Context, tenant, user, month string, usd float64) error {
+	return s.l.append(entry{At: s.l.Now().UTC(), Kind: "person_usd", N: usd, Tenant: tenant, Month: month, User: user})
+}
+
+// SpentByPerson implements budget.PersonMeter.
+func (s *Spend) SpentByPerson(_ context.Context, tenant, month string) (map[string]float64, error) {
+	out := map[string]float64{}
+	err := s.l.each(tenant, func(e entry) {
+		if e.Kind == "person_usd" && e.Month == month && e.User != "" {
+			out[e.User] += e.N
 		}
 	})
 	return out, err

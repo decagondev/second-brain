@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S49.1: Spend with purpose
+
+**Wave/slice:** W49 / S49.1 (SB-5001 to SB-5004) · **Status:** Done
+
+**What:** Every answer's trace now says which feature asked it, and the AI command centre counts 12 weeks of them by space, feature, agent and tier, beside each space's budget, each agent's cap and the personal limit, with the same numbers as a CSV. A space chooses `routing: economy`, `balanced` or `frontier`, which a team inherits and can't go above. A tenant sets a monthly limit per person: at 80% the person is told, at 100% their own asks and research move to the economy tier and their routines pause, and a steward can lift it for the month, audited. An agent takes a one-sentence job and up to three targets on its value numbers, shown against the last four weeks, and a target missed two weeks running tells its owner once.
+
+**Why this way:** The feature is set by whoever calls ask (a routine, a rhythm, a brief, research) on the context, so no caller can count under another's name and old traces read as plain asks. Routing sits in the tier rule after a forced or pinned tier and before the balanced rule, so a held small tier still wins and `model: main` still pins. The cell has two tiers, so frontier is the main model, and the gate check is the evals job running each space's cases on its policy's tier, holding the small tier when they fail. The person meter is a separate ledger kind, read only to compare with the limit and to count bands, so the command centre never needs a person's spend. Goals reuse the value report's counting, week by week, and change nothing the agent does.
+
+**Learned:** The ask core has no person's month spend of its own, so the limit is a function the cell provides, and an unreadable ledger limits nobody while the tenant budget still holds. The admin console's tests answer every route with the same body, so the new section only shows a body that has totals.
+
+**Laws:** LAW-06, LAW-07, LAW-11. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S48.2: Agents that keep up
 
 **Wave/slice:** W48 / S48.2 (SB-4904 to SB-4906) · **Status:** Done

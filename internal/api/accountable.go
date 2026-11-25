@@ -101,6 +101,26 @@ func (h Admin) agentValue(w http.ResponseWriter, r *http.Request, _ tenancy.Scop
 	h.ok(w, v)
 }
 
+// aiUsage is GET /v1/admin/ai/usage[?format=csv]: the AI command centre (SB-5001).
+func (h Admin) aiUsage(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.AIUsage == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "AI use can't be read in this cell."))
+		return
+	}
+	u, err := h.AIUsage(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "AI use can't be read right now."))
+		return
+	}
+	if r.URL.Query().Get("format") == "csv" {
+		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="ai-usage-`+u.From+`.csv"`)
+		_, _ = w.Write(u.CSV())
+		return
+	}
+	h.ok(w, u)
+}
+
 // agentRecord is GET /v1/admin/agents/NAME/record[?format=md]: the agent's signed record, or
 // its Markdown (SB-4707).
 func (h Admin) agentRecord(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {

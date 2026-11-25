@@ -52,6 +52,11 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		return nil, nil, err
 	}
 	out, marks = append(out, pol...), append(marks, polMarks...)
+	lim, limMarks, err := j.nearLimit(ctx, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	out, marks = append(out, lim...), append(marks, limMarks...)
 	if j.SourceChanged != nil {
 		if err := j.SourceChanged(ctx, from, now); err != nil {
 			return nil, nil, fmt.Errorf("notify: sources changed: %w", err)
@@ -79,6 +84,40 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		if err := j.Clock.Mark(ctx, key, now); err != nil {
 			return nil, nil, err
 		}
+	}
+	return out, marks, nil
+}
+
+// nearLimit tells each person at 80% of their personal limit once a month, marked after the
+// run sends (SB-5003). The marker's name carries no id.
+func (j Job) nearLimit(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.NearLimit == nil {
+		return nil, nil, nil
+	}
+	users, err := j.NearLimit(ctx, now)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: limits: %w", err)
+	}
+	var out []outgoing
+	var marks []func() error
+	month := now.UTC().Format("2006-01")
+	for _, u := range users {
+		sum := sha256.Sum256([]byte(u))
+		key := "limit-" + hex.EncodeToString(sum[:8]) + "-" + month
+		if _, done, err := j.Clock.Last(ctx, key); err != nil || done {
+			if err != nil {
+				return nil, nil, err
+			}
+			continue
+		}
+		p, ok, err := j.person(ctx, u)
+		if err != nil {
+			return nil, nil, err
+		}
+		if ok && j.Send != nil {
+			out = append(out, outgoing{p, Message{Kind: KindLimit, Text: "You have used 80% of your monthly AI limit. At 100% your own asks and research use the economy model until the month ends; anything you review keeps working", Link: j.tab("answer")}})
+		}
+		marks = append(marks, func() error { return j.Clock.Mark(ctx, key, now) })
 	}
 	return out, marks, nil
 }

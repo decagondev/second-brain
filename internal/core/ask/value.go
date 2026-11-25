@@ -50,6 +50,7 @@ type ValueReport struct {
 	From  string       `json:"from"`
 	Rows  []ValueRow   `json:"rows"`
 	Spend []AgentSpend `json:"spend"`
+	Goals []GoalView   `json:"goals"`
 }
 
 // draftAgent is the agent of an agent draft, or "" for anything else in a queue.

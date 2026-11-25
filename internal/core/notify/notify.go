@@ -30,6 +30,7 @@ const (
 	KindOwned     = "owned"     // an owner's often-cited documents are past review, monthly (SB-2806)
 	KindWelcome   = "welcome"   // a new member's welcome brief (SB-4006)
 	KindPolicy    = "policy"    // a policy to read, once per version (SB-4103)
+	KindLimit     = "limit"     // 80% of the personal limit, once a month (SB-5003)
 )
 
 // TokenWarn is how long before a token expires its owner is told.
@@ -49,7 +50,7 @@ const KindTest = "test"
 const TestText = "This is a test from Second Brain. Its notifications reach you here."
 
 // Kinds are every kind, for validating a person's settings.
-var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true, KindPolicy: true}
+var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true, KindPolicy: true, KindLimit: true}
 
 // Person is one recipient: a directory user and the email the chat finds them by.
 type Person struct {
@@ -258,6 +259,9 @@ type Job struct {
 	// SourceChanged notes the documents with a new version in [from, now) on the agent
 	// drafts that drew on them, and makes the day's redrafts (SB-4905); nil does neither.
 	SourceChanged func(ctx context.Context, from, now time.Time) error
+	// NearLimit are the people at 80% or more of their personal limit this month (SB-5003),
+	// each told once a month; nil tells no one.
+	NearLimit func(ctx context.Context, now time.Time) ([]string, error)
 	// Research runs the queued research reports and returns those it finished (SB-4201);
 	// Actions are the action items confirmed since a time (SB-4203); PrepDue makes a
 	// person's briefs of the events starting in a window (SB-4202). nil does none.

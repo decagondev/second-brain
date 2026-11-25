@@ -107,7 +107,21 @@ func (c *Cell) agentValue(ctx context.Context, only []string) (ask.ValueReport, 
 	if err != nil {
 		return ask.ValueReport{}, err
 	}
-	return ask.ValueReport{Weeks: ask.ValueWeeks, From: from.UTC().Format("2006-01-02"), Rows: rows, Spend: spend}, nil
+	goals := ask.GoalViews(goalDefs(c.Manifest()), qs, traces, fb, now, ask.GoalWeeks, only)
+	return ask.ValueReport{Weeks: ask.ValueWeeks, From: from.UTC().Format("2006-01-02"), Rows: rows, Spend: spend, Goals: goals}, nil
+}
+
+// goalDefs are the manifest's agent goals as the ask core reads them (SB-5004).
+func goalDefs(m manifest.Tenant) map[string]ask.GoalDef {
+	out := map[string]ask.GoalDef{}
+	for a, g := range m.AgentGoals {
+		d := ask.GoalDef{Job: g.Job}
+		for _, t := range g.Targets {
+			d.Targets = append(d.Targets, ask.TargetDef{Metric: t.Metric, AtLeast: t.AtLeast, AtMost: t.AtMost})
+		}
+		out[a] = d
+	}
+	return out
 }
 
 // ownerValue is the value of the agents s owns.
@@ -139,6 +153,29 @@ func (c *Cell) agentAlerts(ctx context.Context, now time.Time) ([]notify.AgentAl
 		}
 		out = append(out, notify.AgentAlert{Key: "discards-" + d.Agent + "-" + d.Week, To: to,
 			Text: fmt.Sprintf("Twice as many drafts by %s were discarded last week: %d of %d", d.Agent, d.Discarded, d.Drafts)})
+	}
+	if goals := goalDefs(m); len(goals) > 0 { // SB-5004: a target missed two weeks running
+		from := ask.WeekStart(now).AddDate(0, 0, -7*ask.GoalWeeks)
+		traces, err := c.Report.Traces(ctx, c.Config.Tenant, from, now)
+		if err != nil {
+			return nil, err
+		}
+		fb, err := c.Traces.FeedbackBetween(ctx, c.Config.Tenant, from, now)
+		if err != nil {
+			return nil, err
+		}
+		gq, err := c.Traces.StewardQuestionsBetween(ctx, c.Config.Tenant, from, now)
+		if err != nil {
+			return nil, err
+		}
+		for _, ms := range ask.MissedTwice(ask.GoalViews(goals, gq, traces, fb, now, ask.GoalWeeks, nil)) {
+			to, err := c.ownerUsers(ctx, ms.Agent)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, notify.AgentAlert{Key: "goal-" + ms.Agent + "-" + ms.Metric + "-" + ms.Since, To: to,
+				Text: fmt.Sprintf("%s missed its %s target two weeks running", ms.Agent, strings.ReplaceAll(ms.Metric, "_", " "))})
+		}
 	}
 	if len(m.AgentCaps) == 0 {
 		return out, nil
@@ -269,6 +306,9 @@ func (c *Cell) AgentRecord(ctx context.Context, name string) (ask.SignedRecord, 
 	from := time.Unix(0, 0)
 	tenant := c.Config.Tenant
 	in := ask.RecordInputs{Tenant: tenant, Release: c.Release, Now: now, Def: def, OwnerInactive: !c.ownerActive(ctx, def.Owner), Caps: c.Manifest().AgentCaps}
+	if g, ok := goalDefs(c.Manifest())[name]; ok {
+		in.Goal = &g
+	}
 	var err error
 	if in.Traces, err = c.Report.Traces(ctx, tenant, from, now); err != nil {
 		return ask.SignedRecord{}, fmt.Errorf("%w: traces: %v", ask.ErrUnavailable, err)

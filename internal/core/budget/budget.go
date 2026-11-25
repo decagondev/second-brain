@@ -103,6 +103,26 @@ type SpaceMeter interface {
 	SpentBySpace(ctx context.Context, tenant, month string) (map[string]float64, error)
 }
 
+// PersonMeter keeps a tenant's spend per person and month too (SB-5003). A meter without
+// it limits no one.
+type PersonMeter interface {
+	AddPerson(ctx context.Context, tenant, user, month string, usd float64) error
+	SpentByPerson(ctx context.Context, tenant, month string) (map[string]float64, error)
+}
+
+// RecordFor is RecordIn for a call made for user: with a PersonMeter, it is metered for them
+// too (SB-5003).
+func (g *Guard) RecordFor(ctx context.Context, space, user string, input, output int) error {
+	if err := g.RecordIn(ctx, space, input, output); err != nil {
+		return err
+	}
+	if pm, ok := g.Meter.(PersonMeter); ok && user != "" {
+		usd := float64(input)/1e6*g.Price.InputPerM + float64(output)/1e6*g.Price.OutputPerM
+		return pm.AddPerson(ctx, g.Tenant, user, g.month(), usd)
+	}
+	return nil
+}
+
 // RecordIn is Record for a call that ran in space (spc_NAME, or "" for none): the spend is
 // metered for the tenant and, with a SpaceMeter, for the space.
 func (g *Guard) RecordIn(ctx context.Context, space string, input, output int) error {
@@ -187,10 +207,40 @@ func (g *Guard) count(reason string) {
 
 // MemoryMeter is an in-process Meter and SpaceMeter (development and tests).
 type MemoryMeter struct {
-	mu     sync.Mutex
-	m      map[string]float64
-	spaces map[string]map[string]float64
-	Fail   bool
+	mu      sync.Mutex
+	m       map[string]float64
+	spaces  map[string]map[string]float64
+	persons map[string]map[string]float64
+	Fail    bool
+}
+
+// AddPerson implements PersonMeter.
+func (m *MemoryMeter) AddPerson(_ context.Context, tenant, user, month string, usd float64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.persons == nil {
+		m.persons = map[string]map[string]float64{}
+	}
+	k := tenant + "/" + month
+	if m.persons[k] == nil {
+		m.persons[k] = map[string]float64{}
+	}
+	m.persons[k][user] += usd
+	return nil
+}
+
+// SpentByPerson implements PersonMeter.
+func (m *MemoryMeter) SpentByPerson(_ context.Context, tenant, month string) (map[string]float64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.Fail {
+		return nil, errors.New("meter down")
+	}
+	out := map[string]float64{}
+	for u, v := range m.persons[tenant+"/"+month] {
+		out[u] = v
+	}
+	return out, nil
 }
 
 // AddSpace implements SpaceMeter.

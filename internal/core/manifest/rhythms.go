@@ -135,6 +135,9 @@ func (c *checker) rhythmField(key string, v *node, f string, s *Space) {
 	case "on": // SB-4905
 		s.On = c.spaceOn(v, f)
 		return
+	case "routing": // SB-5002
+		s.Routing = c.oneOf(v, f, RoutingPolicies)
+		return
 	}
 	s.Rhythms = c.rhythms(v, f)
 }
@@ -144,6 +147,9 @@ func formatWays(sp Space, nl string) string {
 	out := ""
 	if len(sp.On) > 0 { // SB-4905
 		out += fmt.Sprintf("    on: %s%s", flowList(sp.On, false), nl)
+	}
+	if sp.Routing != "" { // SB-5002
+		out += fmt.Sprintf("    routing: %s%s", sp.Routing, nl)
 	}
 	if sp.Onboarding != nil {
 		out += fmt.Sprintf("    onboarding: %t%s", *sp.Onboarding, nl)

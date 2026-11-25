@@ -130,6 +130,9 @@ func (x Stewards) draftAnswer(ctx context.Context, s tenancy.Scope, kind string,
 	if agent == "" {
 		agent = "ask"
 	}
+	if _, set := ctx.Value(featureKey{}).(string); !set {
+		ctx = WithFeature(ctx, FeatureBrief) // SB-5001: a draft is work a steward reviews
+	}
 	resp, err := x.Agent.Ask(ctx, s, req)
 	if err != nil {
 		return Response{}, "", err

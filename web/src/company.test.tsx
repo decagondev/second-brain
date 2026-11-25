@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { AdminGuardrails, Goals, PoliciesToRead, Requests, StewardPolicies, TeamUpdates } from "./Company";
+import { AdminAIUsage, AdminGuardrails, Goals, PoliciesToRead, Requests, StewardPolicies, TeamUpdates } from "./Company";
 import type { Fetch } from "./api";
 
 afterEach(cleanup);
@@ -129,5 +129,23 @@ describe("guardrails", () => {
     expect(screen.getAllByText("fewer than 5").length).toBe(1);
     const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
     expect(r.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  // SB-5001: the AI command centre's totals, the limit's bands and the CSV link.
+  it("shows AI use by feature with the limit's bands", async () => {
+    const fetcher: Fetch = async () =>
+      json({
+        weeks: 12,
+        from: "2026-09-07",
+        features: [{ feature: "ask", uses: 40, usd: 3.5 }, { feature: "research", uses: 2, usd: 1.25 }],
+        total: { uses: 42, usd: 4.75 },
+        limit: { monthly_usd_per_person: 20, under_80: "38", from_80: "fewer than 5", at_limit: "fewer than 5" },
+      });
+    const { container } = render(<AdminAIUsage fetcher={fetcher} />);
+    expect(await screen.findByText("12 weeks from 2026-09-07")).toBeTruthy();
+    expect(screen.getByText("$4.75")).toBeTruthy();
+    expect(screen.getByText("Personal limit $20.00 a month: 38 under 80%, fewer than 5 from 80%, fewer than 5 at the limit")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Download as CSV" }).getAttribute("href")).toBe("/v1/admin/ai/usage?format=csv");
+    expect(await violations(container)).toEqual([]);
   });
 });

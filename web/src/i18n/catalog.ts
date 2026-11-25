@@ -1037,4 +1037,12 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Project name": { de: "Projektname", fr: "Nom du projet" },
   "Members (emails)": { de: "Mitglieder (E-Mails)", fr: "Membres (e-mails)" },
   "Start a project": { de: "Projekt starten", fr: "Démarrer un projet" },
+  "AI use": { de: "KI-Nutzung", fr: "Usage de l'IA" },
+  "{weeks} weeks from {from}": { de: "{weeks} Wochen ab {from}", fr: "{weeks} semaines depuis le {from}" },
+  "Feature": { de: "Funktion", fr: "Fonction" },
+  "Answers": { de: "Antworten", fr: "Réponses" },
+  "Spend": { de: "Ausgaben", fr: "Dépenses" },
+  "Total": { de: "Gesamt", fr: "Total" },
+  "Personal limit {limit} a month: {under} under 80%, {near} from 80%, {at} at the limit": { de: "Persönliches Limit {limit} im Monat: {under} unter 80 %, {near} ab 80 %, {at} am Limit", fr: "Limite personnelle de {limit} par mois : {under} sous 80 %, {near} à partir de 80 %, {at} à la limite" },
+  "Download as CSV": { de: "Als CSV herunterladen", fr: "Télécharger en CSV" },
 };

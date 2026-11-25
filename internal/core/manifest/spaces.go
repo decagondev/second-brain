@@ -62,6 +62,36 @@ type Space struct {
 	Onboarding *bool `json:"onboarding,omitempty"`
 	// On are the space's opt-in triggers (SB-4905), from SpaceTriggers; nil for none.
 	On []string `json:"on,omitempty"`
+	// Routing is the space's routing policy (SB-5002), one of RoutingPolicies; "" is
+	// balanced, or its department's.
+	Routing string `json:"routing,omitempty"`
+}
+
+// RoutingPolicies are the routing policies, cheapest first (SB-5002).
+var RoutingPolicies = []string{"economy", "balanced", "frontier"}
+
+// DefaultRouting is a space's routing policy when neither it nor its department sets one.
+const DefaultRouting = "balanced"
+
+// routingRank is a policy's place in RoutingPolicies; "" is balanced.
+func routingRank(p string) int {
+	if p == "" {
+		p = DefaultRouting
+	}
+	for i, x := range RoutingPolicies {
+		if x == p {
+			return i
+		}
+	}
+	return 1
+}
+
+// RoutingOf is space name's routing policy: its own, else its department's, else balanced.
+func (t Tenant) RoutingOf(name string) string {
+	if p := t.Effective(name).Routing; p != "" {
+		return p
+	}
+	return DefaultRouting
 }
 
 // SpaceTriggers are the triggers a space's `on` may list: source-changed redrafts what an
@@ -224,7 +254,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -344,7 +374,7 @@ func (c *checker) space(name string, n *node, p string) {
 			s.IncidentLabels = c.incidentLabels(v, f)
 		case "skills": // SB-4601
 			s.Skills, sn.skills = c.skills(v, f), v
-		case "rhythms", "onboarding", "on": // SB-4801, SB-4802, SB-4905
+		case "rhythms", "onboarding", "on", "routing": // SB-4801, SB-4802, SB-4905, SB-5002
 			c.rhythmField(k.value, v, f, &s)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
@@ -988,6 +1018,9 @@ func (c *checker) treeChecks(names []string) {
 		case par.Parent != "":
 			c.add(sn.parent, f, "%s is itself under %s; the tree is at most company, department and team", s.Parent, par.Parent)
 		default:
+			if s.Routing != "" && routingRank(s.Routing) > routingRank(par.Routing) { // SB-5002
+				c.add(sn.parent, "spaces."+name+".routing", "%s can't be above its department's policy (%s)", s.Routing, c.t.RoutingOf(s.Parent))
+			}
 			continue
 		}
 		s.Parent = "" // a bad parent is reported once and not inherited from
@@ -1088,6 +1121,9 @@ func (t Tenant) Effective(name string) Space {
 	}
 	if s.Onboarding == nil {
 		s.Onboarding = par.Onboarding
+	}
+	if s.Routing == "" { // SB-5002
+		s.Routing = par.Routing
 	}
 	if len(par.StartHere) > 0 {
 		joined := append([]string{}, par.StartHere...)

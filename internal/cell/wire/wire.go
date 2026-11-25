@@ -514,7 +514,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		}),
 		Glossary: func(name string) map[string]string { return m.Effective(name).Glossary },
 		Skills:   func(name string) []ask.Skill { return spaceSkills(m, name) }, // SB-4601
-		Rate:     &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
+		Routing:  routing(m), PersonOver: c.personOver,                          // SB-5002, SB-5003
+		Rate: &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
 		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
 		Climb: func(ctx context.Context, space string) []ask.PersonRef { // SB-3906: up to the department's stewards
 			up := parentOf(m)(space)
@@ -708,6 +709,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
+		AIUsage:     c.aiUsage,     // SB-5001
 		AgentRecord: c.AgentRecord} // SB-4707
 	admin.InFlight = c.inFlight(m) // SB-4806
 	admin.Register(mux)
@@ -725,7 +727,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now,
 		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive, PausedIn: c.Kill.PausedIn,
-		Scenarios: stewards, ScopeIn: c.ScopeAs}.Register(mux) // SB-4904
+		Scenarios: stewards, ScopeIn: c.ScopeAs, Lift: c.lift}.Register(mux) // SB-4904, SB-5003
 	api.AgentControl{Value: c.ownerValue, Pause: c.pauseAgent, Shadow: stewards.ShadowsFor}.Register(mux) // SB-4701, SB-4702, SB-4704
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)

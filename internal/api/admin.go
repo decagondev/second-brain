@@ -94,6 +94,8 @@ type Admin struct {
 	PausedIn   func(agent string) []string
 	// AgentRecord is an agent's signed record (SB-4707); nil is EUNAVAIL.
 	AgentRecord func(ctx context.Context, name string) (ask.SignedRecord, error)
+	// AIUsage is the AI command centre (SB-5001); nil is EUNAVAIL.
+	AIUsage func(ctx context.Context) (ask.AIUsage, error)
 }
 
 // SpaceSpend is one space's model spend in a month: its own and its teams' (the branch),
@@ -142,6 +144,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/agents", h.guard(h.agents))
 	mux.HandleFunc("GET /v1/admin/agents/value", h.guard(h.agentValue))          // SB-4701
 	mux.HandleFunc("GET /v1/admin/agents/{name}/record", h.guard(h.agentRecord)) // SB-4707
+	mux.HandleFunc("GET /v1/admin/ai/usage", h.guard(h.aiUsage))                 // SB-5001
 	mux.HandleFunc("GET /v1/admin/tokens", h.guard(h.listTokens))
 	mux.HandleFunc("DELETE /v1/admin/tokens/{id}", h.guard(h.revokeToken))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
