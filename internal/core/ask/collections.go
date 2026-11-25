@@ -36,6 +36,10 @@ type Collection struct {
 	Shared []string  `json:"shared,omitempty"` // emails, lower case
 	At     time.Time `json:"at"`
 	Used   time.Time `json:"used"`
+	// Project is the project it holds (SB-4803), and Closed when the project closed: a
+	// closed collection is read-only and never deleted (SB-4804).
+	Project string     `json:"project,omitempty"`
+	Closed  *time.Time `json:"closed,omitempty"`
 }
 
 // CollectionStore keeps collections.
@@ -65,6 +69,9 @@ type CollectionView struct {
 	Shared []string         `json:"shared,omitempty"`
 	At     time.Time        `json:"at"`
 	Stale  bool             `json:"stale,omitempty"`
+	// Project and Closed are its project's id and closing day (SB-4803, SB-4804).
+	Project string `json:"project,omitempty"`
+	Closed  string `json:"closed,omitempty"`
 }
 
 // CollectionInput is a new collection, or a collection's new name, items and people.
@@ -291,7 +298,10 @@ func (x CollectionService) Update(ctx context.Context, s tenancy.Scope, id strin
 	if err != nil {
 		return CollectionView{}, err
 	}
-	c.ID, c.At, c.Used = old.ID, old.At, x.now()
+	if old.Closed != nil { // SB-4804: a closed project's collection is read-only
+		return CollectionView{}, fmt.Errorf("%w: the project is closed; its collection is read-only", ErrInvalid)
+	}
+	c.ID, c.At, c.Used, c.Project = old.ID, old.At, x.now(), old.Project
 	if err := x.audit(ctx, s, c, "changed"); err != nil {
 		return CollectionView{}, err
 	}
@@ -309,6 +319,9 @@ func (x CollectionService) Delete(ctx context.Context, s tenancy.Scope, id strin
 	c, err := x.own(ctx, s, id)
 	if err != nil {
 		return err
+	}
+	if c.Project != "" { // SB-4804: a project's collection is archived, never deleted
+		return fmt.Errorf("%w: a project's collection is archived when the project closes, never deleted", ErrInvalid)
 	}
 	if err := x.audit(ctx, s, c, "removed"); err != nil {
 		return err
@@ -351,7 +364,10 @@ func (x CollectionService) List(ctx context.Context, s tenancy.Scope) ([]Collect
 
 // view is c as s's person may see it now: documents checked live as them, the rest counted.
 func (x CollectionService) view(ctx context.Context, s tenancy.Scope, c Collection, saved map[string]map[string]string) (CollectionView, error) {
-	v := CollectionView{ID: c.ID, Name: c.Name, Mine: c.Owner == s.User(), Items: []CollectionItem{}, At: c.At}
+	v := CollectionView{ID: c.ID, Name: c.Name, Mine: c.Owner == s.User(), Items: []CollectionItem{}, At: c.At, Project: c.Project}
+	if c.Closed != nil {
+		v.Closed = c.Closed.Format(time.DateOnly)
+	}
 	if es, err := x.Agent.emailsOf(ctx, c.Owner); err == nil && len(es) > 0 {
 		v.Owner = es[0]
 	}

@@ -9,6 +9,7 @@ import { DraftPanel } from "./Draft";
 import { DocumentsView } from "./Documents";
 import { SavedView, TurnTools } from "./Saved";
 import { AskStewards, QuestionsView } from "./Questions";
+import { RhythmsCard, ProjectsCard } from "./Rhythms";
 import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { CatchUp, ServiceCard, Trail, WaitsCard, markVisit } from "./Across";
@@ -317,6 +318,8 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
         {space && turns.length === 0 && <Trail space={space} fetcher={fetcher} />}
         {turns.length === 0 && <WhatChanged space={space || undefined} fetcher={fetcher} />}
         {space && turns.length === 0 && <StartHere space={space} fetcher={fetcher} />}
+        {space && !space.endsWith(BRANCH) && turns.length === 0 && <RhythmsCard space={space} fetcher={fetcher} />}
+        {space && !space.endsWith(BRANCH) && turns.length === 0 && <ProjectsCard space={space} fetcher={fetcher} />}
         {space && !space.endsWith(BRANCH) && turns.length === 0 && <SharedRoutines space={space} fetcher={fetcher} />}
         {space && turns.length === 0 && <WhosWho space={space} fetcher={fetcher} />}
         <section id="conversation" tabIndex={-1} aria-live="polite" aria-busy={busy} aria-label={t("Conversation")} className="turns">

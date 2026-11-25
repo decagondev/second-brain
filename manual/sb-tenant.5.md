@@ -81,7 +81,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `events` | `{ url, kinds }` | no | none | (SB-4404) Signed events out, off by default: the cell posts each event of a chosen kind to `url` (`https://` only), ids only, signed with the key at `vault://tenants/TENANT/events` (sb-api(3), Events out). `kinds` is a non-empty list of `decision`, `goal_at_risk`, `request_overdue`, `policy_published` and `action_due`, each once |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
 | `groups` | map `group:NAME`→list of emails | no | none | Only with an `identity-platform://` idp: the steward-managed group list for a company without SCIM ([sb-identity(7)](sb-identity.7.md)). At most 200 groups and 2,000 members in all; each email at most once per group |
-| `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today |
+| `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today. Each space may hold its own `rhythms` and turn `onboarding` off (SB-4801, SB-4802; sb-space(5)) |
 | `barriers` | list of group pairs | no | none | Information barriers ([sb-space(5)](sb-space.5.md)). Checked, planned and applied like `spaces` |
 
 ## VALIDATION RULES

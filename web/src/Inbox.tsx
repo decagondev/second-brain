@@ -273,7 +273,7 @@ export function AgentCases({ fetcher }: { fetcher?: Fetch }) {
   }, []);
   const docs = (c: CaseCandidate) => {
     const seen = new Map<string, string>();
-    for (const cl of c.claims) for (const ci of cl.cites) seen.set(ci.cite.split("@")[0], ci.title || ci.cite);
+    for (const cl of c.claims) for (const ci of cl.cites) seen.set(ci.cite.split("@")[0] ?? ci.cite, ci.title || ci.cite);
     return [...seen.entries()];
   };
   async function decide(c: CaseCandidate, dismiss: boolean) {
@@ -314,7 +314,7 @@ export function AgentCases({ fetcher }: { fetcher?: Fetch }) {
                     {t("Should cite")}{" "}
                     <select
                       aria-label={t("Should cite: {question}", { question: c.question })}
-                      value={expect[c.id] ?? docs(c)[0][0]}
+                      value={expect[c.id] ?? docs(c)[0]?.[0]}
                       onChange={(e) => setExpect({ ...expect, [c.id]: e.target.value })}
                     >
                       {docs(c).map(([k, title]) => (

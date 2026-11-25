@@ -81,6 +81,7 @@ func Format(t Tenant) []byte {
 			if sp.Updates {
 				fmt.Fprintf(&b, "    updates: true%s", nl)
 			}
+			b.WriteString(formatWays(sp, nl)) // SB-4801, SB-4802
 			if sp.LeaderWeek != nil {
 				fmt.Fprintf(&b, "    leader_week: %t%s", *sp.LeaderWeek, nl)
 			}

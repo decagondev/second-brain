@@ -1108,3 +1108,47 @@ func (t Traces) DeleteShadows(ctx context.Context, tenant string, now time.Time)
 	}
 	return int(tag.RowsAffected()), nil
 }
+
+var _ ask.RhythmStore = Traces{}
+
+// PutRhythmRun implements ask.RhythmStore (SB-4801): one record per run, by its starter.
+func (t Traces) PutRhythmRun(ctx context.Context, r ask.RhythmRun) error {
+	return put(ctx, t.Pool, r.Tenant, "rhythm", r.ID, meta{at: r.At, space: r.Space}, r, false)
+}
+
+// GetRhythmRun implements ask.RhythmStore.
+func (t Traces) GetRhythmRun(ctx context.Context, tenant, id string) (ask.RhythmRun, bool, error) {
+	return get[ask.RhythmRun](ctx, t.Pool, tenant, "rhythm", id, false)
+}
+
+// RhythmRuns implements ask.RhythmStore: the tenant's, oldest first.
+func (t Traces) RhythmRuns(ctx context.Context, tenant string) ([]ask.RhythmRun, error) {
+	return list[ask.RhythmRun](ctx, t.Pool, tenant, "rhythm", "", "at, id")
+}
+
+// PutRoster implements ask.RhythmStore (SB-4802): one record per space.
+func (t Traces) PutRoster(ctx context.Context, r ask.RhythmRoster) error {
+	return put(ctx, t.Pool, r.Tenant, "roster", r.Space, meta{at: r.At, space: r.Space}, r, false)
+}
+
+// GetRoster implements ask.RhythmStore.
+func (t Traces) GetRoster(ctx context.Context, tenant, space string) (ask.RhythmRoster, bool, error) {
+	return get[ask.RhythmRoster](ctx, t.Pool, tenant, "roster", space, false)
+}
+
+var _ ask.ProjectStore = Traces{}
+
+// PutProject implements ask.ProjectStore (SB-4803): one record per project, by its lead.
+func (t Traces) PutProject(ctx context.Context, p ask.Project) error {
+	return put(ctx, t.Pool, p.Tenant, "project", p.ID, meta{at: p.At, user: p.Lead, space: p.Space}, p, false)
+}
+
+// GetProject implements ask.ProjectStore.
+func (t Traces) GetProject(ctx context.Context, tenant, id string) (ask.Project, bool, error) {
+	return get[ask.Project](ctx, t.Pool, tenant, "project", id, false)
+}
+
+// Projects implements ask.ProjectStore: the tenant's, oldest first.
+func (t Traces) Projects(ctx context.Context, tenant string) ([]ask.Project, error) {
+	return list[ask.Project](ctx, t.Pool, tenant, "project", "", "at, id")
+}

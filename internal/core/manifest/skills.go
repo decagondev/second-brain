@@ -46,24 +46,31 @@ func SkillProblem(instruction string) string {
 
 // skills reads a space's skills, NAME: { instruction, cases: { QUESTION: KIND:ID } }.
 func (c *checker) skills(v *node, f string) map[string]Skill {
-	if !c.mapOf(v, f, `{ weekly-update: { instruction: "Three headings: Shipped, Decided, At risk.", cases: { "What did we ship?": "docs:updates/w1.md" } } }`) {
+	return namedMap(c, v, f, `{ weekly-update: { instruction: "Three headings: Shipped, Decided, At risk.", cases: { "What did we ship?": "docs:updates/w1.md" } } }`,
+		"skill", MaxSkills, skillNameRe, c.skill)
+}
+
+// namedMap reads a map of at most max entries, each name matching re and each value read
+// by one; nil for none (skills, SB-4601; rhythms, SB-4801).
+func namedMap[T any](c *checker, v *node, f, example, what string, max int, re *regexp.Regexp, one func(*node, string) (T, bool)) map[string]T {
+	if !c.mapOf(v, f, example) {
 		return nil
 	}
-	if len(v.keys) > MaxSkills {
-		c.add(v, f, "at most %d skills", MaxSkills)
+	if len(v.keys) > max {
+		c.add(v, f, "at most %d %ss", max, what)
 	}
-	out := map[string]Skill{}
+	out := map[string]T{}
 	for j, k := range v.keys {
 		if c.skip[k] {
 			continue
 		}
 		fk := f + "." + k.value
-		if !skillNameRe.MatchString(k.value) {
-			c.add(k, fk, "a skill name is [a-z][a-z0-9-]{0,39}")
+		if !re.MatchString(k.value) {
+			c.add(k, fk, "a %s name is [a-z][a-z0-9-]{0,39}", what)
 			continue
 		}
-		if sk, ok := c.skill(v.vals[j], fk); ok {
-			out[k.value] = sk
+		if x, ok := one(v.vals[j], fk); ok {
+			out[k.value] = x
 		}
 	}
 	if len(out) == 0 {

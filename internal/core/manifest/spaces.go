@@ -55,6 +55,11 @@ type Space struct {
 	IncidentLabels []string `json:"incident_labels,omitempty"`
 	// Skills are the space's named ways of writing an answer (SB-4601), by name; nil for none.
 	Skills map[string]Skill `json:"skills,omitempty"`
+	// Rhythms are the space's own playbooks (SB-4801), by name; nil for none beyond the
+	// built-in ones.
+	Rhythms map[string]Rhythm `json:"rhythms,omitempty"`
+	// Onboarding false turns off the onboarding rhythm for the space (SB-4802); nil is on.
+	Onboarding *bool `json:"onboarding,omitempty"`
 }
 
 // Skill is one way of writing an answer: an instruction on format and steps only, and the
@@ -210,7 +215,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -330,6 +335,8 @@ func (c *checker) space(name string, n *node, p string) {
 			s.IncidentLabels = c.incidentLabels(v, f)
 		case "skills": // SB-4601
 			s.Skills, sn.skills = c.skills(v, f), v
+		case "rhythms", "onboarding": // SB-4801, SB-4802
+			c.rhythmField(k.value, v, f, &s)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
 				s.ReviewAfterDays = 0 // one form for the default, so Format reads back the same
@@ -1035,6 +1042,19 @@ func (t Tenant) Effective(name string) Space {
 			sk[k] = v
 		}
 		s.Skills = sk
+	}
+	if len(par.Rhythms) > 0 { // SB-4801: the team's own rhythm of a name wins
+		rs := map[string]Rhythm{}
+		for k, v := range par.Rhythms {
+			rs[k] = v
+		}
+		for k, v := range s.Rhythms {
+			rs[k] = v
+		}
+		s.Rhythms = rs
+	}
+	if s.Onboarding == nil {
+		s.Onboarding = par.Onboarding
 	}
 	if len(par.StartHere) > 0 {
 		joined := append([]string{}, par.StartHere...)

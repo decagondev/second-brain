@@ -80,6 +80,8 @@ Work that comes to you (SB-4301 to SB-4303): `GET /v1/me/inbox`, `PUT /v1/saved/
 
 Context for the work (SB-4304 to SB-4307): `GET|POST /v1/collections`, `PUT|DELETE /v1/collections/{id}`, the ask's `collection` and `table`, and `GET /v1/me/agent-runs` (sb-ask(3), Context for the work). A collection keeps ids only and shows each reader only what they can open; agent runs keep no record of their own.
 
+Ways of working (SB-4801 to SB-4804): `GET /v1/spaces/{name}/rhythms`, `POST /v1/spaces/{name}/rhythms`, `POST /v1/rhythms/{id}/approve`, `POST /v1/rhythms/{id}/stop` and `POST /v1/rhythms/{id}/consent` (sb-departments(7), Rhythms); `GET /v1/spaces/{name}/projects`, `POST /v1/spaces/{name}/projects`, `GET /v1/projects/{id}`, `POST /v1/projects/{id}/decisions`, `POST /v1/projects/{id}/members` and `POST /v1/projects/{id}/close` (sb-spaces(7), Projects). A rhythm's step is a draft or a prompt in its approver's queue; nothing here publishes or sends (LAW-29), and a project shows each reader only the decisions whose cite they can open (LAW-01).
+
 Governing agents (SB-4401, SB-4402): `GET /v1/agents/cases` and `POST /v1/agents/cases/{id}` (sb-evals(7), Cases from feedback), for an agent's owners only; the registry's `owner` (sb-admin(3)).
 
 ### Idempotency

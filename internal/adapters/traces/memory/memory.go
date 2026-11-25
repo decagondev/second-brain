@@ -43,6 +43,9 @@ type Store struct {
 	colls    map[string]ask.Collection    // tenant/id (SB-4304)
 	shadows  map[string]ask.ShadowRun     // tenant/id (SB-4704)
 	windows  map[string]ask.ShadowWindow  // tenant/agent|release
+	rhythms  map[string]ask.RhythmRun     // tenant/id (SB-4801)
+	rosters  map[string]ask.RhythmRoster  // tenant/space (SB-4802)
+	projects map[string]ask.Project       // tenant/id (SB-4803)
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -58,7 +61,8 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}, memory: map[string]ask.Memory{}, colls: map[string]ask.Collection{}, shadows: map[string]ask.ShadowRun{}, windows: map[string]ask.ShadowWindow{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}, memory: map[string]ask.Memory{}, colls: map[string]ask.Collection{}, shadows: map[string]ask.ShadowRun{}, windows: map[string]ask.ShadowWindow{},
+		rhythms: map[string]ask.RhythmRun{}, rosters: map[string]ask.RhythmRoster{}, projects: map[string]ask.Project{}}
 }
 
 // PutTrace implements ask.Store.
@@ -1104,4 +1108,102 @@ func (s *Store) DeleteShadows(_ context.Context, tenant string, now time.Time) (
 		}
 	}
 	return n, nil
+}
+
+var _ ask.RhythmStore = (*Store)(nil)
+
+func copyRun(r ask.RhythmRun) ask.RhythmRun {
+	r.Steps = append([]ask.RhythmRunStep(nil), r.Steps...)
+	return r
+}
+
+// PutRhythmRun implements ask.RhythmStore (SB-4801).
+func (s *Store) PutRhythmRun(_ context.Context, r ask.RhythmRun) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rhythms[r.Tenant+"/"+r.ID] = copyRun(r)
+	return nil
+}
+
+// GetRhythmRun implements ask.RhythmStore.
+func (s *Store) GetRhythmRun(_ context.Context, tenant, id string) (ask.RhythmRun, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, ok := s.rhythms[tenant+"/"+id]
+	return copyRun(r), ok, nil
+}
+
+// RhythmRuns implements ask.RhythmStore: the tenant's, oldest first.
+func (s *Store) RhythmRuns(_ context.Context, tenant string) ([]ask.RhythmRun, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return oldestFirst(s.rhythms, func(r ask.RhythmRun) (string, time.Time, string) { return r.Tenant, r.At, r.ID }, tenant, copyRun), nil
+}
+
+// oldestFirst are a tenant's records, by time then id, each copied.
+func oldestFirst[T any](m map[string]T, key func(T) (string, time.Time, string), tenant string, cp func(T) T) []T {
+	out := []T{}
+	for _, v := range m {
+		if t, _, _ := key(v); t == tenant {
+			out = append(out, cp(v))
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		_, ai, aid := key(out[i])
+		_, bi, bid := key(out[j])
+		if !ai.Equal(bi) {
+			return ai.Before(bi)
+		}
+		return aid < bid
+	})
+	return out
+}
+
+// PutRoster implements ask.RhythmStore (SB-4802).
+func (s *Store) PutRoster(_ context.Context, r ask.RhythmRoster) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r.Members = append([]string(nil), r.Members...)
+	s.rosters[r.Tenant+"/"+r.Space] = r
+	return nil
+}
+
+// GetRoster implements ask.RhythmStore.
+func (s *Store) GetRoster(_ context.Context, tenant, space string) (ask.RhythmRoster, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, ok := s.rosters[tenant+"/"+space]
+	return r, ok, nil
+}
+
+var _ ask.ProjectStore = (*Store)(nil)
+
+func copyProject(p ask.Project) ask.Project {
+	p.Pending = append([]ask.PendingMember(nil), p.Pending...)
+	p.Decisions = append([]ask.ProjectDecision(nil), p.Decisions...)
+	p.Lessons = append([]ask.Lesson(nil), p.Lessons...)
+	return p
+}
+
+// PutProject implements ask.ProjectStore (SB-4803).
+func (s *Store) PutProject(_ context.Context, p ask.Project) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.projects[p.Tenant+"/"+p.ID] = copyProject(p)
+	return nil
+}
+
+// GetProject implements ask.ProjectStore.
+func (s *Store) GetProject(_ context.Context, tenant, id string) (ask.Project, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.projects[tenant+"/"+id]
+	return copyProject(p), ok, nil
+}
+
+// Projects implements ask.ProjectStore: the tenant's, oldest first.
+func (s *Store) Projects(_ context.Context, tenant string) ([]ask.Project, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return oldestFirst(s.projects, func(p ask.Project) (string, time.Time, string) { return p.Tenant, p.At, p.ID }, tenant, copyProject), nil
 }

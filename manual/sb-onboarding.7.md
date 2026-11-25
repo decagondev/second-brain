@@ -101,6 +101,17 @@ The report holds ids, counts and comments only. It never shows a question or an 
 - [ ] Kill rehearsal done
 - [ ] First 20 approved actions show `Ran` with receipts
 
+### A new joiner's first 90 days (SB-4802)
+
+The days above are a tenant's first 90. A **person's** first 90 in a space are the built-in `onboarding` rhythm (sb-departments(7), Rhythms). It starts when SCIM adds someone to one of the space's member groups (the jobs service notices on its next run; the people already there when the space first runs it get none), or when a steward starts it. Its plan goes first to the joiner's manager from SCIM, or with none to the space's stewards, who approve it once; every later step goes to the joiner.
+
+- **Day 0:** the space's start-here pack (sb-spaces(7), Start here), only the items the joiner can open, and the people to meet: the owners of those items.
+- **Weeks 2 and 6:** a catch-up since they joined (sb-ask(3), Catch me up), as them.
+- **Weeks 2 and 6, for the stewards:** how many of the joiner's questions here found nothing, and the glossary terms they used. Their name goes with it only when they said yes (`POST /v1/rhythms/ID/consent`, `{ "share": true }`).
+- **Day 90:** a prompt to set up a weekly routine of their own.
+
+`onboarding: false` in a space (sb-space(5)) turns it off there. Leaving the space stops it at once (LAW-29), and nothing in it is ever an item the joiner can't open (LAW-01).
+
 ## LAWS
 
 Every gate includes [`sb tenant verify`](sb-tenant.1.md), which checks [LAW-01](sb-laws.7.md#law-01), [LAW-02](sb-laws.7.md#law-02), [LAW-03](sb-laws.7.md#law-03) and [LAW-14](sb-laws.7.md#law-14).

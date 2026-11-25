@@ -27,6 +27,7 @@ LAW-21 moves revoke fast                     LAW-22 barriers hold
 LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 LAW-25 a memory is its person's own          LAW-26 a stored result is checked when read
 LAW-27 a consultation is the asker's own    LAW-28 an agent's writing says so
+LAW-29 a rhythm only drafts                  
 ```
 
 ## DESCRIPTION
@@ -211,6 +212,12 @@ When a branch ask consults department agents (sb-ask(3), Ask each department), e
 Anything an agent wrote says which agent and which version wrote it wherever it is shown: an answer, in the web app and in chat; a report or brief; a draft in a steward queue; and a note published from a draft, which keeps `generated_by` and `approved_by` in its front matter, so every cite of it, its export and its printout show the mark too (sb-agents(7), Marked as AI). The mark goes only when a person rewrites the text: a note published from a draft none of whose lines are left carries none.
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW28_AnAgentsWritingSaysSo`: generated answers, agent drafts and notes published from drafts unchanged, edited or rewritten, through the real answer, chat, draft and note paths and the index, each checked for the mark; SB-4706) · Selftest (`TestSelf_LAW28CatchesAnUnmarkedNote`: a note published without its mark goes red).
+
+### LAW-29: A rhythm only drafts, and stops with its subject {#law-29}
+
+Every step a rhythm offers is a draft or a prompt that waits, unanswered, in the queue of the one person it names (its subject, its starter, the subject's manager) or of the space's stewards, and nothing a rhythm does publishes a note, sends a message or answers a step on its own. A rhythm stops at once when its subject leaves the space, its collection closes or goes, or its starter, its subject or a steward stops it: the next read of the space's rhythms shows it stopped, and no step is offered after that (sb-departments(7), Rhythms).
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW29_ARhythmOnlyDraftsAndStopsWithItsSubject`: random rhythms of up to 12 steps over up to 120 days, with random approvers, a clock that jumps, and the subject leaving at a random moment, through the real rhythms service, steward queues, folder connector and index; SB-4801) · Selftest (`TestSelf_LAW29CatchesARhythmThatActsOrOutlivesItsSubject`: a rhythm that ignores leaving, and one that answers its own steps, each go red).
 
 ### External review (SB-612)
 

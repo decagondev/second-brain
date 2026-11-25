@@ -122,6 +122,15 @@ func JSONSchema() []byte {
 							"properties": map[string]any{"instruction": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxSkillInstruction},
 								"cases": map[string]any{"type": "object", "minProperties": MinSkillCases, "maxProperties": MaxSkillCases,
 									"additionalProperties": map[string]any{"type": "string", "pattern": skillDocRe.String()}}}}},
+					"onboarding": map[string]any{"type": "boolean", "default": true},
+					"rhythms": map[string]any{"type": "object", "maxProperties": MaxRhythms, "propertyNames": map[string]any{"pattern": rhythmNameRe.String()},
+						"additionalProperties": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"subject", "steps"},
+							"properties": map[string]any{"subject": map[string]any{"enum": RhythmSubjects}, "plan": map[string]any{"enum": RhythmPlans},
+								"steps": map[string]any{"type": "array", "minItems": 1, "maxItems": MaxRhythmSteps, "items": map[string]any{"type": "object", "additionalProperties": false,
+									"required": []string{"day", "kind", "ask", "approver"}, "properties": map[string]any{
+										"day": map[string]any{"type": "integer", "minimum": 0, "maximum": MaxRhythmDays}, "kind": map[string]any{"enum": RhythmKinds},
+										"ask": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxRhythmAsk}, "approver": map[string]any{"enum": RhythmApprovers},
+										"agent": map[string]any{"enum": RhythmAgents}}}}}}},
 					"start_here": map[string]any{"type": "array", "maxItems": MaxStartHere, "uniqueItems": true, "items": map[string]any{"type": "string", "pattern": startItem.String()}},
 					"scope": map[string]any{
 						"type": "object", "minProperties": 1, "propertyNames": map[string]any{"enum": ConnectorKinds},

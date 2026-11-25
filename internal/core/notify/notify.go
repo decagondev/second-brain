@@ -279,6 +279,9 @@ type Job struct {
 	AgentAlerts func(ctx context.Context, now time.Time) ([]AgentAlert, error)
 	// SweepShadows deletes the shadow runs of every window that has ended (SB-4704).
 	SweepShadows func(ctx context.Context) (int, error)
+	// Rhythms starts onboarding for new members, stops rhythms whose subject left and
+	// offers the steps whose day has come (SB-4801); nil runs none.
+	Rhythms func(ctx context.Context) (int, error)
 }
 
 // The digest's limits.
@@ -315,6 +318,11 @@ func (j Job) agentWork(ctx context.Context, now time.Time) ([]outgoing, []func()
 	if j.SweepShadows != nil {
 		if _, err := j.SweepShadows(ctx); err != nil {
 			return nil, nil, fmt.Errorf("notify: shadows: %w", err)
+		}
+	}
+	if j.Rhythms != nil {
+		if _, err := j.Rhythms(ctx); err != nil {
+			return nil, nil, fmt.Errorf("notify: rhythms: %w", err)
 		}
 	}
 	return j.agentAlerts(ctx, now)

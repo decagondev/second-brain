@@ -51,7 +51,7 @@ summary: Epics, waves, slices and tickets.
 | W44 Departments Work Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E45), built: ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W45 Agents You Can Shape | 6 | 0 | 0 | Planned 2026-11-25 with the user (E46), built: skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W46 Every Agent Accountable | 7 | 0 | 0 | Planned 2026-11-25 with the user (E47), built: agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
-| W47 Ways of Working | 0 | 0 | 7 | Planned 2026-11-25 with the user (E48): rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
+| W47 Ways of Working | 4 | 0 | 3 | Planned 2026-11-25 with the user (E48), S47.1 built: rhythms, a new joiner's first 90 days, project kickoff, project close-out, quarterly planning, reorg dry run, 1:1 prep ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W48 Agents That Check With You | 0 | 0 | 6 | Planned 2026-11-25 with the user (E49): ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W49 Run AI Like a Business | 0 | 0 | 7 | Planned 2026-11-25 with the user (E50): AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -862,10 +862,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-4801](E48-ways-of-working/SB-4801-rhythms.md) | S47.1 | E48 | Rhythms | Open |
-| [SB-4802](E48-ways-of-working/SB-4802-first-90-days.md) | S47.1 | E48 | A new joiner's first 90 days | Open |
-| [SB-4803](E48-ways-of-working/SB-4803-project-kickoff.md) | S47.1 | E48 | Project kickoff | Open |
-| [SB-4804](E48-ways-of-working/SB-4804-project-close-out.md) | S47.1 | E48 | Project close-out | Open |
+| [SB-4801](E48-ways-of-working/SB-4801-rhythms.md) | S47.1 | E48 | Rhythms | Done |
+| [SB-4802](E48-ways-of-working/SB-4802-first-90-days.md) | S47.1 | E48 | A new joiner's first 90 days | Done |
+| [SB-4803](E48-ways-of-working/SB-4803-project-kickoff.md) | S47.1 | E48 | Project kickoff | Done |
+| [SB-4804](E48-ways-of-working/SB-4804-project-close-out.md) | S47.1 | E48 | Project close-out | Done |
 | [SB-4805](E48-ways-of-working/SB-4805-quarterly-planning.md) | S47.2 | E48 | Quarterly planning | Open |
 | [SB-4806](E48-ways-of-working/SB-4806-reorg-dry-run.md) | S47.2 | E48 | Reorg dry run | Open |
 | [SB-4807](E48-ways-of-working/SB-4807-one-on-one-prep.md) | S47.2 | E48 | 1:1 prep | Open |

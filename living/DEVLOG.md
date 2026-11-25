@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S47.1: Rhythms
+
+**Wave/slice:** W47 / S47.1 (SB-4801 to SB-4804) · **Status:** Done
+
+**What:** A space's manifest may hold `rhythms:`, named playbooks of at most 12 dated steps over at most 120 days, each a draft, routine, check-in or request with a named approver, linted like skills; four come built in (`onboarding`, `kickoff`, `close-out`, `quarterly-planning`). A steward starts one for a person, a collection or the space; one with a plan waits for the subject's manager (or the stewards) to approve it; each step whose day has come waits as its approver's own draft or prompt in their queue, drafted as them. SCIM adding someone to a space starts their onboarding: the start-here items they can open and the people who own them, catch-ups at weeks 2 and 6, and the questions that found nothing sent to the stewards as counts and terms, named only with the joiner's yes; `onboarding: false` turns it off. **Start a project** makes a shared collection, a goal draft and a decision log, asks the steward of any member from another space, and drafts a kickoff brief of similar closed projects from only what the lead can open. **Close project** archives the collection read-only, proposes up to 5 lessons as note drafts to the stewards and drafts a cited retrospective. LAW-29 is new: a rhythm only drafts and stops with its subject.
+
+**Why this way:** Every step lands as an item in an existing queue, so the inbox, the claim, reply and discard paths, retention and the audit trail all apply unchanged, and a step is done when its approver answers it; nothing new can publish. A run's subject is checked on every read and every job run rather than on a SCIM hook, so a leaver stops the rhythm even when the hook never fires. The kickoff brief, retrospective, start-here pack and gaps are put together by code from records the approver can open, so they need no new agent definition, prompt or eval suite and can't cite what the approver can't open; the catch-up and plain draft steps are the ask agent's. Runs, rosters and projects are records in the trace store, no new table.
+
+**Learned:** The folder connector's `.acl` covers its own folder only, so the test's start-here folder needed its own. The notes' readers are emails, not user ids, so the rhythms read member ids from the directory themselves. A draft in a person's queue drafted as someone else would be hidden from them, so a step's item names its approver as the asker.
+
+**Laws:** LAW-29 (new, tested), LAW-01, LAW-12, LAW-14, LAW-16, LAW-24, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S46.2: Prove it
 
 **Wave/slice:** W46 / S46.2 (SB-4704 to SB-4707) · **Status:** Done

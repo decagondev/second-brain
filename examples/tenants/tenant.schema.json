@@ -444,6 +444,10 @@
               "main"
             ]
           },
+          "onboarding": {
+            "default": true,
+            "type": "boolean"
+          },
           "parent": {
             "pattern": "^[a-z][a-z0-9-]{1,30}$",
             "type": "string"
@@ -481,6 +485,89 @@
             "maximum": 3650,
             "minimum": 30,
             "type": "integer"
+          },
+          "rhythms": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "plan": {
+                  "enum": [
+                    "manager",
+                    "steward"
+                  ]
+                },
+                "steps": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "agent": {
+                        "enum": [
+                          "ask",
+                          "start-here",
+                          "catch-up",
+                          "kickoff-brief",
+                          "retrospective",
+                          "gaps"
+                        ]
+                      },
+                      "approver": {
+                        "enum": [
+                          "subject",
+                          "starter",
+                          "manager",
+                          "steward"
+                        ]
+                      },
+                      "ask": {
+                        "maxLength": 300,
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "day": {
+                        "maximum": 120,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "kind": {
+                        "enum": [
+                          "draft",
+                          "routine",
+                          "checkin",
+                          "request"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "day",
+                      "kind",
+                      "ask",
+                      "approver"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 12,
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "subject": {
+                  "enum": [
+                    "person",
+                    "collection",
+                    "space"
+                  ]
+                }
+              },
+              "required": [
+                "subject",
+                "steps"
+              ],
+              "type": "object"
+            },
+            "maxProperties": 10,
+            "propertyNames": {
+              "pattern": "^[a-z][a-z0-9-]{0,39}$"
+            },
+            "type": "object"
           },
           "scope": {
             "additionalProperties": {

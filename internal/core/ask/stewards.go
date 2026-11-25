@@ -88,6 +88,10 @@ type StewardQuestion struct {
 	Waiting *Wait `json:"waiting,omitempty"`
 	// FirstClaim is when a steward first claimed it, which a reply doesn't end (SB-4507).
 	FirstClaim time.Time `json:"first_claim,omitzero"`
+	// Rhythm marks a step a rhythm offered (SB-4801), and Project a project's request to add
+	// a member or a lesson to publish (SB-4803, SB-4804).
+	Rhythm  *RhythmRef  `json:"rhythm,omitempty"`
+	Project *ProjectRef `json:"project,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -237,6 +241,9 @@ type StewardItem struct {
 	SharedHidden int          `json:"shared_hidden,omitempty"`
 	// Waiting is a request's wait on another space (SB-4504).
 	Waiting *Wait `json:"waiting,omitempty"`
+	// Rhythm and Project mark a rhythm's step and a project's request (SB-4801, SB-4803).
+	Rhythm  *RhythmRef  `json:"rhythm,omitempty"`
+	Project *ProjectRef `json:"project,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -376,7 +383,7 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 				it.Thread.Versions, it.Thread.Diff = nil, nil
 			}
 		}
-		it.Draft, it.Request = q.Draft, q.Request
+		it.Draft, it.Request, it.Rhythm, it.Project = q.Draft, q.Request, q.Rhythm, q.Project
 		if it.Shared, it.SharedHidden, err = x.sharedView(ctx, s, q.Shared); err != nil {
 			return nil, err
 		}

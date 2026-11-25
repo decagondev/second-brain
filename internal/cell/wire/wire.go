@@ -12,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -155,6 +157,8 @@ type Parts struct {
 	Stewards ask.Stewards
 	// Legwork is research, meeting prep and action items (SB-4201 to SB-4203).
 	Legwork ask.Legwork
+	// Rhythms are the spaces' playbooks and projects (SB-4801 to SB-4804).
+	Rhythms ask.Rhythms
 	handler http.Handler
 }
 
@@ -672,6 +676,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		app.Saver = stewards
 	}
 	api.Legwork{Service: legwork, Release: c.Release, NewID: newID}.Register(mux)
+	rhythms := c.rhythms(m, stewards, legwork, newID) // SB-4801 to SB-4804
+	api.Rhythms{Service: rhythms, Release: c.Release, NewID: newID}.Register(mux)
 	api.Collections{Service: ask.CollectionService{Agent: agent, Store: c.Traces, Saved: c.Traces, Audit: c.Audit, Known: legwork.Known,
 		NewID: newID, Now: time.Now}, Release: c.Release, NewID: newID}.Register(mux) // SB-4304
 	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces,
@@ -729,7 +735,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
 	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards,
-		Legwork: legwork, handler: public}, nil
+		Legwork: legwork, Rhythms: rhythms, handler: public}, nil
 }
 
 // legwork is the research, meeting-prep and action-item service (sb-ask(3); SB-4201 to
@@ -1133,4 +1139,90 @@ func modelTiers(cfg Config) map[string]string {
 		return nil
 	}
 	return map[string]string{cfg.Model.Provider + "/" + cfg.Model.ID: "main", cfg.Model.Provider + "/" + cfg.Model.Small.ID: "small"}
+}
+
+// rhythms is the rhythms and projects service (SB-4801 to SB-4804): every step is drafted
+// as its approver, with a scope read from the directory now, and a member is someone in
+// one of the space's member groups now.
+func (c *Cell) rhythms(m manifest.Tenant, stewards ask.Stewards, legwork ask.Legwork, newID func(string) string) ask.Rhythms {
+	tenant := c.Config.Tenant
+	readers := func(ctx context.Context, space string) ([]string, error) { // active members' user ids
+		sp, ok := m.Spaces[strings.TrimPrefix(space, "spc_")]
+		if !ok {
+			return nil, fmt.Errorf("no space %s", space)
+		}
+		var out []string
+		for _, g := range sp.Members {
+			ms, err := c.Directory.Members(ctx, tenant, strings.TrimPrefix(g, "group:"))
+			if err != nil {
+				return nil, err
+			}
+			for _, id := range ms {
+				u, found, err := c.Directory.User(ctx, tenant, id)
+				if err != nil {
+					return nil, err
+				}
+				if found && u.Active && !slices.Contains(out, id) {
+					out = append(out, id)
+				}
+			}
+		}
+		return out, nil
+	}
+	return ask.Rhythms{Stewards: stewards, Legwork: legwork, Store: c.Traces, Projects: c.Traces,
+		Collections: ask.CollectionService{Agent: stewards.Agent, Store: c.Traces, Saved: c.Traces, Audit: c.Audit, Known: legwork.Known, NewID: newID, Now: time.Now},
+		Defs: func(space string) map[string]ask.RhythmDef {
+			if _, ok := m.Spaces[space]; !ok {
+				return nil
+			}
+			out := map[string]ask.RhythmDef{}
+			for name, r := range m.Rhythms(space) {
+				d := ask.RhythmDef{Subject: r.Subject, Plan: r.Plan}
+				for _, st := range r.Steps {
+					d.Steps = append(d.Steps, ask.RhythmStepDef{Day: st.Day, Kind: st.Kind, Ask: st.Ask, Approver: st.Approver, Agent: st.Agent})
+				}
+				out[name] = d
+			}
+			return out
+		},
+		Spaces: func() []string {
+			out := make([]string, 0, len(m.Spaces))
+			for name := range m.Spaces {
+				out = append(out, name)
+			}
+			sort.Strings(out)
+			return out
+		},
+		ScopeIn: func(ctx context.Context, user, space string) (tenancy.Scope, error) {
+			ids, err := readers(ctx, "spc_"+space)
+			if err != nil {
+				return tenancy.Scope{}, err
+			}
+			if !slices.Contains(ids, user) {
+				return tenancy.Scope{}, errors.New("wire: not a member of the space")
+			}
+			return c.ScopeAs(ctx, user, "spc_"+space)
+		},
+		Manager: func(ctx context.Context, user string) (string, error) {
+			u, found, err := c.Directory.User(ctx, tenant, user)
+			if err != nil || !found {
+				return "", err
+			}
+			return u.Manager, nil
+		},
+		Members: func(ctx context.Context, space string) ([]string, error) { return readers(ctx, "spc_"+space) },
+		TracesOf: func(ctx context.Context, user string, from time.Time) ([]ask.Trace, error) {
+			ts, err := c.Traces.Between(ctx, tenant, from, time.Now().Add(time.Minute))
+			if err != nil {
+				return nil, err
+			}
+			var out []ask.Trace
+			for _, t := range ts {
+				if t.User == user {
+					out = append(out, t)
+				}
+			}
+			return out, nil
+		},
+	}
 }

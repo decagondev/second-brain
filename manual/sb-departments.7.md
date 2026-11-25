@@ -62,7 +62,18 @@ The templates follow four practices that almost every company with a mature acce
 
 In a `sales` space that runs `account-brief`, or a `support` space that runs `case-brief`, **Account brief** on a CRM account the person can open (sb-ask(3), Account brief) gathers, by code and checked as them: the account's own record, its open tickets, the notes and documents of the last 90 days that name it, and the contracts and proposals that name it, with its renewal date when the CRM record has a `Renewal:` line and the owners among the cited documents. The space's agent writes one cited section of each, as the person. With `prep: true`, a meeting whose attendees share the account's domain gets the brief 30 minutes before. `personal_data` fields stay masked as ingest masked them (sb-ingest(7)), and nothing is written to the CRM.
 
+### Rhythms (SB-4801)
+
+A **rhythm** is a named playbook for a recurring moment: a few dated steps started for a person, a collection or the space, each one a part already built (a draft from an agent, a routine, a goal check-in or a request) offered on its day to one named approver. Four come built in: `onboarding` (SB-4802, sb-onboarding(7)), `kickoff` and `close-out` (SB-4803, SB-4804, sb-spaces(7), Projects) and `quarterly-planning`; a space adds its own, or replaces a built-in one, under `rhythms` in its manifest (sb-space(5)), proposed by a steward and linted like skills: at most 12 steps over at most 120 days, each with an approver.
+
+A steward starts one with `POST /v1/spaces/NAME/rhythms` (`{ rhythm, subject }`, the subject a person's email or a collection id) or from the space's home. A rhythm with a `plan` waits as **proposed** until its plan's approver (the subject's manager from SCIM, or with none the space's stewards) presses **Approve** (`POST /v1/rhythms/ID/approve`); its days count from then. Each step whose day has come lands, as its approver's own draft or prompt, in their queue and their inbox (sb-ask(3), One inbox), drafted as them from what they can open now; a step for the stewards lands in the space's queue. A step is done once its approver answers or discards it. Nothing a step holds is published, sent or created without its approver doing it (LAW-29).
+
+`GET /v1/spaces/NAME/rhythms` lists the space's rhythms with each step's day, approver, due date and state: a steward sees every one, anyone else the ones they started, are the subject of or approve a step of. Each read checks the subject first: a person who has left the space, or a project that has closed, stops the rhythm at once, its waiting steps skipped. Its starter, its subject or a steward stops it with `POST /v1/rhythms/ID/stop`. Every start, approval, step, stop and finish is in the audit log, by id. The jobs service runs the rhythms with the notify job: it starts onboarding for people SCIM added since its last run and offers the steps whose day has come.
+
 ## LAWS
+
+LAW-29 A rhythm only drafts, and stops with its subject ([sb-laws(7)](sb-laws.7.md#law-29)).
+
 
 LAW-20 Restricted stays home: the `restricted` default on `people`, `finance`, `legal` and `executive` is what keeps their content out of everyone else's company-wide answers ([sb-spaces(7)](sb-spaces.7.md)).
 

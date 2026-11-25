@@ -329,6 +329,11 @@ func TestLAW28_AnAgentsWritingSaysSo(t *testing.T) {
 	Check(t, "LAW-28", runs, func(r *rand.Rand) error { return law28(r, dir, RealMarks{}) })
 }
 
+func TestLAW29_ARhythmOnlyDraftsAndStopsWithItsSubject(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-29", runs, func(r *rand.Rand) error { return law29(r, dir, RealRhythms{}) })
+}
+
 func TestLAW27_AConsultationIsTheAskersOwn(t *testing.T) {
 	Check(t, "LAW-27", runs, func(r *rand.Rand) error { return law27(r, NewConsultSystem()) })
 }
