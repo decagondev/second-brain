@@ -1,0 +1,24 @@
+# Suite for the research agent (SB-4201; sb-agents(7), The legwork agents): each sub-question
+# of a report is asked as the person, in any space or company-wide, every claim cited, and
+# never with a document the person can't open.
+suite: agent-research
+world: fixtures/departments
+cases:
+  - id: research-space-001
+    as: usr_law
+    space: legal
+    agent: research
+    ask: "What does the Beta Freight agreement say about ending it?"
+    expect: { cites_any: ["docs:msa-beta-freight@1"], uncited_max: 0 }
+  - id: research-company-001        # company-wide, as the person: their own documents only
+    as: usr_ae
+    space: company
+    agent: research
+    ask: "When was the last contact with Gamma Parts?"
+    expect: { cites_any: ["docs:acct-gamma-parts@1"], cites_none: ["docs:msa-beta-freight@1"], uncited_max: 0 }
+  - id: research-acl-001            # a document the person can't open is never cited
+    as: usr_ae
+    space: company
+    agent: research
+    ask: "What does the Beta Freight agreement say about ending it?"
+    expect: { cites_none: ["docs:msa-beta-freight@1"], uncited_max: 0 }

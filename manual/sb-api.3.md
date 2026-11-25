@@ -68,6 +68,8 @@ Every request is in one space or company-wide (sb-spaces(7)). A request names it
 
 Under a space (SB-4101 to SB-4104): `GET /v1/spaces/NAME/goals`, `GET /v1/spaces/NAME/updates`, `GET|POST /v1/spaces/NAME/requests`, and `POST|GET /v1/spaces/NAME/policies`, `POST /v1/spaces/NAME/policies/read` and `GET /v1/spaces/NAME/policies/status` (sb-ask(3), Goals, updates and policies). Each is `EPERM` (403) for someone who isn't a member of the space, and `POST …/policies` and `GET …/policies/status` for someone who isn't its steward.
 
+The legwork agents (SB-4201 to SB-4203): `POST|GET /v1/research`, `GET /v1/research/{id}`, `POST /v1/research/{id}/run`, `POST /v1/prepare`, `GET /v1/me/events`, `GET /v1/me/actions`, `POST /v1/me/actions/{id}/done`, and `POST|GET /v1/spaces/NAME/actions` (sb-ask(3), Research, meeting prep and action items). Each is for the signed-in person only, and a stored result is checked again as them when it is read (LAW-26).
+
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.

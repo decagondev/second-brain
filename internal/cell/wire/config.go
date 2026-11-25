@@ -69,6 +69,12 @@ type Config struct {
 		Server string `json:"server"`
 		From   string `json:"from"`
 	} `json:"email"`
+	// Calendar is the read-only calendar for meeting prep (sb-cell(5); SB-4202): kind google,
+	// its service account at vault://tenants/TENANT/calendar. Empty is none.
+	Calendar struct {
+		Kind string `json:"kind"`
+		Base string `json:"base"`
+	} `json:"calendar"`
 	Alerts struct {
 		Webhook string `json:"webhook"`
 		// ReportWebhook is where the weekly report is posted; "" is Webhook (SB-1608).
@@ -303,7 +309,8 @@ func (r ReleaseConfig) check() error {
 
 // checkModel checks the model and the embedder (sb-cell(5); SB-1710).
 // checkMattermost: none, or an https base (http on 127.0.0.1 only) and a team (SB-2005);
-// and email: none, or a server and one sender address (SB-2307).
+// email: none, or a server and one sender address (SB-2307); and the calendar: none, or
+// google with an https base (SB-4202).
 func (c Config) checkMattermost() error {
 	if e := c.Email; e.Server != "" || e.From != "" {
 		if smtpmail.Parse(e.Server) != nil {
@@ -311,6 +318,16 @@ func (c Config) checkMattermost() error {
 		}
 		if _, err := smtpmail.Address(e.From); err != nil {
 			return fmt.Errorf("%w: email.from must be one email address", ErrConfig)
+		}
+	}
+	if cal := c.Calendar; cal.Kind != "" || cal.Base != "" {
+		u, err := url.Parse(cal.Base)
+		local := err == nil && u.Scheme == "http" && strings.HasPrefix(u.Host, "127.0.0.1:")
+		if cal.Kind != "google" {
+			return fmt.Errorf("%w: calendar.kind must be google", ErrConfig)
+		}
+		if cal.Base != "" && (err != nil || (u.Scheme != "https" && !local) || u.Host == "" || u.User != nil) {
+			return fmt.Errorf("%w: calendar.base must be an https URL", ErrConfig)
 		}
 	}
 	mm := c.Mattermost
@@ -363,6 +380,9 @@ func (c Config) Secrets() (required, optional []string) {
 	}
 	if c.Worm.Endpoint != "" {
 		required = append(required, "worm")
+	}
+	if c.Calendar.Kind != "" {
+		required = append(required, "calendar")
 	}
 	optional = []string{"email"}
 	return required, optional

@@ -205,6 +205,13 @@
       ],
       "type": "string"
     },
+    "research_usd": {
+      "default": 2,
+      "description": "The most one research report may spend, in USD (SB-4201).",
+      "maximum": 50,
+      "minimum": 0.1,
+      "type": "number"
+    },
     "retention_days": {
       "default": 365,
       "description": "Retention for traces, citations and drafts (not audit).",

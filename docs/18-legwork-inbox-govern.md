@@ -1,13 +1,13 @@
 ---
 title: Agents That Do the Legwork; Work That Comes to You; Govern Every Agent
-summary: Concept for W41 to W43 (proposed 2026-11-24): twenty features from a deeper survey of company OS and second brain tools. Read-only agents that research, prepare and follow up; one inbox, routines and memory for each person; and the controls that keep a growing set of agents honest. No new service, store or Go module.
+summary: Concept for W41 to W43 (approved 2026-11-24): twenty features from a deeper survey of company OS and second brain tools. Read-only agents that research, prepare and follow up; one inbox, routines and memory for each person; and the controls that keep a growing set of agents honest. No new service, store or Go module.
 ---
 
 # Agents that do the legwork; work that comes to you; govern every agent
 
 | Version | Date | Owner | Status | Related |
 |---|---|---|---|---|
-| 0.1 | 2026-11-24 | Platform lead | Proposed, waiting on the user's decisions | [Principles](01-principles.md) · [17-org-agents-os.md](17-org-agents-os.md) · [PRD waves](03-prd.md#waves) |
+| 0.1 | 2026-11-24 | Platform lead | Approved by the user with every recommended decision | [Principles](01-principles.md) · [17-org-agents-os.md](17-org-agents-os.md) · [PRD waves](03-prd.md#waves) |
 
 ## Summary
 
@@ -186,7 +186,7 @@ The goal is that every agent has an owner, real feedback improves its evals, the
 
 ## Decisions for the user
 
-Waiting on the user. Each has a recommended option:
+Approved by the user on 2026-11-24: every recommended option below.
 
 1. **Scope and order.** *Recommended:* all three waves, all twenty tickets, in the order W41, W42, W43. *Other:* W43 first, so agent governance lands before the new agents.
 2. **Research reports (SB-4201).** *Recommended:* the plan is shown and runs only on **Run**, at most 10 sub-questions and $2 a report by default. *Other:* run straight away with no plan step.

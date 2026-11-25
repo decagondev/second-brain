@@ -53,6 +53,7 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 		Off       []string `json:"off"`
 		PauseDays *int     `json:"pause_days"`
 		Digest    *string  `json:"digest"` // SB-3805; nil keeps it
+		Prep      *bool    `json:"prep"`   // SB-4202; nil keeps it
 	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"off": ["digest"]}.`))
@@ -68,13 +69,17 @@ func (h Notifications) put(w http.ResponseWriter, r *http.Request) {
 	if body.Digest != nil {
 		digest = *body.Digest
 	}
-	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil, Digest: digest}.Check()
+	prep := old.Prep
+	if body.Prep != nil {
+		prep = *body.Prep
+	}
+	p, err := notify.Prefs{Off: body.Off, PausedUntil: old.PausedUntil, Digest: digest, Prep: prep}.Check()
 	if errors.Is(err, notify.ErrDigest) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The digest is daily or weekly."))
 		return
 	}
 	if errors.Is(err, notify.ErrKind) {
-		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access, tokens or owned."))
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "Each kind turned off is one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep or action."))
 		return
 	}
 	if body.PauseDays != nil {

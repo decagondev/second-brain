@@ -79,6 +79,8 @@ type Prefs struct {
 	PausedUntil *time.Time `json:"paused_until,omitempty"`
 	// Digest is "daily" for the daily brief (SB-3805); "" is the weekly default.
 	Digest string `json:"digest,omitempty"`
+	// Prep makes a brief before each meeting with an agenda (SB-4202).
+	Prep bool `json:"prep,omitempty"`
 }
 
 // MaxPauseDays is the longest pause.
@@ -121,7 +123,7 @@ var ErrKind = errors.New("notify: EINVAL not a notification kind")
 // Check validates settings and returns them sorted, each kind once.
 func (p Prefs) Check() (Prefs, error) {
 	seen := map[string]bool{}
-	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil}
+	out := Prefs{Off: []string{}, PausedUntil: p.PausedUntil, Prep: p.Prep}
 	switch p.Digest {
 	case "", DigestWeekly:
 	case DigestDaily:
@@ -131,7 +133,7 @@ func (p Prefs) Check() (Prefs, error) {
 	}
 	for _, k := range p.Off {
 		if !Kinds[k] {
-			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned)", ErrKind, k)
+			return Prefs{}, fmt.Errorf("%w: %q (one of questions, replies, digest, watch, access, tokens, owned, welcome, policy, research, prep, action)", ErrKind, k)
 		}
 		if !seen[k] {
 			seen[k] = true
@@ -236,6 +238,12 @@ type Job struct {
 	// PolicyNotices are the policies' current versions and who to tell (SB-4103); each is
 	// told once. nil tells no one.
 	PolicyNotices func(ctx context.Context) ([]ask.PolicyNotice, error)
+	// Research runs the queued research reports and returns those it finished (SB-4201);
+	// Actions are the action items confirmed since a time (SB-4203); PrepDue makes a
+	// person's briefs of the events starting in a window (SB-4202). nil does none.
+	Research func(ctx context.Context) ([]ask.Finished, error)
+	Actions  func(ctx context.Context, since time.Time) ([]ask.Action, error)
+	PrepDue  func(ctx context.Context, user string, from, to time.Time, done func(event string) bool) ([]ask.PrepMade, error)
 }
 
 // The digest's limits.
@@ -313,6 +321,12 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	out = append(out, trig...)
+	leg, legMarks, err := j.legwork(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, leg...)
+	trigMarks = append(trigMarks, legMarks...)
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err

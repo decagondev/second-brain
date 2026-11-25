@@ -34,6 +34,9 @@ type ServiceAccount struct {
 	HTTP   *http.Client
 	Redact Registrar
 	Now    func() time.Time
+	// Scope is the one OAuth scope its tokens carry; "" is Scope, the Drive one. The
+	// calendar (SB-4202) asks for calendar.events.readonly.
+	Scope string
 
 	mu    sync.Mutex
 	cache map[string]token
@@ -80,7 +83,11 @@ func (s *ServiceAccount) Token(ctx context.Context, subject string) (string, err
 	if !ok {
 		return "", errors.New("gdrive: service account key is not RSA")
 	}
-	claims := map[string]any{"iss": k.ClientEmail, "scope": Scope, "aud": k.TokenURI, "iat": now.Unix(), "exp": now.Add(time.Hour).Unix()}
+	scope := s.Scope
+	if scope == "" {
+		scope = Scope
+	}
+	claims := map[string]any{"iss": k.ClientEmail, "scope": scope, "aud": k.TokenURI, "iat": now.Unix(), "exp": now.Add(time.Hour).Unix()}
 	if subject != "" {
 		claims["sub"] = subject
 	}

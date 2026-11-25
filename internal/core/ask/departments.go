@@ -51,6 +51,9 @@ func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (De
 	if name == AgentUpdate {
 		return a.updateDept(ctx, s)
 	}
+	if _, lw := legworkAgents[name]; lw {
+		return a.legworkDept(ctx, s, name) // SB-4201, SB-4202
+	}
 	if !ok {
 		return Department{}, fmt.Errorf("%w: no agent %q", ErrInvalid, name)
 	}

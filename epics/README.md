@@ -45,9 +45,9 @@ summary: Epics, waves, slices and tickets.
 | W38 One Org, Many Levels | 7 | 0 | 0 | Planned 2026-11-24 with the user (E39): parent spaces, settings flow down, ask across a branch, escalate up the tree, roll-ups, who's who, LAW-24 ([17-org-agents-os.md](../docs/17-org-agents-os.md)) |
 | W39 An Agent for Every Department | 7 | 0 | 0 | Planned 2026-11-24 with the user (E40): People, Legal, Sales, Support, Marketing, Operations, Design and Executive agents, every agent in one place, on a schedule, when something happens, the right department |
 | W40 Run the Company | 6 | 0 | 0 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
-| W41 Agents That Do the Legwork | 0 | 0 | 7 | Proposed 2026-11-24, waiting on the user (E42): research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
-| W42 Work That Comes to You | 0 | 0 | 7 | Proposed 2026-11-24, waiting on the user (E43): one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
-| W43 Govern Every Agent | 0 | 0 | 6 | Proposed 2026-11-24, waiting on the user (E44): feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W41 Agents That Do the Legwork | 3 | 0 | 4 | Planned 2026-11-24 with the user (E42), S41.1 built: research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W42 Work That Comes to You | 0 | 0 | 7 | Planned 2026-11-24 with the user (E43): one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W43 Govern Every Agent | 0 | 0 | 6 | Planned 2026-11-24 with the user (E44): feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -768,9 +768,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-4201](E42-agents-do-the-legwork/SB-4201-research-reports.md) | S41.1 | E42 | Research reports | Open |
-| [SB-4202](E42-agents-do-the-legwork/SB-4202-meeting-prep.md) | S41.1 | E42 | Meeting prep | Open |
-| [SB-4203](E42-agents-do-the-legwork/SB-4203-action-items.md) | S41.1 | E42 | Action items from meetings | Open |
+| [SB-4201](E42-agents-do-the-legwork/SB-4201-research-reports.md) | S41.1 | E42 | Research reports | Done |
+| [SB-4202](E42-agents-do-the-legwork/SB-4202-meeting-prep.md) | S41.1 | E42 | Meeting prep | Done |
+| [SB-4203](E42-agents-do-the-legwork/SB-4203-action-items.md) | S41.1 | E42 | Action items from meetings | Done |
 | [SB-4204](E42-agents-do-the-legwork/SB-4204-incident-brief.md) | S41.2 | E42 | Incident brief | Open |
 | [SB-4205](E42-agents-do-the-legwork/SB-4205-voice-of-customer.md) | S41.2 | E42 | Voice of the customer | Open |
 | [SB-4206](E42-agents-do-the-legwork/SB-4206-draft-the-fix.md) | S41.2 | E42 | Draft the fix | Open |

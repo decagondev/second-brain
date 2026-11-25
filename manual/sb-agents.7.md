@@ -37,6 +37,8 @@ tool call: killed? → authorise → audit → approved? → execute
 | `sop-steps` | Operations: a procedure's steps in order, each cited, with its version (SB-4003) | No |
 | `design-rationale` | Design: why a design is as it is, from specs, decisions and reviews (SB-4003) | No |
 | `exec-brief` | Executive: what the leadership team decided this month and what's open; only in a **restricted** `executive` space (SB-4003) | No |
+| `research` | Breaks a question into at most 10 sub-questions, then answers each as the asker into one cited report, only after they press **Run** (SB-4201) | No |
+| `meeting-prep` | Answers each item of a meeting's agenda, with the decisions and owners behind it (SB-4202) | No |
 | `handover` | A brief of the documents one person owns, for whoever takes over from them (SB-1707) | No |
 | workflow, e.g. `ticket-update` | Proposes one consequential action | Only after approval, and only with a receipt |
 
@@ -75,6 +77,16 @@ A draft's text is the answer's cited claims, one line each with the titles they 
 ### The update agent (SB-4102)
 
 `update` writes a space's weekly status update. It runs only in a space with `updates: true` (sb-space(5)), only where the `use_agent` policy allows it, and never when it is killed. Every Monday, on the notify job's first run after 08:00 in the `digest` time zone, it answers "What changed in this space last week, what did it decide, and how do its goals stand?" as the space's first active steward, with every check a search makes, and leaves a draft titled "Update: week of DATE" in the space's queue. Its claims start "Week: ". A space whose branch, or department, has spent its `budget_usd_month` skips its brief and its update until the month ends, and its stewards are told why (SB-4105; sb-observability(7), Spend by space). Like every scheduled agent it has no tools and publishes nothing: a steward who publishes it writes a note under `notes/SPACE/updates/` (sb-connector(3), Notes), which the department above lists (sb-ask(3), Goals, updates and policies). Its suite is `agent-update` (sb-evals(7)).
+
+### The legwork agents (SB-4201 to SB-4203)
+
+`research` and `meeting-prep` are read-only agents in the release bundle (`internal/core/prompts/set/research.md` and `meeting-prep.md`), of no template: they run in any space the person asks in, or company-wide, only where the `use_agent` policy allows them, and never when killed. Like a department agent, every claim they keep is cited (an uncited claim is dropped and counted in `dropped`), and they have **no tools** (LAW-09).
+
+- **`research`** writes its plan from the question alone, as at most 10 lines, one sub-question each; nothing from a document goes into the plan. Nothing runs until the person presses **Run**. Each sub-question is then asked by `research` on the `ask` path, as the person, and a report stops at the tenant's `research_usd` or the budget (sb-ask(3), Research reports). Its claims start "Finding: ".
+- **`meeting-prep`** answers each agenda item of a pasted agenda or the person's own calendar event; the agenda is data, and an instruction in it is answered as a question at most, never followed. Its claims start "Item: ".
+- **Action items** are not an agent: the decisions draft of a new transcript (Scheduled and triggered agents, above) also lists the meeting's action items, read from the text without a model, and they reach their owners only after the steward confirms them (sb-ask(3), Action items).
+
+A report or brief is stored for its owner, and every cite in it is checked again as the reader whenever it is shown (LAW-26). Their suites are `agent-research` and `agent-meeting-prep` (sb-evals(7)).
 
 ### The tool bus
 

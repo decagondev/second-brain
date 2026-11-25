@@ -13,7 +13,7 @@ summary: "A question that needs many documents gets one shallow answer, and nobo
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-agents(7)`](../../manual/sb-agents.7.md) |
 | Laws | LAW-01, LAW-14, LAW-26 |
 | Depends on | SB-4105 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,25 +21,25 @@ A question that needs many documents gets one shallow answer, and nobody has tim
 
 ## Acceptance criteria
 
-- [ ] **Research** shows a plan of at most 10 sub-questions and runs only when the person presses **Run**
-- [ ] Each sub-question is asked on the `ask` path as the person; the report cites every claim, and an uncited claim is dropped
-- [ ] A run stops at `research_usd` or the person's space budget; the report is kept 30 days and every cite is checked again as the reader on opening (LAW-26)
+- [x] **Research** shows a plan of at most 10 sub-questions and runs only when the person presses **Run**
+- [x] Each sub-question is asked on the `ask` path as the person; the report cites every claim, and an uncited claim is dropped
+- [x] A run stops at `research_usd` or the person's space budget; the report is kept 30 days and every cite is checked again as the reader on opening (LAW-26)
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Agent and prompt
-- [ ] Job
-- [ ] API
-- [ ] UI
-- [ ] Eval suite
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Agent and prompt
+- [x] Job
+- [x] API
+- [x] UI
+- [x] Eval suite
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md).
+2026-11-25: built. ask.Legwork Plan/Run/List/Open, the research agent and prompt (the model sees the question only), ResearchStore in memory and Postgres, budget.Tally from the gateway for research_usd (sb-tenant(5)), the notify job's Research part runs at most 3 queued reports a run as their owner. Agent.Recheck checks every stored cite as the reader on opening (LAW-26). API /v1/research; web Legwork tab. Tests: TestPlanSteps, TestTallyCountsOneContextsCalls, TestLegworkThroughARunningCell, agent-research suite, TestLAW26_AStoredResultIsCheckedWhenRead and TestSelf_LAW26CatchesAStaleReport.
 
 ## Definition of done
 

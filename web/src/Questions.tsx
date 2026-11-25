@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, BulkItem, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
+import { AskError, addEvalCase, confirmActions, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
+import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -132,6 +132,8 @@ const kinds: { id: string; name: string }[] = [
   { id: "owned", name: msg("My often-cited documents past review, monthly") },
   { id: "welcome", name: msg("A welcome when I join a space") },
   { id: "policy", name: msg("A policy to read") },
+  { id: "research", name: msg("My research reports when they're ready") },
+  { id: "action", name: msg("Action items from meetings given to me") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
@@ -145,9 +147,9 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
   }, [fetcher]);
   if (!prefs) return null;
   const off = prefs.off;
-  async function save(next: string[], pauseDays?: number, digest?: "daily" | "weekly") {
+  async function save(next: string[], pauseDays?: number, digest?: "daily" | "weekly", prep?: boolean) {
     try {
-      setPrefs(await setNotifySettings(next, fetcher, pauseDays, digest));
+      setPrefs(await setNotifySettings(next, fetcher, pauseDays, digest, prep));
       setStatus(t("Saved."));
     } catch (e) {
       setStatus(errMsg(e, t("Your settings couldn't be saved.")));
@@ -188,6 +190,10 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
           )}
         </div>
       ))}
+      <div>
+        <input type="checkbox" id={`${base}-prep`} checked={prefs.prep === true} onChange={(e) => save(off, undefined, undefined, e.target.checked)} />{" "}
+        <label htmlFor={`${base}-prep`}>{t("A brief before each meeting with an agenda")}</label>
+      </div>
       {paused ? (
         <p>
           {t("Paused until {date}: you're told nothing, and the other stewards still are.", { date: paused.toLocaleDateString() })}{" "}
@@ -354,6 +360,9 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                     {t("Ran as {who}", { who: q.thread.by })}
                   </p>
                   {q.thread.hidden && <p>{t("Only {who} sees its text: it was checked as them.", { who: q.thread.by })}</p>}
+                  {q.state === "open" && q.thread.kind === "decisions" && (q.thread.actions?.length ?? 0) > 0 && (
+                    <ConfirmActions space={space} draft={q.id} items={q.thread.actions!} fetcher={fetcher} />
+                  )}
                   {q.state === "open" && (
                     <button type="button" onClick={() => discard(q.id)}>
                       {t("Discard")}
@@ -1270,6 +1279,47 @@ function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fet
 }
 
 // Add to evals (SB-2204): the steward names the document the reported answer should cite.
+// A decisions draft's action items (SB-4203): the steward edits and confirms them, and only
+// then is each owner told.
+function ConfirmActions({ space, draft, items: first, fetcher }: { space: string; draft: string; items: DraftAction[]; fetcher?: Fetch }) {
+  const base = useId();
+  const [items, setItems] = useState<DraftAction[]>(first);
+  const [done, setDone] = useState("");
+  const [error, setError] = useState("");
+  const edit = (i: number, f: Partial<DraftAction>) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, ...f } : x)));
+  const confirm = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      const as = await confirmActions(space, draft, items.filter((x) => x.text.trim() !== ""), fetcher);
+      const told = as.filter((a) => a.email).length;
+      setDone(tn(as.length, "Confirmed {n} action item. {told} of them went to an owner we know.", "Confirmed {n} action items. {told} of them went to an owner we know.", { told }));
+    } catch (err) {
+      setError(errMsg(err, t("The action items couldn't be confirmed.")));
+    }
+  };
+  if (done) return <p role="status">{done}</p>;
+  return (
+    <form onSubmit={confirm} className="confirm-actions" aria-label={t("Action items")}>
+      <p className="meta">{t("Action items. No one is told until you confirm them.")}</p>
+      {items.map((it, i) => (
+        <div key={i}>
+          <label htmlFor={`${base}-t${i}`}>{t("Action item {n}", { n: i + 1 })}</label>
+          <input id={`${base}-t${i}`} value={it.text} maxLength={300} onChange={(e) => edit(i, { text: e.target.value })} />{" "}
+          <label htmlFor={`${base}-o${i}`}>{t("Owner")}</label>
+          <input id={`${base}-o${i}`} value={it.owner} maxLength={120} onChange={(e) => edit(i, { owner: e.target.value })} />{" "}
+          <label htmlFor={`${base}-d${i}`}>{t("Due")}</label>
+          <input id={`${base}-d${i}`} type="date" value={it.due ?? ""} onChange={(e) => edit(i, { due: e.target.value || undefined })} />
+        </div>
+      ))}
+      <button type="submit" disabled={items.every((x) => x.text.trim() === "")}>
+        {t("Confirm action items")}
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+
 function AddToEvals({ space, item, fetcher }: { space: string; item: ReviewItem; fetcher?: Fetch }) {
   const id = useId();
   const [expect, setExpect] = useState("");

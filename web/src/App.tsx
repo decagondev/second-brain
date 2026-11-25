@@ -11,6 +11,7 @@ import { AskStewards, QuestionsView } from "./Questions";
 import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { MySessions, SignOutEverywhere } from "./Session";
+import { LegworkView } from "./Legwork";
 import { HandoverView } from "./Handover";
 import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
@@ -30,11 +31,12 @@ interface Turn {
   sources?: SearchResult[];
 }
 
-type Tab = "answer" | "documents" | "saved" | "questions" | "handover";
+type Tab = "answer" | "documents" | "saved" | "legwork" | "questions" | "handover";
 const tabs: { id: Tab; name: string }[] = [
   { id: "answer", name: msg("Answer") },
   { id: "documents", name: msg("Documents") },
   { id: "saved", name: msg("Saved") },
+  { id: "legwork", name: msg("Legwork") },
   { id: "questions", name: msg("Questions") },
   { id: "handover", name: msg("Handover") },
 ];
@@ -507,6 +509,9 @@ export function App({ fetcher, share, tab: first, q: fromBar }: { fetcher?: Fetc
       </div>
       <div role="tabpanel" id={`${base}-panel-saved`} aria-labelledby={`${base}-tab-saved`} hidden={tab !== "saved"}>
         {tab === "saved" && <SavedView fetcher={fetcher} onAsk={askAgain} />}
+      </div>
+      <div role="tabpanel" id={`${base}-panel-legwork`} aria-labelledby={`${base}-tab-legwork`} hidden={tab !== "legwork"}>
+        {tab === "legwork" && <LegworkView fetcher={fetcher} space={space || undefined} />}
       </div>
       <div role="tabpanel" id={`${base}-panel-questions`} aria-labelledby={`${base}-tab-questions`} hidden={tab !== "questions"}>
         {tab === "questions" && <QuestionsView fetcher={fetcher} />}

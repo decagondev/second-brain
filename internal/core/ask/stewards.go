@@ -159,6 +159,9 @@ type Stewards struct {
 	Owner func(ctx context.Context, email string) (id string, ok bool, err error)
 	// Requests are space name's request categories and due days, ok false for none (SB-4104).
 	Requests func(name string) (categories []string, dueDays int, ok bool)
+	// ActionsOf are a transcript's action items as a scope reads them (SB-4203); nil reads
+	// none.
+	ActionsOf func(ctx context.Context, s tenancy.Scope, doc string) ([]DraftAction, error)
 }
 
 // ErrNotSteward is a caller who isn't a steward of the space (EPERM).
@@ -337,9 +340,9 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		}
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs)}
 		if q.Thread != nil {
-			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind}
+			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions}
 			if q.Thread.Agent != "" && q.Asker != s.User() {
-				it.Thread.Text, it.Thread.Hidden = "", true
+				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions = "", true, nil
 			}
 		}
 		it.Draft, it.Request = q.Draft, q.Request

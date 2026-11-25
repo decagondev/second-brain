@@ -37,6 +37,8 @@ type Store struct {
 	cares    map[string]ask.Caretaker     // tenant/doc
 	policies map[string]ask.SpacePolicy   // tenant/space/doc (SB-4103)
 	reads    map[string]ask.PolicyRead    // tenant/space/doc/email/version
+	research map[string]ask.Research      // tenant/id (SB-4201)
+	actions  map[string]ask.Action        // tenant/id (SB-4203)
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -52,7 +54,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}}
 }
 
 // PutTrace implements ask.Store.
@@ -823,4 +825,102 @@ func (s *Store) PolicyReads(_ context.Context, tenant, space, doc string) ([]ask
 		return out[i].Email < out[j].Email || out[i].Email == out[j].Email && out[i].Version < out[j].Version
 	})
 	return out, nil
+}
+
+var _ ask.ResearchStore = (*Store)(nil)
+
+// PutResearch implements ask.ResearchStore (SB-4201).
+func (s *Store) PutResearch(_ context.Context, r ask.Research) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.research[r.Tenant+"/"+r.ID] = r
+	return nil
+}
+
+// GetResearch implements ask.ResearchStore.
+func (s *Store) GetResearch(_ context.Context, tenant, id string) (ask.Research, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, ok := s.research[tenant+"/"+id]
+	return r, ok, nil
+}
+
+// ResearchOf implements ask.ResearchStore.
+func (s *Store) ResearchOf(_ context.Context, tenant, user string, since time.Time) ([]ask.Research, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.Research{}
+	for _, r := range s.research {
+		if r.Tenant == tenant && r.User == user && !r.At.Before(since) {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At) || out[i].At.Equal(out[j].At) && out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+// QueuedResearch implements ask.ResearchStore.
+func (s *Store) QueuedResearch(_ context.Context, tenant string) ([]ask.Research, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.Research{}
+	for _, r := range s.research {
+		if r.Tenant == tenant && r.State == ask.StateQueued {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At) || out[i].At.Equal(out[j].At) && out[i].ID < out[j].ID
+	})
+	return out, nil
+}
+
+var _ ask.ActionStore = (*Store)(nil)
+
+// PutAction implements ask.ActionStore (SB-4203).
+func (s *Store) PutAction(_ context.Context, a ask.Action) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.actions[a.Tenant+"/"+a.ID] = a
+	return nil
+}
+
+// GetAction implements ask.ActionStore.
+func (s *Store) GetAction(_ context.Context, tenant, id string) (ask.Action, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	a, ok := s.actions[tenant+"/"+id]
+	return a, ok, nil
+}
+
+func (s *Store) actionsWhere(tenant string, keep func(ask.Action) bool) []ask.Action {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.Action{}
+	for _, a := range s.actions {
+		if a.Tenant == tenant && keep(a) {
+			out = append(out, a)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At) || out[i].At.Equal(out[j].At) && out[i].ID < out[j].ID
+	})
+	return out
+}
+
+// ActionsOf implements ask.ActionStore.
+func (s *Store) ActionsOf(_ context.Context, tenant, user string) ([]ask.Action, error) {
+	return s.actionsWhere(tenant, func(a ask.Action) bool { return a.User == user }), nil
+}
+
+// ActionsIn implements ask.ActionStore.
+func (s *Store) ActionsIn(_ context.Context, tenant, space string) ([]ask.Action, error) {
+	return s.actionsWhere(tenant, func(a ask.Action) bool { return a.Space == space }), nil
+}
+
+// ActionsSince implements ask.ActionStore.
+func (s *Store) ActionsSince(_ context.Context, tenant string, since time.Time) ([]ask.Action, error) {
+	return s.actionsWhere(tenant, func(a ask.Action) bool { return !a.At.Before(since) }), nil
 }

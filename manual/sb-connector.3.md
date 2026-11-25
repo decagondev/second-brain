@@ -220,6 +220,19 @@ Read-only. Name it as `connectors: { crm: hubspot }`. Contacts are personal data
 
 Tested against `hubspottest`, a recorded fake of the CRM v3 objects, search, owners and settings users endpoints the connector calls.
 
+### Calendars (SB-4202)
+
+A calendar isn't a source: nothing in it is indexed, answered from or kept. It is read only for meeting prep (sb-ask(3), Meeting prep), as the person whose calendar it is, and only when that person asks for a brief or has turned on `prep`. It is set in sb-cell(5) `calendar`, not in the tenant's `connectors`.
+
+| Concern | Behaviour |
+|---|---|
+| Credentials | A Google service account key at `vault://tenants/TENANT/calendar`, with domain-wide delegation for `https://www.googleapis.com/auth/calendar.events.readonly` only. Each call takes a token for the person, by their directory email, as its subject, so it reads exactly what that person's own calendar shows them |
+| Events | `GET /calendar/v3/calendars/primary/events` with `singleEvents=true`, `orderBy=startTime` and the window asked, at most 50: the event's id, summary as its title, description as its agenda, start time, and the attendees' emails. Cancelled events, and events the person declined, are left out. The description is data (LAW-09) and is never logged |
+| Errors | A person the delegation doesn't cover, or a 401 or 403, is no events and a count (`sb_calendar_failed_total`), never another person's calendar. HTTP 429 is retried with backoff while the deadline allows |
+| Act | None: the calendar has no write path |
+
+Tested against `caltest`, a recorded fake of the events endpoint and the token endpoint.
+
 ## MOCK CONNECTOR
 
 `internal/adapters/connectors/mock` is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:

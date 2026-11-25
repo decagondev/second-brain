@@ -67,6 +67,10 @@ func JSONSchema() []byte {
 			"type": "integer", "description": "Questions one person may ask in any minute; one more is ERATE (SB-2305).",
 			"minimum": 1, "maximum": MaxAsksPerMinute, "default": DefaultAsksPerMinute,
 		},
+		"research_usd": map[string]any{
+			"type": "number", "description": "The most one research report may spend, in USD (SB-4201).",
+			"minimum": MinResearchUSD, "maximum": MaxResearchUSD, "default": 2,
+		},
 		"groups": map[string]any{
 			"type": "object", "description": "Only with an identity-platform idp: group to member emails (SB-907).",
 			"maxProperties": MaxGroups, "propertyNames": map[string]any{"pattern": groupRe},

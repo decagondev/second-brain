@@ -39,6 +39,9 @@ func Format(t Tenant) []byte {
 	if t.AsksPerMinute != 0 && t.AsksPerMinute != DefaultAsksPerMinute {
 		line("asks_per_minute", strconv.Itoa(t.AsksPerMinute))
 	}
+	if t.ResearchUSD != 0 {
+		line("research_usd", strconv.FormatFloat(t.ResearchUSD, 'f', -1, 64))
+	}
 	if t.PilotGroup != "" {
 		line("pilot_group", t.PilotGroup)
 	}

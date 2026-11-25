@@ -97,6 +97,10 @@ A document can say when it should be reviewed or when it expires. Ingest reads o
 
 A goal is a Markdown document whose front matter (as in Review-by dates, above) says `type: goal`, with `owner: EMAIL`, `quarter: YYYY-Qn`, `status:` one of `on_track`, `at_risk`, `off_track` or `done`, and, optionally, `parent_goal:` the title or source id of a goal in the space above. A goal without a valid `quarter` or `status` is indexed as an ordinary document and listed as no goal. The fields are read at query time from the document's first chunk; nothing about a goal is stored apart from the document, so a goal is checked like any document (sb-ask(3), Goals, updates and policies).
 
+### Action items (SB-4203)
+
+A meeting transcript's action items are read from its text when its decisions draft is made, not at ingest: lines that start `Action:`, `Action item:`, `TODO:` or `AI:`, with their owner and due date as said (sb-ask(3), Action items). Nothing about them is added to the chunks, so the index stays derived from the source (LAW-13), and a chunk flagged `instruction_like` is never read for them (LAW-09).
+
 ### Chunks
 
 A document becomes chunks in a fixed order: normalise (line endings, trailing space), split into paragraphs, then pack paragraphs into chunks of at most 1,200 characters. A paragraph longer than that is cut at the last space before the limit. Boundaries depend only on the text, so the same text always gives the same chunks, and an edit to one paragraph changes only the chunks that contain it.

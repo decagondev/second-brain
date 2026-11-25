@@ -1,7 +1,7 @@
 # World for the department agent suites (SB-1102): one space per department template that
 # ships an agent, each listing it, and one space of another template that doesn't.
 tenant: acme-logistics
-agents: [ask, incident-summary, spec-digest, close-checklist, runbook-answer, policy-answer, clause-finder, account-brief, case-brief, brand-check, sop-steps, design-rationale, exec-brief]
+agents: [ask, incident-summary, spec-digest, close-checklist, runbook-answer, policy-answer, clause-finder, account-brief, case-brief, brand-check, sop-steps, design-rationale, exec-brief, research, meeting-prep]
 users:
   - { id: usr_eng, email: eng@acme-logistics.example, groups: [grp_eng] }
   - { id: usr_pm, email: pm@acme-logistics.example, groups: [grp_product] }

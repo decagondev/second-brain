@@ -30,8 +30,10 @@ type Tenant struct {
 	RetentionDays  int               `json:"retention_days"`
 	BudgetUSDMonth int               `json:"budget_usd_month"`
 	// AsksPerMinute is how many questions one person may ask in a minute (SB-2305).
-	AsksPerMinute int    `json:"asks_per_minute"`
-	PilotGroup    string `json:"pilot_group"`
+	AsksPerMinute int `json:"asks_per_minute"`
+	// ResearchUSD is the most one research report may spend, 0 for the default (SB-4201).
+	ResearchUSD float64 `json:"research_usd"`
+	PilotGroup  string  `json:"pilot_group"`
 	// QuestionsTo answers company-wide questions nothing answered (SB-1704); Notes lets
 	// stewards publish replies as notes into the docs: folder share (SB-1705).
 	QuestionsTo string `json:"questions_to"`
@@ -94,10 +96,13 @@ const (
 	MinBudgetUSDMonth    = 1
 	DefaultBudgetUSD     = 1000
 	DefaultAsksPerMinute = 6
-	MaxAsksPerMinute     = 600
-	MaxWorkflows         = 1
-	MaxGroups            = 200
-	MaxGroupMembers      = 2000
+	// MinResearchUSD and MaxResearchUSD bound research_usd (SB-4201).
+	MinResearchUSD   = 0.1
+	MaxResearchUSD   = 50.0
+	MaxAsksPerMinute = 600
+	MaxWorkflows     = 1
+	MaxGroups        = 200
+	MaxGroupMembers  = 2000
 
 	dnsLabelRe = `^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$`
 	idpRe      = `^(oidc://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(/[^\s?#]*)?|identity-platform://[a-z][a-z0-9-]{4,28}[a-z0-9]/[A-Za-z0-9-]{1,63})$`
@@ -144,6 +149,18 @@ var fields = []field{
 	}},
 	{"asks_per_minute", false, func(c *checker, n *node) {
 		c.t.AsksPerMinute = c.intIn(n, "asks_per_minute", 1, MaxAsksPerMinute)
+	}},
+	{"research_usd", false, func(c *checker, n *node) { // SB-4201
+		v, ok := c.scalar(n, "research_usd")
+		if !ok {
+			return
+		}
+		f, err := strconv.ParseFloat(v, 64)
+		if n.quoted || err != nil || f < MinResearchUSD || f > MaxResearchUSD {
+			c.add(n, "research_usd", "%q must be a number from %g to %g", v, MinResearchUSD, MaxResearchUSD)
+			return
+		}
+		c.t.ResearchUSD = f
 	}},
 	{"pilot_group", false, func(c *checker, n *node) { c.t.PilotGroup = c.group(n, "pilot_group") }},
 	{"questions_to", false, func(c *checker, n *node) { c.t.QuestionsTo = c.group(n, "questions_to") }},

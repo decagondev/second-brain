@@ -31,6 +31,10 @@ type SavedThread struct {
 	// SB-4006): the agent, and brief or decisions. It ran as Asker, so only they see Text.
 	Agent string `json:"agent,omitempty"`
 	Kind  string `json:"kind,omitempty"`
+	// Doc is a decisions draft's transcript (KIND:ID), and Actions its action items, seen
+	// only by Asker until they confirm them (SB-4203).
+	Doc     string        `json:"doc,omitempty"`
+	Actions []DraftAction `json:"actions,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -43,6 +47,8 @@ type ThreadView struct {
 	Agent  string `json:"agent,omitempty"`
 	Kind   string `json:"kind,omitempty"`
 	Hidden bool   `json:"hidden,omitempty"`
+	// Actions are a decisions draft's action items (SB-4203), for the steward it ran as.
+	Actions []DraftAction `json:"actions,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

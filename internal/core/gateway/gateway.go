@@ -92,6 +92,7 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 			g.meter(resp.Usage)
 			if g.Budget != nil {
 				_ = g.Budget.RecordIn(ctx, req.Space, resp.Usage.Input, resp.Usage.Output)
+				budget.TallyOf(ctx).Add(g.Budget.Price, resp.Usage.Input, resp.Usage.Output) // SB-4201
 			}
 			return resp, nil
 		}

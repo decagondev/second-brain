@@ -9,7 +9,7 @@ summary: "Every agent has an owner, real feedback improves its evals, the gate c
 
 **Waves:** W43 · **Tickets:** 6 · **Stories:** 2
 
-Proposed 2026-11-24 after W40. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md). Every ticket keeps to the rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, nothing widens what anyone sees, a person approves every write, the tree only narrows, agents are definitions in the release bundle, stored results are checked when read, and every long run has a ceiling.
+Planned 2026-11-24 after W40, with the user. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md). Every ticket keeps to the rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, nothing widens what anyone sees, a person approves every write, the tree only narrows, agents are definitions in the release bundle, stored results are checked when read, and every long run has a ceiling.
 
 ## User stories
 
@@ -44,4 +44,4 @@ Proposed 2026-11-24 after W40. The concept is in [18-legwork-inbox-govern.md](..
 
 ## Decisions for the user
 
-Waiting on the user ([18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md#decisions-for-the-user)). Recommended: all of W41 to W43, in order; events off by default, ids only, the receiver fetches with its own token (SB-4404); a fixed rule routes short plain asks to the small model, each tier gated by its own eval run (SB-4405).
+Approved by the user on 2026-11-24 ([18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md#decisions-for-the-user)), every recommended decision: all of W41 to W43, in order; events off by default, ids only, the receiver fetches with its own token (SB-4404); a fixed rule routes short plain asks to the small model, each tier gated by its own eval run (SB-4405).

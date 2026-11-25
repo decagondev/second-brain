@@ -9,7 +9,7 @@ summary: "Each person sees in one place what waits on them, has recurring questi
 
 **Waves:** W42 · **Tickets:** 7 · **Stories:** 2
 
-Proposed 2026-11-24 after W40. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md). Every ticket keeps to the rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, nothing widens what anyone sees, a person approves every write, the tree only narrows, agents are definitions in the release bundle, stored results are checked when read, and every long run has a ceiling.
+Planned 2026-11-24 after W40, with the user. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md). Every ticket keeps to the rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, nothing widens what anyone sees, a person approves every write, the tree only narrows, agents are definitions in the release bundle, stored results are checked when read, and every long run has a ceiling.
 
 ## User stories
 
@@ -45,4 +45,4 @@ Proposed 2026-11-24 after W40. The concept is in [18-legwork-inbox-govern.md](..
 
 ## Decisions for the user
 
-Waiting on the user ([18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md#decisions-for-the-user)). Recommended: all of W41 to W43, in order; memory on, holding only what each person writes, shown, exported and forgettable, with an admin switch (SB-4303).
+Approved by the user on 2026-11-24 ([18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md#decisions-for-the-user)), every recommended decision: all of W41 to W43, in order; memory on, holding only what each person writes, shown, exported and forgettable, with an admin switch (SB-4303).

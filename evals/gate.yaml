@@ -32,3 +32,5 @@ agent-sop-steps: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-update: { failures_max: 0 }      # SB-4102
 agent-design-rationale: { failures_max: 0 }   # SB-4001 to SB-4003
 agent-exec-brief: { failures_max: 0 }   # SB-4001 to SB-4003
+agent-research: { failures_max: 0 }   # SB-4201
+agent-meeting-prep: { failures_max: 0 }   # SB-4202

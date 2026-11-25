@@ -78,6 +78,16 @@ func (x Stewards) AgentDraft(ctx context.Context, s tenancy.Scope, kind, title s
 	title = firstLine(title)
 	sq := StewardQuestion{ID: x.NewID("qs_"), Tenant: x.Agent.Tenant, Asker: s.User(), Question: title, Space: s.Space(),
 		Trace: resp.Trace, At: x.Now().UTC(), Thread: &SavedThread{Text: text, Agent: agent, Kind: kind}}
+	if kind == DraftDecisions && len(req.Documents) == 1 { // SB-4203: the meeting's action items, for this steward
+		sq.Thread.Doc = req.Documents[0]
+		if x.ActionsOf != nil {
+			acts, err := x.ActionsOf(ctx, s, req.Documents[0])
+			if err != nil {
+				return StewardQuestion{}, err
+			}
+			sq.Thread.Actions = acts
+		}
+	}
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "access", Subject: sq.ID, State: "drafted",
 		PayloadSHA256: hashOf(text), Reason: "agent " + agent + " drafted a " + kind, Space: auditSpace(s.Space())}); err != nil {
 		return StewardQuestion{}, fmt.Errorf("%w: audit: %v", ErrUnavailable, err)

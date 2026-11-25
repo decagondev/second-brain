@@ -477,3 +477,16 @@ type EvalRecord struct {
 type EvalGate interface {
 	EvalRecord(ctx context.Context, tenant, workflow string) (r EvalRecord, found bool, err error)
 }
+
+// CalendarEvent is one event of a person's own calendar (sb-connector(3), Calendars;
+// SB-4202): its description is the agenda, and is data, never instructions (LAW-09).
+type CalendarEvent struct {
+	ID, Title, Agenda string
+	Start             time.Time
+	Attendees         []string // emails
+}
+
+// Calendar reads a person's own calendar as them, read-only, by their directory email.
+type Calendar interface {
+	Events(ctx context.Context, tenant, email string, from, to time.Time) ([]CalendarEvent, error)
+}

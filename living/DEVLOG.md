@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S41.1: Research, meeting prep and action items
+
+**Wave/slice:** W41 / S41.1 (SB-4201 to SB-4203) · **Status:** Done
+
+**What:** Research turns a question into a plan of at most 10 sub-questions, runs it only when the person presses Run, and the notify job asks each step as them, stopping at research_usd or the space's budget. Meeting prep answers each agenda item, pasted or from the person's own calendar, with recent decisions and what each known attendee owns, and can make a brief before each meeting. A transcript's decisions draft lists its action items, and owners hear of them only after the steward confirms. Everything shows on a new Legwork tab.
+
+**Why this way:** Each step is an ordinary ask as the person, so retrieval, policy, citations and budgets needed no new path. The plan sees only the question, so nothing from a document can steer what runs. Action items are read without a model, so the draft adds no cost and nothing an injected line could invent. The calendar reuses the Drive service account with its own read-only scope.
+
+**Learned:** A report kept for 30 days goes stale the moment a grant is revoked, so every cite is checked again as the reader on opening; that is now LAW-26. A per-report cap needs its own tally on the context, because the tenant and space meters can't say what one report spent.
+
+**Laws:** LAW-01, LAW-09, LAW-12, LAW-14, LAW-26 (new, tested). Every law test is still green.
+
 ## 2026-11-24 S40.2: Requests, budgets and a home
 
 **Wave/slice:** W40 / S40.2 (SB-4104 to SB-4106) · **Status:** Done

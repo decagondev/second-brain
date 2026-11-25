@@ -22,6 +22,7 @@ import (
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/adapters/connectors/bamboohr"
 	"example.com/second-brain/internal/adapters/connectors/folder"
+	"example.com/second-brain/internal/adapters/connectors/gcal"
 	"example.com/second-brain/internal/adapters/connectors/gdrive"
 	"example.com/second-brain/internal/adapters/connectors/github"
 	"example.com/second-brain/internal/adapters/connectors/hubspot"
@@ -150,7 +151,9 @@ type Parts struct {
 	Retention  retention.Job
 	// Stewards is the questions-to-stewards service, where agent drafts wait (SB-4005).
 	Stewards ask.Stewards
-	handler  http.Handler
+	// Legwork is research, meeting prep and action items (SB-4201 to SB-4203).
+	Legwork ask.Legwork
+	handler http.Handler
 }
 
 // Parts returns the parts built from the manifest the cell runs now.
@@ -626,9 +629,12 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if m.Notes {
 		stewards.Bus, stewards.Readers = bus, c.noteReaders(m)
 	}
+	legwork := c.legwork(m, agent, stewards)
+	stewards.ActionsOf = legwork.DraftActions // a decisions draft carries its action items (SB-4203)
 	for _, app := range savers {
 		app.Saver = stewards
 	}
+	api.Legwork{Service: legwork, Release: c.Release, NewID: newID}.Register(mux)
 	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces,
 		ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays }}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
@@ -676,7 +682,50 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /v1/cell/audit/export", c.auditExport)
 	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
-	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards, handler: public}, nil
+	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards,
+		Legwork: legwork, handler: public}, nil
+}
+
+// legwork is the research, meeting-prep and action-item service (sb-ask(3); SB-4201 to
+// SB-4203). Every run is as the person, with a scope read from the directory now.
+func (c *Cell) legwork(m manifest.Tenant, agent ask.Agent, stewards ask.Stewards) ask.Legwork {
+	tenant := c.Config.Tenant
+	l := ask.Legwork{Agent: agent, Stewards: stewards, Research: c.Traces, Actions: c.Traces, Audit: c.Audit,
+		NewID: c.NewID, Now: time.Now, ResearchUSD: func() float64 { return m.ResearchUSD }, ScopeIn: c.ScopeAs,
+		Known: func(ctx context.Context, email string) bool {
+			ids, err := c.activeByEmail(ctx, email)
+			return err == nil && len(ids) == 1 // unknown, or two people: no one (LAW-12)
+		},
+		Users: func(ctx context.Context) ([]ports.User, error) {
+			ids, err := c.Directory.ActiveUserIDs(ctx, tenant)
+			if err != nil {
+				return nil, err
+			}
+			var out []ports.User
+			for _, id := range ids {
+				u, found, err := c.Directory.User(ctx, tenant, id)
+				if err != nil {
+					return nil, err
+				}
+				if found && u.Active {
+					out = append(out, u)
+				}
+			}
+			return out, nil
+		}}
+	if cal := c.Config.Calendar; cal.Kind == "google" {
+		base := cal.Base
+		if base == "" {
+			base = "https://www.googleapis.com"
+		}
+		hc := c.opt.ConnectorHTTP
+		if hc == nil {
+			hc = &http.Client{Timeout: 30 * time.Second}
+		}
+		l.Calendar = &gcal.Calendar{Base: base, HTTP: hc, Metrics: c.Metrics,
+			Tokens: &gdrive.ServiceAccount{Key: c.Secret("calendar"), HTTP: hc, Redact: c.Redact, Now: time.Now, Scope: gcal.Scope}}
+	}
+	return l
 }
 
 // Ready reports whether every part was built (GET /readyz).

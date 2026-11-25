@@ -971,3 +971,53 @@ func (t Traces) PutPolicyRead(ctx context.Context, r ask.PolicyRead) error {
 func (t Traces) PolicyReads(ctx context.Context, tenant, space, doc string) ([]ask.PolicyRead, error) {
 	return list[ask.PolicyRead](ctx, t.Pool, tenant, "policyread", "space = $3 AND body->>'doc' = $4", "id", space, doc)
 }
+
+var _ ask.ResearchStore = Traces{}
+
+// PutResearch implements ask.ResearchStore (SB-4201): by its owner and when it was asked.
+func (t Traces) PutResearch(ctx context.Context, r ask.Research) error {
+	return put(ctx, t.Pool, r.Tenant, "research", r.ID, meta{at: r.At, user: r.User, space: r.Space}, r, false)
+}
+
+// GetResearch implements ask.ResearchStore.
+func (t Traces) GetResearch(ctx context.Context, tenant, id string) (ask.Research, bool, error) {
+	return get[ask.Research](ctx, t.Pool, tenant, "research", id, false)
+}
+
+// ResearchOf implements ask.ResearchStore.
+func (t Traces) ResearchOf(ctx context.Context, tenant, user string, since time.Time) ([]ask.Research, error) {
+	return list[ask.Research](ctx, t.Pool, tenant, "research", "usr = $3 AND at >= $4", "at, id", user, since)
+}
+
+// QueuedResearch implements ask.ResearchStore.
+func (t Traces) QueuedResearch(ctx context.Context, tenant string) ([]ask.Research, error) {
+	return list[ask.Research](ctx, t.Pool, tenant, "research", "body->>'state' = $3", "at, id", ask.StateQueued)
+}
+
+var _ ask.ActionStore = Traces{}
+
+// PutAction implements ask.ActionStore (SB-4203): by its owner, its space and when it was
+// confirmed.
+func (t Traces) PutAction(ctx context.Context, a ask.Action) error {
+	return put(ctx, t.Pool, a.Tenant, "action", a.ID, meta{at: a.At, user: a.User, space: a.Space}, a, false)
+}
+
+// GetAction implements ask.ActionStore.
+func (t Traces) GetAction(ctx context.Context, tenant, id string) (ask.Action, bool, error) {
+	return get[ask.Action](ctx, t.Pool, tenant, "action", id, false)
+}
+
+// ActionsOf implements ask.ActionStore.
+func (t Traces) ActionsOf(ctx context.Context, tenant, user string) ([]ask.Action, error) {
+	return list[ask.Action](ctx, t.Pool, tenant, "action", "usr = $3", "at, id", user)
+}
+
+// ActionsIn implements ask.ActionStore.
+func (t Traces) ActionsIn(ctx context.Context, tenant, space string) ([]ask.Action, error) {
+	return list[ask.Action](ctx, t.Pool, tenant, "action", "space = $3", "at, id", space)
+}
+
+// ActionsSince implements ask.ActionStore.
+func (t Traces) ActionsSince(ctx context.Context, tenant string, since time.Time) ([]ask.Action, error) {
+	return list[ask.Action](ctx, t.Pool, tenant, "action", "at >= $3", "at, id", since)
+}

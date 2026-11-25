@@ -458,7 +458,7 @@ export interface QueueQuestion {
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
   // agent, kind and hidden: a draft an agent wrote on a schedule or a trigger (SB-4005, SB-4006).
-  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean };
+  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[] };
   // A note a steward started from a found-nothing term (SB-3705).
   draft?: { title: string; comment: string };
 }
@@ -471,6 +471,99 @@ export function draftNote(space: string, term: string, count: number, f: Fetch =
 // Ask the owner (SB-3706): the question to one person the answer names in Who to ask.
 export function askOwner(question: string, trace: string, to: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
   return call(inSpace("/v1/questions", space), post({ question, trace, to }), f);
+}
+
+// An action item as a decisions draft reads it from the transcript (SB-4203).
+export interface DraftAction {
+  text: string;
+  owner: string;
+  email?: string;
+  due?: string;
+}
+
+// A confirmed action item, on its owner's list.
+export interface ActionItem extends DraftAction {
+  id: string;
+  space: string;
+  done_at?: string;
+  overdue?: boolean;
+}
+
+// Confirm a decisions draft's action items, as edited (SB-4203): only then are owners told.
+export async function confirmActions(space: string, draft: string, items: DraftAction[], f: Fetch = fetch): Promise<ActionItem[]> {
+  const d = await call<{ actions?: ActionItem[] }>(`/v1/spaces/${encodeURIComponent(space)}/actions`, post({ draft, items }), f);
+  return d.actions ?? [];
+}
+
+// The signed-in person's own action items (SB-4203).
+export async function myActions(f: Fetch = fetch): Promise<ActionItem[]> {
+  const d = await call<{ actions?: ActionItem[] }>("/v1/me/actions", {}, f);
+  return d.actions ?? [];
+}
+
+export function actionDone(id: string, f: Fetch = fetch): Promise<ActionItem> {
+  return call(`/v1/me/actions/${encodeURIComponent(id)}/done`, post({}), f);
+}
+
+// A research report or a meeting brief (SB-4201, SB-4202), checked as the reader when shown.
+export interface ResearchSection {
+  question: string;
+  trace: string;
+  claims: Claim[];
+  decisions?: Cite[];
+  questions?: number;
+}
+
+export interface Research {
+  id: string;
+  kind: string; // research or prep
+  question: string;
+  space: string;
+  state: string; // planned, queued, running, done, stopped, failed
+  why?: string;
+  steps: string[];
+  at: string;
+  done_at?: string;
+  cost_usd: number;
+  stopped?: string;
+  summary: Claim[];
+  sections: ResearchSection[];
+  attendees?: { email: string; known: boolean; owns?: Cite[] }[];
+  dropped: number;
+}
+
+export interface ResearchItem {
+  id: string;
+  kind: string;
+  question: string;
+  space: string;
+  state: string;
+  steps: number;
+  at: string;
+  done_at?: string;
+}
+
+// Plan a research report: nothing runs until runResearch.
+export function planResearch(question: string, f: Fetch = fetch, space?: string): Promise<Research> {
+  return call(inSpace("/v1/research", space), post({ question }), f);
+}
+
+export function runResearch(id: string, f: Fetch = fetch, space?: string): Promise<Research> {
+  return call(inSpace(`/v1/research/${encodeURIComponent(id)}/run`, space), post({}), f);
+}
+
+export async function listResearch(f: Fetch = fetch): Promise<ResearchItem[]> {
+  const d = await call<{ items?: ResearchItem[] }>("/v1/research", {}, f);
+  return d.items ?? [];
+}
+
+export function openResearch(id: string, f: Fetch = fetch): Promise<Research> {
+  return call(`/v1/research/${encodeURIComponent(id)}`, {}, f);
+}
+
+// Prepare a brief from a pasted agenda (SB-4202).
+export function prepareBrief(agenda: string, title: string, attendees: string[], f: Fetch = fetch, space?: string): Promise<Research> {
+  return call(inSpace("/v1/prepare", space), post({ agenda, title, attendees }), f);
 }
 
 // Discard a saved chat thread (SB-3703).
@@ -883,18 +976,21 @@ export interface NotifyPrefs {
   paused_until?: string;
   // "daily" for the daily brief (SB-3805); none is weekly.
   digest?: string;
+  // A brief before each meeting with an agenda (SB-4202).
+  prep?: boolean;
 }
 
-function prefsOf(d: { off?: string[]; paused_until?: string; digest?: string }): NotifyPrefs {
+function prefsOf(d: { off?: string[]; paused_until?: string; digest?: string; prep?: boolean }): NotifyPrefs {
   return {
     off: Array.isArray(d.off) ? d.off : [],
     ...(typeof d.paused_until === "string" ? { paused_until: d.paused_until } : {}),
     ...(d.digest === "daily" ? { digest: "daily" } : {}),
+    ...(d.prep === true ? { prep: true } : {}),
   };
 }
 
 export async function notifySettings(f: Fetch = fetch): Promise<NotifyPrefs> {
-  return prefsOf(await call<{ off?: string[]; paused_until?: string; digest?: string }>("/v1/me/notifications", {}, f));
+  return prefsOf(await call<{ off?: string[]; paused_until?: string; digest?: string; prep?: boolean }>("/v1/me/notifications", {}, f));
 }
 
 // setNotifySettings replaces the kinds turned off; pauseDays, when given, pauses for that
@@ -904,9 +1000,10 @@ export function testNotification(f: Fetch = fetch): Promise<{ sent: boolean; via
   return call("/v1/me/notifications/test", post({}), f);
 }
 
-export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number, digest?: "daily" | "weekly"): Promise<NotifyPrefs> {
+export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number, digest?: "daily" | "weekly", prep?: boolean): Promise<NotifyPrefs> {
   const body: Record<string, unknown> = pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
   if (digest) body.digest = digest;
+  if (prep !== undefined) body.prep = prep;
   return prefsOf(await call("/v1/me/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, f));
 }
 

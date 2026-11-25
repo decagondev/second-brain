@@ -1110,7 +1110,7 @@ gantt
 
 #### W41 Agents That Do the Legwork
 
-*Agents prepare, research and follow up for people, and every result is still a cited draft or a message to the person themselves. Proposed 2026-11-24, waiting on the user's decisions ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
+*Agents prepare, research and follow up for people, and every result is still a cited draft or a message to the person themselves. Planned 2026-11-24 with the user, every recommended decision ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
 
 **Exit gate**
 
@@ -1127,7 +1127,7 @@ gantt
 
 #### W42 Work That Comes to You
 
-*Each person sees in one place what waits on them, has recurring questions answered for them, and keeps context for their work, all checked as them. Proposed 2026-11-24, waiting on the user's decisions ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
+*Each person sees in one place what waits on them, has recurring questions answered for them, and keeps context for their work, all checked as them. Planned 2026-11-24 with the user, every recommended decision ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
 
 **Exit gate**
 
@@ -1144,7 +1144,7 @@ gantt
 
 #### W43 Govern Every Agent
 
-*Every agent has an owner, real feedback improves its evals, the gate catches a bad definition, and admins see the cost and the risk. Proposed 2026-11-24, waiting on the user's decisions ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
+*Every agent has an owner, real feedback improves its evals, the gate catches a bad definition, and admins see the cost and the risk. Planned 2026-11-24 with the user, every recommended decision ([18-legwork-inbox-govern.md](18-legwork-inbox-govern.md)).*
 
 **Exit gate**
 
