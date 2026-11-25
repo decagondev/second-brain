@@ -28,6 +28,7 @@ Read top to bottom the first time. After that, the [manual](../manual/README.md)
 | 16 | [Trust each answer, capture conversations, work where people are](16-trust-capture-reach.md) | Twenty features drawn from other knowledge tools: verified answers, meetings and chat captured, MCP and adoption (W35 to W37) |
 | 17 | [One org, many levels; an agent for every department; run the company](17-org-agents-os.md) | Twenty features toward a company OS: spaces as a tree, an agent for every department, goals, updates, policies, requests and budgets (W38 to W40) |
 | 18 | [Agents that do the legwork; work that comes to you; govern every agent](18-legwork-inbox-govern.md) | Twenty features from a deeper survey of company OS and second brain tools: research, meeting prep, action items and follow-ups; one inbox, routines and memory; owners, evals and a lint for every agent (W41 to W43) |
+| 19 | [Departments work together; agents you can shape; every agent accountable](19-departments-shape-account.md) | Twenty features toward a company OS of department agents: consult and hand off between departments as the asker, the leader's week, skills and redrafts, and value, pauses, caps, shadow runs and an AI mark for every agent (W44 to W46) |
 
 ## Architecture
 

@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-45 epics, 133 user stories and 351 tickets across 44 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+48 epics, 139 user stories and 371 tickets across 47 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -48,6 +48,9 @@ summary: Epics, waves, slices and tickets.
 | W41 Agents That Do the Legwork | 7 | 0 | 0 | Planned 2026-11-24 with the user (E42), W41 built: research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W42 Work That Comes to You | 7 | 0 | 0 | Planned 2026-11-24 with the user (E43), W42 built: one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W43 Govern Every Agent | 6 | 0 | 0 | Planned 2026-11-24 with the user (E44), W43 built: feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W44 Departments Work Together | 0 | 0 | 7 | Planned 2026-11-25 with the user (E45): ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
+| W45 Agents You Can Shape | 0 | 0 | 6 | Planned 2026-11-25 with the user (E46): skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
+| W46 Every Agent Accountable | 0 | 0 | 7 | Planned 2026-11-25 with the user (E47): agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -169,6 +172,12 @@ flowchart LR
   E41 --> E42
   E42 --> E43
   E43 --> E44
+  E45["E45 Departments Work Together"]
+  E46["E46 Agents You Can Shape"]
+  E47["E47 Every Agent Accountable"]
+  E44 --> E45
+  E45 --> E46
+  E46 --> E47
 ```
 
 ## Epics
@@ -220,6 +229,9 @@ flowchart LR
 | [E42 Agents That Do the Legwork](E42-agents-do-the-legwork/README.md) | Agents prepare, research and follow up for people, and every result is still a cited draft or a message to the person themselves. | W41 | 7 |
 | [E43 Work That Comes to You](E43-work-comes-to-you/README.md) | Each person sees in one place what waits on them, has recurring questions answered for them, and keeps context for their work, all checked as them. | W42 | 7 |
 | [E44 Govern Every Agent](E44-govern-every-agent/README.md) | Every agent has an owner, real feedback improves its evals, the gate catches a bad definition, and admins see the cost and the risk. | W43 | 6 |
+| [E45 Departments Work Together](E45-departments-work-together/README.md) | A question or a piece of work that spans departments reaches the right ones, as the asker, and leaders see the week across their branch without assembling it. | W44 | 7 |
+| [E46 Agents You Can Shape](E46-agents-you-can-shape/README.md) | Stewards and owners shape what agents produce, without building agents in the browser, and anyone can see how an answer or draft was made. | W45 | 6 |
+| [E47 Every Agent Accountable](E47-every-agent-accountable/README.md) | Every agent's use is measured, any steward can stop it where it speaks, its cost is capped, its changes are tried before they ship, and its record can be handed to an auditor. | W46 | 7 |
 
 ## All tickets by wave
 
@@ -798,3 +810,38 @@ flowchart LR
 | [SB-4404](E44-govern-every-agent/SB-4404-signed-events.md) | S43.2 | E44 | Signed events out | Done |
 | [SB-4405](E44-govern-every-agent/SB-4405-model-tiers.md) | S43.2 | E44 | Model tiers | Done |
 | [SB-4406](E44-govern-every-agent/SB-4406-guardrail-insights.md) | S43.2 | E44 | Guardrail insights | Done |
+
+### W44 Departments Work Together
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4501](E45-departments-work-together/SB-4501-ask-each-department.md) | S44.1 | E45 | Ask each department | Open |
+| [SB-4502](E45-departments-work-together/SB-4502-hand-off.md) | S44.1 | E45 | Hand off to a department | Open |
+| [SB-4503](E45-departments-work-together/SB-4503-leaders-week.md) | S44.1 | E45 | The leader's week | Open |
+| [SB-4504](E45-departments-work-together/SB-4504-waiting-on.md) | S44.2 | E45 | Waiting on another department | Open |
+| [SB-4505](E45-departments-work-together/SB-4505-superseded-decisions.md) | S44.2 | E45 | Decisions that replace decisions | Open |
+| [SB-4506](E45-departments-work-together/SB-4506-catch-me-up.md) | S44.2 | E45 | Catch me up | Open |
+| [SB-4507](E45-departments-work-together/SB-4507-service-levels.md) | S44.2 | E45 | Department service levels | Open |
+
+### W45 Agents You Can Shape
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4601](E46-agents-you-can-shape/SB-4601-skills.md) | S45.1 | E46 | Skills | Open |
+| [SB-4602](E46-agents-you-can-shape/SB-4602-ask-for-changes.md) | S45.1 | E46 | Ask for changes | Open |
+| [SB-4603](E46-agents-you-can-shape/SB-4603-shared-routines.md) | S45.1 | E46 | Shared routines | Open |
+| [SB-4604](E46-agents-you-can-shape/SB-4604-post-incident-review.md) | S45.2 | E46 | Post-incident review | Open |
+| [SB-4605](E46-agents-you-can-shape/SB-4605-account-brief.md) | S45.2 | E46 | Account brief | Open |
+| [SB-4606](E46-agents-you-can-shape/SB-4606-how-this-was-made.md) | S45.2 | E46 | How this was made | Open |
+
+### W46 Every Agent Accountable
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-4701](E47-every-agent-accountable/SB-4701-agent-value.md) | S46.1 | E47 | Agent value | Open |
+| [SB-4702](E47-every-agent-accountable/SB-4702-pause-here.md) | S46.1 | E47 | Pause from the message | Open |
+| [SB-4703](E47-every-agent-accountable/SB-4703-agent-spend-caps.md) | S46.1 | E47 | Agent spend caps | Open |
+| [SB-4704](E47-every-agent-accountable/SB-4704-shadow-runs.md) | S46.2 | E47 | Shadow runs | Open |
+| [SB-4705](E47-every-agent-accountable/SB-4705-agent-access-review.md) | S46.2 | E47 | Agent access review | Open |
+| [SB-4706](E47-every-agent-accountable/SB-4706-marked-as-ai.md) | S46.2 | E47 | Marked as AI | Open |
+| [SB-4707](E47-every-agent-accountable/SB-4707-agent-record.md) | S46.2 | E47 | An agent's record | Open |
