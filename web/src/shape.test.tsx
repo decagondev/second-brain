@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { AskForChanges, ShareRoutine, SharedRoutines, SkillHint } from "./Shape";
+import { AskForChanges, ShareRoutine, SharedRoutines, SkillHint, Suggestions } from "./Shape";
 import type { Fetch } from "./api";
 
 afterEach(cleanup);
@@ -87,5 +87,30 @@ describe("shape the work", () => {
     cleanup();
     render(<ShareRoutine q={{ ...q, from: "sq_9" }} fetcher={fetcher} onChange={() => undefined} />);
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+describe("edit a draft together (SB-5202)", () => {
+  it("lists the open suggestions and rejects one", async () => {
+    const calls: string[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      calls.push(`${init?.method ?? "GET"} ${u}`);
+      return new Response(JSON.stringify({ text: "Old line", suggestions: [] }), { status: 200 });
+    };
+    let next = "";
+    render(
+      <Suggestions
+        space="ops"
+        id="qs_1"
+        items={[{ n: 1, section: 1, old: "Old line", new: "New line", round: 1, state: "open" }, { n: 2, section: 2, old: "a", new: "b", round: 1, state: "accepted" }]}
+        fetcher={fetcher}
+        onDone={(x) => (next = x)}
+      />,
+    );
+    expect(screen.getByText("1 suggestion to accept or reject before you publish")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    await act(async () => {});
+    expect(calls).toEqual(["POST /v1/spaces/ops/questions/qs_1/suggestions/1/reject"]);
+    expect(next).toBe("Old line");
   });
 });

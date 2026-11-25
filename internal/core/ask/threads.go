@@ -60,6 +60,12 @@ type SavedThread struct {
 	Redrafted time.Time `json:"redrafted,omitzero"`
 	Next      string    `json:"next,omitempty"`
 	Changed   []string  `json:"changed,omitempty"`
+	// Suggestions are the changes Ask for changes made, each open until the reviewer accepts
+	// or rejects it; Generated is what the agent wrote before the reviewer edited it in place,
+	// "" when they haven't; Editors are who edited it (SB-5202, SB-5204).
+	Suggestions []DraftSuggestion `json:"suggestions,omitempty"`
+	Generated   string            `json:"generated,omitempty"`
+	Editors     []string          `json:"editors,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -93,6 +99,9 @@ type ThreadView struct {
 	// Changed are the sources a source-changed redraft was made for (SB-4905), for the
 	// steward it ran as.
 	Changed []string `json:"changed,omitempty"`
+	// Suggestions are the redrafts' changes to accept or reject (SB-5202), for the steward it
+	// ran as.
+	Suggestions []DraftSuggestion `json:"suggestions,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

@@ -329,7 +329,7 @@ func links(cs []answer.Cite) string {
 		} else {
 			out = append(out, "`"+strings.ReplaceAll(c.Cite, "`", "")+"`")
 		}
-		if m := ask.CiteMark(c.GeneratedBy, c.ApprovedBy, c.Edited); m != "" { // SB-4706
+		if m := ask.CiteMark(c.GeneratedBy, c.ApprovedBy, c.Edited, c.AskedBy, c.EditedBy); m != "" { // SB-4706
 			out[len(out)-1] += " (" + escape(m) + ")"
 		}
 	}

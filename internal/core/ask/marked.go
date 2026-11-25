@@ -62,12 +62,22 @@ func Rewrote(t *SavedThread, reply string) bool {
 
 // markFront is the front matter of a note published from an agent draft: generated_by and
 // approved_by, and edited when the reply isn't the draft's text. None for a rewrite.
-func markFront(q StewardQuestion, approver string) []string {
+func markFront(q StewardQuestion, approver string, people ...string) []string {
 	if q.Reply == nil || Rewrote(q.Thread, q.Reply.Text) {
 		return nil
 	}
 	out := []string{"generated_by: " + GeneratedBy(q.Thread.Agent, q.Thread.Release), "approved_by: " + strings.ToLower(approver)}
-	if strings.TrimSpace(q.Reply.Text) != strings.TrimSpace(q.Thread.Text) {
+	if len(people) > 0 && people[0] != "" { // SB-5204: who asked for it
+		out = append(out, "asked_by: "+strings.ToLower(people[0]))
+	}
+	if len(people) > 1 && people[1] != "" { // and who edited it in place
+		out = append(out, "edited_by: "+strings.ToLower(people[1]))
+	}
+	gen := q.Thread.Text
+	if q.Thread.Generated != "" { // edited in place (SB-5202)
+		gen = q.Thread.Generated
+	}
+	if strings.TrimSpace(q.Reply.Text) != strings.TrimSpace(gen) {
 		out = append(out, "edited: true")
 	}
 	return out
@@ -76,12 +86,18 @@ func markFront(q StewardQuestion, approver string) []string {
 // CiteMark is a cited note's mark as shown (SB-4706): "Written by case-brief, version
 // rel_7, approved by sam@…", with "edited and approved" when the person changed it; "" for
 // a document a person wrote.
-func CiteMark(generatedBy, approvedBy string, edited bool) string {
+func CiteMark(generatedBy, approvedBy string, edited bool, people ...string) string {
 	if generatedBy == "" {
 		return ""
 	}
 	agent, version, _ := strings.Cut(generatedBy, "@")
 	line := MarkLine(agent, version)
+	if len(people) > 0 && people[0] != "" { // SB-5204
+		line += ", asked for by " + people[0]
+	}
+	if len(people) > 1 && people[1] != "" {
+		line += ", edited by " + people[1]
+	}
 	if approvedBy != "" {
 		if edited {
 			line += ", edited and approved by " + approvedBy

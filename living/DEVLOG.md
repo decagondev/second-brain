@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S51.1: Fix the source
+
+**Wave/slice:** W51 / S51.1 (SB-5201 to SB-5204) · **Status:** Done
+
+**What:** A steward can send a document's owner a suggested edit from the review list: the change is drafted as the owner, from the document and the evidence they can open, and lands in their own queue; nothing is written to the source, and a dismissed passage isn't suggested again. The reviewer of an agent draft can edit a section in place, and each change Ask for changes makes is a suggestion to accept or reject; a draft with an open one can't be published. A comment starting `@NAME` asks that agent about the section, as the commenter, and keeps its cited reply under the comment. Published notes name who asked for them and who edited them, and every cite shows it.
+
+**Why this way:** The suggested edit uses the owner's own queue and the existing ask pipeline as the owner, so there is no new store and nothing reaches them that they couldn't open. Suggestions sit beside the existing redraft text rather than replacing it, so the versions and diffs of SB-4602 and SB-4902 stay exactly as they were and rejecting simply puts back the old section. The agent's own text is kept when the reviewer edits, which is what the edited mark compares against. An @agent reply is stored on the comment and never read by a redraft, so it can't become a source.
+
+**Learned:** The cell's `suggestion` name was taken (the right-department suggestion, SB-4007), so a draft's are `DraftSuggestion`. A suggested edit started by every automatic check would flood owners; a steward choosing from the review list keeps it to the findings worth an owner's time.
+
+**Laws:** LAW-01, LAW-09, LAW-14, LAW-16, LAW-27, LAW-28. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S50.2: Roll out with care
 
 **Wave/slice:** W50 / S50.2 (SB-5104 to SB-5107) · **Status:** Done

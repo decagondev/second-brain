@@ -26,6 +26,9 @@ export interface Cite {
   generated_by?: string;
   approved_by?: string;
   edited?: boolean;
+  // Who asked for it and who edited it (SB-5204).
+  asked_by?: string;
+  edited_by?: string;
 }
 
 export interface Person {
@@ -643,6 +646,8 @@ export interface QueueQuestion {
     trace?: string;
     mark?: { agent: string; version?: string };
     changed?: string[]; // the sources a source-changed redraft was made for (SB-4905)
+    // The redrafts' changes to accept or reject (SB-5202).
+    suggestions?: DraftSuggestion[];
   }; // SB-4602, SB-4606, SB-4706
   // A request waiting on another space (SB-4504).
   waiting?: { on: string; reason: string; until: string };
@@ -1932,4 +1937,14 @@ export function removeCollection(
     { method: "DELETE" },
     f,
   );
+}
+
+// One change Ask for changes made to a draft (SB-5202), open until accepted or rejected.
+export interface DraftSuggestion {
+  n: number;
+  section: number;
+  old: string;
+  new: string;
+  round: number;
+  state: "open" | "accepted" | "rejected";
 }

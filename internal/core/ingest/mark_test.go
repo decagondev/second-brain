@@ -18,3 +18,11 @@ func TestMarkOf(t *testing.T) {
 		t.Fatalf("a person's document has no mark: %+v", m)
 	}
 }
+
+// SB-5204: asked_by and edited_by are read as addresses; anything else is dropped.
+func TestMarkOfWhoMadeIt(t *testing.T) {
+	m := MarkOf("---\ngenerated_by: case-brief@rel_7\nasked_by: Kim@Acme.example\nedited_by: kim@acme.example, not an address, lee@acme.example\n---\n# x\n", "")
+	if m.AskedBy != "kim@acme.example" || m.EditedBy != "kim@acme.example, lee@acme.example" {
+		t.Fatalf("%+v", m)
+	}
+}

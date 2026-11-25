@@ -11,7 +11,12 @@ import (
 func (h Questions) registerShape(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/skills", h.skills)
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/changes", h.changes)
-	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/comments", h.comment) // SB-4902
+	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/comments", h.comment)                               // SB-4902
+	mux.HandleFunc("POST /v1/spaces/{name}/review/suggest", h.suggestEdit)                                    // SB-5201
+	mux.HandleFunc("POST /v1/me/suggestions/{id}/dismiss", h.dismissEdit)                                     // SB-5201
+	mux.HandleFunc("PUT /v1/spaces/{name}/questions/{id}/sections/{n}", h.editSection)                        // SB-5202
+	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/suggestions/{n}/accept", h.decideSuggestion(true))  // SB-5202
+	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/suggestions/{n}/reject", h.decideSuggestion(false)) // SB-5202
 	mux.HandleFunc("GET /v1/spaces/{name}/routines", h.sharedRoutines)
 	mux.HandleFunc("PUT /v1/spaces/{name}/routines/{id}", h.shareRoutine)
 	mux.HandleFunc("DELETE /v1/spaces/{name}/routines/{id}", h.shareRoutine)

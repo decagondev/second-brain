@@ -40,7 +40,8 @@ GET  /v1/admin/agents/NAME/record
 GET  /v1/admin/agents/NAME/history
 POST /v1/admin/agents/NAME/history/N/restore
 GET  /v1/admin/rollouts
-POST /v1/admin/rollouts/FEATURE/hold|release
+POST /v1/admin/rollouts/FEATURE/hold
+POST /v1/admin/rollouts/FEATURE/release
 GET  /v1/agents/shadow                          (an agent's owners)
 GET  /v1/admin/tokens
 DELETE /v1/admin/tokens/ID

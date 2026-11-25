@@ -63,7 +63,7 @@ import type {
 } from "./api";
 import { placeOf } from "./Answer";
 import { WaitForm } from "./Across";
-import { AskForChanges } from "./Shape";
+import { AskForChanges, Suggestions } from "./Shape";
 import { HowThisWasMade } from "./Further";
 import { AgentValue, PauseHere, ShadowRuns } from "./Accountable";
 import { MarkLine } from "./Marked";
@@ -725,6 +725,18 @@ export function StewardQuestions({
                   )}
                   {q.thread.trace && (
                     <HowThisWasMade trace={q.thread.trace} fetcher={fetcher} />
+                  )}
+                  {q.state === "open" && !q.thread.hidden && (
+                    <Suggestions
+                      space={space}
+                      id={q.id}
+                      items={q.thread.suggestions}
+                      fetcher={fetcher}
+                      onDone={(next) => {
+                        setText((x) => ({ ...x, [q.id]: next }));
+                        void load();
+                      }}
+                    />
                   )}
                   {q.state === "open" && !q.thread.hidden && (
                     <AskForChanges

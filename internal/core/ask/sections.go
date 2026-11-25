@@ -30,6 +30,65 @@ type SectionComment struct {
 	Text    string `json:"text"`
 	By      string `json:"by"`
 	Round   int    `json:"round"`
+	// Reply is the answer of the agent the comment names with @NAME (SB-5203): composed as
+	// the commenter, cited, and never part of the draft or a source for its redraft.
+	Reply *CommentReply `json:"reply,omitempty"`
+}
+
+// CommentReply is an agent's cited reply under a comment.
+type CommentReply struct {
+	Agent string   `json:"agent"`
+	Text  string   `json:"text"`
+	Cites []string `json:"cites"`
+}
+
+// MaxCommentSection is how much of a section an @agent comment sends with its question.
+const MaxCommentSection = 1500
+
+// mentioned is the agent a comment names first, as @NAME, and the rest of the comment.
+func mentioned(text string) (string, string) {
+	if !strings.HasPrefix(text, "@") {
+		return "", text
+	}
+	name, rest, _ := strings.Cut(text[1:], " ")
+	if AgentOwner(name) == "" || strings.TrimSpace(rest) == "" {
+		return "", text
+	}
+	return name, strings.TrimSpace(rest)
+}
+
+// commentReply asks agent about section, as s in the draft's space: the agent's own answer
+// to the asker, with no consultation below it (LAW-27).
+func (x Stewards) commentReply(ctx context.Context, s tenancy.Scope, q StewardQuestion, agent, ask, section string) (*CommentReply, error) {
+	if x.Rescope == nil {
+		return nil, fmt.Errorf("%w: this cell can't ask an agent from a comment", ErrUnavailable)
+	}
+	rctx, in, err := x.Rescope(ctx, s.User(), q.Space, false)
+	if err != nil {
+		return nil, fmt.Errorf("%w: you can't ask in this space now", ErrInvalid)
+	}
+	if r := []rune(section); len(r) > MaxCommentSection {
+		section = string(r[:MaxCommentSection])
+	}
+	req := Request{Question: ask + "\n\nAbout this section of a draft: " + strings.TrimSpace(section)}
+	if agent != "ask" {
+		req.Agent = agent
+	}
+	resp, err := x.Agent.Ask(rctx, in, req)
+	if err != nil {
+		return nil, err
+	}
+	rep := &CommentReply{Agent: agent, Text: strings.TrimRight(DraftText(resp.Answer), "\n"), Cites: []string{}}
+	seen := map[string]bool{}
+	for _, c := range resp.Answer.Claims {
+		for _, ci := range c.Cites {
+			if !seen[ci.Cite] {
+				seen[ci.Cite] = true
+				rep.Cites = append(rep.Cites, ci.Cite)
+			}
+		}
+	}
+	return rep, nil
 }
 
 // SectionDiff is the line diff of one section a redraft wrote again.
@@ -99,8 +158,16 @@ func (x Stewards) CommentSection(ctx context.Context, s tenancy.Scope, name, id 
 	if err := changeable(q, s.User()); err != nil {
 		return nil, err
 	}
-	if n := len(DraftSections(q.Thread.Text)); section < 1 || section > n {
+	secs := DraftSections(q.Thread.Text)
+	if n := len(secs); section < 1 || section > n {
 		return nil, fmt.Errorf("%w: the draft has sections 1 to %d", ErrInvalid, n)
+	}
+	var reply *CommentReply
+	if agent, rest := mentioned(text); agent != "" { // SB-5203: @NAME asks that agent
+		var err error
+		if reply, err = x.commentReply(ctx, s, q, agent, rest, secs[section-1]); err != nil {
+			return nil, err
+		}
 	}
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "access", Subject: id, State: "commented",
 		PayloadSHA256: hashOf(text), Reason: fmt.Sprintf("section %d of a %s, round %d", section, q.Thread.Kind, q.Thread.Rounds+1), Space: auditSpace(q.Space)}); err != nil {
@@ -113,7 +180,7 @@ func (x Stewards) CommentSection(ctx context.Context, s tenancy.Scope, name, id 
 		if len(roundComments(cur.Thread)) >= MaxRoundComments {
 			return fmt.Errorf("%w: at most %d comments a round", ErrInvalid, MaxRoundComments)
 		}
-		cur.Thread.Comments = append(cur.Thread.Comments, SectionComment{Section: section, Text: text, By: s.User(), Round: cur.Thread.Rounds})
+		cur.Thread.Comments = append(cur.Thread.Comments, SectionComment{Section: section, Text: text, By: s.User(), Round: cur.Thread.Rounds, Reply: reply})
 		return nil
 	})
 	if err != nil {
@@ -124,7 +191,7 @@ func (x Stewards) CommentSection(ctx context.Context, s tenancy.Scope, name, id 
 
 // redraftSections writes each commented section of t again, as in, from t's sources (rctx
 // is narrowed to them), with that section's comments and note; every other section is kept.
-func (x Stewards) redraftSections(rctx context.Context, in tenancy.Scope, t *SavedThread, req Request, comments []SectionComment, note string) (Response, string, []SectionDiff, error) {
+func (x Stewards) redraftSections(rctx context.Context, in tenancy.Scope, t *SavedThread, req Request, comments []SectionComment, note string) (Response, string, []SectionDiff, map[int][2]string, error) {
 	secs := DraftSections(t.Text)
 	by := map[int][]string{}
 	for _, c := range comments {
@@ -137,6 +204,7 @@ func (x Stewards) redraftSections(rctx context.Context, in tenancy.Scope, t *Sav
 	sort.Ints(order)
 	var last Response
 	var diffs []SectionDiff
+	changed := map[int][2]string{} // section -> what it held, what it holds now (SB-5202)
 	for _, n := range order {
 		if n < 1 || n > len(secs) {
 			continue
@@ -148,16 +216,17 @@ func (x Stewards) redraftSections(rctx context.Context, in tenancy.Scope, t *Sav
 		ctx := context.WithValue(rctx, noteKey{}, redraftNote{draft: strings.TrimRight(secs[n-1], "\n"), note: ask, section: true})
 		resp, err := x.Agent.Ask(ctx, in, req)
 		if err != nil {
-			return Response{}, "", nil, err
+			return Response{}, "", nil, nil, err
 		}
 		text := strings.TrimRight(DraftText(resp.Answer), "\n")
 		if text == "" {
-			return Response{}, "", nil, fmt.Errorf("%w: nothing the section could cite", ErrInvalid)
+			return Response{}, "", nil, nil, fmt.Errorf("%w: nothing the section could cite", ErrInvalid)
 		}
 		old := secs[n-1]
 		secs[n-1] = text + old[len(strings.TrimRight(old, "\n")):] // the section's own line ends, kept
+		changed[n] = [2]string{old, secs[n-1]}
 		diffs = append(diffs, SectionDiff{Section: n, Diff: LineDiff(lines(strings.TrimRight(old, "\n")), lines(text))})
 		last = resp
 	}
-	return last, strings.Join(secs, ""), diffs, nil
+	return last, strings.Join(secs, ""), diffs, changed, nil
 }

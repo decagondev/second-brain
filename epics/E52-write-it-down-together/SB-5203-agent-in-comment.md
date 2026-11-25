@@ -13,7 +13,7 @@ summary: "A reviewer who wants a department's view has to leave the draft to ask
 | Manual | [`sb-agents(7)`](../../manual/sb-agents.7.md), [`sb-departments(7)`](../../manual/sb-departments.7.md) |
 | Laws | LAW-01, LAW-09, LAW-27 |
 | Depends on | SB-4902, SB-4501 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ A reviewer who wants a department's view has to leave the draft to ask.
 
 ## Acceptance criteria
 
-- [ ] `@NAME` in a section comment asks that department agent about the section, as the commenter
-- [ ] The reply appears under the comment, cited only with what the commenter can open
-- [ ] A reply is never a source and never part of the draft until someone accepts it; consultation stays one level deep
+- [x] `@NAME` in a section comment asks that department agent about the section, as the commenter
+- [x] The reply appears under the comment, cited only with what the commenter can open
+- [x] A reply is never a source and never part of the draft until someone accepts it; consultation stays one level deep
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Mention parsing
-- [ ] Reply as the commenter
-- [ ] Tests
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Mention parsing
+- [x] Reply as the commenter
+- [x] Tests
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-25: built. A section comment starting `@NAME ` (an agent of the bundle) asks that agent the rest of the comment with up to 1,500 characters of the section, as the commenter in the draft's space (`Rescope`, the usual ask pipeline, no consultation), and keeps `reply: {agent, text, cites}` on the comment. Ask for changes reads only the comment's own words, never the reply. Tested in TestFixTheSourceThroughARunningCell.
 
 ## Definition of done
 

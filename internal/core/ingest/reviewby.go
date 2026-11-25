@@ -58,6 +58,8 @@ func frontMatter(text string) map[string]string {
 type Mark struct {
 	GeneratedBy, ApprovedBy string
 	Edited                  bool
+	// AskedBy and EditedBy are who asked for it and who edited it (SB-5204): addresses only.
+	AskedBy, EditedBy string
 }
 
 // markShape is AGENT@VERSION, or AGENT alone.
@@ -72,7 +74,7 @@ func MarkOf(text, owner string) Mark {
 	if !markShape.MatchString(gb) {
 		return Mark{}
 	}
-	m := Mark{GeneratedBy: gb, Edited: fm["edited"] == "true"}
+	m := Mark{GeneratedBy: gb, Edited: fm["edited"] == "true", AskedBy: addresses(fm["asked_by"]), EditedBy: addresses(fm["edited_by"])}
 	if ab := strings.ToLower(fm["approved_by"]); ab != "" && strings.EqualFold(ab, strings.TrimSpace(owner)) {
 		m.ApprovedBy = ab
 	}
@@ -90,4 +92,19 @@ func ParseReviewBy(s string) (time.Time, bool) {
 		return t.UTC(), true
 	}
 	return time.Time{}, false
+}
+
+// addressShape is one email address in a mark.
+var addressShape = regexp.MustCompile(`^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{1,190}$`)
+
+// addresses is a mark's comma-separated addresses, each lower-cased, at most 10; anything
+// that isn't an address is dropped.
+func addresses(v string) string {
+	var out []string
+	for _, a := range strings.Split(v, ",") {
+		if a = strings.ToLower(strings.TrimSpace(a)); addressShape.MatchString(a) && len(out) < 10 {
+			out = append(out, a)
+		}
+	}
+	return strings.Join(out, ", ")
 }

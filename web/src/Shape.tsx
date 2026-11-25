@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import type { Fetch, SavedQuestion } from "./api";
+import type { DraftSuggestion, Fetch, SavedQuestion } from "./api";
 import { BRANCH } from "./api";
 import { call } from "./Steward";
 import { t, tn } from "./i18n";
@@ -121,6 +121,61 @@ export function AskForChanges({
         </p>
       )}
     </div>
+  );
+}
+
+// The redraft's suggestions (SB-5202): each open one with what the section held and what the
+// agent wrote, and Accept or Reject; a draft with an open one can't be published.
+export function Suggestions({
+  space,
+  id,
+  items,
+  fetcher = fetch,
+  onDone,
+}: {
+  space: string;
+  id: string;
+  items?: DraftSuggestion[];
+  fetcher?: Fetch;
+  onDone: (text: string) => void;
+}) {
+  const [status, setStatus] = useState("");
+  const open = (items ?? []).filter((s) => s.state === "open");
+  if (open.length === 0) return null;
+  async function decide(n: number, accept: boolean) {
+    try {
+      const r = await call(fetcher, "POST", `/v1/spaces/${enc(space)}/questions/${enc(id)}/suggestions/${n}/${accept ? "accept" : "reject"}`);
+      setStatus(accept ? t("Suggestion accepted.") : t("Suggestion rejected: the section is back as it was."));
+      onDone(String(r.text ?? ""));
+    } catch (err) {
+      setStatus(msg(err, t("The suggestion couldn't be changed.")));
+    }
+  }
+  return (
+    <section aria-label={t("Suggestions")}>
+      <p className="meta">{tn(open.length, "{n} suggestion to accept or reject before you publish", "{n} suggestions to accept or reject before you publish")}</p>
+      <ol>
+        {open.map((s) => (
+          <li key={s.n}>
+            <ul className="diff">
+              <li className="removed">{s.old}</li>
+              <li className="added">{s.new}</li>
+            </ul>
+            <button type="button" onClick={() => void decide(s.n, true)}>
+              {t("Accept")}
+            </button>{" "}
+            <button type="button" onClick={() => void decide(s.n, false)}>
+              {t("Reject")}
+            </button>
+          </li>
+        ))}
+      </ol>
+      {status && (
+        <p className="meta" role="status">
+          {status}
+        </p>
+      )}
+    </section>
   );
 }
 

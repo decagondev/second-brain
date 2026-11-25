@@ -351,6 +351,9 @@ type Chunk struct {
 	// (SB-4706, LAW-28).
 	GeneratedBy, ApprovedBy string
 	Edited                  bool
+	// AskedBy is who asked for an agent's note and EditedBy who edited it, comma separated,
+	// from its front matter (SB-5204); "" for a document a person wrote.
+	AskedBy, EditedBy string
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.

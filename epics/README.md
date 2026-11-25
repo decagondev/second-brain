@@ -55,7 +55,7 @@ summary: Epics, waves, slices and tickets.
 | W48 Agents That Check With You | 6 | 0 | 0 | Planned 2026-11-25 with the user (E49), built: ask before guessing, comments on a section, long research with checkpoints, scenarios before you approve, when a source changes, starter questions ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W49 Run AI Like a Business | 7 | 0 | 0 | Planned 2026-11-25 with the user (E50), built: AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W50 Guard What Goes In | 7 | 0 | 0 | Planned 2026-11-25 with the user (E51), built: suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
-| W51 Write It Down Together | 0 | 0 | 7 | Planned 2026-11-25 with the user (E52): suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
+| W51 Write It Down Together | 4 | 0 | 3 | Planned 2026-11-25 with the user (E52), S51.1 built: suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W52 Agents That Act Carefully | 0 | 0 | 6 | Planned 2026-11-25 with the user (E53): start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -921,10 +921,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-5201](E52-write-it-down-together/SB-5201-suggested-edits.md) | S51.1 | E52 | Suggested edits to the source | Open |
-| [SB-5202](E52-write-it-down-together/SB-5202-edit-together.md) | S51.1 | E52 | Edit a draft together | Open |
-| [SB-5203](E52-write-it-down-together/SB-5203-agent-in-comment.md) | S51.1 | E52 | Ask an agent in a comment | Open |
-| [SB-5204](E52-write-it-down-together/SB-5204-who-made-it.md) | S51.1 | E52 | Who made it | Open |
+| [SB-5201](E52-write-it-down-together/SB-5201-suggested-edits.md) | S51.1 | E52 | Suggested edits to the source | Done |
+| [SB-5202](E52-write-it-down-together/SB-5202-edit-together.md) | S51.1 | E52 | Edit a draft together | Done |
+| [SB-5203](E52-write-it-down-together/SB-5203-agent-in-comment.md) | S51.1 | E52 | Ask an agent in a comment | Done |
+| [SB-5204](E52-write-it-down-together/SB-5204-who-made-it.md) | S51.1 | E52 | Who made it | Done |
 | [SB-5205](E52-write-it-down-together/SB-5205-page-or-slide.md) | S51.2 | E52 | Cite the page or slide | Open |
 | [SB-5206](E52-write-it-down-together/SB-5206-branch-conversation.md) | S51.2 | E52 | Branch a conversation | Open |
 | [SB-5207](E52-write-it-down-together/SB-5207-at-and-slash.md) | S51.2 | E52 | `@` and `/` in the ask box | Open |

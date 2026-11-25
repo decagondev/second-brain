@@ -379,10 +379,12 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 				it.Thread.Trace = q.Trace
 				it.Thread.Sections, it.Thread.Comments = DraftSections(q.Thread.Text), roundComments(q.Thread) // SB-4902
 				it.Thread.Changed = q.Thread.Changed                                                           // SB-4905
+				it.Thread.Suggestions = q.Thread.Suggestions                                                   // SB-5202
 			}
 			if q.Thread.Agent != "" && q.Asker != s.User() {
 				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede, it.Thread.Trace = "", true, nil, nil, ""
 				it.Thread.Versions, it.Thread.Diff, it.Thread.Sections, it.Thread.Comments, it.Thread.Changed = nil, nil, nil, nil, nil
+				it.Thread.Suggestions = nil
 			}
 		}
 		it.Draft, it.Request, it.Rhythm, it.Project = q.Draft, q.Request, q.Rhythm, q.Project
@@ -647,6 +649,9 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if q.Reply == nil {
 		return NoteResult{}, fmt.Errorf("%w: reply first; a note is a reply", ErrInvalid)
 	}
+	if n := openSuggestions(q.Thread); n > 0 { // SB-5202
+		return NoteResult{}, fmt.Errorf("%w: accept or reject the draft's %d open suggestions first", ErrInvalid, n)
+	}
 	if waitedFor(q, SpaceKey(name)) {
 		return NoteResult{}, fmt.Errorf("%w: publish this note from its own space, %s", ErrInvalid, strings.TrimPrefix(q.Space, "spc_"))
 	}
@@ -705,7 +710,7 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if republish && was.Owner != "" { // the same note: its owner stays, whoever republishes it
 		owner = strings.ToLower(was.Owner)
 	}
-	front = append(front, markFront(q, owner)...) // SB-4706: the steward who published it approved it
+	front = append(front, markFront(q, owner, x.emailOf(ctx, q.Asker), x.emailsOf(ctx, editorsOf(q.Thread)))...) // SB-4706, SB-5204
 	keep := req.KeepQuestion
 	if republish {
 		keep = q.Reply.NoteQuestion
@@ -875,4 +880,35 @@ func noteText(title string, r *StewardReply, question string, due time.Time, fro
 		}
 	}
 	return b.String()
+}
+
+// editorsOf are who edited a draft in place (SB-5202).
+func editorsOf(t *SavedThread) []string {
+	if t == nil {
+		return nil
+	}
+	return t.Editors
+}
+
+// emailOf is user's first address, "" when the directory has none or can't say.
+func (x Stewards) emailOf(ctx context.Context, user string) string {
+	if x.Agent.Emails == nil || user == "" {
+		return ""
+	}
+	es, err := x.Agent.Emails(ctx, user)
+	if err != nil || len(es) == 0 {
+		return ""
+	}
+	return es[0]
+}
+
+// emailsOf are users' first addresses, comma separated.
+func (x Stewards) emailsOf(ctx context.Context, users []string) string {
+	var out []string
+	for _, u := range users {
+		if e := x.emailOf(ctx, u); e != "" {
+			out = append(out, e)
+		}
+	}
+	return strings.Join(out, ", ")
 }

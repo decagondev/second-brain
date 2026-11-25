@@ -29,6 +29,8 @@ type RedraftResponse struct {
 	Diff     []string `json:"diff"`
 	// Sections is the diff of each section redrafted for its comments (SB-4902).
 	Sections []SectionDiff `json:"sections,omitempty"`
+	// Suggestions are the draft's suggestions, the new ones open (SB-5202).
+	Suggestions []DraftSuggestion `json:"suggestions,omitempty"`
 }
 
 // draftSources are the documents a draft cited or offered (See also), as KIND:ID, in order.
@@ -108,8 +110,9 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 	var resp Response
 	var text string
 	var diffs []SectionDiff
+	var changed map[int][2]string
 	if len(comments) > 0 { // SB-4902: only the commented sections, the rest byte for byte
-		resp, text, diffs, err = x.redraftSections(rctx, in, t, req, comments, note)
+		resp, text, diffs, changed, err = x.redraftSections(rctx, in, t, req, comments, note)
 	} else {
 		resp, text, err = x.draftAnswer(withNote(rctx, t.Text, note), in, t.Kind, req)
 	}
@@ -126,7 +129,9 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 		}
 		th := cur.Thread
 		th.Versions = append(th.Versions, th.Text)
-		th.Text, th.Rounds, th.Release = text, th.Rounds+1, resp.Release
+		th.Rounds++
+		suggest(th, th.Text, text, changed) // SB-5202: each change open until accepted or rejected
+		th.Text, th.Release, th.Generated = text, resp.Release, ""
 		if th.Kind == DraftDecisions && th.Doc != "" {
 			th.Supersede = supersedeSuggestions(resp.Answer.Claims, th.Doc) // SB-4505, from the new claims
 		}
@@ -137,7 +142,7 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 		return RedraftResponse{}, err
 	}
 	th := out.Thread
-	return RedraftResponse{ID: id, Text: th.Text, Versions: th.Versions, Rounds: th.Rounds, Diff: threadDiff(th), Sections: diffs}, nil
+	return RedraftResponse{ID: id, Text: th.Text, Versions: th.Versions, Rounds: th.Rounds, Diff: threadDiff(th), Sections: diffs, Suggestions: th.Suggestions}, nil
 }
 
 // changeable says whether a question is an open agent draft user may ask changes of.

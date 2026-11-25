@@ -877,8 +877,12 @@ func (e *env) signedCommand(name string, args []string) (int, bool) {
 		return e.agentsRecord(args), true
 	case "inventory export":
 		return e.inventoryExport(args), true
-	case "rollout list", "rollout hold", "rollout release": // SB-5106
-		return e.rollout(name[len("rollout "):], args), true
+	case "rollout list": // SB-5106
+		return e.rollout("list", args), true
+	case "rollout hold":
+		return e.rollout("hold", args), true
+	case "rollout release":
+		return e.rollout("release", args), true
 	}
 	return 0, false
 }
