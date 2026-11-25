@@ -82,6 +82,7 @@ type TraceStore interface {
 	ask.ActionStore
 	ask.RoutineStore
 	ask.MemoryStore
+	ask.CollectionStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }

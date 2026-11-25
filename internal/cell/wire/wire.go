@@ -506,6 +506,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if m.MemoryOn() { // SB-4303: memory: off keeps and sends none
 		agent.Memory = c.Traces
 	}
+	agent.Collections = c.Traces // SB-4304
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -639,6 +640,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		app.Saver = stewards
 	}
 	api.Legwork{Service: legwork, Release: c.Release, NewID: newID}.Register(mux)
+	api.Collections{Service: ask.CollectionService{Agent: agent, Store: c.Traces, Saved: c.Traces, Audit: c.Audit, Known: legwork.Known,
+		NewID: newID, Now: time.Now}, Release: c.Release, NewID: newID}.Register(mux) // SB-4304
 	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces,
 		ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays }}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
@@ -669,7 +672,10 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
 	if cfg.MCP {
-		api.MCP{Agent: agent, Release: c.Release}.Register(mux)
+		api.MCP{Agent: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
+			Agents: func(ctx context.Context, s tenancy.Scope) (map[string][]string, error) {
+				return agent.UsableAgents(ctx, s, c.ScopeAs)
+			}}.Register(mux)
 	}
 	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)

@@ -4,7 +4,7 @@ import { AskError, addEvalCase, confirmActions, draftFix, discardThread, draftNo
 import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
 import { placeOf } from "./Answer";
 import { MyData } from "./Session";
-import { AboutMe, InboxView } from "./Inbox";
+import { AboutMe, AgentRuns, CollectionsView, InboxView } from "./Inbox";
 import { errorText, msg, t, tj, tn } from "./i18n";
 
 const askable = new Set(["no_sources", "no_access", "most_uncited"]);
@@ -80,6 +80,8 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
   return (
     <section aria-label={t("Questions to stewards")} className="questions">
       <InboxView fetcher={fetcher} />
+      <AgentRuns fetcher={fetcher} />
+      <CollectionsView fetcher={fetcher} />
       <h2>{t("Your questions to stewards")}</h2>
       {error && (
         <p className="error" role="alert">

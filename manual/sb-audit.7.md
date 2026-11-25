@@ -23,6 +23,8 @@ hourly: sign(latest hash) → WORM storage
 
 Every tool-call state change; every policy decision on a tool call; every read refusal and a sample of read allows; every approval event; every kill and unkill; every manifest apply and console change; every deploy, rollback and attestation; and any access from outside the tenant (break-glass).
 
+**What agents did as me** (SB-4305). A person sees the runs made as them from what is already kept: the traces each run wrote, the drafts in the steward queues and their reports, by `GET /v1/me/agent-runs` (sb-ask(3), Context for the work). No new record is kept for it, and what each run read is checked again as the person now, so it names only what they can open (LAW-01, LAW-11). An auditor still reads the rows above.
+
 ### Policy decisions
 
 The policy kernel writes a `decision` row for every decision it records, **before** it returns the decision to the caller:

@@ -13,7 +13,7 @@ summary: "Scheduled briefs, triggers and routines run as people, who can't see w
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-audit(7)`](../../manual/sb-audit.7.md) |
 | Laws | LAW-01, LAW-11 |
 | Depends on | SB-4005 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Scheduled briefs, triggers and routines run as people, who can't see what ran in
 
 ## Acceptance criteria
 
-- [ ] `GET /v1/me/agent-runs` and **Agent runs** list every run made as me in the last 90 days, from traces and the audit log
-- [ ] Each shows when, which agent and space, what it read (titles I can open now, the rest counted) and what it drafted
-- [ ] No new record is kept
+- [x] `GET /v1/me/agent-runs` and **Agent runs** list every run made as me in the last 90 days, from traces and the audit log
+- [x] Each shows when, which agent and space, what it read (titles I can open now, the rest counted) and what it drafted
+- [x] No new record is kept
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] API
-- [ ] UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] API
+- [x] UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md).
+2026-11-25: built. ask.Legwork.AgentRuns: agent drafts made as the person from the steward queues and their reports, briefs, routines and fixes, each run's traces' allowed chunks checked again with CheckCites as them now. GET /v1/me/agent-runs; no record of its own. Web: Agent runs on the Inbox tab. TestContextForTheWorkThroughARunningCell.
 
 ## Definition of done
 

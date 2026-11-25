@@ -22,6 +22,9 @@ var block = regexp.MustCompile(`(?s)<<data cite="(C[0-9]+) [^"]*" flags="[^"]*">
 
 func (m Model) Complete(_ context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
 	last := req.Messages[len(req.Messages)-1].Content
+	if strings.Contains(req.System, "for the table tool") { // SB-4307: plan from the words alone
+		return ports.ModelResponse{Text: tablePlan(last)}, nil
+	}
 	bs := block.FindAllStringSubmatch(last, -1)
 	type cl struct {
 		Text     string   `json:"text"`
@@ -81,4 +84,42 @@ func opening(t string) string {
 		return ""
 	}
 	return strings.Join(ws[:3], " ")
+}
+
+var (
+	sheetBlock = regexp.MustCompile(`(?s)<<data cite="([^"]+)" flags="[^"]*">>\n(.*?)\n<</data>>`)
+	sheetLine  = regexp.MustCompile(`(?m)^Sheet: (.*)\nColumns: (.*)$`)
+	planOps    = []struct{ word, op string }{{"average", "average"}, {"mean", "average"}, {"total", "sum"}, {"sum", "sum"},
+		{"how much", "sum"}, {"highest", "max"}, {"largest", "max"}, {"maximum", "max"}, {"lowest", "min"},
+		{"smallest", "min"}, {"minimum", "min"}, {"how many", "count"}, {"count", "count"}}
+)
+
+// tablePlan plans the table tool from the question's words (SB-4307): the operation its
+// first matching word names, over the longest column it names, in the first sheet with
+// one; with no filters. Nothing it can match is {"op": ""}.
+func tablePlan(msg string) string {
+	_, q, _ := strings.Cut(msg, "\nQuestion: ")
+	lq := strings.ToLower(q)
+	op := ""
+	for _, o := range planOps {
+		if strings.Contains(lq, o.word) {
+			op = o.op
+			break
+		}
+	}
+	for _, b := range sheetBlock.FindAllStringSubmatch(msg, -1) {
+		for _, sh := range sheetLine.FindAllStringSubmatch(b[2], -1) {
+			col := ""
+			for _, c := range strings.Split(sh[2], " | ") {
+				if c = strings.TrimSpace(c); c != "" && strings.Contains(lq, strings.ToLower(c)) && len(c) > len(col) {
+					col = c
+				}
+			}
+			if op != "" && (col != "" || op == "count") {
+				raw, _ := json.Marshal(map[string]any{"doc": b[1], "sheet": strings.TrimSpace(sh[1]), "op": op, "column": col, "where": []any{}})
+				return string(raw)
+			}
+		}
+	}
+	return `{"op": ""}`
 }

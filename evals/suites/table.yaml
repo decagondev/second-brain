@@ -1,0 +1,21 @@
+# Table suite (SB-4307; gate: 0 failures): a sheet's numbers come from the table tool, in
+# code, cited to the sheet; someone who can't open the sheet gets no number from it.
+suite: table
+world: fixtures/tables
+cases:
+  - id: table-001
+    as: usr_alice
+    ask: "What is the total Amount on the invoices?"
+    expect: { table_value: 2400, cites_any: ["docs:invoices.csv@1"], uncited_max: 0 }
+  - id: table-002
+    as: usr_alice
+    ask: "What is the highest Amount on the invoices?"
+    expect: { table_value: 1200, cites_any: ["docs:invoices.csv@1"] }
+  - id: table-003
+    as: usr_alice
+    ask: "What is the average Amount on the invoices?"
+    expect: { table_value: 600, cites_any: ["docs:invoices.csv@1"] }
+  - id: table-acl-001
+    as: usr_bob
+    ask: "What is the total Amount on the invoices?"
+    expect: { cites_none: ["docs:invoices.csv@1"] }

@@ -116,6 +116,8 @@ type result struct {
 	Claims    []claim  `json:"claims"`
 	ToolCalls int      `json:"tool_calls"`
 	Error     string   `json:"error,omitempty"`
+	// Table is the table tool's value and range, when the ask used it (SB-4307).
+	Table *ask.TableResult `json:"table,omitempty"`
 }
 
 func main() {
@@ -308,7 +310,7 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 			out[c.Key] = result{Error: err.Error()}
 			continue
 		}
-		r := result{Notice: resp.Notice, Cites: []string{}, Claims: []claim{}}
+		r := result{Notice: resp.Notice, Cites: []string{}, Claims: []claim{}, Table: resp.Table}
 		var all []string
 		seen := map[string]bool{}
 		for _, cl := range resp.Answer.Claims {

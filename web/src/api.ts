@@ -243,8 +243,10 @@ export async function ask(
   verified?: boolean,
   file?: AskFile,
   agent?: string,
+  collection?: string,
 ): Promise<AskResponse> {
   const body: Record<string, string | string[] | boolean | AskFile> = { question };
+  if (collection) body.collection = collection; // SB-4304
   if (agent) body.agent = agent; // a department agent (SB-4007)
   if (file) body.file = file; // SB-3802
   if (short) body.length = "short"; // SB-3303
@@ -1149,4 +1151,54 @@ export function remember(text: string, f: Fetch = fetch): Promise<MemoryLine> {
 
 export function forgetMemory(id: string | undefined, f: Fetch = fetch): Promise<{ removed: number }> {
   return call(id ? `/v1/me/memory/${encodeURIComponent(id)}` : "/v1/me/memory", { method: "DELETE" }, f);
+}
+
+// What agents did as me (SB-4305): runs made as me, what they read checked as me now.
+export interface AgentRun {
+  kind: string;
+  agent: string;
+  space: string;
+  at: string;
+  title: string;
+  read: { cite: string; title: string }[];
+  hidden: number;
+  drafted: string;
+  link: string;
+}
+
+export async function agentRuns(f: Fetch = fetch): Promise<AgentRun[]> {
+  const d = await call<{ items?: AgentRun[] }>("/v1/me/agent-runs", {}, f);
+  return (d.items ?? []).map((r) => ({ ...r, read: r.read ?? [], hidden: r.hidden ?? 0 }));
+}
+
+// Collections (SB-4304): ids only; each reader sees what they can open, the rest counted.
+export interface CollectionItem {
+  item: string;
+  title?: string;
+  question?: string;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  owner: string;
+  mine: boolean;
+  items: CollectionItem[];
+  hidden: number;
+  shared?: string[];
+  at: string;
+  stale?: boolean;
+}
+
+export async function collections(f: Fetch = fetch): Promise<Collection[]> {
+  const d = await call<{ items?: Collection[] }>("/v1/collections", {}, f);
+  return (d.items ?? []).map((c) => ({ ...c, items: c.items ?? [], hidden: c.hidden ?? 0 }));
+}
+
+export function makeCollection(name: string, items: string[], shared: string[], f: Fetch = fetch): Promise<Collection> {
+  return call("/v1/collections", post({ name, items, shared }), f);
+}
+
+export function removeCollection(id: string, f: Fetch = fetch): Promise<{ deleted: boolean }> {
+  return call(`/v1/collections/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
 }

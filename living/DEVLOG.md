@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S42.2: Context for the work
+
+**Wave/slice:** W42 / S42.2 (SB-4304 to SB-4307) · **Status:** Done
+
+**What:** A collection names up to 50 documents and saved questions, by id, shared with named active people; each reader sees the documents they can open now and a count of the rest, and **Ask this collection** scopes an ask to its documents. GET /v1/me/agent-runs lists the drafts, reports, briefs, routines and fixes made as the caller in the last 90 days, with what each read that they can open now. Over MCP, each department agent the person may use is a tool, with research_plan and research_report; a killed agent leaves the list at once. For a numeric question over a spreadsheet, the model plans one operation from the column names only, the table tool computes it in code over every chunk of the sheet the asker may open, its result is a passage with the sheet's cite, and a claim on the sheet whose number no passage or the tool holds is dropped.
+
+**Why this way:** Collections keep ids only and read through CheckCites, so a shared collection can never name a document to someone who can't open it. Agent runs are drawn from the traces, queues and reports already kept, so there is no second record of what ran that could drift. The MCP list is made from the same checks an ask makes before retrieval, at each call. The model never sees a sheet's rows when it plans, and never does the arithmetic.
+
+**Learned:** A sheet spans chunks that the chunker cut at spaces or paragraph breaks, so the text is rebuilt from the gaps' lengths, and a longer gap means a chunk is missing, which stops the tool rather than give a wrong total.
+
+**Laws:** LAW-01, LAW-03, LAW-10, LAW-11, LAW-14 (extended, tested), LAW-26. Every law test is still green.
+
 ## 2026-11-25 S42.1: One inbox, routines and memory
 
 **Wave/slice:** W42 / S42.1 (SB-4301 to SB-4303) · **Status:** Done

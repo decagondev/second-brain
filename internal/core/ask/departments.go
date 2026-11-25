@@ -3,10 +3,12 @@ package ask
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/policy"
+	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -124,4 +126,41 @@ func contains(xs []string, x string) bool {
 		}
 	}
 	return false
+}
+
+// UsableAgents are the department agents s's person may use now, each with the spaces they
+// are a member of that run it, by name (SB-4306): every check an ask with that agent makes
+// before retrieval, made as them in that space by scopeIn, so a killed agent isn't there.
+func (a Agent) UsableAgents(ctx context.Context, s tenancy.Scope, scopeIn func(ctx context.Context, user, space string) (tenancy.Scope, error)) (map[string][]string, error) {
+	out := map[string][]string{}
+	if a.Auth.Spaces == nil || scopeIn == nil {
+		return out, nil
+	}
+	all, _, err := a.Auth.Spaces(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%w: spaces: %v", ErrUnavailable, err)
+	}
+	for _, sp := range all {
+		if sp.Tenant != a.Tenant || !spaces.Member(sp, s.Groups()) {
+			continue
+		}
+		in := tenancy.Scope{}
+		for _, name := range sp.Agents {
+			if _, ok := Departments[name]; !ok {
+				continue
+			}
+			if in.Check() != nil {
+				if in, err = scopeIn(ctx, s.User(), sp.ID); err != nil {
+					break // not active now: nothing
+				}
+			}
+			if _, err := a.department(ctx, in, name); err == nil {
+				out[name] = append(out[name], sp.Name)
+			}
+		}
+	}
+	for _, v := range out {
+		sort.Strings(v)
+	}
+	return out, nil
 }

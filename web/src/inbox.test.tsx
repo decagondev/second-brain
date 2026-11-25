@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App";
+import { AgentRuns, CollectionsView } from "./Inbox";
 import { SavedView } from "./Saved";
 import type { Fetch } from "./api";
 
@@ -96,5 +97,58 @@ describe("routines", () => {
       fireEvent.change(screen.getByLabelText("Routine: What changed in the close?"), { target: { value: "off" } });
     });
     expect(bodies[1]).toBe(JSON.stringify({ every: "off" }));
+  });
+});
+
+// SB-4304, SB-4305
+describe("collections and agent runs", () => {
+  it("lists what ran as me with what it read I can open, the rest counted", async () => {
+    const fetcher: Fetch = async (u) =>
+      u === "/v1/me/agent-runs"
+        ? json({ items: [{ kind: "routine", agent: "ask", space: "finance", at: "2026-11-24T08:00:00Z", title: "What changed in the close?", read: [{ cite: "docs:close.md@3", title: "Close plan" }], hidden: 2, drafted: "a routine of 2 claims, done", link: "/?tab=legwork" }] })
+        : json({});
+    const { container } = render(<AgentRuns fetcher={fetcher} />);
+    expect(await screen.findByText("Read: Close plan and 2 you can't open")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open: What changed in the close?" }).getAttribute("href")).toBe("/?tab=legwork");
+    const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+    expect(r.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  it("makes a collection, shows only what I can open, and asks it", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    let items: unknown[] = [];
+    const fetcher: Fetch = async (u, init) => {
+      if (u === "/v1/collections" && init?.method === "POST") {
+        bodies.push(JSON.parse(String(init.body)));
+        items = [{ id: "col_1", name: "Q4 close", owner: "sam@acme-logistics.example", mine: true, items: [{ item: "docs:close.md", title: "Close plan" }], hidden: 1, at: "2026-11-25T09:00:00Z" }];
+        return json(items[0]);
+      }
+      if (u === "/v1/collections") return json({ items });
+      if (u === "/v1/ask") {
+        bodies.push(JSON.parse(String(init?.body)));
+        return json({ trace: "tr_1", answer: { claims: [{ text: "The close moves to Tuesday.", cites: [{ cite: "docs:close.md@3", title: "Close plan", span: [0, 10], flags: [] }] }] }, refused: 0, notice: null, conversation: "cv_1", people: [] });
+      }
+      return json({});
+    };
+    const { container } = render(<CollectionsView fetcher={fetcher} />);
+    expect(await screen.findByText("No collections yet.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Collection name"), { target: { value: "Q4 close" } });
+    fireEvent.change(screen.getByLabelText("Documents and saved questions (ids)"), { target: { value: "docs:close.md, docs:ap.md" } });
+    fireEvent.change(screen.getByLabelText("Share with (emails)"), { target: { value: "lee@acme-logistics.example" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Make collection" }));
+    });
+    expect(bodies[0]).toEqual({ name: "Q4 close", items: ["docs:close.md", "docs:ap.md"], shared: ["lee@acme-logistics.example"] });
+    expect(screen.getByText("Close plan")).toBeTruthy();
+    expect(screen.getByText("and 1 you can't open")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ask this collection" }));
+    fireEvent.change(screen.getByLabelText("Your question about the collection"), { target: { value: "When is the close?" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    });
+    expect(bodies[1]).toEqual({ question: "When is the close?", collection: "col_1" });
+    expect(screen.getByText(/The close moves to Tuesday/)).toBeTruthy();
+    const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+    expect(r.violations.map((v) => v.id)).toEqual([]);
   });
 });

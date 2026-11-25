@@ -33,6 +33,21 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/actions", h.spaceActions)
 	mux.HandleFunc("POST /v1/spaces/{name}/review/fix", h.fix)
 	mux.HandleFunc("GET /v1/me/inbox", h.inbox)
+	mux.HandleFunc("GET /v1/me/agent-runs", h.agentRuns)
+}
+
+// agentRuns are the runs agents made as the caller (sb-ask(3), What agents did as me; SB-4305).
+func (h Legwork) agentRuns(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	runs, err := h.Service.AgentRuns(r.Context(), s)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"items": runs})
 }
 
 // inbox is what waits on the caller across every space (sb-ask(3), One inbox; SB-4301).

@@ -572,3 +572,7 @@ func TestLAW07_AnAccessRequestNeverCarriesTheQuestion(t *testing.T) {
 func TestLAW11_TheSIEMGetsEveryRowInOrder(t *testing.T) {
 	Check(t, "LAW-11", runs, func(r *rand.Rand) error { return law11Stream(r, RealStream{}) })
 }
+
+func TestLAW14_NumbersFromTablesComeFromTheTool(t *testing.T) {
+	Check(t, "LAW-14", runs, func(r *rand.Rand) error { return law14Tables(r, RealTables) })
+}

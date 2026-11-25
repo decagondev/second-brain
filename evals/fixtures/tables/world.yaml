@@ -1,0 +1,15 @@
+# World for the table suite (SB-4307): one sheet alice may open and bob may not, and one
+# document with no table.
+tenant: acme-logistics
+users:
+  - { id: usr_alice, email: alice@acme-logistics.example, groups: [grp_finance] }
+  - { id: usr_bob, email: bob@acme-logistics.example, groups: [grp_support] }
+documents:
+  - id: invoices.csv
+    title: Invoices
+    text: "Sheet: Invoices\nCustomer\tAmount\nacme-logistics\t1200\nbeta-freight\t300.50\nacme-logistics\t800\ngamma-parts\t99.5"
+    viewers: [alice@acme-logistics.example]
+  - id: refund-policy
+    title: Refund policy
+    text: "Refunds over 500 need a team lead's approval."
+    viewers: [alice@acme-logistics.example, bob@acme-logistics.example]

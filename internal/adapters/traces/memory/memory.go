@@ -40,6 +40,7 @@ type Store struct {
 	research map[string]ask.Research      // tenant/id (SB-4201)
 	actions  map[string]ask.Action        // tenant/id (SB-4203)
 	memory   map[string]ask.Memory        // tenant/user (SB-4303)
+	colls    map[string]ask.Collection    // tenant/id (SB-4304)
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -55,7 +56,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}, memory: map[string]ask.Memory{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}, memory: map[string]ask.Memory{}, colls: map[string]ask.Collection{}}
 }
 
 // PutTrace implements ask.Store.
@@ -170,12 +171,16 @@ func window[T any](m map[string]T, of func(T) (tenant string, at time.Time, key 
 // conversations and feedback (sb-tenant(5), Retention and deletion).
 func (s *Store) Retention() []retention.Store {
 	// Feedback first: it takes its space from its trace, which must still be there (SB-1401).
-	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}, view{s, "eval cases"}, view{s, "access requests"}, view{s, "review marks"}, view{s, "reply templates"}, view{s, MemoryName}}
+	return []retention.Store{view{s, "feedback"}, view{s, "conversations"}, view{s, "traces"}, view{s, "saved questions"}, view{s, "shares"}, view{s, "steward questions"}, view{s, PrefsName}, view{s, "eval cases"}, view{s, "access requests"}, view{s, "review marks"}, view{s, "reply templates"}, view{s, MemoryName}, view{s, CollectionsName}}
 }
 
 // MemoryName is the memory's store name (SB-4303): erased with a person and by their own
 // Forget, never expired.
 const MemoryName = "memory"
+
+// CollectionsName is the collections' store name (SB-4304): erased with their owner, never
+// expired.
+const CollectionsName = "collections"
 
 // PrefsName is the notification settings' store name: erased with a person, never expired.
 const PrefsName = "notification settings"
@@ -191,7 +196,7 @@ func (v view) Name() string { return v.name }
 // a conversation carries the space it was asked in, and one asked in several, or not yet
 // tagged, is kept by any hold that could cover it.
 func (v view) Expire(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	if v.name == PrefsName || v.name == MemoryName {
+	if v.name == PrefsName || v.name == MemoryName || v.name == CollectionsName {
 		return 0, 0, nil
 	}
 	n, k := v.drop(aged(tenant, before), held, false, nil)
@@ -200,7 +205,7 @@ func (v view) Expire(_ context.Context, tenant string, before time.Time, held re
 
 // Plan implements retention.Store: Expire's selection, deleting nothing.
 func (v view) Plan(_ context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	if v.name == PrefsName || v.name == MemoryName {
+	if v.name == PrefsName || v.name == MemoryName || v.name == CollectionsName {
 		return 0, 0, nil
 	}
 	n, k := v.drop(aged(tenant, before), held, true, nil)
@@ -316,8 +321,8 @@ func (v view) drop(match matcher, held retention.Held, dry bool, got *[]json.Raw
 				delete(s.tmpls, k)
 			}
 		}
-	case MemoryName:
-		dropMemory(s, try)
+	case MemoryName, CollectionsName:
+		dropOwn(s, v.name, try)
 	case PrefsName:
 		for k, p := range s.prefs {
 			if try(p.Tenant, p.User, "", time.Time{}, p) {
@@ -970,10 +975,67 @@ func (s *Store) ActionsSince(_ context.Context, tenant string, since time.Time) 
 	return s.actionsWhere(tenant, func(a ask.Action) bool { return !a.At.Before(since) }), nil
 }
 
-func dropMemory(s *Store, try func(tenant, user, space string, at time.Time, rec any) bool) {
+// dropOwn drops a person's own records that retention never expires: memory, collections.
+func dropOwn(s *Store, name string, try func(tenant, user, space string, at time.Time, rec any) bool) {
+	if name == CollectionsName {
+		for k, c := range s.colls {
+			if try(c.Tenant, c.Owner, "", c.At, c) {
+				delete(s.colls, k)
+			}
+		}
+		return
+	}
 	for k, m := range s.memory {
 		if try(m.Tenant, m.User, "", m.At, m) {
 			delete(s.memory, k)
 		}
 	}
+}
+
+var _ ask.CollectionStore = (*Store)(nil)
+
+func copyCollection(c ask.Collection) ask.Collection {
+	c.Items = append([]string(nil), c.Items...)
+	c.Shared = append([]string(nil), c.Shared...)
+	return c
+}
+
+// PutCollection implements ask.CollectionStore.
+func (s *Store) PutCollection(_ context.Context, c ask.Collection) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.colls[c.Tenant+"/"+c.ID] = copyCollection(c)
+	return nil
+}
+
+// GetCollection implements ask.CollectionStore.
+func (s *Store) GetCollection(_ context.Context, tenant, id string) (ask.Collection, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.colls[tenant+"/"+id]
+	return copyCollection(c), ok, nil
+}
+
+// Collections implements ask.CollectionStore: the tenant's, oldest first.
+func (s *Store) Collections(_ context.Context, tenant string) ([]ask.Collection, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.Collection{}
+	for _, c := range s.colls {
+		if c.Tenant == tenant {
+			out = append(out, copyCollection(c))
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].At.Before(out[j].At) || (out[i].At.Equal(out[j].At) && out[i].ID < out[j].ID)
+	})
+	return out, nil
+}
+
+// DeleteCollection implements ask.CollectionStore.
+func (s *Store) DeleteCollection(_ context.Context, tenant, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.colls, tenant+"/"+id)
+	return nil
 }

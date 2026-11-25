@@ -54,6 +54,10 @@ The model sees each allowed chunk as a data block labelled `C1`, `C2`, … and m
 
 A claim never carries a citation the asker wasn't live-authorised for, and the model can't mark anything as cited by itself (LAW-01, LAW-14).
 
+### Numbers from tables (SB-4307)
+
+When an ask uses the table tool (sb-ask(3), Numbers from tables), its result is one more passage, first among the sources, with the spreadsheet's own cite: the operation, the filters, the range of cells it read and the value, all computed in code from the chunks the asker may open. A claim cites it as any passage. Then one more check, in code: a claim that cites a spreadsheet and states a number found neither in the text of the passages it cites nor as the tool's value is **dropped**, and counted in `dropped`, because a number the model worked out itself is not one a source says (LAW-14). A number is a run of digits, with `,` between thousands and `.` before decimals; it matches the tool's value at the precision it is written in, so 33.33 matches 33.3333.
+
 ### The passage (SB-3001)
 
 A citation can be opened as its passage: the cited chunk's own text at the cited version, at most 600 characters, cut at a sentence (sb-ask(3), The cited passage). It is the source's text, never the model's, shown as a quote and never as markup (LAW-09). It is checked live each time it is opened, exactly as a retrieval is (sb-permissions(7)), so a citation someone could open yesterday can't show them its text today if they have lost access (LAW-01). A citation also names its **section**, the nearest heading above it (sb-ingest(7), Sections; SB-3002).

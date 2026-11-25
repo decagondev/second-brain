@@ -13,7 +13,7 @@ summary: "People using other AI tools can ask the brain, but not its department 
 | Manual | [`sb-api(3)`](../../manual/sb-api.3.md), [`sb-agents(7)`](../../manual/sb-agents.7.md) |
 | Laws | LAW-01, LAW-10 |
 | Depends on | SB-3801 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ People using other AI tools can ask the brain, but not its department agents.
 
 ## Acceptance criteria
 
-- [ ] The MCP server lists as tools the department agents the token's person may use, plus `research_plan` and `research_report`
-- [ ] A tool call runs exactly as `ask` does for that agent, as the person; nothing writes
-- [ ] A killed agent disappears from the list at once
+- [x] The MCP server lists as tools the department agents the token's person may use, plus `research_plan` and `research_report`
+- [x] A tool call runs exactly as `ask` does for that agent, as the person; nothing writes
+- [x] A killed agent disappears from the list at once
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] MCP
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] MCP
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [18-legwork-inbox-govern.md](../../docs/18-legwork-inbox-govern.md).
+2026-11-25: built. ask.Agent.UsableAgents (every pre-retrieval check of an ask with the agent, as the person in each of their spaces), api.MCP Agents/ScopeIn/Legwork, tools agent_NAME with a space enum, research_plan and research_report, the list made at each tools/list. A killed agent is gone at once (TestContextForTheWorkThroughARunningCell).
 
 ## Definition of done
 

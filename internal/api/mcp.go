@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 
 	"example.com/second-brain/internal/core/ask"
@@ -22,6 +24,15 @@ type MCP struct {
 		Searcher
 	}
 	Release string
+	// Agents are the department agents the person may use now, each with its spaces by
+	// name, and ScopeIn the person as a scope in one of them (SB-4306); nil lists none.
+	Agents  func(ctx context.Context, s tenancy.Scope) (map[string][]string, error)
+	ScopeIn func(ctx context.Context, user, space string) (tenancy.Scope, error)
+	// Legwork plans and opens research reports for research_plan and research_report.
+	Legwork interface {
+		Plan(ctx context.Context, s tenancy.Scope, q string, docs []string) (ask.ResearchView, error)
+		Open(ctx context.Context, s tenancy.Scope, id string) (ask.ResearchView, error)
+	}
 }
 
 // MCPVersion is the protocol revision the endpoint speaks.
@@ -103,7 +114,12 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 	case "ping":
 		rpc(w, req.ID, map[string]any{}, nil)
 	case "tools/list":
-		rpc(w, req.ID, map[string]any{"tools": MCPTools}, nil)
+		tools, err := h.tools(r.Context(), s)
+		if err != nil {
+			rpc(w, req.ID, nil, &rpcErr{Code: -32603, Message: "the tools can't be listed now; try again"})
+			return
+		}
+		rpc(w, req.ID, map[string]any{"tools": tools}, nil)
 	case "tools/call":
 		var p struct {
 			Name      string            `json:"name"`
@@ -115,7 +131,7 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		out, err := h.call(r.Context(), s, p.Name, p.Arguments)
 		if errors.Is(err, errNoTool) {
-			rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such tool: search, ask or passage"})
+			rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such tool: see tools/list"})
 			return
 		}
 		if err != nil {
@@ -142,8 +158,20 @@ func (h MCP) call(ctx context.Context, s tenancy.Scope, name string, args map[st
 		out, err = h.Agent.Ask(ctx, s, ask.Request{Question: args["question"]})
 	case "passage":
 		out, err = h.Agent.Passage(ctx, s, strings.TrimSpace(args["trace"]), strings.TrimSpace(args["cite"]), -1)
+	case "research_plan":
+		if h.Legwork == nil {
+			return nil, errNoTool
+		}
+		out, err = h.Legwork.Plan(ctx, s, args["question"], nil)
+	case "research_report":
+		if h.Legwork == nil {
+			return nil, errNoTool
+		}
+		out, err = h.Legwork.Open(ctx, s, strings.TrimSpace(args["id"]))
 	default:
-		return nil, errNoTool
+		if out, err = h.callAgent(ctx, s, name, args); errors.Is(err, errNoTool) {
+			return nil, err
+		}
 	}
 	if err != nil {
 		var over *ask.RateError
@@ -167,4 +195,71 @@ func rpc(w http.ResponseWriter, id json.RawMessage, result any, e *rpcErr) {
 		msg["result"] = result
 	}
 	_ = json.NewEncoder(w).Encode(msg)
+}
+
+// AgentTool is a department agent's tool name (SB-4306): agent_ and its name, - as _.
+func AgentTool(agent string) string { return "agent_" + strings.ReplaceAll(agent, "-", "_") }
+
+// tools are the fixed tools, the research tools and the department agents the person may
+// use now, made at each call so a killed agent is gone at once.
+func (h MCP) tools(ctx context.Context, s tenancy.Scope) ([]mcpTool, error) {
+	out := append([]mcpTool(nil), MCPTools...)
+	if h.Legwork != nil {
+		out = append(out,
+			mcpTool{Name: "research_plan", Description: "Plan a research report on a question, as you, in this space. It is kept for you to read and Run in the web UI; it never runs from here.",
+				InputSchema: strSchema([]string{"question"}, map[string]string{"question": "The question, up to 4,000 characters"}), Annotations: readOnly},
+			mcpTool{Name: "research_report", Description: "Read one of your research reports, checked again as you.",
+				InputSchema: strSchema([]string{"id"}, map[string]string{"id": "The report's id (rs_…)"}), Annotations: readOnly})
+	}
+	if h.Agents == nil || h.ScopeIn == nil {
+		return out, nil
+	}
+	agents, err := h.Agents(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(agents))
+	for n := range agents {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, n := range names {
+		sp := agents[n]
+		out = append(out, mcpTool{Name: AgentTool(n), Description: "Ask the " + n + " agent in one of your spaces, as you. Every claim cites a document you can open now.",
+			InputSchema: map[string]any{"type": "object", "required": []string{"space", "question"}, "additionalProperties": false,
+				"properties": map[string]any{"space": map[string]any{"type": "string", "enum": sp, "description": "The space to ask in"},
+					"question": map[string]any{"type": "string", "description": "The question, up to 4,000 characters"}}},
+			Annotations: readOnly})
+	}
+	return out, nil
+}
+
+// callAgent runs a department agent's tool exactly as an ask with that agent, as the
+// person in the space; an agent or space they can't use now is the tool's error.
+func (h MCP) callAgent(ctx context.Context, s tenancy.Scope, tool string, args map[string]string) (any, error) {
+	if h.Agents == nil || h.ScopeIn == nil || !strings.HasPrefix(tool, "agent_") {
+		return nil, errNoTool
+	}
+	agents, err := h.Agents(ctx, s)
+	if err != nil {
+		return nil, ask.ErrUnavailable
+	}
+	for n, sp := range agents {
+		if AgentTool(n) != tool {
+			continue
+		}
+		space := strings.TrimSpace(args["space"])
+		for _, x := range sp {
+			if x != space {
+				continue
+			}
+			in, err := h.ScopeIn(ctx, s.User(), ask.SpaceKey(space))
+			if err != nil {
+				return nil, ask.ErrInvalid
+			}
+			return h.Agent.Ask(ctx, in, ask.Request{Question: args["question"], Agent: n})
+		}
+		return nil, fmt.Errorf("%w: %s doesn't run in a space of yours called %q", ask.ErrInvalid, n, space)
+	}
+	return nil, fmt.Errorf("%w: no agent %s you can use now", ask.ErrInvalid, tool)
 }

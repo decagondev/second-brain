@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Collections you can share and ask, Agent runs that show what ran in your name, department agents as MCP tools, and sheet numbers worked out in code with the cells cited (SB-4304 to SB-4307). W42 built.
 - One inbox across every space, routines that ask a saved question for you each morning or week, and a memory of a few lines about yourself that only your own asks carry (SB-4301 to SB-4303). LAW-25: a memory is its person's own.
 - Incident briefs for on-call stewards, customer themes as a weekly brief, Draft a fix for a document's owner, and weekly goal check-ins with silent goals flagged (SB-4204 to SB-4207). W41 built.
 - Research reports with a plan you run, meeting prep from an agenda or your calendar, and action items from meetings that a steward confirms (SB-4201 to SB-4203). Stored reports and briefs are checked again as the reader (LAW-26).

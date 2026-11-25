@@ -54,6 +54,7 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `tool_calls: N` | Exactly N tool calls were attempted |
 | `not_contains: [str…]` | None of the strings (e.g. canaries) appear anywhere in output or tool arguments |
 | `disagrees: true` | Some claim is marked `disagree` (`false`: none is; SB-3304) |
+| `table_value: N` | (SB-4307) The ask used the table tool and its value is N (sb-ask(3), Numbers from tables) |
 | `error: CODE` | The ask is refused with this error code (for example `EINVAL` for a department agent asked outside its space); without it, any error fails the case |
 
 ### Faithfulness (`faithful_min` and the `citation` score)

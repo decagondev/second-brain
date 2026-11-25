@@ -38,3 +38,4 @@ agent-incident-brief: { failures_max: 0 }   # SB-4204
 agent-voc: { failures_max: 0 }   # SB-4205
 agent-fix-draft: { failures_max: 0 }   # SB-4206
 agent-goal-check-in: { failures_max: 0 }   # SB-4207
+table: { failures_max: 0 }   # SB-4307

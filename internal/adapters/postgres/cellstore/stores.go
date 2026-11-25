@@ -304,7 +304,7 @@ func (t Traces) Between(ctx context.Context, tenant string, from, to time.Time) 
 // Retention is the stores retention sweeps and erases: feedback first, since it takes its
 // space from its trace, which must still be there.
 func (t Traces) Retention() []retention.Store {
-	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}, view{t, "retirement"}, view{t, "memory"}}
+	return []retention.Store{view{t, "feedback"}, view{t, "conv"}, view{t, "trace"}, view{t, "saved"}, view{t, "share"}, view{t, "stq"}, view{t, "pref"}, view{t, "evalcase"}, view{t, "accessreq"}, view{t, "reviewmark"}, view{t, "replytemplate"}, view{t, "retirement"}, view{t, "memory"}, view{t, "collection"}}
 }
 
 var _ notify.PrefStore = Traces{}
@@ -556,7 +556,7 @@ type view struct {
 }
 
 func (v view) Name() string {
-	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates", "retirement": "retirements", "memory": "memory"}[v.kind]
+	return map[string]string{"feedback": "feedback", "conv": "conversations", "trace": "traces", "saved": "saved questions", "share": "shares", "stq": "steward questions", "pref": "notification settings", "evalcase": "eval cases", "accessreq": "access requests", "reviewmark": "review marks", "replytemplate": "reply templates", "retirement": "retirements", "memory": "memory", "collection": "collections"}[v.kind]
 }
 
 // spaceOf is a record's space for holds: "" (unknown, so any hold may cover it) for one
@@ -604,7 +604,7 @@ func (v view) records(ctx context.Context, tenant string, before *time.Time, use
 
 // Expire implements retention.Store: records older than before, except held ones.
 func (v view) Expire(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	if v.kind == "pref" || v.kind == "memory" { // settings and memory are kept until changed or erased
+	if v.kind == "pref" || v.kind == "memory" || v.kind == "collection" { // settings and memory are kept until changed or erased
 		return 0, 0, nil
 	}
 	rs, err := v.records(ctx, tenant, &before, "")
@@ -627,7 +627,7 @@ func (v view) Expire(ctx context.Context, tenant string, before time.Time, held 
 
 // Plan implements retention.Store: Expire's selection, deleting nothing.
 func (v view) Plan(ctx context.Context, tenant string, before time.Time, held retention.Held) (int, int, error) {
-	if v.kind == "pref" || v.kind == "memory" {
+	if v.kind == "pref" || v.kind == "memory" || v.kind == "collection" {
 		return 0, 0, nil
 	}
 	rs, err := v.records(ctx, tenant, &before, "")
@@ -1047,4 +1047,26 @@ func (t Traces) ActionsIn(ctx context.Context, tenant, space string) ([]ask.Acti
 // ActionsSince implements ask.ActionStore.
 func (t Traces) ActionsSince(ctx context.Context, tenant string, since time.Time) ([]ask.Action, error) {
 	return list[ask.Action](ctx, t.Pool, tenant, "action", "at >= $3", "at, id", since)
+}
+
+var _ ask.CollectionStore = Traces{}
+
+// PutCollection implements ask.CollectionStore: one record per collection, by its owner.
+func (t Traces) PutCollection(ctx context.Context, c ask.Collection) error {
+	return put(ctx, t.Pool, c.Tenant, "collection", c.ID, meta{at: c.At, user: c.Owner}, c, false)
+}
+
+// GetCollection implements ask.CollectionStore.
+func (t Traces) GetCollection(ctx context.Context, tenant, id string) (ask.Collection, bool, error) {
+	return get[ask.Collection](ctx, t.Pool, tenant, "collection", id, false)
+}
+
+// Collections implements ask.CollectionStore: the tenant's, oldest first.
+func (t Traces) Collections(ctx context.Context, tenant string) ([]ask.Collection, error) {
+	return list[ask.Collection](ctx, t.Pool, tenant, "collection", "", "at, id")
+}
+
+// DeleteCollection implements ask.CollectionStore.
+func (t Traces) DeleteCollection(ctx context.Context, tenant, id string) error {
+	return del(ctx, t.Pool, tenant, "collection", id)
 }

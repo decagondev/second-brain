@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, forgetMemory, myInbox, myMemory, remember } from "./api";
-import type { Fetch, Inbox, InboxItem, MemoryLine } from "./api";
+import { AskError, agentRuns, ask, collections, forgetMemory, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
+import type { AgentRun, AskResponse, Collection, Fetch, Inbox, InboxItem, MemoryLine } from "./api";
 import { errorText, msg, t } from "./i18n";
 
 const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
@@ -205,5 +205,168 @@ export function RememberBox({ fetcher }: { fetcher?: Fetch }) {
         </p>
       )}
     </div>
+  );
+}
+
+// Agent runs (sb-ask(3), What agents did as me; SB-4305): what ran in my name, what it read
+// that I can open now (the rest counted) and what it made. Nothing new is kept for it.
+export function AgentRuns({ fetcher }: { fetcher?: Fetch }) {
+  const [runs, setRuns] = useState<AgentRun[]>();
+  const [error, setError] = useState<string>();
+  useEffect(() => {
+    agentRuns(fetcher).then(setRuns, (e) => setError(errMsg(e, t("Agent runs are unavailable right now."))));
+  }, [fetcher]);
+  return (
+    <section aria-label={t("Agent runs")} className="inbox-list">
+      <h2>{t("Agent runs")}</h2>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      {runs && runs.length === 0 && <p className="notice">{t("No agent ran as you in the last 90 days.")}</p>}
+      {runs && runs.length > 0 && (
+        <ul className="saved-list">
+          {runs.map((r, i) => (
+            <li key={r.kind + r.at + i}>
+              <span className="meta">{r.agent}</span> {r.title}{" "}
+              <span className="meta">
+                ({r.space || t("company-wide")}, {r.at.slice(0, 10)})
+              </span>{" "}
+              {r.drafted}
+              {(r.read.length > 0 || r.hidden > 0) && (
+                <p className="meta">
+                  {t("Read: {titles}", { titles: r.read.map((d) => d.title || d.cite).join("; ") || "-" })}
+                  {r.hidden > 0 && ` ${t("and {n} you can't open", { n: String(r.hidden) })}`}
+                </p>
+              )}{" "}
+              <a href={r.link} aria-label={t("Open: {title}", { title: r.title })}>
+                {t("Open")}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// Collections (sb-ask(3), Collections; SB-4304): documents and saved questions for one piece
+// of work. Each reader sees what they can open now; the rest is counted, never named.
+export function CollectionsView({ fetcher }: { fetcher?: Fetch }) {
+  const [items, setItems] = useState<Collection[]>();
+  const [status, setStatus] = useState<string>();
+  const [name, setName] = useState("");
+  const [docs, setDocs] = useState("");
+  const [people, setPeople] = useState("");
+  const [asking, setAsking] = useState<string>();
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<AskResponse>();
+  const id = useId();
+  async function load() {
+    try {
+      setItems(await collections(fetcher));
+    } catch (e) {
+      setStatus(errMsg(e, t("Your collections are unavailable right now.")));
+    }
+  }
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const split = (v: string) =>
+    v
+      .split(/[\s,]+/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+  async function make(e: FormEvent) {
+    e.preventDefault();
+    try {
+      await makeCollection(name, split(docs), split(people), fetcher);
+      setName("");
+      setDocs("");
+      setPeople("");
+      setStatus(t("Collection made."));
+      await load();
+    } catch (err) {
+      setStatus(errMsg(err, t("That collection couldn't be made.")));
+    }
+  }
+  async function remove(c: string) {
+    try {
+      await removeCollection(c, fetcher);
+      await load();
+    } catch (err) {
+      setStatus(errMsg(err, t("That collection couldn't be removed.")));
+    }
+  }
+  async function askIt(e: FormEvent) {
+    e.preventDefault();
+    if (!asking) return;
+    try {
+      setAnswer(await ask(question, undefined, fetcher, undefined, undefined, undefined, undefined, undefined, undefined, undefined, asking));
+    } catch (err) {
+      setStatus(errMsg(err, t("That collection couldn't be asked.")));
+    }
+  }
+  return (
+    <section aria-label={t("Collections")} className="inbox-list">
+      <h2>{t("Collections")}</h2>
+      {items && items.length === 0 && <p className="notice">{t("No collections yet.")}</p>}
+      {items && items.length > 0 && (
+        <ul className="saved-list">
+          {items.map((c) => (
+            <li key={c.id}>
+              <strong>{c.name}</strong> <span className="meta">({c.mine ? t("yours") : c.owner})</span>
+              <ul>
+                {c.items.map((x) => (
+                  <li key={x.item}>{x.title || x.question || x.item}</li>
+                ))}
+              </ul>
+              {c.hidden > 0 && <p className="meta">{t("and {n} you can't open", { n: String(c.hidden) })}</p>}
+              {c.stale && <p className="notice">{t("No one has asked this collection for 90 days.")}</p>}
+              <button type="button" onClick={() => setAsking(c.id)}>
+                {t("Ask this collection")}
+              </button>{" "}
+              {c.mine && (
+                <button type="button" onClick={() => void remove(c.id)} aria-label={t("Remove: {title}", { title: c.name })}>
+                  {t("Remove")}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {asking && (
+        <form onSubmit={askIt}>
+          <label htmlFor={id + "q"}>{t("Your question about the collection")}</label>
+          <input id={id + "q"} value={question} maxLength={4000} onChange={(e) => setQuestion(e.target.value)} />
+          <button type="submit" disabled={!question.trim()}>
+            {t("Ask")}
+          </button>
+        </form>
+      )}
+      {answer && (
+        <ul className="saved-list" aria-label={t("Answer")}>
+          {answer.answer.claims.map((cl, i) => (
+            <li key={i}>
+              {cl.text} {cl.uncited ? <span className="refused">{t("uncited")}</span> : <span className="meta">({cl.cites.map((ci) => ci.title || ci.cite).join("; ")})</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={make}>
+        <label htmlFor={id + "n"}>{t("Collection name")}</label>
+        <input id={id + "n"} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+        <label htmlFor={id + "d"}>{t("Documents and saved questions (ids)")}</label>
+        <input id={id + "d"} value={docs} onChange={(e) => setDocs(e.target.value)} />
+        <label htmlFor={id + "p"}>{t("Share with (emails)")}</label>
+        <input id={id + "p"} value={people} onChange={(e) => setPeople(e.target.value)} />
+        <button type="submit" disabled={!name.trim()}>
+          {t("Make collection")}
+        </button>
+      </form>
+      {status && <p role="status">{status}</p>}
+    </section>
   );
 }

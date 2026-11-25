@@ -55,6 +55,8 @@ type Request struct {
 	Verified bool `json:"verified,omitempty"`
 	// File is one file this ask is about, read for it alone and kept nowhere (SB-3802).
 	File *FileUpload `json:"file,omitempty"`
+	// Collection asks about the documents of one collection the asker may read (SB-4304).
+	Collection string `json:"collection,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -189,6 +191,8 @@ type Response struct {
 	Pinned *Pinned `json:"pinned,omitempty"`
 	// Verified counts the cited documents and those someone has checked (SB-3607).
 	Verified *VerifiedCount `json:"verified,omitempty"`
+	// Table is the table tool's result, when the ask used it (SB-4307).
+	Table *TableResult `json:"table,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -338,6 +342,8 @@ type Agent struct {
 	// memory: off. Audit writes a row for each change to it.
 	Memory MemoryStore
 	Audit  Auditor
+	// Collections are the cell's collections, for an ask about one (SB-4304); nil keeps none.
+	Collections CollectionStore
 }
 
 // Ask answers one question for the scope's user.
@@ -428,6 +434,10 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, err
 	}
 	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe)) // SB-4303: the asker's own, ask agent only (LAW-25)
+	capped := len(docs) == 0
+	if docs, err = a.collectionOr(ctx, s, req.Collection, docs); err != nil { // SB-4304
+		return Response{}, err
+	}
 
 	res, terms, err := a.retrieve(withVerified(withDocs(ctx, docs), req.Verified), s, q, req.Sources, retrieve.Budget)
 	if err != nil {
@@ -446,7 +456,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	turn := len(earlier)
 	sent, left := recent(earlier)
 	resp := Response{Trace: trace, Release: a.Release, Refused: res.Refused, Conversation: conv, Agent: "ask", People: []PersonRef{}, Terms: terms, EarlierDropped: left}
-	if len(docs) == 0 { // chosen documents aren't capped (SB-3004)
+	if capped { // chosen documents aren't capped (SB-3004); a collection's are
 		res.Context = retrieve.PerDocument(res.Context, MaxPerDocument)
 	}
 	if dept != nil {
@@ -469,6 +479,10 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		prompt, lead := "answer", "Question: "
 		if dept != nil {
 			prompt, lead = dept.Prompt, dept.Lead
+		} else if tr, ch, err := a.table(ctx, s, q, res.Context); err != nil { // SB-4307
+			return Response{}, err
+		} else if ch != nil {
+			res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
 		}
 		claims, err := a.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
 		if err != nil {
@@ -480,15 +494,12 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		if dept != nil {
 			claims, resp.Dropped = citedOnly(claims)
 		}
+		var off int // a number no passage or tool returned is dropped (SB-4307, LAW-14)
+		claims, off = tableCheck(claims, res.Context, resp.Table)
+		resp.Dropped += off
 		resp.Answer.Claims = claims
 		resp.People = a.whoToAsk(ctx, s, claims)
-		uncited := 0
-		for _, c := range claims {
-			if c.Uncited {
-				uncited++
-			}
-		}
-		if uncited*2 > len(claims) {
+		if mostUncited(claims) {
 			n := NoticeMostUncited
 			resp.Notice = &n
 		}
@@ -675,4 +686,15 @@ func anyCited(claims []answer.Claim) bool {
 		}
 	}
 	return false
+}
+
+// mostUncited is whether more than half the claims are uncited.
+func mostUncited(claims []answer.Claim) bool {
+	uncited := 0
+	for _, c := range claims {
+		if c.Uncited {
+			uncited++
+		}
+	}
+	return uncited*2 > len(claims)
 }

@@ -58,7 +58,13 @@ def not_contains(res, strings):
     return not hit, f"found {hit}" if hit else "none found"
 
 
-CHECKS = {f.__name__: f for f in (cites_any, cites_all, disagrees, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains)}
+def table_value(res, want):
+    t = res.get("table") or {}
+    got = t.get("value")
+    return got is not None and abs(got - want) < 1e-6, f"table tool value {got!r} over {t.get('range', 'nothing')} (want {want})"
+
+
+CHECKS = {f.__name__: f for f in (cites_any, cites_all, disagrees, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains, table_value)}
 
 
 def evaluate(res, expect):
