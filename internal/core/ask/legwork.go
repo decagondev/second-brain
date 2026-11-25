@@ -23,6 +23,7 @@ var legworkAgents = map[string]Department{
 	AgentResearch: {Name: AgentResearch, Prompt: "answer", Lead: "Finding: "},
 	AgentPrep:     {Name: AgentPrep, Prompt: "meeting-prep", Lead: "Item: "},
 	AgentIncident: {Name: AgentIncident, Prompt: "incident-brief", Lead: "Incident: "},
+	AgentReview:   {Name: AgentReview, Prompt: "incident-review", Lead: "Review: "},
 	AgentVoC:      {Name: AgentVoC, Prompt: "voc", Lead: "Theme: "},
 	AgentFix:      {Name: AgentFix, Prompt: "fix-draft", Lead: "Change: "},
 	AgentCheckin:  {Name: AgentCheckin, Prompt: "goal-check-in", Lead: "Goal: "},

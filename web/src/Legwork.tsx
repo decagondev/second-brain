@@ -4,6 +4,7 @@ import { AskError, actionDone, citeName, listResearch, myActions, openResearch, 
 import type { ActionItem, ApiError, Fetch, Research, ResearchItem } from "./api";
 import { ClaimView } from "./Answer";
 import { ErrorBox } from "./ErrorBox";
+import { AccountBriefForm, AccountFactsView, HowThisWasMade } from "./Further";
 import { msg, t, tn } from "./i18n";
 
 // The legwork (sb-ask(3), Research reports, Meeting prep and Action items; SB-4201 to
@@ -21,7 +22,7 @@ const states: Record<string, string> = {
   applied: msg("applied"),
 };
 
-const kindName = (k: string) => (k === "prep" ? t("Brief") : k === "fix" ? t("Suggested edits") : t("Report"));
+const kindName = (k: string) => (k === "prep" ? t("Brief") : k === "fix" ? t("Suggested edits") : k === "account" ? t("Account brief") : t("Report"));
 
 const unavailable = (): ApiError => ({ code: "EUNAVAIL", message: t("Something went wrong."), trace: "", remedy: t("Try again.") });
 
@@ -47,6 +48,7 @@ export function LegworkView({ fetcher, space }: { fetcher?: Fetch; space?: strin
       <h2>{t("Legwork")}</h2>
       <ResearchForm fetcher={fetcher} space={space} onPlanned={(r) => (setShown(r), load())} onError={fail} />
       <PrepareForm fetcher={fetcher} space={space} onMade={(r) => (setShown(r), load())} onError={fail} />
+      <AccountBriefForm fetcher={fetcher} space={space} onMade={(r) => (setShown(r), load())} />
       {error && <ErrorBox error={error} />}
       {shown && <ResearchShown r={shown} fetcher={fetcher} space={space} onChange={(r) => (setShown(r), load())} onError={fail} />}
       {list.length > 0 && (
@@ -162,6 +164,7 @@ function ResearchShown({ r, fetcher, space, onChange, onError }: { r: Research; 
           </button>
         </>
       )}
+      {r.account && <AccountFactsView account={r.account} />}
       {r.state === "queued" && <p>{t("Queued. You're told when it's ready.")}</p>}
       {r.stopped && <p className="notice">{t("It stopped early: {why}", { why: r.stopped })}</p>}
       {r.sections.map((s, i) => (
@@ -199,6 +202,7 @@ function ResearchShown({ r, fetcher, space, onChange, onError }: { r: Research; 
       {r.dropped > 0 && (
         <p className="meta">{tn(r.dropped, "{n} line was left out because you can't open its source now.", "{n} lines were left out because you can't open their sources now.")}</p>
       )}
+      {r.sections.length > 0 && <HowThisWasMade report={r.id} space={space} fetcher={fetcher} />}
     </article>
   );
 }

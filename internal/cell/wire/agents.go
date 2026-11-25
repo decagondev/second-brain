@@ -289,6 +289,11 @@ func (c *Cell) runAs(ctx context.Context, key, kind, title string, req ask.Reque
 
 // runAsIn is runAs, across the space's branch when branch is set.
 func (c *Cell) runAsIn(ctx context.Context, key, kind, title string, req ask.Request, branch bool) (string, error) {
+	return c.runDraft(ctx, key, kind, title, req, branch, "")
+}
+
+// runDraft is runAsIn for one document (KIND:ID) the draft is about (ask.AgentDraftFor).
+func (c *Cell) runDraft(ctx context.Context, key, kind, title string, req ask.Request, branch bool, doc string) (string, error) {
 	m := c.Manifest()
 	agent := req.Agent
 	if agent == "" {
@@ -314,7 +319,7 @@ func (c *Cell) runAsIn(ctx context.Context, key, kind, title string, req ask.Req
 			return "", err
 		}
 	}
-	_, err = c.Parts().Stewards.AgentDraft(ctx, s, kind, title, req)
+	_, err = c.Parts().Stewards.AgentDraftFor(ctx, s, kind, title, req, doc)
 	switch {
 	case errors.Is(err, ask.ErrInvalid):
 		return notify.BriefNothing, nil
@@ -463,7 +468,7 @@ func (c *Cell) newTranscripts(ctx context.Context, from, to time.Time) ([]notify
 			if title == "" {
 				title = ch.SourceID
 			}
-			out = append(out, notify.NewDoc{Space: sp, Ref: ref, Title: title})
+			out = append(out, notify.NewDoc{Space: sp, Ref: ref, Title: title, Closed: ask.IsClosed(ch.Text)})
 		}
 	}
 	return out, nil
@@ -506,6 +511,24 @@ func departmental(m manifest.Tenant) func(ctx context.Context, s tenancy.Scope) 
 	}
 }
 
+// accountSpaces are the sales and support spaces a user is a member of now that run their
+// account agent, as keys (SB-4605).
+func (c *Cell) accountSpaces(ctx context.Context, user string) []string {
+	s, err := c.ScopeAs(ctx, user, "company")
+	if err != nil {
+		return nil
+	}
+	m := c.Manifest()
+	var out []string
+	for _, ds := range departmental(m)(ctx, s) {
+		if ds.Agent == "account-brief" || ds.Agent == "case-brief" {
+			out = append(out, ask.SpaceKey(ds.Name))
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // policyNotices are the spaces' policies to tell their readers about (SB-4103).
 func (c *Cell) policyNotices(ctx context.Context) ([]ask.PolicyNotice, error) {
 	m := c.Manifest()
@@ -529,7 +552,7 @@ func sortedSpaces(m manifest.Tenant) []string {
 
 // newIncidents are the incident tickets first seen in [from, to): a first chunk whose
 // "Labels:" line names one of a space's incident_labels, once for each such space that
-// holds it (SB-4204).
+// holds it (SB-4204), marked closed when that version is (SB-4604).
 func (c *Cell) newIncidents(ctx context.Context, from, to time.Time) ([]notify.NewDoc, error) {
 	lk, ok := c.Index.(ports.DocLookup)
 	if !ok {
@@ -557,7 +580,7 @@ func (c *Cell) newIncidents(ctx context.Context, from, to time.Time) ([]notify.N
 			if title == "" {
 				title = ch.SourceID
 			}
-			out = append(out, notify.NewDoc{Space: sp, Ref: ref, Title: title})
+			out = append(out, notify.NewDoc{Space: sp, Ref: ref, Title: title, Closed: ask.IsClosed(ch.Text)})
 		}
 	}
 	return out, nil
@@ -570,6 +593,16 @@ func (c *Cell) runIncident(ctx context.Context, d notify.NewDoc) (string, error)
 	}
 	return c.runAs(ctx, d.Space, ask.DraftIncident, "Incident: "+d.Title,
 		ask.Request{Question: ask.IncidentQuestion(d.Title), Agent: ask.AgentIncident})
+}
+
+// runReview drafts a closed incident's review as its space's first active steward, with the
+// ticket's action items for that steward to confirm (SB-4604).
+func (c *Cell) runReview(ctx context.Context, d notify.NewDoc) (string, error) {
+	if _, ok := c.Manifest().Spaces[strings.TrimPrefix(d.Space, "spc_")]; !ok {
+		return "", nil
+	}
+	return c.runDraft(ctx, d.Space, ask.DraftReview, "Review: "+d.Title,
+		ask.Request{Question: ask.ReviewQuestion(d.Title), Agent: ask.AgentReview}, false, d.Ref)
 }
 
 // runCheckins drafts, for each goal not done whose owner is one active user and a steward

@@ -69,6 +69,9 @@ type ThreadView struct {
 	Versions []string `json:"versions,omitempty"`
 	Rounds   int      `json:"rounds,omitempty"`
 	Diff     []string `json:"diff,omitempty"`
+	// Trace is an agent draft's trace, for How this was made (SB-4606), for the steward it
+	// ran as.
+	Trace string `json:"trace,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them

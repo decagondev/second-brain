@@ -63,12 +63,13 @@ func (x Stewards) AgentDraft(ctx context.Context, s tenancy.Scope, kind, title s
 	return x.AgentDraftFor(ctx, s, kind, title, req, "")
 }
 
-// AgentDraftFor is AgentDraft for one goal (KIND:ID), a check-in's (SB-4207).
+// AgentDraftFor is AgentDraft for one document (KIND:ID): a check-in's goal (SB-4207), or a
+// review's incident ticket, whose action items it carries (SB-4604).
 func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, title string, req Request, goal string) (StewardQuestion, error) {
 	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant || s.Space() == "" || s.Space() == "company" {
 		return StewardQuestion{}, fmt.Errorf("%w: an agent draft runs in a space", ErrInvalid)
 	}
-	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate && kind != DraftIncident && kind != DraftCheckin && kind != DraftLeaderWeek {
+	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate && kind != DraftIncident && kind != DraftCheckin && kind != DraftLeaderWeek && kind != DraftReview {
 		return StewardQuestion{}, fmt.Errorf("%w: no draft kind %q", ErrInvalid, kind)
 	}
 	agent := req.Agent
@@ -86,13 +87,16 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	if kind == DraftDecisions && len(req.Documents) == 1 { // SB-4203: the meeting's action items, for this steward
 		sq.Thread.Doc = req.Documents[0]
 		sq.Thread.Supersede = supersedeSuggestions(resp.Answer.Claims, req.Documents[0]) // SB-4505
-		if x.ActionsOf != nil {
-			acts, err := x.ActionsOf(ctx, s, req.Documents[0])
-			if err != nil {
-				return StewardQuestion{}, err
-			}
-			sq.Thread.Actions = acts
+	}
+	if kind == DraftReview && goal != "" { // SB-4604: the ticket's action items, for this steward
+		sq.Thread.Doc = goal
+	}
+	if sq.Thread.Doc != "" && x.ActionsOf != nil {
+		acts, err := x.ActionsOf(ctx, s, sq.Thread.Doc)
+		if err != nil {
+			return StewardQuestion{}, err
 		}
+		sq.Thread.Actions = acts
 	}
 	if kind == DraftCheckin {
 		sq.Thread.Goal = goal

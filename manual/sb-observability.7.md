@@ -94,6 +94,10 @@ Nothing degrades to unmetered or unlimited use. If the meter can't be read, the 
 
 Each model call an ask or a scheduled run makes **in a space** is metered for the tenant and for that space (`space_usd` in the usage ledger: an amount, a month and the space, never who or what). A space's **branch** spend is its own and its teams'. `GET /v1/admin/costs/spaces?month=2027-03` (sb-admin(3)) lists every space: `{ "month", "spaces": [{ "space", "parent"?, "own_usd", "spent_usd", "budget_usd_month", "forecast_usd"? }] }`, `spent_usd` being the branch's, and for the running month after 3 days a straight-line month-end forecast. A space with `budget_usd_month` (sb-space(5)) is watched by the `notify` job: at 80% of it its stewards are told once that month, "The finance space has used 85% of its monthly budget", and at 100% once more, "The finance space has spent its monthly budget: its scheduled briefs and updates pause until next month, and asks carry on". While a branch, or the department above it, is at its budget, its weekly briefs and updates don't run, and its stewards are told why (sb-agents(7)). Asks are never refused for a space's budget: only the tenant's own budget refuses a call (above). Spend that can't be read pauses the runs, never lets them through.
 
+### Cost of one answer (SB-4606)
+
+Every trace keeps `cost_usd`, the model spend of its one ask counted by the gateway at the configured prices, a consultation's within it, and **How this was made** shows it to the person who asked (sb-ask(3)). A report's cost is its own `cost_usd`. It is a count from the gateway, never from the model, and it is the same spend the budgets count (Budgets and rate limits, above).
+
 ### Guardrail insights, exactly (SB-4406)
 
 `GET /v1/admin/guardrails` (sb-admin(3)) and the **Guardrails** card on the admin console show, for each of the last 12 ISO weeks (UTC):

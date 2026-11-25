@@ -266,7 +266,9 @@ type Job struct {
 	// the goals gone three weeks without one (SB-4207). nil does none.
 	Incidents   func(ctx context.Context, from, to time.Time) ([]NewDoc, error)
 	RunIncident func(ctx context.Context, d NewDoc) (why string, err error)
-	Checkins    func(ctx context.Context) ([]SilentGoal, error)
+	// RunReview drafts a closed incident's review (SB-4604); nil drafts none.
+	RunReview func(ctx context.Context, d NewDoc) (why string, err error)
+	Checkins  func(ctx context.Context) ([]SilentGoal, error)
 	// Routines asks the saved questions due as routines, as their owners, and returns those
 	// it ran (SB-4302); nil asks none.
 	Routines func(ctx context.Context) ([]ask.Finished, error)

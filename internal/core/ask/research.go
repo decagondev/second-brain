@@ -65,6 +65,8 @@ type Research struct {
 	Attendees []Attendee `json:"attendees,omitempty"`
 	// Changed is how many of a routine's sources are new since its last run (SB-4302).
 	Changed *int `json:"changed,omitempty"`
+	// Account is an account brief's facts (SB-4605).
+	Account *AccountFacts `json:"account,omitempty"`
 }
 
 // Section is one step's answer: its question, trace and cited claims, and for a brief the
@@ -126,6 +128,9 @@ type Legwork struct {
 	// CatchUpOffer is, once after a person's notification pause ended, the day it began, and
 	// marks it offered (SB-4506); nil offers none.
 	CatchUpOffer func(ctx context.Context, user string) (since time.Time, ok bool, err error)
+	// AccountSpaces are the sales and support spaces a user is a member of that brief
+	// accounts, as keys, for prep before a meeting (SB-4605); nil briefs none.
+	AccountSpaces func(ctx context.Context, user string) []string
 }
 
 // ResearchItem is one report or brief as its owner's list shows it.
@@ -158,6 +163,7 @@ type ResearchView struct {
 	Attendees []Attendee     `json:"attendees,omitempty"`
 	Dropped   int            `json:"dropped"`
 	Changed   *int           `json:"changed,omitempty"`
+	Account   *AccountFacts  `json:"account,omitempty"`
 }
 
 func (l Legwork) now() time.Time { return l.Now().UTC() }
@@ -382,6 +388,11 @@ func (l Legwork) recheck(ctx context.Context, s tenancy.Scope, r Research) (Rese
 		atts = append(atts, a)
 	}
 	r.Sections, r.Attendees = secs, atts
+	if r.Account != nil { // SB-4605: the owners of what the reader can still open
+		f := *r.Account
+		f.Owners = sectionOwners(secs)
+		r.Account = &f
+	}
 	return view(r, secs, dropped), nil
 }
 
@@ -409,7 +420,7 @@ func (l Legwork) keepCites(ctx context.Context, s tenancy.Scope, cs []answer.Cit
 
 func view(r Research, secs []Section, dropped int) ResearchView {
 	v := ResearchView{ID: r.ID, Kind: r.Kind, Question: r.Question, Space: r.Space, State: r.State, Why: r.Why, Steps: r.Steps, At: r.At,
-		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped, Changed: r.Changed}
+		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped, Changed: r.Changed, Account: r.Account}
 	if v.Steps == nil {
 		v.Steps = []string{}
 	}

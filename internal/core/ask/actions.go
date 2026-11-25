@@ -205,7 +205,7 @@ func (l Legwork) Confirm(ctx context.Context, s tenancy.Scope, name, draft strin
 	if err != nil {
 		return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 	}
-	if !found || q.Space != SpaceKey(name) || q.Thread == nil || q.Thread.Kind != DraftDecisions || q.Thread.Discarded || q.Reply != nil || q.Asker != s.User() {
+	if !found || q.Space != SpaceKey(name) || q.Thread == nil || (q.Thread.Kind != DraftDecisions && q.Thread.Kind != DraftReview) || q.Thread.Discarded || q.Reply != nil || q.Asker != s.User() {
 		return nil, ErrNotSteward // only the steward it ran as sees its text
 	}
 	for _, it := range items {

@@ -20,6 +20,8 @@ type Welcome struct {
 // NewDoc is a transcript first seen in a space, by space key and KIND:ID.
 type NewDoc struct {
 	Space, Ref, Title string
+	// Closed says this version of an incident's ticket is closed (SB-4604).
+	Closed bool
 }
 
 // triggers plans the welcome briefs and runs the decisions drafts of the transcripts seen

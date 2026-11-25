@@ -33,7 +33,8 @@ type SilentGoal struct {
 }
 
 // incidents drafts an incident brief for each incident ticket first seen in a space in
-// [from, now), once per ticket and space, and tells the space's stewards it waits.
+// [from, now), once per ticket and space, and a review when a later version of one that had
+// a brief is closed (SB-4604), once; it tells the space's stewards each waits.
 func (j Job) incidents(ctx context.Context, from, now time.Time) ([]outgoing, error) {
 	if j.Incidents == nil || j.RunIncident == nil {
 		return nil, nil
@@ -46,34 +47,57 @@ func (j Job) incidents(ctx context.Context, from, now time.Time) ([]outgoing, er
 	for _, d := range docs {
 		sum := sha256.Sum256([]byte(d.Space + "|" + d.Ref))
 		key := "incident-" + hex.EncodeToString(sum[:8])
-		if _, done, err := j.Clock.Last(ctx, key); err != nil || done {
-			if err != nil {
-				return nil, err
-			}
-			continue
-		}
-		why, err := j.RunIncident(ctx, d)
+		_, briefed, err := j.Clock.Last(ctx, key)
 		if err != nil {
-			return nil, fmt.Errorf("notify: incident brief: %w", err)
+			return nil, err
+		}
+		run, kind, text := j.RunIncident, "brief", "An incident brief is waiting in "
+		if briefed {
+			if !d.Closed || j.RunReview == nil {
+				continue
+			}
+			key = "review-" + hex.EncodeToString(sum[:8])
+			if _, done, err := j.Clock.Last(ctx, key); err != nil || done {
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+			run, kind, text = j.RunReview, "review", "An incident review is waiting in "
+		}
+		why, err := run(ctx, d)
+		if err != nil {
+			return nil, fmt.Errorf("notify: incident %s: %w", kind, err)
 		}
 		if err := j.Clock.Mark(ctx, key, now); err != nil {
 			return nil, err
 		}
-		if why != "" || j.Send == nil || j.Facts == nil {
-			continue
-		}
-		groups, _, ok := j.Facts(d.Space)
-		if !ok {
-			continue
-		}
-		people, err := j.members(ctx, groups)
+		told, err := j.tellStewards(ctx, d.Space, why, text)
 		if err != nil {
 			return nil, err
 		}
-		name := strings.TrimPrefix(d.Space, "spc_")
-		for _, p := range people {
-			out = append(out, outgoing{p, Message{Kind: KindIncident, Text: "An incident brief is waiting in " + name, Link: j.stewardLink(d.Space)}})
-		}
+		out = append(out, told...)
+	}
+	return out, nil
+}
+
+// tellStewards tells a space's stewards one incident draft waits there, unless why says it
+// didn't run.
+func (j Job) tellStewards(ctx context.Context, space, why, text string) ([]outgoing, error) {
+	if why != "" || j.Send == nil || j.Facts == nil {
+		return nil, nil
+	}
+	groups, _, ok := j.Facts(space)
+	if !ok {
+		return nil, nil
+	}
+	people, err := j.members(ctx, groups)
+	if err != nil {
+		return nil, err
+	}
+	var out []outgoing
+	for _, p := range people {
+		out = append(out, outgoing{p, Message{Kind: KindIncident, Text: text + strings.TrimPrefix(space, "spc_"), Link: j.stewardLink(space)}})
 	}
 	return out, nil
 }

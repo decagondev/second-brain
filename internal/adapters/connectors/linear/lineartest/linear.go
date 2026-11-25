@@ -58,6 +58,7 @@ type Issue struct {
 	ID, Identifier, Title, Description, Team string
 	Comments                                 []string
 	Labels                                   []string // SB-4204
+	State, StateType                         string   // SB-4604: the workflow state's name and type
 	UpdatedAt                                time.Time
 	Archived, Trashed                        bool
 }
@@ -141,6 +142,16 @@ func (f *Fake) Put(id, team, title, desc string) {
 		f.issues[id] = is
 	}
 	is.Title, is.Description, is.UpdatedAt = title, desc, f.tick()
+}
+
+// Tag sets an issue's labels and workflow state (SB-4204, SB-4604): stateType is Linear's
+// type, such as started, completed or canceled.
+func (f *Fake) Tag(id string, labels []string, state, stateType string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if is, ok := f.issues[id]; ok {
+		is.Labels, is.State, is.StateType, is.UpdatedAt = labels, state, stateType, f.tick()
+	}
 }
 
 // Archive archives an issue (a delete for the connector).
@@ -365,7 +376,11 @@ func (f *Fake) issueJSON(is *Issue) map[string]any {
 	for _, l := range is.Labels {
 		labels = append(labels, map[string]any{"name": l})
 	}
-	return map[string]any{"id": is.ID, "identifier": is.Identifier, "labels": map[string]any{"nodes": labels}, "title": is.Title, "description": is.Description,
+	var state any
+	if is.State != "" {
+		state = map[string]any{"name": is.State, "type": is.StateType}
+	}
+	return map[string]any{"id": is.ID, "identifier": is.Identifier, "labels": map[string]any{"nodes": labels}, "state": state, "title": is.Title, "description": is.Description,
 		"updatedAt": ts(is.UpdatedAt), "archivedAt": archived(is), "trashed": is.Trashed,
 		"team":     map[string]any{"id": t.ID, "key": t.Key, "private": t.Private, "members": map[string]any{"nodes": members}},
 		"comments": map[string]any{"nodes": comments}}

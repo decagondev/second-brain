@@ -36,6 +36,7 @@ type User struct {
 // Record is a company or a deal.
 type Record struct {
 	Type, ID, Name, Stage, Amount, Description   string
+	Domain                                       string // a company's (SB-4605)
 	Owner, Team                                  string // owner id, team id
 	Created, Modified, OwnerAssigned, ArchivedAt time.Time
 	Archived                                     bool
@@ -103,6 +104,14 @@ func (f *Fake) Put(key, name, desc, owner, team string) {
 		f.records[key] = r
 	}
 	r.Name, r.Description, r.Modified = name, desc, now
+}
+
+// SetDomain sets a company's domain.
+func (f *Fake) SetDomain(key, domain string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	r := f.records[key]
+	r.Domain, r.Modified = domain, f.tick()
 }
 
 // Reassign changes a record's owner and team (a permission-only change).
@@ -315,7 +324,7 @@ func (f *Fake) recordJSON(r *Record) map[string]any {
 	if r.Type == "deals" {
 		props["dealname"], props["dealstage"], props["amount"] = r.Name, r.Stage, r.Amount
 	} else {
-		props["name"] = r.Name
+		props["name"], props["domain"] = r.Name, r.Domain
 	}
 	return map[string]any{"id": r.ID, "properties": props, "archived": false, "updatedAt": iso(r.Modified)}
 }

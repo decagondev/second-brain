@@ -28,8 +28,8 @@ Planned 2026-11-25 after W43, with the user. The concept is in [19-departments-s
 - [x] Every skill passes `sb agents lint` and its eval cases run in the gate
 - [x] A redraft cites only what its first draft could
 - [x] A shared routine runs as each member and its steward never sees their answers
-- [ ] Every new agent has an eval suite that passes the gate and calls no tool
-- [ ] Every law test still green; no new store, service or Go module
+- [x] Every new agent has an eval suite that passes the gate and calls no tool
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

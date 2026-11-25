@@ -13,7 +13,7 @@ summary: "Before a customer call, someone searches tickets, CRM notes and contra
 | Manual | [`sb-agents(7)`](../../manual/sb-agents.7.md), [`sb-departments(7)`](../../manual/sb-departments.7.md) |
 | Laws | LAW-01, LAW-07, LAW-14 |
 | Depends on | SB-610, SB-4202 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Before a customer call, someone searches tickets, CRM notes and contracts one by
 
 ## Acceptance criteria
 
-- [ ] **Account brief** on an account the person can open returns open tickets, 90 days of notes, documents that name it, renewal date and owners
-- [ ] With `prep: true`, a meeting with the account's domain gets a brief 30 minutes before
-- [ ] `personal_data` fields stay masked and nothing is written to the CRM
+- [x] **Account brief** on an account the person can open returns open tickets, 90 days of notes, documents that name it, renewal date and owners
+- [x] With `prep: true`, a meeting with the account's domain gets a brief 30 minutes before
+- [x] `personal_data` fields stay masked and nothing is written to the CRM
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Agent and prompt
-- [ ] UI
-- [ ] Eval suite
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Agent and prompt
+- [x] UI
+- [x] Eval suite
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [19-departments-shape-account.md](../../docs/19-departments-shape-account.md).
+2026-11-25: built. `POST /v1/account-brief` (`Legwork.AccountBrief`) in a `sales` space that runs `account-brief` or a `support` space that runs `case-brief`, on a `crm:` document the caller can open now in that space; anything else is `EINVAL` and names nothing. The groups are picked by code from the space's own documents (`accountGroups`): the record, open tickets (kind `tickets` naming the account or its domain, not `IsClosed`), contracts and proposals (by title), and notes first seen in the last 90 days; at most 20 each, newest first, each checked as the caller (`openDocs`). Each group with a document is asked once through `withOnly`, as the caller. The brief is a report (`kind: "account"`) with `account` facts counted by code; `owners` are recomputed from what the reader can still open each time it's shown. `renewal` comes from a `Renewal:` line; HubSpot's companies have none by default, so it shows only where a record's text carries one (`hubspottest` gained a company `domain`). With `prep: true`, `PrepDue` first briefs up to 3 accounts of the person's sales and support spaces whose `Domain:` matches an attendee's (`prepAccounts`, `wire.accountSpaces`). No new agent: the existing `account-brief` and `case-brief` prompts and suites, with an ACL case added. Web: **Account brief** on the Legwork tab, and the counted facts on the brief. Tests: `tests/cell/further_test.go` (counts, a hidden document never named, an account owned by someone else and a company-wide call refused), `ask/further_internal_test.go`, `web/src/further.test.tsx`.
 
 ## Definition of done
 

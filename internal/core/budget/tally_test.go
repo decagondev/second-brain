@@ -19,3 +19,14 @@ func TestTallyCountsOneContextsCalls(t *testing.T) {
 		t.Fatal("a context without a tally counted")
 	}
 }
+
+func TestTallyInsideATallyAddsToBoth(t *testing.T) {
+	ctx, report := WithTally(context.Background())
+	inner, answer := WithTally(ctx)
+	p := Price{InputPerM: 1e6, OutputPerM: 0}
+	TallyOf(inner).Add(p, 2, 0)
+	TallyOf(ctx).Add(p, 1, 0)
+	if answer.USD() != 2 || report.USD() != 3 {
+		t.Fatalf("answer %v, report %v; want 2 and 3", answer.USD(), report.USD())
+	}
+}

@@ -364,8 +364,11 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		if q.Thread != nil {
 			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions, Supersede: q.Thread.Supersede,
 				Versions: q.Thread.Versions, Rounds: q.Thread.Rounds, Diff: threadDiff(q.Thread)}
+			if q.Thread.Agent != "" {
+				it.Thread.Trace = q.Trace
+			}
 			if q.Thread.Agent != "" && q.Asker != s.User() {
-				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede = "", true, nil, nil
+				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede, it.Thread.Trace = "", true, nil, nil, ""
 				it.Thread.Versions, it.Thread.Diff = nil, nil
 			}
 		}

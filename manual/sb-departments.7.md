@@ -58,6 +58,10 @@ The templates follow four practices that almost every company with a mature acce
 3. **Need to know, and barriers.** HR cases, legal matters, unreleased results and M&A work are visible only to a named group. Some groups must not see each other's work at all, which is an information barrier (an ethical wall). Labels and barriers are separate controls: a label says how sensitive something is, and a barrier says who must never meet.
 4. **Joiner, mover, leaver, and access reviews.** Access changes the moment someone joins, changes team or leaves, within 5 minutes (LAW-21). Each quarter, every space's stewards re-certify who has access, a standard SOX and SOC 2 control (W12).
 
+### Account brief (SB-4605)
+
+In a `sales` space that runs `account-brief`, or a `support` space that runs `case-brief`, **Account brief** on a CRM account the person can open (sb-ask(3), Account brief) gathers, by code and checked as them: the account's own record, its open tickets, the notes and documents of the last 90 days that name it, and the contracts and proposals that name it, with its renewal date when the CRM record has a `Renewal:` line and the owners among the cited documents. The space's agent writes one cited section of each, as the person. With `prep: true`, a meeting whose attendees share the account's domain gets the brief 30 minutes before. `personal_data` fields stay masked as ingest masked them (sb-ingest(7)), and nothing is written to the CRM.
+
 ## LAWS
 
 LAW-20 Restricted stays home: the `restricted` default on `people`, `finance`, `legal` and `executive` is what keeps their content out of everyone else's company-wide answers ([sb-spaces(7)](sb-spaces.7.md)).

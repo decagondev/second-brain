@@ -71,7 +71,7 @@ func (e *gqlError) HTTPStatus() int {
 // Operations, sent by name; the fake and the real API both accept them.
 const (
 	opIssue = `query IssueByID($id: String!) { issue(id: $id) { id identifier title description updatedAt archivedAt trashed
-  team { id key private members(first: 250) { nodes { id email } } } labels(first: 50) { nodes { name } } comments(first: 100) { nodes { body } } } }`
+  team { id key private members(first: 250) { nodes { id email } } } labels(first: 50) { nodes { name } } state { name type } comments(first: 100) { nodes { body } } } }`
 	opComment     = `mutation CommentCreate($input: CommentCreateInput!) { commentCreate(input: $input) { success comment { id } } }`
 	opCommentByID = `query CommentByID($id: String!) { comment(id: $id) { id } }`
 	opUser        = `query UserByEmail($email: String!) { users(filter: { email: { eq: $email } }) { nodes { id active guest } } }`
@@ -171,6 +171,10 @@ type issue struct {
 			Name string `json:"name"`
 		} `json:"nodes"`
 	} `json:"labels"`
+	State *struct {
+		Name string `json:"name"`
+		Type string `json:"type"`
+	} `json:"state"`
 }
 
 func (i issue) gone() bool { return i.ArchivedAt != nil || i.Trashed }
@@ -215,7 +219,17 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 		for _, l := range is.Labels.Nodes {
 			ls = append(ls, l.Name)
 		}
-		b.WriteString("Labels: " + strings.Join(ls, ", ") + "\n\n")
+		b.WriteString("Labels: " + strings.Join(ls, ", ") + "\n")
+	}
+	if is.State != nil && is.State.Name != "" { // SB-4604: the status, so a closed incident is seen
+		st := "Status: " + is.State.Name
+		if is.State.Type == "completed" || is.State.Type == "canceled" {
+			st += " (closed)"
+		}
+		b.WriteString(st + "\n")
+	}
+	if b.Len() > 0 {
+		b.WriteString("\n")
 	}
 	b.WriteString(is.Description)
 	for _, cm := range is.Comments.Nodes {

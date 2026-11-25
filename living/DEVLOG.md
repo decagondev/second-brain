@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S45.2: Agents that go further
+
+**Wave/slice:** W45 / S45.2 (SB-4604 to SB-4606) · **Status:** Done
+
+**What:** When an incident that had a brief closes, the `incident-review` agent drafts its review for the stewards: a timeline from the ticket and the chat it names, what was decided and changed, and the ticket's `Action:` lines as action items for the steward to confirm. Linear's workflow state now leads a ticket's text as `Status: NAME`, with ` (closed)` when done or canceled. **Account brief** briefs a person on one CRM account in a sales or support space, from its record, open tickets, 90 days of notes and its contracts and proposals, and with `prep: true` before a meeting whose attendees share the account's domain. And **How this was made**, under every answer, agent draft and report, shows the agent, release, skill, tier, teams consulted, sub-questions, sources, counts and the answer's cost.
+
+**Why this way:** The review is one more triggered draft on the incident brief's path, keyed per ticket and space, so it runs once and only after a brief ran in an earlier pass; its follow-ups reuse the transcript reader, so no model chooses who is told. The account brief picks its documents by code and narrows each section's ask to them as the person, so the model only ever sees what the cell chose and the live check allowed; a document named by the account but closed to the person is neither asked about nor counted. How this was made keeps nothing new: it is worked out from the trace each time it is opened, with the sources checked as the reader, so it can't show more than the answer could. Cost needed a tally per ask; tallies now nest, so a report's cap still sees every call.
+
+**Learned:** HubSpot's companies have no renewal property by default, so the renewal date is read from a `Renewal:` line only where a record carries one. The fake connectors needed small setters (Linear labels and state, a company's domain) that the real APIs had all along.
+
+**Laws:** LAW-01, LAW-07, LAW-09, LAW-11, LAW-14, LAW-16, LAW-26. Every law test is still green.
+
 ## 2026-11-25 S45.1: Shape the work
 
 **Wave/slice:** W45 / S45.1 (SB-4601 to SB-4603) · **Status:** Done

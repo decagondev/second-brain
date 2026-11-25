@@ -26,6 +26,8 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/research/{id}", h.open)
 	mux.HandleFunc("POST /v1/research/{id}/run", h.run)
 	mux.HandleFunc("POST /v1/prepare", h.prepare)
+	mux.HandleFunc("GET /v1/research/{id}/how", h.how)       // SB-4606
+	mux.HandleFunc("POST /v1/account-brief", h.accountBrief) // SB-4605
 	mux.HandleFunc("GET /v1/me/events", h.events)
 	mux.HandleFunc("GET /v1/me/actions", h.mine)
 	mux.HandleFunc("POST /v1/me/actions/{id}/done", h.done)
@@ -206,6 +208,37 @@ func (h Legwork) prepare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, err := h.Service.Prepare(r.Context(), s, body)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", v)
+}
+
+func (h Legwork) how(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	v, err := h.Service.How(r.Context(), s, r.PathValue("id"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", v)
+}
+
+func (h Legwork) accountBrief(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body ask.AccountRequest
+	if !decode(r, &body) {
+		h.fail(w, ask.ErrInvalid)
+		return
+	}
+	v, err := h.Service.AccountBrief(r.Context(), s, body)
 	if err != nil {
 		h.fail(w, err)
 		return

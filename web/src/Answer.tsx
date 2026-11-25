@@ -4,6 +4,7 @@ import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, P
 import { AskError, askOwner, citeName, docKey, isCited, passage, requestAccess } from "./api";
 import { errorText, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
+import { HowThisWasMade } from "./Further";
 
 const notices: Record<Exclude<Notice, null>, string> = {
   no_access: msg("Some sources you don't have access to may answer this. Ask their owner."),
@@ -457,6 +458,7 @@ export function AnswerView({
           <AccessRequest trace={answer.trace} fetcher={fetcher} />
         </p>
       )}
+      {answer.trace.startsWith("tr_") && <HowThisWasMade trace={answer.trace} fetcher={fetcher} />}
       <p className="trace">{t("Trace {trace}", { trace: answer.trace })}</p>
       <Footnotes nums={nums} />
     </article>

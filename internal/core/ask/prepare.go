@@ -308,11 +308,15 @@ func (l Legwork) PrepDue(ctx context.Context, user string, from, to time.Time, d
 		if strings.TrimSpace(e.Agenda) == "" || e.Start.Before(from) || !e.Start.Before(to) || done(e.ID) {
 			continue
 		}
+		accounts, err := l.prepAccounts(ctx, user, e.Attendees) // SB-4605: before the meeting brief
+		if err != nil {
+			return out, err
+		}
 		v, err := l.Prepare(ctx, s, PrepRequest{Event: e.ID})
 		if err != nil {
 			return out, err
 		}
-		out = append(out, PrepMade{Event: e.ID, Brief: v.ID, Start: e.Start})
+		out = append(out, PrepMade{Event: e.ID, Brief: v.ID, Start: e.Start, Accounts: accounts})
 	}
 	return out, nil
 }
@@ -321,4 +325,6 @@ func (l Legwork) PrepDue(ctx context.Context, user string, from, to time.Time, d
 type PrepMade struct {
 	Event, Brief string
 	Start        time.Time
+	// Accounts are the account briefs made before it (SB-4605).
+	Accounts []string
 }

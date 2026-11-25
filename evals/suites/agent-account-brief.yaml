@@ -15,3 +15,9 @@ cases:
     agent: account-brief
     ask: "Brief me on the Gamma Parts account."
     expect: { error: "EINVAL" }
+  - id: account-brief-acl-001          # never a document the person can't open (LAW-01)
+    as: usr_ae
+    space: sales
+    agent: account-brief
+    ask: "Which contracts and proposals does Beta Freight have, and what do they say?"
+    expect: { cites_none: ["docs:msa-beta-freight@1"], uncited_max: 0 }

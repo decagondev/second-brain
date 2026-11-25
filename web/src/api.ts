@@ -501,7 +501,7 @@ export interface QueueQuestion {
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
   // agent, kind and hidden: a draft an agent wrote on a schedule or a trigger (SB-4005, SB-4006).
   thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[]; supersede?: { cite: string; title?: string }[];
-    versions?: string[]; rounds?: number; diff?: string[] }; // SB-4602
+    versions?: string[]; rounds?: number; diff?: string[]; trace?: string }; // SB-4602, SB-4606
   // A request waiting on another space (SB-4504).
   waiting?: { on: string; reason: string; until: string };
   // A note a steward started from a found-nothing term (SB-3705).
@@ -576,6 +576,7 @@ export interface Research {
   attendees?: { email: string; known: boolean; owns?: Cite[] }[];
   dropped: number;
   changed?: number; // a routine's sources new since its last run (SB-4302)
+  account?: { name: string; domain?: string; renewal?: string; tickets: number; notes: number; documents: number; owners: string[] }; // SB-4605
 }
 
 export interface ResearchItem {

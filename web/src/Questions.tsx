@@ -5,6 +5,7 @@ import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem
 import { placeOf } from "./Answer";
 import { WaitForm } from "./Across";
 import { AskForChanges } from "./Shape";
+import { HowThisWasMade } from "./Further";
 import { MyData } from "./Session";
 import { AboutMe, AgentCases, AgentRuns, CollectionsView, InboxView } from "./Inbox";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -20,6 +21,7 @@ const draftKinds: Record<string, string> = {
   decisions: msg("Decisions drafted by {agent}"),
   update: msg("Weekly update by {agent}"),
   incident: msg("Incident brief by {agent}"),
+  review: msg("Incident review by {agent}"),
   checkin: msg("Goal check-in by {agent}"),
   "leader-week": msg("The leader's week by {agent}"),
 };
@@ -403,9 +405,10 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                       ))}
                     </fieldset>
                   )}
-                  {q.state === "open" && q.thread.kind === "decisions" && (q.thread.actions?.length ?? 0) > 0 && (
+                  {q.state === "open" && (q.thread.kind === "decisions" || q.thread.kind === "review") && (q.thread.actions?.length ?? 0) > 0 && (
                     <ConfirmActions space={space} draft={q.id} items={q.thread.actions!} fetcher={fetcher} />
                   )}
+                  {q.thread.trace && <HowThisWasMade trace={q.thread.trace} fetcher={fetcher} />}
                   {q.state === "open" && !q.thread.hidden && (
                     <AskForChanges
                       space={space}

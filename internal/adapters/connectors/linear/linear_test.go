@@ -165,3 +165,29 @@ func TestActLostAnswerAndFind(t *testing.T) {
 		}
 	}
 }
+
+func TestLabelsAndStatusLead(t *testing.T) {
+	f, c := setup(t)
+	f.AddTeam("T1", "OPS", false, "U1")
+	f.Put("i1", "T1", "Payments down", "The queue stopped.")
+	ref := ports.SourceRef{Kind: "tickets", ID: "i1"}
+	for _, tc := range []struct {
+		labels      []string
+		state, kind string
+		want        string
+	}{
+		{nil, "", "", "The queue stopped."},
+		{[]string{"sev-1"}, "In Progress", "started", "Labels: sev-1\nStatus: In Progress\n\nThe queue stopped."},
+		{[]string{"sev-1"}, "Done", "completed", "Labels: sev-1\nStatus: Done (closed)\n\nThe queue stopped."},
+		{nil, "Won't fix", "canceled", "Status: Won't fix (closed)\n\nThe queue stopped."},
+	} {
+		f.Tag("i1", tc.labels, tc.state, tc.kind)
+		d, err := c.Fetch(context.Background(), ref)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(d.Text, tc.want) {
+			t.Errorf("%s: text %q, want it to start %q", tc.state, d.Text, tc.want)
+		}
+	}
+}

@@ -733,7 +733,7 @@ func (c *Cell) legwork(m manifest.Tenant, agent ask.Agent, stewards ask.Stewards
 	zone, _ := manifest.DigestZone(m.Digest)
 	l := ask.Legwork{Agent: agent, Stewards: stewards, Research: c.Traces, Actions: c.Traces, Audit: c.Audit, Routines: c.Traces, Zone: zone,
 		NewID: c.NewID, Now: time.Now, ResearchUSD: func() float64 { return m.ResearchUSD }, ScopeIn: c.ScopeAs, Tell: c.tell,
-		CatchUpOffer: c.catchUpOffer, // SB-4506
+		CatchUpOffer: c.catchUpOffer, AccountSpaces: c.accountSpaces, // SB-4506, SB-4605
 		Known: func(ctx context.Context, email string) bool {
 			ids, err := c.activeByEmail(ctx, email)
 			return err == nil && len(ids) == 1 // unknown, or two people: no one (LAW-12)

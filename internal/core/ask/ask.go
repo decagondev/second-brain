@@ -260,6 +260,8 @@ type Trace struct {
 	Tier string `json:",omitempty"`
 	// FlaggedFiles is 1 when the file's passages carried an injection flag (SB-4406).
 	FlaggedFiles int `json:",omitempty"`
+	// CostUSD is this one answer's model spend, its consultations' within it (SB-4606).
+	CostUSD float64 `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -431,6 +433,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err := s.Check(); err != nil || s.Tenant() != a.Tenant {
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
+	ctx, tally := budget.WithTally(ctx) // SB-4606: this answer's own cost
 	q, docs, err := validate(req)
 	if err != nil {
 		return Response{}, err
@@ -555,13 +558,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, err
 	}
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD()}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD()}
 	if err := a.keep(ctx, s, conv, q, t); err != nil {
 		return Response{}, err
 	}

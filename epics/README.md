@@ -49,7 +49,7 @@ summary: Epics, waves, slices and tickets.
 | W42 Work That Comes to You | 7 | 0 | 0 | Planned 2026-11-24 with the user (E43), W42 built: one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W43 Govern Every Agent | 6 | 0 | 0 | Planned 2026-11-24 with the user (E44), W43 built: feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W44 Departments Work Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E45), built: ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
-| W45 Agents You Can Shape | 3 | 0 | 3 | Planned 2026-11-25 with the user (E46), S45.1 built: skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
+| W45 Agents You Can Shape | 6 | 0 | 0 | Planned 2026-11-25 with the user (E46), built: skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W46 Every Agent Accountable | 0 | 0 | 7 | Planned 2026-11-25 with the user (E47): agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -830,9 +830,9 @@ flowchart LR
 | [SB-4601](E46-agents-you-can-shape/SB-4601-skills.md) | S45.1 | E46 | Skills | Done |
 | [SB-4602](E46-agents-you-can-shape/SB-4602-ask-for-changes.md) | S45.1 | E46 | Ask for changes | Done |
 | [SB-4603](E46-agents-you-can-shape/SB-4603-shared-routines.md) | S45.1 | E46 | Shared routines | Done |
-| [SB-4604](E46-agents-you-can-shape/SB-4604-post-incident-review.md) | S45.2 | E46 | Post-incident review | Open |
-| [SB-4605](E46-agents-you-can-shape/SB-4605-account-brief.md) | S45.2 | E46 | Account brief | Open |
-| [SB-4606](E46-agents-you-can-shape/SB-4606-how-this-was-made.md) | S45.2 | E46 | How this was made | Open |
+| [SB-4604](E46-agents-you-can-shape/SB-4604-post-incident-review.md) | S45.2 | E46 | Post-incident review | Done |
+| [SB-4605](E46-agents-you-can-shape/SB-4605-account-brief.md) | S45.2 | E46 | Account brief | Done |
+| [SB-4606](E46-agents-you-can-shape/SB-4606-how-this-was-made.md) | S45.2 | E46 | How this was made | Done |
 
 ### W46 Every Agent Accountable
 

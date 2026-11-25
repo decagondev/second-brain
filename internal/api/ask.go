@@ -31,6 +31,11 @@ type Asker interface {
 	Trace(ctx context.Context, s tenancy.Scope, id string) (ask.Trace, error)
 }
 
+// Hower says how an answer was made, checked as the caller now (SB-4606).
+type Hower interface {
+	How(ctx context.Context, s tenancy.Scope, id string) (ask.HowMade, error)
+}
+
 // Passager returns a cite's passage, checked live (SB-3001).
 type Passager interface {
 	Passage(ctx context.Context, s tenancy.Scope, trace, cite string, start int) (ask.Passage, error)
@@ -53,6 +58,9 @@ type Ask struct {
 func (h Ask) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/ask", h.ask)
 	mux.HandleFunc("GET /v1/traces/{id}", h.trace)
+	if _, ok := h.Agent.(Hower); ok {
+		mux.HandleFunc("GET /v1/traces/{id}/how", h.how) // SB-4606
+	}
 	if _, ok := h.Agent.(Passager); ok {
 		mux.HandleFunc("GET /v1/traces/{id}/passage", h.passage)
 	}
@@ -126,6 +134,21 @@ func (h Ask) trace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.ok(w, t.ID, traceBody{Response: t.Response, Decisions: t.Decisions})
+}
+
+// how is how one answer or draft was made, checked as the caller now (SB-4606).
+func (h Ask) how(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		h.fail(w, "", errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	v, err := h.Agent.(Hower).How(r.Context(), s, r.PathValue("id"))
+	if err != nil {
+		h.fail(w, "", mapErr(err))
+		return
+	}
+	h.ok(w, v.Trace, v)
 }
 
 func (h Ask) passage(w http.ResponseWriter, r *http.Request) {
