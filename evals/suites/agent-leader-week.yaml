@@ -1,0 +1,19 @@
+# Suite for the leader's week (SB-4503; sb-agents(7), The leader's week): in a space with
+# teams, a branch ask as its steward cites the department's and the teams' documents with
+# no uncited claim, never one the steward can't open; in a team, it is refused.
+suite: agent-leader-week
+world: fixtures/branch
+cases:
+  - id: leader-week-001
+    as: usr_lead
+    space: operations
+    branch: true
+    agent: leader-week
+    ask: "What did this department and its teams publish, decide and check in on this week, and which goals are at risk?"
+    expect: { cites_all: ["docs:ops-week@1", "docs:returns-rma@1"], cites_none: ["docs:fleet-mot@1"], uncited_max: 0 }
+  - id: leader-week-team-001        # a team has no teams: refused
+    as: usr_lead
+    space: returns
+    agent: leader-week
+    ask: "What did this department and its teams publish, decide and check in on this week, and which goals are at risk?"
+    expect: { error: "EINVAL" }

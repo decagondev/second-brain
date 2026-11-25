@@ -66,6 +66,10 @@ type world struct {
 		Template string              `json:"template"` // SB-1102
 		Agents   []string            `json:"agents"`
 		Updates  bool                `json:"updates"` // SB-4102
+		// Parent is the department a team sits under, and Glossary the space's terms
+		// (SB-4501, SB-4503).
+		Parent   string            `json:"parent"`
+		Glossary map[string]string `json:"glossary"`
 	} `json:"spaces"`
 	// Agents are the agents the world's manifest enables (SB-1102); ask is always on.
 	Agents   []string    `json:"agents"`
@@ -77,7 +81,7 @@ func (w world) spaceList() []ports.Space {
 	var out []ports.Space
 	for name, sp := range w.Spaces {
 		out = append(out, ports.Space{ID: spaces.ID(name), Tenant: w.Tenant, Name: name, Members: sp.Members, Label: sp.Label, Scope: sp.Scope,
-			Template: sp.Template, Agents: sp.Agents})
+			Template: sp.Template, Agents: sp.Agents, Parent: sp.Parent})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
@@ -95,7 +99,11 @@ type input struct {
 		Agent string `json:"agent"` // "" is ask
 		// Language is the ask's language (SB-3003).
 		Language string `json:"language"`
-		Inject   struct {
+		// Branch asks across the space's teams as the auth middleware does, and Consult
+		// consults their agents (SB-3903, SB-4501).
+		Branch  bool `json:"branch"`
+		Consult bool `json:"consult"`
+		Inject  struct {
 			ACL string `json:"acl"` // "timeout", "500" or "404" for the docs connector, this case only
 		} `json:"inject"`
 	} `json:"cases"`
@@ -118,6 +126,8 @@ type result struct {
 	Error     string   `json:"error,omitempty"`
 	// Table is the table tool's value and range, when the ask used it (SB-4307).
 	Table *ask.TableResult `json:"table,omitempty"`
+	// Consulted are the teams a consulting ask consulted, by name (SB-4501).
+	Consulted []string `json:"consulted"`
 }
 
 func main() {
@@ -252,7 +262,16 @@ func build(ctx context.Context, w world, modelName, policies string) (*cell, err
 			return st.Space(ctx, w.Tenant, id)
 		},
 		AgentKilled: func(string) bool { return false },
-		Updates:     func(name string) bool { return w.Spaces[name].Updates }}
+		Updates:     func(name string) bool { return w.Spaces[name].Updates },
+		Glossary:    func(name string) map[string]string { return w.Spaces[name].Glossary },
+		LeaderWeek: func(name string) bool { // SB-4503: a space with teams
+			for _, sp := range w.Spaces {
+				if sp.Parent == name {
+					return true
+				}
+			}
+			return false
+		}}
 
 	return &cell{w: w, src: src, conn: conn, agent: agent, users: users, texts: texts}, nil
 }
@@ -303,17 +322,38 @@ func run(ctx context.Context, in input) (map[string]result, error) {
 			}, agent.Auth.Policy)
 			resp = ask.Response{Answer: h.Answer, Dropped: h.Dropped}
 		} else {
-			resp, err = agent.Ask(ctx, s, ask.Request{Question: c.Ask, Agent: c.Agent, Language: c.Language})
+			actx := ctx
+			if c.Branch { // the branch scopes, as the auth middleware issues them (SB-3903)
+				teams, err := spaces.Teams(ctx, registry(w), w.Tenant, w.Users[i].Groups, space)
+				if err != nil {
+					return nil, err
+				}
+				var branch []tenancy.Scope
+				for _, id := range teams {
+					in, err := issuer.IssueIn(w.Tenant, c.As, w.Users[i].Groups, id)
+					if err != nil {
+						return nil, err
+					}
+					branch = append(branch, in)
+				}
+				actx = tenancy.WithBranch(ctx, branch)
+			}
+			resp, err = agent.Ask(actx, s, ask.Request{Question: c.Ask, Agent: c.Agent, Language: c.Language, Consult: c.Consult})
 		}
 		src.InjectFault(mock.FaultNone)
 		if err != nil {
 			out[c.Key] = result{Error: err.Error()}
 			continue
 		}
-		r := result{Notice: resp.Notice, Cites: []string{}, Claims: []claim{}, Table: resp.Table}
+		r := result{Notice: resp.Notice, Cites: []string{}, Claims: []claim{}, Table: resp.Table, Consulted: []string{}}
 		var all []string
 		seen := map[string]bool{}
-		for _, cl := range resp.Answer.Claims {
+		claims := resp.Answer.Claims
+		for _, d := range resp.Departments { // each section's cites are the answer's too
+			r.Consulted = append(r.Consulted, d.Space)
+			claims = append(claims, d.Claims...)
+		}
+		for _, cl := range claims {
 			all = append(all, cl.Text)
 			if cl.Uncited {
 				r.Uncited++

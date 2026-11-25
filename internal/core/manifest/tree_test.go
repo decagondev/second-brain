@@ -148,3 +148,30 @@ func TestTreeStricterChildIsFine(t *testing.T) {
 		t.Fatalf("rejected:\n%s", format("m.yaml", ds))
 	}
 }
+
+// SB-4503: the leader's week runs in a space with teams and stewards, unless it is off.
+func TestLeaderWeekNeedsTeamsAndStewards(t *testing.T) {
+	off := false
+	m := Tenant{Spaces: map[string]Space{
+		"finance": {Stewards: []string{"group:finance-leads"}},
+		"ap":      {Parent: "finance", Stewards: []string{"group:ap-leads"}},
+		"ops":     {Stewards: []string{"group:ops-leads"}, LeaderWeek: &off},
+		"returns": {Parent: "ops"},
+	}}
+	for name, want := range map[string]bool{"finance": true, "ap": false, "ops": false, "returns": false, "gone": false} {
+		if got := m.LeaderWeek(name); got != want {
+			t.Errorf("LeaderWeek(%s) = %v, want %v", name, got, want)
+		}
+	}
+	team := "  ap:\n    parent: finance\n    members: [group:ap]\n    scope: { docs: [\"/Finance/AP/**\"] }\n"
+	if _, ds := Check([]byte(strings.Replace(treeHead, "    label: confidential\n", "    label: confidential\n    leader_week: maybe\n", 1) + team)); len(ds) == 0 {
+		t.Error("leader_week: maybe was accepted")
+	}
+	got, ds := Check([]byte(strings.Replace(treeHead, "    label: confidential\n", "    label: confidential\n    leader_week: false\n", 1) + team))
+	if len(ds) > 0 || got.LeaderWeek("finance") {
+		t.Fatalf("leader_week: false: %v, on %v", ds, got.LeaderWeek("finance"))
+	}
+	if !strings.Contains(string(Format(got)), "leader_week: false") {
+		t.Error("Format dropped leader_week")
+	}
+}

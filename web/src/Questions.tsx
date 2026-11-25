@@ -19,6 +19,7 @@ const draftKinds: Record<string, string> = {
   update: msg("Weekly update by {agent}"),
   incident: msg("Incident brief by {agent}"),
   checkin: msg("Goal check-in by {agent}"),
+  "leader-week": msg("The leader's week by {agent}"),
 };
 
 const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
@@ -359,6 +360,14 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
             <li key={q.id}>
               <p className="question">{q.question}</p>
               {q.request && <p className="meta">{t("Request: {category}, due {due}", { category: q.request.category, due: q.request.due.slice(0, 10) })}</p>}
+              {q.shared && q.shared.length > 0 && (
+                <ul className="meta" aria-label={t("Shared sources")}>
+                  {q.shared.map((c) => (
+                    <li key={c.cite}>{c.title ?? c.cite}</li>
+                  ))}
+                </ul>
+              )}
+              {!!q.shared_hidden && <p className="meta">{tn(q.shared_hidden, "{n} shared source you can't open.", "{n} shared sources you can't open.")}</p>}
               {q.from_space && (
                 <p className="meta">
                   {q.waited ? t("{space} hasn't answered this in {n} working days", { space: q.from_space, n: q.waited }) : t("{space} has no active steward", { space: q.from_space })}

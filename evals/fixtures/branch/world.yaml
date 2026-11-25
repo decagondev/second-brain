@@ -1,0 +1,28 @@
+# World for the branch suites (SB-4501, SB-4503): an operations department with two teams,
+# each running sop-steps with its own glossary, and people in one team, both or neither.
+tenant: acme-logistics
+agents: [ask, sop-steps, leader-week]
+users:
+  - { id: usr_lead, email: lead@acme-logistics.example, groups: [grp_ops, grp_returns] }
+  - { id: usr_both, email: both@acme-logistics.example, groups: [grp_ops, grp_returns, grp_fleet] }
+  - { id: usr_ops, email: ops@acme-logistics.example, groups: [grp_ops] }
+spaces:
+  operations: { template: operations, agents: [ask], members: [grp_ops], label: internal, scope: { docs: ["/Operations/Dept/**"] } }
+  returns: { template: operations, parent: operations, agents: [ask, sop-steps], members: [grp_returns], label: internal, glossary: { RMA: return merchandise authorisation }, scope: { docs: ["/Operations/Returns/**"] } }
+  fleet: { template: operations, parent: operations, agents: [ask, sop-steps], members: [grp_fleet], label: internal, glossary: { MOT: vehicle inspection }, scope: { docs: ["/Operations/Fleet/**"] } }
+documents:
+  - id: ops-week
+    title: Operations week 47
+    text: "This week the operations department published its update and decided to open the second dock on Saturdays. The dock goal is at risk."
+    path: /Operations/Dept/week-47
+    viewers: [lead@acme-logistics.example, both@acme-logistics.example, ops@acme-logistics.example]
+  - id: returns-rma
+    title: RMA procedure
+    text: "An RMA is approved by the returns desk within two working days. The returns team checked in on its goal and it is on track."
+    path: /Operations/Returns/rma
+    viewers: [lead@acme-logistics.example, both@acme-logistics.example]
+  - id: fleet-mot
+    title: Fleet MOT schedule
+    text: "Every van has its MOT in March. The fleet team decided to book them all at one garage."
+    path: /Operations/Fleet/mot
+    viewers: [both@acme-logistics.example]

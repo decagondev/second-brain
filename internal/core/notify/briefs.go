@@ -114,6 +114,11 @@ func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
 			runs = append(runs, scheduled{s, "update-" + s, time.Monday, j.RunUpdate})
 		}
 	}
+	if j.RunLeader != nil {
+		for _, s := range j.Leaders {
+			runs = append(runs, scheduled{s, "leader-" + s, time.Monday, j.RunLeader})
+		}
+	}
 	sort.Slice(runs, func(a, b int) bool { return runs[a].clock < runs[b].clock })
 	var out []outgoing
 	for _, r := range runs {
@@ -146,6 +151,9 @@ func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
 		text := briefText(why)
 		if strings.HasPrefix(r.clock, "update-") {
 			text = strings.Replace(text, "This week's brief", "This week's update", 1)
+		}
+		if strings.HasPrefix(r.clock, "leader-") {
+			text = strings.Replace(text, "This week's brief", "The leader's week", 1)
 		}
 		for _, p := range people {
 			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(r.space)}})

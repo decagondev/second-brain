@@ -64,7 +64,12 @@ def table_value(res, want):
     return got is not None and abs(got - want) < 1e-6, f"table tool value {got!r} over {t.get('range', 'nothing')} (want {want})"
 
 
-CHECKS = {f.__name__: f for f in (cites_any, cites_all, disagrees, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains, table_value)}
+def consulted(res, want):
+    got = sorted(res.get("consulted", []))
+    return got == sorted(want), f"consulted {got} (want {sorted(want)})"
+
+
+CHECKS = {f.__name__: f for f in (consulted, cites_any, cites_all, disagrees, cites_none, uncited_max, faithful_min, refuses, tool_calls, error, not_contains, table_value)}
 
 
 def evaluate(res, expect):

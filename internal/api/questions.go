@@ -55,6 +55,7 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/goals", h.goals)
 	mux.HandleFunc("GET /v1/spaces/{name}/requests", h.requestForm)
 	mux.HandleFunc("POST /v1/spaces/{name}/requests", h.request)
+	mux.HandleFunc("POST /v1/spaces/{name}/handoff", h.handoff)
 	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
 	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
@@ -674,15 +675,38 @@ func (h Questions) request(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var body struct{ Category, Text string }
+	var body struct {
+		Category, Text string
+		Cites          []string // shared with the stewards (SB-4502)
+	}
 	if !readJSON(r, &body) {
 		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with a category and text."))
 		return
 	}
-	q, err := h.Service.Request(r.Context(), s, r.PathValue("name"), body.Category, body.Text)
+	q, err := h.Service.RequestWith(r.Context(), s, r.PathValue("name"), body.Category, body.Text, body.Cites)
 	if err != nil {
 		h.fail(w, err)
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"id": q.ID, "to": r.PathValue("name"), "category": q.Request.Category, "due": q.Request.Due})
+}
+
+// handoff drafts a request to a space from the caller's own answer (SB-4502): nothing is
+// stored or sent.
+func (h Questions) handoff(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct{ Trace, Question, Category string }
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, "The body must be JSON with the answer's trace and question."))
+		return
+	}
+	d, err := h.Service.HandoffDraft(r.Context(), s, r.PathValue("name"), body.Trace, body.Question, body.Category)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", d)
 }

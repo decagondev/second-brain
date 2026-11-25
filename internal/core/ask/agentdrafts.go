@@ -22,6 +22,7 @@ const (
 	DraftUpdate    = "update"   // a weekly status update, published under notes/SPACE/updates/ (SB-4102)
 	DraftIncident  = "incident" // an incident brief for the on-call stewards (SB-4204)
 	DraftCheckin   = "checkin"  // a goal's weekly check-in, published under notes/SPACE/goals/ (SB-4207)
+	// DraftLeaderWeek (leaderweek.go) is published under notes/SPACE/updates/ too (SB-4503).
 )
 
 // UpdateQuestion is the fixed question of a weekly status update (SB-4102).
@@ -67,7 +68,7 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant || s.Space() == "" || s.Space() == "company" {
 		return StewardQuestion{}, fmt.Errorf("%w: an agent draft runs in a space", ErrInvalid)
 	}
-	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate && kind != DraftIncident && kind != DraftCheckin {
+	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate && kind != DraftIncident && kind != DraftCheckin && kind != DraftLeaderWeek {
 		return StewardQuestion{}, fmt.Errorf("%w: no draft kind %q", ErrInvalid, kind)
 	}
 	agent := req.Agent
@@ -86,6 +87,13 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	text := DraftText(resp.Answer)
 	if text == "" {
 		return StewardQuestion{}, fmt.Errorf("%w: nothing %s could cite", ErrInvalid, agent)
+	}
+	if kind == DraftLeaderWeek { // SB-4503: each team's counts after the cited lines
+		counts, err := x.teamCounts(ctx, strings.TrimPrefix(s.Space(), "spc_"))
+		if err != nil {
+			return StewardQuestion{}, err
+		}
+		text = withCounts(text, counts)
 	}
 	title = firstLine(title)
 	sq := StewardQuestion{ID: x.NewID("qs_"), Tenant: x.Agent.Tenant, Asker: s.User(), Question: title, Space: s.Space(),

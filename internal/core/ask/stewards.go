@@ -82,6 +82,8 @@ type StewardQuestion struct {
 	Draft *NoteDraft `json:"draft,omitempty"`
 	// Request marks a request to a department, with its category and due date (SB-4104).
 	Request *RequestMeta `json:"request,omitempty"`
+	// Shared are the cites its sender shared with a request (SB-4502).
+	Shared []SharedCite `json:"shared,omitempty"`
 }
 
 // StewardStore keeps questions to stewards, under retention, by asker and by space.
@@ -159,6 +161,9 @@ type Stewards struct {
 	Owner func(ctx context.Context, email string) (id string, ok bool, err error)
 	// Requests are space name's request categories and due days, ok false for none (SB-4104).
 	Requests func(name string) (categories []string, dueDays int, ok bool)
+	// BudgetShare is the share of a space's budget its branch spent this month, ok false for
+	// a space with none (SB-4503); nil shows no budgets.
+	BudgetShare func(ctx context.Context, name string) (share float64, ok bool, err error)
 	// ActionsOf are a transcript's action items as a scope reads them (SB-4203); nil reads
 	// none.
 	ActionsOf func(ctx context.Context, s tenancy.Scope, doc string) ([]DraftAction, error)
@@ -211,6 +216,10 @@ type StewardItem struct {
 	Draft  *NoteDraft  `json:"draft,omitempty"`
 	// Request is a request's category and due date (SB-4104); it is overdue past Due.
 	Request *RequestMeta `json:"request,omitempty"`
+	// Shared are the request's shared cites the steward can open now, and SharedHidden how
+	// many they can't (SB-4502).
+	Shared       []SharedCite `json:"shared,omitempty"`
+	SharedHidden int          `json:"shared_hidden,omitempty"`
 }
 
 // SpaceKey is a space name as a record's space: spc_NAME, or company.
@@ -346,6 +355,9 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 			}
 		}
 		it.Draft, it.Request = q.Draft, q.Request
+		if it.Shared, it.SharedHidden, err = x.sharedView(ctx, s, q.Shared); err != nil {
+			return nil, err
+		}
 		if waitedFor(q, SpaceKey(name)) {
 			it.FromSpace, it.Waited = strings.TrimPrefix(q.Space, "spc_"), q.Waited
 		}
@@ -619,7 +631,7 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 		return NoteResult{}, fmt.Errorf("%w: directory: %v", ErrUnavailable, err)
 	}
 	path := "notes/" + name + "/" + id + ".md"
-	if q.Thread != nil && q.Thread.Kind == DraftUpdate {
+	if q.Thread != nil && (q.Thread.Kind == DraftUpdate || q.Thread.Kind == DraftLeaderWeek) {
 		path = "notes/" + name + "/updates/" + id + ".md" // a status update (SB-4102)
 	}
 	if q.Thread != nil && q.Thread.Kind == DraftCheckin {

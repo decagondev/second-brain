@@ -40,6 +40,7 @@ tool call: killed? → authorise → audit → approved? → execute
 | `research` | Breaks a question into at most 10 sub-questions, then answers each as the asker into one cited report, only after they press **Run** (SB-4201) | No |
 | `meeting-prep` | Answers each item of a meeting's agenda, with the decisions and owners behind it (SB-4202) | No |
 | `handover` | A brief of the documents one person owns, for whoever takes over from them (SB-1707) | No |
+| `leader-week` | The week across a department's branch for its stewards, each line cited or counted, every Monday (SB-4503) | No. A steward publishes it |
 | workflow, e.g. `ticket-update` | Proposes one consequential action | Only after approval, and only with a receipt |
 
 Agents are **definitions in the release bundle**: a prompt, a tool list and limits. No company has custom agent code (P3). Prompts and the model version are pinned per release (ADR-0013).
@@ -106,6 +107,13 @@ A draft's text is the answer's cited claims, one line each with the titles they 
 
 `update` writes a space's weekly status update. It runs only in a space with `updates: true` (sb-space(5)), only where the `use_agent` policy allows it, and never when it is killed. Every Monday, on the notify job's first run after 08:00 in the `digest` time zone, it answers "What changed in this space last week, what did it decide, and how do its goals stand?" as the space's first active steward, with every check a search makes, and leaves a draft titled "Update: week of DATE" in the space's queue. Its claims start "Week: ". A space whose branch, or department, has spent its `budget_usd_month` skips its brief and its update until the month ends, and its stewards are told why (SB-4105; sb-observability(7), Spend by space). Like every scheduled agent it has no tools and publishes nothing: a steward who publishes it writes a note under `notes/SPACE/updates/` (sb-connector(3), Notes), which the department above lists (sb-ask(3), Goals, updates and policies). Its suite is `agent-update` (sb-evals(7)).
 
+### Consulted agents (SB-4501)
+
+A branch ask with `consult: true` (sb-ask(3), Ask each department) consults the department agent of at most 6 teams of the branch the asker is a member of. A consulted agent runs exactly as it would if the asker asked it directly in its own team: every rule above holds, as the asker, from that team's space only. It answers once and never consults again, calls no tool, and its model spend is metered to its own space (SB-4105). This is one level deep by design: agents consult, they don't converse (LAW-27).
+
+### The leader's week (SB-4503)
+
+`leader-week` drafts the week across a department's branch for its stewards. It runs only in a space with teams whose manifest doesn't set `leader_week: false` (sb-space(5)), only where the `use_agent` policy allows it, and never when it is killed. Every Monday, on the notify job's first run after 08:00 in the `digest` time zone, it answers "What did this department and its teams publish, decide and check in on this week, and which goals are at risk?" as the space's first active steward, as a branch ask over the space and the teams that steward is a member of; every claim is cited, and an uncited one is dropped (LAW-14). After its claims the draft has one line per team with **counts only**, whether or not the steward can open the team: open and overdue requests, open questions, and the share of its budget its branch has spent this month when it has one (SB-4105). The draft waits in the space's steward queue as kind `leader-week`, and the steward edits and publishes it as the space's update under `notes/NAME/updates/`, or discards it. Nothing is published or sent by the agent. A space with no active steward, or whose branch has spent its budget, is told why, as briefs are. Its suite is `agent-leader-week` (sb-evals(7)).
 ### The legwork agents (SB-4201 to SB-4207)
 
 `research` and `meeting-prep` are read-only agents in the release bundle (`internal/core/prompts/set/research.md` and `meeting-prep.md`), of no template: they run in any space the person asks in, or company-wide, only where the `use_agent` policy allows them, and never when killed. Like a department agent, every claim they keep is cited (an uncited claim is dropped and counted in `dropped`), and they have **no tools** (LAW-09).

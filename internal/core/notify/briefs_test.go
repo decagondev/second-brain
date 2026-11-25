@@ -54,3 +54,32 @@ func TestBriefsRunWeekly(t *testing.T) {
 		t.Fatalf("again: ran %v sent %v err %v", ran, s.got, err)
 	}
 }
+
+// SB-4503: the leader's week runs once each Monday; one that can't run tells the stewards.
+func TestLeaderWeekRunsOnMonday(t *testing.T) {
+	mon := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	j, s, c := world(mon)
+	j.Questions = questions{}
+	c.weekly["weekly"] = Monday(mon, nil)
+	ran := map[string]int{}
+	j.Leaders = []string{"spc_finance", "spc_ops"}
+	j.RunLeader = func(_ context.Context, sp string) (string, error) {
+		ran[sp]++
+		if sp == "spc_ops" {
+			return BriefNoSteward, nil
+		}
+		return "", nil
+	}
+	j.Facts = func(sp string) ([]string, string, bool) { return []string{"group:finance-leads"}, "", true }
+	for i := 0; i < 2; i++ {
+		if _, err := j.Run(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if ran["spc_finance"] != 1 || ran["spc_ops"] != 1 {
+		t.Fatalf("ran %v", ran)
+	}
+	if len(s.got) != 1 || s.got[0].msg.Text != "The leader's week didn't run: the space has no active steward to run it as" {
+		t.Fatalf("sent %v", s.got)
+	}
+}

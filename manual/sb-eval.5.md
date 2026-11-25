@@ -39,6 +39,7 @@ A suite is a list of cases run against a seeded **world** (fixture tenants, user
 | `space` | The space the ask is in, or `company` for a company-wide ask (default). The local cell resolves it as the auth middleware does, so a space the asker isn't a member of is an `ESPACE` error; a world without spaces ignores it |
 | `agent` | The agent to ask: `ask` (default) or a department agent (sb-agents(7)). The world's top-level `agents` list says which agents its manifest enables, and each space may name its `template` and `agents` |
 | `language` | (SB-3003) `en`, `de` or `fr`: the ask's `language` (sb-ask(3)). The local cell passes it on; a case with it expects the same cites as the question without it |
+| `branch` / `consult` | (SB-3903, SB-4501) `branch: true` asks across the space's teams the asker is a member of, as `?branch=true` does; `consult: true` also consults their department agents (sb-ask(3), Ask each department). Each consulted section's cites count as the answer's |
 | `expect` | One or more checks (below) |
 
 A tenant's own cases, from wrong citations (SB-2204) and from feedback on a named agent (SB-4401), are kept in the cell, not in suite files; each runs as the person who added it, with the agent it was made from (sb-evals(7)).
@@ -57,6 +58,7 @@ A tenant's own cases, from wrong citations (SB-2204) and from feedback on a name
 | `not_contains: [str…]` | None of the strings (e.g. canaries) appear anywhere in output or tool arguments |
 | `disagrees: true` | Some claim is marked `disagree` (`false`: none is; SB-3304) |
 | `table_value: N` | (SB-4307) The ask used the table tool and its value is N (sb-ask(3), Numbers from tables) |
+| `consulted: [NAME, …]` | (SB-4501) A consulting ask consulted exactly these teams, in any order; `[]` is none |
 | `error: CODE` | The ask is refused with this error code (for example `EINVAL` for a department agent asked outside its space); without it, any error fails the case |
 
 ### Faithfulness (`faithful_min` and the `citation` score)
@@ -85,6 +87,7 @@ documents:
     viewers: [alice@acme-logistics.example]   # emails; the live check asks by email
 ```
 
+A world's `spaces` give each space its `members`, `label`, `scope`, `template` and `agents`, and since SB-4501 its `parent` (a team under a department) and its `glossary`. A space with a team under it runs the leader's week (sb-agents(7)).
 The `extractive` model is a deterministic stand-in: for each data block it is given, it answers the block's first sentence, citing that block. It measures the pipeline, not a model. A `misattributing` model, which cites each sentence to the wrong block, exists to prove that the scorer and gate catch misattribution.
 
 ### Space-leak suites (SB-807)

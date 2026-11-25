@@ -40,6 +40,9 @@ type Space struct {
 	Brief *Brief `json:"brief,omitempty"`
 	// Updates drafts a weekly status update for the stewards each Monday (SB-4102).
 	Updates bool `json:"updates,omitempty"`
+	// LeaderWeek false turns off the leader's week for a space with teams (SB-4503); nil
+	// is on.
+	LeaderWeek *bool `json:"leader_week,omitempty"`
 	// Requests are the categories a member can send a request in, nil for none (SB-4104).
 	Requests *Requests `json:"requests,omitempty"`
 	// Model is "main" to pin every ask in the space to the main model (SB-4405).
@@ -198,7 +201,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "requests", "budget_usd_month", "incident_labels", "model"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -302,6 +305,8 @@ func (c *checker) space(name string, n *node, p string) {
 			} else {
 				s.Updates, sn.updates = b == "true", v
 			}
+		case "leader_week": // SB-4503
+			s.LeaderWeek = c.boolOf(v, f)
 		case "requests":
 			s.Requests = c.requests(v, f)
 		case "model": // SB-4405
@@ -1025,4 +1030,24 @@ func (t Tenant) Effective(name string) Space {
 		s.ReviewAfterDays = par.ReviewAfterDays
 	}
 	return s
+}
+
+// boolOf is a true or false field, nil when it is neither.
+func (c *checker) boolOf(n *node, field string) *bool {
+	b, ok := c.scalar(n, field)
+	if ok && b != "true" && b != "false" {
+		c.add(n, field, "must be true or false")
+	}
+	if !ok || (b != "true" && b != "false") {
+		return nil
+	}
+	on := b == "true"
+	return &on
+}
+
+// LeaderWeek says whether space name gets the leader's week (SB-4503): it has teams and
+// stewards, and doesn't set leader_week: false.
+func (t Tenant) LeaderWeek(name string) bool {
+	sp, ok := t.Spaces[name]
+	return ok && len(sp.Stewards) > 0 && len(t.Children(name)) > 0 && (sp.LeaderWeek == nil || *sp.LeaderWeek)
 }

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S44.1: Agents across the tree
+
+**Wave/slice:** W44 / S44.1 (SB-4501 to SB-4503) · **Status:** Done
+
+**What:** A branch ask with `consult: true` also asks the department agent of each team of the branch the asker is in whose glossary the question uses or that it names, at most 6, and the answer has a section per team and says why the others weren't asked; teams the asker isn't in are only counted. An answer whose question names another space's request category offers **Hand off**: a drafted request with the question and the answer's sources the asker can open, which the asker edits, ticks the sources to share, and sends; the stewards see only the shared sources they can open. Each Monday a department's stewards get the leader's week: the `leader-week` agent's cited lines from a branch ask as the first steward, then each team's open and overdue requests, open questions and budget share, as counts.
+
+**Why this way:** A consultation is the same call as asking that team's agent directly, run under a context mark that refuses a second consult, so there is nothing new to check: LAW-27 compares each section with the direct ask. The branch scopes come from the auth middleware as for any branch ask, so the asker's membership decides which teams can be consulted. A handoff draft is computed and returned, never stored, so the only write is the asker's own request, and shared cites are checked as the reader on every queue read, the LAW-26 way. The leader's week counts come from the steward queues the roll-up already reads, so a team the steward can't open adds numbers, never words.
+
+**Learned:** The branch carries over in the request context, so a consultation must drop it explicitly, or each team's ask would search the whole branch again.
+
+**Laws:** LAW-01, LAW-14, LAW-16, LAW-24, LAW-27 (new, green). Every law test is still green.
+
 ## 2026-11-25 S43.2: Out, cost and risk
 
 **Wave/slice:** W43 / S43.2 (SB-4404 to SB-4406) · **Status:** Done

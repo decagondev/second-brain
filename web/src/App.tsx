@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
+import { DepartmentsView, HandoffView } from "./Departments";
 import { ask, AskError, BRANCH, fileToAsk, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
 import type { About, ApiError, AskFile, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
 import { AnswerView } from "./Answer";
@@ -80,6 +81,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
   const askBox = useRef<HTMLTextAreaElement>(null);
   const [short, setShort] = useState<boolean>(() => shortAnswers());
   const [verified, setVerified] = useState<boolean>(() => verifiedOnly("ask"));
+  const [consult, setConsult] = useState(false); // ask each department (SB-4501)
   // One file for the next ask only (SB-3802): sent with it and then let go, never kept.
   const [file, setFile] = useState<AskFile>();
   const [fileError, setFileError] = useState<string>();
@@ -171,7 +173,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH));
       setConversation(a.conversation);
       dropFile();
       settle({ id, question: q, answer: a });
@@ -312,6 +314,8 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
               {x.answer && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} />}
+              {x.answer && <DepartmentsView answer={x.answer} fetcher={fetcher} />}
+              {x.answer && <HandoffView answer={x.answer} question={x.question} fetcher={fetcher} />}
               {x.answer && <AnswerTools question={x.question} answer={x.answer} />}
               {x.answer && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {x.answer && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
@@ -474,6 +478,11 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
             />{" "}
             {t("Verified only")}
           </label>
+          {branch && space && (
+            <label className="short">
+              <input type="checkbox" checked={consult} onChange={(e) => setConsult(e.target.checked)} /> {t("Ask each department")}
+            </label>
+          )}
           <span className="attach">
             <label htmlFor={fileId}>{t("Attach a file")}</label>{" "}
             <input id={fileId} ref={fileInput} type="file" onChange={(e) => void pick(e.target.files?.[0])} />

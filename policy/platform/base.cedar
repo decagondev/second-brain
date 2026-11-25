@@ -18,14 +18,15 @@ when { principal.tenant == resource.tenant && resource has enabled && resource.e
 
 // Department agents (SB-1102), where the manifest enables them: read-only, and the cell
 // runs each only in a space of its own template (sb-agents(7), Department agents). update
-// (SB-4102) runs only in a space with updates: true.
+// (SB-4102) runs only in a space with updates: true, and leader-week (SB-4503) only in a space
+// with teams and its leader's week on.
 permit (principal, action == Action::"use_agent", resource is Agent)
 when {
   principal.tenant == resource.tenant && resource has enabled && resource.enabled && !resource.consequential &&
   (resource.name == "incident-summary" || resource.name == "spec-digest" || resource.name == "close-checklist" || resource.name == "runbook-answer" ||
    resource.name == "policy-answer" || resource.name == "clause-finder" || resource.name == "account-brief" || resource.name == "case-brief" ||
    resource.name == "brand-check" || resource.name == "sop-steps" || resource.name == "design-rationale" || resource.name == "exec-brief" ||
-   resource.name == "update")
+   resource.name == "update" || resource.name == "leader-week")
 };
 
 // The legwork agents (SB-4201, SB-4202, SB-4204 to SB-4207): read-only, of no template, in any space or

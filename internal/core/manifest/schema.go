@@ -90,6 +90,7 @@ func JSONSchema() []byte {
 					"template":         map[string]any{"enum": keys(Templates)},
 					"parent":           map[string]any{"type": "string", "pattern": spaceNameRe},
 					"updates":          map[string]any{"type": "boolean"},
+					"leader_week":      map[string]any{"type": "boolean", "default": true},
 					"model":            map[string]any{"enum": []string{"main"}},
 					"budget_usd_month": map[string]any{"type": "integer", "minimum": MinBudgetUSDMonth},
 					"incident_labels": map[string]any{"type": "array", "minItems": 1, "maxItems": MaxIncidentLabels, "uniqueItems": true,

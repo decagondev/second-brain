@@ -25,8 +25,8 @@ Planned 2026-11-25 after W43, with the user. The concept is in [19-departments-s
 
 ## Exit gate
 
-- [ ] A consultation runs as the asker, one level deep, and never reaches a space the asker isn't in (LAW-27 green)
-- [ ] Nothing an agent drafts for another department is sent without the asker
+- [x] A consultation runs as the asker, one level deep, and never reaches a space the asker isn't in (LAW-27 green)
+- [x] Nothing an agent drafts for another department is sent without the asker
 - [ ] Every line of the leader's week and of a catch-up is cited or counted
 - [ ] Every law test still green; no new store, service or Go module
 

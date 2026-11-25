@@ -42,6 +42,12 @@ func AddWorkingDays(from time.Time, n int, zone *time.Location) time.Time {
 
 // Request is a member of space name sending text in category to its stewards.
 func (x Stewards) Request(ctx context.Context, s tenancy.Scope, name, category, text string) (StewardQuestion, error) {
+	return x.RequestWith(ctx, s, name, category, text, nil)
+}
+
+// RequestWith is Request sharing cites with the stewards (SB-4502): at most MaxShared, each
+// one the sender can open now.
+func (x Stewards) RequestWith(ctx context.Context, s tenancy.Scope, name, category, text string, cites []string) (StewardQuestion, error) {
 	q, err := question(s, x.Agent.Tenant, text)
 	if err != nil {
 		return StewardQuestion{}, err
@@ -65,13 +71,17 @@ func (x Stewards) Request(ctx context.Context, s tenancy.Scope, name, category, 
 	if cat == "" {
 		return StewardQuestion{}, fmt.Errorf("%w: category must be one of %s", ErrInvalid, strings.Join(cats, ", "))
 	}
+	shared, err := x.shared(ctx, s, cites)
+	if err != nil {
+		return StewardQuestion{}, err
+	}
 	key := SpaceKey(name)
 	if _, _, ok := x.Facts(key); !ok {
 		return StewardQuestion{}, fmt.Errorf("%w: nobody answers requests sent here", ErrInvalid)
 	}
 	now := x.Now().UTC()
 	sq := StewardQuestion{ID: x.NewID("qs_"), Tenant: x.Agent.Tenant, Asker: s.User(), Question: q, Space: key, At: now,
-		Request: &RequestMeta{Category: cat, DueDays: due, Due: AddWorkingDays(now, due, x.Zone)}}
+		Request: &RequestMeta{Category: cat, DueDays: due, Due: AddWorkingDays(now, due, x.Zone)}, Shared: shared}
 	if _, err := x.Audit.Write(ctx, audit.Event{Actor: s.User(), Kind: "access", Subject: sq.ID, State: "asked",
 		PayloadSHA256: hashOf(q), Reason: "request to stewards", Space: name}); err != nil {
 		return StewardQuestion{}, fmt.Errorf("%w: audit: %v", ErrUnavailable, err)

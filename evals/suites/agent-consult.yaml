@@ -1,0 +1,33 @@
+# Suite for Ask each department (SB-4501; sb-ask(3)): a consulting branch ask consults only
+# the teams the asker is a member of whose terms the question uses, each section citing what
+# that team's agent gives the asker directly; without a branch it is refused.
+suite: agent-consult
+world: fixtures/branch
+cases:
+  - id: consult-001                 # a member of returns only: fleet is counted, never consulted
+    as: usr_lead
+    space: operations
+    branch: true
+    consult: true
+    ask: "How is an RMA approved, and when is the MOT?"
+    expect: { consulted: ["returns"], cites_any: ["docs:returns-rma@1"], cites_none: ["docs:fleet-mot@1"] }
+  - id: consult-002                 # a member of both teams: each consulted on its own terms
+    as: usr_both
+    space: operations
+    branch: true
+    consult: true
+    ask: "How is an RMA approved, and when is the MOT?"
+    expect: { consulted: ["fleet", "returns"], cites_all: ["docs:returns-rma@1", "docs:fleet-mot@1"] }
+  - id: consult-no-match-001        # no team's terms: nobody consulted
+    as: usr_both
+    space: operations
+    branch: true
+    consult: true
+    ask: "When does the second dock open?"
+    expect: { consulted: [] }
+  - id: consult-no-branch-001       # no branch to consult: refused
+    as: usr_lead
+    space: operations
+    consult: true
+    ask: "How is an RMA approved?"
+    expect: { error: "EINVAL" }

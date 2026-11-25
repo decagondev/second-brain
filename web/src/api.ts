@@ -123,6 +123,28 @@ export interface AskResponse {
   verified?: { of: number; marked: number };
   // The one department space whose agent could answer this better (SB-4007).
   suggest?: { space: string; agent: string; terms: string[] };
+  // Ask each department (SB-4501): a section per consulted team, and why the others weren't.
+  departments?: Consultation[];
+  not_consulted?: { space?: string; why: string; count?: number }[];
+  // Hand off (SB-4502): the space whose request category the question names.
+  handoff?: { space: string; category: string };
+}
+
+// One consulted team's section of an answer (SB-4501).
+export interface Consultation {
+  space: string;
+  agent: string;
+  claims: Claim[];
+  dropped: number;
+  refused: number;
+}
+
+// A drafted request to another space (SB-4502): nothing is sent until the asker sends it.
+export interface HandoffDraft {
+  space: string;
+  category: string;
+  text: string;
+  cites: { cite: string; title?: string }[];
 }
 
 // A verified answer, every cite checked again as the asker (SB-3601).
@@ -244,8 +266,10 @@ export async function ask(
   file?: AskFile,
   agent?: string,
   collection?: string,
+  consult?: boolean,
 ): Promise<AskResponse> {
   const body: Record<string, string | string[] | boolean | AskFile> = { question };
+  if (consult) body.consult = true; // SB-4501: with branch=true only
   if (collection) body.collection = collection; // SB-4304
   if (agent) body.agent = agent; // a department agent (SB-4007)
   if (file) body.file = file; // SB-3802
@@ -464,6 +488,9 @@ export interface QueueQuestion {
   overdue?: boolean;
   // A request to the department (SB-4104); overdue past its due date.
   request?: RequestMeta;
+  // The request's shared cites the steward can open, and how many they can't (SB-4502).
+  shared?: { cite: string; title?: string }[];
+  shared_hidden?: number;
   // A reported answer (SB-3606): who sent it, and only what the steward can open.
   report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.

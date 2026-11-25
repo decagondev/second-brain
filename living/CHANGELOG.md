@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Ask each department: a branch ask can consult the department agents of up to 6 teams the asker is in, as the asker, with a section per team; Hand off drafts a request to the department whose category the question names, sent only by the asker with the sources they choose; and the leader's week drafts a department's week for its stewards every Monday, cited lines then counts per team (SB-4501 to SB-4503). LAW-27: a consultation is the asker's own.
 - Signed events out with ids only, a small model tier for short plain asks with its own eval gate and spend line, and 12 weeks of guardrail counts for operators (SB-4404 to SB-4406). W43 built.
 - Agent owners and definitions in the release bundle, `sb agents lint` in the gate, `sb release notes` for each agent's prompt and eval changes, unused department agents proposed off, and down-rated answers turned into eval cases by the agent's owner (SB-4401 to SB-4403).
 - Collections you can share and ask, Agent runs that show what ran in your name, department agents as MCP tools, and sheet numbers worked out in code with the cells cited (SB-4304 to SB-4307). W42 built.

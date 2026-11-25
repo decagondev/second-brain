@@ -225,6 +225,10 @@ type Job struct {
 	// status update each Monday (SB-4102); nil drafts none.
 	Updates   []string
 	RunUpdate func(ctx context.Context, space string) (why string, err error)
+	// Leaders are the spaces that get the leader's week, by key, and RunLeader drafts one's
+	// each Monday (SB-4503).
+	Leaders   []string
+	RunLeader func(ctx context.Context, space string) (why string, err error)
 	// SpaceBudgets are the spaces with a budget_usd_month and the share of it their branch
 	// has spent this month (SB-4105); their stewards are told at WarnShare and at 1.
 	SpaceBudgets func(ctx context.Context) ([]SpaceBudget, error)

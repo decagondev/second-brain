@@ -19,6 +19,7 @@ import (
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/spaces"
 	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/core/toolbus"
 
@@ -34,6 +35,28 @@ func updateSpaces(m manifest.Tenant) []string {
 	var out []string
 	for n, sp := range m.Spaces {
 		if sp.Updates {
+			out = append(out, ask.SpaceKey(n))
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// requestCategories are a space's request categories, by name (SB-4502).
+func requestCategories(m manifest.Tenant) func(name string) []string {
+	return func(name string) []string {
+		if r := m.Spaces[name].Requests; r != nil {
+			return r.Categories
+		}
+		return nil
+	}
+}
+
+// leaderSpaces are the spaces that get the leader's week, by key (SB-4503).
+func leaderSpaces(m manifest.Tenant) []string {
+	var out []string
+	for n := range m.Spaces {
+		if m.LeaderWeek(n) {
 			out = append(out, ask.SpaceKey(n))
 		}
 	}
@@ -208,9 +231,64 @@ func (c *Cell) runUpdate(ctx context.Context, key string) (string, error) {
 		ask.Request{Question: ask.UpdateQuestion, Agent: ask.AgentUpdate})
 }
 
+// runLeader drafts a department's leader's week as a branch ask of its first active
+// steward (SB-4503).
+func (c *Cell) runLeader(ctx context.Context, key string) (string, error) {
+	if !c.Manifest().LeaderWeek(strings.TrimPrefix(key, "spc_")) {
+		return "", nil
+	}
+	if over, err := c.spaceOver(ctx, key); err != nil || over {
+		return notify.BriefSpaceBudget, err
+	}
+	return c.runAsIn(ctx, key, ask.DraftLeaderWeek, "Leader's week: week of "+time.Now().UTC().AddDate(0, 0, -7).Format(time.DateOnly),
+		ask.Request{Question: ask.LeaderWeekQuestion, Agent: ask.AgentLeaderWeek}, true)
+}
+
+// branchOf is ctx with user's scopes in the teams under space key they are a member of, as
+// the auth middleware issues them for ?branch=true (SB-3903).
+func (c *Cell) branchOf(ctx context.Context, user, key string) (context.Context, error) {
+	tenant := c.Config.Tenant
+	groups, err := c.Directory.GroupsOf(ctx, tenant, user)
+	if err != nil {
+		return nil, err
+	}
+	teams, err := spaces.Teams(ctx, c.Spaces, tenant, groups, key)
+	if err != nil {
+		return nil, err
+	}
+	var branch []tenancy.Scope
+	for _, id := range teams {
+		in, err := c.ScopeAs(ctx, user, id)
+		if err != nil {
+			return nil, err
+		}
+		branch = append(branch, in)
+	}
+	return tenancy.WithBranch(ctx, branch), nil
+}
+
+// budgetShare is the share of space name's budget its branch spent this month (SB-4503).
+func (c *Cell) budgetShare(ctx context.Context, name string) (float64, bool, error) {
+	m := c.Manifest()
+	b := m.Spaces[name].BudgetUSDMonth
+	if b <= 0 {
+		return 0, false, nil
+	}
+	spent, err := c.branchSpend(ctx, m, time.Now().UTC().Format("2006-01"))
+	if err != nil {
+		return 0, false, err
+	}
+	return spent[name] / float64(b), true, nil
+}
+
 // runAs runs req in space key as its first active steward and puts the answer in its queue
 // as a draft of kind; why is the reason it didn't (notify.Brief*), "" when it did.
 func (c *Cell) runAs(ctx context.Context, key, kind, title string, req ask.Request) (string, error) {
+	return c.runAsIn(ctx, key, kind, title, req, false)
+}
+
+// runAsIn is runAs, across the space's branch when branch is set.
+func (c *Cell) runAsIn(ctx context.Context, key, kind, title string, req ask.Request, branch bool) (string, error) {
 	m := c.Manifest()
 	agent := req.Agent
 	if agent == "" {
@@ -230,6 +308,11 @@ func (c *Cell) runAs(ctx context.Context, key, kind, title string, req ask.Reque
 	s, err := c.ScopeAs(ctx, user, key)
 	if err != nil {
 		return notify.BriefNoSteward, nil //nolint:nilerr // not active by now: nobody to run it as
+	}
+	if branch {
+		if ctx, err = c.branchOf(ctx, user, key); err != nil {
+			return "", err
+		}
 	}
 	_, err = c.Parts().Stewards.AgentDraft(ctx, s, kind, title, req)
 	switch {

@@ -324,6 +324,10 @@ func TestLAW26_AStoredResultIsCheckedWhenRead(t *testing.T) {
 	Check(t, "LAW-26", runs, func(r *rand.Rand) error { return law26(r, NewStoredSystem()) })
 }
 
+func TestLAW27_AConsultationIsTheAskersOwn(t *testing.T) {
+	Check(t, "LAW-27", runs, func(r *rand.Rand) error { return law27(r, NewConsultSystem()) })
+}
+
 func TestLAW23_GrantsAreConsentedAndRevocable(t *testing.T) {
 	Check(t, "LAW-23", runs, func(r *rand.Rand) error { return law23(r, NewGrantSystem()) })
 }

@@ -81,6 +81,9 @@ func Format(t Tenant) []byte {
 			if sp.Updates {
 				fmt.Fprintf(&b, "    updates: true%s", nl)
 			}
+			if sp.LeaderWeek != nil {
+				fmt.Fprintf(&b, "    leader_week: %t%s", *sp.LeaderWeek, nl)
+			}
 			if sp.Requests != nil {
 				fmt.Fprintf(&b, "    requests: { categories: %s, due_days: %d }%s", flowList(sp.Requests.Categories, true), sp.Requests.DueDays, nl)
 			}

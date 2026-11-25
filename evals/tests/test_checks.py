@@ -12,12 +12,12 @@ class Checks(unittest.TestCase):
     def test_each_check_passes_and_fails(self):
         res = {"cites": ["a@1"], "uncited": 2, "claims": [{"cites": ["a@1"], "support": 0.8}],
                "notice": "no_access", "tool_calls": 1, "text": "hello CANARY", "tool_args": [],
-               "table": {"value": 12.5, "range": "S!B2:B4"}}
+               "table": {"value": 12.5, "range": "S!B2:B4"}, "consulted": ["returns", "fleet"]}
         cases = {
             "cites_any": (["a@1"], ["b@1"]), "cites_none": (["b@1"], ["a@1"]), "uncited_max": (2, 1),
             "faithful_min": (0.8, 0.9), "refuses": (True, False), "tool_calls": (1, 0),
             "not_contains": (["NOPE"], ["CANARY"]), "cites_all": (["a@1"], ["a@1", "b@1"]), "disagrees": (False, True),
-            "table_value": (12.5, 12.0),
+            "table_value": (12.5, 12.0), "consulted": (["fleet", "returns"], ["returns"]),
         }
         for name, (good, bad) in cases.items():
             self.assertTrue(evaluate(res, {name: good})[0][1], name + " should pass")

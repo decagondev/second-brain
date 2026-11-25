@@ -489,6 +489,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Small:       small, SmallHeld: c.smallHeld, PinMain: func(key string) bool { return m.Spaces[strings.TrimPrefix(key, "spc_")].Model == "main" },
 		Departmental: departmental(m),
 		Updates:      func(name string) bool { return m.Spaces[name].Updates },
+		LeaderWeek:   m.LeaderWeek, // SB-4503
 		ReviewAfter: func(ids []string) int {
 			least := 0
 			for _, id := range ids {
@@ -529,7 +530,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if m.MemoryOn() { // SB-4303: memory: off keeps and sends none
 		agent.Memory = c.Traces
 	}
-	agent.Collections = c.Traces // SB-4304
+	agent.Collections = c.Traces          // SB-4304
+	agent.Requests = requestCategories(m) // SB-4502
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
@@ -631,6 +633,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		StartItems: func(name string) []string { return m.Effective(name).StartHere }, Members: c.noteReaders(m),
 		Children: m.Children, Policies: c.Traces, ScopeOf: c.ownerScope, ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays },
 		Parent: func(name string) string { return m.Spaces[name].Parent }, StewardPeople: c.stewardPeople(m),
+		BudgetShare: c.budgetShare, // SB-4503
 		Requests: func(name string) ([]string, int, bool) { // SB-4104
 			if r := m.Spaces[name].Requests; r != nil {
 				return r.Categories, r.DueDays, true

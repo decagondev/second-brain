@@ -26,6 +26,7 @@ LAW-19 spaces only narrow                    LAW-20 restricted stays home
 LAW-21 moves revoke fast                     LAW-22 barriers hold
 LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 LAW-25 a memory is its person's own          LAW-26 a stored result is checked when read
+LAW-27 a consultation is the asker's own
 ```
 
 ## DESCRIPTION
@@ -198,6 +199,12 @@ A memory (sb-ask(3), Memory I control) holds only what its person wrote, never t
 A result the cell keeps and shows later (a research report, a meeting brief, and from W42 an inbox item or a routine's answer) shows the reader only cites they can open **when it is shown**, through every check a search makes; a claim whose every cite they have lost is not shown. What was true when it ran is no proof of what the reader may see now.
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW26_AStoredResultIsCheckedWhenRead`: generated reports over random documents and ACLs, with grants revoked between the run and the read; SB-4201) · Selftest (`TestSelf_LAW26CatchesAStaleReport`: a report shown as it was stored goes red).
+
+### LAW-27: A consultation is the asker's own {#law-27}
+
+When a branch ask consults department agents (sb-ask(3), Ask each department), each consultation runs as the asker, in a team they are a member of, one level deep, and adds nothing the asker couldn't get by asking that team's agent directly: the same claims and cites. A team the asker isn't a member of is never consulted or named, at most 6 are consulted, and a consulted agent never consults again or calls a tool.
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW27_AConsultationIsTheAskersOwn`: generated departments with random teams, members, department agents, glossaries and source ACLs, through consulting branch asks compared with asking each team directly, and a consultation asked to consult; SB-4501) · Selftest (`TestSelf_LAW27CatchesAWideConsultation`: consulting every team, member or not, goes red).
 
 ### External review (SB-612)
 

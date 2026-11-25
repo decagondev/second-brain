@@ -377,6 +377,10 @@
               "restricted"
             ]
           },
+          "leader_week": {
+            "default": true,
+            "type": "boolean"
+          },
           "members": {
             "items": {
               "pattern": "^group:[A-Za-z0-9._-]+$",

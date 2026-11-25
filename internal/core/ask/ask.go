@@ -57,6 +57,9 @@ type Request struct {
 	File *FileUpload `json:"file,omitempty"`
 	// Collection asks about the documents of one collection the asker may read (SB-4304).
 	Collection string `json:"collection,omitempty"`
+	// Consult also asks the department agents of the branch's teams (SB-4501): a branch
+	// ask only, never inside a consultation (LAW-27).
+	Consult bool `json:"consult,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -193,6 +196,12 @@ type Response struct {
 	Verified *VerifiedCount `json:"verified,omitempty"`
 	// Table is the table tool's result, when the ask used it (SB-4307).
 	Table *TableResult `json:"table,omitempty"`
+	// Departments are the consulted teams' sections, and NotConsulted the teams that
+	// weren't and why (SB-4501).
+	Departments  []Consultation `json:"departments,omitempty"`
+	NotConsulted []NotConsulted `json:"not_consulted,omitempty"`
+	// Handoff is the space whose request category the question names (SB-4502).
+	Handoff *Handoff `json:"handoff,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -354,6 +363,11 @@ type Agent struct {
 	Audit  Auditor
 	// Collections are the cell's collections, for an ask about one (SB-4304); nil keeps none.
 	Collections CollectionStore
+	// Requests are a space's request categories, by name, for Hand off (SB-4502); nil
+	// offers none.
+	Requests func(space string) []string
+	// LeaderWeek says whether a space, by name, gets the leader's week (SB-4503); nil is none.
+	LeaderWeek func(space string) bool
 }
 
 // Ask answers one question for the scope's user.
@@ -381,7 +395,7 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (resp Resp
 // ask answers; probe is an eval case's run (SB-2204), which keeps no conversation.
 // take spends one of the asker's asks this minute (SB-2305), or says how long to wait.
 func (a Agent) take(ctx context.Context, s tenancy.Scope) error {
-	if a.Rate == nil {
+	if a.Rate == nil || isConsulted(ctx) { // a consultation is part of the asker's one ask
 		return nil
 	}
 	limit := DefaultAsksPerMinute
@@ -417,7 +431,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
-	if err := a.checkFile(req.File); err != nil {
+	if err := a.checkExtras(ctx, s, req); err != nil {
 		return Response{}, err
 	}
 	if a.Killed == nil || a.Killed(ctx) {
@@ -529,6 +543,12 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.Verified = a.verifiedCount(ctx, claims, res.Context)
 	}
 
+	if isConsulted(ctx) {
+		return resp, nil // kept in the asker's trace, as a section of their answer
+	}
+	if err := a.alongside(ctx, s, q, req, probe || dept != nil, &resp); err != nil {
+		return Response{}, err
+	}
 	if probe {
 		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
@@ -536,19 +556,51 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		}
 		return resp, nil
 	}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier}
+	if err := a.keep(ctx, s, conv, q, t); err != nil {
+		return Response{}, err
+	}
+	return resp, nil
+}
+
+// keep stores an answer: its question in the conversation, the conversation's space, and
+// its trace. No trace, no answer.
+func (a Agent) keep(ctx context.Context, s tenancy.Scope, conv, q string, t Trace) error {
 	if err := a.Store.AppendQuestion(ctx, a.Tenant, s.User(), conv, q); err != nil {
-		return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
+		return fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 	}
 	if st, ok := a.Store.(SpaceTagger); ok {
 		if err := st.TagSpace(ctx, a.Tenant, conv, s.Space()); err != nil {
-			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
+			return fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 		}
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
-		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
+		return fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 	}
-	return resp, nil
+	return nil
+}
+
+// checkExtras checks an ask's file (SB-3802) and its consult (SB-4501, LAW-27).
+func (a Agent) checkExtras(ctx context.Context, s tenancy.Scope, req Request) error {
+	if err := a.checkFile(req.File); err != nil {
+		return err
+	}
+	return checkConsult(ctx, s, req)
+}
+
+// alongside is what an answer carries beside its claims: the consulted teams' sections
+// (SB-4501) and, for the ask agent's own answer, the hand off it offers (SB-4502).
+func (a Agent) alongside(ctx context.Context, s tenancy.Scope, q string, req Request, noOffer bool, resp *Response) error {
+	if req.Consult {
+		var err error
+		if resp.Departments, resp.NotConsulted, err = a.consult(ctx, s, q, req); err != nil {
+			return err
+		}
+	}
+	if !noOffer {
+		resp.Handoff = a.handoff(ctx, s, q) // offered, never sent
+	}
+	return nil
 }
 
 func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, earlier []string, chunks []ports.Chunk) ([]answer.Claim, error) {

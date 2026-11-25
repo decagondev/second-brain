@@ -53,6 +53,9 @@ func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (De
 	if name == AgentUpdate {
 		return a.updateDept(ctx, s)
 	}
+	if name == AgentLeaderWeek {
+		return a.leaderDept(ctx, s) // SB-4503
+	}
 	if _, lw := legworkAgents[name]; lw {
 		return a.legworkDept(ctx, s, name) // SB-4201, SB-4202
 	}
@@ -88,19 +91,25 @@ func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (De
 
 // updateDept checks that the update agent may run in the scope's space.
 func (a Agent) updateDept(ctx context.Context, s tenancy.Scope) (Department, error) {
+	return a.spaceAgent(ctx, s, updateAgent, a.Updates, "a space with updates: true")
+}
+
+// spaceAgent checks that d, an agent of no template, may run in the scope's space: one on
+// says is on (where says where), not killed, and allowed by the policy kernel.
+func (a Agent) spaceAgent(ctx context.Context, s tenancy.Scope, d Department, on func(space string) bool, where string) (Department, error) {
 	sp := strings.TrimPrefix(s.Space(), "spc_")
-	if !strings.HasPrefix(s.Space(), "spc_") || a.Updates == nil || !a.Updates(sp) {
-		return Department{}, fmt.Errorf("%w: agent update runs only in a space with updates: true", ErrInvalid)
+	if !strings.HasPrefix(s.Space(), "spc_") || on == nil || !on(sp) {
+		return Department{}, fmt.Errorf("%w: agent %s runs only in %s", ErrInvalid, d.Name, where)
 	}
-	if a.AgentKilled == nil || a.AgentKilled(AgentUpdate) {
+	if a.AgentKilled == nil || a.AgentKilled(d.Name) {
 		return Department{}, ErrKilled
 	}
-	use := a.Auth.Policy.Authorise(ctx, s, "use_agent", policy.Entity{Type: "Agent", ID: AgentUpdate, Tenant: a.Tenant,
-		Attrs: map[string]any{"name": AgentUpdate, "consequential": false, "enabled": true}}, nil)
+	use := a.Auth.Policy.Authorise(ctx, s, "use_agent", policy.Entity{Type: "Agent", ID: d.Name, Tenant: a.Tenant,
+		Attrs: map[string]any{"name": d.Name, "consequential": false, "enabled": true}}, nil)
 	if use.Decision != policy.Allow {
-		return Department{}, fmt.Errorf("%w: agent update: %s", ErrInvalid, use.Reason)
+		return Department{}, fmt.Errorf("%w: agent %s: %s", ErrInvalid, d.Name, use.Reason)
 	}
-	return updateAgent, nil
+	return d, nil
 }
 
 // citedOnly keeps the cited claims and counts the rest (sb-agents(7): every claim cited).
