@@ -35,6 +35,8 @@ type Line struct {
 	InPerM    float64 `json:"price_in_per_m"`
 	OutPerM   float64 `json:"price_out_per_m"`
 	CostUSD   float64 `json:"cost_usd"`
+	// Tier is main or small when the cell has a small model (SB-4405).
+	Tier string `json:"tier,omitempty"`
 }
 
 // Statement is one tenant's month.

@@ -70,6 +70,8 @@ evals:                 ## eval harness: mock smoke, citation suite on the local 
 	@rm -rf build/evals
 	$(PY) -m evals run evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/space-redteam.yaml evals/suites/table.yaml evals/suites/agent-*.yaml evals/suites/template-*.yaml --model extractive --results build/evals --release rel_local
 	$(PY) -m evals gate build/evals/rel_local
+	$(PY) -m evals run evals/suites/permission.yaml evals/suites/citation.yaml evals/suites/injection.yaml evals/suites/refusal.yaml evals/suites/regression.yaml evals/suites/space-leak.yaml evals/suites/space-redteam.yaml evals/suites/table.yaml evals/suites/agent-*.yaml evals/suites/template-*.yaml --model extractive --results build/evals --release rel_local_small   # the small tier (SB-4405)
+	$(PY) -m evals gate build/evals/rel_local_small
 	$(GO) run ./cmd/sb agents lint   # every agent definition, before a release is gated (SB-4403)
 	@for t in tenants/*/; do $(PY) -m evals run --tenant-dir $$t --model extractive || exit 1; done
 	@! $(PY) -m evals run evals/suites/citation.yaml --model misattributing >/dev/null 2>&1 || { echo "evals: a misattributing model passed the citation suite"; exit 1; }

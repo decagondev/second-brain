@@ -131,6 +131,8 @@ type Cell struct {
 
 	opt      Options
 	model    func(m manifest.Tenant) (ports.Model, error)
+	small    func(m manifest.Tenant) (ports.Model, error)
+	eventKey func(ctx context.Context) (string, error)
 	inbox    slack.Inbox
 	closeDB  func()
 	receipts toolbus.Receipts
@@ -295,6 +297,10 @@ type Options struct {
 	ConnectorHTTP *http.Client
 	// Log is where the cell logs; nil is standard error.
 	Log io.Writer
+	// EventsHTTP posts the events out (SB-4404); nil is one with a 10-second timeout.
+	// Sleep is the wait between retries; nil is time.Sleep.
+	EventsHTTP *http.Client
+	Sleep      func(time.Duration)
 }
 
 // Build builds every part of a cell from its configuration. Anything it can't build stops
@@ -380,11 +386,16 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.inbox, c.receipts, c.Actions, c.Proposals, c.Reviews = st.inbox, st.receipts, st.actions, st.proposals, st.reviews
 	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
 	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index, state: c.Config.State, tree: c.Manifest}
-	c.model = func(m manifest.Tenant) (ports.Model, error) {
+	c.eventKey = secret("events") // SB-4404
+	tierOf := func(m manifest.Tenant, small bool) (ports.Model, error) {
+		mc := cfg
+		if small { // SB-4405: the same provider, base and key, another id and price
+			mc.Model.ID, mc.Model.Price.InPerM, mc.Model.Price.OutPerM = cfg.Model.Small.ID, cfg.Model.Small.Price.InPerM, cfg.Model.Small.Price.OutPerM
+		}
 		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
-			Price: budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}, Once: c.Usage,
+			Price: budget.Price{InputPerM: mc.Model.Price.InPerM, OutputPerM: mc.Model.Price.OutPerM}, Once: c.Usage,
 			Forecast: func(ctx context.Context) (float64, bool) {
-				prices := map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}}
+				prices := modelPrices(cfg)
 				f, ok, err := costs.Forecast(ctx, c.Usage, tenant, prices, time.Now())
 				return f, ok && err == nil
 			},
@@ -394,7 +405,14 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 					_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev3", Kind: "budget_warning", Tenant: tenant, Where: "budget", Ref: month})
 				}
 			}}
-		return buildModel(cfg, tenant, secret, redact, c.Usage, guard)
+		return buildModel(mc, tenant, secret, redact, c.Usage, guard)
+	}
+	c.model = func(m manifest.Tenant) (ports.Model, error) { return tierOf(m, false) }
+	c.small = func(m manifest.Tenant) (ports.Model, error) {
+		if cfg.Model.Small.ID == "" {
+			return nil, nil
+		}
+		return tierOf(m, true)
 	}
 
 	// Sign-in (sb-identity(7)).
@@ -441,6 +459,10 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if err != nil {
 		return nil, err
 	}
+	small, err := c.small(m)
+	if err != nil {
+		return nil, err
+	}
 	spaceFacts := func(ctx context.Context) ([]ports.Space, [][2]string, error) {
 		all, err := c.Spaces.Spaces(ctx, tenant)
 		return all, m.Barriers, err
@@ -463,7 +485,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		SpaceOf: func(ctx context.Context, id string) (ports.Space, bool, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
-		AgentKilled:  func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
+		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
+		Small:       small, SmallHeld: c.smallHeld, PinMain: func(key string) bool { return m.Spaces[strings.TrimPrefix(key, "spc_")].Model == "main" },
 		Departmental: departmental(m),
 		Updates:      func(name string) bool { return m.Spaces[name].Updates },
 		ReviewAfter: func(ids []string) int {
@@ -664,7 +687,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Switches: c.Kill.Store, Audit: c.Audit, AuditRows: c.Audit.Store, Release: c.Release, Approvers: approvers(m),
 		Usage: c.Report,
 		Price: report.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM},
-		Meter: c.Usage, Prices: map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}},
+		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails,
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive}
@@ -1079,4 +1102,21 @@ func workZone(m manifest.Tenant) *time.Location {
 		return z
 	}
 	return time.UTC
+}
+
+// modelPrices are the price of each model the cell calls, by provider/id (SB-4405).
+func modelPrices(cfg Config) map[string]costs.Price {
+	out := map[string]costs.Price{cfg.Model.Provider + "/" + cfg.Model.ID: {InPerM: cfg.Model.Price.InPerM, OutPerM: cfg.Model.Price.OutPerM}}
+	if s := cfg.Model.Small; s.ID != "" {
+		out[cfg.Model.Provider+"/"+s.ID] = costs.Price{InPerM: s.Price.InPerM, OutPerM: s.Price.OutPerM}
+	}
+	return out
+}
+
+// modelTiers name each model's tier, only when the cell has a small one.
+func modelTiers(cfg Config) map[string]string {
+	if cfg.Model.Small.ID == "" {
+		return nil
+	}
+	return map[string]string{cfg.Model.Provider + "/" + cfg.Model.ID: "main", cfg.Model.Provider + "/" + cfg.Model.Small.ID: "small"}
 }

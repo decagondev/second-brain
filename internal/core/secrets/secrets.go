@@ -12,7 +12,7 @@ import (
 	"example.com/second-brain/internal/core/ports"
 )
 
-var refRe = regexp.MustCompile(`^vault://tenants/([a-z0-9][a-z0-9-]{1,38}[a-z0-9])/(connectors/(docs|chat|tickets|crm|code|hris|accounting)|connectors/docs-classification|oidc|scim|model|canary|audit/anchor-seed|control-plane|release-pull|attest-seed|database|worm|offsite|mattermost|email)$`)
+var refRe = regexp.MustCompile(`^vault://tenants/([a-z0-9][a-z0-9-]{1,38}[a-z0-9])/(connectors/(docs|chat|tickets|crm|code|hris|accounting)|connectors/docs-classification|oidc|scim|model|canary|audit/anchor-seed|control-plane|release-pull|attest-seed|database|worm|offsite|mattermost|email|events)$`)
 
 // Ref is a parsed, valid vault reference.
 type Ref struct{ Raw, Tenant, Path string }

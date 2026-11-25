@@ -37,13 +37,20 @@ func start(t *testing.T) running {
 // startWith starts a cell from the configuration fixture returns.
 func startWith(t *testing.T, fixture func(idp *oidctest.IdP, base string) wire.Config) running {
 	t.Helper()
+	return startWithOptions(t, fixture, wire.Options{})
+}
+
+// startWithOptions is startWith with the options a test sets, such as the events client.
+func startWithOptions(t *testing.T, fixture func(idp *oidctest.IdP, base string) wire.Config, opt wire.Options) running {
+	t.Helper()
 	idp := oidctest.New(tenant, "sb-acme-logistics", "oidc-secret")
 	t.Cleanup(idp.Server.Close)
 	h := http.NotFoundHandler()
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { h.ServeHTTP(w, r) }))
 	srv.StartTLS()
 	t.Cleanup(srv.Close)
-	cell, err := wire.Build(context.Background(), fixture(idp, srv.URL), wire.Options{HTTP: idp.Server.Client(), ConnectorHTTP: idp.Server.Client(), Log: io.Discard})
+	opt.HTTP, opt.ConnectorHTTP, opt.Log = idp.Server.Client(), idp.Server.Client(), io.Discard
+	cell, err := wire.Build(context.Background(), fixture(idp, srv.URL), opt)
 	if err != nil {
 		t.Fatal(err)
 	}

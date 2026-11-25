@@ -46,6 +46,14 @@ type Config struct {
 		} `json:"price"`
 		// Local is a model on the cell's own machine (SB-1710): no key, and a price of 0.
 		Local bool `json:"local"`
+		// Small is a second, smaller model of the same provider, base and key (SB-4405).
+		Small struct {
+			ID    string `json:"id"`
+			Price struct {
+				InPerM  float64 `json:"in_per_m"`
+				OutPerM float64 `json:"out_per_m"`
+			} `json:"price"`
+		} `json:"small"`
 	} `json:"model"`
 	// Embed is the embedder (sb-ingest(7); SB-1710): "" or hashing, or openaicompat.
 	Embed struct {
@@ -363,6 +371,9 @@ func (c Config) checkModel() error {
 	}
 	if c.Model.Provider != "extractive" && !c.Model.Local && (c.Model.Price.InPerM <= 0 || c.Model.Price.OutPerM <= 0) {
 		return fmt.Errorf("%w: model.provider %s needs model.price, or the budget can't be kept", ErrConfig, c.Model.Provider)
+	}
+	if s := c.Model.Small; s.ID != "" && c.Model.Provider != "extractive" && !c.Model.Local && (s.Price.InPerM <= 0 || s.Price.OutPerM <= 0) {
+		return fmt.Errorf("%w: model.small needs model.small.price, or the budget can't be kept", ErrConfig)
 	}
 	return nil
 }

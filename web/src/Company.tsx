@@ -376,3 +376,66 @@ export function AdminSpend({ fetcher = fetch, month = new Date().toISOString().s
     </section>
   );
 }
+
+// Guardrail insights (sb-observability(7); SB-4406): 12 weeks of counts, never text. A count
+// of 1 to 4 comes as "fewer than 5" and is shown in the reader's language.
+type GuardCount = number | string;
+interface GuardWeek {
+  week: string;
+  flags: { source: string; space: string; count: GuardCount }[];
+  flagged_uploads: GuardCount;
+  refused_tools: GuardCount;
+  denied_tools: GuardCount;
+  dropped_uncited: GuardCount;
+}
+
+const shown = (c: GuardCount) => (typeof c === "number" ? String(c) : t("fewer than 5"));
+const flagTotal = (w: GuardWeek) =>
+  w.flags.some((f) => typeof f.count !== "number") ? t("{n} and more", { n: String(w.flags.reduce((n, f) => n + (typeof f.count === "number" ? f.count : 0), 0)) }) : String(w.flags.reduce((n, f) => n + (f.count as number), 0));
+
+export function AdminGuardrails({ fetcher = fetch }: { fetcher?: Fetch }) {
+  const [weeks, setWeeks] = useState<GuardWeek[]>([]);
+  const [doubled, setDoubled] = useState<string[]>([]);
+  const [error, setError] = useState<string>();
+  useEffect(() => {
+    call(fetcher, "GET", "/v1/admin/guardrails")
+      .then((d) => {
+        setWeeks((d.weeks as GuardWeek[]) ?? []);
+        setDoubled((d.doubled as string[]) ?? []);
+      })
+      .catch((e: Error) => setError(e.message));
+  }, [fetcher]);
+  return (
+    <section aria-label={t("Guardrails")}>
+      <h2>{t("Guardrails")}</h2>
+      {error && <p role="alert">{error}</p>}
+      {doubled.length > 0 && <p className="notice">{t("Injection flags doubled last week in: {sources}", { sources: doubled.join(", ") })}</p>}
+      {!error && (
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{t("Week")}</th>
+              <th scope="col">{t("Injection flags")}</th>
+              <th scope="col">{t("Flagged uploads")}</th>
+              <th scope="col">{t("Tool calls refused")}</th>
+              <th scope="col">{t("Tool calls denied")}</th>
+              <th scope="col">{t("Uncited claims dropped")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map((w) => (
+              <tr key={w.week}>
+                <th scope="row">{w.week}</th>
+                <td title={w.flags.map((f) => `${f.source} / ${f.space}: ${shown(f.count)}`).join("; ")}>{flagTotal(w)}</td>
+                <td>{shown(w.flagged_uploads)}</td>
+                <td>{shown(w.refused_tools)}</td>
+                <td>{shown(w.denied_tools)}</td>
+                <td>{shown(w.dropped_uncited)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}

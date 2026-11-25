@@ -57,6 +57,10 @@ type Report struct {
 	ActivePerSeat float64   `json:"active_per_seat"`
 	Asks          int       `json:"asks"`
 	Searches      int       `json:"searches"` // searches without the model (SB-1701)
+	// SmallAsks are the asks the small model answered (SB-4405); tiered is any ask with a
+	// tier, so the line shows only on a cell with a small model.
+	SmallAsks int  `json:"small_asks,omitempty"`
+	tiered    bool `json:"-"`
 	// Limited is asks refused for asks_per_minute (SB-2305), never counted as asks.
 	Limited int `json:"limited"`
 	// Questions to stewards asked and answered this week, by space (SB-1704), never their text.
@@ -113,6 +117,24 @@ func ParseWeek(s string) (time.Time, time.Time, error) {
 	return from, from.AddDate(0, 0, 7), nil
 }
 
+// countAsk counts one answer: its tier and gap; it says whether any claim was cited.
+func (r *Report) countAsk(t ask.Trace) bool {
+	r.Asks++
+	r.tiered = r.tiered || t.Tier != ""
+	if t.Tier == ask.TierSmall {
+		r.SmallAsks++
+	}
+	if t.Response.Notice != nil {
+		r.Gaps[*t.Response.Notice]++
+	}
+	for _, c := range t.Response.Answer.Claims {
+		if !c.Uncited && len(c.Cites) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // Build computes one week.
 func Build(ctx context.Context, src Source, tenant string, from, to time.Time, price Price) (Report, error) {
 	label, _, _ := WeekOf(from)
@@ -133,19 +155,9 @@ func Build(ctx context.Context, src Source, tenant string, from, to time.Time, p
 			r.Limited++
 			continue
 		}
-		r.Asks++
 		active[t.User] = true
-		any := false
-		for _, c := range t.Response.Answer.Claims {
-			if !c.Uncited && len(c.Cites) > 0 {
-				any = true
-			}
-		}
-		if any {
+		if r.countAsk(t) {
 			cited++
-		}
-		if t.Response.Notice != nil {
-			r.Gaps[*t.Response.Notice]++
 		}
 	}
 	r.Stale = ask.StaleShare(traces, "")
@@ -263,6 +275,9 @@ func (r Report) Markdown() string {
 	}
 	fmt.Fprintf(&b, "| Asks | %d |\n", r.Asks)
 	fmt.Fprintf(&b, "| Searches | %d |\n", r.Searches)
+	if r.tiered && r.Asks > 0 {
+		fmt.Fprintf(&b, "| Asks on the small model | %d (%.0f%%) |\n", r.SmallAsks, 100*float64(r.SmallAsks)/float64(r.Asks))
+	}
 	fmt.Fprintf(&b, "| Asks refused by the per-person limit | %d |\n", r.Limited)
 	fmt.Fprintf(&b, "| Cited-answer rate | %.0f%% |\n", 100*r.CitedAnswerRate)
 	share := 0.0

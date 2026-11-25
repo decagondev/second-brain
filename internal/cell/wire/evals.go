@@ -64,7 +64,8 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	}
 	cases = ask.ActiveCases(cases) // a dismissed candidate never runs (SB-4401)
 	agent := c.Parts().Agent
-	run := func(ec ask.EvalCase) (bool, error) {
+	ran, smallFailed := 0, 0
+	probe := func(ctx context.Context, ec ask.EvalCase) (bool, error) {
 		s, err := c.ScopeAs(ctx, ec.By, ec.Space)
 		if err != nil {
 			return false, ask.ErrSkipCase // the steward has gone: the case can't run as them
@@ -78,6 +79,19 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 		}
 		return ec.Passes(resp), nil
 	}
+	run := func(ec ask.EvalCase) (bool, error) {
+		ok, err := probe(ask.WithTier(ctx, ask.TierMain), ec)
+		if err != nil || !ok || agent.Small == nil {
+			return ok, err
+		}
+		// SB-4405: a case that passes on the main model must pass on the small one too.
+		ran++
+		small, err := probe(ask.WithTier(ctx, ask.TierSmall), ec)
+		if err == nil && !small {
+			smallFailed++
+		}
+		return ok, nil
+	}
 	checks, err := agent.CaseChecks(ctx, cases)
 	if err != nil {
 		return nil, err
@@ -87,6 +101,11 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	updated, hold, err := ask.RunCases(cases, c.Release, run, checks)
 	if err != nil {
 		return nil, err
+	}
+	if ran > 0 {
+		if err := writeSmallHeld(c.Config.State, smallFailed > 0); err != nil {
+			return nil, err
+		}
 	}
 	ids := map[string]bool{}
 	for i, u := range updated {
@@ -126,3 +145,27 @@ func (c *Cell) evalHeld() (bool, error) {
 
 // agentKilled is whether agent is killed now (SB-4004).
 func (c *Cell) agentKilled(agent string) bool { return c.Kill.AgentKilled(agent)(context.Background()) }
+
+// SmallHeldPath holds the small model tier (SB-4405): while it exists, every ask goes to
+// the main model.
+func SmallHeldPath(state string) string { return filepath.Join(state, "evals", "small-held") }
+
+func writeSmallHeld(state string, held bool) error {
+	p := SmallHeldPath(state)
+	if !held {
+		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(p, []byte("held\n"), 0o600)
+}
+
+// smallHeld is whether the small tier is held; one that can't be read is held.
+func (c *Cell) smallHeld() bool {
+	_, err := os.Stat(SmallHeldPath(c.Config.State))
+	return !errors.Is(err, os.ErrNotExist)
+}

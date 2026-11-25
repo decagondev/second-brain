@@ -37,6 +37,7 @@ Latency (p50, p95), error rates by code, ingest freshness, ACL unknown ratio per
 | Budget warning | this month's spend passes 80% of `budget_usd_month`, or the month-end forecast passes the budget (SB-3505), once a month (`budget_warning`, SB-1608) | Sev-3, to the tenant operator |
 | Box check | a self-hosted machine's check fails: a disk over 90%, a certificate within 7 days, no dump for 50 hours, a service down (`box_check`, `where` the check, `ref` the day; SB-1802) | Sev-2, to the tenant operator, once a day per check |
 | An access review is overdue | `sb_access_review_overdue{space}` is 1: a review open 14 days (sb-spaces(7), Access reviews) | Sev-2, to the tenant operator |
+| Guardrail flags doubled | a source's injection flags in the last full week are at least 5 and at least twice the week before's (`guardrail_flags_doubled`, `where` the source, `ref` the week; SB-4406) | Sev-3, to the tenant operator, once a week per source |
 | A scheduled job missed its run | `sb_job_overdue{job}` is 1 | Sev-1 for `anchor`, `backup`, `access`, `review`; Sev-2 otherwise (sb-runtime(7), Schedules) |
 
 Every alert links to a runbook.
@@ -93,6 +94,20 @@ Nothing degrades to unmetered or unlimited use. If the meter can't be read, the 
 
 Each model call an ask or a scheduled run makes **in a space** is metered for the tenant and for that space (`space_usd` in the usage ledger: an amount, a month and the space, never who or what). A space's **branch** spend is its own and its teams'. `GET /v1/admin/costs/spaces?month=2027-03` (sb-admin(3)) lists every space: `{ "month", "spaces": [{ "space", "parent"?, "own_usd", "spent_usd", "budget_usd_month", "forecast_usd"? }] }`, `spent_usd` being the branch's, and for the running month after 3 days a straight-line month-end forecast. A space with `budget_usd_month` (sb-space(5)) is watched by the `notify` job: at 80% of it its stewards are told once that month, "The finance space has used 85% of its monthly budget", and at 100% once more, "The finance space has spent its monthly budget: its scheduled briefs and updates pause until next month, and asks carry on". While a branch, or the department above it, is at its budget, its weekly briefs and updates don't run, and its stewards are told why (sb-agents(7)). Asks are never refused for a space's budget: only the tenant's own budget refuses a call (above). Spend that can't be read pauses the runs, never lets them through.
 
+### Guardrail insights, exactly (SB-4406)
+
+`GET /v1/admin/guardrails` (sb-admin(3)) and the **Guardrails** card on the admin console show, for each of the last 12 ISO weeks (UTC):
+
+| Count | From |
+|---|---|
+| `flags` | chunks the index first saw that week carrying `instruction_like` or `hidden_text_removed` (sb-ingest(7), Content is data), by source kind and space |
+| `flagged_uploads` | asks about a file (SB-3802) whose passages carried either flag |
+| `refused_tools` | tool calls an approver rejected (`approval` rows, `Rejected`) |
+| `denied_tools` | tool calls the policy kernel denied (`decision` rows for `call_tool` or `propose`, not `allow`) |
+| `dropped_uncited` | answers with at least one uncited claim dropped (`dropped` above 0) |
+
+Counts only: a count of 1 to 4 is shown as "fewer than 5", and no chunk text, title, question or person is read into it. `doubled` names each source whose flags in the last full week are at least 5 and at least twice the week before's, and the `notify` job raises `guardrail_flags_doubled` for it once that week (Alerts, above).
+
 ### Disaster-recovery game day, exactly (SB-613)
 
 The scenario is **lose the cell's database**, and the target is **RTO 4 hours, RPO 15 minutes, inside the cell's region**. The game day runs quarterly in staging and follows [the runbook](../docs/runbooks/dr-game-day.md). It is scored the same way every time:
@@ -138,6 +153,7 @@ Exactly (SB-606). The week is Monday 00:00 to Monday 00:00 UTC, and the report g
 | Spend | model tokens and their cost at the release's price table |
 | Input tokens per model call | (SB-2906) the 95th percentile of the input tokens of each model call this week, and last week's, from the usage ledger; marked **growing** when it is over 1.5 times last week's. Counts only |
 | Seconds per answer | (SB-3205) the 95th percentile of the seconds each answer took this week, and last week's, from the usage ledger, which records each answer's duration in milliseconds beside its tokens; marked **slower** when it is over 1.5 times last week's. Durations only, never a question |
+| Asks on the small model | (SB-4405) asks whose trace records `tier` `small` ÷ asks, as a count and a share, when sb-cell(5) sets `model.small` |
 | Notifications | (SB-2607) the notify job's last run: when, the channel, and its counts sent, skipped and failed; never who |
 | Usage by space | (SB-3506) one row per space the week's asks were asked in, and `company`: its asks, the share that found nothing (`no_sources`, SB-3101) and the share rated helpful (the answer's latest feedback `up`). A space with fewer than 5 asks shows **fewer than 5** and no shares, so a small space can't be read as one person; the rows of the spaces with 5 or more add up to the totals less those. The steward screen shows its own space's row only, over the last 7 days (sb-ask(3), Documents to review). A team's row follows its department's, as `finance / ap` (SB-3905), and a department's stewards see their teams' counts under **Teams** |
 | Adoption | (SB-3804) "31 of 120 seats asked this week (27 last week)": the distinct people who asked at least once (asks only; searches and asks refused by the limit don't count), of the directory's active users, and the same count for the 7 days before. Then, by space, the people who asked in it: "finance 12, ops 9", only for spaces where at least 5 people asked, so a small space can't be read as one person; the rest are left out, never shown as a smaller number. Counts only: no one is named, in the report or in `GET /v1/admin/usage` (`adoption`: `{ "asked", "asked_last_week", "seats", "spaces": { "finance": 12 } }`) |

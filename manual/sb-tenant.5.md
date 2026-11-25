@@ -39,6 +39,7 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 |---|---|
 | `vault://tenants/TENANT/connectors/KIND` | the credential for one connector kind |
 | `vault://tenants/TENANT/mattermost` | the Mattermost slash command's `command_token` and the bot's `bot_token`, as JSON, when sb-cell(5) sets `mattermost` (SB-2005) |
+| `vault://tenants/TENANT/events` | the key that signs the events out, at least 32 bytes, when `events` is set (sb-api(3), Events out; SB-4404) |
 | `vault://tenants/TENANT/oidc` | the cell's OIDC client secret |
 | `vault://tenants/TENANT/scim` | the IdP's SCIM bearer token |
 | `vault://tenants/TENANT/model` | the model gateway's API key (ADR-0019) |
@@ -77,6 +78,7 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 | `asks_per_minute` | int | no | `6` | 1–600. How many questions one person may ask in any minute (SB-2305), so one person can't hold up a small box; one more is `ERATE` with the seconds to wait (sb-ask(3), sb-errors(7)), and the weekly report counts these refusals. Search isn't limited |
 | `language` | `en` \| `de` \| `fr` | no | `en` | The web UI's default language (SB-2301): English, German or French. The cell writes it into the page it serves (`<html lang="…">`), every string the UI shows comes from its catalog in that language, and the cell's errors are shown by their code in it (sb-errors(7)). A person can switch language in the UI; their choice is kept in their own browser and wins over this default. Answers stay in whatever language the model writes |
 | `memory` | `on` \| `off` | no | `on` | (SB-4303) Whether people may keep a few lines about themselves that are sent with their own asks (sb-ask(3), Memory I control). `off` keeps and sends none, and the lines people already kept stay until they remove them or forget their data, unused |
+| `events` | `{ url, kinds }` | no | none | (SB-4404) Signed events out, off by default: the cell posts each event of a chosen kind to `url` (`https://` only), ids only, signed with the key at `vault://tenants/TENANT/events` (sb-api(3), Events out). `kinds` is a non-empty list of `decision`, `goal_at_risk`, `request_overdue`, `policy_published` and `action_due`, each once |
 | `exclude` | map kind→list | no | `{}` | Kinds as in `connectors`. Source paths or channels never ingested, e.g. `chat: ["#hr-*"]` |
 | `groups` | map `group:NAME`→list of emails | no | none | Only with an `identity-platform://` idp: the steward-managed group list for a company without SCIM ([sb-identity(7)](sb-identity.7.md)). At most 200 groups and 2,000 members in all; each email at most once per group |
 | `spaces` | map name→space | no | none | Department spaces ([sb-space(5)](sb-space.5.md), [sb-spaces(7)](sb-spaces.7.md)). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today |
@@ -89,7 +91,8 @@ A reference is resolved through the `Secrets` port at the moment of the call, an
 3. Each item in `workflows` has an `approval` entry, and its connector kind is in `connectors`. Each key of `duties` is in `workflows`, has exactly `second` and `above`, and its `second` group isn't the workflow's `approval` group.
 4. No field anywhere is named `version`, `platform`, `secret`, `password`, `token` or `key`, alone or as part of a `_`-separated name such as `api_token`.
 5. `pilot_group`, `approval` and `duties` principals are `group:` references, never individual users. That way access follows the IdP.
-6. `custody`, `placement` and `key_custodian` are rejected: custody is a factory record that changes only through a dual-approved hand-off ([sb-factory(7)](sb-factory.7.md)).
+6. `events.url` is an `https://` URL with a host, and each of `events.kinds` is a known kind, at most once.
+7. `custody`, `placement` and `key_custodian` are rejected: custody is a factory record that changes only through a dual-approved hand-off ([sb-factory(7)](sb-factory.7.md)).
 
 ## SYNTAX
 

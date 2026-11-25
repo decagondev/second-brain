@@ -84,6 +84,9 @@ func Format(t Tenant) []byte {
 			if sp.Requests != nil {
 				fmt.Fprintf(&b, "    requests: { categories: %s, due_days: %d }%s", flowList(sp.Requests.Categories, true), sp.Requests.DueDays, nl)
 			}
+			if sp.Model != "" {
+				fmt.Fprintf(&b, "    model: %s%s", sp.Model, nl)
+			}
 			if sp.BudgetUSDMonth > 0 {
 				fmt.Fprintf(&b, "    budget_usd_month: %d%s", sp.BudgetUSDMonth, nl)
 			}
@@ -187,5 +190,8 @@ func formatSettings(t Tenant, line func(k, v string)) {
 	}
 	if t.Memory == "off" {
 		line("memory", "off")
+	}
+	if t.Events != nil {
+		line("events", "{ url: "+t.Events.URL+", kinds: "+flowList(t.Events.Kinds, false)+" }")
 	}
 }

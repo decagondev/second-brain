@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Signed events out with ids only, a small model tier for short plain asks with its own eval gate and spend line, and 12 weeks of guardrail counts for operators (SB-4404 to SB-4406). W43 built.
 - Agent owners and definitions in the release bundle, `sb agents lint` in the gate, `sb release notes` for each agent's prompt and eval changes, unused department agents proposed off, and down-rated answers turned into eval cases by the agent's owner (SB-4401 to SB-4403).
 - Collections you can share and ask, Agent runs that show what ran in your name, department agents as MCP tools, and sheet numbers worked out in code with the cells cited (SB-4304 to SB-4307). W42 built.
 - One inbox across every space, routines that ask a saved question for you each morning or week, and a memory of a few lines about yourself that only your own asks carry (SB-4301 to SB-4303). LAW-25: a memory is its person's own.

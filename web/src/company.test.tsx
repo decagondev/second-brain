@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { Goals, PoliciesToRead, Requests, StewardPolicies, TeamUpdates } from "./Company";
+import { AdminGuardrails, Goals, PoliciesToRead, Requests, StewardPolicies, TeamUpdates } from "./Company";
 import type { Fetch } from "./api";
 
 afterEach(cleanup);
@@ -110,5 +110,24 @@ describe("run the company", () => {
     render(<Requests space="hr" fetcher={fetcher} />);
     await act(async () => {});
     expect(screen.queryByRole("region", { name: "Ask the department" })).toBeNull();
+  });
+});
+
+// SB-4406
+describe("guardrails", () => {
+  it("shows 12 weeks of counts, small ones as fewer than 5, and the sources whose flags doubled", async () => {
+    const fetcher: Fetch = async () =>
+      json({
+        weeks: [
+          { week: "2026-W48", flags: [{ source: "docs", space: "ops", count: 6 }, { source: "chat", space: "ops", count: "fewer than 5" }], flagged_uploads: "fewer than 5", refused_tools: 0, denied_tools: 7, dropped_uncited: 12 },
+        ],
+        doubled: ["docs"],
+      });
+    const { container } = render(<AdminGuardrails fetcher={fetcher} />);
+    expect(await screen.findByText("Injection flags doubled last week in: docs")).toBeTruthy();
+    expect(screen.getByText("6 and more")).toBeTruthy();
+    expect(screen.getAllByText("fewer than 5").length).toBe(1);
+    const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
+    expect(r.violations.map((v) => v.id)).toEqual([]);
   });
 });

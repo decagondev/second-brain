@@ -78,6 +78,10 @@ type Admin struct {
 	// OwnerActive says whether an agent's owner, an email or group:NAME, has an active
 	// person (SB-4402); nil flags no owner.
 	OwnerActive func(ctx context.Context, owner string) bool
+	// Guardrails are the 12 weeks of guardrail counts (SB-4406); nil is EUNAVAIL.
+	Guardrails func(ctx context.Context, now time.Time) (report.Guardrails, error)
+	// Tiers names each "provider/model" of the cost statement main or small (SB-4405).
+	Tiers map[string]string
 	// SpaceSpend is each space's branch spend in a month (SB-4105); nil is EUNAVAIL.
 	SpaceSpend func(ctx context.Context, month string) ([]SpaceSpend, error)
 }
@@ -115,6 +119,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/usage", h.readers(h.usage))
 	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
 	mux.HandleFunc("GET /v1/admin/costs/spaces", h.readers(h.spaceCosts))
+	mux.HandleFunc("GET /v1/admin/guardrails", h.guard(h.guardrails))
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
 	mux.HandleFunc("POST /v1/admin/subjects/export", h.guard(h.export))
 	mux.HandleFunc("GET /v1/admin/retention/plan", h.guard(h.plan))
@@ -177,6 +182,9 @@ func (h Admin) costs(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, errs.New(errs.EUNAVAIL, "The cost statement can't be built right now."))
 		return
 	}
+	for i := range st.Lines { // SB-4405: each line's tier
+		st.Lines[i].Tier = h.Tiers[st.Lines[i].Provider+"/"+st.Lines[i].Model]
+	}
 	if r.URL.Query().Get("format") == "csv" {
 		b, err := st.CSV()
 		if err != nil {
@@ -192,6 +200,24 @@ func (h Admin) costs(w http.ResponseWriter, r *http.Request) {
 }
 
 // spaceCosts is each branch's spend in a month (SB-4105): amounts only.
+// guardrails are the guardrail counts (sb-observability(7), Guardrail insights; SB-4406).
+func (h Admin) guardrails(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Guardrails == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Guardrail insights aren't available in this cell."))
+		return
+	}
+	now := time.Now()
+	if h.Now != nil {
+		now = h.Now()
+	}
+	g, err := h.Guardrails(r.Context(), now)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The guardrail counts can't be read right now."))
+		return
+	}
+	h.ok(w, g)
+}
+
 func (h Admin) spaceCosts(w http.ResponseWriter, r *http.Request) {
 	month := r.URL.Query().Get("month")
 	if _, _, err := costs.ParseMonth(month); err != nil {

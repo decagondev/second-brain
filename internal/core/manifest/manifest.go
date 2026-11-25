@@ -43,7 +43,9 @@ type Tenant struct {
 	// Language is the web UI's default language, "" for English (SB-2301).
 	Language string `json:"language"`
 	// Memory is "off" for a cell that keeps no memory, "" or "on" otherwise (SB-4303).
-	Memory   string              `json:"memory"`
+	Memory string `json:"memory"`
+	// Events are the signed events out, nil for none (SB-4404).
+	Events   *Events             `json:"events"`
 	Exclude  map[string][]string `json:"exclude"`
 	Groups   map[string][]string `json:"groups"`
 	Spaces   map[string]Space    `json:"spaces"`
@@ -204,6 +206,7 @@ var fields = []field{
 			}
 		}
 	}},
+	{"events", false, (*checker).events}, // SB-4404
 	{"exclude", false, (*checker).exclude},
 	{"groups", false, (*checker).groups},
 	{"spaces", false, (*checker).spaces},

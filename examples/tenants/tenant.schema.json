@@ -129,6 +129,35 @@
       },
       "type": "object"
     },
+    "events": {
+      "additionalProperties": false,
+      "description": "Signed events out, ids only (SB-4404). Off when absent.",
+      "properties": {
+        "kinds": {
+          "items": {
+            "enum": [
+              "decision",
+              "goal_at_risk",
+              "request_overdue",
+              "policy_published",
+              "action_due"
+            ]
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "url": {
+          "pattern": "^https://",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "kinds"
+      ],
+      "type": "object"
+    },
     "exclude": {
       "additionalProperties": {
         "items": {
@@ -356,6 +385,11 @@
             "minItems": 1,
             "type": "array",
             "uniqueItems": true
+          },
+          "model": {
+            "enum": [
+              "main"
+            ]
           },
           "parent": {
             "pattern": "^[a-z][a-z0-9-]{1,30}$",

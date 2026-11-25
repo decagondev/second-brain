@@ -838,4 +838,13 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Add case: {question}": { de: "Fall hinzufügen: {question}", fr: "Ajouter le cas : {question}" },
   "Dismiss": { de: "Verwerfen", fr: "Écarter" },
   "Dismiss: {question}": { de: "Verwerfen: {question}", fr: "Écarter : {question}" },
+  "{n} and more": { de: "{n} und mehr", fr: "{n} et plus" },
+  "Guardrails": { de: "Schutzmechanismen", fr: "Garde-fous" },
+  "Injection flags doubled last week in: {sources}": { de: "Injektionsmarkierungen haben sich letzte Woche verdoppelt in: {sources}", fr: "Les signalements d'injection ont doublé la semaine dernière dans : {sources}" },
+  "Week": { de: "Woche", fr: "Semaine" },
+  "Injection flags": { de: "Injektionsmarkierungen", fr: "Signalements d'injection" },
+  "Flagged uploads": { de: "Markierte Uploads", fr: "Fichiers signalés" },
+  "Tool calls refused": { de: "Abgelehnte Werkzeugaufrufe", fr: "Appels d'outils refusés" },
+  "Tool calls denied": { de: "Verweigerte Werkzeugaufrufe", fr: "Appels d'outils interdits" },
+  "Uncited claims dropped": { de: "Verworfene Aussagen ohne Beleg", fr: "Affirmations sans source écartées" },
 };

@@ -244,6 +244,11 @@ type Trace struct {
 	Decisions []retrieve.Decision
 	// Files is how many files the ask was about (SB-3802): never their name or text.
 	Files int `json:",omitempty"`
+	// Tier is the model tier that answered, small or main, when the cell has a small
+	// model (SB-4405).
+	Tier string `json:",omitempty"`
+	// FlaggedFiles is 1 when the file's passages carried an injection flag (SB-4406).
+	FlaggedFiles int `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -301,8 +306,13 @@ type Agent struct {
 	IsAuditor func(s tenancy.Scope) bool
 	// Department agents (SB-1102): which agents the manifest enables, the space a scope
 	// is in, and the agent kill switches. With any of them nil, no department agent runs.
-	Enabled     func(agent string) bool
-	SpaceOf     func(ctx context.Context, id string) (ports.Space, bool, error)
+	Enabled func(agent string) bool
+	SpaceOf func(ctx context.Context, id string) (ports.Space, bool, error)
+	// Small is the small model tier (SB-4405), nil for none; SmallHeld says the evals
+	// hold it (an unreadable hold is held), and PinMain that a space, by key, pins main.
+	Small       ports.Model
+	SmallHeld   func() bool
+	PinMain     func(space string) bool
 	AgentKilled func(agent string) bool
 	// Departmental are the spaces the scope's user is a member of that run a department
 	// agent, for the right-department suggestion (SB-4007); nil suggests none.
@@ -433,7 +443,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
-	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe)) // SB-4303: the asker's own, ask agent only (LAW-25)
+	tier := a.tierFor(ctx, s.Space(), req, q, len(docs), len(earlier)) // SB-4405
+	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe))     // SB-4303: the asker's own, ask agent only (LAW-25)
 	capped := len(docs) == 0
 	if docs, err = a.collectionOr(ctx, s, req.Collection, docs); err != nil { // SB-4304
 		return Response{}, err
@@ -443,13 +454,14 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
-	files := 0
+	files, flaggedFiles := 0, 0
 	if req.File != nil { // SB-3802: the file's passages first, never indexed or kept
 		fc, err := a.fileChunks(ctx, q, req.File)
 		if err != nil {
 			return Response{}, err
 		}
 		res.Context, files = append(fc, res.Context...), 1
+		flaggedFiles = fileFlagged(fc)
 	}
 
 	trace := a.NewID("tr_")
@@ -484,7 +496,11 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		} else if ch != nil {
 			res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
 		}
-		claims, err := a.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
+		ca := a
+		if tier == TierSmall {
+			ca.Model = a.Small
+		}
+		claims, err := ca.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
 		if err != nil {
 			return Response{}, err
 		}
@@ -514,7 +530,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
@@ -528,7 +544,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 			return Response{}, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
 		}
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier}
 	if err := a.Store.PutTrace(ctx, t); err != nil {
 		return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err) // no trace, no answer
 	}

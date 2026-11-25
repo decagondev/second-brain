@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S43.2: Out, cost and risk
+
+**Wave/slice:** W43 / S43.2 (SB-4404 to SB-4406) · **Status:** Done
+
+**What:** A tenant can turn on signed events out: for the kinds it chooses (a new decision, a goal at risk, an overdue request, a policy published, an action item past due) the notify job posts the kind, the space, an id and the time to its URL, signed with HMAC-SHA256, retried, audited and sent once. A cell can name a small model: short, plain, first questions go to it, everything else to the main model, and a space can pin the main one. Both tiers are gated, on the release by `make evals` and on the cell by the tenant's cases, and a failing small tier takes no asks. Operators get 12 weeks of guardrail counts, injection flags by source and space, flagged uploads, refused and denied tool calls and dropped uncited claims, with an alert when a source's flags double.
+
+**Why this way:** An event carries ids only, so a receiver learns nothing it couldn't read with its own token, and the cell checks every read as that token's person. The tier rule is fixed and visible in the trace, so no model decides which model answers, and an unreadable hold means the main model. Guardrail counts are read from the index, traces and the audit log already kept, so there is no new store, and small counts are blurred so no one is singled out.
+
+**Learned:** A decision passage held by two spaces is two events, one for each space, or a space's receiver would miss it.
+
+**Laws:** LAW-01, LAW-06, LAW-07, LAW-09, LAW-11. Every law test is still green.
+
 ## 2026-11-25 S43.1: Owners and evals
 
 **Wave/slice:** W43 / S43.1 (SB-4401 to SB-4403) · **Status:** Done

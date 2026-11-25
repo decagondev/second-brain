@@ -84,6 +84,20 @@ POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a reques
 
 A share link is `/q/sh_…` on the cell's own hostname (sb-ask(3), Saved and shared questions). The web UI serves it, never `/v1`, and it holds no answer: the UI reads the share with `GET /v1/shares/{id}`, and the recipient asks it under their own access. A share id is 128 random bits, so one link can't be guessed from another.
 
+### Events out (SB-4404)
+
+With sb-tenant(5) `events: { url, kinds }` set, the cell tells another system that something happened, and nothing more. The `notify` job (sb-runtime(7)) looks for new events of the chosen kinds at each run and posts each one once:
+
+| Kind | When | `id` |
+|---|---|---|
+| `decision` | a decision passage (sb-ask(3), Search, exactly, `type=decision`) the index first saw in the last 7 days | the document, `KIND:ID` |
+| `goal_at_risk` | a goal (sb-ingest(7), Goals) whose status is `at risk` or `off track`, once per version | the goal, `KIND:ID` |
+| `request_overdue` | a request to a space (sb-ask(3), Requests to a department) past its due time and not answered | the request, `qs_…` |
+| `policy_published` | a document marked as a policy (sb-ask(3), Goals, updates and policies) in the last 7 days | the policy, `KIND:ID` |
+| `action_due` | a confirmed action item (sb-ask(3), Research, meeting prep and action items) past its due day and not done | the item, `ac_…` |
+
+The body is `{ "kind", "space", "id", "at" }`, with `space` the space's name or `company` and `at` the time in RFC 3339 UTC. **No title, text or name leaves the cell** (LAW-07). The request is `POST` with `Content-Type: application/json`, `X-SB-Timestamp` (Unix seconds) and `X-SB-Signature: sha256=HEX`, the HMAC-SHA256 of the timestamp, a `.` and the body, keyed with `vault://tenants/TENANT/events`; a receiver checks it and refuses a timestamp more than 5 minutes off. A delivery that fails (no answer in 10 seconds, or a status other than 2xx) is tried twice more in the run, 2 and then 8 seconds later, and the next run tries it again; each event is delivered at most once for each space that holds its item. Every attempt's result is audited (`access`, `event_sent` or `event_failed`, the event's id, its kind as the reason), and nothing else of the event is logged. The receiver fetches anything more with its own read-only token (sb-api(3), Authentication; SB-2306), so the cell checks every read as that token's person (LAW-01). A key that can't be read sends nothing and fails the run.
+
 ### Pagination
 
 List endpoints return `{ "items": [...], "next": "<cursor>" }`. Pass `?cursor=` to continue. Cursors are opaque and expire after 1 hour.

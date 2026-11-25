@@ -400,6 +400,14 @@ func (s *Service) notify(ctx context.Context) error {
 	if rerr := s.Cell.RecordNotify(res, err, s.now()); rerr != nil && err == nil {
 		err = fmt.Errorf("jobs: the notify run can't be kept: %w", rerr)
 	}
+	// The events out and the guardrail alert run with it (SB-4404, SB-4406); each one's
+	// failure fails the run without stopping the others.
+	if _, eerr := s.Cell.RunEvents(ctx); eerr != nil && err == nil {
+		err = eerr
+	}
+	if gerr := s.Cell.GuardrailAlerts(ctx, s.now()); gerr != nil && err == nil {
+		err = gerr
+	}
 	return err
 }
 

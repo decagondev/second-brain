@@ -162,7 +162,10 @@ var frontDecisionRe = regexp.MustCompile(`(?s)\A(?:[^\n]*\n\n)?---\n(?:[^\n]*\n)
 
 // isDecision reports whether chunk c is a decision (SB-3702): it is under or holds a heading
 // Decision or Decisions, or it opens a document whose front matter says type: decision.
-func isDecision(c ports.Chunk) bool {
+func isDecision(c ports.Chunk) bool { return IsDecision(c) }
+
+// IsDecision is isDecision, for the events out (SB-4404).
+func IsDecision(c ports.Chunk) bool {
 	if s := strings.ToLower(strings.TrimSpace(c.Section)); s == "decision" || s == "decisions" || decisionHeadRe.MatchString(c.Text) {
 		return true
 	}

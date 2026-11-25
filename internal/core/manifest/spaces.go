@@ -42,6 +42,8 @@ type Space struct {
 	Updates bool `json:"updates,omitempty"`
 	// Requests are the categories a member can send a request in, nil for none (SB-4104).
 	Requests *Requests `json:"requests,omitempty"`
+	// Model is "main" to pin every ask in the space to the main model (SB-4405).
+	Model string `json:"model,omitempty"`
 	// BudgetUSDMonth is the space's monthly model budget, 0 for none (SB-4105): at
 	// BudgetWarnAt its stewards are told, and at it its scheduled runs pause.
 	BudgetUSDMonth int `json:"budget_usd_month,omitempty"`
@@ -196,7 +198,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "requests", "budget_usd_month", "incident_labels"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "requests", "budget_usd_month", "incident_labels", "model"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -302,6 +304,12 @@ func (c *checker) space(name string, n *node, p string) {
 			}
 		case "requests":
 			s.Requests = c.requests(v, f)
+		case "model": // SB-4405
+			if m, ok := c.scalar(v, f); ok && m != "main" {
+				c.add(v, f, "must be main; leave it out to let short asks use the small model")
+			} else {
+				s.Model = m
+			}
 		case "budget_usd_month":
 			s.BudgetUSDMonth, sn.budget = c.intIn(v, f, MinBudgetUSDMonth, 0), v
 		case "incident_labels":

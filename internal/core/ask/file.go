@@ -121,3 +121,15 @@ func (a Agent) fileChunks(ctx context.Context, q string, f *FileUpload) ([]ports
 	}
 	return out, nil
 }
+
+// fileFlagged is 1 when a file's passages carry an injection flag (SB-4406): counted, never named.
+func fileFlagged(cs []ports.Chunk) int {
+	for _, c := range cs {
+		for _, f := range c.Flags {
+			if f == ingest.FlagInstruction || f == ingest.FlagHidden {
+				return 1
+			}
+		}
+	}
+	return 0
+}

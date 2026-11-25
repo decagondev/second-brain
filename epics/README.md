@@ -47,7 +47,7 @@ summary: Epics, waves, slices and tickets.
 | W40 Run the Company | 6 | 0 | 0 | Planned 2026-11-24 with the user (E41): goals, status updates, policies to read, requests, department budgets, a home for each space |
 | W41 Agents That Do the Legwork | 7 | 0 | 0 | Planned 2026-11-24 with the user (E42), W41 built: research reports, meeting prep, action items from meetings, incident brief, voice of the customer, draft the fix, goal check-ins ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W42 Work That Comes to You | 7 | 0 | 0 | Planned 2026-11-24 with the user (E43), W42 built: one inbox, my routines, memory I control, collections, what agents did as me, agents over MCP, numbers from tables ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
-| W43 Govern Every Agent | 3 | 0 | 3 | Planned 2026-11-24 with the user (E44), S43.1 built: feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
+| W43 Govern Every Agent | 6 | 0 | 0 | Planned 2026-11-24 with the user (E44), W43 built: feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -795,6 +795,6 @@ flowchart LR
 | [SB-4401](E44-govern-every-agent/SB-4401-feedback-to-evals.md) | S43.1 | E44 | Feedback becomes evals | Done |
 | [SB-4402](E44-govern-every-agent/SB-4402-agent-owners.md) | S43.1 | E44 | Agent owners and changes | Done |
 | [SB-4403](E44-govern-every-agent/SB-4403-agent-lint.md) | S43.1 | E44 | Agent lint in the gate | Done |
-| [SB-4404](E44-govern-every-agent/SB-4404-signed-events.md) | S43.2 | E44 | Signed events out | Open |
-| [SB-4405](E44-govern-every-agent/SB-4405-model-tiers.md) | S43.2 | E44 | Model tiers | Open |
-| [SB-4406](E44-govern-every-agent/SB-4406-guardrail-insights.md) | S43.2 | E44 | Guardrail insights | Open |
+| [SB-4404](E44-govern-every-agent/SB-4404-signed-events.md) | S43.2 | E44 | Signed events out | Done |
+| [SB-4405](E44-govern-every-agent/SB-4405-model-tiers.md) | S43.2 | E44 | Model tiers | Done |
+| [SB-4406](E44-govern-every-agent/SB-4406-guardrail-insights.md) | S43.2 | E44 | Guardrail insights | Done |
