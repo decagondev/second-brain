@@ -95,6 +95,7 @@ func BriefDay(now time.Time, zone *time.Location, day time.Weekday) time.Time {
 // scheduled is one weekly run: a space's brief, or its status update (SB-4102).
 type scheduled struct {
 	space, clock string
+	agent        string // the agent that drafts it, for the pause link (SB-5107); "" for none
 	day          time.Weekday
 	run          func(ctx context.Context, space string) (string, error)
 }
@@ -106,17 +107,17 @@ func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
 	var runs []scheduled
 	if j.RunBrief != nil {
 		for s, d := range j.Briefs {
-			runs = append(runs, scheduled{s, "brief-" + s, d, j.RunBrief})
+			runs = append(runs, scheduled{space: s, clock: "brief-" + s, day: d, run: j.RunBrief})
 		}
 	}
 	if j.RunUpdate != nil {
 		for _, s := range j.Updates {
-			runs = append(runs, scheduled{s, "update-" + s, time.Monday, j.RunUpdate})
+			runs = append(runs, scheduled{space: s, clock: "update-" + s, agent: "update", day: time.Monday, run: j.RunUpdate})
 		}
 	}
 	if j.RunLeader != nil {
 		for _, s := range j.Leaders {
-			runs = append(runs, scheduled{s, "leader-" + s, time.Monday, j.RunLeader})
+			runs = append(runs, scheduled{space: s, clock: "leader-" + s, agent: "leader-week", day: time.Monday, run: j.RunLeader})
 		}
 	}
 	sort.Slice(runs, func(a, b int) bool { return runs[a].clock < runs[b].clock })
@@ -156,7 +157,7 @@ func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
 			text = strings.Replace(text, "This week's brief", "The leader's week", 1)
 		}
 		for _, p := range people {
-			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(r.space)}})
+			out = append(out, outgoing{p, Message{Kind: KindQuestions, Text: text, Link: j.stewardLink(r.space), Agent: r.agent, Space: strings.TrimPrefix(r.space, "spc_")}})
 		}
 	}
 	return out, nil

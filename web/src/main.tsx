@@ -21,7 +21,7 @@ if (root) {
     <StrictMode>
       <Localised
         render={() =>
-          action ? <ApproverView id={action} /> : admin ? <AdminConsole /> : steward && steward !== "me" ? <StewardView space={steward} /> : <App share={share} tab={steward === "me" ? "questions" : (params.get("tab") ?? undefined)} q={params.get("q") ?? undefined} space={params.get("space") ?? undefined} />
+          action ? <ApproverView id={action} /> : admin ? <AdminConsole /> : steward && steward !== "me" ? <StewardView space={steward} /> : <App share={share} tab={steward === "me" ? "questions" : (params.get("tab") ?? undefined)} q={params.get("q") ?? undefined} space={params.get("space") ?? undefined} pause={params.get("pause") ?? undefined} />
         }
       />
     </StrictMode>,

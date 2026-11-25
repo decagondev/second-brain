@@ -215,7 +215,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m), Parent: parentOf(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
 		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Trends: c.trends, Audit: c.Audit, Reviews: c.reviewList,
-		Briefs: briefDays(m), RunBrief: c.runBrief, Updates: updateSpaces(m), RunUpdate: c.runUpdate, Leaders: leaderSpaces(m), RunLeader: c.runLeader, Welcomes: c.welcomes, Welcomed: c.welcomed, Transcripts: c.newTranscripts, RunDecisions: c.runDecisions, PolicyNotices: c.policyNotices, SourceChanged: c.sourceChanged, NearLimit: c.nearLimit, Suspects: c.suspects, SpaceBudgets: c.spaceBudgets,
+		Briefs: briefDays(m), RunBrief: c.runBrief, Updates: updateSpaces(m), RunUpdate: c.runUpdate, Leaders: leaderSpaces(m), RunLeader: c.runLeader, Welcomes: c.welcomes, Welcomed: c.welcomed, Transcripts: c.newTranscripts, RunDecisions: c.runDecisions, PolicyNotices: c.policyNotices, SourceChanged: c.sourceChanged, NearLimit: c.nearLimit, Suspects: c.suspects, MayPause: c.mayPauseLink, SpaceBudgets: c.spaceBudgets,
 		Research: c.Parts().Legwork.RunQueued, PrepDue: c.Parts().Legwork.PrepDue,
 		Incidents: c.newIncidents, RunIncident: c.runIncident, RunReview: c.runReview, Checkins: c.runCheckins, Routines: c.Parts().Legwork.RunRoutines,
 		Waits:        c.Parts().Stewards.OverdueWaits, // SB-4504

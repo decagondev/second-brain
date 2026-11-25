@@ -37,6 +37,10 @@ POST /v1/admin/sessions/revoke
 GET  /v1/admin/agents
 GET  /v1/admin/agents/value
 GET  /v1/admin/agents/NAME/record
+GET  /v1/admin/agents/NAME/history
+POST /v1/admin/agents/NAME/history/N/restore
+GET  /v1/admin/rollouts
+POST /v1/admin/rollouts/FEATURE/hold|release
 GET  /v1/agents/shadow                          (an agent's owners)
 GET  /v1/admin/tokens
 DELETE /v1/admin/tokens/ID
@@ -145,6 +149,10 @@ On the notify job's first run from Monday 08:00 in the `digest` time zone (sb-te
 **`GET /v1/spaces/NAME/service`** (SB-4507), for a space's stewards, is 12 weeks of the space's service levels by category and week: time to first reply, time to close and the share closed late, and each team's counts, every row under 5 shown only as `fewer_than_5` (sb-ask(3), Department service levels). Counts and medians only: never a question, a request's text or who sent it. The space's home shows it as **Service**.
 
 **`GET /v1/admin/tree/plan?op=move&space=support&to=customer`** (SB-4806) is the reorg dry run of `sb tree move` and `sb tree merge` (sb-space(1), tree) against the cell's applied manifest, for admins: `{ "plan": { "op", "space", "to", "spaces": [{ "space", "parent_before", "parent_after", "escalate_now", "escalate_after", "rolls_up_now", "rolls_up_after", "settings": [{ "setting", "gains", "loses" }], "gone"? }] }, "manifest": "…", "in_flight": { "SPACE": { "rhythms", "open", "waiting", "projects", "routines", "triggered": [] } } }`. `op=merge` folds `space` into `to`. `manifest` is the manifest the change would leave, to propose through the usual review; nothing is applied. `in_flight` counts what is under way in each affected space now: running rhythms, open queue items and those waiting on another space, open projects, routines asked in the space, and the agents with a schedule or trigger there. Counts only. A change that would widen access (a label that loosens, a retention that grows, a merge whose member groups differ) is `EPERM` with the setting named (LAW-24); an unknown space, or a result `sb tenant check` refuses, is `EINVAL`.
+
+**`GET /v1/admin/agents/NAME/history`** and **`POST /v1/admin/agents/NAME/history/N/restore`** (SB-5104) are an agent's versions and a proposal to go back to one (sb-agents(7), Agent history): `{ "id", "diff", "hash" }` for the proposal, which another operator approves. Restoring the version applied now, or a version number that isn't there, is `EINVAL`.
+
+**`GET /v1/admin/rollouts`** and **`POST /v1/admin/rollouts/FEATURE/hold|release`** (SB-5106) are the release's features and their rollout (sb-release(7), Feature rollouts): `{ "features": [{ "name", "ticket", "rollout", "state", "since", "on_at"?, "pilot_group" }] }`. A feature with no pilot, or one this release doesn't have, is `EINVAL`.
 
 **`GET /v1/admin/guardrails/events`** (SB-5103), for operators, lists guardrail events since `since` (`Nd`, 1 to 90, or an RFC 3339 time; default `7d`), oldest first, at most 10,000: `{ "events": [{ "at", "kind", "space", "agent", "document", "count" }] }`, `kind` one of `suspect`, `masked`, `refused` or `denied` (sb-observability(7), Guardrail events). `format=csv` returns the same as `text/csv`. Ids and counts only; never text or the asker. A bad `since` is `EINVAL`.
 

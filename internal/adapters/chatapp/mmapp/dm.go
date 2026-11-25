@@ -101,5 +101,8 @@ func DMText(m notify.Message) string {
 	if strings.HasPrefix(m.Link, "https://") {
 		text += " [Open](" + strings.NewReplacer("(", "%28", ")", "%29", " ", "%20").Replace(m.Link) + ")"
 	}
+	if strings.HasPrefix(m.Pause, "https://") { // SB-5107
+		text += " [Pause this agent here](" + strings.NewReplacer("(", "%28", ")", "%29", " ", "%20").Replace(m.Pause) + ")"
+	}
 	return text
 }

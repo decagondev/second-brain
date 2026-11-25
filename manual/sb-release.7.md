@@ -80,6 +80,17 @@ Tenants choose `stable` or `testing`, never a version (ADR-0004). The release co
 
 A gated release goes to ring 0 (the internal tenant), then ring 1 (friendly tenants on `testing`), soaks for at least 48 hours, then can be promoted to `stable`. **Promote guard:** promotion is refused unless every stable tenant runs the current stable. That is what keeps everyone at most one behind (LAW-08). A definition's `shadow` runs only here, in the first ring (sb-agents(7), Shadow runs; SB-4704): a changed prompt meets real work beside the current one for up to a week, and its runs are never delivered.
 
+### Feature rollouts (SB-5106)
+
+A release lists its features with a rollout: `on`, or `pilot`. A pilot feature is on only for the members of the tenant's `pilot` IdP group until 14 days after the cell first ran it, then for everyone, unless an admin **holds** it, which keeps it with the pilot group until it is released. `sb rollout list` (sb(1)) and `GET /v1/admin/rollouts` show each feature, its ticket, its state (`on`, `pilot` with `on_at`, or `held`) and when the cell first ran it; `sb rollout hold FEATURE` and `sb rollout release FEATURE`, or `POST /v1/admin/rollouts/FEATURE/hold|release`, change it, audited (`kind: config`, subject `rollout:FEATURE`) before it takes effect. The cell keeps the dates and holds in `state/features/state.json`. The admin's week lists features in pilot, held and gone on for everyone (sb-observability(7)). This release's pilot features:
+
+| Feature | Ticket | While in pilot |
+|---|---|---|
+| `branch-moderators` | SB-5105 | Only the pilot group's stewards act as branch moderators (sb-spaces(7)) |
+| `pause-link` | SB-5107 | Only the pilot group's notices carry Pause this agent here (sb-agents(7)) |
+
+A feature the cell can't read the state of is off, except for a feature with no pilot.
+
 ### Rollback
 
 `sb release rollback` makes the previous stable current, revokes the bad release and redeploys affected cells, in under 10 minutes.

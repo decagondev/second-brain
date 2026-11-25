@@ -191,7 +191,7 @@ func (c *Cell) checkAlerts(ctx context.Context, now time.Time) ([]notify.AgentAl
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, notify.AgentAlert{Kind: notify.KindCheck, Key: "check-" + res.ID, To: to, Text: res.Text})
+		out = append(out, notify.AgentAlert{Kind: notify.KindCheck, Key: "check-" + res.ID, To: to, Text: res.Text, Agent: res.Change.Agent, Space: res.Change.Space})
 	}
 	return out, nil
 }
@@ -245,6 +245,7 @@ func (c *Cell) adminLines(ctx context.Context, m manifest.Tenant, from, to, now 
 	if err != nil {
 		return nil, err
 	}
+	out = append(out, c.rolloutLines(from, to)...) // SB-5106
 	spend, err := c.monthSpend(ctx, m, now, nil)
 	if err != nil {
 		return nil, err

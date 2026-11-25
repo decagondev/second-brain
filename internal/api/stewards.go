@@ -56,6 +56,10 @@ type Stewards struct {
 	Lift func(ctx context.Context, space, email string, audit func(user, month string) error) (user, month string, err error)
 	// Checks are one space's kept "did it help?" checks (SB-5005); nil serves none.
 	Checks func(space string) ([]ask.Check, error)
+	// SharedCount counts a space's shared routines for its branch moderators (SB-5105).
+	SharedCount SharedCounter
+	// Feature says a feature is on for a user (SB-5106); nil is on for everyone.
+	Feature func(ctx context.Context, user, name string) bool
 }
 
 // Register mounts the endpoints.
@@ -64,9 +68,12 @@ func (h Stewards) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/term", h.proposeTerm)
 	mux.HandleFunc("GET /v1/spaces/{name}/agents", h.spaceAgents)
 	mux.HandleFunc("POST /v1/spaces/{name}/proposals/agents", h.proposeAgents)
-	mux.HandleFunc("POST /v1/spaces/{name}/proposals/{id}/scenarios", h.scenarios) // SB-4904
-	mux.HandleFunc("POST /v1/spaces/{name}/limits/lift", h.lift)                   // SB-5003
-	mux.HandleFunc("GET /v1/spaces/{name}/checks", h.spaceChecks)                  // SB-5005
+	mux.HandleFunc("POST /v1/spaces/{name}/proposals/{id}/scenarios", h.scenarios)              // SB-4904
+	mux.HandleFunc("POST /v1/spaces/{name}/limits/lift", h.lift)                                // SB-5003
+	mux.HandleFunc("GET /v1/spaces/{name}/checks", h.spaceChecks)                               // SB-5005
+	mux.HandleFunc("GET /v1/spaces/{name}/branch", h.branch)                                    // SB-5105
+	mux.HandleFunc("GET /v1/spaces/{name}/skills/{skill}/history", h.skillHistory)              // SB-5104
+	mux.HandleFunc("POST /v1/spaces/{name}/skills/{skill}/history/{n}/restore", h.restoreSkill) // SB-5104
 	mux.HandleFunc("GET /v1/admin/proposals", h.list)
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/approve", h.decide(true))
 	mux.HandleFunc("POST /v1/admin/proposals/{id}/reject", h.decide(false))

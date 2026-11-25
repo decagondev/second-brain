@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S50.2: Roll out with care
+
+**Wave/slice:** W50 / S50.2 (SB-5104 to SB-5107) · **Status:** Done
+
+**What:** An agent's manifest settings, and a space's skill, have a history: every approved proposal that changed them, who proposed and approved it, a diff between any two, and Restore, which is a new proposal. A steward of a department can pause any agent in the teams below it and sees their agents, skills, rhythms and shared routines by name and count. New features can go to the tenant's `pilot` group first: on for everyone 14 days after the cell first runs them unless an admin holds them (`sb rollout`, `/v1/admin/rollouts`). Notices about one agent's run in one space carry Pause this agent here for those allowed to pause it.
+
+**Why this way:** History needs no new store: every approved proposal already keeps the whole manifest it would make, so each version is read from it, and the applied manifest is the last. A restore goes back through review because a manifest change is always two people. Branch moderation is one walk up the tree on the existing pause check, so it can never reach a sibling. The rollout state is two small maps in the cell's state directory, and a feature whose state can't be read is off. The pause link is added per recipient at send time, so a notice to many people links only for those who may act.
+
+**Learned:** An agent's prompt and tools are part of the release, not the manifest, so its history is of its settings; an older prompt comes back only with an older release. The two features that ship in pilot are this slice's own: branch moderation and the pause link.
+
+**Laws:** LAW-06, LAW-08, LAW-10, LAW-11, LAW-24. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S50.1: Check what goes in and out
 
 **Wave/slice:** W50 / S50.1 (SB-5101 to SB-5103) · **Status:** Done

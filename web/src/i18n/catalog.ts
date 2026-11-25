@@ -556,6 +556,8 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "This action couldn't be loaded.": { de: "Diese Aktion konnte nicht geladen werden.", fr: "Cette action n'a pas pu être chargée." },
   "{n} passage was skipped because it looked like instructions to the AI.": { de: "{n} Abschnitt wurde übersprungen, weil er wie eine Anweisung an die KI aussah.", fr: "{n} passage a été ignoré parce qu'il ressemblait à des instructions pour l'IA." },
   "{n} passages were skipped because they looked like instructions to the AI.": { de: "{n} Abschnitte wurden übersprungen, weil sie wie Anweisungen an die KI aussahen.", fr: "{n} passages ont été ignorés parce qu'ils ressemblaient à des instructions pour l'IA." },
+  "Pause this agent here": { de: "Diesen Agenten hier pausieren", fr: "Mettre cet agent en pause ici" },
+  "Pause {agent} in {space}? It drafts nothing more there until someone resumes it.": { de: "{agent} in {space} pausieren? Er entwirft dort nichts mehr, bis ihn jemand fortsetzt.", fr: "Mettre {agent} en pause dans {space} ? Il ne rédige plus rien là-bas jusqu'à ce que quelqu'un le relance." },
   "This answer rests on one document. Check it if it matters.": { de: "Diese Antwort beruht auf einem einzigen Dokument. Prüfen Sie es, wenn es darauf ankommt.", fr: "Cette réponse repose sur un seul document. Vérifiez-le si c'est important." },
   "This belongs to another company.": { de: "Dies gehört zu einem anderen Unternehmen.", fr: "Ceci appartient à une autre entreprise." },
   "This browser": { de: "Dieser Browser", fr: "Ce navigateur" },

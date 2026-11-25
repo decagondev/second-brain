@@ -13,12 +13,14 @@ import (
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/costs"
+	"example.com/second-brain/internal/core/features"
 	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/inventory"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
+	"example.com/second-brain/internal/core/proposals"
 	"example.com/second-brain/internal/core/release"
 	"example.com/second-brain/internal/core/reorg"
 	"example.com/second-brain/internal/core/report"
@@ -97,6 +99,14 @@ type Admin struct {
 	PausedIn   func(agent string) []string
 	// AgentRecord is an agent's signed record (SB-4707); nil is EUNAVAIL.
 	AgentRecord func(ctx context.Context, name string) (ask.SignedRecord, error)
+	// AgentHistory is an agent's versions and Restore makes a proposal (SB-5104); nil is
+	// EUNAVAIL.
+	AgentHistory func(ctx context.Context, name string) ([]proposals.Version, error)
+	Restore      RestoreFunc
+	// Rollouts are the features' rollout states and HoldFeature holds or releases one
+	// (SB-5106); nil is EUNAVAIL.
+	Rollouts    func(ctx context.Context) ([]features.Status, error)
+	HoldFeature func(ctx context.Context, s tenancy.Scope, name string, hold bool) error
 	// AIUsage is the AI command centre (SB-5001); nil is EUNAVAIL.
 	AIUsage func(ctx context.Context) (ask.AIUsage, error)
 	// Checks are the kept "did it help?" checks of one space, or every space's for ""
@@ -151,12 +161,17 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/index/refresh", h.guard(h.refresh))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("GET /v1/admin/agents", h.guard(h.agents))
-	mux.HandleFunc("GET /v1/admin/agents/value", h.guard(h.agentValue))          // SB-4701
-	mux.HandleFunc("GET /v1/admin/agents/{name}/record", h.guard(h.agentRecord)) // SB-4707
-	mux.HandleFunc("GET /v1/admin/ai/usage", h.guard(h.aiUsage))                 // SB-5001
-	mux.HandleFunc("GET /v1/admin/checks", h.guard(h.checks))                    // SB-5005
-	mux.HandleFunc("GET /v1/admin/checks/{id}", h.guard(h.check))                // SB-5005
-	mux.HandleFunc("GET /v1/admin/inventory", h.guard(h.inventory))              // SB-5007
+	mux.HandleFunc("GET /v1/admin/agents/value", h.guard(h.agentValue))                         // SB-4701
+	mux.HandleFunc("GET /v1/admin/agents/{name}/record", h.guard(h.agentRecord))                // SB-4707
+	mux.HandleFunc("GET /v1/admin/rollouts", h.guard(h.rollouts))                               // SB-5106
+	mux.HandleFunc("POST /v1/admin/rollouts/{feature}/hold", h.guard(h.hold(true)))             // SB-5106
+	mux.HandleFunc("POST /v1/admin/rollouts/{feature}/release", h.guard(h.hold(false)))         // SB-5106
+	mux.HandleFunc("GET /v1/admin/agents/{name}/history", h.guard(h.agentHistory))              // SB-5104
+	mux.HandleFunc("POST /v1/admin/agents/{name}/history/{n}/restore", h.guard(h.restoreAgent)) // SB-5104
+	mux.HandleFunc("GET /v1/admin/ai/usage", h.guard(h.aiUsage))                                // SB-5001
+	mux.HandleFunc("GET /v1/admin/checks", h.guard(h.checks))                                   // SB-5005
+	mux.HandleFunc("GET /v1/admin/checks/{id}", h.guard(h.check))                               // SB-5005
+	mux.HandleFunc("GET /v1/admin/inventory", h.guard(h.inventory))                             // SB-5007
 	mux.HandleFunc("GET /v1/admin/tokens", h.guard(h.listTokens))
 	mux.HandleFunc("DELETE /v1/admin/tokens/{id}", h.guard(h.revokeToken))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))
@@ -703,4 +718,33 @@ func (h Admin) fail(w http.ResponseWriter, e *errs.Error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(errs.HTTP(e.Code))
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{"code": string(e.Code), "message": e.Msg, "remedy": errs.Remedy(e.Code)}})
+}
+
+// rollouts is GET /v1/admin/rollouts: every feature with a rollout and its state (SB-5106).
+func (h Admin) rollouts(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Rollouts == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Rollouts aren't available in this cell."))
+		return
+	}
+	rs, err := h.Rollouts(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The rollouts can't be read right now."))
+		return
+	}
+	h.ok(w, map[string]any{"features": rs})
+}
+
+// hold is POST /v1/admin/rollouts/FEATURE/hold|release (SB-5106).
+func (h Admin) hold(on bool) func(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+	return func(w http.ResponseWriter, r *http.Request, s tenancy.Scope) {
+		if h.HoldFeature == nil || h.Rollouts == nil {
+			h.fail(w, errs.New(errs.EUNAVAIL, "Rollouts aren't available in this cell."))
+			return
+		}
+		if err := h.HoldFeature(r.Context(), s, r.PathValue("feature"), on); err != nil {
+			h.fail(w, mapErr(err))
+			return
+		}
+		h.rollouts(w, r, s)
+	}
 }

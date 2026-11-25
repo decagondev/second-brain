@@ -223,7 +223,7 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 }
 
 func hasSub(cmd string) bool {
-	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" || cmd == "tree" || cmd == "inventory" {
+	if cmd == "tenant" || cmd == "agents" || cmd == "space" || cmd == "index" || cmd == "selfhost" || cmd == "cell" || cmd == "secrets" || cmd == "backup" || cmd == "recovery" || cmd == "tree" || cmd == "inventory" || cmd == "rollout" {
 		return true
 	}
 	for k := range planned {
@@ -877,6 +877,8 @@ func (e *env) signedCommand(name string, args []string) (int, bool) {
 		return e.agentsRecord(args), true
 	case "inventory export":
 		return e.inventoryExport(args), true
+	case "rollout list", "rollout hold", "rollout release": // SB-5106
+		return e.rollout(name[len("rollout "):], args), true
 	}
 	return 0, false
 }

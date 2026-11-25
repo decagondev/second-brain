@@ -53,3 +53,28 @@ func TestMaskingSender(t *testing.T) {
 		t.Fatalf("sent %+v, masked %d", s.got, n)
 	}
 }
+
+// SB-5107: a notice about one agent's run in one space carries the pause link only for a
+// person who may pause it there.
+func TestPauseLinkOnlyForThoseWhoMay(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	j, s, _ := world(now)
+	j.AgentAlerts = func(context.Context, time.Time) ([]AgentAlert, error) {
+		return []AgentAlert{{Kind: KindCheck, Key: "check-1", To: []string{"usr_ann", "usr_bob"}, Text: "Did it help?", Agent: "case-brief", Space: "support"}}, nil
+	}
+	j.MayPause = func(_ context.Context, user, space, agent string) bool {
+		return user == "usr_ann" && space == "support" && agent == "case-brief"
+	}
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	links := map[string]string{}
+	for _, g := range s.got {
+		if g.msg.Kind == KindCheck {
+			links[g.to.ID] = g.msg.Pause
+		}
+	}
+	if links["usr_ann"] != "https://brain.acme.example/?pause=case-brief&space=support" || links["usr_bob"] != "" || len(links) != 2 {
+		t.Fatalf("links %v", links)
+	}
+}

@@ -223,5 +223,8 @@ func Text(msg notify.Message) string {
 	if strings.HasPrefix(msg.Link, "https://") && !strings.ContainsAny(msg.Link, " \r\n") {
 		text += "\r\n" + msg.Link + "\r\n"
 	}
+	if strings.HasPrefix(msg.Pause, "https://") && !strings.ContainsAny(msg.Pause, " \r\n") { // SB-5107
+		text += "\r\nPause this agent here: " + msg.Pause + "\r\n"
+	}
 	return text + "\r\nYou can turn off " + msg.Kind + " notifications in the web UI's notification settings.\r\n"
 }

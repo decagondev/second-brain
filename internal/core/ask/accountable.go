@@ -2,6 +2,7 @@ package ask
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"example.com/second-brain/internal/core/tenancy"
@@ -55,24 +56,41 @@ func (a Agent) OwnedAgents(ctx context.Context, s tenancy.Scope) ([]string, erro
 // MayPause checks that s may pause or resume agent in space name: a shipped agent, and s a
 // steward of the space or the agent's owner (SB-4702).
 func (x Stewards) MayPause(ctx context.Context, s tenancy.Scope, name, agent string) error {
+	_, err := x.PauseVia(ctx, s, name, agent)
+	return err
+}
+
+// PauseVia is MayPause, and the space above name whose steward s is when that is why s may
+// (a branch moderator, SB-5105); "" when s owns the agent or stewards name itself.
+func (x Stewards) PauseVia(ctx context.Context, s tenancy.Scope, name, agent string) (string, error) {
 	if err := s.Check(); err != nil || s.Tenant() != x.Agent.Tenant {
-		return ErrNotSteward
+		return "", ErrNotSteward
 	}
 	if AgentOwner(agent) == "" {
-		return fmt.Errorf("%w: no agent %q", ErrInvalid, agent)
+		return "", fmt.Errorf("%w: no agent %q", ErrInvalid, agent)
 	}
 	if x.Facts != nil {
 		if _, _, ok := x.Facts(SpaceKey(name)); !ok {
-			return fmt.Errorf("%w: no space %q", ErrInvalid, name)
+			return "", fmt.Errorf("%w: no space %q", ErrInvalid, name)
 		}
 	}
 	owned, err := x.Agent.OwnedAgents(ctx, s)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if contains(owned, agent) {
-		return nil
+		return "", nil
 	}
 	_, _, err = x.steward(ctx, s, name)
-	return err
+	if err == nil || !errors.Is(err, ErrNotSteward) || x.Parent == nil {
+		return "", err
+	}
+	seen := map[string]bool{name: true}
+	for p := x.Parent(name); p != "" && !seen[p]; p = x.Parent(p) { // SB-5105: a steward above it
+		seen[p] = true
+		if _, _, perr := x.steward(ctx, s, p); perr == nil {
+			return p, nil
+		}
+	}
+	return "", err
 }

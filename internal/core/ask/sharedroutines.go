@@ -198,3 +198,17 @@ func (x Stewards) JoinRoutine(ctx context.Context, s tenancy.Scope, name, id str
 	}
 	return cp, nil
 }
+
+// SharedRoutineCount is how many routines are shared with space name now (SB-5105): a count
+// for a branch moderator, never a question or who shared it.
+func (x Stewards) SharedRoutineCount(ctx context.Context, name string) (int, error) {
+	st, err := x.savedStore()
+	if err != nil {
+		return 0, err
+	}
+	all, err := st.Routines(ctx, x.Agent.Tenant)
+	if err != nil {
+		return 0, fmt.Errorf("%w: routines: %v", ErrUnavailable, err)
+	}
+	return len(sharedIn(all, name)), nil
+}

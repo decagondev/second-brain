@@ -21,6 +21,9 @@ type AgentAlert struct {
 	// Kind is the notification kind, KindAgent when empty; KindCheck and KindAdminWeek
 	// are told the same way (SB-5005, SB-5006).
 	Kind string
+	// Agent and Space are the one agent and space it is about, for the pause link
+	// (SB-5107); "" for an alert about no one space.
+	Agent, Space string
 }
 
 // The kinds of the checks that come back and the admin's week (SB-5005, SB-5006).
@@ -67,7 +70,7 @@ func (j Job) agentAlerts(ctx context.Context, now time.Time) ([]outgoing, []func
 				case KindAdminWeek:
 					kind, tab = KindAdminWeek, "admin"
 				}
-				out = append(out, outgoing{p, Message{Kind: kind, Text: a.Text, Link: j.tab(tab)}})
+				out = append(out, outgoing{p, Message{Kind: kind, Text: a.Text, Link: j.tab(tab), Agent: a.Agent, Space: a.Space}})
 			}
 		}
 	}

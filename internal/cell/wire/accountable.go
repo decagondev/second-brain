@@ -211,7 +211,8 @@ func (c *Cell) agentAlerts(ctx context.Context, now time.Time) ([]notify.AgentAl
 // pauseAgent pauses (on) or resumes agent in space name for s, a steward there or its
 // owner: the kill switch agent:AGENT@NAME, audited with the reason, and the owner told.
 func (c *Cell) pauseAgent(ctx context.Context, s tenancy.Scope, name, agent, reason string, on bool) error {
-	if err := c.Parts().Stewards.MayPause(ctx, s, name, agent); err != nil {
+	via, err := c.Parts().Stewards.PauseVia(ctx, s, name, agent)
+	if err != nil {
 		return err
 	}
 	reason = strings.Join(strings.Fields(reason), " ")
@@ -220,6 +221,12 @@ func (c *Cell) pauseAgent(ctx context.Context, s tenancy.Scope, name, agent, rea
 	}
 	if reason == "" || len([]rune(reason)) > ask.MaxPauseReason {
 		return fmt.Errorf("%w: a reason is 1 to %d characters", ask.ErrInvalid, ask.MaxPauseReason)
+	}
+	if via != "" && !c.featureOn(ctx, s.User(), "branch-moderators") { // SB-5106: a pilot feature
+		return ask.ErrNotSteward
+	}
+	if via != "" {
+		reason += " (branch moderator of " + via + ")" // SB-5105: audited with the branch
 	}
 	ctl := kill.Control{Store: c.Kill.Store, Audit: c.Audit, Now: time.Now}
 	change := ctl.Unkill

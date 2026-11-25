@@ -118,5 +118,8 @@ func DMText(m notify.Message) string {
 	if strings.HasPrefix(m.Link, "https://") {
 		text += " <" + strings.NewReplacer("|", "%7C", ">", "%3E", "<", "%3C").Replace(m.Link) + "|Open>"
 	}
+	if strings.HasPrefix(m.Pause, "https://") { // SB-5107
+		text += " <" + strings.NewReplacer("|", "%7C", ">", "%3E", "<", "%3C").Replace(m.Pause) + "|Pause this agent here>"
+	}
 	return text
 }

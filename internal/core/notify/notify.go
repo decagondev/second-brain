@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -64,6 +65,10 @@ type Message struct {
 	Kind string
 	Text string
 	Link string // an https URL on the cell's own web UI
+	// Agent and Space are the agent run a message is about, and Pause the link that pauses
+	// that agent there, set only for someone allowed to (SB-5107).
+	Agent, Space string
+	Pause        string
 }
 
 // Sender delivers a message to one person: a chat bot's direct message, or email.
@@ -263,6 +268,9 @@ type Job struct {
 	// NearLimit are the people at 80% or more of their personal limit this month (SB-5003),
 	// each told once a month; nil tells no one.
 	NearLimit func(ctx context.Context, now time.Time) ([]string, error)
+	// MayPause says a person may pause an agent in a space and has the pause link (SB-5107);
+	// nil adds the link for no one.
+	MayPause func(ctx context.Context, user, space, agent string) bool
 	// Suspects are the documents with a suspect passage, each with its owner's user id
 	// (SB-5101); each version is told once. nil tells no one.
 	Suspects func(ctx context.Context) ([]SuspectDoc, error)
@@ -455,6 +463,7 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 			res.Skipped++
 			continue
 		}
+		o.msg.Pause = j.pauseLink(ctx, o.to.ID, o.msg) // SB-5107
 		if err := j.Send.Send(ctx, o.to, o.msg); errors.Is(err, ErrNoSuchPerson) {
 			res.Skipped++
 			continue
@@ -1208,6 +1217,15 @@ func (j Job) stewardLines(ctx context.Context, now time.Time) (map[string][]stri
 		}
 	}
 	return lines, people, nil
+}
+
+// pauseLink is the web UI's Pause this agent here for a message about an agent run in a
+// space, when to may pause it there and has the feature (SB-5106, SB-5107); "" otherwise.
+func (j Job) pauseLink(ctx context.Context, to string, m Message) string {
+	if m.Agent == "" || m.Space == "" || j.MayPause == nil || !j.MayPause(ctx, to, m.Space, m.Agent) {
+		return ""
+	}
+	return strings.TrimSuffix(j.Base, "/") + "/?pause=" + url.QueryEscape(m.Agent) + "&space=" + url.QueryEscape(m.Space)
 }
 
 func (j Job) tab(name string) string {

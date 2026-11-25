@@ -23,6 +23,7 @@ import { ErrorBox } from "./ErrorBox";
 import { SourcesFirst } from "./Sources";
 import { ApiTokens } from "./Tokens";
 import { NoticeBanner } from "./Notice";
+import { PauseHere } from "./Accountable";
 import { AnswerTools, DownloadConversation } from "./Copy";
 import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, setVerifiedOnly, shortAnswers, verifiedOnly } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
@@ -58,7 +59,8 @@ const searchable = new Set(["EUNAVAIL", "EBUDGET"]);
 // tab opens the app on a tab, from a notification's link (?tab=questions; SB-2102).
 // q is a search from the address bar (SB-3806): with tab documents, it runs at once.
 // space opens it in a space, from an inbox item's link (?space=finance; SB-4301).
-export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: { fetcher?: Fetch; share?: string; tab?: string; q?: string; space?: string }) {
+// pause, with space, offers Pause this agent here from a notice's link (SB-5107).
+export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pause }: { fetcher?: Fetch; share?: string; tab?: string; q?: string; space?: string; pause?: string }) {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
@@ -275,6 +277,12 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace }: 
       </a>
       <h1>{"Second Brain"}</h1>
       <NoticeBanner fetcher={fetcher} />
+      {pause && inSpace && (
+        <section className="pause-link" aria-label={t("Pause this agent here")}>
+          <p>{t("Pause {agent} in {space}? It drafts nothing more there until someone resumes it.", { agent: pause, space: inSpace })}</p>
+          <PauseHere space={inSpace} agent={pause} fetcher={fetcher} />
+        </section>
+      )}
       {(shared || sharedError) && (
         <section className="shared" aria-label={t("Shared question")}>
           {shared ? (
