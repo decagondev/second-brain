@@ -486,7 +486,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			return c.Spaces.Space(ctx, tenant, id)
 		},
 		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
-		Small:       small, SmallHeld: c.smallHeld, PinMain: func(key string) bool { return m.Spaces[strings.TrimPrefix(key, "spc_")].Model == "main" },
+		AgentPaused: c.Kill.Paused, AgentCapped: c.agentCapped, // SB-4702, SB-4703
+		Small: small, SmallHeld: c.smallHeld, PinMain: func(key string) bool { return m.Spaces[strings.TrimPrefix(key, "spc_")].Model == "main" },
 		Departmental: departmental(m),
 		Updates:      func(name string) bool { return m.Spaces[name].Updates },
 		LeaderWeek:   m.LeaderWeek, // SB-4503
@@ -697,7 +698,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails,
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
-		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive}
+		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
+		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn} // SB-4701, SB-4702
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
@@ -712,7 +714,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now,
-		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive}.Register(mux)
+		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive, PausedIn: c.Kill.PausedIn}.Register(mux)
+	api.AgentControl{Value: c.ownerValue, Pause: c.pauseAgent}.Register(mux) // SB-4701, SB-4702
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)
 	api.Holds{Tenant: tenant, Policy: c.Policy, Manifests: man, Service: holds.Service{Store: c.Holds, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)

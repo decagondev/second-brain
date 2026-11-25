@@ -204,6 +204,9 @@ func (l Legwork) runRoutine(ctx context.Context, q SavedQuestion, now time.Time)
 		}
 		return nil, mark(nil)
 	}
+	if l.Agent.runsStop(ctx, s, "ask") != nil { // paused here or at its cap: nothing is asked (SB-4702, SB-4703)
+		return nil, mark(nil)
+	}
 	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, User: q.User, Kind: KindRoutine, Question: q.Question, Space: q.Space,
 		Steps: []string{q.Question}, State: StateDone, At: now}
 	resp, err := l.Agent.Ask(ctx, s, Request{Question: q.Question})

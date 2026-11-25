@@ -13,7 +13,7 @@ summary: "Stopping a misbehaving agent in one space means finding an admin."
 | Manual | [`sb-kill-switches(7)`](../../manual/sb-kill-switches.7.md), [`sb-agents(7)`](../../manual/sb-agents.7.md) |
 | Laws | LAW-10, LAW-11 |
 | Depends on | SB-4402 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Stopping a misbehaving agent in one space means finding an admin.
 
 ## Acceptance criteria
 
-- [ ] Every agent message and draft carries **Pause here** for the space's stewards and the agent's owner
-- [ ] The agent stops in that space at once, the reason goes to the owner, and it's audited
-- [ ] A steward or the owner resumes it; waiting drafts are kept
+- [x] Every agent message and draft carries **Pause here** for the space's stewards and the agent's owner
+- [x] The agent stops in that space at once, the reason goes to the owner, and it's audited
+- [x] A steward or the owner resumes it; waiting drafts are kept
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Kill switch scope
-- [ ] Chat and UI
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Kill switch scope
+- [x] Chat and UI
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [19-departments-shape-account.md](../../docs/19-departments-shape-account.md).
+2026-11-25: built. A pause is the kill switch `agent:NAME@SPACE`: `kill.Checker.Check` refuses an `Op` with that agent and space, and `Paused` answers paused while the list can't be read. Drafts, routine runs, redrafts and named-agent asks check it (`EKILLED`); people's own asks with `ask` go on. `POST /v1/spaces/NAME/agents/AGENT/pause|resume` takes a reason, is allowed to the space's stewards and the agent's owner only, audits `kind: kill`, refreshes the checker at once and tells the owner. Agents speak in a space only through drafts in its steward queue (routine results are kept for the person alone), so Pause here sits on every agent draft there and on an owner's value rows; the space's agents list carries `paused`. LAW-10 now also sets and checks `agent:NAME@SPACE` scopes on its fake clock. TestAgentPausedInASpace, TestLAW10_KillWins, TestEveryAgentAccountableThroughARunningCell.
 
 ## Definition of done
 

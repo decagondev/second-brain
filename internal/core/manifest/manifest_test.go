@@ -195,7 +195,9 @@ func TestOneSourceForTypesAndSchema(t *testing.T) {
 	var tags, names []string
 	ty := reflect.TypeOf(Tenant{})
 	for i := 0; i < ty.NumField(); i++ {
-		tags = append(tags, ty.Field(i).Tag.Get("json"))
+		if tag := ty.Field(i).Tag.Get("json"); tag != "-" { // "-": read from another field's form (agents' caps)
+			tags = append(tags, tag)
+		}
 	}
 	for _, f := range fields {
 		names = append(names, f.name)

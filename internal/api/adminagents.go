@@ -42,6 +42,23 @@ type AdminAgent struct {
 	OwnerInactive bool   `json:"owner_inactive,omitempty"`
 	// Unused marks a listed department agent with no run in the space in UnusedWindow.
 	Unused bool `json:"unused,omitempty"`
+	// Paused are the spaces it is paused in (SB-4702).
+	Paused []string `json:"paused,omitempty"`
+}
+
+// withPauses sets each row's paused spaces, within the spaces it lists.
+func withPauses(rows []AdminAgent, pausedIn func(string) []string) []AdminAgent {
+	if pausedIn == nil {
+		return rows
+	}
+	for i := range rows {
+		for _, sp := range pausedIn(rows[i].Name) {
+			if contains(rows[i].Spaces, sp) {
+				rows[i].Paused = append(rows[i].Paused, sp)
+			}
+		}
+	}
+	return rows
 }
 
 // UnusedWindow is how long a space's agent goes without a run before it is offered off
@@ -225,7 +242,8 @@ func (h Admin) agents(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 			return
 		}
 	}
-	h.ok(w, map[string]any{"agents": withOwners(r.Context(), AgentRegistry(m, "", traces, fb, h.AgentKilled, held), h.OwnerActive), "days": 30})
+	rows := withPauses(withOwners(r.Context(), AgentRegistry(m, "", traces, fb, h.AgentKilled, held), h.OwnerActive), h.PausedIn)
+	h.ok(w, map[string]any{"agents": rows, "days": 30})
 }
 
 // spaceAgents is GET /v1/spaces/NAME/agents: the registry's rows for the agents one space
@@ -259,17 +277,34 @@ func (h Stewards) spaceAgents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	sort.Strings(can)
-	rows := withOwners(r.Context(), AgentRegistry(cur, name, traces, fb, h.AgentKilled, held), h.OwnerActive)
+	rows := withPauses(withOwners(r.Context(), AgentRegistry(cur, name, traces, fb, h.AgentKilled, held), h.OwnerActive), h.PausedIn)
 	off, err := unused(r.Context(), h.Runs, cur, h.Tenant, name, rows, now())
 	if err != nil {
 		fail(w, errs.New(errs.EUNAVAIL, "Runs can't be read right now."))
 		return
 	}
-	body := map[string]any{"space": name, "agents": rows, "listed": nonNil(cur.Spaces[name].Agents), "can_list": can, "days": 30}
+	body := map[string]any{"space": name, "agents": rows, "listed": nonNil(cur.Spaces[name].Agents), "can_list": can, "days": 30,
+		"paused": pausedHere(name, h.PausedIn)}
 	if off != nil {
 		body["propose_off"] = map[string][]string{"agents": off} // SB-4402: a proposal, never a change
 	}
 	writeJSON(w, body)
+}
+
+// pausedHere are the shipped agents paused in space, sorted (SB-4702).
+func pausedHere(space string, pausedIn func(string) []string) []string {
+	out := []string{}
+	if pausedIn == nil {
+		return out
+	}
+	defs, _ := ask.ParseAgentDefs(ask.AgentDefs)
+	for _, d := range defs {
+		if contains(pausedIn(d.Name), space) {
+			out = append(out, d.Name)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func nonNil(xs []string) []string {

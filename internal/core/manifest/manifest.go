@@ -18,17 +18,20 @@ import (
 
 // Tenant is a valid manifest with defaults applied. Absent optional lists and maps are nil.
 type Tenant struct {
-	Tenant         string            `json:"tenant"`
-	Channel        string            `json:"channel"`
-	IdP            string            `json:"idp"`
-	Region         string            `json:"region"`
-	Connectors     map[string]string `json:"connectors"`
-	Agents         []string          `json:"agents"`
-	Workflows      []string          `json:"workflows"`
-	Approval       map[string]string `json:"approval"`
-	Duties         map[string]Duty   `json:"duties"`
-	RetentionDays  int               `json:"retention_days"`
-	BudgetUSDMonth int               `json:"budget_usd_month"`
+	Tenant     string            `json:"tenant"`
+	Channel    string            `json:"channel"`
+	IdP        string            `json:"idp"`
+	Region     string            `json:"region"`
+	Connectors map[string]string `json:"connectors"`
+	Agents     []string          `json:"agents"`
+	// AgentCaps are the agents' monthly model spend caps in USD, from the map form of
+	// agents (SB-4703).
+	AgentCaps      map[string]float64 `json:"-"`
+	Workflows      []string           `json:"workflows"`
+	Approval       map[string]string  `json:"approval"`
+	Duties         map[string]Duty    `json:"duties"`
+	RetentionDays  int                `json:"retention_days"`
+	BudgetUSDMonth int                `json:"budget_usd_month"`
 	// AsksPerMinute is how many questions one person may ask in a minute (SB-2305).
 	AsksPerMinute int `json:"asks_per_minute"`
 	// ResearchUSD is the most one research report may spend, 0 for the default (SB-4201).
@@ -100,6 +103,9 @@ const (
 	MinBudgetUSDMonth    = 1
 	DefaultBudgetUSD     = 1000
 	DefaultAsksPerMinute = 6
+	// MinAgentUSD and MaxAgentUSD bound an agent's monthly_usd (SB-4703).
+	MinAgentUSD = 1.0
+	MaxAgentUSD = 100000.0
 	// MinResearchUSD and MaxResearchUSD bound research_usd (SB-4201).
 	MinResearchUSD   = 0.1
 	MaxResearchUSD   = 50.0
@@ -468,7 +474,16 @@ func (c *checker) connectors(n *node) {
 	}
 }
 
+// CappedOnly are the agents that run without being listed in agents, which its map form may
+// name only to carry a monthly cap (SB-4703).
+var CappedOnly = []string{"research", "meeting-prep", "incident-brief", "incident-review", "voc", "fix-draft", "goal-check-in",
+	"catch-up", "leader-week", "update"}
+
 func (c *checker) agents(n *node) {
+	if n.kind == mapNode { // SB-4703: agents: { NAME: { monthly_usd: N } }
+		c.agentMap(n)
+		return
+	}
 	vs, ns, ok := c.list(n, "agents", "[ask]")
 	if !ok {
 		return
@@ -485,6 +500,57 @@ func (c *checker) agents(n *node) {
 			c.t.Agents = append(c.t.Agents, v)
 		}
 		at[v] = true
+	}
+	if !at["ask"] {
+		c.add(n, "agents", `"ask" is required`)
+	}
+}
+
+// agentMap is agents as a map: each key enabled as in the list, or a legwork agent named
+// only for its cap, each value {} or { monthly_usd: N }.
+func (c *checker) agentMap(n *node) {
+	at := map[string]bool{}
+	for i, k := range n.keys {
+		f := "agents." + k.value
+		switch {
+		case at[k.value]:
+			c.add(k, f, "%q is listed twice", k.value)
+			continue
+		case contains(Agents, k.value):
+			c.t.Agents = append(c.t.Agents, k.value)
+		case contains(CappedOnly, k.value):
+		default:
+			c.add(k, f, "%q is not an agent; use %s", k.value, orList(append(append([]string{}, Agents...), CappedOnly...)))
+			continue
+		}
+		at[k.value] = true
+		v := n.vals[i]
+		if v.kind != mapNode {
+			c.add(v, f, "must be a map, e.g. { monthly_usd: 40 } or {}")
+			continue
+		}
+		for j, kk := range v.keys {
+			if kk.value != "monthly_usd" {
+				c.add(kk, f+"."+kk.value, "unknown field; use monthly_usd")
+				continue
+			}
+			x, ok := c.scalar(v.vals[j], f+".monthly_usd")
+			if !ok {
+				continue
+			}
+			usd, err := strconv.ParseFloat(x, 64)
+			if v.vals[j].quoted || err != nil || usd < MinAgentUSD || usd > MaxAgentUSD {
+				c.add(v.vals[j], f+".monthly_usd", "%q must be a number from %g to %g", x, MinAgentUSD, MaxAgentUSD)
+				continue
+			}
+			if c.t.AgentCaps == nil {
+				c.t.AgentCaps = map[string]float64{}
+			}
+			c.t.AgentCaps[k.value] = usd
+		}
+		if contains(CappedOnly, k.value) && c.t.AgentCaps[k.value] == 0 {
+			c.add(k, f, "%q runs without being listed; name it here only with monthly_usd", k.value)
+		}
 	}
 	if !at["ask"] {
 		c.add(n, "agents", `"ask" is required`)

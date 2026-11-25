@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S46.1: Value and control
+
+**Wave/slice:** W46 / S46.1 (SB-4701 to SB-4703) · **Status:** Done
+
+**What:** Operators (`GET /v1/admin/agents/value`) and an agent's owners (`GET /v1/agents/value`) see what each agent's drafts came to over 12 weeks, per space: drafts, published as is or edited, discarded, rounds of changes, median hours to a reply, helpful rate, cost and cost per published draft. The notify job tells an owner once a week when an agent's discard share doubled (at least 4 drafts), with a new notification kind `agent`. Every agent draft in a steward queue, and each row of an owner's value, has **Pause here**: a reason sets the kill switch `agent:NAME@SPACE`, audited, and the owner is told; resume clears it and waiting drafts stay. sb-tenant(5) `agents` gains a map form with `monthly_usd`: the owner is told at 80% and 100%, and at the cap that agent's drafts and routines stop until the month turns.
+
+**Why this way:** A pause is a kill switch with a space in its scope, so it rides the checker every cell already refreshes within 10 seconds, its audit and its fail-safe; LAW-10 now sets those scopes too. Value is counted from the audit rows and traces already kept, so nothing new is stored and the counts can't drift from the log. Caps reuse each trace's `cost_usd` from S45.2; an unreadable spend stops scheduled runs rather than letting them through, while on-demand asks stay under the space's own budget.
+
+**Learned:** A discarded draft had dropped its agent, kind and rounds, so it couldn't be counted against the agent that wrote it, and it still showed in the person's agent runs. Legwork agents aren't in the registry, so the space's agents list now carries the paused names separately. The manual first said the doubled-discard check ran on Monday after 08:00; the job keys it per ISO week instead, and the manual now says so.
+
+**Laws:** LAW-07, LAW-10, LAW-11. Every law test is still green.
+
 ## 2026-11-25 S45.2: Agents that go further
 
 **Wave/slice:** W45 / S45.2 (SB-4604 to SB-4606) · **Status:** Done

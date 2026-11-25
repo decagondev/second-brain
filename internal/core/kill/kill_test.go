@@ -150,3 +150,26 @@ func TestSpaceScope(t *testing.T) {
 		t.Fatalf("DrillScopes = %v", got)
 	}
 }
+
+// SB-4702: an agent paused in one space stops there only.
+func TestAgentPausedInASpace(t *testing.T) {
+	for s, ok := range map[string]bool{"agent:case-brief@support": true, "agent:ask@it-security": true, "agent:ask@": false, "agent:ask@Support": false, "agent:@support": false} {
+		if ValidScope(s) != ok {
+			t.Errorf("ValidScope(%q) = %v", s, !ok)
+		}
+	}
+	c := &Checker{Tenant: "acme-logistics", Now: func() time.Time { return time.Unix(0, 0) }}
+	if !c.Paused("case-brief", "support") {
+		t.Fatal("before the first load every agent counts as paused")
+	}
+	c.Push([]Switch{{Scope: PauseScope("case-brief", "support")}, {Scope: PauseScope("case-brief", "sales")}, {Scope: "space:finance"}})
+	if !c.Paused("case-brief", "support") || c.Paused("case-brief", "it") || c.Paused("ask", "support") {
+		t.Fatal("Paused")
+	}
+	if c.Check(Op{Agent: "case-brief", Space: "support"}) == nil || c.Check(Op{Agent: "case-brief", Space: "it"}) != nil || c.Check(Op{Agent: "case-brief"}) != nil {
+		t.Fatal("a pause must stop that agent in that space only")
+	}
+	if got := strings.Join(c.PausedIn("case-brief"), ","); got != "sales,support" || len(c.PausedIn("ask")) != 0 {
+		t.Fatalf("PausedIn = %s", got)
+	}
+}

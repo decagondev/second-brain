@@ -12,7 +12,7 @@ const enc = encodeURIComponent;
 
 // call is one JSON request; a failure throws the cell's message (Steward's call, kept here so
 // the answer view doesn't import the steward screens).
-async function call(f: Fetch, method: string, url: string, body?: unknown): Promise<Record<string, unknown>> {
+export async function call(f: Fetch, method: string, url: string, body?: unknown): Promise<Record<string, unknown>> {
   let res: Response;
   try {
     res = await f(url, { method, credentials: "same-origin", headers: { "Content-Type": "application/json" }, ...(body ? { body: JSON.stringify(body) } : {}) });

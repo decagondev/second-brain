@@ -76,6 +76,9 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	if agent == "" {
 		agent = "ask"
 	}
+	if err := x.Agent.runsStop(ctx, s, agent); err != nil { // SB-4702, SB-4703
+		return StewardQuestion{}, err
+	}
 	resp, text, err := x.draftAnswer(ctx, s, kind, req)
 	if err != nil {
 		return StewardQuestion{}, err

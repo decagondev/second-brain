@@ -84,6 +84,10 @@ type Admin struct {
 	Tiers map[string]string
 	// SpaceSpend is each space's branch spend in a month (SB-4105); nil is EUNAVAIL.
 	SpaceSpend func(ctx context.Context, month string) ([]SpaceSpend, error)
+	// AgentValue is every agent's value (SB-4701), and PausedIn the spaces an agent is
+	// paused in (SB-4702); nil has neither.
+	AgentValue func(ctx context.Context) (ask.ValueReport, error)
+	PausedIn   func(agent string) []string
 }
 
 // SpaceSpend is one space's model spend in a month: its own and its teams' (the branch),
@@ -129,6 +133,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/index/refresh", h.guard(h.refresh))
 	mux.HandleFunc("POST /v1/admin/sessions/revoke", h.guard(h.revokeSessions))
 	mux.HandleFunc("GET /v1/admin/agents", h.guard(h.agents))
+	mux.HandleFunc("GET /v1/admin/agents/value", h.guard(h.agentValue)) // SB-4701
 	mux.HandleFunc("GET /v1/admin/tokens", h.guard(h.listTokens))
 	mux.HandleFunc("DELETE /v1/admin/tokens/{id}", h.guard(h.revokeToken))
 	mux.HandleFunc("POST /v1/admin/notifications/test", h.guard(h.notifyTest))

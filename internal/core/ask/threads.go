@@ -147,7 +147,9 @@ func (x Stewards) Discard(ctx context.Context, s tenancy.Scope, name, id string)
 		if q.Thread == nil || q.Reply != nil {
 			return fmt.Errorf("%w: only an open saved thread can be discarded", ErrInvalid)
 		}
-		q.Thread = &SavedThread{Discarded: true}
+		// The text goes; which agent drafted it, its kind and its rounds stay, counts for its
+		// value (SB-4701).
+		q.Thread = &SavedThread{Discarded: true, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Rounds: q.Thread.Rounds}
 		q.Question = "(discarded)"
 		return nil
 	})

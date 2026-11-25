@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Fetch } from "./api";
 import { call } from "./Steward";
 import { t } from "./i18n";
+import { AgentValue } from "./Accountable";
 
 // One agent as the registry counts it (sb-admin(3), GET /v1/admin/agents; SB-4004).
 export interface AgentRow {
@@ -65,6 +66,7 @@ export function AdminAgents({ fetcher = fetch }: { fetcher?: Fetch }) {
     <section aria-label={t("Agents")}>
       <h2>{t("Agents")}</h2>
       {error ? <p role="alert">{error}</p> : <AgentsTable items={items} />}
+      <AgentValue admin fetcher={fetcher} />
     </section>
   );
 }

@@ -6,6 +6,7 @@ import { placeOf } from "./Answer";
 import { WaitForm } from "./Across";
 import { AskForChanges } from "./Shape";
 import { HowThisWasMade } from "./Further";
+import { AgentValue, PauseHere } from "./Accountable";
 import { MyData } from "./Session";
 import { AboutMe, AgentCases, AgentRuns, CollectionsView, InboxView } from "./Inbox";
 import { errorText, msg, t, tj, tn } from "./i18n";
@@ -86,6 +87,7 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
     <section aria-label={t("Questions to stewards")} className="questions">
       <InboxView fetcher={fetcher} />
       <AgentRuns fetcher={fetcher} />
+      <AgentValue fetcher={fetcher} />
       <AgentCases fetcher={fetcher} />
       <CollectionsView fetcher={fetcher} />
       <h2>{t("Your questions to stewards")}</h2>
@@ -158,6 +160,7 @@ const kinds: { id: string; name: string }[] = [
   { id: "incident", name: msg("Incident briefs for spaces I steward") },
   { id: "fix", name: msg("Edits suggested to my documents") },
   { id: "checkin", name: msg("My goals gone 3 weeks without a check-in") },
+  { id: "agent", name: msg("Agents I own: pauses, discards and spend") },
 ];
 
 // What the person is told about (sb-ask(3), Notifications; SB-2101, SB-2102).
@@ -427,6 +430,7 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                       {t("Discard")}
                     </button>
                   )}
+                  {q.state === "open" && space !== "me" && <PauseHere space={space} agent={q.thread.agent} fetcher={fetcher} />}
                 </div>
               )}
               {q.thread && !q.thread.agent && (

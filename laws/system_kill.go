@@ -67,7 +67,12 @@ func (w *killWorld) Advance(d time.Duration) {
 func (w *killWorld) StoreDown(down bool) { w.store.SetDown(down) }
 
 func (w *killWorld) Allowed(agent, connector string, consequential bool) (bool, error) {
-	err := w.checker.Check(kill.Op{Agent: agent, Connector: connector, Consequential: consequential})
+	return w.AllowedIn(agent, "", connector, consequential)
+}
+
+// AllowedIn is one agent's run in one space (SB-4702).
+func (w *killWorld) AllowedIn(agent, space, connector string, consequential bool) (bool, error) {
+	err := w.checker.Check(kill.Op{Agent: agent, Space: space, Connector: connector, Consequential: consequential})
 	if err != nil && !strings.Contains(err.Error(), "EKILLED") {
 		return false, err
 	}

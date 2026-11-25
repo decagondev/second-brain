@@ -50,7 +50,7 @@ summary: Epics, waves, slices and tickets.
 | W43 Govern Every Agent | 6 | 0 | 0 | Planned 2026-11-24 with the user (E44), W43 built: feedback becomes evals, agent owners and changes, agent lint in the gate, signed events out, model tiers, guardrail insights ([18-legwork-inbox-govern.md](../docs/18-legwork-inbox-govern.md)) |
 | W44 Departments Work Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E45), built: ask each department, hand off to a department, the leader's week, waiting on another department, decisions that replace decisions, catch me up, department service levels ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | W45 Agents You Can Shape | 6 | 0 | 0 | Planned 2026-11-25 with the user (E46), built: skills, ask for changes, shared routines, post-incident review, account brief, how this was made ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
-| W46 Every Agent Accountable | 0 | 0 | 7 | Planned 2026-11-25 with the user (E47): agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
+| W46 Every Agent Accountable | 3 | 0 | 4 | Planned 2026-11-25 with the user (E47), S46.1 built: agent value, pause from the message, agent spend caps, shadow runs, agent access review, marked as AI, an agent's record ([19-departments-shape-account.md](../docs/19-departments-shape-account.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -838,9 +838,9 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-4701](E47-every-agent-accountable/SB-4701-agent-value.md) | S46.1 | E47 | Agent value | Open |
-| [SB-4702](E47-every-agent-accountable/SB-4702-pause-here.md) | S46.1 | E47 | Pause from the message | Open |
-| [SB-4703](E47-every-agent-accountable/SB-4703-agent-spend-caps.md) | S46.1 | E47 | Agent spend caps | Open |
+| [SB-4701](E47-every-agent-accountable/SB-4701-agent-value.md) | S46.1 | E47 | Agent value | Done |
+| [SB-4702](E47-every-agent-accountable/SB-4702-pause-here.md) | S46.1 | E47 | Pause from the message | Done |
+| [SB-4703](E47-every-agent-accountable/SB-4703-agent-spend-caps.md) | S46.1 | E47 | Agent spend caps | Done |
 | [SB-4704](E47-every-agent-accountable/SB-4704-shadow-runs.md) | S46.2 | E47 | Shadow runs | Open |
 | [SB-4705](E47-every-agent-accountable/SB-4705-agent-access-review.md) | S46.2 | E47 | Agent access review | Open |
 | [SB-4706](E47-every-agent-accountable/SB-4706-marked-as-ai.md) | S46.2 | E47 | Marked as AI | Open |

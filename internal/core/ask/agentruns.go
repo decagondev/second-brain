@@ -57,7 +57,7 @@ func (l Legwork) AgentRuns(ctx context.Context, s tenancy.Scope) ([]AgentRun, er
 			return nil, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 		}
 		for _, q := range qs {
-			if q.Thread == nil || q.Thread.Agent == "" || q.At.Before(since) {
+			if q.Thread == nil || q.Thread.Agent == "" || q.Thread.Discarded || q.At.Before(since) {
 				continue
 			}
 			runs = append(runs, run{AgentRun{Kind: "draft", Agent: q.Thread.Agent, Space: spaceName(q.Space), At: q.At, Title: q.Question,

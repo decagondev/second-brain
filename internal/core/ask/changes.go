@@ -81,6 +81,9 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 	if err := changeable(q, s.User()); err != nil {
 		return RedraftResponse{}, err
 	}
+	if x.Agent.pausedIn(q.Thread.Agent, s) { // SB-4702
+		return RedraftResponse{}, fmt.Errorf("%w: %s is paused in this space", ErrKilled, q.Thread.Agent)
+	}
 	if x.Rescope == nil {
 		return RedraftResponse{}, fmt.Errorf("%w: this cell can't redraft", ErrUnavailable)
 	}

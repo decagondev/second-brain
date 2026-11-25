@@ -323,6 +323,10 @@ func (c *Cell) runDraft(ctx context.Context, key, kind, title string, req ask.Re
 	switch {
 	case errors.Is(err, ask.ErrInvalid):
 		return notify.BriefNothing, nil
+	case errors.Is(err, ask.ErrKilled): // paused in this space (SB-4702)
+		return notify.BriefKilled, nil
+	case errors.Is(err, ask.ErrBudget): // at its monthly cap (SB-4703)
+		return notify.BriefBudget, nil
 	case err != nil:
 		return "", err
 	}

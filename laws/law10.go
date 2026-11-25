@@ -34,16 +34,27 @@ func (pendingKill) Allowed(string, string, bool) (bool, error) {
 
 var killScopes = []string{"agent:ask", "agent:draft-reply", "connector:docs", "connector:tickets", "tenant"}
 
+// AgentSpaceWorld is a KillWorld that also checks an agent's run in one space, so Pause here
+// (SB-4702, scope agent:NAME@SPACE) is held to the same 10 seconds.
+type AgentSpaceWorld interface {
+	AllowedIn(agent, space, connector string, consequential bool) (bool, error)
+}
+
 func law10(r *rand.Rand, w KillWorld) error {
 	now := time.Duration(0)
 	killedAt := map[string]time.Duration{} // scope -> when it was set (absent: not killed)
 	downSince := time.Duration(-1)
+	scopes := killScopes
+	sw, inSpace := w.(AgentSpaceWorld)
+	if inSpace {
+		scopes = append(append([]string{}, killScopes...), "agent:ask@support", "agent:draft-reply@support")
+	}
 	w.Advance(3 * time.Second) // let the cell load the list once
 	now += 3 * time.Second
 	for step := 0; step < 60; step++ {
 		switch r.Intn(6) {
 		case 0:
-			s := killScopes[r.Intn(len(killScopes))]
+			s := scopes[r.Intn(len(scopes))]
 			if err := w.Kill(s); err != nil {
 				return err
 			}
@@ -83,14 +94,22 @@ func law10(r *rand.Rand, w KillWorld) error {
 		agent := []string{"ask", "draft-reply"}[r.Intn(2)]
 		conn := []string{"docs", "tickets", "chat"}[r.Intn(3)]
 		conseq := r.Intn(2) == 0
-		ok, err := w.Allowed(agent, conn, conseq)
+		in := []string{"agent:" + agent, "connector:" + conn, "tenant"}
+		var ok bool
+		var err error
+		if space := []string{"", "support", "finance"}[r.Intn(3)]; inSpace && space != "" {
+			ok, err = sw.AllowedIn(agent, space, conn, conseq)
+			in = append(in, "agent:"+agent+"@"+space)
+		} else {
+			ok, err = w.Allowed(agent, conn, conseq)
+		}
 		if err != nil {
 			return err
 		}
 		if !ok {
 			continue
 		}
-		for _, s := range []string{"agent:" + agent, "connector:" + conn, "tenant"} {
+		for _, s := range in {
 			if at, killed := killedAt[s]; killed && downSince < 0 && now-at >= 10*time.Second {
 				return fmt.Errorf("%s/%s (consequential=%v) started %v after %s was killed", agent, conn, conseq, now-at, s)
 			}

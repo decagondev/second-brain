@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,7 +24,7 @@ const (
 
 // Switch is one set kill switch.
 type Switch struct {
-	Scope  string    `json:"scope"` // "agent:NAME", "connector:KIND", "space:NAME" or "tenant"
+	Scope  string    `json:"scope"` // "agent:NAME", "agent:NAME@SPACE", "connector:KIND", "space:NAME" or "tenant"
 	Reason string    `json:"reason"`
 	Actor  string    `json:"actor"`
 	At     time.Time `json:"at"`
@@ -43,7 +44,7 @@ var (
 	ErrNoAudit = errors.New("kill: no audit log; refusing to change a switch untraced")
 )
 
-var scopeRe = regexp.MustCompile(`^(agent:[a-z][a-z0-9-]{0,40}|connector:(docs|chat|tickets|crm|code|hris|accounting)|space:[a-z][a-z0-9-]{1,30}|tenant)$`)
+var scopeRe = regexp.MustCompile(`^(agent:[a-z][a-z0-9-]{0,40}(@[a-z][a-z0-9-]{1,30})?|connector:(docs|chat|tickets|crm|code|hris|accounting)|space:[a-z][a-z0-9-]{1,30}|tenant)$`)
 
 // ValidScope reports whether s is a scope sb-kill(1) accepts.
 func ValidScope(s string) bool { return scopeRe.MatchString(s) }
@@ -157,6 +158,8 @@ func (c *Checker) Check(op Op) error {
 		return fmt.Errorf("%w: tenant", ErrKilled)
 	case op.Agent != "" && c.scopes["agent:"+op.Agent]:
 		return fmt.Errorf("%w: agent:%s", ErrKilled, op.Agent)
+	case op.Agent != "" && op.Space != "" && c.scopes["agent:"+op.Agent+"@"+op.Space]: // SB-4702
+		return fmt.Errorf("%w: agent:%s@%s", ErrKilled, op.Agent, op.Space)
 	case op.Connector != "" && c.scopes["connector:"+op.Connector]:
 		return fmt.Errorf("%w: connector:%s", ErrKilled, op.Connector)
 	case op.Space != "" && op.Space != "company" && c.scopes["space:"+op.Space]:
@@ -188,6 +191,30 @@ func (c *Checker) Killed() []string {
 // AgentKilled is the ask agent's Killed hook for one agent name.
 func (c *Checker) AgentKilled(agent string) func(context.Context) bool {
 	return func(context.Context) bool { return c.Check(Op{Agent: agent}) != nil }
+}
+
+// PauseScope is the scope of one agent paused in one space (SB-4702).
+func PauseScope(agent, space string) string { return "agent:" + agent + "@" + space }
+
+// Paused reports whether agent is paused in space (by name), or the list isn't loaded yet.
+func (c *Checker) Paused(agent, space string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return !c.loaded || c.scopes[PauseScope(agent, space)]
+}
+
+// PausedIn are the spaces agent is paused in, sorted.
+func (c *Checker) PausedIn(agent string) []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := []string{}
+	for s := range c.scopes {
+		if sp, ok := strings.CutPrefix(s, "agent:"+agent+"@"); ok {
+			out = append(out, sp)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 // ConnectorKilled is the live check's Killed hook (retrieve.Authoriser.Killed).

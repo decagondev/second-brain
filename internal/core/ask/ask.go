@@ -321,6 +321,11 @@ type Agent struct {
 	// is in, and the agent kill switches. With any of them nil, no department agent runs.
 	Enabled func(agent string) bool
 	SpaceOf func(ctx context.Context, id string) (ports.Space, bool, error)
+	// AgentPaused says an agent is paused in a space, by name (SB-4702); nil pauses none.
+	AgentPaused func(agent, space string) bool
+	// AgentCapped says an agent is at its monthly cap (SB-4703); an error is spend that
+	// can't be read, which stops its runs too. nil caps none.
+	AgentCapped func(ctx context.Context, agent string) (bool, error)
 	// Small is the small model tier (SB-4405), nil for none; SmallHeld says the evals
 	// hold it (an unreadable hold is held), and PinMain that a space, by key, pins main.
 	Small       ports.Model

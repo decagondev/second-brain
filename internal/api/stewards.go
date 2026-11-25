@@ -37,6 +37,8 @@ type Stewards struct {
 	// OwnerActive is whether an agent's owner has an active person now (SB-4402).
 	OwnerActive func(ctx context.Context, owner string) bool
 	EvalHeld    func() (bool, error)
+	// PausedIn are the spaces an agent is paused in (SB-4702); nil shows none.
+	PausedIn func(agent string) []string
 }
 
 // Register mounts the endpoints.

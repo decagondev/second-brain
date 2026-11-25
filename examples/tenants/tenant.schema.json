@@ -4,30 +4,79 @@
   "additionalProperties": false,
   "properties": {
     "agents": {
-      "contains": {
-        "const": "ask"
-      },
-      "description": "Enabled agents; ask is required.",
-      "items": {
-        "enum": [
-          "ask",
-          "draft-reply",
-          "incident-summary",
-          "spec-digest",
-          "close-checklist",
-          "runbook-answer",
-          "policy-answer",
-          "clause-finder",
-          "account-brief",
-          "case-brief",
-          "brand-check",
-          "sop-steps",
-          "design-rationale",
-          "exec-brief"
-        ]
-      },
-      "type": "array",
-      "uniqueItems": true
+      "description": "Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703).",
+      "oneOf": [
+        {
+          "contains": {
+            "const": "ask"
+          },
+          "items": {
+            "enum": [
+              "ask",
+              "draft-reply",
+              "incident-summary",
+              "spec-digest",
+              "close-checklist",
+              "runbook-answer",
+              "policy-answer",
+              "clause-finder",
+              "account-brief",
+              "case-brief",
+              "brand-check",
+              "sop-steps",
+              "design-rationale",
+              "exec-brief"
+            ]
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "monthly_usd": {
+                "maximum": 100000,
+                "minimum": 1,
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "propertyNames": {
+            "enum": [
+              "ask",
+              "draft-reply",
+              "incident-summary",
+              "spec-digest",
+              "close-checklist",
+              "runbook-answer",
+              "policy-answer",
+              "clause-finder",
+              "account-brief",
+              "case-brief",
+              "brand-check",
+              "sop-steps",
+              "design-rationale",
+              "exec-brief",
+              "research",
+              "meeting-prep",
+              "incident-brief",
+              "incident-review",
+              "voc",
+              "fix-draft",
+              "goal-check-in",
+              "catch-up",
+              "leader-week",
+              "update"
+            ]
+          },
+          "required": [
+            "ask"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "approval": {
       "additionalProperties": {

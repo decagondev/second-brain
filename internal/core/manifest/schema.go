@@ -37,8 +37,14 @@ func JSONSchema() []byte {
 			"additionalProperties": map[string]any{"type": "string", "pattern": vendorRe},
 		},
 		"agents": map[string]any{
-			"type": "array", "description": "Enabled agents; ask is required.", "uniqueItems": true,
-			"items": map[string]any{"enum": Agents}, "contains": map[string]any{"const": "ask"},
+			"description": "Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703).",
+			"oneOf": []any{
+				map[string]any{"type": "array", "uniqueItems": true, "items": map[string]any{"enum": Agents}, "contains": map[string]any{"const": "ask"}},
+				map[string]any{"type": "object", "required": []string{"ask"},
+					"propertyNames": map[string]any{"enum": append(append([]string{}, Agents...), CappedOnly...)},
+					"additionalProperties": map[string]any{"type": "object", "additionalProperties": false,
+						"properties": map[string]any{"monthly_usd": map[string]any{"type": "number", "minimum": MinAgentUSD, "maximum": MaxAgentUSD}}}},
+			},
 		},
 		"workflows": map[string]any{
 			"type": "array", "description": "At most one approval-gated workflow in v1.", "uniqueItems": true,

@@ -44,6 +44,14 @@ func Patch(t Tenant, ops []Op) (Tenant, []Diag, error) {
 	if err := json.Unmarshal(b, &next); err != nil {
 		return Tenant{}, nil, fmt.Errorf("manifest: the patch gives a value of the wrong type: %v", err)
 	}
+	for a, usd := range t.AgentCaps { // the caps aren't in the JSON form: keep those still named (SB-4703)
+		if contains(CappedOnly, a) || contains(next.Agents, a) {
+			if next.AgentCaps == nil {
+				next.AgentCaps = map[string]float64{}
+			}
+			next.AgentCaps[a] = usd
+		}
+	}
 	checked, ds := Check(Format(next))
 	if len(ds) > 0 {
 		return Tenant{}, ds, nil

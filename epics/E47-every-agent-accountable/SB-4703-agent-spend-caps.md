@@ -13,7 +13,7 @@ summary: "One busy agent can spend a month's budget before anyone sees it."
 | Manual | [`sb-tenant(5)`](../../manual/sb-tenant.5.md), [`sb-agents(7)`](../../manual/sb-agents.7.md) |
 | Laws | LAW-07 |
 | Depends on | SB-4105, SB-4701 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ One busy agent can spend a month's budget before anyone sees it.
 
 ## Acceptance criteria
 
-- [ ] sb-tenant(5) `agents: { NAME: { monthly_usd } }`
-- [ ] At 80% the owner is told; at 100% scheduled, triggered and shared runs pause until next month
-- [ ] On-demand asks keep working under each space's budget
+- [x] sb-tenant(5) `agents: { NAME: { monthly_usd } }`
+- [x] At 80% the owner is told; at 100% scheduled, triggered and shared runs pause until next month
+- [x] On-demand asks keep working under each space's budget
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Manifest
-- [ ] Guard
-- [ ] Notify
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Manifest
+- [x] Guard
+- [x] Notify
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [19-departments-shape-account.md](../../docs/19-departments-shape-account.md).
+2026-11-25: built. sb-tenant(5) `agents` keeps its list form and gains a map form, `{ NAME: { monthly_usd: N } }` (1 to 100000); a legwork agent may be a key only to carry a cap. `ask.MonthSpend` sums an agent's trace `cost_usd` this UTC month in every space. The notify job tells the owner once at 80% and once at 100% (keyed per agent and month). From 100%, and whenever spend can't be read, drafts and routine runs stop with `EBUDGET`; on-demand asks go on under each space's budget. A manifest patch keeps the caps. TestAgentCaps, TestAPatchKeepsTheCaps, TestMonthSpend, TestEveryAgentAccountableThroughARunningCell.
 
 ## Definition of done
 

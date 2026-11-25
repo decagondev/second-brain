@@ -19,8 +19,8 @@ func Format(t Tenant) []byte {
 	if len(t.Connectors) > 0 {
 		line("connectors", flowMap(t.Connectors))
 	}
-	if len(t.Agents) > 0 {
-		line("agents", flowList(t.Agents, false))
+	if v := agentsLine(t); v != "" {
+		line("agents", v)
 	}
 	if len(t.Workflows) > 0 {
 		line("workflows", flowList(t.Workflows, false))
@@ -208,4 +208,31 @@ func formatSettings(t Tenant, line func(k, v string)) {
 	if t.Events != nil {
 		line("events", "{ url: "+t.Events.URL+", kinds: "+flowList(t.Events.Kinds, false)+" }")
 	}
+}
+
+// agentsLine is the agents row: a list, or the map form when any agent has a cap (SB-4703).
+func agentsLine(t Tenant) string {
+	if len(t.AgentCaps) == 0 {
+		if len(t.Agents) == 0 {
+			return ""
+		}
+		return flowList(t.Agents, false)
+	}
+	var parts []string
+	var extra []string // capped keys not in the list, in name order so Format is stable
+	for a := range t.AgentCaps {
+		if !contains(t.Agents, a) {
+			extra = append(extra, a)
+		}
+	}
+	sort.Strings(extra)
+	names := append(append([]string{}, t.Agents...), extra...)
+	for _, a := range names {
+		if usd, ok := t.AgentCaps[a]; ok {
+			parts = append(parts, a+": { monthly_usd: "+strconv.FormatFloat(usd, 'f', -1, 64)+" }")
+		} else {
+			parts = append(parts, a+": {}")
+		}
+	}
+	return "{ " + strings.Join(parts, ", ") + " }"
 }

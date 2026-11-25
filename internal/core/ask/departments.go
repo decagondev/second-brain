@@ -49,6 +49,9 @@ var updateAgent = Department{Name: AgentUpdate, Prompt: "update", Lead: "Week: "
 // manifest, asked in a space of its own template that lists it, not killed, and allowed
 // by the policy kernel. It returns the agent, or an error before any retrieval.
 func (a Agent) department(ctx context.Context, s tenancy.Scope, name string) (Department, error) {
+	if a.pausedIn(name, s) { // SB-4702: a named agent paused in this space answers nothing here
+		return Department{}, fmt.Errorf("%w: %s is paused in this space", ErrKilled, name)
+	}
 	d, ok := Departments[name]
 	if name == AgentUpdate {
 		return a.updateDept(ctx, s)

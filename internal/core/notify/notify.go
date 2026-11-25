@@ -274,6 +274,9 @@ type Job struct {
 	Routines func(ctx context.Context) ([]ask.Finished, error)
 	// Waits are the waits a working day past their date (SB-4504); nil tells nobody.
 	Waits func(ctx context.Context) ([]ask.OverdueWait, error)
+	// AgentAlerts are what to tell agents' owners now (SB-4701, SB-4703), each once by
+	// its key; nil tells none.
+	AgentAlerts func(ctx context.Context, now time.Time) ([]AgentAlert, error)
 }
 
 // The digest's limits.
@@ -377,6 +380,12 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	out = append(out, wts...)
+	agt, agtMarks, err := j.agentAlerts(ctx, now)
+	if err != nil {
+		return Result{}, err
+	}
+	out = append(out, agt...)
+	wtMarks = append(wtMarks, agtMarks...)
 	week, due, err := j.weeklyDue(ctx, now)
 	if err != nil {
 		return Result{}, err
