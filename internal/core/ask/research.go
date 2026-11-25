@@ -67,6 +67,26 @@ type Research struct {
 	Changed *int `json:"changed,omitempty"`
 	// Account is an account brief's facts (SB-4605).
 	Account *AccountFacts `json:"account,omitempty"`
+	// Agent and Release are who wrote it and under which release (SB-4706); Agent is "" for
+	// a kind with one agent (ResearchAgent).
+	Agent   string `json:"agent,omitempty"`
+	Release string `json:"release,omitempty"`
+}
+
+// ResearchAgent is the agent that wrote a report of kind (SB-4706).
+func ResearchAgent(r Research) string {
+	if r.Agent != "" {
+		return r.Agent
+	}
+	switch r.Kind {
+	case KindPrep:
+		return AgentPrep
+	case KindFix:
+		return AgentFix
+	case KindRoutine:
+		return "ask"
+	}
+	return AgentResearch
 }
 
 // Section is one step's answer: its question, trace and cited claims, and for a brief the
@@ -162,8 +182,10 @@ type ResearchView struct {
 	Sections  []Section      `json:"sections"`
 	Attendees []Attendee     `json:"attendees,omitempty"`
 	Dropped   int            `json:"dropped"`
-	Changed   *int           `json:"changed,omitempty"`
-	Account   *AccountFacts  `json:"account,omitempty"`
+	// Mark is which agent and version wrote it (SB-4706, LAW-28).
+	Mark    *Mark         `json:"mark,omitempty"`
+	Changed *int          `json:"changed,omitempty"`
+	Account *AccountFacts `json:"account,omitempty"`
 }
 
 func (l Legwork) now() time.Time { return l.Now().UTC() }
@@ -222,7 +244,7 @@ func (l Legwork) Plan(ctx context.Context, s tenancy.Scope, q string, docs []str
 	if err != nil {
 		return ResearchView{}, err
 	}
-	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, User: s.User(), Kind: KindResearch, Question: q, Space: s.Space(),
+	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, User: s.User(), Kind: KindResearch, Question: q, Space: s.Space(),
 		Documents: keys, Steps: steps, State: StatePlanned, At: l.now()}
 	if err := l.audit(ctx, s.User(), r, StatePlanned, hashOf(q)); err != nil {
 		return ResearchView{}, err
@@ -420,7 +442,8 @@ func (l Legwork) keepCites(ctx context.Context, s tenancy.Scope, cs []answer.Cit
 
 func view(r Research, secs []Section, dropped int) ResearchView {
 	v := ResearchView{ID: r.ID, Kind: r.Kind, Question: r.Question, Space: r.Space, State: r.State, Why: r.Why, Steps: r.Steps, At: r.At,
-		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped, Changed: r.Changed, Account: r.Account}
+		CostUSD: r.CostUSD, Stopped: r.Stopped, Summary: []answer.Claim{}, Sections: []Section{}, Attendees: r.Attendees, Dropped: dropped, Changed: r.Changed, Account: r.Account,
+		Mark: &Mark{Agent: ResearchAgent(r), Version: r.Release}}
 	if v.Steps == nil {
 		v.Steps = []string{}
 	}

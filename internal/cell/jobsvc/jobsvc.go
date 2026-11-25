@@ -385,7 +385,10 @@ func (s *Service) review(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("jobs: the audit log can't be read: %w", err)
 	}
-	_, err = reviews.Run(ctx, c.Manifest(), s.now(), roster{c}, reviews.FromAudit(rows), c.Reviews, c.NewID)
+	if _, err = reviews.Run(ctx, c.Manifest(), s.now(), roster{c}, reviews.FromAudit(rows), c.Reviews, c.NewID); err != nil {
+		return err
+	}
+	_, err = c.RunAgentReviews(ctx, s.now()) // SB-4705: beside the reviews of people
 	return err
 }
 

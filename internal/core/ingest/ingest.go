@@ -189,6 +189,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		}
 	}
 	reviewBy := p.reviewBy(ref.Kind, doc)
+	mark := MarkOf(doc.Text, doc.Owner) // SB-4706
 	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
 	text := Normalise(clean)
 	spans := Chunks(text)
@@ -242,7 +243,8 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Version: doc.Version, Start: sp.Start, End: sp.End, Text: t, ContentSHA256: hex.EncodeToString(h[:]),
 			ACLPrefilter: acl, Release: p.Release, Flags: merge(merge(docFlags, p.Sanitiser.Flag(t)), personal(pii, sp)),
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
-			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy, Section: sectionAt(hs, sp.Start), Lines: [2]int{lineOf(sp.Start), lineOf(sp.End - 1)}})
+			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy, Section: sectionAt(hs, sp.Start), Lines: [2]int{lineOf(sp.Start), lineOf(sp.End - 1)},
+			GeneratedBy: mark.GeneratedBy, ApprovedBy: mark.ApprovedBy, Edited: mark.Edited})
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)

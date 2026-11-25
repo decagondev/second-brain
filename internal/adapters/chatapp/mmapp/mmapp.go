@@ -253,6 +253,13 @@ func Shared(t ask.Trace) Message {
 		}
 	}
 	text := "Shared an answer (trace " + escape(t.ID) + "). Open the sources to read it with your own access."
+	if t.Response.Agent != "" { // SB-4706, LAW-28
+		v := ""
+		if t.Response.Release != "" {
+			v = ", version " + escape(t.Response.Release)
+		}
+		text = "Shared an answer written by " + escape(t.Response.Agent) + v + " (trace " + escape(t.ID) + "). Open the sources to read it with your own access."
+	}
 	if len(cites) > 0 {
 		text += "\nSources: " + links(cites)
 	}
@@ -297,6 +304,9 @@ func Render(question string, r ask.Response) Message {
 	if r.Refused > 0 {
 		fmt.Fprintf(&b, "_%d source(s) were not shown because you can't open them._\n", r.Refused)
 	}
+	if m := ask.MarkLine(r.Agent, r.Release); m != "" { // SB-4706, LAW-28
+		b.WriteString("_" + escape(m) + "_\n")
+	}
 	fmt.Fprintf(&b, "_Trace %s_", r.Trace)
 	return Message{ResponseType: "ephemeral", Text: b.String()}
 }
@@ -314,6 +324,9 @@ func links(cs []answer.Cite) string {
 			out = append(out, "[`"+strings.ReplaceAll(c.Cite, "`", "")+"`]("+strings.NewReplacer("(", "%28", ")", "%29", " ", "%20").Replace(c.URL)+")")
 		} else {
 			out = append(out, "`"+strings.ReplaceAll(c.Cite, "`", "")+"`")
+		}
+		if m := ask.CiteMark(c.GeneratedBy, c.ApprovedBy, c.Edited); m != "" { // SB-4706
+			out[len(out)-1] += " (" + escape(m) + ")"
 		}
 	}
 	return "[" + strings.Join(out, ", ") + "]"

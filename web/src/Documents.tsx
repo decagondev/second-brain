@@ -2,10 +2,17 @@ import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
 import { AskError, markOwnReviewed, search } from "./api";
 import type { About, ApiError, Fetch, Filters, SearchResponse } from "./api";
-import { AboutButton, AccessRequest, placeOf, PersonName, TermsView } from "./Answer";
+import {
+  AboutButton,
+  AccessRequest,
+  placeOf,
+  PersonName,
+  TermsView,
+} from "./Answer";
 import { errorText, msg, t, tj, tn } from "./i18n";
 import { setVerifiedOnly, verifiedOnly } from "./recent";
 import { ReviewAgain } from "./Questions";
+import { citeMark } from "./Marked";
 
 // The filters (SB-2404), as the API names them.
 const types: { id: string; name: string }[] = [
@@ -49,9 +56,15 @@ export function DocumentsView({
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
   const [since, setSince] = useState(0);
-  const [verified, setVerified] = useState<boolean>(() => verifiedOnly("documents")); // SB-3602
+  const [verified, setVerified] = useState<boolean>(() =>
+    verifiedOnly("documents"),
+  ); // SB-3602
   const [wide, setWide] = useState(false); // searching the whole company from a space (SB-2406)
-  const [ran, setRan] = useState<{ text: string; filtered: boolean; inSpace: boolean }>();
+  const [ran, setRan] = useState<{
+    text: string;
+    filtered: boolean;
+    inSpace: boolean;
+  }>();
   const typeId = useId();
   const sinceId = useId();
   const [busy, setBusy] = useState(false);
@@ -61,19 +74,36 @@ export function DocumentsView({
 
   useEffect(() => setWide(false), [space]);
 
-  async function run(text: string, filters: Filters = { type, since, owner: ownerOf, verified }, whole = wide) {
+  async function run(
+    text: string,
+    filters: Filters = { type, since, owner: ownerOf, verified },
+    whole = wide,
+  ) {
     const want = text.trim();
     const decisions = filters.type === "decision" && !!space && !whole; // a space's decisions need no query (SB-3702)
     if ((!want && !filters.owner && !decisions) || busy) return;
     setBusy(true);
     setError(undefined);
     const where = whole ? undefined : space;
-    setRan({ text: want, filtered: !!filters.type || !!filters.since || !!filters.owner, inSpace: !!where });
+    setRan({
+      text: want,
+      filtered: !!filters.type || !!filters.since || !!filters.owner,
+      inSpace: !!where,
+    });
     try {
       setRes(await search(want, fetcher, where, filters));
     } catch (e) {
       setRes(undefined);
-      setError(e instanceof AskError ? e.error : { code: "EUNAVAIL", message: t("Search is unavailable right now."), trace: "", remedy: "" });
+      setError(
+        e instanceof AskError
+          ? e.error
+          : {
+              code: "EUNAVAIL",
+              message: t("Search is unavailable right now."),
+              trace: "",
+              remedy: "",
+            },
+      );
     } finally {
       setBusy(false);
     }
@@ -106,9 +136,19 @@ export function DocumentsView({
     <section aria-label={t("Documents")} className="documents">
       <form onSubmit={submit} className="ask" role="search">
         <label htmlFor={id}>{t("Search documents")}</label>
-        <input id={id} type="search" value={q} maxLength={4000} onChange={(e) => setQ(e.target.value)} />
+        <input
+          id={id}
+          type="search"
+          value={q}
+          maxLength={4000}
+          onChange={(e) => setQ(e.target.value)}
+        />
         <label htmlFor={typeId}>{t("File type")}</label>
-        <select id={typeId} value={type} onChange={(e) => setType(e.target.value)}>
+        <select
+          id={typeId}
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+        >
           {types.map((x) => (
             <option key={x.id} value={x.id}>
               {t(x.name)}
@@ -116,7 +156,11 @@ export function DocumentsView({
           ))}
         </select>
         <label htmlFor={sinceId}>{t("Changed in")}</label>
-        <select id={sinceId} value={since} onChange={(e) => setSince(Number(e.target.value))}>
+        <select
+          id={sinceId}
+          value={since}
+          onChange={(e) => setSince(Number(e.target.value))}
+        >
           {ages.map((x) => (
             <option key={x.days} value={x.days}>
               {t(x.name)}
@@ -157,7 +201,11 @@ export function DocumentsView({
         {error && (
           <div className="error" role="alert">
             <p>{errorText(error).message}</p>
-            {error.trace && <p>{t("Quote trace {trace} to support.", { trace: error.trace })}</p>}
+            {error.trace && (
+              <p>
+                {t("Quote trace {trace} to support.", { trace: error.trace })}
+              </p>
+            )}
           </div>
         )}
         {res && res.results.length === 0 && (
@@ -191,7 +239,15 @@ export function DocumentsView({
                 <li key={r.cite} className="result">
                   <h2 className="result-title">
                     {r.url ? (
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name, cite: r.cite })}>
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={t(
+                          "{name}, source {cite}, opens in a new tab",
+                          { name, cite: r.cite },
+                        )}
+                      >
                         {name}
                       </a>
                     ) : (
@@ -201,20 +257,35 @@ export function DocumentsView({
                   <blockquote className="snippet" cite={r.url}>
                     {r.snippet}
                   </blockquote>
+                  {citeMark(r) && <p className="meta mark">{citeMark(r)}</p>}
                   <p className="meta">
                     <span>{r.cite}</span>
                     {place && <span> · {place}</span>}
-                    {r.age_days !== undefined && <span> · {tn(r.age_days, "{n} day old", "{n} days old")}</span>}
+                    {r.age_days !== undefined && (
+                      <span>
+                        {" "}
+                        · {tn(r.age_days, "{n} day old", "{n} days old")}
+                      </span>
+                    )}
                     {r.owner && (
                       <span>
                         {" "}
-                        · {tj("Owner {person}", { person: <PersonName person={r.owner} /> })}
+                        ·{" "}
+                        {tj("Owner {person}", {
+                          person: <PersonName person={r.owner} />,
+                        })}
                       </span>
                     )}
-                    {r.flags.includes("injection_suspect") && <span className="flag"> · {t("Flagged")}</span>}
+                    {r.flags.includes("injection_suspect") && (
+                      <span className="flag"> · {t("Flagged")}</span>
+                    )}
                   </p>
-                  {onAbout && <AboutButton cite={r.cite} name={name} onAbout={onAbout} />}
-                  {r.mine && <OwnReviewed cite={r.cite} name={name} fetcher={fetcher} />}
+                  {onAbout && (
+                    <AboutButton cite={r.cite} name={name} onAbout={onAbout} />
+                  )}
+                  {r.mine && (
+                    <OwnReviewed cite={r.cite} name={name} fetcher={fetcher} />
+                  )}
                 </li>
               );
             })}
@@ -223,7 +294,11 @@ export function DocumentsView({
         {res && <TermsView terms={res.terms} />}
         {res && res.refused > 0 && (
           <p className="refused">
-            {tn(res.refused, "{n} document was not shown because you can't open it.", "{n} documents were not shown because you can't open them.")}{" "}
+            {tn(
+              res.refused,
+              "{n} document was not shown because you can't open it.",
+              "{n} documents were not shown because you can't open them.",
+            )}{" "}
             <AccessRequest trace={res.trace} fetcher={fetcher} />
           </p>
         )}
@@ -234,7 +309,19 @@ export function DocumentsView({
 
 // No dead ends (SB-2406): what to try next, from what the person typed and chose only, never
 // from the index, so a document they can't open changes nothing here.
-export function NextSteps({ inSpace, filtered, onWide, onClear, onAsk }: { inSpace: boolean; filtered: boolean; onWide: () => void; onClear: () => void; onAsk?: () => void }) {
+export function NextSteps({
+  inSpace,
+  filtered,
+  onWide,
+  onClear,
+  onAsk,
+}: {
+  inSpace: boolean;
+  filtered: boolean;
+  onWide: () => void;
+  onClear: () => void;
+  onAsk?: () => void;
+}) {
   return (
     <div className="next-steps">
       <p>{t("You could try:")}</p>
@@ -258,7 +345,15 @@ export function NextSteps({ inSpace, filtered, onWide, onClear, onAsk }: { inSpa
 }
 
 // Reviewed, still right on the person's own document (SB-3106): the stewards' record.
-function OwnReviewed({ cite, name, fetcher }: { cite: string; name: string; fetcher?: Fetch }) {
+function OwnReviewed({
+  cite,
+  name,
+  fetcher,
+}: {
+  cite: string;
+  name: string;
+  fetcher?: Fetch;
+}) {
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState("");
   const [days, setDays] = useState(0);
@@ -273,11 +368,17 @@ function OwnReviewed({ cite, name, fetcher }: { cite: string; name: string; fetc
       setError((e as Error).message || t("The document couldn't be marked."));
     }
   }
-  if (state === "done") return <p role="status">{t("Marked reviewed: {name}", { name })}</p>;
+  if (state === "done")
+    return <p role="status">{t("Marked reviewed: {name}", { name })}</p>;
   return (
     <>
       <ReviewAgain days={days} onChange={setDays} name={name} />{" "}
-      <button type="button" disabled={state === "busy"} aria-label={t("Reviewed, still right: {name}", { name })} onClick={() => void mark()}>
+      <button
+        type="button"
+        disabled={state === "busy"}
+        aria-label={t("Reviewed, still right: {name}", { name })}
+        onClick={() => void mark()}
+      >
         {t("Reviewed, still right")}
       </button>
       {error && <span role="alert"> {error}</span>}

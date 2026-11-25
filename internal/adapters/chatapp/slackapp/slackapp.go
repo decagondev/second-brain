@@ -325,6 +325,9 @@ func Render(question string, r ask.Response) Message {
 	if r.Refused > 0 {
 		fmt.Fprintf(&b, "_%d source(s) were not shown because you can't open them._\n", r.Refused)
 	}
+	if m := ask.MarkLine(r.Agent, r.Release); m != "" { // SB-4706, LAW-28
+		b.WriteString("_" + escape(m) + "_\n")
+	}
 	fmt.Fprintf(&b, "_Trace %s_", r.Trace)
 	text := b.String()
 	return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: text, Blocks: []Block{
@@ -367,6 +370,9 @@ func links(cs []answer.Cite) string {
 			out = append(out, "<"+escapeURL(c.URL)+"|"+label+">")
 		} else {
 			out = append(out, "`"+label+"`")
+		}
+		if m := ask.CiteMark(c.GeneratedBy, c.ApprovedBy, c.Edited); m != "" { // SB-4706
+			out[len(out)-1] += " (" + escape(m) + ")"
 		}
 	}
 	return "[" + strings.Join(out, ", ") + "]"
@@ -464,6 +470,9 @@ func Shared(t ask.Trace) Message {
 		}
 	}
 	text := "Shared an answer (trace " + t.ID + "). Open the sources to read it with your own access."
+	if t.Response.Agent != "" { // SB-4706, LAW-28
+		text = "Shared an answer written by " + escape(t.Response.Agent) + markVersion(t.Response.Release) + " (trace " + t.ID + "). Open the sources to read it with your own access."
+	}
 	if len(cites) > 0 {
 		text += "\nSources: " + links(cites)
 	}
@@ -556,4 +565,12 @@ func WebEmail(base string, token func(ctx context.Context) (string, error), clie
 		}
 		return out.User.Profile.Email, nil
 	}
+}
+
+// markVersion is ", version V", or "" without one.
+func markVersion(v string) string {
+	if v == "" {
+		return ""
+	}
+	return ", version " + escape(v)
 }

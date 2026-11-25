@@ -406,7 +406,7 @@ func (a Agent) Ask(ctx context.Context, s tenancy.Scope, req Request) (resp Resp
 // ask answers; probe is an eval case's run (SB-2204), which keeps no conversation.
 // take spends one of the asker's asks this minute (SB-2305), or says how long to wait.
 func (a Agent) take(ctx context.Context, s tenancy.Scope) error {
-	if a.Rate == nil || isConsulted(ctx) { // a consultation is part of the asker's one ask
+	if a.Rate == nil || isConsulted(ctx) || shadowPrompt(ctx) != "" { // a consultation is part of the asker's one ask; a shadow run is no ask
 		return nil
 	}
 	limit := DefaultAsksPerMinute
@@ -515,13 +515,15 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.Notice = &n
 		resp.Answer.Claims = []answer.Claim{{Text: NothingToCite, Cites: []answer.Cite{}, Uncited: true}}
 	} else {
-		prompt, lead := "answer", "Question: "
-		if dept != nil {
-			prompt, lead = dept.Prompt, dept.Lead
-		} else if tr, ch, err := a.table(ctx, s, q, res.Context); err != nil { // SB-4307
-			return Response{}, err
-		} else if ch != nil {
-			res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
+		prompt, lead := promptFor(ctx, dept)
+		if dept == nil { // a department agent uses no table
+			tr, ch, err := a.table(ctx, s, q, res.Context) // SB-4307
+			if err != nil {
+				return Response{}, err
+			}
+			if ch != nil {
+				res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
+			}
 		}
 		ca := a
 		if tier == TierSmall {
@@ -556,8 +558,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.Verified = a.verifiedCount(ctx, claims, res.Context)
 	}
 
-	if isConsulted(ctx) {
-		return resp, nil // kept in the asker's trace, as a section of their answer
+	if keepsNothing(ctx) {
+		return resp, nil
 	}
 	if err := a.alongside(ctx, s, q, req, probe || dept != nil, &resp); err != nil {
 		return Response{}, err
@@ -574,6 +576,26 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, err
 	}
 	return resp, nil
+}
+
+// keepsNothing is an ask whose answer is kept by its caller or not at all: a consultation is
+// kept in the asker's trace, as a section of their answer; a shadow run keeps no trace or
+// conversation (SB-4704).
+func keepsNothing(ctx context.Context) bool {
+	return isConsulted(ctx) || shadowPrompt(ctx) != ""
+}
+
+// promptFor is the prompt an ask answers with: the department agent's, or answer, unless a
+// shadow run names another (SB-4704).
+func promptFor(ctx context.Context, dept *Department) (prompt, lead string) {
+	prompt, lead = "answer", "Question: "
+	if dept != nil {
+		prompt, lead = dept.Prompt, dept.Lead
+	}
+	if sp := shadowPrompt(ctx); sp != "" {
+		prompt = sp
+	}
+	return prompt, lead
 }
 
 // keep stores an answer: its question in the conversation, the conversation's space, and

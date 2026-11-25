@@ -113,7 +113,7 @@ func (x Stewards) AskForChanges(ctx context.Context, s tenancy.Scope, name, id, 
 		}
 		th := cur.Thread
 		th.Versions = append(th.Versions, th.Text)
-		th.Text, th.Rounds = text, th.Rounds+1
+		th.Text, th.Rounds, th.Release = text, th.Rounds+1, resp.Release
 		if th.Kind == DraftDecisions && th.Doc != "" {
 			th.Supersede = supersedeSuggestions(resp.Answer.Claims, th.Doc) // SB-4505, from the new claims
 		}

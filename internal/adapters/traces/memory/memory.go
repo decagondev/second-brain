@@ -41,6 +41,8 @@ type Store struct {
 	actions  map[string]ask.Action        // tenant/id (SB-4203)
 	memory   map[string]ask.Memory        // tenant/user (SB-4303)
 	colls    map[string]ask.Collection    // tenant/id (SB-4304)
+	shadows  map[string]ask.ShadowRun     // tenant/id (SB-4704)
+	windows  map[string]ask.ShadowWindow  // tenant/agent|release
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }
@@ -56,7 +58,7 @@ type conv struct {
 func New() *Store {
 	return &Store{traces: map[string]ask.Trace{}, convs: map[string]conv{}, feedback: map[string]ask.Feedback{},
 		saved: map[string]ask.SavedQuestion{}, shares: map[string]ask.Share{}, stq: map[string]ask.StewardQuestion{}, prefs: map[string]prefRec{},
-		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}, memory: map[string]ask.Memory{}, colls: map[string]ask.Collection{}}
+		evals: map[string]ask.EvalCase{}, access: map[string]accessRec{}, marks: map[string]ask.ReviewMark{}, retired: map[string]ask.Retirement{}, tmpls: map[string]ask.ReplyTemplate{}, notices: map[string]ask.CellNotice{}, suggest: map[string]ask.Suggested{}, pins: map[string]ask.Pins{}, cares: map[string]ask.Caretaker{}, policies: map[string]ask.SpacePolicy{}, reads: map[string]ask.PolicyRead{}, research: map[string]ask.Research{}, actions: map[string]ask.Action{}, memory: map[string]ask.Memory{}, colls: map[string]ask.Collection{}, shadows: map[string]ask.ShadowRun{}, windows: map[string]ask.ShadowWindow{}}
 }
 
 // PutTrace implements ask.Store.
@@ -1038,4 +1040,68 @@ func (s *Store) DeleteCollection(_ context.Context, tenant, id string) error {
 	defer s.mu.Unlock()
 	delete(s.colls, tenant+"/"+id)
 	return nil
+}
+
+var _ ask.ShadowStore = (*Store)(nil)
+
+// OpenShadow implements ask.ShadowStore (SB-4704).
+func (s *Store) OpenShadow(_ context.Context, w ask.ShadowWindow) (ask.ShadowWindow, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	k := w.Tenant + "/" + w.Agent + "|" + w.Release
+	if got, ok := s.windows[k]; ok {
+		return got, nil
+	}
+	s.windows[k] = w
+	return w, nil
+}
+
+// PutShadow implements ask.ShadowStore.
+func (s *Store) PutShadow(_ context.Context, r ask.ShadowRun) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.shadows[r.Tenant+"/"+r.ID] = r
+	return nil
+}
+
+// ShadowRuns implements ask.ShadowStore.
+func (s *Store) ShadowRuns(_ context.Context, tenant string) ([]ask.ShadowRun, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.ShadowRun{}
+	for _, r := range s.shadows {
+		if r.Tenant == tenant {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+// ShadowWindows implements ask.ShadowStore.
+func (s *Store) ShadowWindows(_ context.Context, tenant string) ([]ask.ShadowWindow, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []ask.ShadowWindow{}
+	for _, w := range s.windows {
+		if w.Tenant == tenant {
+			out = append(out, w)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Agent+out[i].Release < out[j].Agent+out[j].Release })
+	return out, nil
+}
+
+// DeleteShadows implements ask.ShadowStore.
+func (s *Store) DeleteShadows(_ context.Context, tenant string, now time.Time) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	for k, r := range s.shadows {
+		if r.Tenant == tenant && !now.Before(r.Until) {
+			delete(s.shadows, k)
+			n++
+		}
+	}
+	return n, nil
 }

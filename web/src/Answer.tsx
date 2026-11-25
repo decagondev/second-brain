@@ -1,20 +1,45 @@
 import { Fragment, useId, useState } from "react";
 import type { ReactNode } from "react";
-import type { About, AskResponse, Cite, Claim, Fetch, Notice, Passage, Person, Pinned, SeeAlso, Term } from "./api";
-import { AskError, askOwner, citeName, docKey, isCited, passage, requestAccess } from "./api";
+import type {
+  About,
+  AskResponse,
+  Cite,
+  Claim,
+  Fetch,
+  Notice,
+  Passage,
+  Person,
+  Pinned,
+  SeeAlso,
+  Term,
+} from "./api";
+import {
+  AskError,
+  askOwner,
+  citeName,
+  docKey,
+  isCited,
+  passage,
+  requestAccess,
+} from "./api";
 import { errorText, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
+import { MarkLine, citeMark } from "./Marked";
 import { HowThisWasMade } from "./Further";
 
 const notices: Record<Exclude<Notice, null>, string> = {
-  no_access: msg("Some sources you don't have access to may answer this. Ask their owner."),
+  no_access: msg(
+    "Some sources you don't have access to may answer this. Ask their owner.",
+  ),
   no_sources: msg("Nothing indexed answers this yet."),
   most_uncited: msg("Most of this answer isn't backed by your sources."),
 };
 
 // "Finance · restricted": the spaces that hold a source and its label, in words.
 export function placeOf(cite: { spaces?: string[]; label?: string }): string {
-  const spaces = (cite.spaces ?? []).map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(", ");
+  const spaces = (cite.spaces ?? [])
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(", ");
   return [spaces, cite.label ?? ""].filter((x) => x !== "").join(" · ");
 }
 
@@ -26,8 +51,15 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
     : cite.stale && cite.age_days !== undefined
       ? tn(cite.age_days, "{n} day old", "{n} days old")
       : "";
-  const replaces = cite.replaces ? t("Replaces {title}", { title: cite.replaces }) : "";
-  const replacedBy = cite.replaced_by ? t("Replaced by {title}", { title: cite.replaced_by.title ?? cite.replaced_by.cite }) : "";
+  const replaces = cite.replaces
+    ? t("Replaces {title}", { title: cite.replaces })
+    : "";
+  const replacedBy = cite.replaced_by
+    ? t("Replaced by {title}", {
+        title: cite.replaced_by.title ?? cite.replaced_by.cite,
+      })
+    : "";
+  const mark = citeMark(cite); // SB-4706
   const label = [
     t("Source {cite}", { cite: cite.cite }),
     cite.title !== undefined ? citeName(cite) : "",
@@ -35,6 +67,7 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
     age,
     replaces,
     replacedBy,
+    mark,
     flagged ? t("flagged") : "",
     cite.url ? t("opens in a new tab") : t("shows the answer's trace"),
   ]
@@ -42,12 +75,19 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
     .join(", ");
   const href = cite.url ?? `/v1/traces/${encodeURIComponent(trace)}`;
   return (
-    <a className="chip" href={href} target={cite.url ? "_blank" : undefined} rel={cite.url ? "noopener noreferrer" : undefined} aria-label={label}>
+    <a
+      className="chip"
+      href={href}
+      target={cite.url ? "_blank" : undefined}
+      rel={cite.url ? "noopener noreferrer" : undefined}
+      aria-label={label}
+    >
       <span>{citeName(cite)}</span>
       {place && <span className="place">{place}</span>}
       {age && <span className="place">{age}</span>}
       {replaces && <span className="place">{replaces}</span>}
       {replacedBy && <span className="place replaced">{replacedBy}</span>}
+      {mark && <span className="place mark">{mark}</span>}
       {flagged && <span className="flag">{t("Flagged")}</span>}
     </a>
   );
@@ -55,7 +95,15 @@ export function CitationChip({ cite, trace }: { cite: Cite; trace: string }) {
 
 // PassageView is Show passage under a chip: the cited text, fetched and checked live as the
 // asker each time it is opened, shown as plain text in a quote (SB-3001, LAW-09).
-export function PassageView({ cite, trace, fetcher }: { cite: Cite; trace: string; fetcher?: Fetch }) {
+export function PassageView({
+  cite,
+  trace,
+  fetcher,
+}: {
+  cite: Cite;
+  trace: string;
+  fetcher?: Fetch;
+}) {
   const [open, setOpen] = useState(false);
   const [p, setP] = useState<Passage | null>(null);
   const [err, setErr] = useState("");
@@ -71,18 +119,35 @@ export function PassageView({ cite, trace, fetcher }: { cite: Cite; trace: strin
       setP(await passage(trace, cite.cite, cite.span[0], fetcher));
     } catch (e) {
       const code = e instanceof AskError ? e.error.code : "EUNAVAIL";
-      setErr(code === "EPERM" ? t("You can't open this source now.") : t("The passage can't be shown right now."));
+      setErr(
+        code === "EPERM"
+          ? t("You can't open this source now.")
+          : t("The passage can't be shown right now."),
+      );
     }
   };
   return (
     <span className="passage">
-      <button type="button" className="link" aria-expanded={open} onClick={() => void show()}>
+      <button
+        type="button"
+        className="link"
+        aria-expanded={open}
+        onClick={() => void show()}
+      >
         {open ? t("Hide passage") : t("Show passage")}
       </button>
       {open && (
-        <span className="passage-body" role="region" aria-label={t("Passage from {title}", { title: citeName(cite) })}>
+        <span
+          className="passage-body"
+          role="region"
+          aria-label={t("Passage from {title}", { title: citeName(cite) })}
+        >
           {err && <span className="notice">{err}</span>}
-          {p?.gone && <span className="notice">{t("This version is no longer indexed.")}</span>}
+          {p?.gone && (
+            <span className="notice">
+              {t("This version is no longer indexed.")}
+            </span>
+          )}
           {p?.text && (
             <blockquote>
               {p.text}
@@ -96,9 +161,22 @@ export function PassageView({ cite, trace, fetcher }: { cite: Cite; trace: strin
 }
 
 // AboutButton is Ask about this document (SB-3004): the next questions search only it.
-export function AboutButton({ cite, name, onAbout }: { cite: string; name: string; onAbout: (d: About) => void }) {
+export function AboutButton({
+  cite,
+  name,
+  onAbout,
+}: {
+  cite: string;
+  name: string;
+  onAbout: (d: About) => void;
+}) {
   return (
-    <button type="button" className="link" aria-label={t("Ask about {title}", { title: name })} onClick={() => onAbout({ key: docKey(cite), name })}>
+    <button
+      type="button"
+      className="link"
+      aria-label={t("Ask about {title}", { title: name })}
+      onClick={() => onAbout({ key: docKey(cite), name })}
+    >
       {t("Ask about this document")}
     </button>
   );
@@ -132,12 +210,27 @@ export function glossed(text: string, terms?: Term[]): ReactNode {
     let best: { at: number; len: number; term: Term } | null = null;
     for (const x of ts) {
       const flags = x.term === x.term.toLowerCase() ? "iu" : "u";
-      const m = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(x.term)}(?![\\p{L}\\p{N}])`, flags).exec(rest);
-      if (m && (best === null || m.index < best.at || (m.index === best.at && m[0].length > best.len))) best = { at: m.index, len: m[0].length, term: x };
+      const m = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRe(x.term)}(?![\\p{L}\\p{N}])`,
+        flags,
+      ).exec(rest);
+      if (
+        m &&
+        (best === null ||
+          m.index < best.at ||
+          (m.index === best.at && m[0].length > best.len))
+      )
+        best = { at: m.index, len: m[0].length, term: x };
     }
     if (best === null) break;
     out.push(<Fragment key={key++}>{rest.slice(0, best.at)}</Fragment>);
-    out.push(<TermWord key={key++} word={rest.slice(best.at, best.at + best.len)} means={best.term.means} />);
+    out.push(
+      <TermWord
+        key={key++}
+        word={rest.slice(best.at, best.at + best.len)}
+        means={best.term.means}
+      />,
+    );
     rest = rest.slice(best.at + best.len);
   }
   out.push(<Fragment key={key++}>{rest}</Fragment>);
@@ -161,32 +254,55 @@ export function ClaimView({
 }) {
   if (!isCited(claim)) {
     return (
-      <li className="claim uncited" title={t("No source you can open supports this.")}>
-        <span className="badge">{t("Uncited")}</span> <span>{glossed(claim.text, terms)}</span>
+      <li
+        className="claim uncited"
+        title={t("No source you can open supports this.")}
+      >
+        <span className="badge">{t("Uncited")}</span>{" "}
+        <span>{glossed(claim.text, terms)}</span>
       </li>
     );
   }
   return (
     <li className="claim cited">
-      {claim.disagree && <strong className="disagree">{t("Sources disagree:")} </strong>}
+      {claim.disagree && (
+        <strong className="disagree">{t("Sources disagree:")} </strong>
+      )}
       <span>{glossed(claim.text, terms)}</span>{" "}
       <span className="chips">
         {claim.cites.map((c, i) => (
           <span key={`${c.cite}-${i}`} className="cite-with-passage">
             <CitationChip cite={c} trace={trace} />
-            {trace.startsWith("tr_") && <PassageView cite={c} trace={trace} fetcher={fetcher} />}
-            {onAbout && <AboutButton cite={c.cite} name={citeName(c)} onAbout={onAbout} />}
+            {trace.startsWith("tr_") && (
+              <PassageView cite={c} trace={trace} fetcher={fetcher} />
+            )}
+            {onAbout && (
+              <AboutButton cite={c.cite} name={citeName(c)} onAbout={onAbout} />
+            )}
           </span>
         ))}
       </span>
-      {nums && <span className="print-only"> {claim.cites.map((c) => `[${numberOf(nums, c.cite)}]`).join(" ")}</span>}
+      {nums && (
+        <span className="print-only">
+          {" "}
+          {claim.cites.map((c) => `[${numberOf(nums, c.cite)}]`).join(" ")}
+        </span>
+      )}
     </li>
   );
 }
 
 // SeeAlsoView lists the documents the search found that no claim cites (SB-3301), by title
 // and age, never as claims: their text is only ever a passage the asker opens.
-export function SeeAlsoView({ answer, fetcher, onAbout }: { answer: AskResponse; fetcher?: Fetch; onAbout?: (d: About) => void }) {
+export function SeeAlsoView({
+  answer,
+  fetcher,
+  onAbout,
+}: {
+  answer: AskResponse;
+  fetcher?: Fetch;
+  onAbout?: (d: About) => void;
+}) {
   const items: SeeAlso[] = answer.see_also ?? [];
   if (items.length === 0) return null;
   return (
@@ -194,13 +310,36 @@ export function SeeAlsoView({ answer, fetcher, onAbout }: { answer: AskResponse;
       <h3>{t("See also")}</h3>
       <ul>
         {items.map((x) => {
-          const cite: Cite = { cite: x.cite, title: x.title, section: x.section, span: x.span, flags: [] };
+          const cite: Cite = {
+            cite: x.cite,
+            title: x.title,
+            section: x.section,
+            span: x.span,
+            flags: [],
+          };
           return (
             <li key={x.cite}>
               <span>{citeName(cite)}</span>
-              {x.age_days !== undefined && <span className="place"> {tn(x.age_days, "{n} day old", "{n} days old")}</span>}{" "}
-              {answer.trace.startsWith("tr_") && <PassageView cite={cite} trace={answer.trace} fetcher={fetcher} />}
-              {onAbout && <AboutButton cite={x.cite} name={citeName(cite)} onAbout={onAbout} />}
+              {x.age_days !== undefined && (
+                <span className="place">
+                  {" "}
+                  {tn(x.age_days, "{n} day old", "{n} days old")}
+                </span>
+              )}{" "}
+              {answer.trace.startsWith("tr_") && (
+                <PassageView
+                  cite={cite}
+                  trace={answer.trace}
+                  fetcher={fetcher}
+                />
+              )}
+              {onAbout && (
+                <AboutButton
+                  cite={x.cite}
+                  name={citeName(cite)}
+                  onAbout={onAbout}
+                />
+              )}
             </li>
           );
         })}
@@ -222,15 +361,34 @@ export function PersonName({ person }: { person: Person }) {
 
 // Who to ask (SB-1702): each owner with the documents of theirs this answer cites, and
 // only those, since a cite is only ever a document the asker may open.
-export function PeopleView({ answer, onOwner, ask }: { answer: AskResponse; onOwner?: (email: string) => void; ask?: { question: string; space?: string; fetcher?: Fetch } }) {
+export function PeopleView({
+  answer,
+  onOwner,
+  ask,
+}: {
+  answer: AskResponse;
+  onOwner?: (email: string) => void;
+  ask?: { question: string; space?: string; fetcher?: Fetch };
+}) {
   const [asked, setAsked] = useState<Record<string, string>>({});
   async function askThem(email: string) {
     if (!ask) return;
     try {
       await askOwner(ask.question, answer.trace, email, ask.fetcher, ask.space);
-      setAsked((x) => ({ ...x, [email]: t("Sent to {person}. Their reply shows under Questions.", { person: email }) }));
+      setAsked((x) => ({
+        ...x,
+        [email]: t("Sent to {person}. Their reply shows under Questions.", {
+          person: email,
+        }),
+      }));
     } catch (e) {
-      setAsked((x) => ({ ...x, [email]: e instanceof AskError ? errorText(e.error).message : t("The question couldn't be sent.") }));
+      setAsked((x) => ({
+        ...x,
+        [email]:
+          e instanceof AskError
+            ? errorText(e.error).message
+            : t("The question couldn't be sent."),
+      }));
     }
   }
   const people = answer.people ?? [];
@@ -262,7 +420,12 @@ export function PeopleView({ answer, onOwner, ask }: { answer: AskResponse; onOw
           {onOwner && (
             <>
               {" "}
-              <button type="button" className="link" aria-label={t("Documents of {person}", { person: p.email })} onClick={() => onOwner(p.email)}>
+              <button
+                type="button"
+                className="link"
+                aria-label={t("Documents of {person}", { person: p.email })}
+                onClick={() => onOwner(p.email)}
+              >
                 {t("Their documents")}
               </button>
             </>
@@ -270,7 +433,15 @@ export function PeopleView({ answer, onOwner, ask }: { answer: AskResponse; onOw
           {ask && (
             <>
               {" "}
-              <button type="button" className="link" aria-label={t("Ask {person} this question", { person: p.email })} disabled={asked[p.email] !== undefined} onClick={() => askThem(p.email)}>
+              <button
+                type="button"
+                className="link"
+                aria-label={t("Ask {person} this question", {
+                  person: p.email,
+                })}
+                disabled={asked[p.email] !== undefined}
+                onClick={() => askThem(p.email)}
+              >
                 {t("Ask them")}
               </button>
               {asked[p.email] && <span role="status"> {asked[p.email]}</span>}
@@ -291,7 +462,11 @@ export function TermsView({ terms }: { terms?: Term[] }) {
         terms: terms.map((x, i) => (
           <span key={x.term}>
             {i > 0 && "; "}
-            {tj("{term} means {means}", { term: <abbr title={x.means}>{x.term}</abbr> }, { means: x.means })}
+            {tj(
+              "{term} means {means}",
+              { term: <abbr title={x.means}>{x.term}</abbr> },
+              { means: x.means },
+            )}
           </span>
         )),
       })}
@@ -300,15 +475,38 @@ export function TermsView({ terms }: { terms?: Term[] }) {
 }
 
 // Ask the owners for access (SB-2205): the owners hear which document; the asker sees counts.
-export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fetch }) {
-  const [state, setState] = useState<"idle" | "busy" | "failed" | { sent: number; already: number; no_owner: number }>("idle");
+export function AccessRequest({
+  trace,
+  fetcher,
+}: {
+  trace: string;
+  fetcher?: Fetch;
+}) {
+  const [state, setState] = useState<
+    | "idle"
+    | "busy"
+    | "failed"
+    | { sent: number; already: number; no_owner: number }
+  >("idle");
   if (typeof state === "object") {
     const parts = [
-      state.sent > 0 ? tn(state.sent, "asked {n} owner", "asked {n} owners") : "",
-      state.already > 0 ? t("{n} already asked this week", { n: state.already }) : "",
-      state.no_owner > 0 ? t("{n} with no owner to ask", { n: state.no_owner }) : "",
+      state.sent > 0
+        ? tn(state.sent, "asked {n} owner", "asked {n} owners")
+        : "",
+      state.already > 0
+        ? t("{n} already asked this week", { n: state.already })
+        : "",
+      state.no_owner > 0
+        ? t("{n} with no owner to ask", { n: state.no_owner })
+        : "",
     ].filter((p) => p !== "");
-    return <span role="status">{parts.length > 0 ? t("Done: {parts}.", { parts: parts.join(", ") }) : t("There was nobody to ask.")}</span>;
+    return (
+      <span role="status">
+        {parts.length > 0
+          ? t("Done: {parts}.", { parts: parts.join(", ") })
+          : t("There was nobody to ask.")}
+      </span>
+    );
   }
   return (
     <>
@@ -326,7 +524,9 @@ export function AccessRequest({ trace, fetcher }: { trace: string; fetcher?: Fet
       >
         {t("Ask the owners for access")}
       </button>
-      {state === "failed" && <span role="alert"> {t("The owners couldn't be asked just now.")}</span>}
+      {state === "failed" && (
+        <span role="alert"> {t("The owners couldn't be asked just now.")}</span>
+      )}
     </>
   );
 }
@@ -356,9 +556,15 @@ function Freshness({ answer }: { answer: AskResponse }) {
           {n.last_success
             ? t("{kind} last synced at {time}; newer changes may be missing.", {
                 kind: n.kind,
-                time: new Date(n.last_success).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                time: new Date(n.last_success).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
               })
-            : t("{kind}: when it last synced is unknown; newer changes may be missing.", { kind: n.kind })}
+            : t(
+                "{kind}: when it last synced is unknown; newer changes may be missing.",
+                { kind: n.kind },
+              )}
         </p>
       ))}
     </>
@@ -376,7 +582,10 @@ function Footnotes({ nums }: { nums: { cite: Cite; n: number }[] }) {
           <li key={cite.cite} value={n}>
             {citeName(cite)}
             {cite.url ? `, ${cite.url}` : ""}
-            {cite.age_days !== undefined ? `, ${tn(cite.age_days, "{n} day old", "{n} days old")}` : ""}
+            {cite.age_days !== undefined
+              ? `, ${tn(cite.age_days, "{n} day old", "{n} days old")}`
+              : ""}
+            {citeMark(cite) ? `, ${citeMark(cite)}` : ""}
           </li>
         ))}
       </ol>
@@ -428,9 +637,20 @@ export function AnswerView({
       {answer.pinned && <PinnedView pin={answer.pinned} />}
       {answer.suggest && onSuggest && (
         <p className="notice" role="note">
-          {t("{space} has an agent for this: {agent}.", { space: answer.suggest.space, agent: answer.suggest.agent })}{" "}
-          <button type="button" onClick={() => onSuggest(answer.suggest!.space, answer.suggest!.agent)}>
-            {t("Ask {agent} in {space}", { space: answer.suggest.space, agent: answer.suggest.agent })}
+          {t("{space} has an agent for this: {agent}.", {
+            space: answer.suggest.space,
+            agent: answer.suggest.agent,
+          })}{" "}
+          <button
+            type="button"
+            onClick={() =>
+              onSuggest(answer.suggest!.space, answer.suggest!.agent)
+            }
+          >
+            {t("Ask {agent} in {space}", {
+              space: answer.suggest.space,
+              agent: answer.suggest.agent,
+            })}
           </button>
         </p>
       )}
@@ -442,23 +662,51 @@ export function AnswerView({
       )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (
-          <ClaimView key={i} claim={c} trace={answer.trace} nums={nums} fetcher={fetcher} onAbout={onAbout} terms={answer.terms} />
+          <ClaimView
+            key={i}
+            claim={c}
+            trace={answer.trace}
+            nums={nums}
+            fetcher={fetcher}
+            onAbout={onAbout}
+            terms={answer.terms}
+          />
         ))}
       </ul>
-      {answer.skill && <p className="meta skill">{t("Written with the skill /{name}", { name: answer.skill })}</p>}
+      {answer.skill && (
+        <p className="meta skill">
+          {t("Written with the skill /{name}", { name: answer.skill })}
+        </p>
+      )}
       {answer.verified && answer.verified.of > 0 && (
-        <p className="meta verified-count">{t("{marked} of {of} sources verified", { marked: answer.verified.marked, of: answer.verified.of })}</p>
+        <p className="meta verified-count">
+          {t("{marked} of {of} sources verified", {
+            marked: answer.verified.marked,
+            of: answer.verified.of,
+          })}
+        </p>
       )}
       <SeeAlsoView answer={answer} fetcher={fetcher} onAbout={onAbout} />
-      <PeopleView answer={answer} onOwner={onOwner} ask={question ? { question, space, fetcher } : undefined} />
+      <PeopleView
+        answer={answer}
+        onOwner={onOwner}
+        ask={question ? { question, space, fetcher } : undefined}
+      />
       <TermsView terms={answer.terms} />
       {answer.refused > 0 && (
         <p className="refused">
-          {tn(answer.refused, "{n} source was not shown because you can't open it.", "{n} sources were not shown because you can't open them.")}{" "}
+          {tn(
+            answer.refused,
+            "{n} source was not shown because you can't open it.",
+            "{n} sources were not shown because you can't open them.",
+          )}{" "}
           <AccessRequest trace={answer.trace} fetcher={fetcher} />
         </p>
       )}
-      {answer.trace.startsWith("tr_") && <HowThisWasMade trace={answer.trace} fetcher={fetcher} />}
+      {answer.trace.startsWith("tr_") && (
+        <HowThisWasMade trace={answer.trace} fetcher={fetcher} />
+      )}
+      <MarkLine agent={answer.agent} version={answer.release} />
       <p className="trace">{t("Trace {trace}", { trace: answer.trace })}</p>
       <Footnotes nums={nums} />
     </article>

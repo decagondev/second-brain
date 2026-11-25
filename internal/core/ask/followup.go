@@ -285,7 +285,7 @@ func (l Legwork) DraftFix(ctx context.Context, s tenancy.Scope, name, doc string
 	if len(changes) == 0 {
 		return out, fmt.Errorf("%w: nothing newer that the owner can open says otherwise", ErrInvalid)
 	}
-	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, User: owner.ID, Kind: KindFix, Question: "Suggested edits: " + cut(title, 200),
+	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, User: owner.ID, Kind: KindFix, Question: "Suggested edits: " + cut(title, 200),
 		Space: SpaceKey(name), Documents: []string{first.Cite}, Steps: []string{}, State: FixSuggested, At: l.now(), DoneAt: l.now(),
 		Sections: []Section{{Question: cut(title, MaxStep), Trace: resp.Trace, Claims: changes}}}
 	if err := l.audit(ctx, s.User(), r, "fix_suggested", hashOf(first.Cite)); err != nil {

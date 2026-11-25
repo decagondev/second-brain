@@ -40,6 +40,11 @@ type Cite struct {
 	// ReplacedBy is the newer decision that replaces a cited one, shown only when the
 	// asker can open it too (SB-4505).
 	ReplacedBy *Newer `json:"replaced_by,omitempty"`
+	// GeneratedBy, ApprovedBy and Edited mark a cited note an agent drafted (SB-4706,
+	// LAW-28): AGENT@VERSION, the person who published it, and whether they changed it.
+	GeneratedBy string `json:"generated_by,omitempty"`
+	ApprovedBy  string `json:"approved_by,omitempty"`
+	Edited      bool   `json:"edited,omitempty"`
 }
 
 // Newer is a document that replaces a cited one: its cite and title.
@@ -155,7 +160,7 @@ func Compose(raw string, ctx Context, titles map[string]string) Result {
 				title = ch.Title
 			}
 			c.Cites = append(c.Cites, Cite{Cite: ch.Cite, Title: title, Span: [2]int{ch.Start, ch.End}, Flags: flags,
-				Spaces: held, Label: ch.Label, Section: ch.Section})
+				Spaces: held, Label: ch.Label, Section: ch.Section, GeneratedBy: ch.GeneratedBy, ApprovedBy: ch.ApprovedBy, Edited: ch.Edited})
 		}
 		c.Uncited = len(c.Cites) == 0
 		c.Disagree = pc.Disagree && TwoDocuments(c.Cites) // the model's word, kept only with two documents

@@ -1070,3 +1070,41 @@ func (t Traces) Collections(ctx context.Context, tenant string) ([]ask.Collectio
 func (t Traces) DeleteCollection(ctx context.Context, tenant, id string) error {
 	return del(ctx, t.Pool, tenant, "collection", id)
 }
+
+var _ ask.ShadowStore = Traces{}
+
+// OpenShadow implements ask.ShadowStore (SB-4704): the window by agent and release, the
+// first one written winning.
+func (t Traces) OpenShadow(ctx context.Context, w ask.ShadowWindow) (ask.ShadowWindow, error) {
+	id := w.Agent + "|" + w.Release
+	err := put(ctx, t.Pool, w.Tenant, "shadowwindow", id, meta{at: w.From}, w, true)
+	if err != nil && !errors.Is(err, ErrDuplicate) {
+		return ask.ShadowWindow{}, err
+	}
+	got, _, err := get[ask.ShadowWindow](ctx, t.Pool, w.Tenant, "shadowwindow", id, false)
+	return got, err
+}
+
+// PutShadow implements ask.ShadowStore: kept under its window's end, which deletes it.
+func (t Traces) PutShadow(ctx context.Context, r ask.ShadowRun) error {
+	return put(ctx, t.Pool, r.Tenant, "shadow", r.ID, meta{at: r.Until, user: r.User, space: r.Space}, r, false)
+}
+
+// ShadowRuns implements ask.ShadowStore.
+func (t Traces) ShadowRuns(ctx context.Context, tenant string) ([]ask.ShadowRun, error) {
+	return list[ask.ShadowRun](ctx, t.Pool, tenant, "shadow", "", "id")
+}
+
+// ShadowWindows implements ask.ShadowStore.
+func (t Traces) ShadowWindows(ctx context.Context, tenant string) ([]ask.ShadowWindow, error) {
+	return list[ask.ShadowWindow](ctx, t.Pool, tenant, "shadowwindow", "", "id")
+}
+
+// DeleteShadows implements ask.ShadowStore.
+func (t Traces) DeleteShadows(ctx context.Context, tenant string, now time.Time) (int, error) {
+	tag, err := t.Pool.Exec(ctx, `DELETE FROM cell_docs WHERE tenant = $1 AND kind = 'shadow' AND at <= $2`, tenant, now)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
+}

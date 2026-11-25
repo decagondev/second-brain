@@ -74,7 +74,7 @@ Tenants choose `stable` or `testing`, never a version (ADR-0004). The release co
 
 ### Rings and promotion
 
-A gated release goes to ring 0 (the internal tenant), then ring 1 (friendly tenants on `testing`), soaks for at least 48 hours, then can be promoted to `stable`. **Promote guard:** promotion is refused unless every stable tenant runs the current stable. That is what keeps everyone at most one behind (LAW-08).
+A gated release goes to ring 0 (the internal tenant), then ring 1 (friendly tenants on `testing`), soaks for at least 48 hours, then can be promoted to `stable`. **Promote guard:** promotion is refused unless every stable tenant runs the current stable. That is what keeps everyone at most one behind (LAW-08). A definition's `shadow` runs only here, in the first ring (sb-agents(7), Shadow runs; SB-4704): a changed prompt meets real work beside the current one for up to a week, and its runs are never delivered.
 
 ### Rollback
 

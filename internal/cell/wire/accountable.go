@@ -2,15 +2,24 @@ package wire
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/kill"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/notify"
+	"example.com/second-brain/internal/core/prompts"
+	"example.com/second-brain/internal/core/reviews"
 	"example.com/second-brain/internal/core/tenancy"
+	"example.com/second-brain/internal/errs"
 )
 
 // Every agent accountable (sb-agents(7), Value, Pause here, Spend caps; SB-4701 to SB-4703):
@@ -192,4 +201,120 @@ func (c *Cell) pauseAgent(ctx context.Context, s tenancy.Scope, name, agent, rea
 		_ = c.tell(ctx, id, notify.KindAgent, agent+" was paused in "+name+": "+reason) // best effort: the pause stands
 	}
 	return nil
+}
+
+// agentFacts are what an agent review reads (SB-4705): the department agents, their tools,
+// and each agent's and trigger's last use in each space over the review window.
+func (c *Cell) agentFacts(ctx context.Context, now time.Time) (reviews.AgentFacts, error) {
+	from := now.Add(-reviews.UseWindow)
+	qs, err := c.Traces.StewardQuestionsBetween(ctx, c.Config.Tenant, from, now)
+	if err != nil {
+		return reviews.AgentFacts{}, err
+	}
+	traces, err := c.Report.Traces(ctx, c.Config.Tenant, from, now)
+	if err != nil {
+		return reviews.AgentFacts{}, err
+	}
+	last := ask.LastUses(qs, traces)
+	return reviews.AgentFacts{
+		Department: func(a string) bool { _, ok := ask.Departments[a]; return ok },
+		Tools: func(a string) []string {
+			d, _ := ask.AgentDefOf(a)
+			return d.Tools
+		},
+		LastUse: func(space, item string) (time.Time, bool) {
+			at, ok := last[space+"\x00"+item]
+			return at, ok
+		},
+	}, nil
+}
+
+// RunAgentReviews opens the quarter's agent reviews that don't exist yet, each audited
+// (SB-4705).
+func (c *Cell) RunAgentReviews(ctx context.Context, now time.Time) ([]reviews.Review, error) {
+	if c.Reviews == nil {
+		return nil, nil
+	}
+	f, err := c.agentFacts(ctx, now)
+	if err != nil {
+		return nil, fmt.Errorf("wire: agent reviews: %w", err)
+	}
+	opened, err := reviews.RunAgents(ctx, c.Manifest(), now, f, c.Reviews, c.NewID)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range opened {
+		unused := 0
+		for _, it := range r.Items {
+			if it.Unused {
+				unused++
+			}
+		}
+		if _, err := c.Audit.Write(ctx, audit.Event{Actor: "sys_jobs", Kind: "access", Subject: r.ID, State: "opened",
+			Reason: fmt.Sprintf("agent review %s: %d items, %d unused", r.Quarter, len(r.Items), unused), Space: "spc_" + r.Space}); err != nil {
+			return nil, fmt.Errorf("wire: agent review %s can't be audited: %w", r.ID, err)
+		}
+	}
+	return opened, nil
+}
+
+// AgentRecord is agent's signed record (SB-4707), counted from everything the cell keeps:
+// traces, queues, feedback, the audit log's kill rows and the agent reviews.
+func (c *Cell) AgentRecord(ctx context.Context, name string) (ask.SignedRecord, error) {
+	def, ok := ask.AgentDefOf(name)
+	if !ok {
+		return ask.SignedRecord{}, fmt.Errorf("%w: no agent %q in the bundle", ask.ErrInvalid, name)
+	}
+	now := time.Now()
+	from := time.Unix(0, 0)
+	tenant := c.Config.Tenant
+	in := ask.RecordInputs{Tenant: tenant, Release: c.Release, Now: now, Def: def, OwnerInactive: !c.ownerActive(ctx, def.Owner), Caps: c.Manifest().AgentCaps}
+	var err error
+	if in.Traces, err = c.Report.Traces(ctx, tenant, from, now); err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: traces: %v", ask.ErrUnavailable, err)
+	}
+	if in.Questions, err = c.Traces.StewardQuestionsBetween(ctx, tenant, from, now); err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: questions: %v", ask.ErrUnavailable, err)
+	}
+	if in.Feedback, err = c.Traces.FeedbackBetween(ctx, tenant, from, now); err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: feedback: %v", ask.ErrUnavailable, err)
+	}
+	if in.Audit, err = c.Audit.Store.Range(ctx, 1, 1<<30); err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: audit: %v", ask.ErrUnavailable, err)
+	}
+	if c.Reviews != nil {
+		if in.Reviews, err = c.Reviews.List(ctx); err != nil {
+			return ask.SignedRecord{}, fmt.Errorf("%w: reviews: %v", ask.ErrUnavailable, err)
+		}
+	}
+	if in.EvalHeld, err = c.evalHeld(); err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: eval hold: %v", ask.ErrUnavailable, err)
+	}
+	if p, err := prompts.Get(def.Prompt); err == nil {
+		sum := sha256.Sum256([]byte(p.Text))
+		in.PromptSHA256 = hex.EncodeToString(sum[:])
+	}
+	sg, err := c.AnchorSigner(ctx)
+	if err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: %v", ask.ErrUnavailable, err)
+	}
+	return ask.SignRecord(ask.BuildRecord(in), sg, now)
+}
+
+// agentRecordCP is GET /v1/cell/agents/NAME/record for sb agents record (SB-4707).
+func (c *Cell) agentRecordCP(w http.ResponseWriter, r *http.Request) {
+	if !c.guardControlPlane(w, r) {
+		return
+	}
+	sr, err := c.AgentRecord(r.Context(), r.PathValue("name"))
+	switch {
+	case errors.Is(err, ask.ErrInvalid):
+		refuseJSON(w, errs.EINVAL, "No agent of that name in the bundle.")
+		return
+	case err != nil:
+		refuseJSON(w, errs.EUNAVAIL, "The agent's record can't be made right now.")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(sr)
 }

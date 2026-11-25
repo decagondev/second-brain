@@ -83,6 +83,10 @@ func (x Index) Migrate(ctx context.Context) error {
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS section text NOT NULL DEFAULT ''`,
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS line_start int NOT NULL DEFAULT 0`,
 		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS line_end int NOT NULL DEFAULT 0`,
+		// Marked as AI (SB-4706): who wrote a note, from its front matter.
+		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS generated_by text NOT NULL DEFAULT ''`,
+		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS approved_by text NOT NULL DEFAULT ''`,
+		`ALTER TABLE ` + sc + `.chunks ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false`,
 		// A different embedder (SB-1710): the index is derived, so vectors of another size
 		// are dropped with their chunks and the column resized; the ingest service resyncs.
 		`DO $$ BEGIN IF (SELECT atttypmod FROM pg_attribute WHERE attrelid = '` + sc + `.chunks'::regclass AND attname = 'embedding') <> ` + strconv.Itoa(x.Dim) + ` THEN
@@ -158,9 +162,9 @@ func (x Index) Replace(ctx context.Context, tenant string, ref ports.SourceRef, 
 				return ErrOtherTenant
 			}
 			if _, err := tx.Exec(ctx, `INSERT INTO `+sc+`.chunks (id, tenant, cite, kind, source_id, version, span_start, span_end,
-				body, sha256, flags, acl, release, embedding, label, spaces, routing, owner, title, seen, location, rebuilt, text_sha256, review_by, section, line_start, line_end) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::vector,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)`,
+				body, sha256, flags, acl, release, embedding, label, spaces, routing, owner, title, seen, location, rebuilt, text_sha256, review_by, section, line_start, line_end, generated_by, approved_by, edited) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::vector,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)`,
 				c.ID, c.Tenant, c.Cite, c.Kind, c.SourceID, c.Version, c.Start, c.End, c.Text, c.ContentSHA256,
-				nonNil(c.Flags), nonNil(c.ACLPrefilter), c.Release, vec(c.Vector), c.Label, nonNil(c.Spaces), c.Routing, c.Owner, c.Title, seen, c.Location, c.Rebuilt, c.TextSHA256, optTime(c.ReviewBy), c.Section, c.Lines[0], c.Lines[1]); err != nil {
+				nonNil(c.Flags), nonNil(c.ACLPrefilter), c.Release, vec(c.Vector), c.Label, nonNil(c.Spaces), c.Routing, c.Owner, c.Title, seen, c.Location, c.Rebuilt, c.TextSHA256, optTime(c.ReviewBy), c.Section, c.Lines[0], c.Lines[1], c.GeneratedBy, c.ApprovedBy, c.Edited); err != nil {
 				return err
 			}
 		}
@@ -194,7 +198,7 @@ func (x Index) Delete(ctx context.Context, tenant string, ref ports.SourceRef) e
 	})
 }
 
-const cols = `id, tenant, cite, kind, source_id, version, span_start, span_end, body, sha256, flags, acl, release, label, spaces, routing, owner, title, seen, location, rebuilt, text_sha256, review_by, section, line_start, line_end`
+const cols = `id, tenant, cite, kind, source_id, version, span_start, span_end, body, sha256, flags, acl, release, label, spaces, routing, owner, title, seen, location, rebuilt, text_sha256, review_by, section, line_start, line_end, generated_by, approved_by, edited`
 
 // optTime is t, or NULL for the zero time.
 func optTime(t time.Time) *time.Time {
@@ -209,7 +213,7 @@ func scan(rows pgx.Rows) (ports.Chunk, error) {
 	var c ports.Chunk
 	var seen, reviewBy *time.Time
 	err := rows.Scan(&c.ID, &c.Tenant, &c.Cite, &c.Kind, &c.SourceID, &c.Version, &c.Start, &c.End, &c.Text,
-		&c.ContentSHA256, &c.Flags, &c.ACLPrefilter, &c.Release, &c.Label, &c.Spaces, &c.Routing, &c.Owner, &c.Title, &seen, &c.Location, &c.Rebuilt, &c.TextSHA256, &reviewBy, &c.Section, &c.Lines[0], &c.Lines[1])
+		&c.ContentSHA256, &c.Flags, &c.ACLPrefilter, &c.Release, &c.Label, &c.Spaces, &c.Routing, &c.Owner, &c.Title, &seen, &c.Location, &c.Rebuilt, &c.TextSHA256, &reviewBy, &c.Section, &c.Lines[0], &c.Lines[1], &c.GeneratedBy, &c.ApprovedBy, &c.Edited)
 	if seen != nil {
 		c.Seen = seen.UTC()
 	}

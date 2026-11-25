@@ -104,6 +104,9 @@ type Result struct {
 	Label   string         `json:"label,omitempty"`
 	// Mine is the asker being the document's current owner at the source (SB-3106).
 	Mine bool `json:"mine,omitempty"`
+	// GeneratedBy and ApprovedBy mark a note an agent drafted (SB-4706, LAW-28).
+	GeneratedBy string `json:"generated_by,omitempty"`
+	ApprovedBy  string `json:"approved_by,omitempty"`
 }
 
 // SearchResponse is the 200 body of GET /v1/search.
@@ -200,7 +203,8 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 }
 
 func (a Agent) result(ctx context.Context, own *owners, c ports.Chunk) Result {
-	r := Result{Cite: c.Cite, Title: c.Title, Owner: own.of(ctx, c), Snippet: snippet(ingest.Shown(c.Text, c.Flags)), Flags: c.Flags, Label: c.Label}
+	r := Result{Cite: c.Cite, Title: c.Title, Owner: own.of(ctx, c), Snippet: snippet(ingest.Shown(c.Text, c.Flags)), Flags: c.Flags, Label: c.Label,
+		GeneratedBy: c.GeneratedBy, ApprovedBy: c.ApprovedBy}
 	if r.Flags == nil {
 		r.Flags = []string{}
 	}

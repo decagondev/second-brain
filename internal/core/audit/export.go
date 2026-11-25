@@ -244,3 +244,31 @@ func strictDecode(b []byte, v any) error {
 	d.DisallowUnknownFields()
 	return d.Decode(v)
 }
+
+func documentMessage(kind, tenant, sha, at string) []byte {
+	return []byte("sb-document:v1:" + kind + ":" + tenant + ":" + sha + ":" + at)
+}
+
+// SignDocument signs a document of kind by its SHA-256 with the anchor key, such as an
+// agent's record (sb-agents(7), An agent's record; SB-4707): when, the signature and the key.
+func (s Signer) SignDocument(kind, sha string, at time.Time) (signedAt, sig, key string) {
+	ts := at.UTC().Format("2006-01-02T15:04:05.000Z")
+	return ts, base64.StdEncoding.EncodeToString(ed25519.Sign(s.priv, documentMessage(kind, s.Tenant, sha, ts))), s.Key()
+}
+
+// VerifyDocument checks a signature SignDocument made.
+func VerifyDocument(kind, tenant, key, sha, signedAt, sig string) bool {
+	raw, ok := strings.CutPrefix(key, "ed25519:")
+	if !ok {
+		return false
+	}
+	pub, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil || len(pub) != ed25519.PublicKeySize {
+		return false
+	}
+	b, err := base64.StdEncoding.DecodeString(sig)
+	if err != nil {
+		return false
+	}
+	return ed25519.Verify(pub, documentMessage(kind, tenant, sha, signedAt), b)
+}

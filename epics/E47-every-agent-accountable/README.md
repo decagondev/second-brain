@@ -27,9 +27,9 @@ Planned 2026-11-25 after W43, with the user. The concept is in [19-departments-s
 
 - [x] Every agent's value counts match the audit log
 - [x] A paused agent runs nothing in that space, and a capped agent's scheduled runs stop
-- [ ] No shadow draft reaches anyone
-- [ ] Everything an agent wrote carries the AI mark (LAW-28 green)
-- [ ] Every law test still green; no new store, service or Go module
+- [x] No shadow draft reaches anyone
+- [x] Everything an agent wrote carries the AI mark (LAW-28 green)
+- [x] Every law test still green; no new store, service or Go module
 
 ## Tickets
 

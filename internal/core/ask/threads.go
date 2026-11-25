@@ -48,6 +48,8 @@ type SavedThread struct {
 	Sources  []string `json:"sources,omitempty"`
 	Versions []string `json:"versions,omitempty"`
 	Rounds   int      `json:"rounds,omitempty"`
+	// Release is the release the agent ran under, its version (SB-4706).
+	Release string `json:"release,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -72,6 +74,8 @@ type ThreadView struct {
 	// Trace is an agent draft's trace, for How this was made (SB-4606), for the steward it
 	// ran as.
 	Trace string `json:"trace,omitempty"`
+	// Mark is which agent and version wrote a draft (SB-4706, LAW-28), shown to everyone.
+	Mark *Mark `json:"mark,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them
@@ -149,7 +153,7 @@ func (x Stewards) Discard(ctx context.Context, s tenancy.Scope, name, id string)
 		}
 		// The text goes; which agent drafted it, its kind and its rounds stay, counts for its
 		// value (SB-4701).
-		q.Thread = &SavedThread{Discarded: true, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Rounds: q.Thread.Rounds}
+		q.Thread = &SavedThread{Discarded: true, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Rounds: q.Thread.Rounds, Release: q.Thread.Release}
 		q.Question = "(discarded)"
 		return nil
 	})

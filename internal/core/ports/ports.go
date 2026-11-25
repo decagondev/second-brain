@@ -345,6 +345,12 @@ type Chunk struct {
 	// ReviewBy is the document's own review-by or expires date (SB-2705); zero for none.
 	// A cite is stale from it, if that is sooner than its age makes it.
 	ReviewBy time.Time
+	// GeneratedBy is the AGENT@VERSION that wrote the document, from its front matter, and
+	// ApprovedBy the person who published it when that is its owner at the source; Edited
+	// that the person changed the agent's text. "" and false for a document a person wrote
+	// (SB-4706, LAW-28).
+	GeneratedBy, ApprovedBy string
+	Edited                  bool
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.

@@ -225,3 +225,37 @@ func MonthSpend(traces []Trace, month string, caps map[string]float64, only []st
 	sort.Slice(out, func(i, j int) bool { return out[i].Agent < out[j].Agent })
 	return out
 }
+
+// LastUses is when each agent and trigger last ran in each space (SB-4705), keyed
+// SPACE "\x00" ITEM with SPACE its name: an agent's latest draft or answer there, and a
+// trigger's (brief:AGENT, updates, leader_week) latest draft.
+func LastUses(qs []StewardQuestion, traces []Trace) map[string]time.Time {
+	out := map[string]time.Time{}
+	mark := func(space, item string, at time.Time) {
+		k := strings.TrimPrefix(space, "spc_") + "\x00" + item
+		if at.After(out[k]) {
+			out[k] = at
+		}
+	}
+	for _, q := range qs {
+		a := draftAgent(q)
+		if a == "" {
+			continue
+		}
+		mark(q.Space, a, q.At)
+		switch q.Thread.Kind {
+		case DraftBrief:
+			mark(q.Space, "brief:"+a, q.At)
+		case DraftUpdate:
+			mark(q.Space, "updates", q.At)
+		case DraftLeaderWeek:
+			mark(q.Space, "leader_week", q.At)
+		}
+	}
+	for _, t := range traces {
+		if a := traceAgent(t); a != "" {
+			mark(t.Space, a, t.At)
+		}
+	}
+	return out
+}

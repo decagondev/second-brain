@@ -26,7 +26,7 @@ LAW-19 spaces only narrow                    LAW-20 restricted stays home
 LAW-21 moves revoke fast                     LAW-22 barriers hold
 LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 LAW-25 a memory is its person's own          LAW-26 a stored result is checked when read
-LAW-27 a consultation is the asker's own
+LAW-27 a consultation is the asker's own    LAW-28 an agent's writing says so
 ```
 
 ## DESCRIPTION
@@ -205,6 +205,12 @@ A result the cell keeps and shows later (a research report, a meeting brief, and
 When a branch ask consults department agents (sb-ask(3), Ask each department), each consultation runs as the asker, in a team they are a member of, one level deep, and adds nothing the asker couldn't get by asking that team's agent directly: the same claims and cites. A team the asker isn't a member of is never consulted or named, at most 6 are consulted, and a consulted agent never consults again or calls a tool.
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW27_AConsultationIsTheAskersOwn`: generated departments with random teams, members, department agents, glossaries and source ACLs, through consulting branch asks compared with asking each team directly, and a consultation asked to consult; SB-4501) · Selftest (`TestSelf_LAW27CatchesAWideConsultation`: consulting every team, member or not, goes red).
+
+### LAW-28: An agent's writing says so {#law-28}
+
+Anything an agent wrote says which agent and which version wrote it wherever it is shown: an answer, in the web app and in chat; a report or brief; a draft in a steward queue; and a note published from a draft, which keeps `generated_by` and `approved_by` in its front matter, so every cite of it, its export and its printout show the mark too (sb-agents(7), Marked as AI). The mark goes only when a person rewrites the text: a note published from a draft none of whose lines are left carries none.
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW28_AnAgentsWritingSaysSo`: generated answers, agent drafts and notes published from drafts unchanged, edited or rewritten, through the real answer, chat, draft and note paths and the index, each checked for the mark; SB-4706) · Selftest (`TestSelf_LAW28CatchesAnUnmarkedNote`: a note published without its mark goes red).
 
 ### External review (SB-612)
 

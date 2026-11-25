@@ -173,7 +173,7 @@ func (l Legwork) Prepare(ctx context.Context, s tenancy.Scope, req PrepRequest) 
 	if err != nil {
 		return ResearchView{}, err
 	}
-	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, User: s.User(), Kind: KindPrep, Question: title, Space: s.Space(),
+	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, User: s.User(), Kind: KindPrep, Question: title, Space: s.Space(),
 		Steps: items, State: StateDone, At: l.now()}
 	owners := map[string][]answer.Cite{}
 	for _, it := range items {

@@ -13,7 +13,7 @@ summary: "An auditor asking how an agent behaved gets a dozen screens."
 | Manual | [`sb-agents(7)`](../../manual/sb-agents.7.md), [`sb-audit(1)`](../../manual/sb-audit.1.md) |
 | Laws | LAW-07, LAW-11 |
 | Depends on | SB-4701, SB-4702, SB-4705 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ An auditor asking how an agent behaved gets a dozen screens.
 
 ## Acceptance criteria
 
-- [ ] `sb agents record NAME` and **Download record** write one signed JSON file and its Markdown
-- [ ] It holds the definition, owner, versions, eval scores, value, pauses, spend, access reviews and incidents
-- [ ] No document text or asker names; the signature verifies
+- [x] `sb agents record NAME` and **Download record** write one signed JSON file and its Markdown
+- [x] It holds the definition, owner, versions, eval scores, value, pauses, spend, access reviews and incidents
+- [x] No document text or asker names; the signature verifies
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] CLI
-- [ ] API
-- [ ] Signing
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] CLI
+- [x] API
+- [x] Signing
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [19-departments-shape-account.md](../../docs/19-departments-shape-account.md).
+2026-11-25: built. `ask.BuildRecord` gathers one agent's definition, owner, prompt SHA-256, eval scores, the versions it ran under, its value per quarter, pauses, spend, agent reviews and incident reports: counts, names of spaces and agents, never document text or askers. `SignRecord` signs its canonical JSON SHA-256 with the cell's anchor key (`audit.Signer.SignDocument`, kind `agent-record`), and `VerifyRecord` checks the hash, the signature and, when given, a pinned key. `GET /v1/admin/agents/NAME/record` (also `?format=md`) and `GET /v1/cell/agents/NAME/record` serve it; `sb agents record NAME` checks it before it writes NAME-record.json and NAME-record.md; the operators' Agents screen has **Download record** and its Markdown. TestRecordSignsAndCatchesTampering, TestProveItThroughARunningCell and TestAgentRecordAgainstARunningCell.
 
 ## Definition of done
 

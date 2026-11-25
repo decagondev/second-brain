@@ -324,6 +324,11 @@ func TestLAW26_AStoredResultIsCheckedWhenRead(t *testing.T) {
 	Check(t, "LAW-26", runs, func(r *rand.Rand) error { return law26(r, NewStoredSystem()) })
 }
 
+func TestLAW28_AnAgentsWritingSaysSo(t *testing.T) {
+	dir := t.TempDir()
+	Check(t, "LAW-28", runs, func(r *rand.Rand) error { return law28(r, dir, RealMarks{}) })
+}
+
 func TestLAW27_AConsultationIsTheAskersOwn(t *testing.T) {
 	Check(t, "LAW-27", runs, func(r *rand.Rand) error { return law27(r, NewConsultSystem()) })
 }

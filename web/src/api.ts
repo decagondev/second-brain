@@ -22,6 +22,10 @@ export interface Cite {
   replaces?: string;
   // The newer decision that replaces this one, when the asker can open it (SB-4505).
   replaced_by?: { cite: string; title?: string };
+  // A note an agent drafted (SB-4706): AGENT@VERSION, who published it, and if they edited it.
+  generated_by?: string;
+  approved_by?: string;
+  edited?: boolean;
 }
 
 export interface Person {
@@ -63,7 +67,12 @@ export async function readNotice(f: Fetch = fetch): Promise<CellNotice | null> {
     const res = await f("/v1/notice", { credentials: "same-origin" });
     if (!res.ok) return null;
     const d = (await res.json()) as { text?: unknown; until?: unknown };
-    if (typeof d?.text !== "string" || d.text === "" || typeof d.until !== "string") return null;
+    if (
+      typeof d?.text !== "string" ||
+      d.text === "" ||
+      typeof d.until !== "string"
+    )
+      return null;
     if (!(Date.parse(d.until) > Date.now())) return null;
     return { text: d.text, until: d.until };
   } catch {
@@ -77,7 +86,10 @@ export async function listSpaces(f: Fetch = fetch): Promise<Space[]> {
     if (!res.ok) return [];
     const data = (await res.json()) as { spaces?: unknown };
     if (!Array.isArray(data.spaces)) return [];
-    return data.spaces.filter((s): s is Space => typeof s?.name === "string" && typeof s?.label === "string");
+    return data.spaces.filter(
+      (s): s is Space =>
+        typeof s?.name === "string" && typeof s?.label === "string",
+    );
   } catch {
     return [];
   }
@@ -131,6 +143,7 @@ export interface AskResponse {
   // Hand off (SB-4502): the space whose request category the question names.
   handoff?: { space: string; category: string };
   skill?: string; // the skill the question loaded with /NAME (SB-4601)
+  agent?: string; // which agent wrote it (SB-4706)
 }
 
 // One consulted team's section of an answer (SB-4501).
@@ -192,7 +205,11 @@ export class AskError extends Error {
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 // citeName is a cite as people read it: "Title › Section", the title alone, or the cite (SB-3002).
-export function citeName(c: { cite: string; title?: string; section?: string }): string {
+export function citeName(c: {
+  cite: string;
+  title?: string;
+  section?: string;
+}): string {
   const title = c.title ?? c.cite;
   return c.section ? `${title} › ${c.section}` : title;
 }
@@ -205,18 +222,37 @@ export interface Passage {
   gone?: boolean;
 }
 
-export async function passage(trace: string, cite: string, start: number, f: Fetch = fetch): Promise<Passage> {
+export async function passage(
+  trace: string,
+  cite: string,
+  start: number,
+  f: Fetch = fetch,
+): Promise<Passage> {
   const q = `cite=${encodeURIComponent(cite)}&start=${encodeURIComponent(String(start))}`;
   let res: Response;
   try {
-    res = await f(`/v1/traces/${encodeURIComponent(trace)}/passage?${q}`, { credentials: "same-origin" });
+    res = await f(`/v1/traces/${encodeURIComponent(trace)}/passage?${q}`, {
+      credentials: "same-origin",
+    });
   } catch {
-    throw new AskError({ code: "EUNAVAIL", message: "Answers are unavailable right now.", trace, remedy: "Try again in a minute." });
+    throw new AskError({
+      code: "EUNAVAIL",
+      message: "Answers are unavailable right now.",
+      trace,
+      remedy: "Try again in a minute.",
+    });
   }
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const e = (data as { error?: ApiError } | null)?.error;
-    throw new AskError(e ?? { code: "EUNAVAIL", message: "Answers are unavailable right now.", trace, remedy: "Try again in a minute." });
+    throw new AskError(
+      e ?? {
+        code: "EUNAVAIL",
+        message: "Answers are unavailable right now.",
+        trace,
+        remedy: "Try again in a minute.",
+      },
+    );
   }
   return data as Passage;
 }
@@ -244,7 +280,9 @@ export interface AskFile {
 export const maxFileBytes = 2 << 20;
 
 // fileToAsk reads a picked file as an AskFile, or undefined when it is over 2 MB.
-export function fileToAsk(f: Blob & { name: string }): Promise<AskFile | undefined> {
+export function fileToAsk(
+  f: Blob & { name: string },
+): Promise<AskFile | undefined> {
   if (f.size > maxFileBytes) return Promise.resolve(undefined);
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -271,7 +309,9 @@ export async function ask(
   collection?: string,
   consult?: boolean,
 ): Promise<AskResponse> {
-  const body: Record<string, string | string[] | boolean | AskFile> = { question };
+  const body: Record<string, string | string[] | boolean | AskFile> = {
+    question,
+  };
   if (consult) body.consult = true; // SB-4501: with branch=true only
   if (collection) body.collection = collection; // SB-4304
   if (agent) body.agent = agent; // a department agent (SB-4007)
@@ -291,12 +331,24 @@ export async function ask(
       body: JSON.stringify(body),
     });
   } catch {
-    throw new AskError({ code: "EUNAVAIL", message: "Answers are unavailable right now.", trace: "", remedy: "Try again in a minute." });
+    throw new AskError({
+      code: "EUNAVAIL",
+      message: "Answers are unavailable right now.",
+      trace: "",
+      remedy: "Try again in a minute.",
+    });
   }
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const e = (data as { error?: ApiError } | null)?.error;
-    throw new AskError(e ?? { code: "EUNAVAIL", message: "Answers are unavailable right now.", trace: "", remedy: "Try again in a minute." });
+    throw new AskError(
+      e ?? {
+        code: "EUNAVAIL",
+        message: "Answers are unavailable right now.",
+        trace: "",
+        remedy: "Try again in a minute.",
+      },
+    );
   }
   return data as AskResponse;
 }
@@ -315,7 +367,10 @@ export interface FeedbackRequest {
   comment?: string;
 }
 
-export async function sendFeedback(req: FeedbackRequest, f: Fetch = fetch): Promise<void> {
+export async function sendFeedback(
+  req: FeedbackRequest,
+  f: Fetch = fetch,
+): Promise<void> {
   let res: Response;
   try {
     res = await f("/v1/feedback", {
@@ -325,11 +380,25 @@ export async function sendFeedback(req: FeedbackRequest, f: Fetch = fetch): Prom
       body: JSON.stringify(req),
     });
   } catch {
-    throw new AskError({ code: "EUNAVAIL", message: "Feedback couldn't be sent.", trace: req.trace, remedy: "Try again in a minute." });
+    throw new AskError({
+      code: "EUNAVAIL",
+      message: "Feedback couldn't be sent.",
+      trace: req.trace,
+      remedy: "Try again in a minute.",
+    });
   }
   if (!res.ok) {
-    const data = (await res.json().catch(() => null)) as { error?: ApiError } | null;
-    throw new AskError(data?.error ?? { code: "EUNAVAIL", message: "Feedback couldn't be sent.", trace: req.trace, remedy: "Try again in a minute." });
+    const data = (await res.json().catch(() => null)) as {
+      error?: ApiError;
+    } | null;
+    throw new AskError(
+      data?.error ?? {
+        code: "EUNAVAIL",
+        message: "Feedback couldn't be sent.",
+        trace: req.trace,
+        remedy: "Try again in a minute.",
+      },
+    );
   }
 }
 
@@ -347,6 +416,9 @@ export interface SearchResult {
   label?: string;
   // The asker is the document's current owner at the source (SB-3106).
   mine?: boolean;
+  // A note an agent drafted (SB-4706).
+  generated_by?: string;
+  approved_by?: string;
 }
 
 export interface SearchResponse {
@@ -382,7 +454,12 @@ export interface SharedQuestion {
   expires: string;
 }
 
-const unavailable: ApiError = { code: "EUNAVAIL", message: "This is unavailable right now.", trace: "", remedy: "Try again in a minute." };
+const unavailable: ApiError = {
+  code: "EUNAVAIL",
+  message: "This is unavailable right now.",
+  trace: "",
+  remedy: "Try again in a minute.",
+};
 
 // call is one JSON request to the cell's API; any failure is an AskError with the API's error.
 async function call<T>(url: string, init: RequestInit, f: Fetch): Promise<T> {
@@ -393,12 +470,19 @@ async function call<T>(url: string, init: RequestInit, f: Fetch): Promise<T> {
     throw new AskError(unavailable);
   }
   const data: unknown = await res.json().catch(() => null);
-  if (!res.ok) throw new AskError((data as { error?: ApiError } | null)?.error ?? unavailable);
+  if (!res.ok)
+    throw new AskError(
+      (data as { error?: ApiError } | null)?.error ?? unavailable,
+    );
   return data as T;
 }
 
 function post(body: unknown): RequestInit {
-  return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  return {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
 }
 
 function inSpace(path: string, space?: string): string {
@@ -414,7 +498,12 @@ export interface Filters {
   verified?: boolean; // verified documents only (SB-3602)
 }
 
-export function search(q: string, f: Fetch = fetch, space?: string, filters: Filters = {}): Promise<SearchResponse> {
+export function search(
+  q: string,
+  f: Fetch = fetch,
+  space?: string,
+  filters: Filters = {},
+): Promise<SearchResponse> {
   let path = `/v1/search?q=${encodeURIComponent(q)}`;
   if (filters.type) path += `&type=${encodeURIComponent(filters.type)}`;
   if (filters.since) path += `&since=${filters.since}d`;
@@ -423,7 +512,11 @@ export function search(q: string, f: Fetch = fetch, space?: string, filters: Fil
   return call<SearchResponse>(inSpace(path, space), {}, f);
 }
 
-export function saveQuestion(question: string, f: Fetch = fetch, space?: string): Promise<{ id: string }> {
+export function saveQuestion(
+  question: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<{ id: string }> {
   return call(inSpace("/v1/saved", space), post({ question }), f);
 }
 
@@ -436,11 +529,18 @@ export function removeSaved(id: string, f: Fetch = fetch): Promise<unknown> {
   return call(`/v1/saved/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
 }
 
-export function shareQuestion(question: string, f: Fetch = fetch, space?: string): Promise<{ id: string; url: string; expires: string }> {
+export function shareQuestion(
+  question: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<{ id: string; url: string; expires: string }> {
   return call(inSpace("/v1/shares", space), post({ question }), f);
 }
 
-export function openShare(id: string, f: Fetch = fetch): Promise<SharedQuestion> {
+export function openShare(
+  id: string,
+  f: Fetch = fetch,
+): Promise<SharedQuestion> {
   return call(`/v1/shares/${encodeURIComponent(id)}`, {}, f);
 }
 
@@ -481,7 +581,13 @@ export interface QueueQuestion {
   question: string;
   at: string;
   state: "open" | "answered";
-  reply?: { by: string; text: string; cites: string[]; at: string; note?: string };
+  reply?: {
+    by: string;
+    text: string;
+    cites: string[];
+    at: string;
+    note?: string;
+  };
   // A steward's live claim (SB-2502): who, whether it is the caller's, and until when.
   claim?: { by: string; mine: boolean; until: string };
   // Rerouted from a space with no active steward (SB-3102), or one that left it open
@@ -497,11 +603,30 @@ export interface QueueQuestion {
   shared?: { cite: string; title?: string }[];
   shared_hidden?: number;
   // A reported answer (SB-3606): who sent it, and only what the steward can open.
-  report?: { by: string; note?: string; claims: string[]; documents: SearchResult[]; hidden: number };
+  report?: {
+    by: string;
+    note?: string;
+    claims: string[];
+    documents: SearchResult[];
+    hidden: number;
+  };
   // A chat thread saved to the stewards (SB-3703): who saved it, a link and its messages.
   // agent, kind and hidden: a draft an agent wrote on a schedule or a trigger (SB-4005, SB-4006).
-  thread?: { by: string; link: string; text: string; agent?: string; kind?: string; hidden?: boolean; actions?: DraftAction[]; supersede?: { cite: string; title?: string }[];
-    versions?: string[]; rounds?: number; diff?: string[]; trace?: string }; // SB-4602, SB-4606
+  thread?: {
+    by: string;
+    link: string;
+    text: string;
+    agent?: string;
+    kind?: string;
+    hidden?: boolean;
+    actions?: DraftAction[];
+    supersede?: { cite: string; title?: string }[];
+    versions?: string[];
+    rounds?: number;
+    diff?: string[];
+    trace?: string;
+    mark?: { agent: string; version?: string };
+  }; // SB-4602, SB-4606, SB-4706
   // A request waiting on another space (SB-4504).
   waiting?: { on: string; reason: string; until: string };
   // A note a steward started from a found-nothing term (SB-3705).
@@ -509,13 +634,32 @@ export interface QueueQuestion {
 }
 
 // Draft a note from a found-nothing term (SB-3705).
-export function draftNote(space: string, term: string, count: number, f: Fetch = fetch): Promise<{ id: string }> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/drafts`, post({ term, count }), f);
+export function draftNote(
+  space: string,
+  term: string,
+  count: number,
+  f: Fetch = fetch,
+): Promise<{ id: string }> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/drafts`,
+    post({ term, count }),
+    f,
+  );
 }
 
 // Ask the owner (SB-3706): the question to one person the answer names in Who to ask.
-export function askOwner(question: string, trace: string, to: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
-  return call(inSpace("/v1/questions", space), post({ question, trace, to }), f);
+export function askOwner(
+  question: string,
+  trace: string,
+  to: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<{ id: string; to: string }> {
+  return call(
+    inSpace("/v1/questions", space),
+    post({ question, trace, to }),
+    f,
+  );
 }
 
 // An action item as a decisions draft reads it from the transcript (SB-4203).
@@ -535,8 +679,17 @@ export interface ActionItem extends DraftAction {
 }
 
 // Confirm a decisions draft's action items, as edited (SB-4203): only then are owners told.
-export async function confirmActions(space: string, draft: string, items: DraftAction[], f: Fetch = fetch): Promise<ActionItem[]> {
-  const d = await call<{ actions?: ActionItem[] }>(`/v1/spaces/${encodeURIComponent(space)}/actions`, post({ draft, items }), f);
+export async function confirmActions(
+  space: string,
+  draft: string,
+  items: DraftAction[],
+  f: Fetch = fetch,
+): Promise<ActionItem[]> {
+  const d = await call<{ actions?: ActionItem[] }>(
+    `/v1/spaces/${encodeURIComponent(space)}/actions`,
+    post({ draft, items }),
+    f,
+  );
   return d.actions ?? [];
 }
 
@@ -576,7 +729,16 @@ export interface Research {
   attendees?: { email: string; known: boolean; owns?: Cite[] }[];
   dropped: number;
   changed?: number; // a routine's sources new since its last run (SB-4302)
-  account?: { name: string; domain?: string; renewal?: string; tickets: number; notes: number; documents: number; owners: string[] }; // SB-4605
+  account?: {
+    name: string;
+    domain?: string;
+    renewal?: string;
+    tickets: number;
+    notes: number;
+    documents: number;
+    owners: string[];
+  }; // SB-4605
+  mark?: { agent: string; version?: string }; // SB-4706
 }
 
 export interface ResearchItem {
@@ -591,17 +753,37 @@ export interface ResearchItem {
 }
 
 // Draft a fix (SB-4206): a suggested edit of a document, kept for its owner and told to them.
-export function draftFix(space: string, doc: string, f: Fetch = fetch): Promise<{ id?: string; owner: string; changes: number; told: boolean }> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/review/fix`, post({ doc }), f);
+export function draftFix(
+  space: string,
+  doc: string,
+  f: Fetch = fetch,
+): Promise<{ id?: string; owner: string; changes: number; told: boolean }> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/review/fix`,
+    post({ doc }),
+    f,
+  );
 }
 
 // Plan a research report: nothing runs until runResearch.
-export function planResearch(question: string, f: Fetch = fetch, space?: string): Promise<Research> {
+export function planResearch(
+  question: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<Research> {
   return call(inSpace("/v1/research", space), post({ question }), f);
 }
 
-export function runResearch(id: string, f: Fetch = fetch, space?: string): Promise<Research> {
-  return call(inSpace(`/v1/research/${encodeURIComponent(id)}/run`, space), post({}), f);
+export function runResearch(
+  id: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<Research> {
+  return call(
+    inSpace(`/v1/research/${encodeURIComponent(id)}/run`, space),
+    post({}),
+    f,
+  );
 }
 
 export async function listResearch(f: Fetch = fetch): Promise<ResearchItem[]> {
@@ -614,13 +796,31 @@ export function openResearch(id: string, f: Fetch = fetch): Promise<Research> {
 }
 
 // Prepare a brief from a pasted agenda (SB-4202).
-export function prepareBrief(agenda: string, title: string, attendees: string[], f: Fetch = fetch, space?: string): Promise<Research> {
-  return call(inSpace("/v1/prepare", space), post({ agenda, title, attendees }), f);
+export function prepareBrief(
+  agenda: string,
+  title: string,
+  attendees: string[],
+  f: Fetch = fetch,
+  space?: string,
+): Promise<Research> {
+  return call(
+    inSpace("/v1/prepare", space),
+    post({ agenda, title, attendees }),
+    f,
+  );
 }
 
 // Discard a saved chat thread (SB-3703).
-export function discardThread(space: string, id: string, f: Fetch = fetch): Promise<unknown> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+export function discardThread(
+  space: string,
+  id: string,
+  f: Fetch = fetch,
+): Promise<unknown> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+    f,
+  );
 }
 
 export interface NoteResult {
@@ -635,11 +835,31 @@ export interface NoteResult {
 }
 
 // Report this answer (SB-3606): only by the asker's click, and it names them.
-export function reportAnswer(question: string, trace: string, note: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
-  return call(inSpace("/v1/questions", space), post({ question, trace, report: true, ...(note.trim() ? { note: note.trim() } : {}) }), f);
+export function reportAnswer(
+  question: string,
+  trace: string,
+  note: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<{ id: string; to: string }> {
+  return call(
+    inSpace("/v1/questions", space),
+    post({
+      question,
+      trace,
+      report: true,
+      ...(note.trim() ? { note: note.trim() } : {}),
+    }),
+    f,
+  );
 }
 
-export function sendToStewards(question: string, trace: string, f: Fetch = fetch, space?: string): Promise<{ id: string; to: string }> {
+export function sendToStewards(
+  question: string,
+  trace: string,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<{ id: string; to: string }> {
   return call(inSpace("/v1/questions", space), post({ question, trace }), f);
 }
 
@@ -648,44 +868,117 @@ export async function listQuestions(f: Fetch = fetch): Promise<MyQuestion[]> {
   return Array.isArray(data.items) ? data.items : [];
 }
 
-export async function stewardQueue(space: string, f: Fetch = fetch): Promise<QueueQuestion[]> {
-  const data = await call<{ items?: QueueQuestion[] }>(`/v1/spaces/${encodeURIComponent(space)}/questions`, {}, f);
+export async function stewardQueue(
+  space: string,
+  f: Fetch = fetch,
+): Promise<QueueQuestion[]> {
+  const data = await call<{ items?: QueueQuestion[] }>(
+    `/v1/spaces/${encodeURIComponent(space)}/questions`,
+    {},
+    f,
+  );
   return Array.isArray(data.items) ? data.items : [];
 }
 
-export function replyToQuestion(space: string, id: string, text: string, cites: string[], f: Fetch = fetch, both = false): Promise<unknown> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/reply`, post(both ? { text, cites, both } : { text, cites }), f);
+export function replyToQuestion(
+  space: string,
+  id: string,
+  text: string,
+  cites: string[],
+  f: Fetch = fetch,
+  both = false,
+): Promise<unknown> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/reply`,
+    post(both ? { text, cites, both } : { text, cites }),
+    f,
+  );
 }
 
-export function publishNote(space: string, id: string, title: string, confirm: number | undefined, f: Fetch = fetch, keepQuestion = false, supersedes = ""): Promise<NoteResult> {
-  const keep = { ...(keepQuestion ? { keep_question: true } : {}), ...(supersedes ? { supersedes } : {}) };
-  return call(`/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`, post(confirm === undefined ? { title, ...keep } : { title, confirm, ...keep }), f);
+export function publishNote(
+  space: string,
+  id: string,
+  title: string,
+  confirm: number | undefined,
+  f: Fetch = fetch,
+  keepQuestion = false,
+  supersedes = "",
+): Promise<NoteResult> {
+  const keep = {
+    ...(keepQuestion ? { keep_question: true } : {}),
+    ...(supersedes ? { supersedes } : {}),
+  };
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/questions/${encodeURIComponent(id)}/note`,
+    post(
+      confirm === undefined ? { title, ...keep } : { title, confirm, ...keep },
+    ),
+    f,
+  );
 }
 
 // Stewards' tools (sb-ask(3); SB-2501 to SB-2503).
 const sp = (space: string) => `/v1/spaces/${encodeURIComponent(space)}`;
 
 // markReviewed is Reviewed, still right; days is Review again in (SB-3603), 0 the space's default.
-export function markReviewed(space: string, cite: string, f: Fetch = fetch, days = 0): Promise<{ document: string; version: number }> {
-  return call(`${sp(space)}/review/marks`, post(days ? { cite, days } : { cite }), f);
+export function markReviewed(
+  space: string,
+  cite: string,
+  f: Fetch = fetch,
+  days = 0,
+): Promise<{ document: string; version: number }> {
+  return call(
+    `${sp(space)}/review/marks`,
+    post(days ? { cite, days } : { cite }),
+    f,
+  );
 }
 
 // The space's verified answers (SB-3601).
-export async function listPins(space: string, f: Fetch = fetch): Promise<PinItem[]> {
+export async function listPins(
+  space: string,
+  f: Fetch = fetch,
+): Promise<PinItem[]> {
   const d = await call<{ items?: PinItem[] }>(`${sp(space)}/pins`, {}, f);
   return Array.isArray(d.items) ? d.items : [];
 }
 
-export function pinReply(space: string, questionId: string, question: string, f: Fetch = fetch): Promise<PinItem> {
-  return call(`${sp(space)}/pins`, post({ question_id: questionId, question }), f);
+export function pinReply(
+  space: string,
+  questionId: string,
+  question: string,
+  f: Fetch = fetch,
+): Promise<PinItem> {
+  return call(
+    `${sp(space)}/pins`,
+    post({ question_id: questionId, question }),
+    f,
+  );
 }
 
-export function unpin(space: string, id: string, f: Fetch = fetch): Promise<unknown> {
-  return call(`${sp(space)}/pins/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+export function unpin(
+  space: string,
+  id: string,
+  f: Fetch = fetch,
+): Promise<unknown> {
+  return call(
+    `${sp(space)}/pins/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+    f,
+  );
 }
 
-export async function claimQuestion(space: string, id: string, release: boolean, f: Fetch = fetch): Promise<QueueQuestion["claim"] | null> {
-  const d = await call<{ claim?: QueueQuestion["claim"] | null }>(`${sp(space)}/questions/${encodeURIComponent(id)}/claim`, release ? { method: "DELETE" } : post({}), f);
+export async function claimQuestion(
+  space: string,
+  id: string,
+  release: boolean,
+  f: Fetch = fetch,
+): Promise<QueueQuestion["claim"] | null> {
+  const d = await call<{ claim?: QueueQuestion["claim"] | null }>(
+    `${sp(space)}/questions/${encodeURIComponent(id)}/claim`,
+    release ? { method: "DELETE" } : post({}),
+    f,
+  );
   return d.claim ?? null;
 }
 
@@ -695,38 +988,87 @@ export interface ReplyTemplate {
   text: string;
 }
 
-export async function replyTemplates(space: string, f: Fetch = fetch): Promise<ReplyTemplate[]> {
+export async function replyTemplates(
+  space: string,
+  f: Fetch = fetch,
+): Promise<ReplyTemplate[]> {
   try {
-    const d = await call<{ items?: ReplyTemplate[] }>(`${sp(space)}/templates`, {}, f);
-    return Array.isArray(d.items) ? d.items.filter((x) => typeof x.name === "string" && typeof x.text === "string") : [];
+    const d = await call<{ items?: ReplyTemplate[] }>(
+      `${sp(space)}/templates`,
+      {},
+      f,
+    );
+    return Array.isArray(d.items)
+      ? d.items.filter(
+          (x) => typeof x.name === "string" && typeof x.text === "string",
+        )
+      : [];
   } catch {
     return [];
   }
 }
 
-export function saveTemplate(space: string, id: string, name: string, text: string, f: Fetch = fetch): Promise<ReplyTemplate> {
+export function saveTemplate(
+  space: string,
+  id: string,
+  name: string,
+  text: string,
+  f: Fetch = fetch,
+): Promise<ReplyTemplate> {
   const body = post({ name, text });
-  return id === "" ? call(`${sp(space)}/templates`, body, f) : call(`${sp(space)}/templates/${encodeURIComponent(id)}`, { ...body, method: "PUT" }, f);
+  return id === ""
+    ? call(`${sp(space)}/templates`, body, f)
+    : call(
+        `${sp(space)}/templates/${encodeURIComponent(id)}`,
+        { ...body, method: "PUT" },
+        f,
+      );
 }
 
-export function deleteTemplate(space: string, id: string, f: Fetch = fetch): Promise<unknown> {
-  return call(`${sp(space)}/templates/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+export function deleteTemplate(
+  space: string,
+  id: string,
+  f: Fetch = fetch,
+): Promise<unknown> {
+  return call(
+    `${sp(space)}/templates/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+    f,
+  );
 }
 
 // A space's start list for a member (sb-spaces(7), Start here; SB-1706). Any failure shows none.
-export async function startHere(space: string, f: Fetch = fetch): Promise<{ items: SearchResult[]; hidden: number }> {
+export async function startHere(
+  space: string,
+  f: Fetch = fetch,
+): Promise<{ items: SearchResult[]; hidden: number }> {
   try {
-    const d = await call<{ items?: SearchResult[]; hidden?: number }>(`/v1/start?space=${encodeURIComponent(space)}`, {}, f);
-    return { items: Array.isArray(d.items) ? d.items : [], hidden: typeof d.hidden === "number" ? d.hidden : 0 };
+    const d = await call<{ items?: SearchResult[]; hidden?: number }>(
+      `/v1/start?space=${encodeURIComponent(space)}`,
+      {},
+      f,
+    );
+    return {
+      items: Array.isArray(d.items) ? d.items : [],
+      hidden: typeof d.hidden === "number" ? d.hidden : 0,
+    };
   } catch {
     return { items: [], hidden: 0 };
   }
 }
 
 // What changed (SB-1708) and documents to review (SB-1709). Any failure shows none.
-export async function changes(days: number, f: Fetch = fetch, space?: string): Promise<SearchResult[]> {
+export async function changes(
+  days: number,
+  f: Fetch = fetch,
+  space?: string,
+): Promise<SearchResult[]> {
   try {
-    const d = await call<{ items?: SearchResult[] }>(inSpace(`/v1/changes?since=${days}d`, space), {}, f);
+    const d = await call<{ items?: SearchResult[] }>(
+      inSpace(`/v1/changes?since=${days}d`, space),
+      {},
+      f,
+    );
     return Array.isArray(d.items) ? d.items : [];
   } catch {
     return [];
@@ -787,13 +1129,30 @@ export interface BulkItem {
   error?: { code: string; message: string };
 }
 
-export async function markReviewedMany(space: string, cites: string[], f: Fetch = fetch): Promise<BulkItem[]> {
-  const d = await call<{ items?: BulkItem[] }>(`${sp(space)}/review/marks`, post({ cites }), f);
+export async function markReviewedMany(
+  space: string,
+  cites: string[],
+  f: Fetch = fetch,
+): Promise<BulkItem[]> {
+  const d = await call<{ items?: BulkItem[] }>(
+    `${sp(space)}/review/marks`,
+    post({ cites }),
+    f,
+  );
   return Array.isArray(d.items) ? d.items : [];
 }
 
-export async function retireMany(space: string, cites: string[], reason: string, f: Fetch = fetch): Promise<BulkItem[]> {
-  const d = await call<{ items?: BulkItem[] }>(`${sp(space)}/retired`, post({ cites, reason }), f);
+export async function retireMany(
+  space: string,
+  cites: string[],
+  reason: string,
+  f: Fetch = fetch,
+): Promise<BulkItem[]> {
+  const d = await call<{ items?: BulkItem[] }>(
+    `${sp(space)}/retired`,
+    post({ cites, reason }),
+    f,
+  );
   return Array.isArray(d.items) ? d.items : [];
 }
 
@@ -845,16 +1204,35 @@ export interface SpacePeople {
   space: string;
   parent?: string;
   stewards: Person[];
-  owners: { email: string; title?: string; cites: number; caretaker?: boolean }[];
+  owners: {
+    email: string;
+    title?: string;
+    cites: number;
+    caretaker?: boolean;
+  }[];
   members: number;
 }
 
 // A space's people for a member. Any failure shows none.
-export async function spacePeople(space: string, f: Fetch = fetch): Promise<SpacePeople | undefined> {
+export async function spacePeople(
+  space: string,
+  f: Fetch = fetch,
+): Promise<SpacePeople | undefined> {
   try {
     const d = await call<Partial<SpacePeople>>(`${sp(space)}/people`, {}, f);
-    if (!Array.isArray(d.stewards) || !Array.isArray(d.owners) || typeof d.members !== "number") return undefined;
-    return { space, parent: d.parent, stewards: d.stewards, owners: d.owners, members: d.members };
+    if (
+      !Array.isArray(d.stewards) ||
+      !Array.isArray(d.owners) ||
+      typeof d.members !== "number"
+    )
+      return undefined;
+    return {
+      space,
+      parent: d.parent,
+      stewards: d.stewards,
+      owners: d.owners,
+      members: d.members,
+    };
   } catch {
     return undefined;
   }
@@ -876,12 +1254,33 @@ export interface DefinedTerm {
 }
 
 // A document's caretaker (SB-3405): named by a steward, or removed.
-export function nameCaretaker(space: string, doc: string, email: string, f: Fetch = fetch): Promise<{ doc: string; email: string }> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/caretakers`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ doc, email }) }, f);
+export function nameCaretaker(
+  space: string,
+  doc: string,
+  email: string,
+  f: Fetch = fetch,
+): Promise<{ doc: string; email: string }> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/caretakers`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doc, email }),
+    },
+    f,
+  );
 }
 
-export function removeCaretaker(space: string, doc: string, f: Fetch = fetch): Promise<unknown> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/caretakers?doc=${encodeURIComponent(doc)}`, { method: "DELETE" }, f);
+export function removeCaretaker(
+  space: string,
+  doc: string,
+  f: Fetch = fetch,
+): Promise<unknown> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/caretakers?doc=${encodeURIComponent(doc)}`,
+    { method: "DELETE" },
+    f,
+  );
 }
 
 export interface StartItem {
@@ -922,28 +1321,65 @@ export async function reviewList(
       terms?: DefinedTerm[];
       usage?: SpaceUsage;
       teams?: TeamRollup[];
-    }>(
-      `/v1/spaces/${encodeURIComponent(space)}/review`,
-      {},
-      f,
-    );
+    }>(`/v1/spaces/${encodeURIComponent(space)}/review`, {}, f);
     return {
       items: Array.isArray(d.items) ? d.items : [],
       hidden: Array.isArray(d.hidden) ? d.hidden : [],
-      personal_data: typeof d.personal_data === "number" ? d.personal_data : undefined,
-      glossary_flagged: Array.isArray(d.glossary_flagged) ? d.glossary_flagged : undefined,
-      same_name: Array.isArray(d.same_name) ? d.same_name.filter((g) => Array.isArray(g.items)) : undefined,
-      evals_to_check: Array.isArray(d.evals_to_check) ? d.evals_to_check : undefined,
-      start_here: Array.isArray(d.start_here) ? d.start_here.filter((x) => typeof x.item === "string" && Array.isArray(x.why)) : undefined,
-      start_here_hidden: typeof d.start_here_hidden === "number" ? d.start_here_hidden : undefined,
-      freshness: d.freshness && typeof d.freshness.this_month?.answers === "number" && typeof d.freshness.last_month?.answers === "number" ? d.freshness : undefined,
-      found_nothing: d.found_nothing && typeof d.found_nothing.this_week === "number" && Array.isArray(d.found_nothing.terms) ? d.found_nothing : undefined,
-      feedback: d.feedback && typeof d.feedback.this_month?.helpful === "number" && Array.isArray(d.feedback.documents) ? d.feedback : undefined,
-      terms: Array.isArray(d.terms) ? d.terms.filter((x) => typeof x.term === "string" && typeof x.meaning === "string") : undefined,
+      personal_data:
+        typeof d.personal_data === "number" ? d.personal_data : undefined,
+      glossary_flagged: Array.isArray(d.glossary_flagged)
+        ? d.glossary_flagged
+        : undefined,
+      same_name: Array.isArray(d.same_name)
+        ? d.same_name.filter((g) => Array.isArray(g.items))
+        : undefined,
+      evals_to_check: Array.isArray(d.evals_to_check)
+        ? d.evals_to_check
+        : undefined,
+      start_here: Array.isArray(d.start_here)
+        ? d.start_here.filter(
+            (x) => typeof x.item === "string" && Array.isArray(x.why),
+          )
+        : undefined,
+      start_here_hidden:
+        typeof d.start_here_hidden === "number"
+          ? d.start_here_hidden
+          : undefined,
+      freshness:
+        d.freshness &&
+        typeof d.freshness.this_month?.answers === "number" &&
+        typeof d.freshness.last_month?.answers === "number"
+          ? d.freshness
+          : undefined,
+      found_nothing:
+        d.found_nothing &&
+        typeof d.found_nothing.this_week === "number" &&
+        Array.isArray(d.found_nothing.terms)
+          ? d.found_nothing
+          : undefined,
+      feedback:
+        d.feedback &&
+        typeof d.feedback.this_month?.helpful === "number" &&
+        Array.isArray(d.feedback.documents)
+          ? d.feedback
+          : undefined,
+      terms: Array.isArray(d.terms)
+        ? d.terms.filter(
+            (x) => typeof x.term === "string" && typeof x.meaning === "string",
+          )
+        : undefined,
       usage: d.usage && typeof d.usage.space === "string" ? d.usage : undefined,
-      teams: Array.isArray(d.teams) ? d.teams.filter((x) => typeof x.space === "string" && typeof x.to_review === "number") : undefined,
-      conflicts: Array.isArray(d.conflicts) ? d.conflicts.filter((c) => c.a && c.b && typeof c.answers === "number") : undefined,
-      conflicts_hidden: typeof d.conflicts_hidden === "number" ? d.conflicts_hidden : undefined,
+      teams: Array.isArray(d.teams)
+        ? d.teams.filter(
+            (x) =>
+              typeof x.space === "string" && typeof x.to_review === "number",
+          )
+        : undefined,
+      conflicts: Array.isArray(d.conflicts)
+        ? d.conflicts.filter((c) => c.a && c.b && typeof c.answers === "number")
+        : undefined,
+      conflicts_hidden:
+        typeof d.conflicts_hidden === "number" ? d.conflicts_hidden : undefined,
     };
   } catch {
     return { items: [], hidden: [] };
@@ -960,29 +1396,68 @@ export interface Retired {
   at: string;
 }
 
-export function retireDocument(space: string, cite: string, reason: string, replacedBy: string, f: Fetch = fetch): Promise<Retired> {
-  return call(`${sp(space)}/retired`, post({ cite, reason, replaced_by: replacedBy }), f);
+export function retireDocument(
+  space: string,
+  cite: string,
+  reason: string,
+  replacedBy: string,
+  f: Fetch = fetch,
+): Promise<Retired> {
+  return call(
+    `${sp(space)}/retired`,
+    post({ cite, reason, replaced_by: replacedBy }),
+    f,
+  );
 }
 
-export async function retiredList(space: string, f: Fetch = fetch): Promise<{ items: Retired[]; hidden: number }> {
+export async function retiredList(
+  space: string,
+  f: Fetch = fetch,
+): Promise<{ items: Retired[]; hidden: number }> {
   try {
-    const d = await call<{ items?: Retired[]; hidden?: number }>(`${sp(space)}/retired`, {}, f);
-    const items = Array.isArray(d.items) ? d.items.filter((x) => typeof x.document === "string" && typeof x.reason === "string" && typeof x.at === "string") : [];
+    const d = await call<{ items?: Retired[]; hidden?: number }>(
+      `${sp(space)}/retired`,
+      {},
+      f,
+    );
+    const items = Array.isArray(d.items)
+      ? d.items.filter(
+          (x) =>
+            typeof x.document === "string" &&
+            typeof x.reason === "string" &&
+            typeof x.at === "string",
+        )
+      : [];
     return { items, hidden: typeof d.hidden === "number" ? d.hidden : 0 };
   } catch {
     return { items: [], hidden: 0 };
   }
 }
 
-export function restoreDocument(space: string, document: string, f: Fetch = fetch): Promise<{ document: string; restored: boolean }> {
+export function restoreDocument(
+  space: string,
+  document: string,
+  f: Fetch = fetch,
+): Promise<{ document: string; restored: boolean }> {
   return call(`${sp(space)}/retired/restore`, post({ document }), f);
 }
 
 // Never cited (SB-2803): documents older than 90 days no answer cited in 180 days.
 // unused_terms are the space's glossary terms no question used in 180 days (SB-2805).
-export async function uncitedList(space: string, f: Fetch = fetch): Promise<{ items: SearchResult[]; hidden: { owner?: string }[]; unused_terms?: string[] }> {
+export async function uncitedList(
+  space: string,
+  f: Fetch = fetch,
+): Promise<{
+  items: SearchResult[];
+  hidden: { owner?: string }[];
+  unused_terms?: string[];
+}> {
   try {
-    const d = await call<{ items?: SearchResult[]; hidden?: { owner?: string }[]; unused_terms?: string[] }>(`${sp(space)}/review?section=uncited`, {}, f);
+    const d = await call<{
+      items?: SearchResult[];
+      hidden?: { owner?: string }[];
+      unused_terms?: string[];
+    }>(`${sp(space)}/review?section=uncited`, {}, f);
     return {
       items: Array.isArray(d.items) ? d.items : [],
       hidden: Array.isArray(d.hidden) ? d.hidden : [],
@@ -998,14 +1473,32 @@ export interface DueItem extends SearchResult {
   due_in_days: number;
 }
 
-export async function dueList(space: string, f: Fetch = fetch): Promise<{ items: DueItem[]; hidden: { owner?: string }[] }> {
-  const d = await call<{ items?: DueItem[]; hidden?: { owner?: string }[] }>(`${sp(space)}/review?section=due`, {}, f);
-  return { items: Array.isArray(d.items) ? d.items : [], hidden: Array.isArray(d.hidden) ? d.hidden : [] };
+export async function dueList(
+  space: string,
+  f: Fetch = fetch,
+): Promise<{ items: DueItem[]; hidden: { owner?: string }[] }> {
+  const d = await call<{ items?: DueItem[]; hidden?: { owner?: string }[] }>(
+    `${sp(space)}/review?section=due`,
+    {},
+    f,
+  );
+  return {
+    items: Array.isArray(d.items) ? d.items : [],
+    hidden: Array.isArray(d.hidden) ? d.hidden : [],
+  };
 }
 
 // An owner's Reviewed, still right on their own document (SB-3106).
-export function markOwnReviewed(cite: string, f: Fetch = fetch, days = 0): Promise<{ document: string; version: number; spaces: string[] }> {
-  return call("/v1/documents/reviewed", post(days ? { cite, days } : { cite }), f);
+export function markOwnReviewed(
+  cite: string,
+  f: Fetch = fetch,
+  days = 0,
+): Promise<{ document: string; version: number; spaces: string[] }> {
+  return call(
+    "/v1/documents/reviewed",
+    post(days ? { cite, days } : { cite }),
+    f,
+  );
 }
 
 // The handover brief (SB-1707, SB-2002): the person's documents the asker can open now.
@@ -1018,7 +1511,10 @@ export interface HandoverBrief {
   locations?: Record<string, string>;
 }
 
-export function handover(person: string, f: Fetch = fetch): Promise<HandoverBrief> {
+export function handover(
+  person: string,
+  f: Fetch = fetch,
+): Promise<HandoverBrief> {
   return call<HandoverBrief>("/v1/handover", post({ person }), f);
 }
 
@@ -1033,52 +1529,113 @@ export interface NotifyPrefs {
   prep?: boolean;
 }
 
-function prefsOf(d: { off?: string[]; paused_until?: string; digest?: string; prep?: boolean }): NotifyPrefs {
+function prefsOf(d: {
+  off?: string[];
+  paused_until?: string;
+  digest?: string;
+  prep?: boolean;
+}): NotifyPrefs {
   return {
     off: Array.isArray(d.off) ? d.off : [],
-    ...(typeof d.paused_until === "string" ? { paused_until: d.paused_until } : {}),
+    ...(typeof d.paused_until === "string"
+      ? { paused_until: d.paused_until }
+      : {}),
     ...(d.digest === "daily" ? { digest: "daily" } : {}),
     ...(d.prep === true ? { prep: true } : {}),
   };
 }
 
 export async function notifySettings(f: Fetch = fetch): Promise<NotifyPrefs> {
-  return prefsOf(await call<{ off?: string[]; paused_until?: string; digest?: string; prep?: boolean }>("/v1/me/notifications", {}, f));
+  return prefsOf(
+    await call<{
+      off?: string[];
+      paused_until?: string;
+      digest?: string;
+      prep?: boolean;
+    }>("/v1/me/notifications", {}, f),
+  );
 }
 
 // setNotifySettings replaces the kinds turned off; pauseDays, when given, pauses for that
 // many days from now (0 resumes), and otherwise the pause stays as it is.
 // Send me a test (SB-2602): the fixed test text through the cell's real channel.
-export function testNotification(f: Fetch = fetch): Promise<{ sent: boolean; via: string }> {
+export function testNotification(
+  f: Fetch = fetch,
+): Promise<{ sent: boolean; via: string }> {
   return call("/v1/me/notifications/test", post({}), f);
 }
 
-export async function setNotifySettings(off: string[], f: Fetch = fetch, pauseDays?: number, digest?: "daily" | "weekly", prep?: boolean): Promise<NotifyPrefs> {
-  const body: Record<string, unknown> = pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
+export async function setNotifySettings(
+  off: string[],
+  f: Fetch = fetch,
+  pauseDays?: number,
+  digest?: "daily" | "weekly",
+  prep?: boolean,
+): Promise<NotifyPrefs> {
+  const body: Record<string, unknown> =
+    pauseDays === undefined ? { off } : { off, pause_days: pauseDays };
   if (digest) body.digest = digest;
   if (prep !== undefined) body.prep = prep;
-  return prefsOf(await call("/v1/me/notifications", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }, f));
+  return prefsOf(
+    await call(
+      "/v1/me/notifications",
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      f,
+    ),
+  );
 }
 
 // Watch a saved question (SB-2104): told weekly when its sources change.
-export function watchSaved(id: string, watch: boolean, f: Fetch = fetch): Promise<{ id: string; watch: boolean }> {
+export function watchSaved(
+  id: string,
+  watch: boolean,
+  f: Fetch = fetch,
+): Promise<{ id: string; watch: boolean }> {
   return call(
     `/v1/saved/${encodeURIComponent(id)}/watch`,
-    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ watch }) },
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ watch }),
+    },
     f,
   );
 }
 
 // Ask the owners of sources an answer couldn't show to share them (SB-2205): counts only.
-export function requestAccess(trace: string, f: Fetch = fetch): Promise<{ sent: number; already: number; no_owner: number }> {
-  return call("/v1/access-requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trace }) }, f);
+export function requestAccess(
+  trace: string,
+  f: Fetch = fetch,
+): Promise<{ sent: number; already: number; no_owner: number }> {
+  return call(
+    "/v1/access-requests",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trace }),
+    },
+    f,
+  );
 }
 
 // A wrong-citation report as an eval case (SB-2204): the document the answer should cite.
-export function addEvalCase(space: string, report: string, expect: string, f: Fetch = fetch): Promise<{ id: string; question: string }> {
+export function addEvalCase(
+  space: string,
+  report: string,
+  expect: string,
+  f: Fetch = fetch,
+): Promise<{ id: string; question: string }> {
   return call(
     `/v1/spaces/${encodeURIComponent(space)}/evals`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ report, expect }) },
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ report, expect }),
+    },
     f,
   );
 }
@@ -1091,8 +1648,15 @@ export interface Briefable {
   title?: string;
 }
 
-export async function briefable(q: string, f: Fetch = fetch): Promise<Briefable[]> {
-  const data = await call<{ items?: Briefable[] }>(`/v1/handover/people?q=${encodeURIComponent(q)}`, {}, f);
+export async function briefable(
+  q: string,
+  f: Fetch = fetch,
+): Promise<Briefable[]> {
+  const data = await call<{ items?: Briefable[] }>(
+    `/v1/handover/people?q=${encodeURIComponent(q)}`,
+    {},
+    f,
+  );
   return Array.isArray(data.items) ? data.items : [];
 }
 
@@ -1111,33 +1675,70 @@ export async function listTokens(f: Fetch = fetch): Promise<ApiToken[]> {
   return Array.isArray(data.items) ? data.items : [];
 }
 
-export function makeToken(name: string, days: number, f: Fetch = fetch): Promise<ApiToken> {
+export function makeToken(
+  name: string,
+  days: number,
+  f: Fetch = fetch,
+): Promise<ApiToken> {
   return call<ApiToken>("/v1/tokens", post({ name, days }), f);
 }
 
-export function revokeToken(id: string, f: Fetch = fetch): Promise<{ revoked: boolean }> {
+export function revokeToken(
+  id: string,
+  f: Fetch = fetch,
+): Promise<{ revoked: boolean }> {
   return call(`/v1/tokens/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
 }
 
 // A space's suggested questions, for its members (SB-3307). A failure is none.
-export async function suggestedQuestions(space: string, f: Fetch = fetch): Promise<string[]> {
+export async function suggestedQuestions(
+  space: string,
+  f: Fetch = fetch,
+): Promise<string[]> {
   try {
-    const d = await call<{ questions?: unknown }>(`/v1/spaces/${encodeURIComponent(space)}/suggested`, {}, f);
-    return Array.isArray(d.questions) ? d.questions.filter((q): q is string => typeof q === "string") : [];
+    const d = await call<{ questions?: unknown }>(
+      `/v1/spaces/${encodeURIComponent(space)}/suggested`,
+      {},
+      f,
+    );
+    return Array.isArray(d.questions)
+      ? d.questions.filter((q): q is string => typeof q === "string")
+      : [];
   } catch {
     return [];
   }
 }
 
-export function setSuggestedQuestions(space: string, questions: string[], f: Fetch = fetch): Promise<{ questions: string[] }> {
-  return call(`/v1/spaces/${encodeURIComponent(space)}/suggested`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ questions }) }, f);
+export function setSuggestedQuestions(
+  space: string,
+  questions: string[],
+  f: Fetch = fetch,
+): Promise<{ questions: string[] }> {
+  return call(
+    `/v1/spaces/${encodeURIComponent(space)}/suggested`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questions }),
+    },
+    f,
+  );
 }
 
 // Make a saved question a routine, or stop it (SB-4302): every is daily, weekly or off.
-export function setRoutine(id: string, every: string, day: string | undefined, f: Fetch = fetch): Promise<SavedQuestion> {
+export function setRoutine(
+  id: string,
+  every: string,
+  day: string | undefined,
+  f: Fetch = fetch,
+): Promise<SavedQuestion> {
   return call(
     `/v1/saved/${encodeURIComponent(id)}/routine`,
-    { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(day ? { every, day } : { every }) },
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(day ? { every, day } : { every }),
+    },
     f,
   );
 }
@@ -1169,7 +1770,17 @@ export async function myInbox(f: Fetch = fetch): Promise<Inbox> {
   const needs_you = d.needs_you ?? [];
   const failed = d.failed ?? [];
   const done = d.done ?? [];
-  return { needs_you, failed, done, counts: { needs_you: needs_you.length, failed: failed.length, done: done.length }, ...(d.catch_up ? { catch_up: d.catch_up } : {}) };
+  return {
+    needs_you,
+    failed,
+    done,
+    counts: {
+      needs_you: needs_you.length,
+      failed: failed.length,
+      done: done.length,
+    },
+    ...(d.catch_up ? { catch_up: d.catch_up } : {}),
+  };
 }
 
 // Memory I control (SB-4303): lines I wrote about myself, sent with my own asks only.
@@ -1179,8 +1790,14 @@ export interface MemoryLine {
   at: string;
 }
 
-export async function myMemory(f: Fetch = fetch): Promise<{ on: boolean; lines: MemoryLine[] }> {
-  const d = await call<{ on?: boolean; lines?: MemoryLine[] }>("/v1/me/memory", {}, f);
+export async function myMemory(
+  f: Fetch = fetch,
+): Promise<{ on: boolean; lines: MemoryLine[] }> {
+  const d = await call<{ on?: boolean; lines?: MemoryLine[] }>(
+    "/v1/me/memory",
+    {},
+    f,
+  );
   return { on: d.on !== false, lines: d.lines ?? [] };
 }
 
@@ -1188,8 +1805,15 @@ export function remember(text: string, f: Fetch = fetch): Promise<MemoryLine> {
   return call("/v1/me/memory", post({ text }), f);
 }
 
-export function forgetMemory(id: string | undefined, f: Fetch = fetch): Promise<{ removed: number }> {
-  return call(id ? `/v1/me/memory/${encodeURIComponent(id)}` : "/v1/me/memory", { method: "DELETE" }, f);
+export function forgetMemory(
+  id: string | undefined,
+  f: Fetch = fetch,
+): Promise<{ removed: number }> {
+  return call(
+    id ? `/v1/me/memory/${encodeURIComponent(id)}` : "/v1/me/memory",
+    { method: "DELETE" },
+    f,
+  );
 }
 
 // What agents did as me (SB-4305): runs made as me, what they read checked as me now.
@@ -1207,7 +1831,11 @@ export interface AgentRun {
 
 export async function agentRuns(f: Fetch = fetch): Promise<AgentRun[]> {
   const d = await call<{ items?: AgentRun[] }>("/v1/me/agent-runs", {}, f);
-  return (d.items ?? []).map((r) => ({ ...r, read: r.read ?? [], hidden: r.hidden ?? 0 }));
+  return (d.items ?? []).map((r) => ({
+    ...r,
+    read: r.read ?? [],
+    hidden: r.hidden ?? 0,
+  }));
 }
 
 // Cases from feedback (SB-4401): down-rated answers of the agents I answer for. The asker is
@@ -1222,12 +1850,22 @@ export interface CaseCandidate {
   at: string;
 }
 
-export async function caseCandidates(f: Fetch = fetch): Promise<CaseCandidate[]> {
+export async function caseCandidates(
+  f: Fetch = fetch,
+): Promise<CaseCandidate[]> {
   const d = await call<{ items?: CaseCandidate[] }>("/v1/agents/cases", {}, f);
-  return (d.items ?? []).map((c) => ({ ...c, claims: (c.claims ?? []).map((cl) => ({ ...cl, cites: cl.cites ?? [] })), hidden: c.hidden ?? 0 }));
+  return (d.items ?? []).map((c) => ({
+    ...c,
+    claims: (c.claims ?? []).map((cl) => ({ ...cl, cites: cl.cites ?? [] })),
+    hidden: c.hidden ?? 0,
+  }));
 }
 
-export function decideCase(id: string, decision: { expect: string } | { dismiss: true }, f: Fetch = fetch): Promise<{ id: string }> {
+export function decideCase(
+  id: string,
+  decision: { expect: string } | { dismiss: true },
+  f: Fetch = fetch,
+): Promise<{ id: string }> {
   return call(`/v1/agents/cases/${encodeURIComponent(id)}`, post(decision), f);
 }
 
@@ -1252,13 +1890,29 @@ export interface Collection {
 
 export async function collections(f: Fetch = fetch): Promise<Collection[]> {
   const d = await call<{ items?: Collection[] }>("/v1/collections", {}, f);
-  return (d.items ?? []).map((c) => ({ ...c, items: c.items ?? [], hidden: c.hidden ?? 0 }));
+  return (d.items ?? []).map((c) => ({
+    ...c,
+    items: c.items ?? [],
+    hidden: c.hidden ?? 0,
+  }));
 }
 
-export function makeCollection(name: string, items: string[], shared: string[], f: Fetch = fetch): Promise<Collection> {
+export function makeCollection(
+  name: string,
+  items: string[],
+  shared: string[],
+  f: Fetch = fetch,
+): Promise<Collection> {
   return call("/v1/collections", post({ name, items, shared }), f);
 }
 
-export function removeCollection(id: string, f: Fetch = fetch): Promise<{ deleted: boolean }> {
-  return call(`/v1/collections/${encodeURIComponent(id)}`, { method: "DELETE" }, f);
+export function removeCollection(
+  id: string,
+  f: Fetch = fetch,
+): Promise<{ deleted: boolean }> {
+  return call(
+    `/v1/collections/${encodeURIComponent(id)}`,
+    { method: "DELETE" },
+    f,
+  );
 }

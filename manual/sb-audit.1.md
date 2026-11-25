@@ -30,6 +30,8 @@ The forms without `--export` talk to a running cell (SB-1507): `--cell URL`, or 
 
 Rows never contain document content, prompts or secrets: payloads appear only as SHA-256 hashes.
 
+An agent's record for an auditor, its definition, versions, value, pauses, spend, access reviews and reports, signed with the same anchor key, is `sb agents record NAME` (sb-agents(7), An agent's record; SB-4707).
+
 ## EXIT STATUS
 
 0 chain intact · 1 `ECHAIN`: a break was found (the first bad `seq` is printed) · 3 not permitted.

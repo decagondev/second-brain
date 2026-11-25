@@ -105,7 +105,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `refused` | How many candidate documents were refused (deny or unknown). Never their titles |
 | `notice` | `null`, `"most_uncited"`, `"no_access"` or `"no_sources"` |
 | `conversation` | The conversation this turn belongs to, `cv_…` |
+| `agent`, `release` | (SB-4706) Which agent wrote the answer and the release it ran under; the web app shows "Written by ask, version rel_…" under every answer, and the chat app ends with that line (sb-agents(7), Marked as AI; LAW-28) |
 | `claims[].cites[].title` | The cited document's title at the source, as indexed |
+| `claims[].cites[].generated_by`, `approved_by`, `edited` | (SB-4706) A cited note an agent drafted: the front matter's `generated_by` (`AGENT@VERSION`), `approved_by` (the steward who published it) and `edited`, shown as "Written by case-brief, version rel_7, approved by …". Omitted for a document a person wrote |
 | `claims[].cites[].section` | (SB-3002) The nearest heading above the cited chunk in its document, at most 120 characters, as indexed (sb-ingest(7), Sections). Omitted for a chunk with no heading above it. The UI shows the cite as "Title › Section" |
 | `claims[].cites[].owner` | The cited document's owner at the source: their `email` and job `title` from the directory, only when exactly one **active** directory user has that email. Omitted otherwise (SB-1702) |
 | `terms` | The space's glossary entries the question used (Glossary, below; SB-2203). Omitted when none |

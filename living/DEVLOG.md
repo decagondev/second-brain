@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S46.2: Prove it
+
+**Wave/slice:** W46 / S46.2 (SB-4704 to SB-4707) · **Status:** Done
+
+**What:** An agent definition may carry `shadow: { prompt, days }`: on the first ring each of its drafts also runs the shadow prompt as the same person, and the result is kept only as a shadow run, with its checks and length beside the current draft's, for the agent's owners at `GET /v1/agents/shadow` (text only when they can open every cite), and deleted when the window ends. Each quarter a space's stewards get an agent review of its department agents, brief, updates and leader's week, with tools and last use; what ran not once in 90 days is proposed off as a manifest diff, and their removals become one proposal. Everything an agent wrote says "Written by AGENT, version V" in the web, chat and shared answers; a note published from a draft keeps `generated_by`, `approved_by` and `edited` in its front matter and on its indexed chunks and cites, and a reply with none of the draft's lines left carries no mark. `sb agents record NAME`, `GET /v1/admin/agents/NAME/record` and **Download record** give one signed JSON record and its Markdown.
+
+**Why this way:** A shadow returns before anything is stored or rate-limited, so it can't reach a queue by accident, and its runs sit in the trace store with every other run rather than in a new one. The record is signed with the anchor key the audit export already uses, under its own message kind, so an auditor checks it with the key they already pin. The mark is data in the front matter, and ingest only honours an `approved_by` that is the document's owner, so a document can't claim a steward approved it.
+
+**Learned:** The record route answered 503 in the test cell because its fixture had no anchor seed; the fixture now has one. The update trigger drafts too, so counting "the agent's drafts" in the queue needed the kind as well as the agent. `sb agents record` was handed its own subcommand name as the agent, and the dispatch now passes only what follows it.
+
+**Laws:** LAW-28 (new, tested), LAW-01, LAW-06, LAW-11, LAW-16. Every law test is still green.
+
 ## 2026-11-25 S46.1: Value and control
 
 **Wave/slice:** W46 / S46.1 (SB-4701 to SB-4703) · **Status:** Done

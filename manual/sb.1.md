@@ -28,6 +28,7 @@ sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
 sb release status|promote|rollback|notes   (maintainers; notes: --from DIR --to DIR)
 sb agents  lint [--root DIR]             (sb-agents(7), Lint)
+sb agents  record NAME [--tenant T | --cell URL] [--out DIR] [--key ed25519:PUB]  (sb-agents(7), An agent's record)
 sb factory status|handoff|access|detach|verify-export  (factory operators and tenant owners, sb-factory(1))
 sb eval    run|gate|diff
 sb selfhost doctor [--facts FILE]        (a self-hosted box, sb-selfhost(7))

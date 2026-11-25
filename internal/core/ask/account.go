@@ -101,7 +101,7 @@ func (l Legwork) AccountBrief(ctx context.Context, s tenancy.Scope, req AccountR
 		return ResearchView{}, err
 	}
 	facts.Tickets, facts.Notes, facts.Documents = len(groups[1].docs), len(groups[2].docs), len(groups[3].docs)
-	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, User: s.User(), Kind: KindAccount, Question: facts.Name, Space: s.Space(),
+	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, Agent: agent, User: s.User(), Kind: KindAccount, Question: facts.Name, Space: s.Space(),
 		State: StateDone, At: l.now(), Account: &facts}
 	for _, g := range groups {
 		if len(g.docs) == 0 {

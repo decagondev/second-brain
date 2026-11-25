@@ -3,10 +3,13 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/manifest"
@@ -236,3 +239,69 @@ func suiteResult(dir, suite string) string {
 
 // lineDiff is ask.LineDiff (SB-4402).
 func lineDiff(a, b []string) []string { return ask.LineDiff(a, b) }
+
+// agentsRecord is sb agents record NAME [--tenant T | --cell URL] [--out DIR] [--key KEY]
+// (sb-agents(7), An agent's record; SB-4707): the running cell's signed record of one agent,
+// checked before it writes NAME-record.json and NAME-record.md.
+func (e *env) agentsRecord(args []string) int {
+	const name = "sb agents record"
+	var o cellOpts
+	var agent, out, key string
+	out = "."
+	args = e.localArgs(args)
+	for i := 0; i < len(args); i++ {
+		if took, err := o.take(args, &i); took {
+			if err != nil {
+				return e.fail(name, err)
+			}
+			continue
+		}
+		switch a := args[i]; a {
+		case "--out", "--key":
+			if i+1 >= len(args) {
+				return e.fail(name, errs.New(errs.EUSAGE, "%s needs a value", a))
+			}
+			if a == "--out" {
+				out = args[i+1]
+			} else {
+				key = args[i+1]
+			}
+			i++
+		default:
+			if strings.HasPrefix(a, "-") || agent != "" {
+				return e.fail(name, errs.New(errs.EUSAGE, "usage: sb agents record NAME [--tenant T | --cell URL] [--out DIR] [--key ed25519:PUB]"))
+			}
+			agent = a
+		}
+	}
+	if agent == "" {
+		return e.fail(name, errs.New(errs.EUSAGE, "usage: sb agents record NAME [--tenant T | --cell URL] [--out DIR] [--key ed25519:PUB]"))
+	}
+	cellURL, _, err := e.cellURL(o)
+	if err != nil {
+		return e.fail(name, err)
+	}
+	raw, err := cellDo(http.MethodGet, cellURL, "/v1/cell/agents/"+url.PathEscape(agent)+"/record", "", nil, 2*time.Minute)
+	if err != nil {
+		return e.fail(name, err)
+	}
+	sr, err := ask.VerifyRecord(raw, key)
+	if err != nil {
+		return e.fail(name, errs.New(errs.ECHAIN, "the record doesn't verify: %v", err))
+	}
+	if sr.Record.Agent != agent {
+		return e.fail(name, errs.New(errs.ECHAIN, "the cell sent the record of %q, not %q", sr.Record.Agent, agent))
+	}
+	js, md := filepath.Join(out, agent+"-record.json"), filepath.Join(out, agent+"-record.md")
+	if err := os.WriteFile(js, raw, 0o600); err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "cannot write %s: %v", js, err))
+	}
+	if err := os.WriteFile(md, []byte(ask.RecordMarkdown(sr)), 0o600); err != nil {
+		return e.fail(name, errs.New(errs.EUSAGE, "cannot write %s: %v", md, err))
+	}
+	if e.g.JSON {
+		return e.json(map[string]any{"json": js, "markdown": md, "sha256": sr.SHA256, "key": sr.Key})
+	}
+	fmt.Fprintf(e.out, "record: %s and %s, sha256 %s, signed by %s, verified\n", js, md, sr.SHA256, sr.Key)
+	return 0
+}

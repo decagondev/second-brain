@@ -85,7 +85,7 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	}
 	title = firstLine(title)
 	sq := StewardQuestion{ID: x.NewID("qs_"), Tenant: x.Agent.Tenant, Asker: s.User(), Question: title, Space: s.Space(),
-		Trace: resp.Trace, At: x.Now().UTC(), Thread: &SavedThread{Text: text, Agent: agent, Kind: kind,
+		Trace: resp.Trace, At: x.Now().UTC(), Thread: &SavedThread{Text: text, Agent: agent, Kind: kind, Release: resp.Release,
 			Asked: req.Question, AskDocs: req.Documents, Sources: draftSources(resp)}} // SB-4602: what a redraft asks again
 	if kind == DraftDecisions && len(req.Documents) == 1 { // SB-4203: the meeting's action items, for this steward
 		sq.Thread.Doc = req.Documents[0]
@@ -111,6 +111,7 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 	if err := x.Store.PutStewardQuestion(ctx, sq); err != nil {
 		return StewardQuestion{}, fmt.Errorf("%w: questions: %v", ErrUnavailable, err)
 	}
+	x.shadow(ctx, s, kind, agent, req, resp, text) // SB-4704: never delivered
 	return sq, nil
 }
 

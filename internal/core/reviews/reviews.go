@@ -44,6 +44,10 @@ type Item struct {
 	At       string   `json:"at,omitempty"`
 	Reason   string   `json:"reason,omitempty"`
 	AuditSeq int64    `json:"audit_seq,omitempty"`
+	// Unused and Tools are an agent review's (SB-4705): no use in UseWindow before it
+	// opened, and the tools the agent's definition lists.
+	Unused bool     `json:"unused,omitempty"`
+	Tools  []string `json:"tools,omitempty"`
 }
 
 // Request is one change a removal asks for: a manifest change (its proposal) or an IdP one.
@@ -66,6 +70,10 @@ type Review struct {
 	State     string    `json:"state"`
 	Items     []Item    `json:"items"`
 	Requests  []Request `json:"requests"`
+	// Kind is KindAgents for an agent review (SB-4705), "" for people; ProposeOff is its
+	// manifest diff taking the unused items off.
+	Kind       string   `json:"kind,omitempty"`
+	ProposeOff []string `json:"propose_off,omitempty"`
 }
 
 // Quarter names the quarter t is in, such as 2027-Q1.
@@ -205,6 +213,9 @@ func Decide(r Review, user, decision, reason, by string, now time.Time) (Review,
 // is true), which goes to an operator as a proposal; for any other group, an IdP request.
 // t is never modified.
 func Requests(t manifest.Tenant, r Review) (next manifest.Tenant, changed bool, reqs []Request) {
+	if r.Kind == KindAgents { // SB-4705: agents and triggers off one space
+		return agentRequests(t, r)
+	}
 	next = t
 	if t.Groups != nil {
 		next.Groups = make(map[string][]string, len(t.Groups))
@@ -331,9 +342,15 @@ func Clone(r Review) Review {
 	c.Items = make([]Item, len(r.Items))
 	for i, it := range r.Items {
 		it.Via = append([]string{}, it.Via...)
+		if it.Tools != nil {
+			it.Tools = append([]string{}, it.Tools...)
+		}
 		c.Items[i] = it
 	}
 	c.Requests = append([]Request{}, r.Requests...)
+	if r.ProposeOff != nil {
+		c.ProposeOff = append([]string{}, r.ProposeOff...)
+	}
 	return c
 }
 
@@ -405,7 +422,7 @@ func Run(ctx context.Context, t manifest.Tenant, now time.Time, roster Roster, l
 	}
 	have := func(space, quarter string) bool {
 		for _, r := range all {
-			if r.Space == space && r.Quarter == quarter {
+			if r.Kind == "" && r.Space == space && r.Quarter == quarter {
 				return true
 			}
 		}

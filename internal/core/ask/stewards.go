@@ -111,13 +111,17 @@ type SpaceFacts func(space string) (stewards []string, label string, ok bool)
 
 // Stewards is the questions-to-stewards service for one cell.
 type Stewards struct {
-	Agent  Agent
-	Store  StewardStore
-	Audit  Auditor
-	Policy policy.Kernel
-	Facts  SpaceFacts
-	NewID  func(prefix string) string
-	Now    func() time.Time
+	// Shadows keep shadow runs, and FirstRing is whether this cell is in the first ring, on
+	// the testing channel (SB-4704). Either nil runs no shadow.
+	Shadows   ShadowStore
+	FirstRing func() bool
+	Agent     Agent
+	Store     StewardStore
+	Audit     Auditor
+	Policy    policy.Kernel
+	Facts     SpaceFacts
+	NewID     func(prefix string) string
+	Now       func() time.Time
 	// Notes (SB-1705): the bus with note-publish, and the emails of a space's members now
 	// (every active user for company). A nil Bus is a cell without notes.
 	Bus     NoteBus
@@ -363,7 +367,7 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs), Waiting: q.Waiting}
 		if q.Thread != nil {
 			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions, Supersede: q.Thread.Supersede,
-				Versions: q.Thread.Versions, Rounds: q.Thread.Rounds, Diff: threadDiff(q.Thread)}
+				Versions: q.Thread.Versions, Rounds: q.Thread.Rounds, Diff: threadDiff(q.Thread), Mark: draftMark(q.Thread)}
 			if q.Thread.Agent != "" {
 				it.Thread.Trace = q.Trace
 			}
@@ -692,6 +696,7 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	if republish && was.Owner != "" { // the same note: its owner stays, whoever republishes it
 		owner = strings.ToLower(was.Owner)
 	}
+	front = append(front, markFront(q, owner)...) // SB-4706: the steward who published it approved it
 	keep := req.KeepQuestion
 	if republish {
 		keep = q.Reply.NoteQuestion

@@ -21,7 +21,13 @@ function share(a: AgentRow): string {
   return a.rated === 0 ? "-" : `${Math.round((100 * a.unhelpful) / a.rated)}%`;
 }
 
-export function AgentsTable({ items }: { items: AgentRow[] }) {
+export function AgentsTable({
+  items,
+  records,
+}: {
+  items: AgentRow[];
+  records?: boolean;
+}) {
   return (
     <table>
       <caption>{t("Runs in the last 30 days")}</caption>
@@ -34,6 +40,7 @@ export function AgentsTable({ items }: { items: AgentRow[] }) {
           <th scope="col">{t("Rated unhelpful")}</th>
           <th scope="col">{t("Eval")}</th>
           <th scope="col">{t("State")}</th>
+          {records && <th scope="col">{t("Record")}</th>}
         </tr>
       </thead>
       <tbody>
@@ -44,8 +51,31 @@ export function AgentsTable({ items }: { items: AgentRow[] }) {
             <td>{a.spaces.join(", ")}</td>
             <td>{a.runs}</td>
             <td>{share(a)}</td>
-            <td>{a.eval === "held" ? t("held ({suite})", { suite: a.suite }) : t("passed ({suite})", { suite: a.suite })}</td>
+            <td>
+              {a.eval === "held"
+                ? t("held ({suite})", { suite: a.suite })
+                : t("passed ({suite})", { suite: a.suite })}
+            </td>
             <td>{a.killed ? t("killed") : t("running")}</td>
+            {records && (
+              <td>
+                <a
+                  href={`/v1/admin/agents/${encodeURIComponent(a.name)}/record`}
+                  download={`${a.name}-record.json`}
+                  aria-label={t("Download the record of {agent}", {
+                    agent: a.name,
+                  })}
+                >
+                  {t("Download record")}
+                </a>{" "}
+                <a
+                  href={`/v1/admin/agents/${encodeURIComponent(a.name)}/record?format=md`}
+                  download={`${a.name}-record.md`}
+                >
+                  {t("as Markdown")}
+                </a>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
@@ -65,7 +95,11 @@ export function AdminAgents({ fetcher = fetch }: { fetcher?: Fetch }) {
   return (
     <section aria-label={t("Agents")}>
       <h2>{t("Agents")}</h2>
-      {error ? <p role="alert">{error}</p> : <AgentsTable items={items} />}
+      {error ? (
+        <p role="alert">{error}</p>
+      ) : (
+        <AgentsTable items={items} records />
+      )}
       <AgentValue admin fetcher={fetcher} />
     </section>
   );
@@ -73,7 +107,13 @@ export function AdminAgents({ fetcher = fetch }: { fetcher?: Fetch }) {
 
 // A space's agents, for its stewards, with a proposal to change which department agents
 // it lists: an operator approves the exact manifest diff.
-export function SpaceAgents({ base, fetcher = fetch }: { base: string; fetcher?: Fetch }) {
+export function SpaceAgents({
+  base,
+  fetcher = fetch,
+}: {
+  base: string;
+  fetcher?: Fetch;
+}) {
   const [items, setItems] = useState<AgentRow[]>([]);
   const [can, setCan] = useState<string[]>([]);
   const [listed, setListed] = useState<string[]>([]);
@@ -93,9 +133,16 @@ export function SpaceAgents({ base, fetcher = fetch }: { base: string; fetcher?:
   }
   async function propose() {
     try {
-      const p = await call(fetcher, "POST", `${base}/proposals/agents`, { agents: listed });
+      const p = await call(fetcher, "POST", `${base}/proposals/agents`, {
+        agents: listed,
+      });
       setDiff((p.diff as string[]) ?? []);
-      setStatus(t("Proposal {id} made. Nothing changes until an operator approves it and the manifest is applied.", { id: String(p.id) }));
+      setStatus(
+        t(
+          "Proposal {id} made. Nothing changes until an operator approves it and the manifest is applied.",
+          { id: String(p.id) },
+        ),
+      );
     } catch (e) {
       setStatus((e as Error).message);
     }
@@ -109,7 +156,12 @@ export function SpaceAgents({ base, fetcher = fetch }: { base: string; fetcher?:
           <legend>{t("Department agents this space lists")}</legend>
           {can.map((n) => (
             <label key={n}>
-              <input type="checkbox" checked={listed.includes(n)} onChange={() => toggle(n)} /> {n}
+              <input
+                type="checkbox"
+                checked={listed.includes(n)}
+                onChange={() => toggle(n)}
+              />{" "}
+              {n}
             </label>
           ))}
           <button type="button" onClick={propose}>

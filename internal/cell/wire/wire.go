@@ -618,7 +618,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Drafts{Agent: ask.Drafts{Agent: agent, Killed: c.Kill.AgentKilled("draft-reply"), Policy: c.Policy, Metrics: c.Usage},
 		Ask: api.Ask{Agent: agent, Release: c.Release, NewID: newID}}.Register(mux)
 	api.Actions{Bus: bus, Release: c.Release, NewID: newID}.Register(mux)
-	stewards := ask.Stewards{Agent: agent, Store: c.Traces, Audit: c.Audit, Policy: c.Policy, NewID: newID, Now: time.Now,
+	stewards := ask.Stewards{Shadows: c.Traces, FirstRing: func() bool { return c.Manifest().Channel == "testing" }, // SB-4704
+		Agent: agent, Store: c.Traces, Audit: c.Audit, Policy: c.Policy, NewID: newID, Now: time.Now,
 		Unstewarded: c.unstewarded, Suggested: c.Traces, Zone: workZone(m), Caretakers: c.Traces,
 		Facts: stewardFacts(m), Gone: func(ctx context.Context, email string) (bool, error) {
 			us, err := c.Directory.UsersByEmail(ctx, tenant, email)
@@ -699,7 +700,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
-		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn} // SB-4701, SB-4702
+		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
+		AgentRecord: c.AgentRecord} // SB-4707
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
@@ -715,7 +717,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Spaces{Store: c.Spaces}.Register(mux)
 	api.Stewards{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Proposals: c.Proposals, NewID: newID, Now: time.Now,
 		Runs: c.Report, AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, OwnerActive: c.ownerActive, PausedIn: c.Kill.PausedIn}.Register(mux)
-	api.AgentControl{Value: c.ownerValue, Pause: c.pauseAgent}.Register(mux) // SB-4701, SB-4702
+	api.AgentControl{Value: c.ownerValue, Pause: c.pauseAgent, Shadow: stewards.ShadowsFor}.Register(mux) // SB-4701, SB-4702, SB-4704
 	api.Reviews{Tenant: tenant, Policy: c.Policy, Manifests: man, Audit: c.Audit, Reviews: c.Reviews, Proposals: c.Proposals,
 		NewID: newID, Now: time.Now}.Register(mux)
 	api.Holds{Tenant: tenant, Policy: c.Policy, Manifests: man, Service: holds.Service{Store: c.Holds, Audit: c.Audit, NewID: newID, Now: time.Now}}.Register(mux)
@@ -723,6 +725,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	public.HandleFunc("GET /v1/cell/live", c.liveHandler)
 	public.HandleFunc("GET /v1/cell/audit", c.auditRows)
 	public.HandleFunc("GET /v1/cell/audit/export", c.auditExport)
+	public.HandleFunc("GET /v1/cell/agents/{name}/record", c.agentRecordCP) // SB-4707
 	public.HandleFunc("GET /v1/cell/package", c.packageHandler)
 	public.Handle("/v1/", c.Auth.Middleware(mux))
 	return &Parts{Manifest: m, SHA256: digest, Connectors: conns, Agent: agent, Bus: bus, Retention: ret, Stewards: stewards,

@@ -1,20 +1,89 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, addEvalCase, confirmActions, draftFix, discardThread, draftNote, listPins, pinReply, unpin, dueList, markReviewedMany, retireMany, claimQuestion, deleteTemplate, listQuestions, markReviewed, replyTemplates, restoreDocument, retireDocument, retiredList, uncitedList, saveTemplate, notifySettings, testNotification, publishNote, nameCaretaker, removeCaretaker, setNotifySettings, replyToQuestion, reviewList, sendToStewards, spaceName, stewardQueue } from "./api";
-import type { AskResponse, BulkItem, DraftAction, Conflict, DefinedTerm, DueItem, Fetch, FoundNothing, Freshness, MyQuestion, NoteResult, NotifyPrefs, PinItem, QueueQuestion, ReplyTemplate, Retired, ReviewData, ReviewItem, SameNameGroup, SearchResult, SpaceUsage, StartItem, StewardFeedback, TeamRollup } from "./api";
+import {
+  AskError,
+  addEvalCase,
+  confirmActions,
+  draftFix,
+  discardThread,
+  draftNote,
+  listPins,
+  pinReply,
+  unpin,
+  dueList,
+  markReviewedMany,
+  retireMany,
+  claimQuestion,
+  deleteTemplate,
+  listQuestions,
+  markReviewed,
+  replyTemplates,
+  restoreDocument,
+  retireDocument,
+  retiredList,
+  uncitedList,
+  saveTemplate,
+  notifySettings,
+  testNotification,
+  publishNote,
+  nameCaretaker,
+  removeCaretaker,
+  setNotifySettings,
+  replyToQuestion,
+  reviewList,
+  sendToStewards,
+  spaceName,
+  stewardQueue,
+} from "./api";
+import type {
+  AskResponse,
+  BulkItem,
+  DraftAction,
+  Conflict,
+  DefinedTerm,
+  DueItem,
+  Fetch,
+  FoundNothing,
+  Freshness,
+  MyQuestion,
+  NoteResult,
+  NotifyPrefs,
+  PinItem,
+  QueueQuestion,
+  ReplyTemplate,
+  Retired,
+  ReviewData,
+  ReviewItem,
+  SameNameGroup,
+  SearchResult,
+  SpaceUsage,
+  StartItem,
+  StewardFeedback,
+  TeamRollup,
+} from "./api";
 import { placeOf } from "./Answer";
 import { WaitForm } from "./Across";
 import { AskForChanges } from "./Shape";
 import { HowThisWasMade } from "./Further";
-import { AgentValue, PauseHere } from "./Accountable";
+import { AgentValue, PauseHere, ShadowRuns } from "./Accountable";
+import { MarkLine } from "./Marked";
 import { MyData } from "./Session";
-import { AboutMe, AgentCases, AgentRuns, CollectionsView, InboxView } from "./Inbox";
+import {
+  AboutMe,
+  AgentCases,
+  AgentRuns,
+  CollectionsView,
+  InboxView,
+} from "./Inbox";
 import { errorText, msg, t, tj, tn } from "./i18n";
 
 const askable = new Set(["no_sources", "no_access", "most_uncited"]);
 
 // A question's state, in words.
-const states: Record<string, string> = { open: msg("open"), answered: msg("answered") };
+const states: Record<string, string> = {
+  open: msg("open"),
+  answered: msg("answered"),
+};
 
 // An agent draft's heading, by kind (SB-4005, SB-4006, SB-4102, SB-4204, SB-4207).
 const draftKinds: Record<string, string> = {
@@ -27,21 +96,38 @@ const draftKinds: Record<string, string> = {
   "leader-week": msg("The leader's week by {agent}"),
 };
 
-const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
+const errMsg = (e: unknown, fallback: string) =>
+  e instanceof AskError ? errorText(e.error).message : fallback;
 
 // Ask the stewards (sb-ask(3), Questions to the stewards; SB-1704): offered only when
 // nothing answered, and it shows exactly what will be sent before sending it.
-export function AskStewards({ question, answer, space, fetcher }: { question: string; answer: AskResponse; space?: string; fetcher?: Fetch }) {
+export function AskStewards({
+  question,
+  answer,
+  space,
+  fetcher,
+}: {
+  question: string;
+  answer: AskResponse;
+  space?: string;
+  fetcher?: Fetch;
+}) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<string>();
   if (!answer.notice || !askable.has(answer.notice)) return null;
-  const who = space ? t("the stewards of {space}", { space: space.charAt(0).toUpperCase() + space.slice(1) }) : t("the people who answer company-wide questions");
+  const who = space
+    ? t("the stewards of {space}", {
+        space: space.charAt(0).toUpperCase() + space.slice(1),
+      })
+    : t("the people who answer company-wide questions");
 
   async function send() {
     try {
       await sendToStewards(question, answer.trace, fetcher, space);
       setOpen(false);
-      setStatus(t("Sent to {who}. Their reply will be in the Questions tab.", { who }));
+      setStatus(
+        t("Sent to {who}. Their reply will be in the Questions tab.", { who }),
+      );
     } catch (e) {
       setStatus(errMsg(e, t("The question couldn't be sent.")));
     }
@@ -56,7 +142,12 @@ export function AskStewards({ question, answer, space, fetcher }: { question: st
       )}
       {open && (
         <div role="group" aria-label={t("What will be sent")}>
-          <p>{t("Only this text will be sent to {who}, without your answer or its sources:", { who })}</p>
+          <p>
+            {t(
+              "Only this text will be sent to {who}, without your answer or its sources:",
+              { who },
+            )}
+          </p>
           <blockquote className="snippet">{question}</blockquote>
           <button type="button" onClick={send}>
             {t("Send question")}
@@ -81,13 +172,16 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
   const [items, setItems] = useState<MyQuestion[]>();
   const [error, setError] = useState<string>();
   useEffect(() => {
-    listQuestions(fetcher).then(setItems, (e) => setError(errMsg(e, t("Your questions are unavailable right now."))));
+    listQuestions(fetcher).then(setItems, (e) =>
+      setError(errMsg(e, t("Your questions are unavailable right now."))),
+    );
   }, [fetcher]);
   return (
     <section aria-label={t("Questions to stewards")} className="questions">
       <InboxView fetcher={fetcher} />
       <AgentRuns fetcher={fetcher} />
       <AgentValue fetcher={fetcher} />
+      <ShadowRuns fetcher={fetcher} />
       <AgentCases fetcher={fetcher} />
       <CollectionsView fetcher={fetcher} />
       <h2>{t("Your questions to stewards")}</h2>
@@ -96,15 +190,35 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
           {error}
         </p>
       )}
-      {items && items.length === 0 && <p className="notice">{t("No questions yet. When nothing answers, you can ask the stewards.")}</p>}
+      {items && items.length === 0 && (
+        <p className="notice">
+          {t(
+            "No questions yet. When nothing answers, you can ask the stewards.",
+          )}
+        </p>
+      )}
       {items && items.length > 0 && (
         <ul className="saved-list">
           {items.map((q) => (
             <li key={q.id}>
               <p className="question">
-                {q.question} <span className="meta">({q.space.startsWith("person:") ? t("to a document's owner") : spaceName(q.space) || t("company-wide")}, {t(states[q.state] ?? q.state)})</span>
+                {q.question}{" "}
+                <span className="meta">
+                  (
+                  {q.space.startsWith("person:")
+                    ? t("to a document's owner")
+                    : spaceName(q.space) || t("company-wide")}
+                  , {t(states[q.state] ?? q.state)})
+                </span>
               </p>
-              {q.request && <p className="meta">{t("Request: {category}, due {due}", { category: q.request.category, due: q.request.due.slice(0, 10) })}</p>}
+              {q.request && (
+                <p className="meta">
+                  {t("Request: {category}, due {due}", {
+                    category: q.request.category,
+                    due: q.request.due.slice(0, 10),
+                  })}
+                </p>
+              )}
               {q.reply && (
                 <div className="reply">
                   <p>{q.reply.text}</p>
@@ -114,7 +228,17 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
                         const place = placeOf(c);
                         const name = c.title ?? c.cite;
                         return c.url ? (
-                          <a key={c.cite} className="chip" href={c.url} target="_blank" rel="noopener noreferrer" aria-label={t("Source {cite}, {name}, opens in a new tab", { cite: c.cite, name })}>
+                          <a
+                            key={c.cite}
+                            className="chip"
+                            href={c.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={t(
+                              "Source {cite}, {name}, opens in a new tab",
+                              { cite: c.cite, name },
+                            )}
+                          >
                             {name}
                             {place && <span className="place"> {place}</span>}
                           </a>
@@ -128,10 +252,20 @@ export function QuestionsView({ fetcher }: { fetcher?: Fetch }) {
                   )}
                   {q.reply.dropped > 0 && (
                     <p className="refused">
-                      {tn(q.reply.dropped, "{n} source was not shown because you can't open it.", "{n} sources were not shown because you can't open them.")}
+                      {tn(
+                        q.reply.dropped,
+                        "{n} source was not shown because you can't open it.",
+                        "{n} sources were not shown because you can't open them.",
+                      )}
                     </p>
                   )}
-                  {q.reply.note && <p className="meta">{t("Published as a note, so the next person who asks gets this answer with its cite.")}</p>}
+                  {q.reply.note && (
+                    <p className="meta">
+                      {t(
+                        "Published as a note, so the next person who asks gets this answer with its cite.",
+                      )}
+                    </p>
+                  )}
                 </div>
               )}
             </li>
@@ -174,7 +308,12 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
   }, [fetcher]);
   if (!prefs) return null;
   const off = prefs.off;
-  async function save(next: string[], pauseDays?: number, digest?: "daily" | "weekly", prep?: boolean) {
+  async function save(
+    next: string[],
+    pauseDays?: number,
+    digest?: "daily" | "weekly",
+    prep?: boolean,
+  ) {
     try {
       setPrefs(await setNotifySettings(next, fetcher, pauseDays, digest, prep));
       setStatus(t("Saved."));
@@ -185,12 +324,24 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
   async function test() {
     try {
       const r = await testNotification(fetcher);
-      setStatus(r.sent ? t("Sent by {via}. If nothing arrives, tell your administrator.", { via: r.via }) : t("{via} doesn't know you by your email. Tell your administrator.", { via: r.via }));
+      setStatus(
+        r.sent
+          ? t("Sent by {via}. If nothing arrives, tell your administrator.", {
+              via: r.via,
+            })
+          : t(
+              "{via} doesn't know you by your email. Tell your administrator.",
+              { via: r.via },
+            ),
+      );
     } catch (e) {
       setStatus(errMsg(e, t("The test couldn't be sent.")));
     }
   }
-  const paused = prefs.paused_until && new Date(prefs.paused_until) > new Date() ? new Date(prefs.paused_until) : undefined;
+  const paused =
+    prefs.paused_until && new Date(prefs.paused_until) > new Date()
+      ? new Date(prefs.paused_until)
+      : undefined;
   return (
     <fieldset className="notify-settings">
       <legend>{t("Tell me in chat about")}</legend>
@@ -200,7 +351,13 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
             type="checkbox"
             id={`${base}-${k.id}`}
             checked={!off.includes(k.id)}
-            onChange={(e) => save(e.target.checked ? off.filter((x) => x !== k.id) : [...off, k.id])}
+            onChange={(e) =>
+              save(
+                e.target.checked
+                  ? off.filter((x) => x !== k.id)
+                  : [...off, k.id],
+              )
+            }
           />{" "}
           <label htmlFor={`${base}-${k.id}`}>{t(k.name)}</label>
           {k.id === "digest" && !off.includes("digest") && (
@@ -210,20 +367,34 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
                 type="checkbox"
                 id={`${base}-daily`}
                 checked={prefs.digest === "daily"}
-                onChange={(e) => save(off, undefined, e.target.checked ? "daily" : "weekly")}
+                onChange={(e) =>
+                  save(off, undefined, e.target.checked ? "daily" : "weekly")
+                }
               />{" "}
-              <label htmlFor={`${base}-daily`}>{t("Daily, each working morning")}</label>
+              <label htmlFor={`${base}-daily`}>
+                {t("Daily, each working morning")}
+              </label>
             </>
           )}
         </div>
       ))}
       <div>
-        <input type="checkbox" id={`${base}-prep`} checked={prefs.prep === true} onChange={(e) => save(off, undefined, undefined, e.target.checked)} />{" "}
-        <label htmlFor={`${base}-prep`}>{t("A brief before each meeting with an agenda")}</label>
+        <input
+          type="checkbox"
+          id={`${base}-prep`}
+          checked={prefs.prep === true}
+          onChange={(e) => save(off, undefined, undefined, e.target.checked)}
+        />{" "}
+        <label htmlFor={`${base}-prep`}>
+          {t("A brief before each meeting with an agenda")}
+        </label>
       </div>
       {paused ? (
         <p>
-          {t("Paused until {date}: you're told nothing, and the other stewards still are.", { date: paused.toLocaleDateString() })}{" "}
+          {t(
+            "Paused until {date}: you're told nothing, and the other stewards still are.",
+            { date: paused.toLocaleDateString() },
+          )}{" "}
           <button type="button" onClick={() => save(off, 0)}>
             {t("Resume")}
           </button>
@@ -231,8 +402,19 @@ export function NotifySettings({ fetcher }: { fetcher?: Fetch }) {
       ) : (
         <p>
           <label htmlFor={`${base}-pause`}>{t("Pause for (days)")}</label>{" "}
-          <input id={`${base}-pause`} type="number" min={1} max={30} value={days} onChange={(e) => setDays(e.target.value)} />{" "}
-          <button type="button" disabled={!(Number(days) >= 1 && Number(days) <= 30)} onClick={() => save(off, Math.floor(Number(days)))}>
+          <input
+            id={`${base}-pause`}
+            type="number"
+            min={1}
+            max={30}
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+          />{" "}
+          <button
+            type="button"
+            disabled={!(Number(days) >= 1 && Number(days) <= 30)}
+            onClick={() => save(off, Math.floor(Number(days)))}
+          >
             {t("Pause")}
           </button>
         </p>
@@ -259,7 +441,9 @@ function Count({ n }: { n: number }) {
       <span className="count" aria-hidden="true">
         ({n})
       </span>
-      <span className="visually-hidden">{tn(n, "{n} waiting", "{n} waiting")}</span>
+      <span className="visually-hidden">
+        {tn(n, "{n} waiting", "{n} waiting")}
+      </span>
     </>
   );
 }
@@ -270,7 +454,15 @@ const Refresh = 5 * 60 * 1000;
 // The steward's queue on their screen (sb-spaces(7); SB-1704, SB-1705).
 // With own, it is the caller's own queue (space "me"): questions sent to them as a
 // document's owner (SB-3706), hidden while empty, with no pins, templates or notes.
-export function StewardQuestions({ space, fetcher, own }: { space: string; fetcher?: Fetch; own?: boolean }) {
+export function StewardQuestions({
+  space,
+  fetcher,
+  own,
+}: {
+  space: string;
+  fetcher?: Fetch;
+  own?: boolean;
+}) {
   const [items, setItems] = useState<QueueQuestion[]>([]);
   const [status, setStatus] = useState<string>();
   const [text, setText] = useState<Record<string, string>>({});
@@ -304,8 +496,17 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
   async function reply(id: string, both = false) {
     try {
       const cs = (cites[id] ?? "").split(/[\s,]+/).filter(Boolean);
-      await replyToQuestion(space, id, text[id] ?? items.find((q) => q.id === id)?.thread?.text ?? "", cs, fetcher, both);
-      setStatus(t("Replied. The asker sees each cite only if they can open it."));
+      await replyToQuestion(
+        space,
+        id,
+        text[id] ?? items.find((q) => q.id === id)?.thread?.text ?? "",
+        cs,
+        fetcher,
+        both,
+      );
+      setStatus(
+        t("Replied. The asker sees each cite only if they can open it."),
+      );
       await load();
     } catch (e) {
       setStatus(errMsg(e, t("The reply couldn't be sent.")));
@@ -325,8 +526,11 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
   async function claim(id: string, release: boolean) {
     try {
       const c = await claimQuestion(space, id, release, fetcher);
-      setItems((xs) => xs.map((q) => (q.id === id ? { ...q, claim: c ?? undefined } : q)));
-      if (c && !c.mine) setStatus(t("{who} is already answering this.", { who: c.by }));
+      setItems((xs) =>
+        xs.map((q) => (q.id === id ? { ...q, claim: c ?? undefined } : q)),
+      );
+      if (c && !c.mine)
+        setStatus(t("{who} is already answering this.", { who: c.by }));
     } catch (e) {
       setStatus(errMsg(e, t("The question couldn't be claimed.")));
     }
@@ -335,17 +539,34 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
   async function note(id: string) {
     try {
       const p = preview[id];
-      const r = await publishNote(space, id, title[id] ?? "", p?.narrower, fetcher, keep[id] ?? false, supersede[id] ?? "");
+      const r = await publishNote(
+        space,
+        id,
+        title[id] ?? "",
+        p?.narrower,
+        fetcher,
+        keep[id] ?? false,
+        supersede[id] ?? "",
+      );
       if (!p) {
         setPreview((x) => ({ ...x, [id]: r }));
-        setStatus(t("The note will have {readers} readers. {narrower} of its cites some of them can't open. Publish to confirm.", { readers: r.readers, narrower: r.narrower }));
+        setStatus(
+          t(
+            "The note will have {readers} readers. {narrower} of its cites some of them can't open. Publish to confirm.",
+            { readers: r.readers, narrower: r.narrower },
+          ),
+        );
       } else {
         setPreview((x) => {
           const y = { ...x };
           delete y[id];
           return y;
         });
-        setStatus(r.state === "Ran" ? t("Published as {path}.", { path: r.path ?? "" }) : t("The note didn't run ({state}).", { state: r.state ?? "" }));
+        setStatus(
+          r.state === "Ran"
+            ? t("Published as {path}.", { path: r.path ?? "" })
+            : t("The note didn't run ({state}).", { state: r.state ?? "" }),
+        );
         await load();
       }
     } catch (e) {
@@ -358,7 +579,9 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
     <section aria-label={own ? t("Questions to you") : t("Questions")}>
       <h2>
         {own ? t("Questions to you") : t("Questions")}
-        {steward && <Count n={items.filter((q) => q.state === "open").length} />}
+        {steward && (
+          <Count n={items.filter((q) => q.state === "open").length} />
+        )}
       </h2>
       {items.length === 0 ? (
         <p>{t("No questions for this space.")}</p>
@@ -367,9 +590,31 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
           {items.map((q, i) => (
             <li key={q.id}>
               <p className="question">{q.question}</p>
-              {q.request && <p className="meta">{t("Request: {category}, due {due}", { category: q.request.category, due: q.request.due.slice(0, 10) })}</p>}
-              {q.waiting && <p className="meta">{t("Waiting on {space} until {until}: {reason}", { space: q.waiting.on, until: q.waiting.until, reason: q.waiting.reason })}</p>}
-              {q.request && q.state === "open" && !own && <WaitForm space={space} kind="request" id={q.id} fetcher={fetcher} />}
+              {q.request && (
+                <p className="meta">
+                  {t("Request: {category}, due {due}", {
+                    category: q.request.category,
+                    due: q.request.due.slice(0, 10),
+                  })}
+                </p>
+              )}
+              {q.waiting && (
+                <p className="meta">
+                  {t("Waiting on {space} until {until}: {reason}", {
+                    space: q.waiting.on,
+                    until: q.waiting.until,
+                    reason: q.waiting.reason,
+                  })}
+                </p>
+              )}
+              {q.request && q.state === "open" && !own && (
+                <WaitForm
+                  space={space}
+                  kind="request"
+                  id={q.id}
+                  fetcher={fetcher}
+                />
+              )}
               {q.shared && q.shared.length > 0 && (
                 <ul className="meta" aria-label={t("Shared sources")}>
                   {q.shared.map((c) => (
@@ -377,14 +622,33 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                   ))}
                 </ul>
               )}
-              {!!q.shared_hidden && <p className="meta">{tn(q.shared_hidden, "{n} shared source you can't open.", "{n} shared sources you can't open.")}</p>}
-              {q.from_space && (
+              {!!q.shared_hidden && (
                 <p className="meta">
-                  {q.waited ? t("{space} hasn't answered this in {n} working days", { space: q.from_space, n: q.waited }) : t("{space} has no active steward", { space: q.from_space })}
+                  {tn(
+                    q.shared_hidden,
+                    "{n} shared source you can't open.",
+                    "{n} shared sources you can't open.",
+                  )}
                 </p>
               )}
-              {q.state === "open" && q.overdue && <p className="meta overdue">{t("Overdue")}</p>}
-              {q.like && <p className="meta">{t("Looks like {id}", { id: q.like })}</p>}
+              {q.from_space && (
+                <p className="meta">
+                  {q.waited
+                    ? t("{space} hasn't answered this in {n} working days", {
+                        space: q.from_space,
+                        n: q.waited,
+                      })
+                    : t("{space} has no active steward", {
+                        space: q.from_space,
+                      })}
+                </p>
+              )}
+              {q.state === "open" && q.overdue && (
+                <p className="meta overdue">{t("Overdue")}</p>
+              )}
+              {q.like && (
+                <p className="meta">{t("Looks like {id}", { id: q.like })}</p>
+              )}
               {q.report && <ReportedAnswer r={q.report} />}
               {q.draft && (
                 <p className="meta">
@@ -392,26 +656,70 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                 </p>
               )}
               {q.thread?.agent && (
-                <div className="report" role="group" aria-label={t("Drafted by an agent")}>
+                <div
+                  className="report"
+                  role="group"
+                  aria-label={t("Drafted by an agent")}
+                >
                   <p className="meta">
-                    <strong>{t(draftKinds[q.thread.kind ?? ""] ?? draftKinds.brief!, { agent: q.thread.agent })}</strong> ·{" "}
-                    {t("Ran as {who}", { who: q.thread.by })}
+                    <strong>
+                      {t(draftKinds[q.thread.kind ?? ""] ?? draftKinds.brief!, {
+                        agent: q.thread.agent,
+                      })}
+                    </strong>{" "}
+                    · {t("Ran as {who}", { who: q.thread.by })}
                   </p>
-                  {q.thread.hidden && <p>{t("Only {who} sees its text: it was checked as them.", { who: q.thread.by })}</p>}
-                  {q.thread.kind === "decisions" && (q.thread.supersede?.length ?? 0) > 0 && (
-                    <fieldset>
-                      <legend>{t("Does this replace an earlier decision?")}</legend>
-                      {[{ cite: "", title: t("No") }, ...q.thread.supersede!].map((d) => (
-                        <label key={d.cite || "none"}>
-                          <input type="radio" name={`${ids}-sup${i}`} checked={(supersede[q.id] ?? "") === d.cite} onChange={() => setSupersede((x) => ({ ...x, [q.id]: d.cite }))} /> {d.title ?? d.cite}
-                        </label>
-                      ))}
-                    </fieldset>
+                  {q.thread.mark && (
+                    <MarkLine
+                      agent={q.thread.mark.agent}
+                      version={q.thread.mark.version}
+                    />
                   )}
-                  {q.state === "open" && (q.thread.kind === "decisions" || q.thread.kind === "review") && (q.thread.actions?.length ?? 0) > 0 && (
-                    <ConfirmActions space={space} draft={q.id} items={q.thread.actions!} fetcher={fetcher} />
+                  {q.thread.hidden && (
+                    <p>
+                      {t("Only {who} sees its text: it was checked as them.", {
+                        who: q.thread.by,
+                      })}
+                    </p>
                   )}
-                  {q.thread.trace && <HowThisWasMade trace={q.thread.trace} fetcher={fetcher} />}
+                  {q.thread.kind === "decisions" &&
+                    (q.thread.supersede?.length ?? 0) > 0 && (
+                      <fieldset>
+                        <legend>
+                          {t("Does this replace an earlier decision?")}
+                        </legend>
+                        {[
+                          { cite: "", title: t("No") },
+                          ...q.thread.supersede!,
+                        ].map((d) => (
+                          <label key={d.cite || "none"}>
+                            <input
+                              type="radio"
+                              name={`${ids}-sup${i}`}
+                              checked={(supersede[q.id] ?? "") === d.cite}
+                              onChange={() =>
+                                setSupersede((x) => ({ ...x, [q.id]: d.cite }))
+                              }
+                            />{" "}
+                            {d.title ?? d.cite}
+                          </label>
+                        ))}
+                      </fieldset>
+                    )}
+                  {q.state === "open" &&
+                    (q.thread.kind === "decisions" ||
+                      q.thread.kind === "review") &&
+                    (q.thread.actions?.length ?? 0) > 0 && (
+                      <ConfirmActions
+                        space={space}
+                        draft={q.id}
+                        items={q.thread.actions!}
+                        fetcher={fetcher}
+                      />
+                    )}
+                  {q.thread.trace && (
+                    <HowThisWasMade trace={q.thread.trace} fetcher={fetcher} />
+                  )}
                   {q.state === "open" && !q.thread.hidden && (
                     <AskForChanges
                       space={space}
@@ -430,14 +738,29 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                       {t("Discard")}
                     </button>
                   )}
-                  {q.state === "open" && space !== "me" && <PauseHere space={space} agent={q.thread.agent} fetcher={fetcher} />}
+                  {q.state === "open" && space !== "me" && (
+                    <PauseHere
+                      space={space}
+                      agent={q.thread.agent}
+                      fetcher={fetcher}
+                    />
+                  )}
                 </div>
               )}
               {q.thread && !q.thread.agent && (
-                <div className="report" role="group" aria-label={t("Saved from chat")}>
+                <div
+                  className="report"
+                  role="group"
+                  aria-label={t("Saved from chat")}
+                >
                   <p className="meta">
-                    <strong>{t("Saved from chat")}</strong> · {t("Sent by {who}", { who: q.thread.by })} ·{" "}
-                    <a href={q.thread.link} target="_blank" rel="noopener noreferrer">
+                    <strong>{t("Saved from chat")}</strong> ·{" "}
+                    {t("Sent by {who}", { who: q.thread.by })} ·{" "}
+                    <a
+                      href={q.thread.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {t("Open the thread")}
                     </a>
                   </p>
@@ -452,7 +775,13 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                 <div className="decide">
                   <p className="meta">
                     {q.claim && !q.claim.mine
-                      ? t("{who} is answering this, until {time}.", { who: q.claim.by, time: new Date(q.claim.until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })
+                      ? t("{who} is answering this, until {time}.", {
+                          who: q.claim.by,
+                          time: new Date(q.claim.until).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }),
+                        })
                       : q.claim?.mine
                         ? t("You said you'd answer this.")
                         : ""}{" "}
@@ -462,7 +791,10 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                       </button>
                     ) : (
                       !q.claim && (
-                        <button type="button" onClick={() => claim(q.id, false)}>
+                        <button
+                          type="button"
+                          onClick={() => claim(q.id, false)}
+                        >
                           {t("I'll answer this")}
                         </button>
                       )
@@ -470,12 +802,16 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                   </p>
                   {templates.length > 0 && (
                     <>
-                      <label htmlFor={`${ids}-u${i}`}>{t("Use a template")}</label>
+                      <label htmlFor={`${ids}-u${i}`}>
+                        {t("Use a template")}
+                      </label>
                       <select
                         id={`${ids}-u${i}`}
                         value=""
                         onChange={(e) => {
-                          const tm = templates.find((x) => x.id === e.target.value);
+                          const tm = templates.find(
+                            (x) => x.id === e.target.value,
+                          );
                           if (tm) setText((x) => ({ ...x, [q.id]: tm.text }));
                         }}
                       >
@@ -488,18 +824,40 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                       </select>
                     </>
                   )}
-                  <label htmlFor={`${ids}-r${i}`}>{t("Reply to: {question}", { question: q.question })}</label>
-                  <textarea id={`${ids}-r${i}`} rows={3} maxLength={4000} value={text[q.id] ?? q.thread?.text ?? ""} onChange={(e) => setText((x) => ({ ...x, [q.id]: e.target.value }))} />
-                  <label htmlFor={`${ids}-c${i}`}>{t("Cites, from your own search (optional)")}</label>
-                  <input id={`${ids}-c${i}`} type="text" value={cites[q.id] ?? ""} onChange={(e) => setCites((x) => ({ ...x, [q.id]: e.target.value }))} />
+                  <label htmlFor={`${ids}-r${i}`}>
+                    {t("Reply to: {question}", { question: q.question })}
+                  </label>
+                  <textarea
+                    id={`${ids}-r${i}`}
+                    rows={3}
+                    maxLength={4000}
+                    value={text[q.id] ?? q.thread?.text ?? ""}
+                    onChange={(e) =>
+                      setText((x) => ({ ...x, [q.id]: e.target.value }))
+                    }
+                  />
+                  <label htmlFor={`${ids}-c${i}`}>
+                    {t("Cites, from your own search (optional)")}
+                  </label>
+                  <input
+                    id={`${ids}-c${i}`}
+                    type="text"
+                    value={cites[q.id] ?? ""}
+                    onChange={(e) =>
+                      setCites((x) => ({ ...x, [q.id]: e.target.value }))
+                    }
+                  />
                   <button type="button" onClick={() => reply(q.id)}>
                     {t("Send reply")}
                   </button>
-                  {q.like && items.some((o) => o.id === q.like && o.state === "open") && (
-                    <button type="button" onClick={() => reply(q.id, true)}>
-                      {t("Answer both")}
-                    </button>
-                  )}
+                  {q.like &&
+                    items.some(
+                      (o) => o.id === q.like && o.state === "open",
+                    ) && (
+                      <button type="button" onClick={() => reply(q.id, true)}>
+                        {t("Answer both")}
+                      </button>
+                    )}
                 </div>
               ) : (
                 <div className="decide">
@@ -508,17 +866,44 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                     <p className="meta">{t("Published as a note.")}</p>
                   ) : (
                     <>
-                      <label htmlFor={`${ids}-t${i}`}>{t("Note title for: {question}", { question: q.question })}</label>
-                      <input id={`${ids}-t${i}`} type="text" maxLength={200} value={title[q.id] ?? q.draft?.title ?? ""} onChange={(e) => setTitle((x) => ({ ...x, [q.id]: e.target.value }))} />
+                      <label htmlFor={`${ids}-t${i}`}>
+                        {t("Note title for: {question}", {
+                          question: q.question,
+                        })}
+                      </label>
+                      <input
+                        id={`${ids}-t${i}`}
+                        type="text"
+                        maxLength={200}
+                        value={title[q.id] ?? q.draft?.title ?? ""}
+                        onChange={(e) =>
+                          setTitle((x) => ({ ...x, [q.id]: e.target.value }))
+                        }
+                      />
                       <label>
-                        <input type="checkbox" checked={keep[q.id] ?? false} onChange={(e) => setKeep((x) => ({ ...x, [q.id]: e.target.checked }))} /> {t("Keep the question in the note")}
+                        <input
+                          type="checkbox"
+                          checked={keep[q.id] ?? false}
+                          onChange={(e) =>
+                            setKeep((x) => ({ ...x, [q.id]: e.target.checked }))
+                          }
+                        />{" "}
+                        {t("Keep the question in the note")}
                       </label>
                       <button type="button" onClick={() => note(q.id)}>
-                        {preview[q.id] ? t("Publish, accepting {n} narrower cites", { n: preview[q.id]!.narrower }) : t("Publish as note")}
+                        {preview[q.id]
+                          ? t("Publish, accepting {n} narrower cites", {
+                              n: preview[q.id]!.narrower,
+                            })
+                          : t("Publish as note")}
                       </button>
                       {(preview[q.id]?.similar?.length ?? 0) > 0 && (
                         <div role="note" aria-label={t("Already written?")}>
-                          <p className="meta">{t("Already written? These documents read the same:")}</p>
+                          <p className="meta">
+                            {t(
+                              "Already written? These documents read the same:",
+                            )}
+                          </p>
                           <ul>
                             {preview[q.id]!.similar!.map((d) => (
                               <li key={d.cite}>
@@ -530,22 +915,51 @@ export function StewardQuestions({ space, fetcher, own }: { space: string; fetch
                       )}
                     </>
                   )}
-                  {!own && (q.reply?.cites?.length ?? 0) > 0 && <PinButton space={space} id={q.id} question={q.question} onDone={() => setPinsBump((n) => n + 1)} fetcher={fetcher} />}
+                  {!own && (q.reply?.cites?.length ?? 0) > 0 && (
+                    <PinButton
+                      space={space}
+                      id={q.id}
+                      question={q.question}
+                      onDone={() => setPinsBump((n) => n + 1)}
+                      fetcher={fetcher}
+                    />
+                  )}
                 </div>
               )}
             </li>
           ))}
         </ul>
       )}
-      {steward && !own && <Pins space={space} bump={pinsBump} fetcher={fetcher} />}
-      {steward && !own && <Templates space={space} items={templates} onChange={setTemplates} fetcher={fetcher} />}
+      {steward && !own && (
+        <Pins space={space} bump={pinsBump} fetcher={fetcher} />
+      )}
+      {steward && !own && (
+        <Templates
+          space={space}
+          items={templates}
+          onChange={setTemplates}
+          fetcher={fetcher}
+        />
+      )}
       {status && <p role="status">{status}</p>}
     </section>
   );
 }
 
 // Pin as the verified answer (SB-3601): the question as askers will see it, then the pin.
-function PinButton({ space, id, question, onDone, fetcher }: { space: string; id: string; question: string; onDone: () => void; fetcher?: Fetch }) {
+function PinButton({
+  space,
+  id,
+  question,
+  onDone,
+  fetcher,
+}: {
+  space: string;
+  id: string;
+  question: string;
+  onDone: () => void;
+  fetcher?: Fetch;
+}) {
   const fid = useId();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(question);
@@ -574,7 +988,13 @@ function PinButton({ space, id, question, onDone, fetcher }: { space: string; id
   return (
     <form onSubmit={pin}>
       <label htmlFor={fid}>{t("The question as askers will see it")}</label>
-      <input id={fid} type="text" maxLength={300} value={text} onChange={(e) => setText(e.target.value)} />
+      <input
+        id={fid}
+        type="text"
+        maxLength={300}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
       <button type="submit" disabled={text.trim() === ""}>
         {t("Pin")}
       </button>
@@ -584,7 +1004,15 @@ function PinButton({ space, id, question, onDone, fetcher }: { space: string; id
 }
 
 // The space's verified answers (SB-3601), with Remove.
-function Pins({ space, bump, fetcher }: { space: string; bump: number; fetcher?: Fetch }) {
+function Pins({
+  space,
+  bump,
+  fetcher,
+}: {
+  space: string;
+  bump: number;
+  fetcher?: Fetch;
+}) {
   const [items, setItems] = useState<PinItem[]>([]);
   const [error, setError] = useState("");
   const load = useCallback(async () => {
@@ -604,18 +1032,27 @@ function Pins({ space, bump, fetcher }: { space: string; bump: number; fetcher?:
       <ul>
         {items.map((p) => (
           <li key={p.id}>
-            <strong>{p.question}</strong> {p.due && <span className="meta">{t("due for review, no longer shown")}</span>}
+            <strong>{p.question}</strong>{" "}
+            {p.due && (
+              <span className="meta">
+                {t("due for review, no longer shown")}
+              </span>
+            )}
             <p>{p.text}</p>
             <button
               type="button"
-              aria-label={t("Remove the verified answer: {question}", { question: p.question })}
+              aria-label={t("Remove the verified answer: {question}", {
+                question: p.question,
+              })}
               onClick={async () => {
                 setError("");
                 try {
                   await unpin(space, p.id, fetcher);
                   await load();
                 } catch (err) {
-                  setError(errMsg(err, t("The verified answer couldn't be removed.")));
+                  setError(
+                    errMsg(err, t("The verified answer couldn't be removed.")),
+                  );
                 }
               }}
             >
@@ -630,7 +1067,15 @@ function Pins({ space, bump, fetcher }: { space: string; bump: number; fetcher?:
 }
 
 // ReviewAgain is the choice of how long a mark lasts (SB-3603): 0 is the space's default.
-export function ReviewAgain({ days, onChange, name }: { days: number; onChange: (d: number) => void; name: string }) {
+export function ReviewAgain({
+  days,
+  onChange,
+  name,
+}: {
+  days: number;
+  onChange: (d: number) => void;
+  name: string;
+}) {
   const id = useId();
   return (
     <>
@@ -638,7 +1083,11 @@ export function ReviewAgain({ days, onChange, name }: { days: number; onChange: 
       <label htmlFor={id} className="visually-hidden">
         {t("Review again in, for {name}", { name })}
       </label>
-      <select id={id} value={days} onChange={(e) => onChange(Number(e.target.value))}>
+      <select
+        id={id}
+        value={days}
+        onChange={(e) => onChange(Number(e.target.value))}
+      >
         <option value={0}>{t("the space's default")}</option>
         {[30, 90, 180, 365].map((d) => (
           <option key={d} value={d}>
@@ -651,15 +1100,35 @@ export function ReviewAgain({ days, onChange, name }: { days: number; onChange: 
 }
 
 // A space's reply templates (SB-2503): add, edit and delete, for its stewards only.
-function Templates({ space, items, onChange, fetcher }: { space: string; items: ReplyTemplate[]; onChange: (ts: ReplyTemplate[]) => void; fetcher?: Fetch }) {
+function Templates({
+  space,
+  items,
+  onChange,
+  fetcher,
+}: {
+  space: string;
+  items: ReplyTemplate[];
+  onChange: (ts: ReplyTemplate[]) => void;
+  fetcher?: Fetch;
+}) {
   const ids = useId();
-  const [editing, setEditing] = useState<ReplyTemplate>({ id: "", name: "", text: "" });
+  const [editing, setEditing] = useState<ReplyTemplate>({
+    id: "",
+    name: "",
+    text: "",
+  });
   const [error, setError] = useState("");
   async function save(e: FormEvent) {
     e.preventDefault();
     setError("");
     try {
-      await saveTemplate(space, editing.id, editing.name, editing.text, fetcher);
+      await saveTemplate(
+        space,
+        editing.id,
+        editing.name,
+        editing.text,
+        fetcher,
+      );
       onChange(await replyTemplates(space, fetcher));
       setEditing({ id: "", name: "", text: "" });
     } catch (err) {
@@ -683,10 +1152,18 @@ function Templates({ space, items, onChange, fetcher }: { space: string; items: 
           {items.map((tm) => (
             <li key={tm.id}>
               <span>{tm.name}</span>{" "}
-              <button type="button" aria-label={t("Edit {name}", { name: tm.name })} onClick={() => setEditing(tm)}>
+              <button
+                type="button"
+                aria-label={t("Edit {name}", { name: tm.name })}
+                onClick={() => setEditing(tm)}
+              >
                 {t("Edit")}
               </button>{" "}
-              <button type="button" aria-label={t("Delete {name}", { name: tm.name })} onClick={() => remove(tm.id)}>
+              <button
+                type="button"
+                aria-label={t("Delete {name}", { name: tm.name })}
+                onClick={() => remove(tm.id)}
+              >
                 {t("Delete")}
               </button>
             </li>
@@ -695,10 +1172,24 @@ function Templates({ space, items, onChange, fetcher }: { space: string; items: 
       )}
       <form onSubmit={save}>
         <label htmlFor={`${ids}-n`}>{t("Template name")}</label>
-        <input id={`${ids}-n`} maxLength={60} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+        <input
+          id={`${ids}-n`}
+          maxLength={60}
+          value={editing.name}
+          onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+        />
         <label htmlFor={`${ids}-x`}>{t("Template text")}</label>
-        <textarea id={`${ids}-x`} rows={3} maxLength={2000} value={editing.text} onChange={(e) => setEditing({ ...editing, text: e.target.value })} />
-        <button type="submit" disabled={editing.name.trim() === "" || editing.text.trim() === ""}>
+        <textarea
+          id={`${ids}-x`}
+          rows={3}
+          maxLength={2000}
+          value={editing.text}
+          onChange={(e) => setEditing({ ...editing, text: e.target.value })}
+        />
+        <button
+          type="submit"
+          disabled={editing.name.trim() === "" || editing.text.trim() === ""}
+        >
           {editing.id ? t("Save template") : t("Add template")}
         </button>
       </form>
@@ -708,7 +1199,17 @@ function Templates({ space, items, onChange, fetcher }: { space: string; items: 
 }
 
 // Reviewed, still right (SB-2501): off the list until a new version, its age or a new report.
-function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: ReviewItem; onDone: () => void; fetcher?: Fetch }) {
+function MarkReviewed({
+  space,
+  item,
+  onDone,
+  fetcher,
+}: {
+  space: string;
+  item: ReviewItem;
+  onDone: () => void;
+  fetcher?: Fetch;
+}) {
   const [error, setError] = useState("");
   const [days, setDays] = useState(0);
   async function mark() {
@@ -723,8 +1224,18 @@ function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: R
   return (
     <>
       {" "}
-      <ReviewAgain days={days} onChange={setDays} name={item.title ?? item.cite} />{" "}
-      <button type="button" aria-label={t("Reviewed, still right: {name}", { name: item.title ?? item.cite })} onClick={mark}>
+      <ReviewAgain
+        days={days}
+        onChange={setDays}
+        name={item.title ?? item.cite}
+      />{" "}
+      <button
+        type="button"
+        aria-label={t("Reviewed, still right: {name}", {
+          name: item.title ?? item.cite,
+        })}
+        onClick={mark}
+      >
         {t("Reviewed, still right")}
       </button>
       {error && <span role="alert"> {error}</span>}
@@ -734,7 +1245,17 @@ function MarkReviewed({ space, item, onDone, fetcher }: { space: string; item: R
 
 // Caretaker (SB-3405): on a document whose owner is gone, a steward names an active member
 // of the space to look after it, or removes them.
-function Caretaker({ space, item, onDone, fetcher }: { space: string; item: ReviewItem; onDone: () => void; fetcher?: Fetch }) {
+function Caretaker({
+  space,
+  item,
+  onDone,
+  fetcher,
+}: {
+  space: string;
+  item: ReviewItem;
+  onDone: () => void;
+  fetcher?: Fetch;
+}) {
   const id = useId();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -756,7 +1277,11 @@ function Caretaker({ space, item, onDone, fetcher }: { space: string; item: Revi
       <span>
         {" "}
         {t("Caretaker {person}", { person: item.owner.email })}{" "}
-        <button type="button" aria-label={t("Remove the caretaker of {name}", { name })} onClick={() => act(true)}>
+        <button
+          type="button"
+          aria-label={t("Remove the caretaker of {name}", { name })}
+          onClick={() => act(true)}
+        >
           {t("Remove")}
         </button>
         {error && <span role="alert"> {error}</span>}
@@ -766,8 +1291,17 @@ function Caretaker({ space, item, onDone, fetcher }: { space: string; item: Revi
     <span>
       {" "}
       <label htmlFor={id}>{t("Caretaker's email for {name}", { name })}</label>
-      <input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <button type="button" disabled={email.trim() === ""} onClick={() => act(false)}>
+      <input
+        id={id}
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button
+        type="button"
+        disabled={email.trim() === ""}
+        onClick={() => act(false)}
+      >
         {t("Name a caretaker")}
       </button>
       {error && <span role="alert"> {error}</span>}
@@ -776,7 +1310,13 @@ function Caretaker({ space, item, onDone, fetcher }: { space: string; item: Revi
 }
 
 // Terms the documents define (SB-3407): suggestions only; Suggest fills the Glossary form.
-function DefinedTerms({ terms, onSuggest }: { terms: DefinedTerm[]; onSuggest?: (term: DefinedTerm) => void }) {
+function DefinedTerms({
+  terms,
+  onSuggest,
+}: {
+  terms: DefinedTerm[];
+  onSuggest?: (term: DefinedTerm) => void;
+}) {
   if (terms.length === 0 || !onSuggest) return null;
   return (
     <details>
@@ -784,8 +1324,15 @@ function DefinedTerms({ terms, onSuggest }: { terms: DefinedTerm[]; onSuggest?: 
       <ul>
         {terms.map((d) => (
           <li key={d.term + d.meaning}>
-            {d.term}: {d.meaning} <span className="meta">· {tn(d.docs, "in {n} document", "in {n} documents")}</span>{" "}
-            <button type="button" aria-label={t("Suggest {term}", { term: d.term })} onClick={() => onSuggest(d)}>
+            {d.term}: {d.meaning}{" "}
+            <span className="meta">
+              · {tn(d.docs, "in {n} document", "in {n} documents")}
+            </span>{" "}
+            <button
+              type="button"
+              aria-label={t("Suggest {term}", { term: d.term })}
+              onClick={() => onSuggest(d)}
+            >
               {t("Suggest")}
             </button>
           </li>
@@ -796,7 +1343,19 @@ function DefinedTerms({ terms, onSuggest }: { terms: DefinedTerm[]; onSuggest?: 
 }
 
 // Retire from answers (SB-2801): a reason, and the document that replaces it if any.
-function Retire({ space, cite, name, onDone, fetcher }: { space: string; cite: string; name: string; onDone: () => void; fetcher?: Fetch }) {
+function Retire({
+  space,
+  cite,
+  name,
+  onDone,
+  fetcher,
+}: {
+  space: string;
+  cite: string;
+  name: string;
+  onDone: () => void;
+  fetcher?: Fetch;
+}) {
   const reasonId = useId();
   const byId = useId();
   const [open, setOpen] = useState(false);
@@ -807,7 +1366,11 @@ function Retire({ space, cite, name, onDone, fetcher }: { space: string; cite: s
     return (
       <>
         {" "}
-        <button type="button" aria-label={t("Retire from answers: {name}", { name })} onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          aria-label={t("Retire from answers: {name}", { name })}
+          onClick={() => setOpen(true)}
+        >
           {t("Retire from answers")}
         </button>
       </>
@@ -824,10 +1387,24 @@ function Retire({ space, cite, name, onDone, fetcher }: { space: string; cite: s
   };
   return (
     <form onSubmit={send} className="retire">
-      <label htmlFor={reasonId}>{t("Why it should leave this space's answers")}</label>
-      <input id={reasonId} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
-      <label htmlFor={byId}>{t("Replaced by ({form}, optional)", { form: "KIND:ID" })}</label>
-      <input id={byId} value={by} onChange={(e) => setBy(e.target.value)} placeholder="docs:Ops/right.md" />
+      <label htmlFor={reasonId}>
+        {t("Why it should leave this space's answers")}
+      </label>
+      <input
+        id={reasonId}
+        value={reason}
+        maxLength={200}
+        onChange={(e) => setReason(e.target.value)}
+      />
+      <label htmlFor={byId}>
+        {t("Replaced by ({form}, optional)", { form: "KIND:ID" })}
+      </label>
+      <input
+        id={byId}
+        value={by}
+        onChange={(e) => setBy(e.target.value)}
+        placeholder="docs:Ops/right.md"
+      />
       <button type="submit" disabled={reason.trim() === ""}>
         {t("Retire")}
       </button>
@@ -840,8 +1417,19 @@ function Retire({ space, cite, name, onDone, fetcher }: { space: string; cite: s
 }
 
 // The space's retired documents (SB-2801), each one brought back with a click.
-function RetiredDocs({ space, fetcher, bump }: { space: string; fetcher?: Fetch; bump: number }) {
-  const [list, setList] = useState<{ items: Retired[]; hidden: number }>({ items: [], hidden: 0 });
+function RetiredDocs({
+  space,
+  fetcher,
+  bump,
+}: {
+  space: string;
+  fetcher?: Fetch;
+  bump: number;
+}) {
+  const [list, setList] = useState<{ items: Retired[]; hidden: number }>({
+    items: [],
+    hidden: 0,
+  });
   const [error, setError] = useState("");
   useEffect(() => {
     void retiredList(space, fetcher).then(setList);
@@ -851,7 +1439,10 @@ function RetiredDocs({ space, fetcher, bump }: { space: string; fetcher?: Fetch;
     setError("");
     try {
       await restoreDocument(space, doc, fetcher);
-      setList((l) => ({ ...l, items: l.items.filter((x) => x.document !== doc) }));
+      setList((l) => ({
+        ...l,
+        items: l.items.filter((x) => x.document !== doc),
+      }));
     } catch (err) {
       setError(errMsg(err, t("The document couldn't be brought back.")));
     }
@@ -869,15 +1460,32 @@ function RetiredDocs({ space, fetcher, bump }: { space: string; fetcher?: Fetch;
             <span className="meta">
               {" "}
               · {r.reason}
-              {r.replaced_by ? ` · ${t("replaced by {cite}", { cite: r.replaced_by })}` : ""} · {r.by} · {r.at.slice(0, 10)}
+              {r.replaced_by
+                ? ` · ${t("replaced by {cite}", { cite: r.replaced_by })}`
+                : ""}{" "}
+              · {r.by} · {r.at.slice(0, 10)}
             </span>{" "}
-            <button type="button" aria-label={t("Bring back: {name}", { name: r.title ?? r.document })} onClick={() => void restore(r.document)}>
+            <button
+              type="button"
+              aria-label={t("Bring back: {name}", {
+                name: r.title ?? r.document,
+              })}
+              onClick={() => void restore(r.document)}
+            >
               {t("Bring back")}
             </button>
           </li>
         ))}
       </ul>
-      {list.hidden > 0 && <p className="refused">{tn(list.hidden, "{n} more retired document you can't open", "{n} more retired documents you can't open")}</p>}
+      {list.hidden > 0 && (
+        <p className="refused">
+          {tn(
+            list.hidden,
+            "{n} more retired document you can't open",
+            "{n} more retired documents you can't open",
+          )}
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
     </section>
   );
@@ -885,7 +1493,15 @@ function RetiredDocs({ space, fetcher, bump }: { space: string; fetcher?: Fetch;
 
 function DocLink({ r }: { r: SearchResult }) {
   return r.url ? (
-    <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: r.title ?? r.cite, cite: r.cite })}>
+    <a
+      href={r.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={t("{name}, source {cite}, opens in a new tab", {
+        name: r.title ?? r.cite,
+        cite: r.cite,
+      })}
+    >
       {r.title ?? r.cite}
     </a>
   ) : (
@@ -909,7 +1525,9 @@ function SameNames({ groups }: { groups: SameNameGroup[] }) {
                 <DocLink r={r} />
               </span>
             ))}
-            {g.hidden > 0 ? ` · ${tn(g.hidden, "{n} more you can't open", "{n} more you can't open")}` : ""}
+            {g.hidden > 0
+              ? ` · ${tn(g.hidden, "{n} more you can't open", "{n} more you can't open")}`
+              : ""}
           </li>
         ))}
       </ul>
@@ -918,11 +1536,26 @@ function SameNames({ groups }: { groups: SameNameGroup[] }) {
 }
 
 // Never cited (SB-2803): loaded only when the steward asks.
-function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fetch; onRetired: () => void }) {
-  const [list, setList] = useState<{ items: SearchResult[]; hidden: { owner?: string }[]; unused_terms?: string[] }>();
+function NeverCited({
+  space,
+  fetcher,
+  onRetired,
+}: {
+  space: string;
+  fetcher?: Fetch;
+  onRetired: () => void;
+}) {
+  const [list, setList] = useState<{
+    items: SearchResult[];
+    hidden: { owner?: string }[];
+    unused_terms?: string[];
+  }>();
   if (!list)
     return (
-      <button type="button" onClick={() => void uncitedList(space, fetcher).then(setList)}>
+      <button
+        type="button"
+        onClick={() => void uncitedList(space, fetcher).then(setList)}
+      >
         {t("Show never cited")}
       </button>
     );
@@ -932,19 +1565,36 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
         {t("Never cited")}
         <Count n={list.items.length + list.hidden.length} />
       </h3>
-      {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Every document here older than 90 days was cited in the last 180 days.")}</p>}
+      {list.items.length === 0 && list.hidden.length === 0 && (
+        <p>
+          {t(
+            "Every document here older than 90 days was cited in the last 180 days.",
+          )}
+        </p>
+      )}
       <ul className="saved-list">
         {list.items.map((r) => (
           <li key={r.cite}>
             <DocLink r={r} />
-            {r.age_days !== undefined ? <span className="meta"> · {tn(r.age_days, "{n} day old", "{n} days old")}</span> : null}
+            {r.age_days !== undefined ? (
+              <span className="meta">
+                {" "}
+                · {tn(r.age_days, "{n} day old", "{n} days old")}
+              </span>
+            ) : null}
             <Retire
               space={space}
               cite={r.cite}
               name={r.title ?? r.cite}
               fetcher={fetcher}
               onDone={() => {
-                setList((l) => l && { ...l, items: l.items.filter((x) => x.cite !== r.cite) });
+                setList(
+                  (l) =>
+                    l && {
+                      ...l,
+                      items: l.items.filter((x) => x.cite !== r.cite),
+                    },
+                );
                 onRetired();
               }}
             />
@@ -953,7 +1603,11 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
       </ul>
       {list.hidden.length > 0 && (
         <p className="refused">
-          {tn(list.hidden.length, "{n} more document you can't open was never cited", "{n} more documents you can't open were never cited")}
+          {tn(
+            list.hidden.length,
+            "{n} more document you can't open was never cited",
+            "{n} more documents you can't open were never cited",
+          )}
           {list.hidden.some((h) => h.owner)
             ? `; ${t("ask their owners: {owners}", { owners: Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ") })}`
             : ""}
@@ -961,7 +1615,12 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
         </p>
       )}
       {list.unused_terms && list.unused_terms.length > 0 && (
-        <p>{t("No question here used these glossary terms in 180 days: {terms}. Propose removing them if nobody needs them.", { terms: list.unused_terms.join(", ") })}</p>
+        <p>
+          {t(
+            "No question here used these glossary terms in 180 days: {terms}. Propose removing them if nobody needs them.",
+            { terms: list.unused_terms.join(", ") },
+          )}
+        </p>
       )}
     </section>
   );
@@ -969,7 +1628,10 @@ function NeverCited({ space, fetcher, onRetired }: { space: string; fetcher?: Fe
 
 // Coming due (SB-3105): soonest first, each with Reviewed, still right; loaded on request.
 function ComingDue({ space, fetcher }: { space: string; fetcher?: Fetch }) {
-  const [list, setList] = useState<{ items: DueItem[]; hidden: { owner?: string }[] }>();
+  const [list, setList] = useState<{
+    items: DueItem[];
+    hidden: { owner?: string }[];
+  }>();
   const [error, setError] = useState("");
   const load = () =>
     void dueList(space, fetcher)
@@ -993,22 +1655,43 @@ function ComingDue({ space, fetcher }: { space: string; fetcher?: Fetch }) {
         {t("Coming due")}
         <Count n={list.items.length + list.hidden.length} />
       </h3>
-      {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Nothing answers rely on falls due in the next 14 days.")}</p>}
+      {list.items.length === 0 && list.hidden.length === 0 && (
+        <p>{t("Nothing answers rely on falls due in the next 14 days.")}</p>
+      )}
       <ul className="saved-list">
         {list.items.map((r) => (
           <li key={r.cite}>
             <DocLink r={r} />
-            <span className="meta"> · {tn(r.due_in_days, "due in {n} day", "due in {n} days")}</span>
+            <span className="meta">
+              {" "}
+              · {tn(r.due_in_days, "due in {n} day", "due in {n} days")}
+            </span>
             <MarkReviewed
               space={space}
               item={{ ...r, cited: 0, flagged: 0 }}
               fetcher={fetcher}
-              onDone={() => setList((l) => l && { ...l, items: l.items.filter((x) => x.cite !== r.cite) })}
+              onDone={() =>
+                setList(
+                  (l) =>
+                    l && {
+                      ...l,
+                      items: l.items.filter((x) => x.cite !== r.cite),
+                    },
+                )
+              }
             />
           </li>
         ))}
       </ul>
-      {list.hidden.length > 0 && <p className="refused">{tn(list.hidden.length, "{n} more document you can't open falls due", "{n} more documents you can't open fall due")}</p>}
+      {list.hidden.length > 0 && (
+        <p className="refused">
+          {tn(
+            list.hidden.length,
+            "{n} more document you can't open falls due",
+            "{n} more documents you can't open fall due",
+          )}
+        </p>
+      )}
     </section>
   );
 }
@@ -1020,7 +1703,13 @@ const startWhy: Record<string, string> = {
 };
 
 // Start here items gone stale (SB-2907): each with why; ones the steward can't open counted.
-function StartHereStale({ items, hidden }: { items: StartItem[]; hidden: number }) {
+function StartHereStale({
+  items,
+  hidden,
+}: {
+  items: StartItem[];
+  hidden: number;
+}) {
   if (items.length === 0 && hidden === 0) return null;
   return (
     <section aria-label={t("Start here needs a look")}>
@@ -1032,25 +1721,48 @@ function StartHereStale({ items, hidden }: { items: StartItem[]; hidden: number 
             <span className="meta">
               {" "}
               · {it.why.map((w) => t(startWhy[w] ?? w)).join(", ")}
-              {it.why.includes("unreadable") ? ` (${t("{n} of {m} members", { n: it.members_without, m: it.members })})` : ""}
+              {it.why.includes("unreadable")
+                ? ` (${t("{n} of {m} members", { n: it.members_without, m: it.members })})`
+                : ""}
             </span>
           </li>
         ))}
       </ul>
-      {hidden > 0 && <p className="refused">{tn(hidden, "{n} more item you can't open needs a look", "{n} more items you can't open need a look")}</p>}
+      {hidden > 0 && (
+        <p className="refused">
+          {tn(
+            hidden,
+            "{n} more item you can't open needs a look",
+            "{n} more items you can't open need a look",
+          )}
+        </p>
+      )}
     </section>
   );
 }
 
 // Questions that found nothing (SB-3101): counts and the space's own terms, never a question.
-function FoundNothingLine({ f, space, fetcher }: { f: FoundNothing; space: string; fetcher?: Fetch }) {
+function FoundNothingLine({
+  f,
+  space,
+  fetcher,
+}: {
+  f: FoundNothing;
+  space: string;
+  fetcher?: Fetch;
+}) {
   const [status, setStatus] = useState<string>();
   if (f.this_week === 0 && f.last_week === 0) return null;
   const drafts = f.terms.filter((term) => (f.counts?.[term] ?? 0) > 0);
   async function draft(term: string) {
     try {
       await draftNote(space, term, f.counts?.[term] ?? 1, fetcher);
-      setStatus(t("Added a draft for {term} to the space's questions. Write the text as the reply, then publish it as a note.", { term }));
+      setStatus(
+        t(
+          "Added a draft for {term} to the space's questions. Write the text as the reply, then publish it as a note.",
+          { term },
+        ),
+      );
     } catch (e) {
       setStatus(errMsg(e, t("The draft couldn't be added.")));
     }
@@ -1058,15 +1770,24 @@ function FoundNothingLine({ f, space, fetcher }: { f: FoundNothing; space: strin
   return (
     <>
       <p className="meta">
-        {t("Questions that found nothing: {now} this week, {last} the week before.", { now: f.this_week, last: f.last_week })}
-        {f.terms.length > 0 ? ` ${t("Glossary terms they used: {terms}.", { terms: f.terms.join(", ") })}` : ""}
+        {t(
+          "Questions that found nothing: {now} this week, {last} the week before.",
+          { now: f.this_week, last: f.last_week },
+        )}
+        {f.terms.length > 0
+          ? ` ${t("Glossary terms they used: {terms}.", { terms: f.terms.join(", ") })}`
+          : ""}
       </p>
       {drafts.length > 0 && (
         <ul className="saved-list">
           {drafts.map((term) => (
             <li key={term}>
               {term}{" "}
-              <button type="button" aria-label={t("Draft a note for {term}", { term })} onClick={() => draft(term)}>
+              <button
+                type="button"
+                aria-label={t("Draft a note for {term}", { term })}
+                onClick={() => draft(term)}
+              >
                 {t("Draft a note")}
               </button>
             </li>
@@ -1081,7 +1802,15 @@ function FoundNothingLine({ f, space, fetcher }: { f: FoundNothing; space: strin
 // The space's feedback this month and last, and what unhelpful answers cited (SB-3104).
 function DocName({ d }: { d: SearchResult }) {
   return d.url ? (
-    <a href={d.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: d.title ?? d.cite, cite: d.cite })}>
+    <a
+      href={d.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={t("{name}, source {cite}, opens in a new tab", {
+        name: d.title ?? d.cite,
+        cite: d.cite,
+      })}
+    >
       {d.title ?? d.cite}
     </a>
   ) : (
@@ -1114,13 +1843,23 @@ function ReportedAnswer({ r }: { r: NonNullable<QueueQuestion["report"]> }) {
           ))}
         </p>
       )}
-      {r.hidden > 0 && <p className="meta">{tn(r.hidden, "{n} more you can't open", "{n} more you can't open")}</p>}
+      {r.hidden > 0 && (
+        <p className="meta">
+          {tn(r.hidden, "{n} more you can't open", "{n} more you can't open")}
+        </p>
+      )}
     </div>
   );
 }
 
 // Pairs of documents that disagreed in answers this month (SB-3605).
-function ConflictsLine({ items, hidden }: { items: Conflict[]; hidden: number }) {
+function ConflictsLine({
+  items,
+  hidden,
+}: {
+  items: Conflict[];
+  hidden: number;
+}) {
   if (items.length === 0 && hidden === 0) return null;
   return (
     <section aria-label={t("Conflicts")}>
@@ -1129,29 +1868,53 @@ function ConflictsLine({ items, hidden }: { items: Conflict[]; hidden: number })
         {items.map((c) => (
           <li key={c.a.cite + " " + c.b.cite}>
             {c.answers === 1
-              ? tj("{a} and {b} disagreed in {n} answer", { a: <DocName d={c.a} />, b: <DocName d={c.b} /> }, { n: c.answers })
-              : tj("{a} and {b} disagreed in {n} answers", { a: <DocName d={c.a} />, b: <DocName d={c.b} /> }, { n: c.answers })}
+              ? tj(
+                  "{a} and {b} disagreed in {n} answer",
+                  { a: <DocName d={c.a} />, b: <DocName d={c.b} /> },
+                  { n: c.answers },
+                )
+              : tj(
+                  "{a} and {b} disagreed in {n} answers",
+                  { a: <DocName d={c.a} />, b: <DocName d={c.b} /> },
+                  { n: c.answers },
+                )}
           </li>
         ))}
       </ul>
-      {hidden > 0 && <p className="meta">{tn(hidden, "{n} more pair you can't open", "{n} more pairs you can't open")}</p>}
+      {hidden > 0 && (
+        <p className="meta">
+          {tn(
+            hidden,
+            "{n} more pair you can't open",
+            "{n} more pairs you can't open",
+          )}
+        </p>
+      )}
     </section>
   );
 }
 
 function FeedbackLine({ f }: { f: StewardFeedback }) {
-  const any = f.this_month.helpful + f.this_month.not_helpful + f.last_month.helpful + f.last_month.not_helpful > 0;
+  const any =
+    f.this_month.helpful +
+      f.this_month.not_helpful +
+      f.last_month.helpful +
+      f.last_month.not_helpful >
+    0;
   if (!any) return null;
   return (
     <section aria-label={t("Feedback")}>
       <h3>{t("Feedback")}</h3>
       <p className="meta">
-        {t("This month: {up} helpful, {down} not helpful. Last month: {upBefore} helpful, {downBefore} not helpful.", {
-          up: f.this_month.helpful,
-          down: f.this_month.not_helpful,
-          upBefore: f.last_month.helpful,
-          downBefore: f.last_month.not_helpful,
-        })}
+        {t(
+          "This month: {up} helpful, {down} not helpful. Last month: {upBefore} helpful, {downBefore} not helpful.",
+          {
+            up: f.this_month.helpful,
+            down: f.this_month.not_helpful,
+            upBefore: f.last_month.helpful,
+            downBefore: f.last_month.not_helpful,
+          },
+        )}
       </p>
       {(f.documents.length > 0 || f.documents_hidden > 0) && (
         <>
@@ -1160,7 +1923,15 @@ function FeedbackLine({ f }: { f: StewardFeedback }) {
             {f.documents.map((d) => (
               <li key={d.cite}>
                 {d.url ? (
-                  <a href={d.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: d.title ?? d.cite, cite: d.cite })}>
+                  <a
+                    href={d.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t("{name}, source {cite}, opens in a new tab", {
+                      name: d.title ?? d.cite,
+                      cite: d.cite,
+                    })}
+                  >
                     {d.title ?? d.cite}
                   </a>
                 ) : (
@@ -1170,7 +1941,13 @@ function FeedbackLine({ f }: { f: StewardFeedback }) {
             ))}
           </ul>
           {f.documents_hidden > 0 && (
-            <p className="refused">{tn(f.documents_hidden, "and {n} document you can't open", "and {n} documents you can't open")}</p>
+            <p className="refused">
+              {tn(
+                f.documents_hidden,
+                "and {n} document you can't open",
+                "and {n} documents you can't open",
+              )}
+            </p>
           )}
         </>
       )}
@@ -1179,7 +1956,17 @@ function FeedbackLine({ f }: { f: StewardFeedback }) {
 }
 
 // Several at once (SB-3103): each document is decided on its own; failures are listed.
-function BulkActions({ space, cites, onDone, fetcher }: { space: string; cites: string[]; onDone: (ok: string[]) => void; fetcher?: Fetch }) {
+function BulkActions({
+  space,
+  cites,
+  onDone,
+  fetcher,
+}: {
+  space: string;
+  cites: string[];
+  onDone: (ok: string[]) => void;
+  fetcher?: Fetch;
+}) {
   const [reason, setReason] = useState("");
   const [failed, setFailed] = useState<BulkItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -1192,7 +1979,15 @@ function BulkActions({ space, cites, onDone, fetcher }: { space: string; cites: 
       setFailed(items.filter((x) => !x.ok));
       onDone(items.filter((x) => x.ok).map((x) => x.cite));
     } catch (e) {
-      setFailed(cites.map((c) => ({ cite: c, error: { code: "EUNAVAIL", message: errMsg(e, t("That didn't work. Try again.")) } })));
+      setFailed(
+        cites.map((c) => ({
+          cite: c,
+          error: {
+            code: "EUNAVAIL",
+            message: errMsg(e, t("That didn't work. Try again.")),
+          },
+        })),
+      );
     } finally {
       setBusy(false);
     }
@@ -1202,12 +1997,29 @@ function BulkActions({ space, cites, onDone, fetcher }: { space: string; cites: 
       {cites.length > 0 && (
         <>
           <span>{tn(cites.length, "{n} selected", "{n} selected")}</span>{" "}
-          <button type="button" disabled={busy} onClick={() => void run(() => markReviewedMany(space, cites, fetcher))}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              void run(() => markReviewedMany(space, cites, fetcher))
+            }
+          >
             {t("Mark reviewed")}
           </button>{" "}
           <label htmlFor={id}>{t("Reason")}</label>{" "}
-          <input id={id} value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />{" "}
-          <button type="button" disabled={busy || reason.trim() === ""} onClick={() => void run(() => retireMany(space, cites, reason, fetcher))}>
+          <input
+            id={id}
+            value={reason}
+            maxLength={200}
+            onChange={(e) => setReason(e.target.value)}
+          />{" "}
+          <button
+            type="button"
+            disabled={busy || reason.trim() === ""}
+            onClick={() =>
+              void run(() => retireMany(space, cites, reason, fetcher))
+            }
+          >
             {t("Retire")}
           </button>
         </>
@@ -1215,7 +2027,12 @@ function BulkActions({ space, cites, onDone, fetcher }: { space: string; cites: 
       {failed.length > 0 && (
         <ul className="refused">
           {failed.map((x) => (
-            <li key={x.cite}>{t("{cite}: {message}", { cite: x.cite, message: x.error?.message ?? "" })}</li>
+            <li key={x.cite}>
+              {t("{cite}: {message}", {
+                cite: x.cite,
+                message: x.error?.message ?? "",
+              })}
+            </li>
           ))}
         </ul>
       )}
@@ -1225,16 +2042,20 @@ function BulkActions({ space, cites, onDone, fetcher }: { space: string; cites: 
 
 // The share of the month's cited answers resting mostly on stale cites (SB-2807).
 function FreshnessLine({ f }: { f: Freshness }) {
-  const pct = (c: { answers: number; stale: number }) => (c.answers > 0 ? Math.round((100 * c.stale) / c.answers) : 0);
+  const pct = (c: { answers: number; stale: number }) =>
+    c.answers > 0 ? Math.round((100 * c.stale) / c.answers) : 0;
   if (f.this_month.answers === 0 && f.last_month.answers === 0) return null;
   return (
     <p className="meta">
-      {t("Answers resting on stale sources: {now}% this month ({stale} of {answers}), {last}% last month.", {
-        now: pct(f.this_month),
-        stale: f.this_month.stale,
-        answers: f.this_month.answers,
-        last: pct(f.last_month),
-      })}
+      {t(
+        "Answers resting on stale sources: {now}% this month ({stale} of {answers}), {last}% last month.",
+        {
+          now: pct(f.this_month),
+          stale: f.this_month.stale,
+          answers: f.this_month.answers,
+          last: pct(f.last_month),
+        },
+      )}
     </p>
   );
 }
@@ -1263,7 +2084,14 @@ export function TeamsTable({ teams }: { teams: TeamRollup[] }) {
               <td>{x.open_questions}</td>
               <td>{x.overdue}</td>
               <td>{x.waiting ?? 0}</td>
-              <td>{x.fewer_than_5 || x.asks === undefined ? t("fewer than 5") : t("{asks}, {none} found nothing", { asks: x.asks, none: x.found_nothing ?? 0 })}</td>
+              <td>
+                {x.fewer_than_5 || x.asks === undefined
+                  ? t("fewer than 5")
+                  : t("{asks}, {none} found nothing", {
+                      asks: x.asks,
+                      none: x.found_nothing ?? 0,
+                    })}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -1274,15 +2102,23 @@ export function TeamsTable({ teams }: { teams: TeamRollup[] }) {
 
 // The space's own usage this week (SB-3506): counts and shares, or too few to say.
 function UsageLine({ u }: { u: SpaceUsage }) {
-  if (u.fewer_than_5 || u.asks === undefined) return <p className="meta">{t("Fewer than 5 questions were asked here in the last 7 days.")}</p>;
+  if (u.fewer_than_5 || u.asks === undefined)
+    return (
+      <p className="meta">
+        {t("Fewer than 5 questions were asked here in the last 7 days.")}
+      </p>
+    );
   const pct = (x?: number) => Math.round(100 * (x ?? 0));
   return (
     <p className="meta">
-      {t("Last 7 days: {asks} questions, {none}% found nothing, {up}% rated helpful.", {
-        asks: u.asks,
-        none: pct(u.found_nothing_share),
-        up: pct(u.helpful_share),
-      })}
+      {t(
+        "Last 7 days: {asks} questions, {none}% found nothing, {up}% rated helpful.",
+        {
+          asks: u.asks,
+          none: pct(u.found_nothing_share),
+          up: pct(u.helpful_share),
+        },
+      )}
     </p>
   );
 }
@@ -1291,7 +2127,15 @@ function UsageLine({ u }: { u: SpaceUsage }) {
 // marked as wrong citations, each one the steward can open; the rest counted with an owner.
 // A note whose readers are wider than its space now (SB-2004): the count, never who, and a
 // republish to the members who can still read it, confirmed like any note.
-function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fetcher?: Fetch }) {
+function Narrow({
+  space,
+  item,
+  fetcher,
+}: {
+  space: string;
+  item: ReviewItem;
+  fetcher?: Fetch;
+}) {
   const [preview, setPreview] = useState<NoteResult>();
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string>();
@@ -1314,18 +2158,37 @@ function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fet
   return (
     <div className="narrow">
       <p className="refused">
-        {tn(n, "{n} of this note's readers is no longer a member of the space.", "{n} of this note's readers are no longer a member of the space.")}
+        {tn(
+          n,
+          "{n} of this note's readers is no longer a member of the space.",
+          "{n} of this note's readers are no longer a member of the space.",
+        )}
       </p>
       {done ? (
-        <p role="status">{t("Republished. It leaves this list once the share is next read.")}</p>
+        <p role="status">
+          {t("Republished. It leaves this list once the share is next read.")}
+        </p>
       ) : preview ? (
         <p>
           {preview.narrower > 0
-            ? tn(preview.readers, "Republish to {n} reader; {narrower} of its sources some of them can't open.", "Republish to {n} readers; {narrower} of its sources some of them can't open.", {
-                narrower: preview.narrower,
-              })
-            : tn(preview.readers, "Republish to {n} reader.", "Republish to {n} readers.")}{" "}
-          <button type="button" disabled={busy} onClick={() => step(preview.narrower)}>
+            ? tn(
+                preview.readers,
+                "Republish to {n} reader; {narrower} of its sources some of them can't open.",
+                "Republish to {n} readers; {narrower} of its sources some of them can't open.",
+                {
+                  narrower: preview.narrower,
+                },
+              )
+            : tn(
+                preview.readers,
+                "Republish to {n} reader.",
+                "Republish to {n} readers.",
+              )}{" "}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => step(preview.narrower)}
+          >
             {t("Confirm republish")}
           </button>
         </p>
@@ -1346,12 +2209,30 @@ function Narrow({ space, item, fetcher }: { space: string; item: ReviewItem; fet
 // Add to evals (SB-2204): the steward names the document the reported answer should cite.
 // Draft a fix (SB-4206): the fix-draft agent's suggested edit goes to the document's owner;
 // nothing is written to the source.
-function DraftFix({ space, cite, fetcher }: { space: string; cite: string; fetcher?: Fetch }) {
+function DraftFix({
+  space,
+  cite,
+  fetcher,
+}: {
+  space: string;
+  cite: string;
+  fetcher?: Fetch;
+}) {
   const [done, setDone] = useState("");
   const draft = async () => {
     try {
       const r = await draftFix(space, cite.split("@")[0]!, fetcher);
-      setDone(r.told ? t("Sent {n} suggested changes to {owner}.", { n: r.changes, owner: r.owner }) : t("Kept {n} suggested changes for {owner}.", { n: r.changes, owner: r.owner }));
+      setDone(
+        r.told
+          ? t("Sent {n} suggested changes to {owner}.", {
+              n: r.changes,
+              owner: r.owner,
+            })
+          : t("Kept {n} suggested changes for {owner}.", {
+              n: r.changes,
+              owner: r.owner,
+            }),
+      );
     } catch (e) {
       setDone(errMsg(e, t("No fix could be drafted.")));
     }
@@ -1366,35 +2247,81 @@ function DraftFix({ space, cite, fetcher }: { space: string; cite: string; fetch
 
 // A decisions draft's action items (SB-4203): the steward edits and confirms them, and only
 // then is each owner told.
-function ConfirmActions({ space, draft, items: first, fetcher }: { space: string; draft: string; items: DraftAction[]; fetcher?: Fetch }) {
+function ConfirmActions({
+  space,
+  draft,
+  items: first,
+  fetcher,
+}: {
+  space: string;
+  draft: string;
+  items: DraftAction[];
+  fetcher?: Fetch;
+}) {
   const base = useId();
   const [items, setItems] = useState<DraftAction[]>(first);
   const [done, setDone] = useState("");
   const [error, setError] = useState("");
-  const edit = (i: number, f: Partial<DraftAction>) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, ...f } : x)));
+  const edit = (i: number, f: Partial<DraftAction>) =>
+    setItems((xs) => xs.map((x, j) => (j === i ? { ...x, ...f } : x)));
   const confirm = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     try {
-      const as = await confirmActions(space, draft, items.filter((x) => x.text.trim() !== ""), fetcher);
+      const as = await confirmActions(
+        space,
+        draft,
+        items.filter((x) => x.text.trim() !== ""),
+        fetcher,
+      );
       const told = as.filter((a) => a.email).length;
-      setDone(tn(as.length, "Confirmed {n} action item. {told} of them went to an owner we know.", "Confirmed {n} action items. {told} of them went to an owner we know.", { told }));
+      setDone(
+        tn(
+          as.length,
+          "Confirmed {n} action item. {told} of them went to an owner we know.",
+          "Confirmed {n} action items. {told} of them went to an owner we know.",
+          { told },
+        ),
+      );
     } catch (err) {
       setError(errMsg(err, t("The action items couldn't be confirmed.")));
     }
   };
   if (done) return <p role="status">{done}</p>;
   return (
-    <form onSubmit={confirm} className="confirm-actions" aria-label={t("Action items")}>
-      <p className="meta">{t("Action items. No one is told until you confirm them.")}</p>
+    <form
+      onSubmit={confirm}
+      className="confirm-actions"
+      aria-label={t("Action items")}
+    >
+      <p className="meta">
+        {t("Action items. No one is told until you confirm them.")}
+      </p>
       {items.map((it, i) => (
         <div key={i}>
-          <label htmlFor={`${base}-t${i}`}>{t("Action item {n}", { n: i + 1 })}</label>
-          <input id={`${base}-t${i}`} value={it.text} maxLength={300} onChange={(e) => edit(i, { text: e.target.value })} />{" "}
+          <label htmlFor={`${base}-t${i}`}>
+            {t("Action item {n}", { n: i + 1 })}
+          </label>
+          <input
+            id={`${base}-t${i}`}
+            value={it.text}
+            maxLength={300}
+            onChange={(e) => edit(i, { text: e.target.value })}
+          />{" "}
           <label htmlFor={`${base}-o${i}`}>{t("Owner")}</label>
-          <input id={`${base}-o${i}`} value={it.owner} maxLength={120} onChange={(e) => edit(i, { owner: e.target.value })} />{" "}
+          <input
+            id={`${base}-o${i}`}
+            value={it.owner}
+            maxLength={120}
+            onChange={(e) => edit(i, { owner: e.target.value })}
+          />{" "}
           <label htmlFor={`${base}-d${i}`}>{t("Due")}</label>
-          <input id={`${base}-d${i}`} type="date" value={it.due ?? ""} onChange={(e) => edit(i, { due: e.target.value || undefined })} />
+          <input
+            id={`${base}-d${i}`}
+            type="date"
+            value={it.due ?? ""}
+            onChange={(e) => edit(i, { due: e.target.value || undefined })}
+          />
         </div>
       ))}
       <button type="submit" disabled={items.every((x) => x.text.trim() === "")}>
@@ -1405,7 +2332,15 @@ function ConfirmActions({ space, draft, items: first, fetcher }: { space: string
   );
 }
 
-function AddToEvals({ space, item, fetcher }: { space: string; item: ReviewItem; fetcher?: Fetch }) {
+function AddToEvals({
+  space,
+  item,
+  fetcher,
+}: {
+  space: string;
+  item: ReviewItem;
+  fetcher?: Fetch;
+}) {
   const id = useId();
   const [expect, setExpect] = useState("");
   const [done, setDone] = useState("");
@@ -1416,7 +2351,12 @@ function AddToEvals({ space, item, fetcher }: { space: string; item: ReviewItem;
     setError("");
     try {
       const c = await addEvalCase(space, report, expect.trim(), fetcher);
-      setDone(t("Added as eval case {id}: every release now has to cite it for this question.", { id: c.id }));
+      setDone(
+        t(
+          "Added as eval case {id}: every release now has to cite it for this question.",
+          { id: c.id },
+        ),
+      );
     } catch (err) {
       setError(errMsg(err, t("The case couldn't be added.")));
     }
@@ -1424,8 +2364,15 @@ function AddToEvals({ space, item, fetcher }: { space: string; item: ReviewItem;
   if (done) return <p role="status">{done}</p>;
   return (
     <form onSubmit={add} className="add-eval">
-      <label htmlFor={id}>{t("Should have cited ({form})", { form: "KIND:ID" })}</label>
-      <input id={id} value={expect} onChange={(e) => setExpect(e.target.value)} placeholder="docs:Ops/right.md" />
+      <label htmlFor={id}>
+        {t("Should have cited ({form})", { form: "KIND:ID" })}
+      </label>
+      <input
+        id={id}
+        value={expect}
+        onChange={(e) => setExpect(e.target.value)}
+        placeholder="docs:Ops/right.md"
+      />
       <button type="submit" disabled={expect.trim() === ""}>
         {t("Add to evals")}
       </button>
@@ -1441,20 +2388,63 @@ export function csvCell(v: string | number | boolean): string {
   return `"${s.replace(/"/g, '""')}"`;
 }
 
-
 // reviewCSV is the review list exactly as shown (SB-2505): a row per document the steward
 // can open, and those they can't only as a count with their owners, never a title.
 export function reviewCSV(list: Pick<ReviewData, "items" | "hidden">): string {
-  const rows: (string | number | boolean)[][] = [["title", "cite", "cited_30_days", "age_days", "marked_wrong", "reported_outdated", "owner_gone", "owners"]];
-  for (const r of list.items) rows.push([r.title ?? r.cite, r.cite, r.cited, r.age_days ?? "", r.flagged, r.outdated ?? 0, r.owner_gone === true, ""]);
+  const rows: (string | number | boolean)[][] = [
+    [
+      "title",
+      "cite",
+      "cited_30_days",
+      "age_days",
+      "marked_wrong",
+      "reported_outdated",
+      "owner_gone",
+      "owners",
+    ],
+  ];
+  for (const r of list.items)
+    rows.push([
+      r.title ?? r.cite,
+      r.cite,
+      r.cited,
+      r.age_days ?? "",
+      r.flagged,
+      r.outdated ?? 0,
+      r.owner_gone === true,
+      "",
+    ]);
   if (list.hidden.length > 0) {
-    const owners = Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join("; ");
-    rows.push([tn(list.hidden.length, "{n} more document you can't open", "{n} more documents you can't open"), "", "", "", "", "", "", owners]);
+    const owners = Array.from(
+      new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : []))),
+    ).join("; ");
+    rows.push([
+      tn(
+        list.hidden.length,
+        "{n} more document you can't open",
+        "{n} more documents you can't open",
+      ),
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      owners,
+    ]);
   }
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 
-export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; fetcher?: Fetch; onSuggestTerm?: (term: DefinedTerm) => void }) {
+export function ReviewList({
+  space,
+  fetcher,
+  onSuggestTerm,
+}: {
+  space: string;
+  fetcher?: Fetch;
+  onSuggestTerm?: (term: DefinedTerm) => void;
+}) {
   const [list, setList] = useState<ReviewData>({ items: [], hidden: [] });
   const [bump, setBump] = useState(0);
   const [picked, setPicked] = useState<string[]>([]);
@@ -1470,7 +2460,9 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
     return () => window.clearInterval(timer);
   }, [space, fetcher, reload]);
   const download = () => {
-    const url = URL.createObjectURL(new Blob([reviewCSV(list)], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(
+      new Blob([reviewCSV(list)], { type: "text/csv;charset=utf-8" }),
+    );
     const a = document.createElement("a");
     a.href = url;
     a.download = `review-${space}.csv`;
@@ -1492,18 +2484,33 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
       {list.teams && list.teams.length > 0 && <TeamsTable teams={list.teams} />}
       {list.freshness && <FreshnessLine f={list.freshness} />}
       <DefinedTerms terms={list.terms ?? []} onSuggest={onSuggestTerm} />
-      {list.found_nothing && <FoundNothingLine f={list.found_nothing} space={space} fetcher={fetcher} />}
+      {list.found_nothing && (
+        <FoundNothingLine
+          f={list.found_nothing}
+          space={space}
+          fetcher={fetcher}
+        />
+      )}
       <BulkActions
         space={space}
         cites={picked}
         fetcher={fetcher}
         onDone={(ok) => {
-          setList((l) => ({ ...l, items: l.items.filter((x) => !ok.includes(x.cite)) }));
+          setList((l) => ({
+            ...l,
+            items: l.items.filter((x) => !ok.includes(x.cite)),
+          }));
           setPicked((p) => p.filter((c) => !ok.includes(c)));
           setBump((b) => b + 1);
         }}
       />
-      {list.items.length === 0 && list.hidden.length === 0 && <p>{t("Nothing to review: no relied-on document here is stale or marked wrong.")}</p>}
+      {list.items.length === 0 && list.hidden.length === 0 && (
+        <p>
+          {t(
+            "Nothing to review: no relied-on document here is stale or marked wrong.",
+          )}
+        </p>
+      )}
       {list.items.length > 0 && (
         <ul className="saved-list">
           {list.items.map((r) => (
@@ -1513,11 +2520,25 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
                   type="checkbox"
                   aria-label={t("Select {name}", { name: r.title ?? r.cite })}
                   checked={picked.includes(r.cite)}
-                  onChange={(e) => setPicked((p) => (e.target.checked ? [...p, r.cite] : p.filter((c) => c !== r.cite)))}
+                  onChange={(e) =>
+                    setPicked((p) =>
+                      e.target.checked
+                        ? [...p, r.cite]
+                        : p.filter((c) => c !== r.cite),
+                    )
+                  }
                 />
               )}{" "}
               {r.url ? (
-                <a href={r.url} target="_blank" rel="noopener noreferrer" aria-label={t("{name}, source {cite}, opens in a new tab", { name: r.title ?? r.cite, cite: r.cite })}>
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("{name}, source {cite}, opens in a new tab", {
+                    name: r.title ?? r.cite,
+                    cite: r.cite,
+                  })}
+                >
                   {r.title ?? r.cite}
                 </a>
               ) : (
@@ -1525,13 +2546,30 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
               )}
               <span className="meta">
                 {" "}
-                · {tn(r.cited, "cited {n} time in 30 days", "cited {n} times in 30 days")}
-                {r.age_days !== undefined ? ` · ${tn(r.age_days, "{n} day old", "{n} days old")}` : ""}
-                {r.flagged > 0 ? ` · ${tn(r.flagged, "marked wrong {n} time", "marked wrong {n} times")}` : ""}
-                {r.outdated ? ` · ${tn(r.outdated, "reported out of date {n} time", "reported out of date {n} times")}` : ""}
-                {r.unhelpful ? ` · ${tn(r.unhelpful, "rated unhelpful {n} time since its review", "rated unhelpful {n} times since its review")}` : ""}
-                {r.owner_gone ? ` · ${t("owner gone: find it a new owner")}` : ""}
-                {r.sources_moved ? ` · ${tn(r.sources_moved, "{n} of its sources changed or is gone", "{n} of its sources changed or are gone")}` : ""}
+                ·{" "}
+                {tn(
+                  r.cited,
+                  "cited {n} time in 30 days",
+                  "cited {n} times in 30 days",
+                )}
+                {r.age_days !== undefined
+                  ? ` · ${tn(r.age_days, "{n} day old", "{n} days old")}`
+                  : ""}
+                {r.flagged > 0
+                  ? ` · ${tn(r.flagged, "marked wrong {n} time", "marked wrong {n} times")}`
+                  : ""}
+                {r.outdated
+                  ? ` · ${tn(r.outdated, "reported out of date {n} time", "reported out of date {n} times")}`
+                  : ""}
+                {r.unhelpful
+                  ? ` · ${tn(r.unhelpful, "rated unhelpful {n} time since its review", "rated unhelpful {n} times since its review")}`
+                  : ""}
+                {r.owner_gone
+                  ? ` · ${t("owner gone: find it a new owner")}`
+                  : ""}
+                {r.sources_moved
+                  ? ` · ${tn(r.sources_moved, "{n} of its sources changed or is gone", "{n} of its sources changed or are gone")}`
+                  : ""}
               </span>
               {r.copies && r.copies.length > 0 && (
                 <span className="meta">
@@ -1541,7 +2579,15 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
                     <span key={c.cite}>
                       {i > 0 ? ", " : ""}
                       {c.url ? (
-                        <a href={c.url} target="_blank" rel="noopener noreferrer" aria-label={t("Copy: {name}, source {cite}, opens in a new tab", { name: c.title ?? c.cite, cite: c.cite })}>
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={t(
+                            "Copy: {name}, source {cite}, opens in a new tab",
+                            { name: c.title ?? c.cite, cite: c.cite },
+                          )}
+                        >
                           {c.title ?? c.cite}
                         </a>
                       ) : (
@@ -1551,22 +2597,61 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
                   ))}
                 </span>
               )}
-              {r.owner_gone && <Caretaker space={space} item={r} fetcher={fetcher} onDone={() => setReload((n) => n + 1)} />}
-              {r.wider !== undefined && r.wider > 0 && r.question && <Narrow space={space} item={r} fetcher={fetcher} />}
-              {!r.owner_gone && !(r.wider !== undefined && r.wider > 0) && !(r.copies && r.copies.length > 0) && (
-                <MarkReviewed space={space} item={r} fetcher={fetcher} onDone={() => setList((l) => ({ ...l, items: l.items.filter((x) => x.cite !== r.cite) }))} />
+              {r.owner_gone && (
+                <Caretaker
+                  space={space}
+                  item={r}
+                  fetcher={fetcher}
+                  onDone={() => setReload((n) => n + 1)}
+                />
               )}
-              {!r.question && <Retire space={space} cite={r.cite} name={r.title ?? r.cite} fetcher={fetcher} onDone={() => retired(r.cite)} />}
-              {!r.question && <DraftFix space={space} cite={r.cite} fetcher={fetcher} />}
-              {r.reports && r.reports.length > 0 && <AddToEvals space={space} item={r} fetcher={fetcher} />}
+              {r.wider !== undefined && r.wider > 0 && r.question && (
+                <Narrow space={space} item={r} fetcher={fetcher} />
+              )}
+              {!r.owner_gone &&
+                !(r.wider !== undefined && r.wider > 0) &&
+                !(r.copies && r.copies.length > 0) && (
+                  <MarkReviewed
+                    space={space}
+                    item={r}
+                    fetcher={fetcher}
+                    onDone={() =>
+                      setList((l) => ({
+                        ...l,
+                        items: l.items.filter((x) => x.cite !== r.cite),
+                      }))
+                    }
+                  />
+                )}
+              {!r.question && (
+                <Retire
+                  space={space}
+                  cite={r.cite}
+                  name={r.title ?? r.cite}
+                  fetcher={fetcher}
+                  onDone={() => retired(r.cite)}
+                />
+              )}
+              {!r.question && (
+                <DraftFix space={space} cite={r.cite} fetcher={fetcher} />
+              )}
+              {r.reports && r.reports.length > 0 && (
+                <AddToEvals space={space} item={r} fetcher={fetcher} />
+              )}
             </li>
           ))}
         </ul>
       )}
       {list.hidden.length > 0 && (
         <p className="refused">
-          {tn(list.hidden.length, "{n} more document you can't open needs review", "{n} more documents you can't open need review")}
-          {list.hidden.some((h) => h.owner_gone) ? `, ${t("{n} of them with no owner", { n: list.hidden.filter((h) => h.owner_gone).length })}` : ""}
+          {tn(
+            list.hidden.length,
+            "{n} more document you can't open needs review",
+            "{n} more documents you can't open need review",
+          )}
+          {list.hidden.some((h) => h.owner_gone)
+            ? `, ${t("{n} of them with no owner", { n: list.hidden.filter((h) => h.owner_gone).length })}`
+            : ""}
           {list.hidden.some((h) => h.owner)
             ? `; ${t("ask their owners: {owners}", { owners: Array.from(new Set(list.hidden.flatMap((h) => (h.owner ? [h.owner] : [])))).join(", ") })}`
             : ""}
@@ -1575,14 +2660,23 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
       )}
       {list.glossary_flagged && list.glossary_flagged.length > 0 && (
         <p className="refused">
-          {t("These glossary terms read like instructions to the model, so they aren't used: {terms}. Propose a plain meaning for each.", {
-            terms: list.glossary_flagged.join(", "),
-          })}
+          {t(
+            "These glossary terms read like instructions to the model, so they aren't used: {terms}. Propose a plain meaning for each.",
+            {
+              terms: list.glossary_flagged.join(", "),
+            },
+          )}
         </p>
       )}
       {list.feedback && <FeedbackLine f={list.feedback} />}
-      <ConflictsLine items={list.conflicts ?? []} hidden={list.conflicts_hidden ?? 0} />
-      <StartHereStale items={list.start_here ?? []} hidden={list.start_here_hidden ?? 0} />
+      <ConflictsLine
+        items={list.conflicts ?? []}
+        hidden={list.conflicts_hidden ?? 0}
+      />
+      <StartHereStale
+        items={list.start_here ?? []}
+        hidden={list.start_here_hidden ?? 0}
+      />
       {list.evals_to_check && list.evals_to_check.length > 0 && (
         <section aria-label={t("Eval cases to check")}>
           <h3>{t("Eval cases to check")}</h3>
@@ -1592,7 +2686,10 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
                 {c.question}
                 <span className="meta">
                   {" "}
-                  · {c.check === "gone" ? t("the document it expects is gone") : t("the document it expects has a new version")}
+                  ·{" "}
+                  {c.check === "gone"
+                    ? t("the document it expects is gone")
+                    : t("the document it expects has a new version")}
                 </span>
               </li>
             ))}
@@ -1601,7 +2698,11 @@ export function ReviewList({ space, fetcher, onSuggestTerm }: { space: string; f
       )}
       <SameNames groups={list.same_name ?? []} />
       <ComingDue space={space} fetcher={fetcher} />
-      <NeverCited space={space} fetcher={fetcher} onRetired={() => setBump((b) => b + 1)} />
+      <NeverCited
+        space={space}
+        fetcher={fetcher}
+        onRetired={() => setBump((b) => b + 1)}
+      />
       <RetiredDocs space={space} fetcher={fetcher} bump={bump} />
       {list.personal_data !== undefined && list.personal_data > 0 && (
         <p className="personal">

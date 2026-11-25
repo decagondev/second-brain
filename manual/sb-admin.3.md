@@ -36,6 +36,8 @@ POST /v1/admin/index/prune
 POST /v1/admin/sessions/revoke
 GET  /v1/admin/agents
 GET  /v1/admin/agents/value
+GET  /v1/admin/agents/NAME/record
+GET  /v1/agents/shadow                          (an agent's owners)
 GET  /v1/admin/tokens
 DELETE /v1/admin/tokens/ID
 POST /v1/admin/notifications/test
@@ -105,6 +107,8 @@ The nightly `retention` job counts the leftovers and keeps the counts, and **`GE
 
 **`GET /v1/admin/agents/value`** (SB-4701) is each agent's drafts over 12 weeks, per agent and space, published, edited, discarded, rounds of changes, hours to publish, helpful rate and cost, with each agent's spend this month against its cap (sb-agents(7), Value). An agent's owner gets the same for the agents they own at `GET /v1/agents/value`. Counts only. The admin console's **Agents** shows it under the registry. Each registry row also carries `paused`, the spaces the agent is paused in (SB-4702).
 
+**`GET /v1/admin/agents/NAME/record`** (SB-4707) is the agent's signed record, `{ "record", "sha256", "signed_at", "sig", "key" }`, with `?format=md` its Markdown (sb-agents(7), An agent's record); an agent the bundle doesn't define is `EINVAL`. The registry's **Download record** saves both. **`GET /v1/agents/shadow`** (SB-4704) is the open shadow windows of the agents the caller owns (sb-agents(7), Shadow runs).
+
 **`GET /v1/spaces/NAME/agents`** (SB-4004) is the same for a space's stewards: the rows of the agents that space can run, counted in that space only, with `listed`, the department agents its `agents` lists, and `can_list`, the ones its template could list. A listed department agent with no run there in 60 days is `"unused": true`, and `propose_off` is the `agents` list without them, for **Propose turning off**; with `retention_days` under 60 neither is shown (SB-4402). **`POST /v1/spaces/NAME/proposals/agents`** `{ "agents": ["incident-summary"] }` is a steward proposal of the space as applied with that `agents` list, checked, recorded and audited as any proposal, so an operator approves the exact manifest diff. The steward screen's **Agents** has the table and **Propose these agents**.
 
 **`GET /v1/admin/tokens`** (SB-3803) lists every live read-only API token of the tenant (sb-api(3), Read-only API tokens): `{ "items": [{ "id": "tok_…", "owner": "usr_…", "name", "created", "last_used": "YYYY-MM-DD", "expires" }] }`, oldest unused first: the ones never used, then by the day they were last used. `last_used` is the day the token was last checked against the directory on a use, which happens at most once a minute; it is left out for a token never used. Never the token, and never its hash. **`DELETE /v1/admin/tokens/ID`** `{ "reason": "…" }` revokes one at once: a `kind: access` audit row (subject `token:tok_…`, state `token_revoked`, the reason, the admin as actor) is written first, and if it can't be, nothing is revoked (`EUNAVAIL`). A missing reason, or no such live token, is `EINVAL`. The admin console's **API tokens** lists them with **Revoke**.
@@ -144,6 +148,8 @@ Roles are Cedar policies, not code: the base policy permits `admin` on the tenan
 ### Access reviews (SB-1202)
 
 **`GET /v1/spaces/NAME/reviews`** lists the space's reviews for its stewards (Cedar `review_space`; sb-spaces(7), Access reviews). **`POST /v1/spaces/NAME/reviews/ID/decide`** takes `{ "user": "usr_…", "decision": "certify" | "remove", "reason": "…" }`; a removal needs a reason, and deciding on your own access is `EPERM`. The response is the review; when the decision completes it, the response's `requests` hold the change requests, and a manifest one carries its proposal id for `…/proposals/ID/approve`.
+
+An **agent review** (SB-4705; sb-agents(7), Agent access reviews) is a review with `kind: "agents"`: each item's `user` is an agent or trigger (`case-brief`, `brief:case-brief`, `updates`, `leader_week`), with `via`, `last_use`, `unused` and `tools`, and the review carries `propose_off`; it is decided on the same route, and its removals become one manifest proposal.
 
 **`GET /v1/admin/reviews`** lists every review with `overdue` for the operator. **`GET /v1/admin/reviews/ID/evidence`** returns `{ "review": {…}, "sha256": "…" }`, the audit-ready evidence.
 

@@ -131,6 +131,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return e.auditVerify(rest[2:])
 	case "audit tail":
 		return e.auditTail(rest[2:])
+	case "agents record":
+		return e.agentsRecord(rest[2:])
 	case "audit export":
 		return e.auditExport(rest[2:])
 	case "factory handoff":

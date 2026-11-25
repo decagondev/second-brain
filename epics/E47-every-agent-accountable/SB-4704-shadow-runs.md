@@ -13,7 +13,7 @@ summary: "A changed prompt is judged by its eval suite alone before it meets rea
 | Manual | [`sb-release(7)`](../../manual/sb-release.7.md), [`sb-evals(7)`](../../manual/sb-evals.7.md) |
 | Laws | LAW-01, LAW-06 |
 | Depends on | SB-4402, SB-4701 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A changed prompt is judged by its eval suite alone before it meets real work.
 
 ## Acceptance criteria
 
-- [ ] `shadow: 7d` runs a changed agent beside the current one in the first ring for a week
-- [ ] Shadow drafts are never delivered, and are gone after the week
-- [ ] The owner sees scores, lengths and cite counts, and text only for runs whose every cite they can open
+- [x] `shadow: 7d` runs a changed agent beside the current one in the first ring for a week
+- [x] Shadow drafts are never delivered, and are gone after the week
+- [x] The owner sees scores, lengths and cite counts, and text only for runs whose every cite they can open
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Release
-- [ ] Runner
-- [ ] UI
-- [ ] Tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Release
+- [x] Runner
+- [x] UI
+- [x] Tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started. The concept is in [19-departments-shape-account.md](../../docs/19-departments-shape-account.md).
+2026-11-25: built. An agent definition may carry `shadow: { prompt, days }` (at most 7 days; `sb agents lint` rule 8 checks it). On the first ring (the `testing` channel) each draft of that agent also runs the shadow prompt as the same person, in `Stewards.shadow`, and the result is kept only as a shadow run with its own checks (claims, cited, cites, dropped) and length beside the current draft's; it is never stored as a thread, never queued and never rate-limited. `GET /v1/agents/shadow` shows an agent's owners both sides, with text only for runs whose every cite the owner can open (`opensAll`); everyone else sees nothing. The notify job's `SweepShadows` deletes a window's runs when it ends. Shadow runs and windows live in the cell's existing trace store (kinds `shadow` and `shadowwindow`), no new store. The web shows them on Questions for owners (`ShadowRuns`). TestProveItThroughARunningCell checks that the shadow never reaches the queue, only the owner sees it, and the week's end deletes it.
 
 ## Definition of done
 

@@ -277,6 +277,8 @@ type Job struct {
 	// AgentAlerts are what to tell agents' owners now (SB-4701, SB-4703), each once by
 	// its key; nil tells none.
 	AgentAlerts func(ctx context.Context, now time.Time) ([]AgentAlert, error)
+	// SweepShadows deletes the shadow runs of every window that has ended (SB-4704).
+	SweepShadows func(ctx context.Context) (int, error)
 }
 
 // The digest's limits.
@@ -306,6 +308,17 @@ type RunRecord struct {
 
 // ErrSend is a run in which some sends failed; the events are not sent again.
 var ErrSend = errors.New("notify: some messages couldn't be sent")
+
+// agentWork is the agents' alerts, after the shadow runs whose window ended are deleted:
+// a shadow run never outlives its window (SB-4704).
+func (j Job) agentWork(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.SweepShadows != nil {
+		if _, err := j.SweepShadows(ctx); err != nil {
+			return nil, nil, fmt.Errorf("notify: shadows: %w", err)
+		}
+	}
+	return j.agentAlerts(ctx, now)
+}
 
 // Run tells what happened in [last run, now).
 func (j Job) Run(ctx context.Context) (Result, error) {
@@ -380,7 +393,7 @@ func (j Job) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	out = append(out, wts...)
-	agt, agtMarks, err := j.agentAlerts(ctx, now)
+	agt, agtMarks, err := j.agentWork(ctx, now)
 	if err != nil {
 		return Result{}, err
 	}
@@ -660,11 +673,20 @@ func (j Job) reviews(ctx context.Context, now time.Time) ([]outgoing, []func() e
 			continue
 		}
 		name := strings.TrimPrefix(r.Space, "spc_")
-		notices := []struct{ part, text string }{
-			{"review-" + r.ID + "-open", fmt.Sprintf("The %s access review is open: %s, due %s", name, plural(len(r.Items), "person", "people"), due.UTC().Format(time.DateOnly))},
+		opened, what := fmt.Sprintf("The %s access review is open: %s, due %s", name, plural(len(r.Items), "person", "people"), due.UTC().Format(time.DateOnly)), "access"
+		if r.Kind == reviews.KindAgents { // SB-4705
+			unused := 0
+			for _, it := range r.Items {
+				if it.Unused {
+					unused++
+				}
+			}
+			opened = fmt.Sprintf("The %s agent review is open: %s, %d unused, due %s", name, plural(len(r.Items), "agent or trigger", "agents and triggers"), unused, due.UTC().Format(time.DateOnly))
+			what = "agent"
 		}
+		notices := []struct{ part, text string }{{"review-" + r.ID + "-open", opened}}
 		if !now.Before(due) {
-			notices = append(notices, struct{ part, text string }{"review-" + r.ID + "-overdue", "The " + name + " access review is overdue"})
+			notices = append(notices, struct{ part, text string }{"review-" + r.ID + "-overdue", "The " + name + " " + what + " review is overdue"})
 		}
 		for _, n := range notices {
 			_, told, err := j.Clock.Last(ctx, n.part)

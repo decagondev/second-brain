@@ -31,6 +31,31 @@ type AgentDef struct {
 	Approvals  bool     `json:"approvals"`
 	Labels     []string `json:"labels"`
 	Restricted bool     `json:"restricted"`
+	// Shadow is a prompt to try beside its own in the first ring (SB-4704).
+	Shadow *ShadowDef `json:"shadow,omitempty"`
+}
+
+// ShadowDef is a definition's shadow: a bundled prompt and 1 to MaxShadowDays days.
+type ShadowDef struct {
+	Prompt string `json:"prompt"`
+	Days   int    `json:"days"`
+}
+
+// MaxShadowDays is the longest shadow window: a week.
+const MaxShadowDays = 7
+
+// AgentDefOf is one agent's definition in the bundle.
+func AgentDefOf(name string) (AgentDef, bool) {
+	defs, err := ParseAgentDefs(AgentDefs)
+	if err != nil {
+		return AgentDef{}, false
+	}
+	for _, d := range defs {
+		if d.Name == name {
+			return d, true
+		}
+	}
+	return AgentDef{}, false
 }
 
 // ParseAgentDefs reads definitions; unknown fields are refused.
@@ -167,6 +192,7 @@ func LintAgents(lb LintBundle) []LintProblem {
 			bad("suite", "has no eval suite (%q)", d.Suite)
 		}
 		out = append(out, lintPrompt(lb, d, line)...)
+		out = append(out, lintShadow(lb, d, line)...)
 	}
 	for _, a := range lb.Agents {
 		if !seen[a] {
@@ -174,6 +200,26 @@ func LintAgents(lb LintBundle) []LintProblem {
 		}
 	}
 	return out
+}
+
+// lintShadow checks a definition's shadow (SB-4704): a bundled prompt other than its own,
+// held to the same prompt rules, for 1 to MaxShadowDays days.
+func lintShadow(lb LintBundle, d AgentDef, line int) []LintProblem {
+	if d.Shadow == nil {
+		return nil
+	}
+	bad := LintProblem{File: "internal/core/ask/agents.json", Line: line, Rule: "shadow"}
+	switch {
+	case d.Shadow.Prompt == "" || d.Shadow.Prompt == d.Prompt:
+		bad.Msg = d.Name + ": a shadow needs a prompt other than its own"
+	case d.Shadow.Days < 1 || d.Shadow.Days > MaxShadowDays:
+		bad.Msg = fmt.Sprintf("%s: a shadow runs 1 to %d days, not %d", d.Name, MaxShadowDays, d.Shadow.Days)
+	default:
+		sd := d
+		sd.Prompt = d.Shadow.Prompt
+		return lintPrompt(lb, sd, line)
+	}
+	return []LintProblem{bad}
 }
 
 // lintPrompt checks one agent's prompt: it says data is never instructions, never tells the

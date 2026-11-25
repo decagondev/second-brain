@@ -19,11 +19,16 @@ import (
 type AgentControl struct {
 	Value func(ctx context.Context, s tenancy.Scope) (ask.ValueReport, error)
 	Pause func(ctx context.Context, s tenancy.Scope, space, agent, reason string, on bool) error
+	// Shadow is the open shadow windows of the caller's agents (SB-4704).
+	Shadow func(ctx context.Context, s tenancy.Scope) (ask.ShadowReport, error)
 }
 
 // Register mounts the endpoints.
 func (h AgentControl) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/agents/value", h.value)
+	if h.Shadow != nil {
+		mux.HandleFunc("GET /v1/agents/shadow", h.shadow)
+	}
 	mux.HandleFunc("POST /v1/spaces/{name}/agents/{agent}/pause", h.pause(true))
 	mux.HandleFunc("POST /v1/spaces/{name}/agents/{agent}/resume", h.pause(false))
 }
@@ -35,6 +40,20 @@ func (h AgentControl) value(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	v, err := h.Value(r.Context(), s)
+	if err != nil {
+		fail(w, mapErr(err))
+		return
+	}
+	writeJSON(w, v)
+}
+
+func (h AgentControl) shadow(w http.ResponseWriter, r *http.Request) {
+	s, err := tenancy.FromContext(r.Context())
+	if err != nil {
+		fail(w, errs.New(errs.EAUTH, "Sign in again."))
+		return
+	}
+	v, err := h.Shadow(r.Context(), s)
 	if err != nil {
 		fail(w, mapErr(err))
 		return
@@ -80,4 +99,30 @@ func (h Admin) agentValue(w http.ResponseWriter, r *http.Request, _ tenancy.Scop
 		return
 	}
 	h.ok(w, v)
+}
+
+// agentRecord is GET /v1/admin/agents/NAME/record[?format=md]: the agent's signed record, or
+// its Markdown (SB-4707).
+func (h Admin) agentRecord(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.AgentRecord == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Agent records can't be made in this cell."))
+		return
+	}
+	sr, err := h.AgentRecord(r.Context(), r.PathValue("name"))
+	switch {
+	case errors.Is(err, ask.ErrInvalid):
+		h.fail(w, errs.New(errs.EINVAL, "No agent %q in the bundle.", r.PathValue("name")))
+		return
+	case err != nil:
+		h.fail(w, errs.New(errs.EUNAVAIL, "The agent's record can't be made right now."))
+		return
+	}
+	if r.URL.Query().Get("format") == "md" {
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="`+sr.Record.Agent+`-record.md"`)
+		_, _ = io.WriteString(w, ask.RecordMarkdown(sr))
+		return
+	}
+	w.Header().Set("Content-Disposition", `attachment; filename="`+sr.Record.Agent+`-record.json"`)
+	h.ok(w, sr)
 }
