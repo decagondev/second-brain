@@ -53,3 +53,11 @@ func TestIsWorkEvent(t *testing.T) {
 		t.Fatal("IsWorkEvent")
 	}
 }
+
+// SB-5306: a Google Meet transcript in Drive is a transcript by its title.
+func TestMeetTranscriptIsATranscript(t *testing.T) {
+	if ask.TypeOf(ports.Chunk{Kind: "docs", SourceID: "1AbC", Title: "Weekly ops sync (2026-11-20 10:00 GMT) - Transcript"}) != "transcript" ||
+		ask.TypeOf(ports.Chunk{Kind: "docs", SourceID: "1AbC", Title: "Ops notes"}) == "transcript" {
+		t.Fatal("TypeOf")
+	}
+}

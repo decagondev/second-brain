@@ -10,11 +10,13 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 
 	"example.com/second-brain/internal/adapters/audit/syslogtls"
 	"example.com/second-brain/internal/adapters/backup/s3"
 	"example.com/second-brain/internal/adapters/smtpmail"
+	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/core/offsite"
 )
 
@@ -35,8 +37,11 @@ type Config struct {
 	} `json:"oidc"`
 	Web string `json:"web"`
 	// MCP serves POST /v1/mcp, the read-only MCP endpoint (sb-api(3), MCP; SB-3801).
-	MCP   bool `json:"mcp"`
-	Model struct {
+	MCP bool `json:"mcp"`
+	// MCPGroups are the IdP groups that may use MCP and the tool families each gets
+	// (sb-cell(5), mcp_groups; SB-5305); nil is everyone, every family.
+	MCPGroups map[string][]string `json:"mcp_groups,omitempty"`
+	Model     struct {
 		Provider string `json:"provider"`
 		Base     string `json:"base"`
 		ID       string `json:"id"`
@@ -220,6 +225,9 @@ func Parse(b []byte) (Config, error) {
 	if err := c.checkMattermost(); err != nil {
 		return Config{}, err
 	}
+	if err := c.checkMCPGroups(); err != nil { // SB-5305
+		return Config{}, err
+	}
 	if err := c.Release.check(); err != nil {
 		return Config{}, err
 	}
@@ -397,4 +405,25 @@ func (c Config) Secrets() (required, optional []string) {
 	}
 	optional = []string{"email"}
 	return required, optional
+}
+
+// checkMCPGroups is mcp_groups: only with mcp, each group a name, each family known (SB-5305).
+func (c Config) checkMCPGroups() error {
+	if len(c.MCPGroups) == 0 {
+		return nil
+	}
+	if !c.MCP {
+		return fmt.Errorf("%w: mcp_groups needs mcp: true", ErrConfig)
+	}
+	for g, fs := range c.MCPGroups {
+		if strings.TrimSpace(g) == "" || len(fs) == 0 {
+			return fmt.Errorf("%w: mcp_groups names a group and its tool families", ErrConfig)
+		}
+		for _, f := range fs {
+			if !slices.Contains(api.MCPFamilies, f) {
+				return fmt.Errorf("%w: mcp_groups.%s: %q is not a tool family (%s)", ErrConfig, g, f, strings.Join(api.MCPFamilies, ", "))
+			}
+		}
+	}
+	return nil
 }

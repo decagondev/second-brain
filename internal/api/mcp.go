@@ -38,6 +38,45 @@ type MCP struct {
 	// Starters are the starter questions of the person's spaces, listed as prompts with no
 	// arguments (SB-4906); nil lists none.
 	Starters func(ctx context.Context, s tenancy.Scope) ([]ask.SpaceStarter, error)
+	// Families are the tool families the person's groups grant and whether they may use MCP
+	// at all (sb-cell(5), mcp_groups; SB-5305); nil grants every family to everyone.
+	Families func(s tenancy.Scope) (map[string]bool, bool)
+}
+
+// MCP tool families (SB-5305).
+const (
+	FamilySearch   = "search"
+	FamilyAsk      = "ask"
+	FamilyAgents   = "agents"
+	FamilyResearch = "research"
+	FamilySkills   = "skills"
+)
+
+// MCPFamilies are the families mcp_groups may grant.
+var MCPFamilies = []string{FamilySearch, FamilyAsk, FamilyAgents, FamilyResearch, FamilySkills}
+
+// familyOf is a tool's family.
+func familyOf(tool string) string {
+	switch {
+	case tool == "search":
+		return FamilySearch
+	case tool == "ask" || tool == "passage":
+		return FamilyAsk
+	case strings.HasPrefix(tool, "research_"):
+		return FamilyResearch
+	case strings.HasPrefix(tool, "agent_"):
+		return FamilyAgents
+	}
+	return ""
+}
+
+// granted says the person may use a family; with no Families, every one.
+func (h MCP) granted(s tenancy.Scope, family string) bool {
+	if h.Families == nil {
+		return true
+	}
+	fs, ok := h.Families(s)
+	return ok && fs[family]
 }
 
 // MCPVersion is the protocol revision the endpoint speaks.
@@ -103,6 +142,13 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 		return
 	}
+	if h.Families != nil { // SB-5305: only the groups mcp_groups names
+		if _, ok := h.Families(s); !ok {
+			rpc(w, req.ID, nil, &rpcErr{Code: -32001, Message: "EPERM: your groups aren't allowed to use MCP in this cell"})
+			return
+		}
+	}
+	r = r.WithContext(tenancy.WithClient(r.Context(), tenancy.ClientMCP)) // SB-5305: counted as MCP
 	switch req.Method {
 	case "initialize":
 		var p struct {
@@ -124,7 +170,13 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 			rpc(w, req.ID, nil, &rpcErr{Code: -32603, Message: "the tools can't be listed now; try again"})
 			return
 		}
-		rpc(w, req.ID, map[string]any{"tools": tools}, nil)
+		kept := []mcpTool{}
+		for _, t := range tools {
+			if h.granted(s, familyOf(t.Name)) {
+				kept = append(kept, t)
+			}
+		}
+		rpc(w, req.ID, map[string]any{"tools": kept}, nil)
 	case "tools/call":
 		var p struct {
 			Name      string            `json:"name"`
@@ -132,6 +184,10 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		if json.Unmarshal(req.Params, &p) != nil {
 			rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "tools/call takes a name and string arguments"})
+			return
+		}
+		if !h.granted(s, familyOf(p.Name)) {
+			rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such tool: see tools/list"})
 			return
 		}
 		out, err := h.call(r.Context(), s, p.Name, p.Arguments)
@@ -146,6 +202,14 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		b, _ := json.Marshal(out)
 		rpc(w, req.ID, map[string]any{"content": []map[string]string{{"type": "text", "text": string(b)}}, "structuredContent": out}, nil)
 	case "prompts/list", "prompts/get":
+		if !h.granted(s, FamilySkills) {
+			if req.Method == "prompts/list" {
+				rpc(w, req.ID, map[string]any{"prompts": []any{}}, nil)
+			} else {
+				rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such prompt"})
+			}
+			return
+		}
 		h.prompts(w, r, s, req)
 	default:
 		rpc(w, req.ID, nil, &rpcErr{Code: -32601, Message: "no such method"})

@@ -56,7 +56,7 @@ summary: Epics, waves, slices and tickets.
 | W49 Run AI Like a Business | 7 | 0 | 0 | Planned 2026-11-25 with the user (E50), built: AI command centre, routing policies, personal limits, agent goals, did it help?, the admin's week, inventory export ([20-rhythms-check-run.md](../docs/20-rhythms-check-run.md)) |
 | W50 Guard What Goes In | 7 | 0 | 0 | Planned 2026-11-25 with the user (E51), built: suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W51 Write It Down Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E52), built: suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
-| W52 Agents That Act Carefully | 3 | 0 | 3 | Planned 2026-11-25 with the user (E53), S52.1 built: start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
+| W52 Agents That Act Carefully | 5 | 0 | 1 | Planned 2026-11-25 with the user (E53), all but SB-5304 built: start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -937,5 +937,5 @@ flowchart LR
 | [SB-5302](E53-agents-act-carefully/SB-5302-try-a-trigger.md) | S52.1 | E53 | Try a trigger first | Done |
 | [SB-5303](E53-agents-act-carefully/SB-5303-borrow-access.md) | S52.1 | E53 | Borrow access for one run | Done |
 | [SB-5304](E53-agents-act-carefully/SB-5304-draft-next-action.md) | S52.2 | E53 | Draft the next action | Open |
-| [SB-5305](E53-agents-act-carefully/SB-5305-managed-mcp.md) | S52.2 | E53 | Managed MCP access | Open |
-| [SB-5306](E53-agents-act-carefully/SB-5306-meet-transcripts.md) | S52.2 | E53 | Meeting transcripts from Drive | Open |
+| [SB-5305](E53-agents-act-carefully/SB-5305-managed-mcp.md) | S52.2 | E53 | Managed MCP access | Done |
+| [SB-5306](E53-agents-act-carefully/SB-5306-meet-transcripts.md) | S52.2 | E53 | Meeting transcripts from Drive | Done |

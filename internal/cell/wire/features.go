@@ -187,3 +187,24 @@ func (c *Cell) rolloutLines(from, to time.Time) []ask.AdminLine {
 	}
 	return out
 }
+
+// mcpFamilies is the MCP tool families a person's groups grant (SB-5305): nil without
+// mcp_groups, so everyone gets every family.
+func (c *Cell) mcpFamilies() func(s tenancy.Scope) (map[string]bool, bool) {
+	if len(c.Config.MCPGroups) == 0 {
+		return nil
+	}
+	groups := c.Config.MCPGroups
+	return func(s tenancy.Scope) (map[string]bool, bool) {
+		out, ok := map[string]bool{}, false
+		for _, g := range s.Groups() {
+			if fs, in := groups[g]; in {
+				ok = true
+				for _, f := range fs {
+					out[f] = true
+				}
+			}
+		}
+		return out, ok
+	}
+}

@@ -53,8 +53,12 @@ var Types = map[string][]string{
 // MaxSinceDays bounds since=.
 const MaxSinceDays = 365
 
-// TypeOf is a document's type: by the extension on its source id, else on its title.
+// TypeOf is a document's type: by the extension on its source id, else on its title. A
+// Google Meet transcript in Drive is a transcript by its title (SB-5306).
 func TypeOf(c ports.Chunk) string {
+	if IsMeetTranscript(c.Title) {
+		return "transcript"
+	}
 	for _, name := range []string{c.SourceID, c.Title} {
 		ext := strings.ToLower(path.Ext(name))
 		if ext == "" {
@@ -352,4 +356,11 @@ func (a Agent) spaceDecisions(ctx context.Context, s tenancy.Scope) (retrieve.Re
 		return retrieve.Result{}, fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}
 	return res, nil
+}
+
+// IsMeetTranscript says a title is a Google Meet transcript's: Meet names the Doc it writes
+// "MEETING (DATE) - Transcript" (SB-5306).
+func IsMeetTranscript(title string) bool {
+	t := strings.ToLower(strings.TrimSpace(title))
+	return strings.HasSuffix(t, "- transcript") && strings.Contains(t, "(")
 }

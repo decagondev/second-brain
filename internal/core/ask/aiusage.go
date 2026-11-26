@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	"example.com/second-brain/internal/core/tenancy"
 )
 
 // The AI command centre (sb-admin(3), AI command centre; SB-5001): 12 weeks of answers and
@@ -68,6 +70,15 @@ type AIUsage struct {
 	Budgets  []SpaceBudget `json:"budgets"`
 	Caps     []AgentSpend  `json:"caps"`
 	Limit    *LimitBands   `json:"limit,omitempty"`
+	// Clients are uses and spend by where the asks came from (SB-5305).
+	Clients []ClientUse `json:"clients"`
+}
+
+// ClientUse is one client's uses and spend over the weeks.
+type ClientUse struct {
+	Client string  `json:"client"`
+	Uses   int     `json:"uses"`
+	USD    float64 `json:"usd"`
 }
 
 // WeekStart is the Monday 00:00 UTC of t's week.
@@ -93,7 +104,8 @@ func BuildAIUsage(traces []Trace, now time.Time) AIUsage {
 	from := WeekStart(now).AddDate(0, 0, -7*(UsageWeeks-1))
 	rows := map[[5]string]*UsageRow{}
 	feats := map[string]*UsageTotal{}
-	out := AIUsage{Weeks: UsageWeeks, From: from.Format(time.DateOnly), Rows: []UsageRow{}, Features: []UsageTotal{}, Budgets: []SpaceBudget{}, Caps: []AgentSpend{}}
+	out := AIUsage{Weeks: UsageWeeks, From: from.Format(time.DateOnly), Rows: []UsageRow{}, Features: []UsageTotal{}, Budgets: []SpaceBudget{}, Caps: []AgentSpend{}, Clients: []ClientUse{}}
+	clients := map[string]*ClientUse{}
 	for _, t := range traces {
 		f := usageFeature(t)
 		if f == "" || t.At.Before(from) || t.At.After(now) {
@@ -121,6 +133,15 @@ func BuildAIUsage(traces []Trace, now time.Time) AIUsage {
 		}
 		feats[f].Uses++
 		feats[f].USD += t.CostUSD
+		cl := t.Client
+		if cl == "" {
+			cl = tenancy.ClientWeb
+		}
+		if clients[cl] == nil {
+			clients[cl] = &ClientUse{Client: cl}
+		}
+		clients[cl].Uses++
+		clients[cl].USD += t.CostUSD
 		out.Total.Uses++
 		out.Total.USD += t.CostUSD
 	}
@@ -143,6 +164,11 @@ func BuildAIUsage(traces []Trace, now time.Time) AIUsage {
 	for _, f := range Features {
 		if t, ok := feats[f]; ok {
 			out.Features = append(out.Features, *t)
+		}
+	}
+	for _, c := range []string{tenancy.ClientWeb, tenancy.ClientChat, tenancy.ClientMCP, tenancy.ClientToken} {
+		if u, ok := clients[c]; ok {
+			out.Clients = append(out.Clients, *u)
 		}
 	}
 	return out

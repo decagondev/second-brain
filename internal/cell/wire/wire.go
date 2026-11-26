@@ -724,7 +724,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		api.MCP{Agent: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
 			Agents: func(ctx context.Context, s tenancy.Scope) (map[string][]string, error) {
 				return agent.UsableAgents(ctx, s, c.ScopeAs)
-			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters}.Register(mux) // SB-4601, SB-4906
+			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters, Families: c.mcpFamilies()}.Register(mux) // SB-4601, SB-4906, SB-5305
 	}
 	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)

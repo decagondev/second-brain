@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -290,6 +291,9 @@ func (c *Connector) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docum
 	if err != nil {
 		return ports.Document{}, err
 	}
+	if IsMeetTranscript(f.Name) { // SB-5306: speakers on their lines, Meet's timestamps out
+		text = MeetText(text)
+	}
 	loc, err := c.location(ctx, f)
 	if err != nil {
 		return ports.Document{}, err
@@ -471,4 +475,29 @@ func (c *Connector) everything(ctx context.Context) (ports.ChangeSet, ports.Curs
 // Act is not supported: read-only.
 func (c *Connector) Act(context.Context, ports.Action, ports.IdempotencyKey) (ports.Receipt, error) {
 	return ports.Receipt{}, ErrNotSupported
+}
+
+// IsMeetTranscript says a file is a Google Meet transcript by its name, "MEETING (DATE) -
+// Transcript" (SB-5306); ask.TypeOf reads the same rule from the title.
+func IsMeetTranscript(name string) bool {
+	t := strings.ToLower(strings.TrimSpace(name))
+	return strings.HasSuffix(t, "- transcript") && strings.Contains(t, "(")
+}
+
+// meetStamp is a line of a Meet transcript that is only a timestamp, such as 00:01:05.
+var meetStamp = regexp.MustCompile(`^\d{1,2}:\d{2}(:\d{2})?$`)
+
+// MeetText is a Google Meet transcript's exported text as a transcript (SB-5306): each
+// "Speaker: words" line kept, the timestamp lines Meet puts between them left out, blank
+// lines folded.
+func MeetText(text string) string {
+	var out []string
+	for _, l := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
+		l = strings.TrimSpace(strings.TrimPrefix(l, "\ufeff"))
+		if l == "" || meetStamp.MatchString(l) {
+			continue
+		}
+		out = append(out, l)
+	}
+	return strings.Join(out, "\n")
 }

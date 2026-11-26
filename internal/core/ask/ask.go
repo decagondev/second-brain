@@ -274,6 +274,8 @@ type Trace struct {
 	CostUSD float64 `json:",omitempty"`
 	// Feature is what asked it, one of Features or eval (SB-5001); "" is an older ask.
 	Feature string `json:",omitempty"`
+	// Client is where the ask came from: web, chat, mcp or token (SB-5305).
+	Client string `json:",omitempty"`
 	// Suspect are the cites of the answer's suspect passages, skipped or monitored
 	// (SB-5101): never their text.
 	Suspect []string `json:",omitempty"`
@@ -589,13 +591,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	resp.Skipped = sk.Skipped() // SB-5101, its consultations' too
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites()}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites()}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}

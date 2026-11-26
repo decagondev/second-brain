@@ -22,8 +22,8 @@ import (
 	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/ask"
-
 	"example.com/second-brain/internal/core/ingest"
+	"example.com/second-brain/internal/core/tenancy"
 )
 
 // App is one cell's Mattermost slash command.
@@ -186,7 +186,7 @@ func (a *App) answer(ctx context.Context, user, channel, question string) answer
 	if msg != "" {
 		return answered{Message: Message{ResponseType: "ephemeral", Text: msg}}
 	}
-	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question, Language: a.Rules.AnswerLanguage()})
+	resp, err := a.Agent.Ask(tenancy.WithClient(ctx, tenancy.ClientChat), s, ask.Request{Question: question, Language: a.Rules.AnswerLanguage()})
 	if err != nil {
 		return answered{Message: Message{ResponseType: "ephemeral", Text: slackapp.ErrText(err)}}
 	}

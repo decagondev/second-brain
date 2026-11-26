@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-26 S52.2: Do the next thing (SB-5305, SB-5306)
+
+**Wave/slice:** W52 / S52.2 (SB-5305, SB-5306; SB-5304 waits on the user's decision) · **Status:** In progress
+
+**What:** `mcp_groups` lets an admin choose which IdP groups may use MCP and which tool families each gets; anyone else is refused on every method. Every ask now records where it came from, and the AI command centre counts answers and spend by client: web, chat, MCP and API token. Google Meet transcripts in Drive are read as transcripts, with their speakers' lines, so they feed decisions drafts and action items like a `.vtt` file.
+
+**Why this way:** The group setting sits beside `mcp` rather than replacing it, so an existing `mcp: true` keeps its meaning. The client is a context value set where a request enters (the token check, the chat apps, the MCP endpoint), so no handler has to remember it. A Meet transcript is recognised by the name Meet gives it, the one thing every such Doc has.
+
+**Learned:** SB-5304 as planned ("sent with the person's own token") needs per-person sign-in to Linear, Slack and Mattermost, which means a new token store; the user has been asked how to proceed.
+
+**Laws:** LAW-01, LAW-02, LAW-07. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S52.1: Start on work
 
 **Wave/slice:** W52 / S52.1 (SB-5301 to SB-5303) · **Status:** Done

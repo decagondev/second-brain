@@ -226,7 +226,7 @@ func (a *App) answer(ctx context.Context, slackUser, channel, question string) M
 	if msg != "" {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: msg}
 	}
-	resp, err := a.Agent.Ask(ctx, s, ask.Request{Question: question, Language: a.AnswerLanguage()})
+	resp, err := a.Agent.Ask(tenancy.WithClient(ctx, tenancy.ClientChat), s, ask.Request{Question: question, Language: a.AnswerLanguage()})
 	if err != nil {
 		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: ErrText(err)}
 	}

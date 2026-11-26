@@ -37,7 +37,7 @@ An answer that recommends a ticket or a message leaves the person to write it fr
 
 ## Progress
 
-Not started.
+2026-11-26: waiting on a decision. Sending "with the person's own token" needs per-person sign-in to Linear, Slack and Mattermost and a store for those tokens, which this wave's rules leave out. The choices put to the user: send through the tool bus with the tenant's credentials (a Linear comment through the gated ticket-update workflow, a message by the bot marked as sent by the person, nothing out before they press Send); the person posts it from the tool itself, the brain only preparing it; or leave SB-5304 out of W52.
 
 ## Definition of done
 
