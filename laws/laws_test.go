@@ -599,3 +599,7 @@ func TestLAW14_NumbersFromTablesComeFromTheTool(t *testing.T) {
 func TestLAW07_NothingSensitiveGoesOut(t *testing.T) {
 	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Out(r, RealOutFilter) })
 }
+
+func TestLAW31_LentAccessLastsOneRun(t *testing.T) {
+	Check(t, "LAW-31", runs, func(r *rand.Rand) error { return law31(r, RealLentGate) })
+}

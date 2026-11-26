@@ -498,7 +498,9 @@
           "on": {
             "items": {
               "enum": [
-                "source-changed"
+                "source-changed",
+                "pr-opened",
+                "ticket-filed"
               ]
             },
             "minItems": 1,

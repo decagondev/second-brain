@@ -374,14 +374,18 @@ func (x Stewards) Queue(ctx context.Context, s tenancy.Scope, name string) ([]St
 		it := StewardItem{ID: q.ID, Question: q.Question, At: q.At, State: "open", Reply: q.Reply, FromSpace: q.FromSpace, Like: partner(q, qs), Waiting: q.Waiting}
 		if q.Thread != nil {
 			it.Thread = &ThreadView{By: q.Asker, Link: q.Thread.Link, Text: q.Thread.Text, Agent: q.Thread.Agent, Kind: q.Thread.Kind, Actions: q.Thread.Actions, Supersede: q.Thread.Supersede,
-				Versions: q.Thread.Versions, Rounds: q.Thread.Rounds, Diff: threadDiff(q.Thread), Mark: draftMark(q.Thread)}
+				Versions: q.Thread.Versions, Rounds: q.Thread.Rounds, Diff: threadDiff(q.Thread), Mark: draftMark(q.Thread), Lender: q.Thread.Lender}
 			if q.Thread.Agent != "" {
 				it.Thread.Trace = q.Trace
 				it.Thread.Sections, it.Thread.Comments = DraftSections(q.Thread.Text), roundComments(q.Thread) // SB-4902
 				it.Thread.Changed = q.Thread.Changed                                                           // SB-4905
 				it.Thread.Suggestions = q.Thread.Suggestions                                                   // SB-5202
 			}
-			if q.Thread.Agent != "" && q.Asker != s.User() {
+			hide := q.Asker != s.User()
+			if q.Thread.Kind == DraftLent { // LAW-31: a lent draft for any steward who can open every cite, and no one else
+				hide = x.lentHidden(ctx, s, q.Thread)
+			}
+			if q.Thread.Agent != "" && hide {
 				it.Thread.Text, it.Thread.Hidden, it.Thread.Actions, it.Thread.Supersede, it.Thread.Trace = "", true, nil, nil, ""
 				it.Thread.Versions, it.Thread.Diff, it.Thread.Sections, it.Thread.Comments, it.Thread.Changed = nil, nil, nil, nil, nil
 				it.Thread.Suggestions = nil

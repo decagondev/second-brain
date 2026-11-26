@@ -23,6 +23,10 @@ type Questions struct {
 	ReviewAfter func(space string) int
 	Release     string
 	NewID       func(prefix string) string
+	// TryTrigger replays a space's trigger as the steward (SB-5302), and LendAs is a lender's
+	// scope in the space they lend (SB-5303); nil serves neither.
+	TryTrigger func(ctx context.Context, s tenancy.Scope, name, on string) (ask.TryResult, error)
+	LendAs     func(ctx context.Context, user, space string) (tenancy.Scope, error)
 }
 
 // Register mounts the endpoints.

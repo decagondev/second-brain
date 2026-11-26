@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/ports"
 )
 
 // SB-5206: a branch is a new conversation of the asker's own with the first N questions;
@@ -40,5 +41,15 @@ func TestBranchAConversation(t *testing.T) {
 		if _, err := a.Branch(ctx, scope(t, c.who), c.conv, c.at); !errors.Is(err, ask.ErrInvalid) {
 			t.Errorf("%+v: %v", c, err)
 		}
+	}
+}
+
+// SB-5301: a pull request on GitHub and a ticket are work events; a document isn't.
+func TestIsWorkEvent(t *testing.T) {
+	pr := ports.Chunk{Kind: "code", SourceID: "acme/app/pulls/12"}
+	if !ask.IsWorkEvent(ask.OnPROpened, pr) || ask.IsWorkEvent(ask.OnTicketFiled, pr) ||
+		!ask.IsWorkEvent(ask.OnTicketFiled, ports.Chunk{Kind: "tickets", SourceID: "LIN-7"}) ||
+		ask.IsWorkEvent(ask.OnPROpened, ports.Chunk{Kind: "code", SourceID: "acme/app/blob/README.md"}) {
+		t.Fatal("IsWorkEvent")
 	}
 }

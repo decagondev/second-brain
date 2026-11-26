@@ -21,6 +21,8 @@ type Welcome struct {
 // NewDoc is a transcript first seen in a space, by space key and KIND:ID.
 type NewDoc struct {
 	Space, Ref, Title string
+	// On is the work event it starts (SB-5301): pr-opened or ticket-filed; "" otherwise.
+	On string
 	// Closed says this version of an incident's ticket is closed (SB-4604).
 	Closed bool
 }
@@ -67,6 +69,9 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		if err := j.SourceChanged(ctx, from, now); err != nil {
 			return nil, nil, fmt.Errorf("notify: sources changed: %w", err)
 		}
+	}
+	if err := j.workEvents(ctx, from, now); err != nil { // SB-5301
+		return nil, nil, err
 	}
 	if j.Transcripts == nil || j.RunDecisions == nil {
 		return out, marks, nil
@@ -219,3 +224,59 @@ func (j Job) suspects(ctx context.Context, now time.Time) ([]outgoing, []func() 
 	}
 	return out, marks, nil
 }
+
+// workEvents drafts the work events first seen in [from, now) of the spaces that watch them
+// (SB-5301): one draft each, or one for a space's events of a kind past MaxWork in a run.
+// Each document starts one draft, ever.
+func (j Job) workEvents(ctx context.Context, from, now time.Time) error {
+	if j.WorkEvents == nil || j.RunWork == nil {
+		return nil
+	}
+	docs, err := j.WorkEvents(ctx, from, now)
+	if err != nil {
+		return fmt.Errorf("notify: work events: %w", err)
+	}
+	groups := map[string][]NewDoc{}
+	var order []string
+	for _, d := range docs {
+		sum := sha256.Sum256([]byte(d.Space + "|" + d.Ref))
+		key := "work-" + hex.EncodeToString(sum[:8])
+		if _, done, err := j.Clock.Last(ctx, key); err != nil || done {
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		g := d.Space + "|" + d.On
+		if groups[g] == nil {
+			order = append(order, g)
+		}
+		groups[g] = append(groups[g], d)
+	}
+	sort.Strings(order)
+	for _, g := range order {
+		ds := groups[g]
+		runs := [][]NewDoc{ds}
+		if len(ds) <= MaxWork {
+			runs = nil
+			for _, d := range ds {
+				runs = append(runs, []NewDoc{d})
+			}
+		}
+		for _, r := range runs {
+			if _, err := j.RunWork(ctx, r); err != nil {
+				return fmt.Errorf("notify: work event: %w", err)
+			}
+			for _, d := range r {
+				sum := sha256.Sum256([]byte(d.Space + "|" + d.Ref))
+				if err := j.Clock.Mark(ctx, "work-"+hex.EncodeToString(sum[:8]), now); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// MaxWork is how many events of one kind in one space a run drafts one by one (SB-5301).
+const MaxWork = 10

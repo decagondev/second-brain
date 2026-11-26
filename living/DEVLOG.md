@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-25 S52.1: Start on work
+
+**Wave/slice:** W52 / S52.1 (SB-5301 to SB-5303) · **Status:** Done
+
+**What:** A space with `on: [pr-opened]` or `[ticket-filed]` gets a draft for each new pull request or ticket, as its first active steward, narrowed to that document; a flood becomes one draft. **Try it** replays a trigger over the last 14 days as the steward and shows what it would have drafted and what that cost, sending nothing. A steward can ask someone to lend a space for one run: the lender approves, one run asks as them in that space, and the draft names them and shows only to stewards who can open every cite (LAW-31).
+
+**Why this way:** Work events are read from the index the syncs already fill, like incidents and transcripts, so no new intake or store is needed; each document is marked once in the notify job's clock. Try it reuses the probe path the eval cases use, so it composes exactly as a real run would without keeping anything. A loan is a request in the lender's own queue, closed by its answer, so there is nothing to revoke and a second run needs a second yes; the run is the lender's alone, and the visibility gate is a live check of every cite for each reader.
+
+**Learned:** The planned calendar trigger doesn't fit: meetings aren't indexed documents, and meeting prep already starts from them (SB-4202). The signed events of SB-4404 go out of the cell, so work events come from the index instead.
+
+**Laws:** LAW-01, LAW-16, LAW-29, LAW-31 (new). Every law test is still green except LAW-23, as before.
+
 ## 2026-11-25 S51.2: Point precisely, ask freely
 
 **Wave/slice:** W51 / S51.2 (SB-5205 to SB-5207) · **Status:** Done

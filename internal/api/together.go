@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
 
@@ -92,4 +93,64 @@ func (h Questions) dismissEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "dismissed": true})
+}
+
+// tryTrigger is POST /v1/spaces/NAME/triggers/ON/try: what the trigger would have drafted in
+// the last 14 days, as the steward, sending nothing (SB-5302).
+func (h Questions) tryTrigger(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	if h.TryTrigger == nil {
+		h.k().out().fail(w, "", errs.New(errs.EUNAVAIL, "Triggers can't be tried in this cell."))
+		return
+	}
+	res, err := h.TryTrigger(r.Context(), s, r.PathValue("name"), r.PathValue("on"))
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", res)
+}
+
+// requestLoan is POST /v1/spaces/NAME/loans {"lender", "space", "purpose"} (SB-5303).
+func (h Questions) requestLoan(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var req ask.LoanRequest
+	if !readJSON(r, &req) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"lender": "…", "space": "finance", "purpose": "…"}.`))
+		return
+	}
+	q, err := h.Service.RequestLoan(r.Context(), s, r.PathValue("name"), req)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", map[string]any{"id": q.ID, "to": "lender"})
+}
+
+// lend is POST /v1/me/loans/ID/approve|decline, for the lender (SB-5303).
+func (h Questions) lend(yes bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s, ok := h.k().scope(w, r)
+		if !ok {
+			return
+		}
+		if h.LendAs == nil {
+			h.k().out().fail(w, "", errs.New(errs.EUNAVAIL, "Access can't be lent in this cell."))
+			return
+		}
+		_, err := h.Service.Lend(r.Context(), s, r.PathValue("id"), yes, func(space string) (tenancy.Scope, error) {
+			return h.LendAs(r.Context(), s.User(), space)
+		})
+		if err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "lent": yes})
+	}
 }

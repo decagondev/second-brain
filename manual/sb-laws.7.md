@@ -28,6 +28,7 @@ LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 LAW-25 a memory is its person's own          LAW-26 a stored result is checked when read
 LAW-27 a consultation is the asker's own    LAW-28 an agent's writing says so
 LAW-29 a rhythm only drafts                  LAW-30 a brief about a person is theirs to read
+LAW-31 lent access lasts one run
 ```
 
 ## DESCRIPTION
@@ -224,6 +225,12 @@ Every step a rhythm offers is a draft or a prompt that waits, unanswered, in the
 A brief the platform makes about one person for someone else (the 1:1 prep a manager gets for a report) holds only what that person published: goals they own and their check-ins, and action items assigned to them, each line cited to something both the reader and the person can open. Nothing from the person's asks, inbox, memory, routines or unpublished drafts appears in it, no line rates or scores them, and the person gets the same text at the same time (sb-agents(7), 1:1 prep).
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW30_ABriefAboutAPersonDrawsOnlyOnWhatTheyPublished`: random published goals and action items, some in documents only one of the two can open, beside random private asks, memory entries and routines with unique markers, through the real rhythms service, folder connector and index; every brief line is published and openable by both, no private marker appears, and the two copies are identical; SB-4807) · Selftest (`TestSelf_LAW30CatchesABriefThatLeaksAPrivateItem`: a brief that adds the report's latest ask goes red).
+
+### LAW-31: Lent access lasts one run, names the lender, and its result reaches only people who can open every cite {#law-31}
+
+When a steward's run needs a space they can't read, a person who can read it may lend it for **one run** (sb-agents(7), Borrow access for one run). The run reads that space as the lender, once; its draft names the lender; and a reader sees the draft only when they can open every one of its cites, checked live as them, so the loan widens what no one sees. A loan is answered once, yes or no, and never runs again: the next run asks again.
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW31_LentAccessLastsOneRun`: random lent drafts with random cites and random readers who can open part of them, through the real visibility gate, and a loan answered at random, through the real loan service and store, then answered again; SB-5303) · Selftest (`TestSelfLentGateIsCaught`: a gate that shows a lent draft to anyone, or to a reader who can open one of its cites, goes red).
 
 ### External review (SB-612)
 

@@ -2,6 +2,7 @@ package notify
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -76,5 +77,34 @@ func TestPauseLinkOnlyForThoseWhoMay(t *testing.T) {
 	}
 	if links["usr_ann"] != "https://brain.acme.example/?pause=case-brief&space=support" || links["usr_bob"] != "" || len(links) != 2 {
 		t.Fatalf("links %v", links)
+	}
+}
+
+// SB-5301: each new work event drafts once; more than MaxWork of one kind in one space in a
+// run are one draft; a second run drafts nothing again.
+func TestWorkEventsDraftOnceAndBatch(t *testing.T) {
+	now := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	j, _, _ := world(now)
+	var docs []NewDoc
+	for i := 0; i < MaxWork+2; i++ {
+		docs = append(docs, NewDoc{Space: "spc_ops", Ref: fmt.Sprintf("tickets:T-%d", i), Title: fmt.Sprintf("T-%d", i), On: "ticket-filed"})
+	}
+	docs = append(docs, NewDoc{Space: "spc_eng", Ref: "code:repo/pulls/7", Title: "PR 7", On: "pr-opened"})
+	j.WorkEvents = func(context.Context, time.Time, time.Time) ([]NewDoc, error) { return docs, nil }
+	var runs [][]NewDoc
+	j.RunWork = func(_ context.Context, ds []NewDoc) (string, error) { runs = append(runs, ds); return "", nil }
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(runs) != 2 || len(runs[0]) != 1 || runs[0][0].Ref != "code:repo/pulls/7" || len(runs[1]) != MaxWork+2 {
+		t.Fatalf("runs %v", runs)
+	}
+	runs = nil
+	j.Now = func() time.Time { return now.Add(time.Hour) }
+	if _, err := j.Run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(runs) != 0 {
+		t.Fatalf("drafted again: %v", runs)
 	}
 }

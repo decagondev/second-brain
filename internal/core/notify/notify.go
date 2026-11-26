@@ -268,6 +268,10 @@ type Job struct {
 	// NearLimit are the people at 80% or more of their personal limit this month (SB-5003),
 	// each told once a month; nil tells no one.
 	NearLimit func(ctx context.Context, now time.Time) ([]string, error)
+	// WorkEvents are the work events first seen in a window, and RunWork drafts one or a
+	// batch of one space and kind as its trigger's approver (SB-5301); nil drafts none.
+	WorkEvents func(ctx context.Context, from, to time.Time) ([]NewDoc, error)
+	RunWork    func(ctx context.Context, docs []NewDoc) (why string, err error)
 	// MayPause says a person may pause an agent in a space and has the pause link (SB-5107);
 	// nil adds the link for no one.
 	MayPause func(ctx context.Context, user, space, agent string) bool

@@ -110,7 +110,7 @@ func (t Tenant) RoutingOf(name string) string {
 
 // SpaceTriggers are the triggers a space's `on` may list: source-changed redrafts what an
 // agent drafted from a document that has a new version (SB-4905).
-var SpaceTriggers = []string{"source-changed"}
+var SpaceTriggers = []string{"source-changed", "pr-opened", "ticket-filed"} // SB-5301: a work event starts a draft
 
 // Watches says whether the space lists trigger t in `on`.
 func (s Space) Watches(t string) bool { return contains(s.On, t) }

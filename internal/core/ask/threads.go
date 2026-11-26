@@ -66,6 +66,8 @@ type SavedThread struct {
 	Suggestions []DraftSuggestion `json:"suggestions,omitempty"`
 	Generated   string            `json:"generated,omitempty"`
 	Editors     []string          `json:"editors,omitempty"`
+	// Lender is who lent their access for the one run that made a lent draft (SB-5303).
+	Lender string `json:"lender,omitempty"`
 }
 
 // ThreadView is a saved thread on the steward screen.
@@ -102,6 +104,8 @@ type ThreadView struct {
 	// Suggestions are the redrafts' changes to accept or reject (SB-5202), for the steward it
 	// ran as.
 	Suggestions []DraftSuggestion `json:"suggestions,omitempty"`
+	// Lender is who lent their access for a lent run's draft (SB-5303), shown to everyone.
+	Lender string `json:"lender,omitempty"`
 }
 
 // ThreadText is a thread's messages as lines EMAIL: text, at most MaxThreadMessages of them
