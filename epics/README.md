@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-54 epics, 151 user stories and 411 tickets across 53 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+57 epics, 157 user stories and 431 tickets across 56 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -57,6 +57,9 @@ summary: Epics, waves, slices and tickets.
 | W50 Guard What Goes In | 7 | 0 | 0 | Planned 2026-11-25 with the user (E51), built: suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W51 Write It Down Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E52), built: suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W52 Agents That Act Carefully | 6 | 0 | 0 | Planned 2026-11-25 with the user (E53), built: start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
+| W53 Know Who Can See | 0 | 0 | 7 | Planned 2026-11-26 with the user (E54): shared too widely, hold until the owner confirms, sharing widened, who can see this, labels travel, how far each agent reaches, sensitive map ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
+| W54 See and Steer the Context | 0 | 0 | 7 | Planned 2026-11-26 with the user (E55): context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
+| W55 Keep Answering, Spend Less | 0 | 0 | 6 | Planned 2026-11-26 with the user (E56): fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -196,6 +199,12 @@ flowchart LR
   E50 --> E51
   E51 --> E52
   E52 --> E53
+  E54["E54 Know Who Can See"]
+  E55["E55 See and Steer the Context"]
+  E56["E56 Keep Answering, Spend Less"]
+  E53 --> E54
+  E54 --> E55
+  E55 --> E56
 ```
 
 ## Epics
@@ -256,6 +265,9 @@ flowchart LR
 | [E51 Guard What Goes In](E51-guard-what-goes-in/README.md) | Nothing a source says can steer an agent or leak through it, a new feature reaches a pilot before everyone, and anyone can see how an agent changed. | W50 | 7 |
 | [E52 Write It Down Together](E52-write-it-down-together/README.md) | What the brain learns flows back to the sources, drafts are written together, and every answer points to exactly where it came from. | W51 | 7 |
 | [E53 Agents That Act Carefully](E53-agents-act-carefully/README.md) | Agents start on the work events that matter, can be tried before they're turned on, can borrow access for one run with a named lender, and draft the next action for a person to send. | W52 | 6 |
+| [E54 Know Who Can See](E54-know-who-can-see/README.md) | A document shared too widely is noticed and held back before the brain spreads it, its label goes wherever its content goes, and everyone can see how far each agent reaches. | W53 | 7 |
+| [E55 See and Steer the Context](E55-see-and-steer-context/README.md) | A person sees what each answer was built from, can change it, and can find out why something they expected wasn't used. | W54 | 7 |
+| [E56 Keep Answering, Spend Less](E56-keep-answering-spend-less/README.md) | A provider failing doesn't stop the brain, and the same quality costs less. | W55 | 6 |
 
 ## All tickets by wave
 
@@ -939,3 +951,38 @@ flowchart LR
 | [SB-5304](E53-agents-act-carefully/SB-5304-draft-next-action.md) | S52.2 | E53 | Draft the next action | Done |
 | [SB-5305](E53-agents-act-carefully/SB-5305-managed-mcp.md) | S52.2 | E53 | Managed MCP access | Done |
 | [SB-5306](E53-agents-act-carefully/SB-5306-meet-transcripts.md) | S52.2 | E53 | Meeting transcripts from Drive | Done |
+
+### W53 Know Who Can See
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5401](E54-know-who-can-see/SB-5401-shared-too-widely.md) | S53.1 | E54 | Shared too widely | Open |
+| [SB-5402](E54-know-who-can-see/SB-5402-hold-until-confirmed.md) | S53.1 | E54 | Hold until the owner confirms | Open |
+| [SB-5403](E54-know-who-can-see/SB-5403-sharing-widened.md) | S53.1 | E54 | Sharing widened | Open |
+| [SB-5404](E54-know-who-can-see/SB-5404-who-can-see.md) | S53.1 | E54 | Who can see this | Open |
+| [SB-5405](E54-know-who-can-see/SB-5405-labels-travel.md) | S53.2 | E54 | Labels travel | Open |
+| [SB-5406](E54-know-who-can-see/SB-5406-agent-reach.md) | S53.2 | E54 | How far each agent reaches | Open |
+| [SB-5407](E54-know-who-can-see/SB-5407-sensitive-map.md) | S53.2 | E54 | Sensitive map | Open |
+
+### W54 See and Steer the Context
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5501](E55-see-and-steer-context/SB-5501-context-panel.md) | S54.1 | E55 | Context panel | Open |
+| [SB-5502](E55-see-and-steer-context/SB-5502-keep-or-drop.md) | S54.1 | E55 | Keep or drop for this conversation | Open |
+| [SB-5503](E55-see-and-steer-context/SB-5503-not-for-me.md) | S54.1 | E55 | Not for me | Open |
+| [SB-5504](E55-see-and-steer-context/SB-5504-memory-used.md) | S54.1 | E55 | Memory used, shown | Open |
+| [SB-5505](E55-see-and-steer-context/SB-5505-memory-over-mcp.md) | S54.2 | E55 | Memory over MCP | Open |
+| [SB-5506](E55-see-and-steer-context/SB-5506-why-not.md) | S54.2 | E55 | Why not this document? | Open |
+| [SB-5507](E55-see-and-steer-context/SB-5507-retrieval-view.md) | S54.2 | E55 | Retrieval view for stewards | Open |
+
+### W55 Keep Answering, Spend Less
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5601](E56-keep-answering-spend-less/SB-5601-gated-fallback.md) | S55.1 | E56 | Fall back to a gated model | Open |
+| [SB-5602](E56-keep-answering-spend-less/SB-5602-passages-when-down.md) | S55.1 | E56 | Passages when the model is down | Open |
+| [SB-5603](E56-keep-answering-spend-less/SB-5603-answer-reuse.md) | S55.1 | E56 | Answered before, checked now | Open |
+| [SB-5604](E56-keep-answering-spend-less/SB-5604-batch-what-can-wait.md) | S55.2 | E56 | Batch what can wait | Open |
+| [SB-5605](E56-keep-answering-spend-less/SB-5605-prompt-caching.md) | S55.2 | E56 | Cache the stable part | Open |
+| [SB-5606](E56-keep-answering-spend-less/SB-5606-what-it-saved.md) | S55.2 | E56 | What it saved | Open |
