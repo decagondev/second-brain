@@ -2,10 +2,13 @@ package wire
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/adapters/chatapp/mmapp"
+	"example.com/second-brain/internal/adapters/chatapp/slackapp"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/budget"
 	"example.com/second-brain/internal/core/notify"
@@ -90,4 +93,22 @@ func (c *Cell) tryTrigger(ctx context.Context, s tenancy.Scope, name, on string)
 	}
 	ctx, tally := budget.WithTally(ctx)
 	return c.Parts().Stewards.Try(ctx, s, name, on, chunks, tally.USD)
+}
+
+// chatPoster is the bot that posts a person's drafted message (SB-5304): the Mattermost bot
+// when the cell has one, else the Slack bot, else none.
+func (c *Cell) chatPoster() ask.ChannelPoster {
+	client := &http.Client{Timeout: 10 * time.Second}
+	if mm := c.Config.Mattermost; mm.Base != "" {
+		return mmapp.DM{Base: mm.Base, TeamID: mm.TeamID, Token: slackField(c.Secret("mattermost"), "bot_token"), Client: client}
+	}
+	if cc, ok := c.Config.Connectors["chat"]; ok {
+		return slackapp.DM{Base: cc.Base, Token: slackField(c.Secret("connectors/chat"), "bot_token"), Client: client}
+	}
+	return nil
+}
+
+// spaceChannels are a space's chat channels in the manifest now.
+func (c *Cell) spaceChannels(space string) []string {
+	return c.Manifest().Spaces[space].Channels
 }

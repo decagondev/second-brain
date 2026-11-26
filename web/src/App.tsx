@@ -26,6 +26,7 @@ import { NoticeBanner } from "./Notice";
 import { PauseHere } from "./Accountable";
 import { AnswerTools, DownloadConversation } from "./Copy";
 import { AskFromHere, OtherBranches, branchFrom } from "./Branch";
+import { NextAction } from "./NextAction";
 import { AtHint, withoutAt } from "./AtHint";
 import type { Branch } from "./Branch";
 import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, setVerifiedOnly, shortAnswers, verifiedOnly } from "./recent";
@@ -351,6 +352,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               {answered(x) && <DepartmentsView answer={x.answer} fetcher={fetcher} />}
               {answered(x) && <HandoffView answer={x.answer} question={x.question} fetcher={fetcher} />}
               {answered(x) && <AnswerTools question={x.question} answer={x.answer} />}
+              {answered(x) && x.answer.trace && <NextAction trace={x.answer.trace} space={space && !space.endsWith(BRANCH) ? space : undefined} fetcher={fetcher} />}
               {answered(x) && <FeedbackBar answer={x.answer} fetcher={fetcher} question={x.question} space={space || undefined} />}
               {answered(x) && <TurnTools question={x.question} fetcher={fetcher} space={space || undefined} />}
               {answered(x) && <RememberBox fetcher={fetcher} />}

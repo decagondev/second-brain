@@ -18,6 +18,7 @@ import (
 // Notifications; SB-2101): the user by email, a direct channel with the bot, one post.
 type DM struct {
 	Base   string // the Mattermost server
+	TeamID string // the team whose channels Post finds by name (SB-5304)
 	Token  func(ctx context.Context) (string, error)
 	Client *http.Client
 }
@@ -105,4 +106,23 @@ func DMText(m notify.Message) string {
 		text += " [Pause this agent here](" + strings.NewReplacer("(", "%28", ")", "%29", " ", "%20").Replace(m.Pause) + ")"
 	}
 	return text
+}
+
+// Post posts text in channel (#name) of the team, as the bot (SB-5304), and returns the
+// post's id. The bot must be in the channel.
+func (d DM) Post(ctx context.Context, channel, text string) (string, error) {
+	var ch struct {
+		ID string `json:"id"`
+	}
+	name := strings.TrimPrefix(channel, "#")
+	if err := d.call(ctx, http.MethodGet, "teams/"+url.PathEscape(d.TeamID)+"/channels/name/"+url.PathEscape(name), nil, &ch); err != nil || ch.ID == "" {
+		return "", fmt.Errorf("mmapp: channel %s: %v", name, err)
+	}
+	var post struct {
+		ID string `json:"id"`
+	}
+	if err := d.call(ctx, http.MethodPost, "posts", map[string]string{"channel_id": ch.ID, "message": escape(text)}, &post); err != nil {
+		return "", err
+	}
+	return post.ID, nil
 }

@@ -154,3 +154,43 @@ func (h Questions) lend(yes bool) http.HandlerFunc {
 		h.k().out().ok(w, "", map[string]any{"id": r.PathValue("id"), "lent": yes})
 	}
 }
+
+// draftAction is POST /v1/actions/draft {"trace", "kind"}: the next action drafted from the
+// caller's own answer, for them to edit (SB-5304). Nothing is sent.
+func (h Questions) draftAction(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct{ Trace, Kind string }
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"trace": "tr_…", "kind": "ticket"}.`))
+		return
+	}
+	d, err := h.Service.Agent.DraftAction(r.Context(), s, body.Trace, body.Kind)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", d)
+}
+
+// sendMessage is POST /v1/spaces/NAME/messages {"channel", "text"}: the person's edited
+// message, posted by the bot in one of the space's channels, marked as sent by them (SB-5304).
+func (h Questions) sendMessage(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	var body struct{ Channel, Text string }
+	if !readJSON(r, &body) {
+		h.k().out().fail(w, "", errs.New(errs.EINVAL, `The body must be JSON such as {"channel": "#ops", "text": "…"}.`))
+		return
+	}
+	m, err := h.Service.SendMessage(r.Context(), s, r.PathValue("name"), body.Channel, body.Text, h.Poster, h.Channels)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", m)
+}

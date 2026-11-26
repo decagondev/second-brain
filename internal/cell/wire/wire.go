@@ -684,7 +684,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Rhythms{Service: rhythms, Release: c.Release, NewID: newID}.Register(mux)
 	api.Collections{Service: ask.CollectionService{Agent: agent, Store: c.Traces, Saved: c.Traces, Audit: c.Audit, Known: legwork.Known,
 		NewID: newID, Now: time.Now}, Release: c.Release, NewID: newID}.Register(mux) // SB-4304
-	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces, TryTrigger: c.tryTrigger, LendAs: c.ScopeAs,
+	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces, TryTrigger: c.tryTrigger, LendAs: c.ScopeAs, Poster: c.chatPoster(), Channels: c.spaceChannels,
 		ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays }}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
 		Start: func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error) {

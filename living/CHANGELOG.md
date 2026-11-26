@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Draft the next action: an answer becomes a ticket comment, sent through the gated ticket-update workflow, or a message the bot posts in one of the space's channels signed as the person (`POST /v1/actions/draft`, `POST /v1/spaces/NAME/messages`); nothing goes out before Send (SB-5304)
 - Managed MCP access: sb-cell(5) `mcp_groups` names which groups may use MCP and which tool families each gets; the AI command centre counts answers by client (web, chat, MCP, API token); Google Meet transcripts in Drive are read as transcripts (SB-5305, SB-5306)
 - Start on work: `on: [pr-opened, ticket-filed]` drafts each new pull request or ticket for the space's steward, batching floods; **Try it** replays a trigger over 14 days without sending anything (`POST /v1/spaces/NAME/triggers/ON/try`); a steward asks someone to lend a space for one run, and the lent draft names the lender and shows only to those who can open every cite (`POST /v1/spaces/NAME/loans`, `/v1/me/loans/ID/approve|decline`, LAW-31) (SB-5301 to SB-5303)
 - Point precisely, ask freely: cites to PDFs and decks name the page or slide (`page` on cites and passages); **Ask from here** branches a conversation from an earlier question (`POST /v1/conversations/ID/branch`) and the other branches stay in the browser; `@` in the ask box offers spaces, people and documents, and `/` offers starter questions beside skills (SB-5205 to SB-5207)

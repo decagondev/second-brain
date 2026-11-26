@@ -65,6 +65,16 @@ Approvers fetch it with `GET /v1/actions/{id}`, which adds a `diff` against the 
 | `approval`, `approved_by` | Set once approved |
 | `receipt` / `reason` | Set once `Ran` / `DidNotRun` |
 
+### Draft the next action (SB-5304)
+
+An answer can become the next action, drafted for the person to edit; nothing goes out until they press **Send**.
+
+- `POST /v1/actions/draft` `{ "trace": "tr_…", "kind": "ticket"|"message" }`, on the caller's own answer, returns `{ "kind", "text", "cites" }`: each cited claim as a line, then the cites, every one checked again as the caller now; a claim whose cite they can no longer open is left out (LAW-26). Nothing is sent or kept.
+- A **ticket** comment is sent as any action is: `POST /v1/actions` with `workflow: ticket-update`, the ticket as `target` and `{ "comment": TEXT }`, so it waits for its approver and is audited like every action (Actions, above; LAW-04).
+- A **message** is posted by the cell's chat bot (Mattermost, else Slack) in one of the space's `channels` (sb-space(5)): `POST /v1/spaces/NAME/messages` `{ "channel": "#ops", "text": "…" }` (1 to 4,000 characters), for a member of the space, answers `{ "channel", "id" }`. It starts "Sent by EMAIL via Second Brain:", is masked like everything the cell sends (sb-ingest(7), Nothing sensitive goes out), and is audited `message_sent` with its hash before it is posted. A channel that isn't the space's is `EINVAL`; a cell without a chat bot is `EUNAVAIL`. The bot must be a member of the channel.
+
+The web app's **Draft a ticket comment** and **Draft a message** under each answer do this, with the text to edit and **Send**.
+
 ### The approver view
 
 The web UI shows an action at `/?action=tc_…` (SB-407). It shows the target system and object, the requester, the policy reason, the expiry, the exact payload, and the diff, field by field. The page shows the hash it was given and **echoes that same hash** on approve, so a payload that changed after the page loaded is refused (`ENOAPPROVAL`) rather than approved unseen. Approve and Reject are two separate buttons. Each needs an explicit click, and each offers an optional note. The page never approves on load, on Enter, or for a list of actions at once.

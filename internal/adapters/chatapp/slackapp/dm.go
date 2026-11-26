@@ -123,3 +123,22 @@ func DMText(m notify.Message) string {
 	}
 	return text
 }
+
+// Post posts text in a channel, by its name (#ops) or id, as the bot (SB-5304), and returns
+// the message's timestamp, Slack's id for it. The bot must be in the channel.
+func (d DM) Post(ctx context.Context, channel, text string) (string, error) {
+	var sent struct {
+		OK  bool   `json:"ok"`
+		Err string `json:"error"`
+		TS  string `json:"ts"`
+	}
+	esc := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+	if err := d.call(ctx, http.MethodPost, "chat.postMessage", map[string]any{"channel": channel, "text": esc.Replace(text),
+		"unfurl_links": false, "unfurl_media": false}, &sent); err != nil {
+		return "", err
+	}
+	if !sent.OK {
+		return "", fmt.Errorf("slackapp: chat.postMessage: %s", sent.Err)
+	}
+	return sent.TS, nil
+}

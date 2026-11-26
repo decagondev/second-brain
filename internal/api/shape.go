@@ -18,6 +18,8 @@ func (h Questions) registerShape(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/spaces/{name}/loans", h.requestLoan)                                             // SB-5303
 	mux.HandleFunc("POST /v1/me/loans/{id}/approve", h.lend(true))                                            // SB-5303
 	mux.HandleFunc("POST /v1/me/loans/{id}/decline", h.lend(false))                                           // SB-5303
+	mux.HandleFunc("POST /v1/actions/draft", h.draftAction)                                                   // SB-5304
+	mux.HandleFunc("POST /v1/spaces/{name}/messages", h.sendMessage)                                          // SB-5304
 	mux.HandleFunc("PUT /v1/spaces/{name}/questions/{id}/sections/{n}", h.editSection)                        // SB-5202
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/suggestions/{n}/accept", h.decideSuggestion(true))  // SB-5202
 	mux.HandleFunc("POST /v1/spaces/{name}/questions/{id}/suggestions/{n}/reject", h.decideSuggestion(false)) // SB-5202

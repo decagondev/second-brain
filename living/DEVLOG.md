@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-26 SB-5304: Draft the next action
+
+**Wave/slice:** W52 / S52.2 (SB-5304) · **Status:** Done
+
+**What:** Under each answer, **Draft a ticket comment** and **Draft a message** turn it into the next action: its cited lines and their cites, each checked again as the person, ready to edit. A ticket comment is sent through the gated ticket-update workflow, so it waits for its approver like any action. A message is posted by the cell's chat bot in one of the space's channels, starting "Sent by EMAIL via Second Brain:", masked and audited before it goes. Nothing leaves before the person presses Send.
+
+**Why this way:** The user chose the tenant's credentials over each person's own token, which would need a sign-in to every tool and a store of tokens. Tickets reuse the approval path that already exists, so nothing new can change a ticket without an approver; messages are limited to the space's own channels and signed, so a post always says whose it is.
+
+**Learned:** Slack accepts a channel by name for chat.postMessage; Mattermost needs its id, found by name in the team, so the cell's Mattermost bot now knows its team.
+
+**Laws:** LAW-01, LAW-04, LAW-07, LAW-16. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-26 S52.2: Do the next thing (SB-5305, SB-5306)
 
 **Wave/slice:** W52 / S52.2 (SB-5305, SB-5306; SB-5304 waits on the user's decision) · **Status:** In progress

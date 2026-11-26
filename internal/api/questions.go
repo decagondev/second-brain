@@ -27,6 +27,10 @@ type Questions struct {
 	// scope in the space they lend (SB-5303); nil serves neither.
 	TryTrigger func(ctx context.Context, s tenancy.Scope, name, on string) (ask.TryResult, error)
 	LendAs     func(ctx context.Context, user, space string) (tenancy.Scope, error)
+	// Poster is the chat bot that posts a person's drafted message, and Channels a space's
+	// channels (SB-5304); nil posts none.
+	Poster   ask.ChannelPoster
+	Channels func(space string) []string
 }
 
 // Register mounts the endpoints.
