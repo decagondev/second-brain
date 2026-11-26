@@ -26,7 +26,7 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
 <h3 id="bundles">Bundles</h3>
-<p>A release is a signed <strong>bundle</strong>. Anything that changes behaviour is inside it and hashed into the release id, including prompts and the model version (ADR-0013). A prompt change is a release.</p>
+<p>A release is a signed <strong>bundle</strong>. Anything that changes behaviour is inside it and hashed into the release id, including prompts and the model version (ADR-0013). A prompt change is a release. Every agent in it is a definition with an owner (sb-agents(7), Definitions), and <code>sb agents lint</code> passing is part of the gate: a bundle with a definition that fails lint is never gated (sb-agents(7), Lint; SB-4403).</p>
 <p>The bundle manifest, <code>bundle.json</code> (SB-503):</p>
 <table>
 <thead>
@@ -93,10 +93,36 @@ rings:   0 internal → 1 friendly (testing) → 2 all (stable)
 <p>A cell in <code>tenant</code> custody (sb-factory(7)) gets releases exactly as a factory cell does: it <strong>pulls</strong>. Its only link to the factory's release store is a read token held in the tenant's own vault, <code>vault://tenants/TENANT/release-pull</code>, scoped to reading bundles. The factory's <code>publish-releases</code> grant lets the factory publish to its own store, and gives it no way into the tenant's account. The cell admits a bundle only after all four checks above, against the release identity it already trusts. A tampered object, an unknown release, a missing gate record or a wrong token all fail admission with <code>EUNSIGNED</code>, and the cell keeps running what it runs.</p>
 <p>The release controller holds every cell on the train with its custody. <strong>Tenant-custody cells count in the promote guard</strong> like any other: a stable tenant in its own account that hasn't pulled the current stable blocks promotion, so LAW-08 holds for it too. The controller learns what such a cell runs only from its signed attestations (Attestation, below), never by reaching in.</p>
 <p>A tenant may <strong>pause pulls</strong> by withholding the pull token. While paused, the cell falls behind, and once it is more than one behind stable, the promote guard holds every promotion until it pulls again. A pause that should last becomes a <strong>detach</strong> (sb-factory(7), Detach; the runbook <code>docs/runbooks/pause-pulls.md</code>). A detached cell leaves the train: the controller drops it from the guard and never deploys to it again, and LAW-06 and LAW-08 stop applying to it, as sb-factory(7) says.</p>
+<h3 id="routing-policies-and-the-gate-sb-5002">Routing policies and the gate (SB-5002)</h3>
+<p>A space's <code>routing</code> (sb-space(5)) decides which model tier answers it, so the gate checks each space on its policy: on the cell, the evals job runs an <code>economy</code> space's cases on the small tier, a <code>frontier</code> space's on the main tier only, and a <code>balanced</code> space's on both (sb-evals(7), Routing policies). A case that fails on the tier its policy uses holds the small tier until a later run passes, so no policy keeps sending answers to a tier its own cases fail on. A manifest whose team chooses a policy above its department's is refused by <code>sb tenant check</code> (sb-tenant(5)).</p>
 <h3 id="channels">Channels</h3>
 <p>Tenants choose <code>stable</code> or <code>testing</code>, never a version (ADR-0004). The release controller points each channel at one release in the store, <code>channels/stable</code> and <code>channels/testing</code>, each holding a release id; a cell's updater reads its channel's pointer with its pull token and admits the release it names like any other (SB-1505). A pointer to a release that fails admission changes nothing in the cell. A bundle names each service's image by digest as <code>image/api</code>, <code>image/ingest</code>, <code>image/jobs</code>, <code>image/updater</code> (and <code>image/web</code>); <code>make images</code> builds them and <code>tools/release/bundle --image NAME=sha256:…</code> records them (sb-selfhost(7)).</p>
 <h3 id="rings-and-promotion">Rings and promotion</h3>
-<p>A gated release goes to ring 0 (the internal tenant), then ring 1 (friendly tenants on <code>testing</code>), soaks for at least 48 hours, then can be promoted to <code>stable</code>. <strong>Promote guard:</strong> promotion is refused unless every stable tenant runs the current stable. That is what keeps everyone at most one behind (LAW-08).</p>
+<p>A gated release goes to ring 0 (the internal tenant), then ring 1 (friendly tenants on <code>testing</code>), soaks for at least 48 hours, then can be promoted to <code>stable</code>. <strong>Promote guard:</strong> promotion is refused unless every stable tenant runs the current stable. That is what keeps everyone at most one behind (LAW-08). A definition's <code>shadow</code> runs only here, in the first ring (sb-agents(7), Shadow runs; SB-4704): a changed prompt meets real work beside the current one for up to a week, and its runs are never delivered.</p>
+<h3 id="feature-rollouts-sb-5106">Feature rollouts (SB-5106)</h3>
+<p>A release lists its features with a rollout: <code>on</code>, or <code>pilot</code>. A pilot feature is on only for the members of the tenant's <code>pilot</code> IdP group until 14 days after the cell first ran it, then for everyone, unless an admin <strong>holds</strong> it, which keeps it with the pilot group until it is released. <code>sb rollout list</code> (sb(1)) and <code>GET /v1/admin/rollouts</code> show each feature, its ticket, its state (<code>on</code>, <code>pilot</code> with <code>on_at</code>, or <code>held</code>) and when the cell first ran it; <code>sb rollout hold FEATURE</code> and <code>sb rollout release FEATURE</code>, or <code>POST /v1/admin/rollouts/FEATURE/hold|release</code>, change it, audited (<code>kind: config</code>, subject <code>rollout:FEATURE</code>) before it takes effect. <code>sb rollout</code> talks to the cell's control-plane endpoints, <code>GET /v1/cell/rollouts</code> and <code>POST /v1/cell/rollouts/FEATURE/OP</code> (<code>OP</code> is <code>hold</code> or <code>release</code>), which only the control plane may call; <code>POST /v1/admin/rollouts/FEATURE/release</code> is the operator's way. The cell keeps the dates and holds in <code>state/features/state.json</code>. The admin's week lists features in pilot, held and gone on for everyone (sb-observability(7)). This release's pilot features:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Ticket</th>
+<th>While in pilot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>branch-moderators</code></td>
+<td>SB-5105</td>
+<td>Only the pilot group's stewards act as branch moderators (sb-spaces(7))</td>
+</tr>
+<tr>
+<td><code>pause-link</code></td>
+<td>SB-5107</td>
+<td>Only the pilot group's notices carry Pause this agent here (sb-agents(7))</td>
+</tr>
+</tbody>
+</table>
+<p>A feature the cell can't read the state of is off, except for a feature with no pilot.</p>
 <h3 id="rollback">Rollback</h3>
 <p><code>sb release rollback</code> makes the previous stable current, revokes the bad release and redeploys affected cells, in under 10 minutes.</p>
 <h3 id="attestation">Attestation</h3>
@@ -146,7 +172,7 @@ sb release rollback --reason &quot;citation regressions in ring 2&quot;
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-release.1.html">sb-release(1)</a>, <a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and supply chain</a></p><p class="srcline">Source: <code>manual/sb-release.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#bundles">Bundles</a></li><li class="l3"><a href="#builds">Builds</a></li><li class="l3"><a href="#what-a-cell-admits-sb-506">What a cell admits (SB-506)</a></li><li class="l3"><a href="#cells-in-a-tenants-account-sb-707">Cells in a tenant's account (SB-707)</a></li><li class="l3"><a href="#channels">Channels</a></li><li class="l3"><a href="#rings-and-promotion">Rings and promotion</a></li><li class="l3"><a href="#rollback">Rollback</a></li><li class="l3"><a href="#attestation">Attestation</a></li><li class="l3"><a href="#cves">CVEs</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#bundles">Bundles</a></li><li class="l3"><a href="#builds">Builds</a></li><li class="l3"><a href="#what-a-cell-admits-sb-506">What a cell admits (SB-506)</a></li><li class="l3"><a href="#cells-in-a-tenants-account-sb-707">Cells in a tenant's account (SB-707)</a></li><li class="l3"><a href="#routing-policies-and-the-gate-sb-5002">Routing policies and the gate (SB-5002)</a></li><li class="l3"><a href="#channels">Channels</a></li><li class="l3"><a href="#rings-and-promotion">Rings and promotion</a></li><li class="l3"><a href="#feature-rollouts-sb-5106">Feature rollouts (SB-5106)</a></li><li class="l3"><a href="#rollback">Rollback</a></li><li class="l3"><a href="#attestation">Attestation</a></li><li class="l3"><a href="#cves">CVEs</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

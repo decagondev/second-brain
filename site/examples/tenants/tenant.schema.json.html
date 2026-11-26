@@ -24,22 +24,115 @@
   &quot;additionalProperties&quot;: false,
   &quot;properties&quot;: {
     &quot;agents&quot;: {
-      &quot;contains&quot;: {
-        &quot;const&quot;: &quot;ask&quot;
-      },
-      &quot;description&quot;: &quot;Enabled agents; ask is required.&quot;,
-      &quot;items&quot;: {
-        &quot;enum&quot;: [
-          &quot;ask&quot;,
-          &quot;draft-reply&quot;,
-          &quot;incident-summary&quot;,
-          &quot;spec-digest&quot;,
-          &quot;close-checklist&quot;,
-          &quot;runbook-answer&quot;
-        ]
-      },
-      &quot;type&quot;: &quot;array&quot;,
-      &quot;uniqueItems&quot;: true
+      &quot;description&quot;: &quot;Enabled agents; ask is required. As a map, each agent may carry monthly_usd (SB-4703), and its job and targets (SB-5004).&quot;,
+      &quot;oneOf&quot;: [
+        {
+          &quot;contains&quot;: {
+            &quot;const&quot;: &quot;ask&quot;
+          },
+          &quot;items&quot;: {
+            &quot;enum&quot;: [
+              &quot;ask&quot;,
+              &quot;draft-reply&quot;,
+              &quot;incident-summary&quot;,
+              &quot;spec-digest&quot;,
+              &quot;close-checklist&quot;,
+              &quot;runbook-answer&quot;,
+              &quot;policy-answer&quot;,
+              &quot;clause-finder&quot;,
+              &quot;account-brief&quot;,
+              &quot;case-brief&quot;,
+              &quot;brand-check&quot;,
+              &quot;sop-steps&quot;,
+              &quot;design-rationale&quot;,
+              &quot;exec-brief&quot;
+            ]
+          },
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;uniqueItems&quot;: true
+        },
+        {
+          &quot;additionalProperties&quot;: {
+            &quot;additionalProperties&quot;: false,
+            &quot;properties&quot;: {
+              &quot;job&quot;: {
+                &quot;maxLength&quot;: 200,
+                &quot;minLength&quot;: 1,
+                &quot;type&quot;: &quot;string&quot;
+              },
+              &quot;monthly_usd&quot;: {
+                &quot;maximum&quot;: 100000,
+                &quot;minimum&quot;: 1,
+                &quot;type&quot;: &quot;number&quot;
+              },
+              &quot;targets&quot;: {
+                &quot;items&quot;: {
+                  &quot;additionalProperties&quot;: false,
+                  &quot;properties&quot;: {
+                    &quot;at_least&quot;: {
+                      &quot;minimum&quot;: 0,
+                      &quot;type&quot;: &quot;number&quot;
+                    },
+                    &quot;at_most&quot;: {
+                      &quot;minimum&quot;: 0,
+                      &quot;type&quot;: &quot;number&quot;
+                    },
+                    &quot;metric&quot;: {
+                      &quot;enum&quot;: [
+                        &quot;published_as_is&quot;,
+                        &quot;discard_rate&quot;,
+                        &quot;hours_to_publish&quot;,
+                        &quot;helpful_rate&quot;,
+                        &quot;cost_per_published_usd&quot;
+                      ]
+                    }
+                  },
+                  &quot;required&quot;: [
+                    &quot;metric&quot;
+                  ],
+                  &quot;type&quot;: &quot;object&quot;
+                },
+                &quot;maxItems&quot;: 3,
+                &quot;minItems&quot;: 1,
+                &quot;type&quot;: &quot;array&quot;
+              }
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;propertyNames&quot;: {
+            &quot;enum&quot;: [
+              &quot;ask&quot;,
+              &quot;draft-reply&quot;,
+              &quot;incident-summary&quot;,
+              &quot;spec-digest&quot;,
+              &quot;close-checklist&quot;,
+              &quot;runbook-answer&quot;,
+              &quot;policy-answer&quot;,
+              &quot;clause-finder&quot;,
+              &quot;account-brief&quot;,
+              &quot;case-brief&quot;,
+              &quot;brand-check&quot;,
+              &quot;sop-steps&quot;,
+              &quot;design-rationale&quot;,
+              &quot;exec-brief&quot;,
+              &quot;research&quot;,
+              &quot;meeting-prep&quot;,
+              &quot;incident-brief&quot;,
+              &quot;incident-review&quot;,
+              &quot;voc&quot;,
+              &quot;fix-draft&quot;,
+              &quot;goal-check-in&quot;,
+              &quot;catch-up&quot;,
+              &quot;leader-week&quot;,
+              &quot;update&quot;
+            ]
+          },
+          &quot;required&quot;: [
+            &quot;ask&quot;
+          ],
+          &quot;type&quot;: &quot;object&quot;
+        }
+      ]
     },
     &quot;approval&quot;: {
       &quot;additionalProperties&quot;: {
@@ -141,6 +234,35 @@
       },
       &quot;type&quot;: &quot;object&quot;
     },
+    &quot;events&quot;: {
+      &quot;additionalProperties&quot;: false,
+      &quot;description&quot;: &quot;Signed events out, ids only (SB-4404). Off when absent.&quot;,
+      &quot;properties&quot;: {
+        &quot;kinds&quot;: {
+          &quot;items&quot;: {
+            &quot;enum&quot;: [
+              &quot;decision&quot;,
+              &quot;goal_at_risk&quot;,
+              &quot;request_overdue&quot;,
+              &quot;policy_published&quot;,
+              &quot;action_due&quot;
+            ]
+          },
+          &quot;minItems&quot;: 1,
+          &quot;type&quot;: &quot;array&quot;,
+          &quot;uniqueItems&quot;: true
+        },
+        &quot;url&quot;: {
+          &quot;pattern&quot;: &quot;^https://&quot;,
+          &quot;type&quot;: &quot;string&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;url&quot;,
+        &quot;kinds&quot;
+      ],
+      &quot;type&quot;: &quot;object&quot;
+    },
     &quot;exclude&quot;: {
       &quot;additionalProperties&quot;: {
         &quot;items&quot;: {
@@ -194,6 +316,29 @@
       ],
       &quot;type&quot;: &quot;string&quot;
     },
+    &quot;limits&quot;: {
+      &quot;additionalProperties&quot;: false,
+      &quot;description&quot;: &quot;Per-person limits (SB-5003): at 80% the person is told, at 100% their own asks and research use the economy tier.&quot;,
+      &quot;properties&quot;: {
+        &quot;monthly_usd_per_person&quot;: {
+          &quot;maximum&quot;: 10000,
+          &quot;minimum&quot;: 1,
+          &quot;type&quot;: &quot;number&quot;
+        }
+      },
+      &quot;required&quot;: [
+        &quot;monthly_usd_per_person&quot;
+      ],
+      &quot;type&quot;: &quot;object&quot;
+    },
+    &quot;memory&quot;: {
+      &quot;description&quot;: &quot;Whether people may keep lines about themselves for their own asks (SB-4303). Default on.&quot;,
+      &quot;enum&quot;: [
+        &quot;on&quot;,
+        &quot;off&quot;
+      ],
+      &quot;type&quot;: &quot;string&quot;
+    },
     &quot;notes&quot;: {
       &quot;default&quot;: false,
       &quot;description&quot;: &quot;Stewards may publish replies as notes into the docs: folder share (SB-1705).&quot;,
@@ -217,6 +362,13 @@
       ],
       &quot;type&quot;: &quot;string&quot;
     },
+    &quot;research_usd&quot;: {
+      &quot;default&quot;: 2,
+      &quot;description&quot;: &quot;The most one research report may spend, in USD (SB-4201).&quot;,
+      &quot;maximum&quot;: 50,
+      &quot;minimum&quot;: 0.1,
+      &quot;type&quot;: &quot;number&quot;
+    },
     &quot;retention_days&quot;: {
       &quot;default&quot;: 365,
       &quot;description&quot;: &quot;Retention for traces, citations and drafts (not audit).&quot;,
@@ -236,11 +388,62 @@
                 &quot;incident-summary&quot;,
                 &quot;spec-digest&quot;,
                 &quot;close-checklist&quot;,
-                &quot;runbook-answer&quot;
+                &quot;runbook-answer&quot;,
+                &quot;policy-answer&quot;,
+                &quot;clause-finder&quot;,
+                &quot;account-brief&quot;,
+                &quot;case-brief&quot;,
+                &quot;brand-check&quot;,
+                &quot;sop-steps&quot;,
+                &quot;design-rationale&quot;,
+                &quot;exec-brief&quot;
               ]
             },
             &quot;type&quot;: &quot;array&quot;,
             &quot;uniqueItems&quot;: true
+          },
+          &quot;brief&quot;: {
+            &quot;additionalProperties&quot;: false,
+            &quot;properties&quot;: {
+              &quot;agent&quot;: {
+                &quot;enum&quot;: [
+                  &quot;ask&quot;,
+                  &quot;draft-reply&quot;,
+                  &quot;incident-summary&quot;,
+                  &quot;spec-digest&quot;,
+                  &quot;close-checklist&quot;,
+                  &quot;runbook-answer&quot;,
+                  &quot;policy-answer&quot;,
+                  &quot;clause-finder&quot;,
+                  &quot;account-brief&quot;,
+                  &quot;case-brief&quot;,
+                  &quot;brand-check&quot;,
+                  &quot;sop-steps&quot;,
+                  &quot;design-rationale&quot;,
+                  &quot;exec-brief&quot;
+                ]
+              },
+              &quot;weekly&quot;: {
+                &quot;enum&quot;: [
+                  &quot;monday&quot;,
+                  &quot;tuesday&quot;,
+                  &quot;wednesday&quot;,
+                  &quot;thursday&quot;,
+                  &quot;friday&quot;,
+                  &quot;saturday&quot;,
+                  &quot;sunday&quot;
+                ]
+              }
+            },
+            &quot;required&quot;: [
+              &quot;agent&quot;,
+              &quot;weekly&quot;
+            ],
+            &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;budget_usd_month&quot;: {
+            &quot;minimum&quot;: 1,
+            &quot;type&quot;: &quot;integer&quot;
           },
           &quot;channels&quot;: {
             &quot;items&quot;: {
@@ -273,6 +476,19 @@
             },
             &quot;type&quot;: &quot;object&quot;
           },
+          &quot;incident_labels&quot;: {
+            &quot;default&quot;: [
+              &quot;sev-1&quot;
+            ],
+            &quot;items&quot;: {
+              &quot;pattern&quot;: &quot;^[A-Za-z0-9][A-Za-z0-9 _.:/-]{0,39}$&quot;,
+              &quot;type&quot;: &quot;string&quot;
+            },
+            &quot;maxItems&quot;: 10,
+            &quot;minItems&quot;: 1,
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
+          },
           &quot;label&quot;: {
             &quot;enum&quot;: [
               &quot;public&quot;,
@@ -280,6 +496,10 @@
               &quot;confidential&quot;,
               &quot;restricted&quot;
             ]
+          },
+          &quot;leader_week&quot;: {
+            &quot;default&quot;: true,
+            &quot;type&quot;: &quot;boolean&quot;
           },
           &quot;members&quot;: {
             &quot;items&quot;: {
@@ -289,6 +509,54 @@
             &quot;minItems&quot;: 1,
             &quot;type&quot;: &quot;array&quot;,
             &quot;uniqueItems&quot;: true
+          },
+          &quot;model&quot;: {
+            &quot;enum&quot;: [
+              &quot;main&quot;
+            ]
+          },
+          &quot;on&quot;: {
+            &quot;items&quot;: {
+              &quot;enum&quot;: [
+                &quot;source-changed&quot;,
+                &quot;pr-opened&quot;,
+                &quot;ticket-filed&quot;
+              ]
+            },
+            &quot;minItems&quot;: 1,
+            &quot;type&quot;: &quot;array&quot;,
+            &quot;uniqueItems&quot;: true
+          },
+          &quot;onboarding&quot;: {
+            &quot;default&quot;: true,
+            &quot;type&quot;: &quot;boolean&quot;
+          },
+          &quot;parent&quot;: {
+            &quot;pattern&quot;: &quot;^[a-z][a-z0-9-]{1,30}$&quot;,
+            &quot;type&quot;: &quot;string&quot;
+          },
+          &quot;requests&quot;: {
+            &quot;additionalProperties&quot;: false,
+            &quot;properties&quot;: {
+              &quot;categories&quot;: {
+                &quot;items&quot;: {
+                  &quot;pattern&quot;: &quot;^[A-Za-z0-9][A-Za-z0-9 \u0026/:'-]{0,39}$&quot;,
+                  &quot;type&quot;: &quot;string&quot;
+                },
+                &quot;maxItems&quot;: 10,
+                &quot;minItems&quot;: 1,
+                &quot;type&quot;: &quot;array&quot;
+              },
+              &quot;due_days&quot;: {
+                &quot;maximum&quot;: 30,
+                &quot;minimum&quot;: 1,
+                &quot;type&quot;: &quot;integer&quot;
+              }
+            },
+            &quot;required&quot;: [
+              &quot;categories&quot;
+            ],
+            &quot;type&quot;: &quot;object&quot;
           },
           &quot;retention_days&quot;: {
             &quot;maximum&quot;: 3650,
@@ -300,6 +568,99 @@
             &quot;maximum&quot;: 3650,
             &quot;minimum&quot;: 30,
             &quot;type&quot;: &quot;integer&quot;
+          },
+          &quot;rhythms&quot;: {
+            &quot;additionalProperties&quot;: {
+              &quot;additionalProperties&quot;: false,
+              &quot;properties&quot;: {
+                &quot;plan&quot;: {
+                  &quot;enum&quot;: [
+                    &quot;manager&quot;,
+                    &quot;steward&quot;
+                  ]
+                },
+                &quot;steps&quot;: {
+                  &quot;items&quot;: {
+                    &quot;additionalProperties&quot;: false,
+                    &quot;properties&quot;: {
+                      &quot;agent&quot;: {
+                        &quot;enum&quot;: [
+                          &quot;ask&quot;,
+                          &quot;start-here&quot;,
+                          &quot;catch-up&quot;,
+                          &quot;kickoff-brief&quot;,
+                          &quot;retrospective&quot;,
+                          &quot;gaps&quot;,
+                          &quot;goal-plan&quot;,
+                          &quot;one-on-one&quot;
+                        ]
+                      },
+                      &quot;approver&quot;: {
+                        &quot;enum&quot;: [
+                          &quot;subject&quot;,
+                          &quot;starter&quot;,
+                          &quot;manager&quot;,
+                          &quot;steward&quot;
+                        ]
+                      },
+                      &quot;ask&quot;: {
+                        &quot;maxLength&quot;: 300,
+                        &quot;minLength&quot;: 1,
+                        &quot;type&quot;: &quot;string&quot;
+                      },
+                      &quot;day&quot;: {
+                        &quot;maximum&quot;: 120,
+                        &quot;minimum&quot;: 0,
+                        &quot;type&quot;: &quot;integer&quot;
+                      },
+                      &quot;kind&quot;: {
+                        &quot;enum&quot;: [
+                          &quot;draft&quot;,
+                          &quot;routine&quot;,
+                          &quot;checkin&quot;,
+                          &quot;request&quot;
+                        ]
+                      }
+                    },
+                    &quot;required&quot;: [
+                      &quot;day&quot;,
+                      &quot;kind&quot;,
+                      &quot;ask&quot;,
+                      &quot;approver&quot;
+                    ],
+                    &quot;type&quot;: &quot;object&quot;
+                  },
+                  &quot;maxItems&quot;: 12,
+                  &quot;minItems&quot;: 1,
+                  &quot;type&quot;: &quot;array&quot;
+                },
+                &quot;subject&quot;: {
+                  &quot;enum&quot;: [
+                    &quot;person&quot;,
+                    &quot;collection&quot;,
+                    &quot;space&quot;
+                  ]
+                }
+              },
+              &quot;required&quot;: [
+                &quot;subject&quot;,
+                &quot;steps&quot;
+              ],
+              &quot;type&quot;: &quot;object&quot;
+            },
+            &quot;maxProperties&quot;: 10,
+            &quot;propertyNames&quot;: {
+              &quot;pattern&quot;: &quot;^[a-z][a-z0-9-]{0,39}$&quot;
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;routing&quot;: {
+            &quot;default&quot;: &quot;balanced&quot;,
+            &quot;enum&quot;: [
+              &quot;economy&quot;,
+              &quot;balanced&quot;,
+              &quot;frontier&quot;
+            ]
           },
           &quot;scope&quot;: {
             &quot;additionalProperties&quot;: {
@@ -321,6 +682,37 @@
                 &quot;hris&quot;,
                 &quot;accounting&quot;
               ]
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
+          &quot;skills&quot;: {
+            &quot;additionalProperties&quot;: {
+              &quot;additionalProperties&quot;: false,
+              &quot;properties&quot;: {
+                &quot;cases&quot;: {
+                  &quot;additionalProperties&quot;: {
+                    &quot;pattern&quot;: &quot;^[a-z]+:[^@\\s]+$&quot;,
+                    &quot;type&quot;: &quot;string&quot;
+                  },
+                  &quot;maxProperties&quot;: 10,
+                  &quot;minProperties&quot;: 3,
+                  &quot;type&quot;: &quot;object&quot;
+                },
+                &quot;instruction&quot;: {
+                  &quot;maxLength&quot;: 1000,
+                  &quot;minLength&quot;: 1,
+                  &quot;type&quot;: &quot;string&quot;
+                }
+              },
+              &quot;required&quot;: [
+                &quot;instruction&quot;,
+                &quot;cases&quot;
+              ],
+              &quot;type&quot;: &quot;object&quot;
+            },
+            &quot;maxProperties&quot;: 10,
+            &quot;propertyNames&quot;: {
+              &quot;pattern&quot;: &quot;^[a-z][a-z0-9-]{0,39}$&quot;
             },
             &quot;type&quot;: &quot;object&quot;
           },
@@ -357,6 +749,9 @@
               &quot;sales&quot;,
               &quot;support&quot;
             ]
+          },
+          &quot;updates&quot;: {
+            &quot;type&quot;: &quot;boolean&quot;
           }
         },
         &quot;required&quot;: [

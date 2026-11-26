@@ -28,10 +28,19 @@ sb tenant  retention --plan [--days N] (--cell URL | --tenant T)
 sb space   init FILE --template NAME --members GROUP…   (sb-space(1))
 sb space   templates
 sb space   diff FILE --idp-snapshot SNAPSHOT [--json]
+sb space   scope-report (--cell URL | --tenant T) [--json]
+sb tree    move FILE SPACE --to PARENT --plan [--write OUT]   (sb-space(1), tree)
+sb tree    merge FILE FROM INTO --plan [--write OUT]
+sb index   prune [--dry-run] [--reason TEXT] (--cell URL | --tenant T)   (sb-admin(3), index leftovers)
+sb index   refresh CITE --reason TEXT (--cell URL | --tenant T)      (sb-admin(3), index refresh)
 sb kill    agent|connector|space|tenant [NAME] --reason TEXT
 sb unkill  agent|connector|space|tenant [NAME] --reason TEXT
 sb audit   verify|tail|export
-sb release status|promote|rollback       (maintainers)
+sb release status|promote|rollback|notes   (maintainers; notes: --from DIR --to DIR)
+sb agents  lint [--root DIR]             (sb-agents(7), Lint)
+sb agents  record NAME [--tenant T | --cell URL] [--out DIR] [--key ed25519:PUB]  (sb-agents(7), An agent's record)
+sb inventory export [--tenant T | --cell URL] [--out DIR] [--key ed25519:PUB]  (sb-admin(3), Inventory)
+sb rollout list|hold|release [FEATURE] [--tenant T | --cell URL]  (sb-release(7), Feature rollouts)
 sb factory status|handoff|access|detach|verify-export  (factory operators and tenant owners, sb-factory(1))
 sb eval    run|gate|diff
 sb selfhost doctor [--facts FILE]        (a self-hosted box, sb-selfhost(7))
@@ -41,7 +50,7 @@ sb selfhost check-dsn FILE [--service OUT]
 sb selfhost check-email HOST:PORT [--ca FILE]
 sb selfhost check-notify --to EMAIL (--cell URL | --tenant T)
 sb selfhost check-chat --slack TOKENFILE [--api URL] | --mattermost URL --token-file FILE [--team ID]
-sb cell check-config FILE [--vault DIR]
+sb cell check-config FILE [--vault DIR]...
 sb selfhost retire-statement --tenant T --export FILE (--anchor-seed FILE --check | --cell-key KEY --host H --destroyed TEXT... [--kept TEXT]... --out FILE)
 sb selfhost verify-retirement FILE --key ed25519:KEY
 sb secrets scan [--known PATH]... PATH...   (sb-observability(7))
@@ -65,6 +74,8 @@ sb version
 <li>writes nothing locally except <code>~/.config/sb/credentials</code> (an OIDC device-flow token);</li>
 <li>is audited server-side when it changes anything.</li>
 </ul>
+<p><code>sb index prune --dry-run</code> prints the index's leftovers by cite (<code>GET /v1/admin/index/leftovers</code>): documents their source no longer lists, and chunks no space holds. Without <code>--dry-run</code> it removes the documents their source no longer lists, which needs <code>--reason</code> and is audited (<code>POST /v1/admin/index/prune</code>; SB-2905). It never touches a document its source still lists, so chunks no space holds are only listed.</p>
+<p><code>sb index refresh CITE --reason TEXT</code> re-reads one document from its source now (<code>POST /v1/admin/index/refresh</code>; SB-3202) and prints its version and whether it changed, or that it was removed because the source no longer has it. Audited; admins only.</p>
 <p>During the build, every command in the SYNOPSIS exists. A command whose ticket hasn't landed yet exits 2 with <code>ENOTIMPL</code> and names the ticket, for example <code>sb tenant check: not built yet (SB-101)</code>. It never pretends to succeed.</p>
 <h2 id="options">OPTIONS</h2>
 <table>

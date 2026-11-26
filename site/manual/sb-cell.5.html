@@ -117,6 +117,18 @@
 <td>The built web UI (<code>web/dist</code>); without it, <code>GET /</code> is not served</td>
 </tr>
 <tr>
+<td><code>mcp_groups</code></td>
+<td>map group → list</td>
+<td>no</td>
+<td>(SB-5305) Who may use MCP, and which tools: each IdP group named gets the tool families listed, of <code>search</code>, <code>ask</code> (with <code>passage</code>), <code>agents</code>, <code>research</code> and <code>skills</code> (prompts). A person in none of the groups is refused (<code>EPERM</code>), and a tool not granted to any of their groups isn't listed or callable. Without it, everyone gets every family, as before. It needs <code>mcp: true</code></td>
+</tr>
+<tr>
+<td><code>mcp</code></td>
+<td>bool</td>
+<td>no</td>
+<td>(SB-3801) <code>true</code> serves <code>POST /v1/mcp</code>, the read-only MCP endpoint other AI tools use with a person's own API token (sb-api(3), MCP). Off by default</td>
+</tr>
+<tr>
 <td><code>model.provider</code></td>
 <td>string</td>
 <td>yes</td>
@@ -133,6 +145,12 @@
 <td>string</td>
 <td>for a gateway provider</td>
 <td>The model id</td>
+</tr>
+<tr>
+<td><code>model.small.id</code>, <code>model.small.price.in_per_m</code>, <code>model.small.price.out_per_m</code></td>
+<td>string, numbers</td>
+<td>no</td>
+<td>(SB-4405) A second, smaller model of the same provider, base and key: short plain asks go to it (sb-evals(7), Model tiers). Without it, every call uses <code>model.id</code></td>
 </tr>
 <tr>
 <td><code>model.price.in_per_m</code>, <code>model.price.out_per_m</code></td>
@@ -169,6 +187,12 @@
 <td>https URL, string</td>
 <td>no</td>
 <td>The Mattermost server and the tenant's team for the Mattermost slash command at <code>POST /chat/mattermost</code> (sb-ask(3), The chat app (Mattermost); SB-2005), with <code>{"command_token", "bot_token"}</code> at <code>vault://tenants/TENANT/mattermost</code>. The same bot sends notifications as direct messages (sb-ask(3), Notifications). Without them nothing answers there. The base is <code>https</code>, or <code>http</code> on <code>127.0.0.1</code> only for a server on this machine</td>
+</tr>
+<tr>
+<td><code>calendar.kind</code>, <code>calendar.base</code></td>
+<td><code>google</code>, https URL</td>
+<td>no</td>
+<td>(SB-4202) A read-only calendar for meeting prep (sb-ask(3), Meeting prep; sb-connector(3), Calendars): each person's own events, read as them through the Google service account at <code>vault://tenants/TENANT/calendar</code> with domain-wide delegation for the one scope <code>calendar.events.readonly</code>. <code>base</code> defaults to <code>https://www.googleapis.com</code>. Without it there is no calendar, and prep takes a pasted agenda only</td>
 </tr>
 <tr>
 <td><code>email.server</code>, <code>email.from</code></td>

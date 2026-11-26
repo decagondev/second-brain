@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SB-4802: A new joiner&#x27;s first 90 days · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a><a href="../../epics/E16-self-hosted-cell/README.html">E16 Self-hosted Cell</a><a href="../../epics/E17-team-knowledge/README.html">E17 Team Knowledge</a><a href="../../epics/E18-easy-to-run/README.html">E18 Easy to Run</a><a href="../../epics/E19-protect-the-data/README.html">E19 Protect the Data</a><a href="../../epics/E20-close-the-loops/README.html">E20 Close the Loops</a><a href="../../epics/E21-keep-people-in-the-loop/README.html">E21 Keep People in the Loop</a><a href="../../epics/E22-keep-knowledge-owned/README.html">E22 Keep Knowledge Owned</a><a href="../../epics/E23-fit-the-site/README.html">E23 Fit the Site</a><a href="../../epics/E24-easier-to-ask/README.html">E24 Easier to Ask</a><a href="../../epics/E25-easier-to-steward/README.html">E25 Easier to Steward</a><a href="../../epics/E26-easier-to-operate/README.html">E26 Easier to Operate</a><a href="../../epics/E27-fresh-answers/README.html">E27 Fresh Answers</a><a href="../../epics/E28-tidy-corpus/README.html">E28 A Tidy Corpus</a><a href="../../epics/E29-focused-context/README.html">E29 A Focused Context</a><a href="../../epics/E30-show-the-evidence/README.html">E30 Show the Evidence</a><a href="../../epics/E31-fill-the-gaps/README.html">E31 Fill the Gaps</a><a href="../../epics/E32-run-without-surprises/README.html">E32 Run Without Surprises</a><a href="../../epics/E33-ask-better/README.html">E33 Ask Better</a><a href="../../epics/E34-capture-knowledge/README.html">E34 Capture Knowledge</a><a href="../../epics/E35-trust-and-control/README.html">E35 Trust and Control</a><a href="../../epics/E36-trust-each-answer/README.html">E36 Trust Each Answer</a><a href="../../epics/E37-capture-conversations/README.html">E37 Capture Conversations</a><a href="../../epics/E38-work-where-people-are/README.html">E38 Work Where People Are</a><a href="../../epics/E39-one-org-many-levels/README.html">E39 One Org, Many Levels</a><a href="../../epics/E40-agent-for-every-department/README.html">E40 An Agent for Every Department</a><a href="../../epics/E41-run-the-company/README.html">E41 Run the Company</a><a href="../../epics/E42-agents-do-the-legwork/README.html">E42 Agents That Do the Legwork</a><a href="../../epics/E43-work-comes-to-you/README.html">E43 Work That Comes to You</a><a href="../../epics/E44-govern-every-agent/README.html">E44 Govern Every Agent</a><a href="../../epics/E45-departments-work-together/README.html">E45 Departments Work Together</a><a href="../../epics/E46-agents-you-can-shape/README.html">E46 Agents You Can Shape</a><a href="../../epics/E47-every-agent-accountable/README.html">E47 Every Agent Accountable</a><a href="../../epics/E48-ways-of-working/README.html">E48 Ways of Working</a><a href="../../epics/E49-agents-check-with-you/README.html">E49 Agents That Check With You</a><a href="../../epics/E50-run-ai-like-a-business/README.html">E50 Run AI Like a Business</a><a href="../../epics/E51-guard-what-goes-in/README.html">E51 Guard What Goes In</a><a href="../../epics/E52-write-it-down-together/README.html">E52 Write It Down Together</a><a href="../../epics/E53-agents-act-carefully/README.html">E53 Agents That Act Carefully</a></div><div class="group"><h4>Tickets in E48</h4><a href="../../epics/E48-ways-of-working/SB-4801-rhythms.html">SB-4801: Rhythms</a><a class="current" href="../../epics/E48-ways-of-working/SB-4802-first-90-days.html">SB-4802: A new joiner&#x27;s first 90 days</a><a href="../../epics/E48-ways-of-working/SB-4803-project-kickoff.html">SB-4803: Project kickoff</a><a href="../../epics/E48-ways-of-working/SB-4804-project-close-out.html">SB-4804: Project close-out</a><a href="../../epics/E48-ways-of-working/SB-4805-quarterly-planning.html">SB-4805: Quarterly planning</a><a href="../../epics/E48-ways-of-working/SB-4806-reorg-dry-run.html">SB-4806: Reorg dry run</a><a href="../../epics/E48-ways-of-working/SB-4807-one-on-one-prep.html">SB-4807: 1:1 prep</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E48-ways-of-working</div><h1 id="sb-4802-a-new-joiners-first-90-days">SB-4802: A new joiner's first 90 days</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Epic</td>
+<td><a href="README.html">E48 Ways of Working</a></td>
+</tr>
+<tr>
+<td>Wave / slice</td>
+<td>W47 / S47.1</td>
+</tr>
+<tr>
+<td>Stories</td>
+<td>US-48.1</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td><a href="../../manual/sb-onboarding.7.html"><code>sb-onboarding(7)</code></a>, <a href="../../manual/sb-tenant.5.html"><code>sb-tenant(5)</code></a></td>
+</tr>
+<tr>
+<td>Laws</td>
+<td>LAW-01, LAW-12, LAW-29</td>
+</tr>
+<tr>
+<td>Depends on</td>
+<td>SB-4801, SB-1706, SB-4506</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>Done</td>
+</tr>
+</tbody>
+</table>
+<h2 id="why">Why</h2>
+<p>A new joiner's first weeks depend on a manager remembering what to send and when.</p>
+<h2 id="acceptance-criteria">Acceptance criteria</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>The <code>onboarding</code> rhythm starts on SCIM add or by a steward, and every item is one the joiner can open</li>
+<li class="task done"><span class="box">✓</span>Unanswered questions reach stewards as gaps without the joiner's name unless they agree</li>
+<li class="task done"><span class="box">✓</span><code>onboarding: false</code> turns it off for a space; leaving the space stops it</li>
+</ul>
+<h2 id="subtasks">Subtasks</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Onboarding rhythm</li>
+<li class="task done"><span class="box">✓</span>People to meet</li>
+<li class="task done"><span class="box">✓</span>Gap hand-off</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
+</ul>
+<h2 id="progress">Progress</h2>
+<p>2026-11-25: built. The built-in <code>onboarding</code> rhythm: the jobs service keeps a roster per space and starts it for each member SCIM added since its last run (the first run only notes who is there); the plan goes to the SCIM manager, or the stewards. Day 0 <code>start-here</code> lists the start-here items the joiner can open and the owners of them as people to meet; weeks 2 and 6 a catch-up since the start; the <code>gaps</code> steps tell the stewards how many of the joiner's asks found nothing and the glossary terms, named only after <code>POST /v1/rhythms/ID/consent</code>. <code>onboarding: false</code> removes it. TestRhythmsAndProjectsThroughARunningCell covers the start on SCIM add, the plan approval, the LAW-01 filtering and the stop on leaving.</p>
+<h2 id="definition-of-done">Definition of done</h2>
+<p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E48-ways-of-working/SB-4802-first-90-days.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

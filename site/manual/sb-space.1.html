@@ -24,6 +24,9 @@
 <pre><code class="language-text">sb space init FILE --template NAME --members GROUP[,GROUP…] [--name NAME] [--stewards GROUP[,GROUP…]]
 sb space templates
 sb space diff FILE --idp-snapshot SNAPSHOT [--json]
+sb space scope-report (--cell URL | --tenant T) [--json]
+sb tree move FILE SPACE --to PARENT --plan [--write OUT] [--json]
+sb tree merge FILE FROM INTO --plan [--write OUT] [--json]
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
 <p><strong>init</strong> adds one space to the manifest <code>FILE</code>, filled in from a template of the catalogue (sb-departments(7)), and writes the file back only if the result passes every rule of <code>sb tenant check</code> (sb-space(5)). It changes nothing else in the file: comments and the order of the other fields stay as they are. The new space is added under an existing block-style <code>spaces:</code> key, or a new <code>spaces:</code> key is added at the end.</p>
@@ -43,6 +46,9 @@ sb space diff FILE --idp-snapshot SNAPSHOT [--json]
 <li><code>barrier</code>: a person whose groups after the reorg sit on both sides of one of the manifest's <code>barriers</code>, so the barrier would wall them off from themselves.</li>
 </ul>
 <p>People whose spaces don't change are counted, not listed. <code>diff</code> reads only its two files: it needs no cell, no network and no credentials, and it writes nothing and changes nothing (LAW-16: the change happens only when the IdP and the manifest change). <code>--json</code> prints <code>{"people": [{"user", "gains", "loses", "flags"}], "unchanged": N}</code>.</p>
+<p><strong>scope-report</strong> (SB-2903) prints, for each space of the cell's applied manifest and each of its scope patterns, how many documents in the cell's index the pattern matches now, out of how many that connector kind has, from <code>GET /v1/admin/index/scopes</code> (sb-admin(3)). It names a pattern that matches <strong>none</strong>, which is usually a typo or a folder that moved, and one that matches <strong>more than half</strong> of its connector's documents, which is usually too wide (such as <code>/**</code>). It reads only document locations, never their text, and changes nothing: a fix is a manifest change (LAW-16). It exits 0 either way; <code>--json</code> prints <code>{"patterns": [{"space", "kind", "pattern", "matches", "of", "problem"}]}</code>, with <code>problem</code> <code>none</code>, <code>too_wide</code> or empty.</p>
+<p><strong>tree move</strong> and <strong>tree merge</strong> are the reorg dry run (SB-4806). <code>move</code> makes <code>SPACE</code> a team of <code>PARENT</code> (<code>--to ""</code> makes it a department of its own); <code>merge</code> folds space <code>FROM</code> into <code>INTO</code>: <code>FROM</code>'s scope joins <code>INTO</code>'s and its teams become <code>INTO</code>'s. It needs the same member groups and a label at least as strict. Each reads manifest <code>FILE</code>, makes the manifest the change would leave, checks it with every rule of <code>sb tenant check</code>, and prints, for the space, its teams, and its old and new parent (or the space merged into): the parent before and after, the queues a question climbs before and after (the space, its department, company; sb-spaces(7), Escalation), and each setting it would <strong>gain</strong> or <strong>lose</strong> by inheritance: glossary terms, skills, rhythms, start-here, agents, label and retention. A merged space is listed as merged. The output ends with <code>nothing applied</code>: the change is a manifest diff the admin proposes through the usual review (sb-tenant(1), apply). <code>--write OUT</code> saves that manifest; <code>FILE</code> is never touched. A move or merge changes no space's <code>members</code>, and a merge needs the two spaces' members to be the same, so nobody loses a space they use or a document they own; a change that would is refused (<code>sb space diff</code> previews changes of people's groups).</p>
+<p>A change that would let anyone see more is refused, naming the setting and the space: a label that would loosen or a retention that would grow (LAW-24). Neither command needs a cell. What is under way in each space (rhythms in flight, open and waiting queue items, open projects, routines, triggered agents) needs the running cell: <code>GET /v1/admin/tree/plan</code> (sb-admin(3)) gives the same plan with <code>in_flight</code>. <code>--plan</code> is required; there is no form that applies a change.</p>
 <p>The catalogue is data, <code>internal/core/manifest/catalogue.json</code>, and every release bundle pins its hash (sb-release(7)), so two cells on the same release read the same templates.</p>
 <h2 id="options">OPTIONS</h2>
 <table>
@@ -75,14 +81,30 @@ sb space diff FILE --idp-snapshot SNAPSHOT [--json]
 </tr>
 <tr>
 <td><code>--json</code></td>
-<td>diff: machine-readable output</td>
+<td>diff, scope-report, tree: machine-readable output</td>
+</tr>
+<tr>
+<td><code>--to PARENT</code></td>
+<td>tree move: the new parent; <code>""</code> for none</td>
+</tr>
+<tr>
+<td><code>--plan</code></td>
+<td>tree: print the dry run; required</td>
+</tr>
+<tr>
+<td><code>--write OUT</code></td>
+<td>tree: write the manifest the change would leave to <code>OUT</code></td>
+</tr>
+<tr>
+<td><code>--cell URL</code>, <code>--tenant T</code></td>
+<td>scope-report: the cell to ask, by URL or by the tenant's registered endpoint</td>
 </tr>
 </tbody>
 </table>
 <h2 id="exit-status">EXIT STATUS</h2>
-<p>0 when the space was added, or <code>diff</code> ran (flags are output, not failures). 1 with <code>EMANIFEST</code> for a manifest <code>diff</code> can't read. 2 with <code>EUSAGE</code> for a snapshot that breaks its format. 1 with <code>EMANIFEST</code> when the manifest, before or after, fails <code>sb tenant check</code>, or the space already exists. 2 with <code>EUSAGE</code> for a missing or bad option, or an unknown template.</p>
+<p>0 when the space was added, or <code>diff</code> ran (flags are output, not failures). 1 with <code>EMANIFEST</code> for a manifest <code>diff</code> can't read. 2 with <code>EUSAGE</code> for a snapshot that breaks its format. 1 with <code>EMANIFEST</code> when the manifest, before or after, fails <code>sb tenant check</code>, or the space already exists. 2 with <code>EUSAGE</code> for a missing or bad option, or an unknown template. For <code>tree</code>: 0 when the plan printed, 2 with <code>EINVAL</code> for a space that doesn't exist or a result <code>sb tenant check</code> refuses (such as a team that would keep more than its new parent), and 3 with <code>EPERM</code> for a change that would widen access: a label that loosens, a retention that grows, or a merge whose member groups differ.</p>
 <h2 id="laws">LAWS</h2>
-<p><a href="sb-laws.7.html#law-16">LAW-16</a>: the space exists only once it is in the manifest and applied.</p>
+<p><a href="sb-laws.7.html#law-16">LAW-16</a>: the space exists only once it is in the manifest and applied. <a href="sb-laws.7.html#law-24">LAW-24</a>: a tree change that would widen access is refused (<code>tree</code>: 3 with <code>EPERM</code>).</p>
 <h2 id="examples">EXAMPLES</h2>
 <pre><code class="language-text">$ sb space init acme.yaml --template people --members group:people-team --stewards group:people-leads
 space people added to acme.yaml (template people, label restricted)
@@ -94,6 +116,15 @@ plan: 1 to add, 0 to change, 0 to remove
 ana@acme.example  gains people  loses -  [gains-restricted]
 bo@acme.example  gains -  loses engineering  [loses-all]
 1 unchanged
+</code></pre>
+<pre><code class="language-text">$ sb tree move acme.yaml support --to customer --plan --write acme-next.yaml
+customer  parent - -&gt; -  escalates customer &gt; company -&gt; customer &gt; company
+ops  parent - -&gt; -  escalates ops &gt; company -&gt; ops &gt; company
+support  parent ops -&gt; customer  escalates support &gt; ops &gt; company -&gt; support &gt; customer &gt; company
+  glossary  gains SLA  loses runbook
+nothing applied; propose the manifest diff for review
+$ sb tree merge acme.yaml support customer --plan
+sb tree merge: reorg: the change would widen access: support's documents would reach group:sales [EPERM]
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-departments.7.html">sb-departments(7)</a>, <a href="sb-tenant.1.html">sb-tenant(1)</a>, <a href="sb.1.html">sb(1)</a></p><p class="srcline">Source: <code>manual/sb-space.1.md</code></p></main>

@@ -88,6 +88,7 @@
 <li><strong>Receipt or it didn't happen.</strong> Only a target receipt makes <code>Ran</code> (LAW-05).</li>
 <li><strong>At most once.</strong> The approval id is the idempotency key for <code>Act</code>.</li>
 </ol>
+<p>An agent's draft in a steward queue is not an action and has no approval: it publishes only when a steward replies with it and publishes it as a note (sb-spaces(7)). <strong>Ask for changes</strong> (SB-4602; sb-agents(7)) sends a draft back for a redraft, at most 3 rounds, before that; a redraft is still a draft, and nothing it says is published, sent or run until the steward publishes it (LAW-16).</p>
 <h3 id="the-ticket-update-workflow">The <code>ticket-update</code> workflow</h3>
 <p>The first gated workflow (SB-410). Enabling it takes <code>workflows: [ticket-update]</code> and <code>approval: { ticket-update: group:&lt;name&gt; }</code> in the manifest, the <code>tickets</code> connector, and a passing eval record (sb-tenant(1)).</p>
 <table>

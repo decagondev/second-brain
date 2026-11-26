@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Show the Evidence, Fill the Gaps, Run Without Surprises · Second Brain</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../index.html">Home</a><a class="" href="../manual/sb-tour.7.html">Tour</a><a class="" href="../manual/README.html">Manual</a><a class="active" href="../docs/README.html">Design</a><a class="" href="../epics/README.html">Plan</a><a class="" href="../devlog.html">Devlog</a><a class="" href="../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Design</h4><a href="../docs/README.html">Design</a><a href="../docs/00-problem-statement.html">Problem Statement</a><a href="../docs/01-principles.html">Principles</a><a href="../docs/02-domain-model.html">Domain Model</a><a href="../docs/03-prd.html">Second Brain: Product Requirements Document</a><a href="../docs/04-testing-and-assurance.html">Testing and Assurance</a><a href="../docs/05-living-documents.html">Living Documents</a><a href="../docs/06-engineering-standards.html">Engineering Standards</a><a href="../docs/07-threat-model.html">Threat Model</a><a href="../docs/08-department-brains.html">Department Brains</a><a href="../docs/09-team-knowledge.html">Team Knowledge</a><a href="../docs/10-run-protect-close.html">Run It, Protect It, Close the Loops</a><a href="../docs/11-loop-own-fit.html">Keep People in the Loop, Keep Knowledge Owned, Fit the Site</a><a href="../docs/12-ask-steward-operate.html">Easier to Ask, Easier to Steward, Easier to Operate</a><a href="../docs/13-fresh-tidy-focused.html">Fresh Answers, a Tidy Corpus, a Focused Context</a><a class="current" href="../docs/14-evidence-gaps-surprises.html">Show the Evidence, Fill the Gaps, Run Without Surprises</a><a href="../docs/15-ask-capture-trust.html">Ask Better, Capture Knowledge, Trust and Control</a><a href="../docs/16-trust-capture-reach.html">Trust Each Answer, Capture Conversations, Work Where People Are</a><a href="../docs/17-org-agents-os.html">One Org, Many Levels; An Agent for Every Department; Run the Company</a><a href="../docs/18-legwork-inbox-govern.html">Agents That Do the Legwork; Work That Comes to You; Govern Every Agent</a><a href="../docs/19-departments-shape-account.html">Departments Work Together; Agents You Can Shape; Every Agent Accountable</a><a href="../docs/20-rhythms-check-run.html">Ways of Working; Agents That Check With You; Run AI Like a Business</a><a href="../docs/21-guard-write-act.html">Guard What Goes In; Write It Down Together; Agents That Act Carefully</a><a href="../docs/patch-release-playbook.html">Patch-release playbook</a><a href="../docs/pilot-retro-template.html">Pilot retro template</a><a href="../docs/red-team-spaces.html">Cross-space red team</a></div><div class="group"><h4>Architecture</h4><a href="../docs/architecture/00-overview.html">Architecture Overview</a><a href="../docs/architecture/01-identity-and-tenancy.html">01 Identity and Tenancy</a><a href="../docs/architecture/02-policy-engine.html">02 Policy Engine</a><a href="../docs/architecture/03-connectors.html">03 Connectors</a><a href="../docs/architecture/04-ingest-pipeline.html">04 Ingest Pipeline</a><a href="../docs/architecture/05-storage-and-index.html">05 Storage and Index</a><a href="../docs/architecture/06-retrieval-and-authorisation.html">06 Retrieval and Authorisation</a><a href="../docs/architecture/07-answer-composer.html">07 Answer Composer and Citations</a><a href="../docs/architecture/08-agent-runtime-and-tool-bus.html">08 Agent Runtime and Tool Bus</a><a href="../docs/architecture/09-approvals-and-actions.html">09 Approvals and Actions</a><a href="../docs/architecture/10-audit-log.html">10 Audit Log</a><a href="../docs/architecture/11-kill-switches.html">11 Kill Switches</a><a href="../docs/architecture/12-evals-and-gate.html">12 Evals and the Gate</a><a href="../docs/architecture/13-release-and-supply-chain.html">13 Release and Supply Chain</a><a href="../docs/architecture/14-manifest-cli-console.html">14 Manifest, CLI and Console</a><a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, Backup and DR</a><a href="../docs/architecture/16-factory-and-handoff.html">16 Factory and Hand-off</a></div><div class="group"><h4>Decisions</h4><a href="../docs/adr/README.html">Decision Records</a><a href="../docs/adr/ADR-0000-template.html">ADR-0000: Template</a><a href="../docs/adr/ADR-0001-cell-per-tenant.html">ADR-0001: One cell per tenant, stamped from one template</a><a href="../docs/adr/ADR-0002-source-acl-is-authority.html">ADR-0002: The source&#x27;s live ACL is the authority; the index ACL is only a prefilter</a><a href="../docs/adr/ADR-0003-receipts-define-ran.html">ADR-0003: An action ran only if the target returned a receipt</a><a href="../docs/adr/ADR-0004-channels-not-versions.html">ADR-0004: Tenants choose a channel, never a version; nobody is more than one behind</a><a href="../docs/adr/ADR-0005-supply-chain.html">ADR-0005: Reproducible, signed builds with SBOM; lockfiles regenerated every release</a><a href="../docs/adr/ADR-0006-build-vs-buy.html">ADR-0006: Buy commodity infrastructure; build the trust layer</a><a href="../docs/adr/ADR-0007-language-and-stack.html">ADR-0007: Go for services and CLI; Python for evals; TypeScript for UI</a><a href="../docs/adr/ADR-0008-policy-language-cedar.html">ADR-0008: Write policy in Cedar</a><a href="../docs/adr/ADR-0009-manual-first.html">ADR-0009: The manual is the spec, and CI enforces it</a><a href="../docs/adr/ADR-0010-formal-methods-from-wave-0.html">ADR-0010: TLA+ and Alloy from Wave 0; laws as the main gate from Wave 3</a><a href="../docs/adr/ADR-0011-no-kubernetes-in-v1.html">ADR-0011: No Kubernetes in v1; use a managed container runtime</a><a href="../docs/adr/ADR-0012-audit-hash-chain.html">ADR-0012: Audit is an append-only hash chain in the cell database, anchored hourly to WORM storage</a><a href="../docs/adr/ADR-0013-release-bundle-pins-behaviour.html">ADR-0013: Prompts, tools, policies and model version are part of the release</a><a href="../docs/adr/ADR-0014-parent-org-is-a-tenant.html">ADR-0014: If the parent organisation reads company data, it does so as a separate tenant, never as a superuser</a><a href="../docs/adr/ADR-0015-factory-and-handoff.html">ADR-0015: The control plane is a factory; custody of a cell can be handed off</a><a href="../docs/adr/ADR-0016-stdlib-only-go-in-w0.html">ADR-0016: Go standard library only in W0; property tests use an in-repo helper</a><a href="../docs/adr/ADR-0017-first-third-party-go-modules.html">ADR-0017: First third-party Go modules: cedar-go and pgx, pinned, vendored and allow-listed</a><a href="../docs/adr/ADR-0018-cloud-neutral-cells-behind-ports.html">ADR-0018: Cells are cloud-neutral; each cloud is an adapter behind the Placement and Keys ports</a><a href="../docs/adr/ADR-0019-provider-neutral-model-gateway.html">ADR-0019: A provider-neutral model gateway with adapters for OpenAI-compatible APIs, Anthropic, Groq and OpenRouter</a><a href="../docs/adr/ADR-0020-department-spaces-inside-the-cell.html">ADR-0020: Department brains are spaces inside the company&#x27;s cell, and a space can only narrow access</a><a href="../docs/adr/ADR-0021-gcp-cell-runtime.html">ADR-0021: Cells run on Cloud Run with Cloud SQL, one project per cell; Firebase only for hosting and identity</a><a href="../docs/adr/ADR-0022-self-hosted-cell.html">ADR-0022: A self-hosted cell runs in containers that mirror GCP, on one machine</a></div><div class="group"><h4>Proofs and policy</h4><a href="../policy/README.html">Policy</a><a href="../proofs/README.html">Proofs</a><a href="../policy/platform/base.cedar.html">base.cedar</a><a href="../policy/platform/spaces.cedar.html">spaces.cedar</a><a href="../policy/schema.cedarschema.html">schema.cedarschema</a><a href="../proofs/alloy/Permissions.als.html">Permissions.als</a><a href="../proofs/alloy/Spaces.als.html">Spaces.als</a><a href="../proofs/crosscheck.py.html">crosscheck.py</a><a href="../proofs/tla/Approvals.cfg.html">Approvals.cfg</a><a href="../proofs/tla/Approvals.tla.html">Approvals.tla</a><a href="../proofs/tla/Handoff.cfg.html">Handoff.cfg</a><a href="../proofs/tla/Handoff.tla.html">Handoff.tla</a><a href="../proofs/tla/Rollout.cfg.html">Rollout.cfg</a><a href="../proofs/tla/Rollout.tla.html">Rollout.tla</a></div><div class="group"><h4>Laws, tests and evals</h4><a href="../evals/README.html">Evals</a><a href="../evals/__main__.py.html">__main__.py</a><a href="../evals/checks.py.html">checks.py</a><a href="../evals/corpus/injection.json.html">injection.json</a><a href="../evals/expected_red.yaml.html">expected_red.yaml</a><a href="../evals/faithfulness.py.html">faithfulness.py</a><a href="../evals/fixtures/branch/world.yaml.html">world.yaml</a><a href="../evals/fixtures/citation/world.yaml.html">world.yaml</a><a href="../evals/fixtures/departments/world.yaml.html">world.yaml</a><a href="../evals/fixtures/handover/world.yaml.html">world.yaml</a><a href="../evals/fixtures/injection/world.yaml.html">world.yaml</a><a href="../evals/fixtures/permission/world.yaml.html">world.yaml</a><a href="../evals/fixtures/smoke/responses.yaml.html">responses.yaml</a><a href="../evals/fixtures/space-leak/world.yaml.html">world.yaml</a><a href="../evals/fixtures/space-redteam/world.yaml.html">world.yaml</a><a href="../evals/fixtures/tables/world.yaml.html">world.yaml</a><a href="../evals/fixtures/templates/world.yaml.html">world.yaml</a><a href="../evals/gate.py.html">gate.py</a><a href="../evals/gate.yaml.html">gate.yaml</a><a href="../evals/pilot.py.html">pilot.py</a><a href="../evals/runner.py.html">runner.py</a><a href="../evals/suites/agent-account-brief.yaml.html">agent-account-brief.yaml</a><a href="../evals/suites/agent-brand-check.yaml.html">agent-brand-check.yaml</a><a href="../evals/suites/agent-case-brief.yaml.html">agent-case-brief.yaml</a><a href="../evals/suites/agent-catch-up.yaml.html">agent-catch-up.yaml</a><a href="../evals/suites/agent-clause-finder.yaml.html">agent-clause-finder.yaml</a><a href="../evals/suites/agent-close-checklist.yaml.html">agent-close-checklist.yaml</a><a href="../evals/suites/agent-consult.yaml.html">agent-consult.yaml</a><a href="../evals/suites/agent-design-rationale.yaml.html">agent-design-rationale.yaml</a><a href="../evals/suites/agent-exec-brief.yaml.html">agent-exec-brief.yaml</a><a href="../evals/suites/agent-fix-draft.yaml.html">agent-fix-draft.yaml</a><a href="../evals/suites/agent-goal-check-in.yaml.html">agent-goal-check-in.yaml</a><a href="../evals/suites/agent-handover.yaml.html">agent-handover.yaml</a><a href="../evals/suites/agent-incident-brief.yaml.html">agent-incident-brief.yaml</a><a href="../evals/suites/agent-incident-review.yaml.html">agent-incident-review.yaml</a><a href="../evals/suites/agent-incident-summary.yaml.html">agent-incident-summary.yaml</a><a href="../evals/suites/agent-leader-week.yaml.html">agent-leader-week.yaml</a><a href="../evals/suites/agent-meeting-prep.yaml.html">agent-meeting-prep.yaml</a><a href="../evals/suites/agent-policy-answer.yaml.html">agent-policy-answer.yaml</a><a href="../evals/suites/agent-research.yaml.html">agent-research.yaml</a><a href="../evals/suites/agent-runbook-answer.yaml.html">agent-runbook-answer.yaml</a><a href="../evals/suites/agent-sop-steps.yaml.html">agent-sop-steps.yaml</a><a href="../evals/suites/agent-spec-digest.yaml.html">agent-spec-digest.yaml</a><a href="../evals/suites/agent-update.yaml.html">agent-update.yaml</a><a href="../evals/suites/agent-voc.yaml.html">agent-voc.yaml</a><a href="../evals/suites/citation.yaml.html">citation.yaml</a><a href="../evals/suites/injection.yaml.html">injection.yaml</a><a href="../evals/suites/permission.yaml.html">permission.yaml</a><a href="../evals/suites/refusal.yaml.html">refusal.yaml</a><a href="../evals/suites/regression.yaml.html">regression.yaml</a><a href="../evals/suites/smoke.yaml.html">smoke.yaml</a><a href="../evals/suites/space-leak.yaml.html">space-leak.yaml</a><a href="../evals/suites/space-redteam.yaml.html">space-redteam.yaml</a><a href="../evals/suites/table.yaml.html">table.yaml</a><a href="../evals/suites/template-design.yaml.html">template-design.yaml</a><a href="../evals/suites/template-engineering.yaml.html">template-engineering.yaml</a><a href="../evals/suites/template-executive.yaml.html">template-executive.yaml</a><a href="../evals/suites/template-finance.yaml.html">template-finance.yaml</a><a href="../evals/suites/template-it-security.yaml.html">template-it-security.yaml</a><a href="../evals/suites/template-legal.yaml.html">template-legal.yaml</a><a href="../evals/suites/template-marketing.yaml.html">template-marketing.yaml</a><a href="../evals/suites/template-operations.yaml.html">template-operations.yaml</a><a href="../evals/suites/template-people.yaml.html">template-people.yaml</a><a href="../evals/suites/template-product.yaml.html">template-product.yaml</a><a href="../evals/suites/template-sales.yaml.html">template-sales.yaml</a><a href="../evals/suites/template-support.yaml.html">template-support.yaml</a><a href="../evals/targets.py.html">targets.py</a><a href="../evals/tests/test_checks.py.html">test_checks.py</a><a href="../evals/tests/test_diff.py.html">test_diff.py</a><a href="../evals/tests/test_pilot.py.html">test_pilot.py</a><a href="../laws/README.html">Laws</a><a href="../laws/checks.go.html">checks.go</a><a href="../laws/law01access.go.html">law01access.go</a><a href="../laws/law01chat.go.html">law01chat.go</a><a href="../laws/law01crm.go.html">law01crm.go</a><a href="../laws/law01digest.go.html">law01digest.go</a><a href="../laws/law01prefilter.go.html">law01prefilter.go</a><a href="../laws/law01search.go.html">law01search.go</a><a href="../laws/law01start.go.html">law01start.go</a><a href="../laws/law02attack.go.html">law02attack.go</a><a href="../laws/law02cell.go.html">law02cell.go</a><a href="../laws/law02gcp.go.html">law02gcp.go</a><a href="../laws/law02hosting.go.html">law02hosting.go</a><a href="../laws/law02idp.go.html">law02idp.go</a><a href="../laws/law02perimeter.go.html">law02perimeter.go</a><a href="../laws/law02policy.go.html">law02policy.go</a><a href="../laws/law02route.go.html">law02route.go</a><a href="../laws/law02scope.go.html">law02scope.go</a><a href="../laws/law02token.go.html">law02token.go</a><a href="../laws/law03box.go.html">law03box.go</a><a href="../laws/law03health.go.html">law03health.go</a><a href="../laws/law03policy.go.html">law03policy.go</a><a href="../laws/law04policy.go.html">law04policy.go</a><a href="../laws/law06.go.html">law06.go</a><a href="../laws/law06bundle.go.html">law06bundle.go</a><a href="../laws/law06evals.go.html">law06evals.go</a><a href="../laws/law06pull.go.html">law06pull.go</a><a href="../laws/law06runtime.go.html">law06runtime.go</a><a href="../laws/law06templates.go.html">law06templates.go</a><a href="../laws/law07.go.html">law07.go</a><a href="../laws/law07encoded.go.html">law07encoded.go</a><a href="../laws/law07fields.go.html">law07fields.go</a><a href="../laws/law07offsite.go.html">law07offsite.go</a><a href="../laws/law07out.go.html">law07out.go</a><a href="../laws/law07pii.go.html">law07pii.go</a><a href="../laws/law07support.go.html">law07support.go</a><a href="../laws/law08.go.html">law08.go</a><a href="../laws/law09.go.html">law09.go</a><a href="../laws/law09corpus.go.html">law09corpus.go</a><a href="../laws/law10.go.html">law10.go</a><a href="../laws/law10spaces.go.html">law10spaces.go</a><a href="../laws/law11.go.html">law11.go</a><a href="../laws/law11box.go.html">law11box.go</a><a href="../laws/law11export.go.html">law11export.go</a><a href="../laws/law11restore.go.html">law11restore.go</a><a href="../laws/law11stream.go.html">law11stream.go</a><a href="../laws/law11worm.go.html">law11worm.go</a><a href="../laws/law12.go.html">law12.go</a><a href="../laws/law12groups.go.html">law12groups.go</a><a href="../laws/law12owned.go.html">law12owned.go</a><a href="../laws/law12revoke.go.html">law12revoke.go</a><a href="../laws/law13.go.html">law13.go</a><a href="../laws/law13changes.go.html">law13changes.go</a><a href="../laws/law13holds.go.html">law13holds.go</a><a href="../laws/law13retention.go.html">law13retention.go</a><a href="../laws/law13spaces.go.html">law13spaces.go</a><a href="../laws/law14.go.html">law14.go</a><a href="../laws/law14departments.go.html">law14departments.go</a><a href="../laws/law14tables.go.html">law14tables.go</a><a href="../laws/law15.go.html">law15.go</a><a href="../laws/law15duties.go.html">law15duties.go</a><a href="../laws/law15stewards.go.html">law15stewards.go</a><a href="../laws/law16.go.html">law16.go</a><a href="../laws/law16catalogue.go.html">law16catalogue.go</a><a href="../laws/law16reorg.go.html">law16reorg.go</a><a href="../laws/law16retention.go.html">law16retention.go</a><a href="../laws/law16reviews.go.html">law16reviews.go</a><a href="../laws/law17.go.html">law17.go</a><a href="../laws/law17access.go.html">law17access.go</a><a href="../laws/law17world.go.html">law17world.go</a><a href="../laws/law18.go.html">law18.go</a><a href="../laws/law18kit.go.html">law18kit.go</a><a href="../laws/law18retire.go.html">law18retire.go</a><a href="../laws/law18spaces.go.html">law18spaces.go</a><a href="../laws/law18wrap.go.html">law18wrap.go</a><a href="../laws/law19.go.html">law19.go</a><a href="../laws/law19context.go.html">law19context.go</a><a href="../laws/law19glossary.go.html">law19glossary.go</a><a href="../laws/law19notes.go.html">law19notes.go</a><a href="../laws/law19policy.go.html">law19policy.go</a><a href="../laws/law20ask.go.html">law20ask.go</a><a href="../laws/law20chat.go.html">law20chat.go</a><a href="../laws/law20reach.go.html">law20reach.go</a><a href="../laws/law21.go.html">law21.go</a><a href="../laws/law21moves.go.html">law21moves.go</a><a href="../laws/law21notify.go.html">law21notify.go</a><a href="../laws/law21questions.go.html">law21questions.go</a><a href="../laws/law22barriers.go.html">law22barriers.go</a><a href="../laws/law22notes.go.html">law22notes.go</a><a href="../laws/law23.go.html">law23.go</a><a href="../laws/law24.go.html">law24.go</a><a href="../laws/law25.go.html">law25.go</a><a href="../laws/law26.go.html">law26.go</a><a href="../laws/law27.go.html">law27.go</a><a href="../laws/law28.go.html">law28.go</a><a href="../laws/law29.go.html">law29.go</a><a href="../laws/law30.go.html">law30.go</a><a href="../laws/law31.go.html">law31.go</a><a href="../laws/lawbamboohr.go.html">lawbamboohr.go</a><a href="../laws/lawconnector.go.html">lawconnector.go</a><a href="../laws/lawfolder.go.html">lawfolder.go</a><a href="../laws/lawgithub.go.html">lawgithub.go</a><a href="../laws/lawoffice.go.html">lawoffice.go</a><a href="../laws/lawquickbooks.go.html">lawquickbooks.go</a><a href="../laws/laws_test.go.html">laws_test.go</a><a href="../laws/main_test.go.html">main_test.go</a><a href="../laws/prop.go.html">prop.go</a><a href="../laws/selftest_access_test.go.html">selftest_access_test.go</a><a href="../laws/selftest_bamboohr_test.go.html">selftest_bamboohr_test.go</a><a href="../laws/selftest_barriers_test.go.html">selftest_barriers_test.go</a><a href="../laws/selftest_box_test.go.html">selftest_box_test.go</a><a href="../laws/selftest_consult_test.go.html">selftest_consult_test.go</a><a href="../laws/selftest_departments_test.go.html">selftest_departments_test.go</a><a href="../laws/selftest_digest_test.go.html">selftest_digest_test.go</a><a href="../laws/selftest_duties_test.go.html">selftest_duties_test.go</a><a href="../laws/selftest_evals_test.go.html">selftest_evals_test.go</a><a href="../laws/selftest_fields_test.go.html">selftest_fields_test.go</a><a href="../laws/selftest_find_test.go.html">selftest_find_test.go</a><a href="../laws/selftest_github_test.go.html">selftest_github_test.go</a><a href="../laws/selftest_glossary_test.go.html">selftest_glossary_test.go</a><a href="../laws/selftest_governance_test.go.html">selftest_governance_test.go</a><a href="../laws/selftest_holds_test.go.html">selftest_holds_test.go</a><a href="../laws/selftest_identity_test.go.html">selftest_identity_test.go</a><a href="../laws/selftest_lent_test.go.html">selftest_lent_test.go</a><a href="../laws/selftest_marks_test.go.html">selftest_marks_test.go</a><a href="../laws/selftest_mattermost_test.go.html">selftest_mattermost_test.go</a><a href="../laws/selftest_memory_test.go.html">selftest_memory_test.go</a><a href="../laws/selftest_moves_test.go.html">selftest_moves_test.go</a><a href="../laws/selftest_notenarrow_test.go.html">selftest_notenarrow_test.go</a><a href="../laws/selftest_notes_test.go.html">selftest_notes_test.go</a><a href="../laws/selftest_notify_test.go.html">selftest_notify_test.go</a><a href="../laws/selftest_office_test.go.html">selftest_office_test.go</a><a href="../laws/selftest_offsite_test.go.html">selftest_offsite_test.go</a><a href="../laws/selftest_out_test.go.html">selftest_out_test.go</a><a href="../laws/selftest_owned_test.go.html">selftest_owned_test.go</a><a href="../laws/selftest_quickbooks_test.go.html">selftest_quickbooks_test.go</a><a href="../laws/selftest_reach_test.go.html">selftest_reach_test.go</a><a href="../laws/selftest_reorg_test.go.html">selftest_reorg_test.go</a><a href="../laws/selftest_retention_test.go.html">selftest_retention_test.go</a><a href="../laws/selftest_reviews_test.go.html">selftest_reviews_test.go</a><a href="../laws/selftest_rhythms_test.go.html">selftest_rhythms_test.go</a><a href="../laws/selftest_route_test.go.html">selftest_route_test.go</a><a href="../laws/selftest_spacekeys_test.go.html">selftest_spacekeys_test.go</a><a href="../laws/selftest_spacepolicy_test.go.html">selftest_spacepolicy_test.go</a><a href="../laws/selftest_spaces_test.go.html">selftest_spaces_test.go</a><a href="../laws/selftest_stewards_test.go.html">selftest_stewards_test.go</a><a href="../laws/selftest_stored_test.go.html">selftest_stored_test.go</a><a href="../laws/selftest_stream_test.go.html">selftest_stream_test.go</a><a href="../laws/selftest_tables_test.go.html">selftest_tables_test.go</a><a href="../laws/selftest_templates_test.go.html">selftest_templates_test.go</a><a href="../laws/selftest_test.go.html">selftest_test.go</a><a href="../laws/selftest_tree_test.go.html">selftest_tree_test.go</a><a href="../laws/system.go.html">system.go</a><a href="../laws/system_ask.go.html">system_ask.go</a><a href="../laws/system_audit.go.html">system_audit.go</a><a href="../laws/system_bus.go.html">system_bus.go</a><a href="../laws/system_chat.go.html">system_chat.go</a><a href="../laws/system_drift.go.html">system_drift.go</a><a href="../laws/system_kill.go.html">system_kill.go</a><a href="../laws/system_mattermost.go.html">system_mattermost.go</a><a href="../laws/system_prompt.go.html">system_prompt.go</a><a href="../laws/system_release.go.html">system_release.go</a><a href="../laws/system_rollout.go.html">system_rollout.go</a><a href="../laws/term_test.go.html">term_test.go</a><a href="../laws/world.go.html">world.go</a><a href="../tests/backup/backup_test.go.html">backup_test.go</a><a href="../tests/canary/canary_test.go.html">canary_test.go</a><a href="../tests/cell/access_test.go.html">access_test.go</a><a href="../tests/cell/accountable_test.go.html">accountable_test.go</a><a href="../tests/cell/across_test.go.html">across_test.go</a><a href="../tests/cell/agents_test.go.html">agents_test.go</a><a href="../tests/cell/apply_test.go.html">apply_test.go</a><a href="../tests/cell/askbetter_test.go.html">askbetter_test.go</a><a href="../tests/cell/caretaker_test.go.html">caretaker_test.go</a><a href="../tests/cell/cases_test.go.html">cases_test.go</a><a href="../tests/cell/cell_test.go.html">cell_test.go</a><a href="../tests/cell/checkwithyou_test.go.html">checkwithyou_test.go</a><a href="../tests/cell/cli_test.go.html">cli_test.go</a><a href="../tests/cell/company_test.go.html">company_test.go</a><a href="../tests/cell/context_test.go.html">context_test.go</a><a href="../tests/cell/conversations_test.go.html">conversations_test.go</a><a href="../tests/cell/current_test.go.html">current_test.go</a><a href="../tests/cell/departments_test.go.html">departments_test.go</a><a href="../tests/cell/e2e_test.go.html">e2e_test.go</a><a href="../tests/cell/embed_test.go.html">embed_test.go</a><a href="../tests/cell/evals_test.go.html">evals_test.go</a><a href="../tests/cell/fillin_test.go.html">fillin_test.go</a><a href="../tests/cell/find_test.go.html">find_test.go</a><a href="../tests/cell/followup_test.go.html">followup_test.go</a><a href="../tests/cell/further_test.go.html">further_test.go</a><a href="../tests/cell/govern_test.go.html">govern_test.go</a><a href="../tests/cell/guard_test.go.html">guard_test.go</a><a href="../tests/cell/handover_test.go.html">handover_test.go</a><a href="../tests/cell/inbox_test.go.html">inbox_test.go</a><a href="../tests/cell/ingest_test.go.html">ingest_test.go</a><a href="../tests/cell/jobs_test.go.html">jobs_test.go</a><a href="../tests/cell/learn_test.go.html">learn_test.go</a><a href="../tests/cell/leftovers_test.go.html">leftovers_test.go</a><a href="../tests/cell/legwork_test.go.html">legwork_test.go</a><a href="../tests/cell/loan_test.go.html">loan_test.go</a><a href="../tests/cell/mattermost_test.go.html">mattermost_test.go</a><a href="../tests/cell/mcpgroups_test.go.html">mcpgroups_test.go</a><a href="../tests/cell/notice_test.go.html">notice_test.go</a><a href="../tests/cell/notify_test.go.html">notify_test.go</a><a href="../tests/cell/notifytest_test.go.html">notifytest_test.go</a><a href="../tests/cell/offsite_s3_test.go.html">offsite_s3_test.go</a><a href="../tests/cell/operations_test.go.html">operations_test.go</a><a href="../tests/cell/owndata_test.go.html">owndata_test.go</a><a href="../tests/cell/planning_test.go.html">planning_test.go</a><a href="../tests/cell/prove_test.go.html">prove_test.go</a><a href="../tests/cell/questions_test.go.html">questions_test.go</a><a href="../tests/cell/reach_test.go.html">reach_test.go</a><a href="../tests/cell/requests_test.go.html">requests_test.go</a><a href="../tests/cell/retire_test.go.html">retire_test.go</a><a href="../tests/cell/rhythms_test.go.html">rhythms_test.go</a><a href="../tests/cell/rollout_test.go.html">rollout_test.go</a><a href="../tests/cell/shape_test.go.html">shape_test.go</a><a href="../tests/cell/spend_test.go.html">spend_test.go</a><a href="../tests/cell/stewardtools_test.go.html">stewardtools_test.go</a><a href="../tests/cell/stream_test.go.html">stream_test.go</a><a href="../tests/cell/together_test.go.html">together_test.go</a><a href="../tests/cell/tokens_test.go.html">tokens_test.go</a><a href="../tests/cell/tree_test.go.html">tree_test.go</a><a href="../tests/cell/trust_test.go.html">trust_test.go</a><a href="../tests/cell/updater_test.go.html">updater_test.go</a><a href="../tests/cell/watch_test.go.html">watch_test.go</a><a href="../tests/gameday/gameday_test.go.html">gameday_test.go</a><a href="../tests/groupsync/groupsync_test.go.html">groupsync_test.go</a><a href="../tests/handoff/handoff_test.go.html">handoff_test.go</a><a href="../tests/regress/README.html">Regression tests</a><a href="../tests/regress/test_bug_0003_cedar_reserved_type.py.html">test_bug_0003_cedar_reserved_type.py</a><a href="../tests/regress/test_bug_0005_issuer_rule_never_matched.py.html">test_bug_0005_issuer_rule_never_matched.py</a><a href="../tests/smoke/README.html">Smoke tests</a><a href="../tests/smoke/sb_smoke_test.go.html">sb_smoke_test.go</a><a href="../tests/spaces/evidence_test.go.html">evidence_test.go</a><a href="../tests/spaces/ingest_fixes_test.go.html">ingest_fixes_test.go</a><a href="../tests/spaces/leftovers_test.go.html">leftovers_test.go</a><a href="../tests/spaces/reviewby_test.go.html">reviewby_test.go</a><a href="../tests/spaces/spaces_test.go.html">spaces_test.go</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../index.html">second brain</a> / docs</div><h1 id="show-the-evidence-fill-the-gaps-run-without-surprises">Show the evidence, fill the gaps, run without surprises</h1>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Owner</th>
+<th>Status</th>
+<th>Related</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.1</td>
+<td>2026-11-24</td>
+<td>Platform lead</td>
+<td>Proposed, waiting on the user's decisions</td>
+<td><a href="01-principles.html">Principles</a> · <a href="13-fresh-tidy-focused.html">13-fresh-tidy-focused.md</a> · <a href="12-ask-steward-operate.html">12-ask-steward-operate.md</a> · <a href="03-prd.html#waves">PRD waves</a></td>
+</tr>
+<tr>
+<td>0.2</td>
+<td>2026-11-24</td>
+<td>Platform lead</td>
+<td>Plan accepted: every recommended decision (2026-11-24)</td>
+<td><a href="01-principles.html">Principles</a> · <a href="13-fresh-tidy-focused.html">13-fresh-tidy-focused.md</a> · <a href="12-ask-steward-operate.html">12-ask-steward-operate.md</a> · <a href="03-prd.html#waves">PRD waves</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="summary">Summary</h2>
+<p>After W28 an answer has cites, warns when its sources are old, and keeps a short and focused context. Stewards can retire, review and tidy documents, and operators can watch the index and the prompts. Reading the code at <code>83c8451</code>, the easy gaps that remain fall into three groups:</p>
+<ul>
+<li><strong>The asker can't see the evidence without leaving the page.</strong> A cite chip gives a title and an age, but not the sentences it rests on, though the answer already holds the span (<code>cites[].span</code>). Chunks don't record the heading they sit under, so a cite of a 40-page handbook says only "Handbook". The UI speaks German and French, but "answers stay in whatever language the model writes" (sb-ask(3)). There is no way to ask about one particular document. An answer resting on a single document looks the same as one backed by five. A GitHub cite opens the file at the top, not at the cited lines.</li>
+<li><strong>Stewards only see the gaps people report.</strong> Nothing counts the questions that found nothing, per space, so the stewards don't know what to write next. A space whose steward group has emptied out still takes questions that nobody gets. Marks and retirements go one document at a time. Feedback counts are admin-only (<code>GET /v1/admin/feedback</code>). The review list shows what is overdue but not what falls due soon. Owners hear about their old documents (SB-2806) but can't mark one reviewed. A new glossary term needs a manifest edit.</li>
+<li><strong>Operators find out late.</strong> Connector health says a sync failed, but not why (expired token, rate limit, network). The only way to re-read one changed document is to wait for a sync or rebuild. Health is JSON only, so the site's Prometheus alerts can't see most of it. The audit API filters by kind and space but not by who did it or when. Nobody watches how long answers take, or how fast the disk is filling. And there is no way to tell everyone "the brain is down for an update at 18:00".</li>
+</ul>
+<p>Three waves, twenty tickets. Each feature reuses an endpoint, job, adapter, screen or record kind the cell already has.</p>
+<h2 id="keeping-it-small">Keeping it small</h2>
+<p>The bloat rules from W16 to W28 still apply:</p>
+<ol>
+<li><strong>No new service the cell must run.</strong> Everything runs in <code>sb-api</code>, <code>sb-jobs</code> or the existing scripts.</li>
+<li><strong>No new store.</strong> New records are <code>cell_docs</code> kinds or small files under <code>state/</code>, like <code>state/index/leftovers.json</code>.</li>
+<li><strong>No new third-party Go module.</strong></li>
+<li><strong>At most one setting per feature.</strong></li>
+<li><strong>No new page.</strong> Features go in as chips, lines, list sections and buttons.</li>
+<li><strong>Nothing widens what anyone sees.</strong> Every passage, count and list is checked live as the person.</li>
+</ol>
+<p>One more rule for these waves: <strong>evidence is shown, never paraphrased.</strong> A passage is the source's own text at the cited version, shown as a quote. It is fetched and checked again when it is opened, so a share or an old trace can't show text the person has since lost access to (LAW-01, LAW-09).</p>
+<h2 id="the-twenty-features">The twenty features</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Ticket</th>
+<th>Wave</th>
+<th>Feature</th>
+<th>For</th>
+<th>In one line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>SB-3001</td>
+<td>W29</td>
+<td>Show the passage</td>
+<td>Asker</td>
+<td><strong>Show passage</strong> on a cite opens the cited sentences as a quote, checked live as the asker</td>
+</tr>
+<tr>
+<td>2</td>
+<td>SB-3002</td>
+<td>W29</td>
+<td>Section on the cite</td>
+<td>Asker</td>
+<td>A cite names the heading it sits under: "Staff handbook › Carry-over"</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SB-3003</td>
+<td>W29</td>
+<td>Answers in the asker's language</td>
+<td>Asker</td>
+<td>The answer is written in the person's UI language (English, German or French); the cites stay as they are</td>
+</tr>
+<tr>
+<td>4</td>
+<td>SB-3004</td>
+<td>W29</td>
+<td>Ask about this document</td>
+<td>Asker</td>
+<td>From a cite or a search result, the next question searches only that document (up to 5 documents)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>SB-3005</td>
+<td>W29</td>
+<td>One-source warning</td>
+<td>Asker</td>
+<td>An answer whose every cite comes from one document says so in one line</td>
+</tr>
+<tr>
+<td>6</td>
+<td>SB-3006</td>
+<td>W29</td>
+<td>Open at the cited lines</td>
+<td>Asker</td>
+<td>A GitHub cite opens the file at the cited lines (<code>#L12-L20</code>)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>SB-3101</td>
+<td>W30</td>
+<td>Questions that found nothing</td>
+<td>Steward</td>
+<td>Per space, the weekly count of questions that found nothing, the glossary terms they used, and the trend; counts only</td>
+</tr>
+<tr>
+<td>8</td>
+<td>SB-3102</td>
+<td>W30</td>
+<td>Spaces with no steward left</td>
+<td>Admin, steward</td>
+<td>A space whose steward groups have no active member shows in health, and its questions go to the company-wide answerers</td>
+</tr>
+<tr>
+<td>9</td>
+<td>SB-3103</td>
+<td>W30</td>
+<td>Review several at once</td>
+<td>Steward</td>
+<td>Pick up to 50 documents on the review list and mark them reviewed or retire them in one step, with one audit row each</td>
+</tr>
+<tr>
+<td>10</td>
+<td>SB-3104</td>
+<td>W30</td>
+<td>Feedback for the stewards</td>
+<td>Steward</td>
+<td>The steward screen shows the space's Helpful and Not helpful counts this month, and the documents cited most in unhelpful answers</td>
+</tr>
+<tr>
+<td>11</td>
+<td>SB-3105</td>
+<td>W30</td>
+<td>Coming due</td>
+<td>Steward</td>
+<td>The review list adds the documents that fall due in the next 14 days, so stewards can get ahead</td>
+</tr>
+<tr>
+<td>12</td>
+<td>SB-3106</td>
+<td>W30</td>
+<td>Owners mark their own reviewed</td>
+<td>Owner</td>
+<td>From the monthly owner note, an owner marks their own document "Reviewed, still right"</td>
+</tr>
+<tr>
+<td>13</td>
+<td>SB-3107</td>
+<td>W30</td>
+<td>Suggest a glossary term</td>
+<td>Steward</td>
+<td>A steward adds a term on the steward screen; it becomes a manifest proposal for an admin to approve</td>
+</tr>
+<tr>
+<td>14</td>
+<td>SB-3201</td>
+<td>W31</td>
+<td>Why a sync fails</td>
+<td>Operator</td>
+<td>Connector health says why the last sync failed (sign-in, rate limit, unreachable, source error) and names the fix</td>
+</tr>
+<tr>
+<td>15</td>
+<td>SB-3202</td>
+<td>W31</td>
+<td>Refresh one document</td>
+<td>Operator</td>
+<td><code>sb index refresh CITE</code> re-reads one document from its source now, audited</td>
+</tr>
+<tr>
+<td>16</td>
+<td>SB-3203</td>
+<td>W31</td>
+<td>Health in Prometheus</td>
+<td>Operator</td>
+<td>Every health check is also a gauge on <code>/metrics</code>, so the site's existing alerts cover them</td>
+</tr>
+<tr>
+<td>17</td>
+<td>SB-3204</td>
+<td>W31</td>
+<td>Audit by person and date</td>
+<td>Admin</td>
+<td><code>actor=</code>, <code>from=</code> and <code>to=</code> on the audit API, in the console and on <code>sb audit tail</code></td>
+</tr>
+<tr>
+<td>18</td>
+<td>SB-3205</td>
+<td>W31</td>
+<td>Answer time watch</td>
+<td>Operator</td>
+<td>Health and the weekly report show the 95th percentile of seconds per answer, and warn when it grows by half week on week</td>
+</tr>
+<tr>
+<td>19</td>
+<td>SB-3206</td>
+<td>W31</td>
+<td>Disk runway</td>
+<td>Operator</td>
+<td>The doctor and health estimate the days until the data disk is full, and warn under 30</td>
+</tr>
+<tr>
+<td>20</td>
+<td>SB-3207</td>
+<td>W31</td>
+<td>Notice to everyone</td>
+<td>Admin</td>
+<td>An admin sets one line, such as "Updating at 18:00, back by 18:30", that ends by itself; shown in the web UI and in chat replies</td>
+</tr>
+</tbody>
+</table>
+<h2 id="w29-show-the-evidence-epic-e30-sb-3001-to-sb-3006">W29 Show the evidence (epic E30, SB-3001 to SB-3006)</h2>
+<p>The goal is that an asker can check an answer without leaving it, and the answer reads in their language.</p>
+<h3 id="s291-see-what-it-rests-on">S29.1 See what it rests on</h3>
+<p><strong>SB-3001 Show the passage.</strong> Each citation chip gets <strong>Show passage</strong>. It calls <code>GET /v1/traces/{id}/passage?cite=…</code>, which checks the asker's access to that document again, now and as them, and returns the cited span's text at that version (at most 600 characters, cut at a sentence). The UI shows it as a block quote with the cite. It is never rendered as markup (LAW-09). If the asker can't open the document any more, it says "You can't open this source now" and never shows the text. If that version is gone from the index, it says "This version is no longer indexed".
+<em>Laws:</em> LAW-01 (a live check on every open), LAW-07 (nothing new is stored), LAW-09. <em>Acceptance:</em> the passage matches the span. Once access is revoked after the answer, it is refused. HTML in a source shows as text. axe passes.</p>
+<p><strong>SB-3002 Section on the cite.</strong> At ingest, each chunk records the nearest heading above it: a Markdown <code>#</code> to <code>###</code>, Word and OpenDocument headings, and HTML <code>h1</code> to <code>h3</code>, at most 120 characters. The chip and the copied and printed cite show "Title › Section". A rebuild fills it for every document (LAW-13). A heading is data. It can't move a document or change its rank.
+<em>Laws:</em> LAW-09, LAW-13. <em>Acceptance:</em> a Markdown chunk under "## Carry-over" shows it. A document with no headings shows the title only. A rebuild fills it in.</p>
+<p><strong>SB-3003 Answers in the asker's language.</strong> <code>POST /v1/ask</code> takes <code>"language": "de"</code> (<code>en</code>, <code>de</code> or <code>fr</code>; anything else is ignored), and the web UI sends the person's chosen language. Slack and Mattermost send the manifest's <code>language</code>. The answer prompt adds one line: write the claims in that language and keep the labels. Cites, titles and passages stay in the source's own language. The eval suite gains a German case and a French case, and the gate runs them.
+<em>Laws:</em> LAW-14 (an uncited claim is still marked), LAW-07. <em>Acceptance:</em> a German ask gets German claims with the same cites. An unknown code changes nothing. The new eval cases pass.</p>
+<h3 id="s292-narrow-it-and-say-how-thin-it-is">S29.2 Narrow it and say how thin it is</h3>
+<p><strong>SB-3004 Ask about this document.</strong> A citation chip and a Documents result get <strong>Ask about this document</strong>. The next question carries <code>"documents": ["docs:…"]</code> (at most 5), and retrieval keeps only chunks of those documents. The documents still go through the live checks first. A chip above the ask box shows the filter, and <strong>Clear</strong> removes it. A document the asker can't open gives <code>no_access</code> like any other.
+<em>Laws:</em> LAW-01 (the filter runs after the check and can only narrow). <em>Acceptance:</em> an answer cites only the chosen document. A hidden one gives <code>no_access</code> and nothing else.</p>
+<p><strong>SB-3005 One-source warning.</strong> When every cite of an answer with at least two claims comes from one document, the response carries <code>"notice_single": true</code>. The UI then shows one line above the answer: "This answer rests on one document. Check it if it matters." Slack and Mattermost put it first. Hidden cites don't count.
+<em>Laws:</em> LAW-01, LAW-14. <em>Acceptance:</em> three claims from one document warn. Two documents don't. A one-claim answer doesn't.</p>
+<p><strong>SB-3006 Open at the cited lines.</strong> For a GitHub cite, ingest records the chunk's lines and the connector links the file on the default branch with <code>#L12-L20</code>. A version is a commit time, not a commit, so the link is to the default branch (built: the plan said "at that commit"). Other kinds are unchanged.
+<em>Laws:</em> none new. <em>Acceptance:</em> a span in lines 12 to 20 links to <code>#L12-L20</code>.</p>
+<h2 id="w30-fill-the-gaps-epic-e31-sb-3101-to-sb-3107">W30 Fill the gaps (epic E31, SB-3101 to SB-3107)</h2>
+<p>The goal is that stewards see what people couldn't find, and the upkeep is spread across stewards and owners.</p>
+<h3 id="s301-see-whats-missing">S30.1 See what's missing</h3>
+<p><strong>SB-3101 Questions that found nothing.</strong> The weekly job counts, per space, the asks that ended <code>no_sources</code> or <code>most_uncited</code>, from the traces. The steward screen and the stewards' digest line (SB-2507) show the count, last week's count, and the glossary terms those questions used (SB-2203), most used first. They never show question text.
+<em>Laws:</em> LAW-07 (counts and terms the space already defined). <em>Acceptance:</em> two no-source asks count 2. A question's text appears nowhere.</p>
+<p><strong>SB-3102 Spaces with no steward left.</strong> The nightly job checks each space's steward groups against the directory. A space with no active steward shows in <code>GET /v1/admin/health</code> as <code>spaces_unstewarded</code> and warns. Its new questions go to the company-wide answerers (SB-1704) with "Finance has no active steward", instead of waiting for nobody. An unknown directory answer counts as a warning, never as fine.
+<em>Laws:</em> LAW-12, LAW-03 (Unknown isn't fine). <em>Acceptance:</em> deprovisioning the last steward warns and reroutes. A directory error warns.</p>
+<p><strong>SB-3103 Review several at once.</strong> The review list gets a checkbox on each document, and <strong>Mark reviewed</strong> and <strong>Retire</strong> act on the selection. <code>POST …/review/marks</code> and <code>POST …/retired</code> take <code>"cites": […]</code> (at most 50). Each document is checked and audited on its own. The response lists any that failed and why.
+<em>Laws:</em> LAW-11 (one audit row each), LAW-19 (only the steward's own space). <em>Acceptance:</em> marking 3 writes 3 rows. A document outside the space fails alone.</p>
+<p><strong>SB-3104 Feedback for the stewards.</strong> The steward screen shows the space's month of feedback: Helpful and Not helpful counts, last month's, and at most 10 documents most cited in Not helpful answers. It shows titles only for documents the steward can open and counts for the rest. Comments stay admin-only.
+<em>Laws:</em> LAW-01, LAW-07. <em>Acceptance:</em> the counts match <code>GET /v1/admin/feedback</code> for the space. A hidden document is a count.</p>
+<h3 id="s302-share-the-upkeep">S30.2 Share the upkeep</h3>
+<p><strong>SB-3105 Coming due.</strong> <code>GET /v1/spaces/NAME/review?section=due</code> lists the documents that answers cite and that turn stale in the next 14 days, by <code>review_after_days</code> or their own review-by date (SB-2705), soonest first. <strong>Reviewed, still right</strong> works on them as on stale ones.
+<em>Laws:</em> LAW-01. <em>Acceptance:</em> a document due in 10 days is listed. One due in 20 days isn't.</p>
+<p><strong>SB-3106 Owners mark their own reviewed.</strong> The monthly owner note (SB-2806) links to the Documents tab filtered to their documents that are past review. Each one there has <strong>Reviewed, still right</strong> when the person is its current owner at the source. The mark is the same record stewards make, and the audit row names the owner.
+<em>Laws:</em> LAW-01, LAW-11, LAW-12 (a deprovisioned owner can't mark). <em>Acceptance:</em> the owner can mark their own document. They can't mark someone else's, which is refused with <code>EPERM</code>.</p>
+<p><strong>SB-3107 Suggest a glossary term.</strong> The glossary section of the steward screen gets <strong>Suggest a term</strong> (term, meaning, at most 10 expansions). It sends a manifest proposal through <code>POST /v1/spaces/NAME/proposals</code>, which an admin approves as today. Nothing changes until the proposal is applied.
+<em>Laws:</em> LAW-16 (the manifest stays the truth), LAW-11. <em>Acceptance:</em> a suggestion appears in <code>GET /v1/admin/proposals</code>. Approving and applying it adds the term.</p>
+<h2 id="w31-run-without-surprises-epic-e32-sb-3201-to-sb-3207">W31 Run without surprises (epic E32, SB-3201 to SB-3207)</h2>
+<p>The goal is that the operator learns about trouble from the cell before users do, and can fix the small things in one command.</p>
+<h3 id="s311-know-why">S31.1 Know why</h3>
+<p><strong>SB-3201 Why a sync fails.</strong> A connector's sync record keeps the class of its last failure: <code>auth</code> (401 or 403), <code>rate_limited</code> (429), <code>unreachable</code> (DNS, TLS, timeout), or <code>source_error</code> (5xx or anything else). It never keeps a URL, a body or a token. Health shows it with the runbook section that fixes it, as the doctor does (SB-2605).
+<em>Laws:</em> LAW-07, LAW-03 (an unclassified failure is <code>source_error</code>, never fine). <em>Acceptance:</em> a fake 401 shows <code>auth</code> and its fix. The record carries no URL.</p>
+<p><strong>SB-3202 Refresh one document.</strong> <code>sb index refresh CITE --reason TEXT</code>, or <code>POST /v1/admin/index/refresh</code>, re-reads one document from its source now with the normal pipeline and checks, and writes an audit row. A document the source no longer has is tombstoned like a sync would. Admins only.
+<em>Laws:</em> LAW-11, LAW-13. <em>Acceptance:</em> a changed document has a new version after the refresh. A gone one is tombstoned.</p>
+<p><strong>SB-3203 Health in Prometheus.</strong> <code>/metrics</code> gains <code>sb_health_warning{check="job:notify"}</code> and so on, at 0 or 1, for every line of <code>GET /v1/admin/health</code>, and <code>sb_health_unknown</code> for lines it can't read. The runbook gets example alert rules.
+<em>Laws:</em> LAW-03 (an unreadable line is 1 on <code>sb_health_unknown</code>, never 0 on both). <em>Acceptance:</em> each warning in health is 1 on its gauge.</p>
+<p><strong>SB-3204 Audit by person and date.</strong> <code>GET /v1/admin/audit</code> takes <code>actor=</code> (a user id or email), <code>from=</code> and <code>to=</code> (dates), beside <code>kind</code> and <code>space</code>. The console's Audit section gets the same three fields, and <code>sb audit tail</code> gets <code>--actor</code>, <code>--from</code> and <code>--to</code>.
+<em>Laws:</em> LAW-11 (filtering reads, never changes). <em>Acceptance:</em> the filters narrow as expected, and paging still works.</p>
+<h3 id="s312-see-it-coming">S31.2 See it coming</h3>
+<p><strong>SB-3205 Answer time watch.</strong> The usage ledger row each model call already writes gains its duration in milliseconds. Health and the weekly report add this week's 95th percentile of seconds per answer, last week's, and a warning when it is over 1.5 times last week's, as for prompt size (SB-2906).
+<em>Laws:</em> LAW-07 (counts only). <em>Acceptance:</em> a fake week with doubled times warns. A flat one doesn't.</p>
+<p><strong>SB-3206 Disk runway.</strong> The host step keeps the data disk's used bytes for the last 14 days in <code>state/box/disk.json</code>. The doctor and the console's Box section estimate the days until the disk is full from that growth, and warn under 30 days. Under 7 days the warning is an alert. With fewer than 3 days of history it shows "not enough history yet", never a number.
+<em>Laws:</em> LAW-03. <em>Acceptance:</em> steady growth gives the right estimate. A shrinking disk shows no runway. Two days of history shows "not enough history".</p>
+<p><strong>SB-3207 Notice to everyone.</strong> <code>PUT /v1/admin/notice</code> sets one line, at most 200 characters, with an end time no more than 7 days away. The web UI shows it at the top of every screen, and chat replies put it first, until it ends. <code>DELETE</code> clears it. It is one <code>cell_docs</code> record with an audit row. It is plain text and can't hold a link or markup.
+<em>Laws:</em> LAW-09, LAW-11. <em>Acceptance:</em> the notice shows and ends by itself. More than 200 characters, or an end time more than 7 days away, gets <code>EINVAL</code>.</p>
+<h2 id="decisions-for-the-user">Decisions for the user</h2>
+<p>Decided by the user on 2026-11-24, with every recommended option:</p>
+<ol>
+<li><strong>Scope and order.</strong> <em>Recommended:</em> all three waves, all twenty tickets, in the order W29, W30, W31. <em>Other:</em> W31 first, so the operator side lands before the asker features.</li>
+<li><strong>Answer language (SB-3003).</strong> <em>Recommended:</em> the language the person picked in the UI, or the manifest's language in chat. <em>Other:</em> the language the question is written in, which the model has to guess; or leave answers as they are.</li>
+<li><strong>Passage length (SB-3001).</strong> <em>Recommended:</em> up to 600 characters of the cited span, cut at a sentence. <em>Other:</em> the whole chunk, which is longer and shows more of the source.</li>
+<li><strong>Owners marking their own documents (SB-3106).</strong> <em>Recommended:</em> yes, for their own documents only. <em>Other:</em> stewards only, as today.</li>
+<li><strong>Who sets the notice (SB-3207).</strong> <em>Recommended:</em> admins only, ending by itself within 7 days. <em>Other:</em> stewards too, for their own space.</li>
+</ol>
+<h2 id="still-open-from-earlier-waves">Still open from earlier waves</h2>
+<ul>
+<li><strong>SB-1605</strong> and <strong>SB-2601</strong> need a run on a real Linux VM.</li>
+<li><strong>SB-903</strong> and <strong>SB-908</strong> need a real GCP project.</li>
+<li><strong>Mattermost (SB-2005, SB-2105, SB-2603)</strong> has been tested against a fake server only.</li>
+</ul><p class="srcline">Source: <code>docs/14-evidence-gaps-surprises.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#summary">Summary</a></li><li class="l2"><a href="#keeping-it-small">Keeping it small</a></li><li class="l2"><a href="#the-twenty-features">The twenty features</a></li><li class="l2"><a href="#w29-show-the-evidence-epic-e30-sb-3001-to-sb-3006">W29 Show the evidence (epic E30, SB-3001 to SB-3006)</a></li><li class="l3"><a href="#s291-see-what-it-rests-on">S29.1 See what it rests on</a></li><li class="l3"><a href="#s292-narrow-it-and-say-how-thin-it-is">S29.2 Narrow it and say how thin it is</a></li><li class="l2"><a href="#w30-fill-the-gaps-epic-e31-sb-3101-to-sb-3107">W30 Fill the gaps (epic E31, SB-3101 to SB-3107)</a></li><li class="l3"><a href="#s301-see-whats-missing">S30.1 See what's missing</a></li><li class="l3"><a href="#s302-share-the-upkeep">S30.2 Share the upkeep</a></li><li class="l2"><a href="#w31-run-without-surprises-epic-e32-sb-3201-to-sb-3207">W31 Run without surprises (epic E32, SB-3201 to SB-3207)</a></li><li class="l3"><a href="#s311-know-why">S31.1 Know why</a></li><li class="l3"><a href="#s312-see-it-coming">S31.2 See it coming</a></li><li class="l2"><a href="#decisions-for-the-user">Decisions for the user</a></li><li class="l2"><a href="#still-open-from-earlier-waves">Still open from earlier waves</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../";</script>
+<script src="../assets/search-index.js"></script>
+<script src="../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

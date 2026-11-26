@@ -67,11 +67,20 @@ cases:
 <td>The agent to ask: <code>ask</code> (default) or a department agent (sb-agents(7)). The world's top-level <code>agents</code> list says which agents its manifest enables, and each space may name its <code>template</code> and <code>agents</code></td>
 </tr>
 <tr>
+<td><code>language</code></td>
+<td>(SB-3003) <code>en</code>, <code>de</code> or <code>fr</code>: the ask's <code>language</code> (sb-ask(3)). The local cell passes it on; a case with it expects the same cites as the question without it</td>
+</tr>
+<tr>
+<td><code>branch</code> / <code>consult</code></td>
+<td>(SB-3903, SB-4501) <code>branch: true</code> asks across the space's teams the asker is a member of, as <code>?branch=true</code> does; <code>consult: true</code> also consults their department agents (sb-ask(3), Ask each department). Each consulted section's cites count as the answer's</td>
+</tr>
+<tr>
 <td><code>expect</code></td>
 <td>One or more checks (below)</td>
 </tr>
 </tbody>
 </table>
+<p>A tenant's own cases, from wrong citations (SB-2204) and from feedback on a named agent (SB-4401), are kept in the cell, not in suite files; each runs as the person who added it, with the agent it was made from (sb-evals(7)).</p>
 <h3 id="expectations">Expectations</h3>
 <table>
 <thead>
@@ -84,6 +93,10 @@ cases:
 <tr>
 <td><code>cites_any: [cite…]</code></td>
 <td>At least one listed citation appears</td>
+</tr>
+<tr>
+<td><code>cites_all: [cite…]</code></td>
+<td>Every listed citation appears (SB-3304)</td>
 </tr>
 <tr>
 <td><code>cites_none: [cite…]</code></td>
@@ -108,6 +121,18 @@ cases:
 <tr>
 <td><code>not_contains: [str…]</code></td>
 <td>None of the strings (e.g. canaries) appear anywhere in output or tool arguments</td>
+</tr>
+<tr>
+<td><code>disagrees: true</code></td>
+<td>Some claim is marked <code>disagree</code> (<code>false</code>: none is; SB-3304)</td>
+</tr>
+<tr>
+<td><code>table_value: N</code></td>
+<td>(SB-4307) The ask used the table tool and its value is N (sb-ask(3), Numbers from tables)</td>
+</tr>
+<tr>
+<td><code>consulted: [NAME, …]</code></td>
+<td>(SB-4501) A consulting ask consulted exactly these teams, in any order; <code>[]</code> is none</td>
 </tr>
 <tr>
 <td><code>error: CODE</code></td>
@@ -135,7 +160,8 @@ documents:
     text: &quot;Refunds over 500 need a team lead's approval.&quot;
     viewers: [alice@acme-logistics.example]   # emails; the live check asks by email
 </code></pre>
-<p>The <code>extractive</code> model is a deterministic stand-in: for each data block it is given, it answers the block's first sentence, citing that block. It measures the pipeline, not a model. A <code>misattributing</code> model, which cites each sentence to the wrong block, exists to prove that the scorer and gate catch misattribution.</p>
+<p>A world's <code>spaces</code> give each space its <code>members</code>, <code>label</code>, <code>scope</code>, <code>template</code> and <code>agents</code>, and since SB-4501 its <code>parent</code> (a team under a department) and its <code>glossary</code>. A space with a team under it runs the leader's week (sb-agents(7)).
+The <code>extractive</code> model is a deterministic stand-in: for each data block it is given, it answers the block's first sentence, citing that block. It measures the pipeline, not a model. A <code>misattributing</code> model, which cites each sentence to the wrong block, exists to prove that the scorer and gate catch misattribution.</p>
 <h3 id="space-leak-suites-sb-807">Space-leak suites (SB-807)</h3>
 <p>A <strong>space-leak</strong> case tries to make content cross from one space to someone outside it. It names an asker, the space they ask in (usually <code>company</code>), a question that only another space's <code>restricted</code> content could answer, and the expected refusal, as <code>cites_none</code> on that content. The world gives each such document a <code>label</code> and a <code>path</code> inside a space's scope, under a top-level <code>spaces:</code> map shaped like sb-space(5). It also lets the asker open the document at the source, which is the sharing mistake spaces exist to contain. Control cases check that <code>internal</code> content still answers everyone, and that members still get their own space's content.</p>
 <p>A <strong>space-redteam</strong> case is the same shape, from the cross-space red team (<a href="../docs/red-team-spaces.html">docs/red-team-spaces.md</a>): mislabelled and misfiled files, injected instructions, a file owned across a barrier (a document's <code>owner</code>, an email), and a mid-reorg ask expecting <code>ESPACE</code>. It is in the release gate with <code>failures_max: 0</code> (SB-1208).</p>

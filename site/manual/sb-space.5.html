@@ -48,8 +48,15 @@
 <td><code>template</code></td>
 <td>string</td>
 <td>no</td>
-<td><code>custom</code></td>
-<td>One of the templates in <a href="sb-departments.7.html">sb-departments(7)</a>. It supplies the defaults below; any field set here wins</td>
+<td><code>custom</code>, or the parent's</td>
+<td>One of the templates in <a href="sb-departments.7.html">sb-departments(7)</a>. It supplies the defaults below; any field set here wins. A team space (<code>parent</code>) without one takes its department's</td>
+</tr>
+<tr>
+<td><code>parent</code></td>
+<td>space name</td>
+<td>no</td>
+<td>none</td>
+<td>The department space this one is a team of (SB-3901; sb-spaces(7), The tree). The parent is another space of the manifest, and has no parent of its own, so the tree is at most company, department and team. A team is at least as strict as its department: its <code>label</code> is at least the parent's and its <code>retention_days</code> at most the parent's, and when it leaves them out it takes the parent's. <code>members</code> are never inherited: a team's members are its own groups. A team without its own <code>glossary</code>, <code>start_here</code>, <code>review_after_days</code> or <code>agents</code> takes its department's (SB-3902): glossaries merge, the team's own term winning, and so do <code>skills</code> (SB-4601); start-here lists join, the department's first, at most ten; agents are the department's that the team's template allows</td>
 </tr>
 <tr>
 <td><code>members</code></td>
@@ -115,11 +122,109 @@
 <td>30 to 3650. A document this space holds whose version is older than this, and that answers keep citing, goes on the stewards' review list (sb-ask(3), Documents to review; SB-1709), and its cites show their age</td>
 </tr>
 <tr>
+<td><code>brief</code></td>
+<td><code>{ agent, weekly }</code></td>
+<td>no</td>
+<td>none</td>
+<td>The space's one scheduled agent (SB-4005; sb-agents(7), Scheduled and triggered agents): <code>agent</code> is <code>ask</code>, one of the space's own <code>agents</code> (never <code>draft-reply</code>), or, in a <code>product</code> or <code>support</code> space, <code>voc</code> (SB-4205), and <code>weekly</code> the day it runs, <code>monday</code> to <code>sunday</code>. Once a week, on the notify job's first run after 08:00 that day in the <code>digest</code> time zone (or UTC), the agent answers one fixed question, "What happened in this space this week, and what is still open?", as the space's first active steward (by email), and the answer waits in the space's steward queue as a draft. A space with a brief needs <code>stewards</code>. Changed like any field</td>
+</tr>
+<tr>
+<td><code>updates</code></td>
+<td>bool</td>
+<td>no</td>
+<td><code>false</code></td>
+<td>(SB-4102) The <code>update</code> agent drafts this space's status update every Monday (sb-agents(7), The update agent), and its stewards publish it as a note under <code>notes/NAME/updates/</code>, which the space above lists. A space with <code>updates</code> needs <code>stewards</code></td>
+</tr>
+<tr>
+<td><code>leader_week</code></td>
+<td>bool</td>
+<td>no</td>
+<td><code>true</code></td>
+<td>(SB-4503) In a space with teams and <code>stewards</code>, the <code>leader-week</code> agent drafts the week across its branch for its stewards every Monday (sb-agents(7), The leader's week). <code>false</code> turns it off. Only a space with teams uses it, and it isn't inherited</td>
+</tr>
+<tr>
+<td><code>requests</code></td>
+<td><code>{ categories, due_days }</code></td>
+<td>no</td>
+<td>none</td>
+<td>(SB-4104) What members may ask this space for: <code>categories</code>, 1 to 10 names of 1 to 40 letters, digits, spaces or <code>&amp; / : ' -</code>, none twice (ignoring case), and <code>due_days</code>, 1 to 30 working days (default 5). A request goes to the space's steward queue with its category and due date, and climbs the tree once it is past due (sb-ask(3), Requests to a department). A space with requests needs <code>stewards</code> to answer them, or they go nowhere: <code>POST …/requests</code> is <code>EINVAL</code></td>
+</tr>
+<tr>
+<td><code>budget_usd_month</code></td>
+<td>int</td>
+<td>no</td>
+<td>none</td>
+<td>(SB-4105) The space's monthly model budget in US dollars, at most the tenant's <code>budget_usd_month</code> and, in a team, at most its department's. Its branch's spend (its own and its teams', sb-observability(7), Spend by space) at 80% tells its stewards once a month; at 100% its scheduled briefs and updates, and its teams', pause until the month ends (sb-agents(7)). Asks never stop for a space's budget: only the tenant's refuses a call. Not inherited</td>
+</tr>
+<tr>
+<td><code>incident_labels</code></td>
+<td>list</td>
+<td>no</td>
+<td><code>[sev-1]</code></td>
+<td>(SB-4204) The ticket labels that make a ticket an incident in this space: 1 to 10 labels of 1 to 40 letters, digits, spaces or <code>_ . : / -</code>, none twice (ignoring case). When the notify job first sees a ticket in the space whose text names one of them on a <code>Labels:</code> line among its first five lines (sb-connector(3), <code>tickets: linear</code>), the <code>incident-brief</code> agent drafts one brief for the stewards (sb-agents(7), Scheduled and triggered agents). Switch it off with the agent's kill switch</td>
+</tr>
+<tr>
+<td><code>routing</code></td>
+<td><code>economy</code>, <code>balanced</code> or <code>frontier</code></td>
+<td>no</td>
+<td><code>balanced</code></td>
+<td>(SB-5002) How the space's asks pick a model tier. <code>balanced</code> is the usual rule (sb-evals(7), Model tiers); <code>economy</code> sends everything but research to the small tier; <code>frontier</code> sends everything to the main tier. A held small tier answers on main whatever the policy. A team inherits its department's, and can't be above it (<code>economy</code> &lt; <code>balanced</code> &lt; <code>frontier</code>). Evals run each space's cases on the tiers its policy uses</td>
+</tr>
+<tr>
+<td><code>on</code> (work events)</td>
+<td><code>pr-opened</code>, <code>ticket-filed</code></td>
+<td>no</td>
+<td>none</td>
+<td>(SB-5301) Beside <code>source-changed</code>: a new pull request on GitHub, or a new ticket, in the space starts a draft about it for the space's first active steward (sb-agents(7), Start on a work event)</td>
+</tr>
+<tr>
+<td><code>suspect</code></td>
+<td><code>skip</code> or <code>monitor</code></td>
+<td>no</td>
+<td><code>skip</code></td>
+<td>(SB-5101) What happens to a passage that reads like instructions to the model (sb-ingest(7), Suspect passages): <code>skip</code> keeps it out of every prompt; <code>monitor</code> lets it through wrapped and flagged. Both record it for the stewards. A team inherits its department's</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td><code>main</code></td>
+<td>no</td>
+<td>none</td>
+<td>(SB-4405) Pins every ask in this space to the main model (sb-evals(7), Model tiers)</td>
+</tr>
+<tr>
 <td><code>glossary</code></td>
 <td>map</td>
 <td>no</td>
 <td><code>{}</code></td>
-<td>The space's terms and acronyms, <code>TERM: MEANING</code> (SB-2203): at most 200, each term 1 to 40 characters and each meaning 1 to 200, printable, no term twice (ignoring case). Search and answers <strong>in this space</strong> expand a term the question uses with its meaning (sb-ask(3), Glossary); a company-wide ask or another space never does. An entry that reads like an instruction to the model is kept but <strong>flagged and not used</strong>, and the stewards' review list names it. Changed like any field: a steward's proposal an operator approves (sb-spaces(7))</td>
+<td>The space's terms and acronyms, <code>TERM: MEANING</code> (SB-2203; stewards see the terms its documents define as suggestions, sb-ask(3), SB-3407): at most 200, each term 1 to 40 characters and each meaning 1 to 200, printable, no term twice (ignoring case). Search and answers <strong>in this space</strong> expand a term the question uses with its meaning (sb-ask(3), Glossary); a company-wide ask or another space never does. An entry that reads like an instruction to the model is kept but <strong>flagged and not used</strong>, and the stewards' review list names it. Changed like any field: a steward's proposal an operator approves (sb-spaces(7))</td>
+</tr>
+<tr>
+<td><code>skills</code></td>
+<td>map name → <code>{ instruction, cases }</code></td>
+<td>no</td>
+<td><code>{}</code></td>
+<td>(SB-4601) The space's named ways of writing an answer, such as <code>weekly-update</code> (sb-agents(7), Skills): at most 10, each name <code>[a-z][a-z0-9-]{0,39}</code>. <code>instruction</code> is one line of at most 1,000 printable characters on <strong>format and steps only</strong>; <code>cases</code> are at least 3 and at most 10 eval cases, <code>"QUESTION": KIND:ID</code>, the document an answer with the skill must cite (sb-evals(7), Skill cases). <code>/NAME</code> at the start of an ask, a research question or a routine loads it. A team takes its department's skills, its own of the same name winning. Changed like any field: a steward's proposal an operator approves (sb-spaces(7)), after <code>sb agents lint --manifest</code></td>
+</tr>
+<tr>
+<td><code>rhythms</code></td>
+<td>map name → <code>{ subject, plan, steps }</code></td>
+<td>no</td>
+<td><code>{}</code></td>
+<td>(SB-4801) The space's own playbooks for a recurring moment (sb-departments(7), Rhythms), beside the built-in <code>onboarding</code>, <code>kickoff</code>, <code>close-out</code>, <code>quarterly-planning</code> and <code>one-on-one</code>; a space's own rhythm of a built-in name replaces it, and a team takes its department's, its own of a name winning. At most 10, each name <code>[a-z][a-z0-9-]{0,39}</code>. <code>subject</code> is <code>person</code>, <code>collection</code> or <code>space</code>; <code>plan</code> is <code>manager</code> or <code>steward</code> when that person approves the plan before it starts. <code>steps</code> are 1 to 12, in day order, each <code>{ day, kind, ask, approver, agent }</code>: <code>day</code> 0 to 120 from the start, <code>kind</code> one of <code>draft</code>, <code>routine</code>, <code>checkin</code> or <code>request</code>, <code>ask</code> one line of at most 300 printable characters under the skills' content rules, <code>approver</code> one of <code>subject</code> (a person subject only), <code>starter</code>, <code>manager</code> or <code>steward</code>, and <code>agent</code> (a draft only, or <code>gaps</code> on a request) one of <code>ask</code>, <code>start-here</code>, <code>catch-up</code>, <code>kickoff-brief</code>, <code>retrospective</code>, <code>goal-plan</code>, <code>one-on-one</code> or <code>gaps</code>. Every step is a draft in its approver's queue; none publishes or sends (LAW-29). Changed like any field, after <code>sb agents lint --manifest</code></td>
+</tr>
+<tr>
+<td><code>onboarding</code></td>
+<td>boolean</td>
+<td>no</td>
+<td><code>true</code></td>
+<td>(SB-4802) <code>false</code> turns off the onboarding rhythm for the space and its teams: nobody SCIM adds to it gets one</td>
+</tr>
+<tr>
+<td><code>on</code></td>
+<td>list</td>
+<td>no</td>
+<td><code>[]</code></td>
+<td>(SB-4905) The space's opt-in triggers; the only one is <code>source-changed</code>: a new version of a document an agent draft of the space cited, or was narrowed to, in the last 90 days redrafts that draft for its approver, once a day at most, and republishes nothing (sb-agents(7), When a source changes). Listed once each; not inherited by teams</td>
 </tr>
 <tr>
 <td><code>start_here</code></td>
@@ -173,6 +278,9 @@
 <li><code>barriers</code> with no <code>spaces</code>. The barrier checks run with the space checks, so a cell without spaces couldn't enforce them (SB-1401).</li>
 <li>A <code>start_here</code> with more than ten items, an item listed twice, an item that isn't <code>KIND:ID</code> or <code>KIND:/Folder/</code>, or a kind outside the space's <code>scope</code>.</li>
 <li>A <code>glossary</code> with more than 200 terms, a term listed twice (ignoring case), a term over 40 or a meaning over 200 characters, or a character that isn't printable.</li>
+<li>A <code>parent</code> that isn't another space of the manifest, is the space itself, or has a parent of its own (a fourth level, or a cycle); a team whose <code>label</code> is looser than its parent's, or whose <code>retention_days</code> is above its parent's (SB-3901, LAW-24).</li>
+<li>A <code>skills</code> entry with a bad name, more than 10 skills, an <code>instruction</code> that is empty, over 1,000 characters or not printable, fewer than 3 or more than 10 <code>cases</code>, a case whose question is empty or over 4,000 characters or whose expected document isn't <code>KIND:ID</code> in the space's <code>scope</code>. An <code>instruction</code> that names a tool, widens what is searched (another space, every space, company-wide, around permissions) or tells the model to act on what a document says is refused, naming its line (SB-4601, LAW-06, LAW-09).</li>
+<li>A <code>rhythms</code> entry with a bad name, more than 10 rhythms, a <code>subject</code> or <code>plan</code> not in its list, no steps or more than 12, a step past day 120 or before the step above it, a <code>kind</code>, <code>approver</code> or <code>agent</code> not in its list, a step with no <code>approver</code>, an <code>approver: subject</code> on a rhythm whose subject isn't a person, an <code>agent</code> on a step that isn't a draft, an unknown field, or an <code>ask</code> that is empty, over 300 characters, on two lines, or names a tool, an action or a wider scope (SB-4801, LAW-06, LAW-09, LAW-29). A thirteenth step is refused by the lint.</li>
 </ol>
 <p>A field a space leaves out takes its template's value: the label, the agents (those of the template's defaults the manifest enables, and always <code>ask</code>), and the retention (the template's, or else the tenant's, never more than the tenant's).</p>
 <h2 id="exit-status-errors">EXIT STATUS / ERRORS</h2>

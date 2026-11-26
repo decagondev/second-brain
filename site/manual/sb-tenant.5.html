@@ -52,6 +52,10 @@ agents: [ask]
 <td>the Mattermost slash command's <code>command_token</code> and the bot's <code>bot_token</code>, as JSON, when sb-cell(5) sets <code>mattermost</code> (SB-2005)</td>
 </tr>
 <tr>
+<td><code>vault://tenants/TENANT/events</code></td>
+<td>the key that signs the events out, at least 32 bytes, when <code>events</code> is set (sb-api(3), Events out; SB-4404)</td>
+</tr>
+<tr>
 <td><code>vault://tenants/TENANT/oidc</code></td>
 <td>the cell's OIDC client secret</td>
 </tr>
@@ -151,10 +155,10 @@ agents: [ask]
 </tr>
 <tr>
 <td><code>agents</code></td>
-<td>list</td>
+<td>list, or map name→<code>{ monthly_usd? }</code></td>
 <td>yes</td>
 <td></td>
-<td><code>ask</code> (required), <code>draft-reply</code>, and the department agents <code>incident-summary</code>, <code>spec-digest</code>, <code>close-checklist</code> and <code>runbook-answer</code> (sb-agents(7)). No duplicates</td>
+<td><code>ask</code> (required), <code>draft-reply</code>, and the department agents <code>incident-summary</code>, <code>spec-digest</code>, <code>close-checklist</code>, <code>runbook-answer</code>, <code>policy-answer</code>, <code>clause-finder</code>, <code>account-brief</code>, <code>case-brief</code>, <code>brand-check</code>, <code>sop-steps</code>, <code>design-rationale</code> and <code>exec-brief</code> (sb-agents(7)). No duplicates. (SB-4703) As a map, <code>agents: { ask: {}, case-brief: { monthly_usd: 40 } }</code>, each key is enabled as in the list, and <code>monthly_usd</code>, from 1 to 100000, caps that agent's model spend in a calendar month (UTC); a legwork agent (<code>research</code>, <code>meeting-prep</code>, <code>incident-brief</code>, <code>incident-review</code>, <code>voc</code>, <code>fix-draft</code>, <code>goal-check-in</code>, <code>catch-up</code>, <code>leader-week</code>, <code>update</code>), which runs without being listed, may be a key only to carry a cap. At 80% its owner is told; at 100% its scheduled, triggered and routine runs pause until the month turns, and on-demand asks go on under each space's budget (sb-agents(7), Spend caps). (SB-5004) An agent's map may also carry <code>job</code>, one sentence of at most 200 characters, and <code>targets</code>, at most 3 of <code>{ metric, at_least }</code> or <code>{ metric, at_most }</code>, the metric one of <code>published_as_is</code>, <code>discard_rate</code>, <code>hours_to_publish</code>, <code>helpful_rate</code> and <code>cost_per_published_usd</code>, each once (sb-agents(7), Goals)</td>
 </tr>
 <tr>
 <td><code>workflows</code></td>
@@ -185,11 +189,25 @@ agents: [ask]
 <td>30–3650. Applies to traces (with their citations and decision lists), drafts, conversations, feedback and logs, never to audit or the index. See Retention and deletion</td>
 </tr>
 <tr>
+<td><code>research_usd</code></td>
+<td>number</td>
+<td>no</td>
+<td><code>2</code></td>
+<td>From 0.1 to 50. The most a research report may spend, the model's price of the tokens its asks use; at it the report stops and keeps what it has (sb-ask(3), Research reports; SB-4201)</td>
+</tr>
+<tr>
 <td><code>budget_usd_month</code></td>
 <td>int</td>
 <td>no</td>
 <td><code>1000</code></td>
-<td>At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with <code>EBUDGET</code>, never unmetered (<a href="sb-observability.7.html#budgets-and-rate-limits-sb-609">sb-observability(7)</a>)</td>
+<td>At least 1. Model spend cap per calendar month (UTC). Over budget, asks fail with <code>EBUDGET</code>, never unmetered; a month-end forecast over it warns early (SB-3505) (<a href="sb-observability.7.html#budgets-and-rate-limits-sb-609">sb-observability(7)</a>)</td>
+</tr>
+<tr>
+<td><code>limits</code></td>
+<td>map</td>
+<td>no</td>
+<td></td>
+<td>(SB-5003) <code>{ monthly_usd_per_person: N }</code>, N from 1 to 10000: each person's own model spend in a calendar month (UTC). At 80% the person is told once (notification kind <code>limit</code>); at 100% their own asks, consultations and research use the economy (small) tier until the month ends, and their routines pause. Briefs and rhythm steps others review keep their tier. A steward can lift one member's limit for the month (sb-admin(3), <code>POST /v1/spaces/NAME/limits/lift</code>)</td>
 </tr>
 <tr>
 <td><code>pilot_group</code></td>
@@ -234,6 +252,20 @@ agents: [ask]
 <td>The web UI's default language (SB-2301): English, German or French. The cell writes it into the page it serves (<code>&lt;html lang="…"&gt;</code>), every string the UI shows comes from its catalog in that language, and the cell's errors are shown by their code in it (sb-errors(7)). A person can switch language in the UI; their choice is kept in their own browser and wins over this default. Answers stay in whatever language the model writes</td>
 </tr>
 <tr>
+<td><code>memory</code></td>
+<td><code>on</code> | <code>off</code></td>
+<td>no</td>
+<td><code>on</code></td>
+<td>(SB-4303) Whether people may keep a few lines about themselves that are sent with their own asks (sb-ask(3), Memory I control). <code>off</code> keeps and sends none, and the lines people already kept stay until they remove them or forget their data, unused</td>
+</tr>
+<tr>
+<td><code>events</code></td>
+<td><code>{ url, kinds }</code></td>
+<td>no</td>
+<td>none</td>
+<td>(SB-4404) Signed events out, off by default: the cell posts each event of a chosen kind to <code>url</code> (<code>https://</code> only), ids only, signed with the key at <code>vault://tenants/TENANT/events</code> (sb-api(3), Events out). <code>kinds</code> is a non-empty list of <code>decision</code>, <code>goal_at_risk</code>, <code>request_overdue</code>, <code>policy_published</code> and <code>action_due</code>, each once</td>
+</tr>
+<tr>
 <td><code>exclude</code></td>
 <td>map kind→list</td>
 <td>no</td>
@@ -252,7 +284,7 @@ agents: [ask]
 <td>map name→space</td>
 <td>no</td>
 <td>none</td>
-<td>Department spaces (<a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-spaces.7.html">sb-spaces(7)</a>). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today</td>
+<td>Department spaces (<a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-spaces.7.html">sb-spaces(7)</a>). Checked and planned from SB-1001 and applied from SB-1008. Without it, the cell is one undivided brain, as today. Each space may hold its own <code>rhythms</code> and turn <code>onboarding</code> off (SB-4801, SB-4802; sb-space(5))</td>
 </tr>
 <tr>
 <td><code>barriers</code></td>
@@ -270,6 +302,7 @@ agents: [ask]
 <li>Each item in <code>workflows</code> has an <code>approval</code> entry, and its connector kind is in <code>connectors</code>. Each key of <code>duties</code> is in <code>workflows</code>, has exactly <code>second</code> and <code>above</code>, and its <code>second</code> group isn't the workflow's <code>approval</code> group.</li>
 <li>No field anywhere is named <code>version</code>, <code>platform</code>, <code>secret</code>, <code>password</code>, <code>token</code> or <code>key</code>, alone or as part of a <code>_</code>-separated name such as <code>api_token</code>.</li>
 <li><code>pilot_group</code>, <code>approval</code> and <code>duties</code> principals are <code>group:</code> references, never individual users. That way access follows the IdP.</li>
+<li><code>events.url</code> is an <code>https://</code> URL with a host, and each of <code>events.kinds</code> is a known kind, at most once.</li>
 <li><code>custody</code>, <code>placement</code> and <code>key_custodian</code> are rejected: custody is a factory record that changes only through a dual-approved hand-off (<a href="sb-factory.7.html">sb-factory(7)</a>).</li>
 </ol>
 <h2 id="syntax">SYNTAX</h2>

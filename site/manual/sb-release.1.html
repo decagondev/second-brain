@@ -24,6 +24,7 @@
 <pre><code class="language-text">sb release status   [--tenant T]
 sb release promote  REL --to stable
 sb release rollback [--reason TEXT]
+sb release notes    --from DIR --to DIR
 </code></pre>
 <h2 id="description">DESCRIPTION</h2>
 <p><strong>status</strong> lists the current <code>stable</code> and <code>testing</code> releases, each ring's state, and for every tenant: channel, running release, attested digest and lag behind stable.</p>
@@ -34,7 +35,8 @@ sb release rollback [--reason TEXT]
 <li><strong>every stable-channel tenant is running the current stable</strong> (the promote guard, LAW-08).</li>
 </ol>
 <p><strong>rollback</strong> makes the previous stable current, marks the bad release <code>Revoked</code>, and redeploys every cell running it. Target: under 10 minutes for all cells. A revoked release can never be promoted or redeployed.</p>
-<p>Only maintainers can run these commands. Company operators see the same information read-only in the console.</p>
+<p><strong>notes</strong> (SB-4402) says what changed for each agent between two releases. <code>DIR</code> is a release's agent bundle as <code>make release-build</code> writes it to <code>build/release/agents/</code>: <code>agents.json</code>, <code>prompts/NAME.md</code> and <code>evals/SUITE.json</code>, the gate's results. For each agent in either, it prints its owner, <code>added</code> or <code>removed</code> if it is only in one, the prompt's lines added (<code>+</code>) and removed (<code>-</code>), and its suite's pass rate and failures before and after, or <code>no results</code> when a side has none. It reads files only, and needs no control plane.</p>
+<p>Only maintainers can run status, promote and rollback. Company operators see the same information read-only in the console.</p>
 <p><strong>How the controller decides, exactly (SB-507, SB-508).</strong> The controller is <code>internal/core/rollout</code>. Its state and moves are those of <code>proofs/tla/Rollout.tla</code>, and after every move it checks the model's invariants (<code>OnlyGatedRuns</code>, <code>OneBehindMax</code>, <code>StableNotAhead</code>, <code>StableNotRevoked</code>, <code>RevokedOnlyWhileDraining</code>, <code>DrainingOnlyRevoked</code>). A move that would break one is refused.</p>
 <table>
 <thead>

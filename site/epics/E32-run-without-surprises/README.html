@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E32 Run Without Surprises · Second Brain</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<script>try{const t=localStorage.getItem('sb-theme');if(t)document.documentElement.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark'}catch(e){}</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <button class="menu" aria-label="Menu" onclick="document.body.classList.toggle('nav-open')">☰</button>
+  <a class="brand" href="../../index.html"><span class="mark">◈</span> second brain</a>
+  <nav class="tabs" aria-label="Main"><a class="" href="../../index.html">Home</a><a class="" href="../../manual/sb-tour.7.html">Tour</a><a class="" href="../../manual/README.html">Manual</a><a class="" href="../../docs/README.html">Design</a><a class="active" href="../../epics/README.html">Plan</a><a class="" href="../../devlog.html">Devlog</a><a class="" href="../../examples/README.html">Examples</a></nav>
+  <div class="search"><input id="q" type="search" placeholder="Search docs  /" autocomplete="off" aria-label="Search"><div id="results" role="listbox"></div></div>
+  <button class="theme" aria-label="Toggle light and dark theme" onclick="sbToggleTheme()">◐</button>
+</header>
+<div class="layout">
+  <aside class="side" aria-label="Section"><div class="group"><h4>Plan</h4><a href="../../epics/README.html">Plan</a><a href="../../docs/03-prd.html">Second Brain: Product Requirements Document</a></div><div class="group"><h4>Epics</h4><a href="../../epics/E00-foundations/README.html">E00 Manual, Laws and Proofs</a><a href="../../epics/E01-tenancy-identity/README.html">E01 Tenancy and Identity</a><a href="../../epics/E02-policy/README.html">E02 Policy Kernel</a><a href="../../epics/E03-connectors-ingestion/README.html">E03 Connectors and Ingestion</a><a href="../../epics/E04-retrieval-answers/README.html">E04 Retrieval and Cited Answers</a><a href="../../epics/E05-actions-approvals-audit/README.html">E05 Actions, Approvals, Audit and Kill Switches</a><a href="../../epics/E06-evals-release/README.html">E06 Evals, Release and Supply Chain</a><a href="../../epics/E07-rollout-ops/README.html">E07 Roll-out, Admin and Operations</a><a href="../../epics/E08-factory-handoff/README.html">E08 Factory and Hand-off</a><a href="../../epics/E09-gcp-runtime/README.html">E09 Cells on GCP</a><a href="../../epics/E10-department-spaces/README.html">E10 Department Spaces</a><a href="../../epics/E11-department-templates/README.html">E11 Department Templates and Connectors</a><a href="../../epics/E12-space-governance/README.html">E12 Space Governance</a><a href="../../epics/E13-portfolio-grants/README.html">E13 Portfolio Department Grants</a><a href="../../epics/E14-hardening/README.html">E14 Hardening</a><a href="../../epics/E15-cell-runtime/README.html">E15 Cell Runtime</a><a href="../../epics/E16-self-hosted-cell/README.html">E16 Self-hosted Cell</a><a href="../../epics/E17-team-knowledge/README.html">E17 Team Knowledge</a><a href="../../epics/E18-easy-to-run/README.html">E18 Easy to Run</a><a href="../../epics/E19-protect-the-data/README.html">E19 Protect the Data</a><a href="../../epics/E20-close-the-loops/README.html">E20 Close the Loops</a><a href="../../epics/E21-keep-people-in-the-loop/README.html">E21 Keep People in the Loop</a><a href="../../epics/E22-keep-knowledge-owned/README.html">E22 Keep Knowledge Owned</a><a href="../../epics/E23-fit-the-site/README.html">E23 Fit the Site</a><a href="../../epics/E24-easier-to-ask/README.html">E24 Easier to Ask</a><a href="../../epics/E25-easier-to-steward/README.html">E25 Easier to Steward</a><a href="../../epics/E26-easier-to-operate/README.html">E26 Easier to Operate</a><a href="../../epics/E27-fresh-answers/README.html">E27 Fresh Answers</a><a href="../../epics/E28-tidy-corpus/README.html">E28 A Tidy Corpus</a><a href="../../epics/E29-focused-context/README.html">E29 A Focused Context</a><a href="../../epics/E30-show-the-evidence/README.html">E30 Show the Evidence</a><a href="../../epics/E31-fill-the-gaps/README.html">E31 Fill the Gaps</a><a class="current" href="../../epics/E32-run-without-surprises/README.html">E32 Run Without Surprises</a><a href="../../epics/E33-ask-better/README.html">E33 Ask Better</a><a href="../../epics/E34-capture-knowledge/README.html">E34 Capture Knowledge</a><a href="../../epics/E35-trust-and-control/README.html">E35 Trust and Control</a><a href="../../epics/E36-trust-each-answer/README.html">E36 Trust Each Answer</a><a href="../../epics/E37-capture-conversations/README.html">E37 Capture Conversations</a><a href="../../epics/E38-work-where-people-are/README.html">E38 Work Where People Are</a><a href="../../epics/E39-one-org-many-levels/README.html">E39 One Org, Many Levels</a><a href="../../epics/E40-agent-for-every-department/README.html">E40 An Agent for Every Department</a><a href="../../epics/E41-run-the-company/README.html">E41 Run the Company</a><a href="../../epics/E42-agents-do-the-legwork/README.html">E42 Agents That Do the Legwork</a><a href="../../epics/E43-work-comes-to-you/README.html">E43 Work That Comes to You</a><a href="../../epics/E44-govern-every-agent/README.html">E44 Govern Every Agent</a><a href="../../epics/E45-departments-work-together/README.html">E45 Departments Work Together</a><a href="../../epics/E46-agents-you-can-shape/README.html">E46 Agents You Can Shape</a><a href="../../epics/E47-every-agent-accountable/README.html">E47 Every Agent Accountable</a><a href="../../epics/E48-ways-of-working/README.html">E48 Ways of Working</a><a href="../../epics/E49-agents-check-with-you/README.html">E49 Agents That Check With You</a><a href="../../epics/E50-run-ai-like-a-business/README.html">E50 Run AI Like a Business</a><a href="../../epics/E51-guard-what-goes-in/README.html">E51 Guard What Goes In</a><a href="../../epics/E52-write-it-down-together/README.html">E52 Write It Down Together</a><a href="../../epics/E53-agents-act-carefully/README.html">E53 Agents That Act Carefully</a></div><div class="group"><h4>Tickets in E32</h4><a href="../../epics/E32-run-without-surprises/SB-3201-sync-reason.html">SB-3201: Why a sync fails</a><a href="../../epics/E32-run-without-surprises/SB-3202-refresh-document.html">SB-3202: Refresh one document</a><a href="../../epics/E32-run-without-surprises/SB-3203-health-metrics.html">SB-3203: Health in Prometheus</a><a href="../../epics/E32-run-without-surprises/SB-3204-audit-filters.html">SB-3204: Audit by person and date</a><a href="../../epics/E32-run-without-surprises/SB-3205-answer-time.html">SB-3205: Answer time watch</a><a href="../../epics/E32-run-without-surprises/SB-3206-disk-runway.html">SB-3206: Disk runway</a><a href="../../epics/E32-run-without-surprises/SB-3207-notice-to-everyone.html">SB-3207: Notice to everyone</a></div></aside>
+  <main class="content" id="main"><div class="crumbs"><a href="../../index.html">second brain</a> / epics/E32-run-without-surprises</div><h1 id="e32-run-without-surprises">E32: Run Without Surprises</h1>
+<blockquote>
+<p>The operator learns about trouble from the cell before users do, and can fix the small things in one command.</p>
+</blockquote>
+<p><strong>Waves:</strong> W31 · <strong>Tickets:</strong> 7 · <strong>Stories:</strong> 2</p>
+<p>Proposed 2026-11-24 after W28 and accepted by the user the same day, with every recommended decision. The concept is in <a href="../../docs/14-evidence-gaps-surprises.html">14-evidence-gaps-surprises.md</a>. Every ticket keeps to the bloat rules there: no new service the cell must run, no new store, no new third-party Go module, at most one setting a feature, no new page, and nothing widens what anyone sees.</p>
+<h2 id="user-stories">User stories</h2>
+<ul>
+<li><strong>US-32.1</strong>: As an <em>operator</em> or <em>admin</em>, I want to know why a sync fails, refresh one document, alert from Prometheus, and filter the audit by person and date, so that I fix things before anyone asks. Delivered by SB-3201, SB-3202, SB-3203, SB-3204.</li>
+<li><strong>US-32.2</strong>: As an <em>operator</em> or <em>admin</em>, I want to see answer time and disk runway coming, and tell everyone about downtime, so that nobody is surprised. Delivered by SB-3205, SB-3206, SB-3207.</li>
+</ul>
+<h2 id="slices">Slices</h2>
+<table>
+<thead>
+<tr>
+<th>Slice</th>
+<th>Name</th>
+<th>Delivers</th>
+<th>Tickets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S31.1</td>
+<td>Know why</td>
+<td>Why a sync fails, refresh one document, health in Prometheus, audit by person and date</td>
+<td>SB-3201, SB-3202, SB-3203, SB-3204</td>
+</tr>
+<tr>
+<td>S31.2</td>
+<td>See it coming</td>
+<td>Answer time watch, disk runway, notice to everyone</td>
+<td>SB-3205, SB-3206, SB-3207</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exit-gate">Exit gate</h2>
+<ul>
+<li class="task done"><span class="box">✓</span>A sync failure is classified and its record holds no URL</li>
+<li class="task done"><span class="box">✓</span>An unreadable health line is never 0 on both gauges</li>
+<li class="task done"><span class="box">✓</span>A disk runway is never shown from too little history</li>
+<li class="task done"><span class="box">✓</span>A notice ends by itself within 7 days</li>
+<li class="task done"><span class="box">✓</span>Every law test still green; no new store, service or Go module</li>
+</ul>
+<h2 id="tickets">Tickets</h2>
+<table>
+<thead>
+<tr>
+<th>Ticket</th>
+<th>Wave / slice</th>
+<th>Title</th>
+<th>Laws</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="SB-3201-sync-reason.html">SB-3201</a></td>
+<td>W31 / S31.1</td>
+<td>Why a sync fails</td>
+<td>LAW-07, LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-3202-refresh-document.html">SB-3202</a></td>
+<td>W31 / S31.1</td>
+<td>Refresh one document</td>
+<td>LAW-11, LAW-13</td>
+</tr>
+<tr>
+<td><a href="SB-3203-health-metrics.html">SB-3203</a></td>
+<td>W31 / S31.1</td>
+<td>Health in Prometheus</td>
+<td>LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-3204-audit-filters.html">SB-3204</a></td>
+<td>W31 / S31.1</td>
+<td>Audit by person and date</td>
+<td>LAW-11</td>
+</tr>
+<tr>
+<td><a href="SB-3205-answer-time.html">SB-3205</a></td>
+<td>W31 / S31.2</td>
+<td>Answer time watch</td>
+<td>LAW-07</td>
+</tr>
+<tr>
+<td><a href="SB-3206-disk-runway.html">SB-3206</a></td>
+<td>W31 / S31.2</td>
+<td>Disk runway</td>
+<td>LAW-03</td>
+</tr>
+<tr>
+<td><a href="SB-3207-notice-to-everyone.html">SB-3207</a></td>
+<td>W31 / S31.2</td>
+<td>Notice to everyone</td>
+<td>LAW-09, LAW-11</td>
+</tr>
+</tbody>
+</table>
+<h2 id="decisions-for-the-user">Decisions for the user</h2>
+<p>Decided 2026-11-24 (<a href="../../docs/14-evidence-gaps-surprises.html#decisions-for-the-user">14-evidence-gaps-surprises.md</a>): all of W29 to W31, in order; answers in the language picked in the UI, or the manifest's in chat (SB-3003); passages of up to 600 characters (SB-3001); owners mark only their own documents reviewed (SB-3106); admins alone set the notice, ending within 7 days (SB-3207).</p><p class="srcline">Source: <code>epics/E32-run-without-surprises/README.md</code></p></main>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#user-stories">User stories</a></li><li class="l2"><a href="#slices">Slices</a></li><li class="l2"><a href="#exit-gate">Exit gate</a></li><li class="l2"><a href="#tickets">Tickets</a></li><li class="l2"><a href="#decisions-for-the-user">Decisions for the user</a></li></ul></aside>
+</div>
+<footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
+<script>window.SB_PREFIX="../../";</script>
+<script src="../../assets/search-index.js"></script>
+<script src="../../assets/app.js"></script>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+window.sbMermaid = mermaid; window.sbRenderMermaid && window.sbRenderMermaid();
+</script>
+</body></html>

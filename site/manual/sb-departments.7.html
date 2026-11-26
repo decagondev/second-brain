@@ -59,7 +59,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>design</code></td>
 <td>internal</td>
 <td>docs</td>
-<td><code>ask</code></td>
+<td><code>ask</code>, <code>design-rationale</code></td>
 <td>tenant's</td>
 <td>Product, Engineering, Marketing</td>
 </tr>
@@ -67,7 +67,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>sales</code></td>
 <td>confidential</td>
 <td>crm, docs</td>
-<td><code>ask</code>, <code>draft-reply</code></td>
+<td><code>ask</code>, <code>draft-reply</code>, <code>account-brief</code></td>
 <td>tenant's</td>
 <td>Finance, Support, Executive</td>
 </tr>
@@ -75,7 +75,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>marketing</code></td>
 <td>internal</td>
 <td>docs, chat</td>
-<td><code>ask</code>, <code>draft-reply</code></td>
+<td><code>ask</code>, <code>draft-reply</code>, <code>brand-check</code></td>
 <td>tenant's</td>
 <td>Sales, Product</td>
 </tr>
@@ -83,7 +83,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>support</code></td>
 <td>internal</td>
 <td>tickets, docs</td>
-<td><code>ask</code>, <code>draft-reply</code></td>
+<td><code>ask</code>, <code>draft-reply</code>, <code>case-brief</code></td>
 <td>tenant's</td>
 <td>Engineering, Product, Sales</td>
 </tr>
@@ -91,7 +91,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>people</code></td>
 <td>restricted</td>
 <td>hris, docs</td>
-<td><code>ask</code></td>
+<td><code>ask</code>, <code>policy-answer</code></td>
 <td>365 days</td>
 <td>Managers for their own reports only; Legal for cases</td>
 </tr>
@@ -107,7 +107,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>legal</code></td>
 <td>restricted</td>
 <td>docs</td>
-<td><code>ask</code></td>
+<td><code>ask</code>, <code>clause-finder</code></td>
 <td>tenant's; a legal hold overrides it</td>
 <td>Executive; deal teams by matter</td>
 </tr>
@@ -123,7 +123,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>operations</code></td>
 <td>internal</td>
 <td>docs</td>
-<td><code>ask</code></td>
+<td><code>ask</code>, <code>sop-steps</code></td>
 <td>tenant's</td>
 <td>Finance, Sales</td>
 </tr>
@@ -131,7 +131,7 @@ finance · legal · it-security · operations · executive · custom
 <td><code>executive</code></td>
 <td>restricted</td>
 <td>docs</td>
-<td><code>ask</code></td>
+<td><code>ask</code>, <code>exec-brief</code></td>
 <td>tenant's</td>
 <td>Board, named deal teams</td>
 </tr>
@@ -163,7 +163,17 @@ finance · legal · it-security · operations · executive · custom
 <li><strong>Need to know, and barriers.</strong> HR cases, legal matters, unreleased results and M&amp;A work are visible only to a named group. Some groups must not see each other's work at all, which is an information barrier (an ethical wall). Labels and barriers are separate controls: a label says how sensitive something is, and a barrier says who must never meet.</li>
 <li><strong>Joiner, mover, leaver, and access reviews.</strong> Access changes the moment someone joins, changes team or leaves, within 5 minutes (LAW-21). Each quarter, every space's stewards re-certify who has access, a standard SOX and SOC 2 control (W12).</li>
 </ol>
+<h3 id="account-brief-sb-4605">Account brief (SB-4605)</h3>
+<p>In a <code>sales</code> space that runs <code>account-brief</code>, or a <code>support</code> space that runs <code>case-brief</code>, <strong>Account brief</strong> on a CRM account the person can open (sb-ask(3), Account brief) gathers, by code and checked as them: the account's own record, its open tickets, the notes and documents of the last 90 days that name it, and the contracts and proposals that name it, with its renewal date when the CRM record has a <code>Renewal:</code> line and the owners among the cited documents. The space's agent writes one cited section of each, as the person. With <code>prep: true</code>, a meeting whose attendees share the account's domain gets the brief 30 minutes before. <code>personal_data</code> fields stay masked as ingest masked them (sb-ingest(7)), and nothing is written to the CRM.</p>
+<h3 id="rhythms-sb-4801">Rhythms (SB-4801)</h3>
+<p>A <strong>rhythm</strong> is a named playbook for a recurring moment: a few dated steps started for a person, a collection or the space, each one a part already built (a draft from an agent, a routine, a goal check-in or a request) offered on its day to one named approver. Five come built in: <code>onboarding</code> (SB-4802, sb-onboarding(7)), <code>kickoff</code> and <code>close-out</code> (SB-4803, SB-4804, sb-spaces(7), Projects), <code>quarterly-planning</code> (SB-4805, Quarterly planning below) and <code>one-on-one</code> (SB-4807, sb-agents(7), 1:1 prep); a space adds its own, or replaces a built-in one, under <code>rhythms</code> in its manifest (sb-space(5)), proposed by a steward and linted like skills: at most 12 steps over at most 120 days, each with an approver.</p>
+<p>A steward starts one with <code>POST /v1/spaces/NAME/rhythms</code> (<code>{ rhythm, subject }</code>, the subject a person's email or a collection id) or from the space's home. A rhythm with a <code>plan</code> waits as <strong>proposed</strong> until its plan's approver (the subject's manager from SCIM, or with none the space's stewards) presses <strong>Approve</strong> (<code>POST /v1/rhythms/ID/approve</code>); its days count from then. Each step whose day has come lands, as its approver's own draft or prompt, in their queue and their inbox (sb-ask(3), One inbox), drafted as them from what they can open now; a step for the stewards lands in the space's queue. A step is done once its approver answers or discards it. Nothing a step holds is published, sent or created without its approver doing it (LAW-29).</p>
+<p><code>GET /v1/spaces/NAME/rhythms</code> lists the space's rhythms with each step's day, approver, due date and state: a steward sees every one, anyone else the ones they started, are the subject of or approve a step of. Each read checks the subject first: a person who has left the space, or a project that has closed, stops the rhythm at once, its waiting steps skipped. Its starter, its subject or a steward stops it with <code>POST /v1/rhythms/ID/stop</code>. Every start, approval, step, stop and finish is in the audit log, by id. The jobs service runs the rhythms with the notify job: it starts onboarding for people SCIM added since its last run and offers the steps whose day has come.</p>
+<h3 id="quarterly-planning-sb-4805">Quarterly planning (SB-4805)</h3>
+<p>Fourteen days before a quarter ends, the jobs service starts each space's <code>quarterly-planning</code> rhythm once, unless the space's manifest replaces or drops it. Its day-0 step is a <code>goal-plan</code> draft in the space's steward queue, drafted as the space's first active steward: next quarter's proposed goals, one line for each of this quarter's goals of the space that isn't done (at most 10), marked <strong>carry over</strong>, or <strong>at risk</strong> when its last check-in said at risk or off track, each cited to the goal's document, then the space's requests this quarter counted by category. It is put together by code from the goals and queue the steward can open, not written by a model. The steward edits it and publishes each goal as usual (sb-spaces(7), Goals); a proposed goal starts nothing (LAW-16). A space with no goal to carry over gets no draft.</p>
+<p><code>GET /v1/spaces/NAME/planning</code>, for the space's stewards, rolls up the latest planning draft of the space and each of its teams: <code>{ "space", "quarter", "teams": [{ "space", "proposed": [{ "title", "cite", "why" }], "hidden" }], "overlaps": [{ "teams", "goals", "term" }] }</code>. A proposed goal is listed only when the steward can open its cite; the rest are counted in <code>hidden</code> (LAW-01). Two teams' proposed goals are flagged as a possible overlap when their titles share a glossary term of the space, or two words of four letters or more. An overlap is a flag for the stewards to talk about, never a merge.</p>
 <h2 id="laws">LAWS</h2>
+<p>LAW-29 A rhythm only drafts, and stops with its subject (<a href="sb-laws.7.html#law-29">sb-laws(7)</a>).</p>
 <p>LAW-20 Restricted stays home: the <code>restricted</code> default on <code>people</code>, <code>finance</code>, <code>legal</code> and <code>executive</code> is what keeps their content out of everyone else's company-wide answers (<a href="sb-spaces.7.html">sb-spaces(7)</a>).</p>
 <h2 id="examples">EXAMPLES</h2>
 <p>Starting from a template and narrowing it:</p>
@@ -177,7 +187,7 @@ finance · legal · it-security · operations · executive · custom
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-spaces.7.html">sb-spaces(7)</a>, <a href="sb-space.5.html">sb-space(5)</a>, <a href="sb-onboarding.7.html">sb-onboarding(7)</a>, <a href="../docs/08-department-brains.html">08 Department brains</a></p><p class="srcline">Source: <code>manual/sb-departments.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#the-catalogue">The catalogue</a></li><li class="l3"><a href="#the-four-practices">The four practices</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#the-catalogue">The catalogue</a></li><li class="l3"><a href="#the-four-practices">The four practices</a></li><li class="l3"><a href="#account-brief-sb-4605">Account brief (SB-4605)</a></li><li class="l3"><a href="#rhythms-sb-4801">Rhythms (SB-4801)</a></li><li class="l3"><a href="#quarterly-planning-sb-4805">Quarterly planning (SB-4805)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

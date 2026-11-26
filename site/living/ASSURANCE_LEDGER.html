@@ -1062,6 +1062,522 @@
 <td>Tested (extended)</td>
 <td>SB-2606, SB-2607: the token warning and the notify run record carry no content and no other person (TestTokenExpiryToldOnce, TestNotifyRunIsKept, TestNotifyFrom)</td>
 </tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-03</td>
+<td>Tested (extended)</td>
+<td>SB-2704: an unreadable sync record is shown as unknown on the answer, never as fresh (TestSyncLagNotice)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-09</td>
+<td>Tested (extended)</td>
+<td>SB-2705: a document's own review-by date only makes it stale sooner; 2099 changes nothing (TestReviewByMakesStaleSooner, TestReviewByDatesAreKept)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-09</td>
+<td>Tested (extended)</td>
+<td>SB-2801: a retirement drops a document from its own space's answers only; company-wide only once every holding space retired it (TestRetireOnlyNarrowsItsSpace, TestRetireThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-2806: an owner who is not one active user is told nothing, and the rest only of documents they can open (TestOwnedPastReview, TestOwnersHearMonthly)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-2903: the scope report only counts; a typo and a too-wide pattern are named and nothing changes (TestScopeReport, TestRetireThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-23</td>
+<td>LAW-13</td>
+<td>Tested (extended)</td>
+<td>SB-2905: a missed tombstone is counted and pruned, and nothing a source still lists is touched (TestLeftovers, TestIndexLeftoversThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3001: a passage is checked live on every open, and refused once access is revoked or unknown (TestPassage)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3004: a document filter only narrows after the checks, and a hidden chosen document is no_access (TestAskAboutDocuments)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-03</td>
+<td>Tested (extended)</td>
+<td>SB-3102: an unknown or failed steward check keeps a question in its space (TestNoStewardReroute)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-3107: a suggested term changes nothing until approved, and the approved manifest has it (TestSuggestedTermIsAProposal)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-03</td>
+<td>Tested (extended)</td>
+<td>SB-3201, SB-3203: an unclassed sync failure is source_error and an unreadable health line is unknown (TestFailureClass, TestFailureAndChecks)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-3207: a notice's audit rows hold its digest, never its text (TestNoticeToEveryone)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-3303, SB-3304: a short answer and a disagreement mark keep every claim cited or uncited, and the mark needs two documents (TestShortAnswerAndOneDocumentDisagreement, TestDisagreeNeedsTwoDocuments, cite-008, cite-009)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-19</td>
+<td>Tested (extended)</td>
+<td>SB-3307: a space's suggested questions are read by its members only and set by its stewards only (TestSuggestedQuestionsThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-3401, SB-3404: a note never names its asker, and the old-question messages and audit rows hold counts and ids only (TestNoteKeepsQuestionAndComesDue, TestOldQuestionsWaitThenGoCompanyWide)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-3405: a deprovisioned caretaker is shown as nobody to ask (TestCaretakersAndDefinedTermsThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3501: a person's own export leaves out a cite they can no longer open, and the claim it backed (TestOwnDataThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-3506: usage by space shows no shares under 5 asks (TestUsageBySpace, TestUsageBySpaceLine)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3601: a pin with one cite the asker can't open isn't shown (TestTrustEachAnswerThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3605, SB-3606: conflicts and reported answers show the steward only documents they can open (TestTrustEachAnswerThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-3704: question trends are counts of the space's own terms, at least 5 asks each (TestTrendsBySpace, TestDigestTrends)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-3706: a deprovisioned owner can't be asked (TestFillItInOnceThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-3801, SB-3803: a token an admin revokes is refused on MCP at once (TestWorkWherePeopleAreThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3805: the digest law runs with the daily window (law01digest)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-3903: a branch ask returns only what each team's own checks allowed, and nothing from a team the asker isn't in (TestTreeThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-24</td>
+<td>Tested</td>
+<td>SB-3907: branch asks over generated trees never use more than the asker's own spaces would, and the selftest with a wide tree goes red (TestLAW24_TheTreeNeverWidens)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-26</td>
+<td>Tested</td>
+<td>SB-4201: generated reports over random documents and ACLs, with grants revoked or gone Unknown before the read, never show a cite the reader can't open now, and the selftest that shows a report as stored goes red (TestLAW26_AStoredResultIsCheckedWhenRead)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-25</td>
+<td>Tested</td>
+<td>SB-4303: generated people with random memory lines and pasted passages from documents they can open: a passage is never kept, no ask carries another person's line, and an eval probe carries none; the selftest that shares every memory goes red (TestLAW25_AMemoryIsItsPersonsOwn)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-26</td>
+<td>Tested (extended)</td>
+<td>SB-4301, SB-4302: the inbox is built as the caller when shown, so an action item whose transcript they lost goes; a routine's answer is a stored result checked again when read (TestWorkComesToYouThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-27</td>
+<td>Tested</td>
+<td>SB-4501: generated departments with random teams, members, department agents, glossaries and source ACLs: a consulting branch ask consults only teams the asker is in, at most 6, each section citing exactly what asking that team's agent directly gives them, never names a team they aren't in, and a consultation asked to consult is refused; the selftest that consults every team goes red (TestLAW27_AConsultationIsTheAskersOwn)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4502, SB-4503: a handed-off request shows its stewards only the shared cites they can open now and counts the rest, a sender can't share a cite they can't open, and the leader's week lists a team the steward can't open as counts only (TestDepartmentsWorkTogetherThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4504 to SB-4506: a wait is named only to someone who can see its item (a request's category and reason to the waited-on stewards) and counted for the rest; a trail and a replaced_by name only decisions the reader can open; catch-up asks about and counts only changed documents the person can open now, each in its own space (TestWorkAcrossDepartmentsThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-4507: service levels are counts and medians, a row or team under 5 shows only fewer_than_5, and no question or request text appears (TestServiceRows, TestWorkAcrossDepartmentsThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-4601: a skill's cases run in the tenant's eval gate as sk_ cases and hold a release they regress; a skill naming a tool or an action, widening the search or acting on document text is refused at its line by the manifest check and <code>sb agents lint --manifest</code> (TestSkillsRefused, TestAgentsLintManifestSkills, TestShapeTheWorkThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-4602: every cite of three redrafts is one of the first draft's sources, though the note asks for another space's document, and the note is never cited (TestShapeTheWorkThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-09</td>
+<td>Tested (extended)</td>
+<td>SB-4604: a closed incident's review ignores an instruction in its ticket and posts nothing to it (agent-incident-review, review-injection-001; TestAgentsThatGoFurtherThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4605, SB-4606: an account brief never names a document of the account the person can't open, nor an account they can't open; How this was made counts a source the reader lost and doesn't name it (TestAgentsThatGoFurtherThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-4603: a shared routine's copy runs as its member, the steward sees only the count, and the copy stops and asks nothing once the member leaves the space (TestShapeTheWorkThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-10</td>
+<td>Tested (extended)</td>
+<td>SB-4702: a pause <code>agent:NAME@SPACE</code> stops that agent in that space within 10 seconds on the fake clock, and answers paused while the list can't be read (TestLAW10_KillWins, TestAgentPausedInASpace, TestEveryAgentAccountableThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-4701, SB-4703: agent value is counts only and matches the audit rows; a capped agent's drafts and routines stop with EBUDGET, and spend that can't be read stops them too (TestAgentValueCounts, TestMonthSpend, TestEveryAgentAccountableThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-29</td>
+<td>Tested</td>
+<td>SB-4801: random rhythms of up to 12 steps over up to 120 days with random approvers, a jumping clock and the subject leaving at a random moment: every step waits unanswered in its approver's queue, nothing is published, the next read after leaving shows it stopped and nothing is offered after; the selftests that ignore leaving and answer their own steps are caught (TestLAW29_ARhythmOnlyDraftsAndStopsWithItsSubject, TestSelf_LAW29CatchesARhythmThatActsOrOutlivesItsSubject, TestRhythmsAndProjectsThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4802 to SB-4804: a joiner's day-one draft never names a start-here item they can't open; a kickoff brief and a project's decision log never show a line whose cite the reader can't open; a member from another space reads nothing until their steward approves (TestRhythmsAndProjectsThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-30</td>
+<td>Tested</td>
+<td>SB-4807: random goals and action items in documents both, only the manager or only the report can open, beside private asks, routines and memory with unique markers: every brief line is the report's own published work both can open, no private marker appears, the report's copy is the manager's brief, and the report's line reaches both; the selftest that adds the report's latest ask is caught (TestLAW30_ABriefAboutAPersonDrawsOnlyOnWhatTheyPublished, TestSelf_LAW30CatchesABriefThatLeaksAPrivateItem, TestPlanningOneOnOneAndTreePlanThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4805: a department steward's planning roll-up lists a team's proposed goal only when they can open its cite and counts the rest (TestPlanningOneOnOneAndTreePlanThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-24</td>
+<td>Tested (extended)</td>
+<td>SB-4806: a reorg dry run whose label would loosen, or a merge whose members differ, is refused with the path; a team that would keep more than its new parent is refused by the manifest check; the manifest read is never changed (TestTreeRefusesWhatWouldWiden, TestTreePlan)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-25</td>
+<td>Tested (extended)</td>
+<td>SB-4901: a clarifying choice goes into the conversation's question, never memory; a choice the question wouldn't offer is refused and a later question of the conversation is never asked about (TestAskBeforeGuessing)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-4902: a section redrafted for a comment that names another document cites none of it; every uncommented section is unchanged byte for byte (TestShapeTheWorkThroughARunningCell, TestDraftSections, FuzzDraftSections)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-26</td>
+<td>Tested (extended)</td>
+<td>SB-4903: a long report runs nothing before Run, waits at a checkpoint after each stage, drops at the next stage what its owner lost in between, and stops at its ceiling with what it has (TestLegworkThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4904, SB-4906: scenarios run as the steward who sends them, and only stewards can; two people asking the same starter question get answers that follow their own access (TestScenariosSourcesAndStartersThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-4906: a starter-question candidate carries no asker's id or address, and needs two people who found it helpful (TestScenariosSourcesAndStartersThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-26</td>
+<td>Tested (extended)</td>
+<td>SB-4905: a source-changed redraft checks its approver against the changed source before it runs, and one they can't open drops it; a second change the same day waits (TestScenariosSourcesAndStartersThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-26</td>
+<td>LAW-04</td>
+<td>Tested (extended)</td>
+<td>SB-5304: a drafted message is audited before the bot posts it, only in the space's channels and only for its members; a ticket comment goes through the gated workflow (TestDraftTheNextAction, TestPostInAChannel)</td>
+</tr>
+<tr>
+<td>2026-11-26</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-5305: with mcp_groups, a person in no listed group is refused on every MCP method and only granted tool families are listed or callable (TestManagedMCPAccessThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-31</td>
+<td>Tested</td>
+<td>SB-5303: a lent draft shows exactly to readers who can open every cite, and a loan answered once never runs again (TestLAW31_LentAccessLastsOneRun, TestSelfLentGateIsCaught, TestBorrowAccessThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-29</td>
+<td>Tested (extended)</td>
+<td>SB-5301: a work event only drafts, once per document, as the trigger's approver (TestWorkEventsDraftOnceAndBatch)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-13</td>
+<td>Tested (extended)</td>
+<td>SB-5205: a chunk's page comes from the source's own page offsets, so a rebuild gives the same pages (TestPagesOfPDFsAndDecks)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-5206, SB-5207: a branch copies only the asker's own questions and someone else's conversation can't be branched; @ offers only what the checked endpoints return (TestBranchAConversation, web athint.test.tsx)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-5201, SB-5203: a suggested edit is drafted as the owner and an @agent reply as the commenter, each citing only what that person can open (TestFixTheSourceThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-28</td>
+<td>Tested (extended)</td>
+<td>SB-5202, SB-5204: a draft edited in place is published <code>edited</code>, and the note names who asked for it and who edited it (TestEditADraftTogether, TestMarkOfWhoMadeIt)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-5202: a draft with an open suggestion can't be published (TestEditADraftTogether)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-10</td>
+<td>Tested (extended)</td>
+<td>SB-5105, SB-5107: a department steward's pause of a team's agent is the same kill switch, audited with the branch; a sibling's steward is refused; the pause link reaches only those who may pause (TestRollOutWithCareThroughARunningCell, TestPauseLinkOnlyForThoseWhoMay)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-5104: a restore is an open proposal that changes nothing until approved and applied (TestAgentHistoryAndRestore, TestRollOutWithCareThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-5106: a feature's hold and release write their audit row before they take effect (TestRollOutWithCareThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-5102: nothing sensitive goes out: a credential or a whole card, IBAN or national id never leaves in an API body or a notice, and a JSON body keeps its shape (TestLAW07_NothingSensitiveGoesOut, TestSelfOutFilterIsCaught, TestMaskOutMiddleware, TestReplyIsMasked)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-09</td>
+<td>Tested (extended)</td>
+<td>SB-5101: a passage that reads like instructions never reaches a model, flagged at ingest or matching the rules now, and an answer left with nothing calls no model (TestSuspectPassagesAreSkipped, TestOnlySuspectPassagesCallNoModel, TestGuardWhatGoesInThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-5103: suspect passages and masked outputs are <code>guardrail</code> audit rows in the chain, exported with ids and counts only (TestGuardrailEvents, TestGuardWhatGoesInThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-5005 to SB-5007: a check, the admin's week and the inventory carry counts, ids and amounts only; a personal routine is never named in the inventory, only counted per space (TestInventory, TestLearnWhatWorksThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-5006, SB-5007: every line of the admin's week links to its audit row or source record, and the inventory is signed with the audit anchor key and verified by <code>sb inventory export</code> (TestLearnWhatWorksThroughARunningCell, TestInventoryExportAgainstARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-5005, SB-5006: checks and the admin's week go to active stewards, owners and operators only (TestLearnWhatWorksThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-5001, SB-5003: the AI command centre and its CSV name nobody, rows under 5 answers and limit bands under 5 people show as "fewer than 5", and the person meter is read only to compare and count (TestAIUsageMasksSmallRows, TestSpendWithPurposeThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-5003: a personal limit's lift writes its audit row before it takes effect, naming the month and the reason (TestSpendWithPurposeThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-5002: a space's routing policy picks the tier, but a held small tier always answers on main, and the evals job runs each space's cases on the tiers its policy uses (TestRoutingPoliciesAndLimits)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-28</td>
+<td>Tested</td>
+<td>SB-4706: generated agent drafts published as is, edited or rewritten: each published note keeps <code>generated_by</code> and <code>approved_by</code> (and <code>edited</code>) on the file and on every indexed chunk and cite, and one a person rewrote carries none; the selftest that strips the mark is caught (TestLAW28_AnAgentsWritingSaysSo, TestSelf_LAW28CatchesAnUnmarkedNote, TestMarkOf, TestMarkFrontAndRewrote, TestProveItThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4704: a shadow run's text is shown to the agent's owner only when they can open every cite, and to no one else; it is never queued or delivered (TestProveItThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-4704: a shadow prompt runs only on the first ring, for at most 7 days, is linted, and its runs are deleted when the window ends (TestAgentLintCatchesEachRule, TestProveItThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-16</td>
+<td>Tested (extended)</td>
+<td>SB-4705: an agent review proposes the unused off as a manifest diff and changes nothing itself; the stewards' removals become one manifest proposal (TestOpenAgentsProposesTheUnusedOff, TestProveItThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-11</td>
+<td>Tested (extended)</td>
+<td>SB-4705, SB-4707: opening an agent review is audited, and an agent's record is signed with the anchor key and fails to verify when changed or against another key (TestRecordSignsAndCatchesTampering, TestAgentRecordAgainstARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-4404, SB-4406: an event body carries the kind, space, id and time only, and the guardrail counts carry no chunk text, title or person (TestEventsTiersAndGuardrailsThroughARunningCell, TestGuardrails)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4401: a candidate case shows its owner only claims whose every cite they can open now, counts the rest, names no asker, and can't be accepted with anything hidden (TestCasesFromFeedbackThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-4403: the agent lint breaks each rule once and fails, and every shipped agent passes in make evals (TestAgentLintCatchesEachRule)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-4307: generated sheets and plans through the real ask path: the table value is the operation computed over the sheet and no claim on the sheet states a number neither the sheet nor the tool holds; selftests that keep a made-up number or add up wrong go red (TestLAW14_NumbersFromTablesComeFromTheTool)</td>
+</tr>
+<tr>
+<td>2026-11-25</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4304, SB-4305: a shared collection shows each reader only the documents they can open, and an ask about it cites nothing outside it; agent runs name only what the person can open now (TestContextForTheWorkThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-4001 to SB-4003: every department agent, now one per template, answers only in its own template's space with every claim cited (TestLAW14 department agents, agent-* suites)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-12</td>
+<td>Tested (extended)</td>
+<td>SB-4005, SB-4006: an agent's draft runs as one steward and only that steward sees its text; a welcome is resolved as the new member (TestAgentDraftWaitsForItsSteward, TestAgentsOnAScheduleThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-01</td>
+<td>Tested (extended)</td>
+<td>SB-4101 to SB-4103: goals, team updates and policies are checked as the person who looks; one they can't open is only counted (TestParseAndNestGoals, TestRunTheCompanyThroughARunningCell)</td>
+</tr>
+<tr>
+<td>2026-11-24</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-4104, SB-4105: a request's climb and a space's budget warnings carry counts and amounts only (TestRequestsClimbWhenOverdue, TestSpaceBudgetWarnings, TestRequestsAndBudgetsThroughARunningCell)</td>
+</tr>
 </tbody>
 </table><p class="srcline">Source: <code>living/ASSURANCE_LEDGER.md</code></p></main>
   

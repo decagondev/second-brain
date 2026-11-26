@@ -103,11 +103,20 @@ Days 46–90 one approval-gated workflow, once its evals pass
 <li class="task"><span class="box"></span>Kill rehearsal done</li>
 <li class="task"><span class="box"></span>First 20 approved actions show <code>Ran</code> with receipts</li>
 </ul>
+<h3 id="a-new-joiners-first-90-days-sb-4802">A new joiner's first 90 days (SB-4802)</h3>
+<p>The days above are a tenant's first 90. A <strong>person's</strong> first 90 in a space are the built-in <code>onboarding</code> rhythm (sb-departments(7), Rhythms). It starts when SCIM adds someone to one of the space's member groups (the jobs service notices on its next run; the people already there when the space first runs it get none), or when a steward starts it. Its plan goes first to the joiner's manager from SCIM, or with none to the space's stewards, who approve it once; every later step goes to the joiner.</p>
+<ul>
+<li><strong>Day 0:</strong> the space's start-here pack (sb-spaces(7), Start here), only the items the joiner can open, and the people to meet: the owners of those items.</li>
+<li><strong>Weeks 2 and 6:</strong> a catch-up since they joined (sb-ask(3), Catch me up), as them.</li>
+<li><strong>Weeks 2 and 6, for the stewards:</strong> how many of the joiner's questions here found nothing, and the glossary terms they used. Their name goes with it only when they said yes (<code>POST /v1/rhythms/ID/consent</code>, <code>{ "share": true }</code>).</li>
+<li><strong>Day 90:</strong> a prompt to set up a weekly routine of their own.</li>
+</ul>
+<p><code>onboarding: false</code> in a space (sb-space(5)) turns it off there. Leaving the space stops it at once (LAW-29), and nothing in it is ever an item the joiner can't open (LAW-01).</p>
 <h2 id="laws">LAWS</h2>
 <p>Every gate includes <a href="sb-tenant.1.html"><code>sb tenant verify</code></a>, which checks <a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-02">LAW-02</a>, <a href="sb-laws.7.html#law-03">LAW-03</a> and <a href="sb-laws.7.html#law-14">LAW-14</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-tour.7.html">sb-tour(7)</a>, <a href="sb-tenant.5.html">sb-tenant(5)</a>, <a href="sb-kill.1.html">sb-kill(1)</a>, <a href="sb-observability.7.html">sb-observability(7)</a></p><p class="srcline">Source: <code>manual/sb-onboarding.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#before-day-0-prerequisites">Before day 0: prerequisites</a></li><li class="l3"><a href="#day-0-create-the-cell">Day 0: create the cell</a></li><li class="l3"><a href="#days-114-pilot">Days 1–14: pilot</a></li><li class="l3"><a href="#days-1545-everyone-plus-drafts">Days 15–45: everyone, plus drafts</a></li><li class="l3"><a href="#days-4690-one-gated-workflow">Days 46–90: one gated workflow</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#before-day-0-prerequisites">Before day 0: prerequisites</a></li><li class="l3"><a href="#day-0-create-the-cell">Day 0: create the cell</a></li><li class="l3"><a href="#days-114-pilot">Days 1–14: pilot</a></li><li class="l3"><a href="#days-1545-everyone-plus-drafts">Days 15–45: everyone, plus drafts</a></li><li class="l3"><a href="#days-4690-one-gated-workflow">Days 46–90: one gated workflow</a></li><li class="l3"><a href="#a-new-joiners-first-90-days-sb-4802">A new joiner's first 90 days (SB-4802)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

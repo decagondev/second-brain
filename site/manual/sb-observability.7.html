@@ -74,7 +74,7 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 </tr>
 <tr>
 <td>Budget warning</td>
-<td>this month's spend passes 80% of <code>budget_usd_month</code>, once a month (<code>budget_warning</code>, SB-1608)</td>
+<td>this month's spend passes 80% of <code>budget_usd_month</code>, or the month-end forecast passes the budget (SB-3505), once a month (<code>budget_warning</code>, SB-1608)</td>
 <td>Sev-3, to the tenant operator</td>
 </tr>
 <tr>
@@ -88,6 +88,11 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 <td>Sev-2, to the tenant operator</td>
 </tr>
 <tr>
+<td>Guardrail flags doubled</td>
+<td>a source's injection flags in the last full week are at least 5 and at least twice the week before's (<code>guardrail_flags_doubled</code>, <code>where</code> the source, <code>ref</code> the week; SB-4406)</td>
+<td>Sev-3, to the tenant operator, once a week per source</td>
+</tr>
+<tr>
 <td>A scheduled job missed its run</td>
 <td><code>sb_job_overdue{job}</code> is 1</td>
 <td>Sev-1 for <code>anchor</code>, <code>backup</code>, <code>access</code>, <code>review</code>; Sev-2 otherwise (sb-runtime(7), Schedules)</td>
@@ -95,6 +100,16 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 </tbody>
 </table>
 <p>Every alert links to a runbook.</p>
+<h3 id="health-as-gauges-exactly-sb-3203">Health as gauges, exactly (SB-3203)</h3>
+<p><code>/metrics</code> carries every line of <code>GET /v1/admin/health</code> (sb-admin(3)) as two gauges, read each time <code>/metrics</code> is scraped: <code>sb_health_warning{check}</code> is 1 when the line warns and 0 when it doesn't, and <code>sb_health_unknown{check}</code> is 1 when the cell can't read it. A line it can't read is always 1 on <code>sb_health_unknown</code>, so it is never 0 on both (LAW-03). The checks are <code>job:NAME</code> (overdue; unknown when its record is unreadable), <code>connector:KIND</code> (stale), <code>box:CHECK</code> (<code>warn</code> or <code>fail</code>; unknown for <code>unknown</code>), <code>notify</code>, <code>index</code>, <code>prompt</code>, <code>answer_time</code>, <code>box:disk runway</code> and <code>stewards</code> (a space with no active steward; unknown when the directory couldn't say), each only when health has that line. When health can't be built at all, <code>sb_health_unknown{check="health"}</code> is 1. Labels are check names only, never a person or a document. The existing alerts can use them, for example:</p>
+<pre><code class="language-yaml">- alert: CellHealthWarning
+  expr: max by (check) (sb_health_warning) == 1
+  for: 30m
+- alert: CellHealthUnknown
+  expr: max by (check) (sb_health_unknown) == 1
+  for: 30m
+</code></pre>
+<p>The connectors runbook (<a href="../docs/runbooks/connectors.html">docs/runbooks/connectors.md</a>) says what to do for each <code>connector:</code> line, by its <code>failure</code>.</p>
 <h3 id="law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</h3>
 <p>Every law with a production check has one alert rule, in <code>internal/core/alerts</code>, and one runbook, <code>docs/runbooks/LAW-nn.md</code>. A test fails the build if a law with a <strong>Watch</strong> line in sb-laws(7) lacks either.</p>
 <table>
@@ -173,6 +188,75 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 <li><strong>Rate limit:</strong> 30 model calls per user per minute (a token bucket). A refused call is counted in <code>sb_budget_refusals_total{reason}</code> with <code>reason</code> either <code>budget</code> or <code>rate</code>.</li>
 </ul>
 <p>Nothing degrades to unmetered or unlimited use. If the meter can't be read, the call is refused (<code>EUNAVAIL</code>). A budget pace above 120% of the month so far raises the Sev-3 alert above. <strong>Before the budget runs out</strong> (SB-1608): the first metered call that takes the month's spend past 80% of <code>budget_usd_month</code> sends one <code>budget_warning</code> alert (Sev-3, <code>where</code> <code>budget</code>, <code>ref</code> the month, e.g. <code>2027-03</code>), so operators hear of it while answers still work. It goes once a month, whatever the number of services or restarts: a marker in the usage ledger (<code>state/usage/once-budget-warning-TENANT-MONTH</code>) is made with an exclusive create before the alert is sent, so only the first wins; a meter or marker that can't be read sends nothing, and the next metered call tries again. A budget of 0 sends none.</p>
+<h3 id="spend-by-space-exactly-sb-4105">Spend by space, exactly (SB-4105)</h3>
+<p>Each model call an ask or a scheduled run makes <strong>in a space</strong> is metered for the tenant and for that space (<code>space_usd</code> in the usage ledger: an amount, a month and the space, never who or what). A space's <strong>branch</strong> spend is its own and its teams'. <code>GET /v1/admin/costs/spaces?month=2027-03</code> (sb-admin(3)) lists every space: <code>{ "month", "spaces": [{ "space", "parent"?, "own_usd", "spent_usd", "budget_usd_month", "forecast_usd"? }] }</code>, <code>spent_usd</code> being the branch's, and for the running month after 3 days a straight-line month-end forecast. A space with <code>budget_usd_month</code> (sb-space(5)) is watched by the <code>notify</code> job: at 80% of it its stewards are told once that month, "The finance space has used 85% of its monthly budget", and at 100% once more, "The finance space has spent its monthly budget: its scheduled briefs and updates pause until next month, and asks carry on". While a branch, or the department above it, is at its budget, its weekly briefs and updates don't run, and its stewards are told why (sb-agents(7)). Asks are never refused for a space's budget: only the tenant's own budget refuses a call (above). Spend that can't be read pauses the runs, never lets them through.</p>
+<h3 id="ai-use-exactly-sb-5001">AI use, exactly (SB-5001)</h3>
+<p>Every trace carries the <code>feature</code> that asked it (<code>ask</code>, <code>research</code>, <code>brief</code>, <code>routine</code>, <code>rhythm</code>, <code>consultation</code>, or <code>eval</code>) beside its <code>tier</code> and <code>cost_usd</code>. <code>GET /v1/admin/ai/usage</code> (sb-admin(3)) counts 12 weeks of them by week, space, feature, agent and tier, with each space's budget and spend this month, each capped agent's spend and the personal limit's bands. Eval runs aren't counted. A row of fewer than 5 answers, and a band of fewer than 5 people, shows as "fewer than 5", and no person is named anywhere in it. The CSV has the same numbers.</p>
+<p><strong>Personal limits</strong> (SB-5003). With <code>limits</code> in the manifest (sb-tenant(5)), each model call is metered for its person too (<code>person_usd</code> in the usage ledger: an amount, a month and the person's id, read only to compare with the limit and to count the bands). At 80% the person is told once that month (notification kind <code>limit</code>); at 100% their own asks, consultations and research use the small tier, and their routines pause, until the month turns or a steward lifts it (audited). A ledger that can't be read limits nobody: the tenant's budget still holds.</p>
+<h3 id="checks-and-the-admins-week-sb-5005-sb-5006">Checks and the admin's week (SB-5005, SB-5006)</h3>
+<p>The numbers a check compares (sb-agents(7), Did it help?) and the admin's week (sb-admin(3)) are counted from the same traces, queues, feedback, audit rows and usage ledger as the pages above, at most once an hour, and keep no text: a check's file in <code>state/checks</code> holds its change, its counts and its verdict.</p>
+<h3 id="cost-of-one-answer-sb-4606">Cost of one answer (SB-4606)</h3>
+<p>Every trace keeps <code>cost_usd</code>, the model spend of its one ask counted by the gateway at the configured prices, a consultation's within it, and <strong>How this was made</strong> shows it to the person who asked (sb-ask(3)). A report's cost is its own <code>cost_usd</code>. It is a count from the gateway, never from the model, and it is the same spend the budgets count (Budgets and rate limits, above).</p>
+<h3 id="guardrail-events-sb-5103">Guardrail events (SB-5103)</h3>
+<p>Each guardrail event is an audit row of kind <code>guardrail</code> (sb-audit(5)), written by <code>sys_guard</code>, so the audit stream (sb-audit(7), SB-2302) carries each once:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Subject</th>
+<th>State</th>
+<th>Space, reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A suspect passage of a kept answer (sb-ingest(7), Suspect passages)</td>
+<td><code>suspect:CITE</code></td>
+<td><code>skipped</code> or <code>monitored</code></td>
+<td>the answer's space; reason <code>agent=NAME</code></td>
+</tr>
+<tr>
+<td>A response, notice or chat reply with something masked on its way out (sb-ingest(7), Nothing sensitive goes out)</td>
+<td><code>masked:WAY</code> (<code>api</code>, <code>notify</code>, <code>slack</code>, <code>mattermost</code>)</td>
+<td><code>masked</code></td>
+<td>reason <code>strings=N</code></td>
+</tr>
+</tbody>
+</table>
+<p>Never the asker, the question or any text. <code>GET /v1/admin/guardrails/events?since=7d</code> (sb-admin(3)) lists these with tool calls refused by an approver and denied by the policy kernel, oldest first, at most 10,000: <code>{ "events": [{ "at", "kind", "space", "agent", "document", "count" }] }</code>, <code>kind</code> one of <code>suspect</code>, <code>masked</code>, <code>refused</code> or <code>denied</code>. <code>since</code> is <code>Nd</code> (1 to 90) or an RFC 3339 time, default 7 days; <code>format=csv</code> gives the same columns as CSV. An eval run's answers write no events.</p>
+<h3 id="guardrail-insights-exactly-sb-4406">Guardrail insights, exactly (SB-4406)</h3>
+<p><code>GET /v1/admin/guardrails</code> (sb-admin(3)) and the <strong>Guardrails</strong> card on the admin console show, for each of the last 12 ISO weeks (UTC):</p>
+<table>
+<thead>
+<tr>
+<th>Count</th>
+<th>From</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>flags</code></td>
+<td>chunks the index first saw that week carrying <code>instruction_like</code> or <code>hidden_text_removed</code> (sb-ingest(7), Content is data), by source kind and space</td>
+</tr>
+<tr>
+<td><code>flagged_uploads</code></td>
+<td>asks about a file (SB-3802) whose passages carried either flag</td>
+</tr>
+<tr>
+<td><code>refused_tools</code></td>
+<td>tool calls an approver rejected (<code>approval</code> rows, <code>Rejected</code>)</td>
+</tr>
+<tr>
+<td><code>denied_tools</code></td>
+<td>tool calls the policy kernel denied (<code>decision</code> rows for <code>call_tool</code> or <code>propose</code>, not <code>allow</code>)</td>
+</tr>
+<tr>
+<td><code>dropped_uncited</code></td>
+<td>answers with at least one uncited claim dropped (<code>dropped</code> above 0)</td>
+</tr>
+</tbody>
+</table>
+<p>Counts only: a count of 1 to 4 is shown as "fewer than 5", and no chunk text, title, question or person is read into it. <code>doubled</code> names each source whose flags in the last full week are at least 5 and at least twice the week before's, and the <code>notify</code> job raises <code>guardrail_flags_doubled</code> for it once that week (Alerts, above).</p>
 <h3 id="disaster-recovery-game-day-exactly-sb-613">Disaster-recovery game day, exactly (SB-613)</h3>
 <p>The scenario is <strong>lose the cell's database</strong>, and the target is <strong>RTO 4 hours, RPO 15 minutes, inside the cell's region</strong>. The game day runs quarterly in staging and follows <a href="../docs/runbooks/dr-game-day.html">the runbook</a>. It is scored the same way every time:</p>
 <table>
@@ -266,12 +350,36 @@ alert:   any law_violation_total &gt; 0  →  Sev-1
 <td>proposed, approved, rejected, expired, <code>Ran</code> with a receipt, <code>DidNotRun</code></td>
 </tr>
 <tr>
+<td>Stale answers</td>
+<td>(SB-2807) cited answers that carried <code>notice_stale</code> (most of their cites stale, sb-ask(3)) ÷ cited answers, for the cell, as a count and a share; never which documents, titles or questions</td>
+</tr>
+<tr>
 <td>Spend</td>
 <td>model tokens and their cost at the release's price table</td>
 </tr>
 <tr>
+<td>Input tokens per model call</td>
+<td>(SB-2906) the 95th percentile of the input tokens of each model call this week, and last week's, from the usage ledger; marked <strong>growing</strong> when it is over 1.5 times last week's. Counts only</td>
+</tr>
+<tr>
+<td>Seconds per answer</td>
+<td>(SB-3205) the 95th percentile of the seconds each answer took this week, and last week's, from the usage ledger, which records each answer's duration in milliseconds beside its tokens; marked <strong>slower</strong> when it is over 1.5 times last week's. Durations only, never a question</td>
+</tr>
+<tr>
+<td>Asks on the small model</td>
+<td>(SB-4405) asks whose trace records <code>tier</code> <code>small</code> ÷ asks, as a count and a share, when sb-cell(5) sets <code>model.small</code></td>
+</tr>
+<tr>
 <td>Notifications</td>
 <td>(SB-2607) the notify job's last run: when, the channel, and its counts sent, skipped and failed; never who</td>
+</tr>
+<tr>
+<td>Usage by space</td>
+<td>(SB-3506) one row per space the week's asks were asked in, and <code>company</code>: its asks, the share that found nothing (<code>no_sources</code>, SB-3101) and the share rated helpful (the answer's latest feedback <code>up</code>). A space with fewer than 5 asks shows <strong>fewer than 5</strong> and no shares, so a small space can't be read as one person; the rows of the spaces with 5 or more add up to the totals less those. The steward screen shows its own space's row only, over the last 7 days (sb-ask(3), Documents to review). A team's row follows its department's, as <code>finance / ap</code> (SB-3905), and a department's stewards see their teams' counts under <strong>Teams</strong></td>
+</tr>
+<tr>
+<td>Adoption</td>
+<td>(SB-3804) "31 of 120 seats asked this week (27 last week)": the distinct people who asked at least once (asks only; searches and asks refused by the limit don't count), of the directory's active users, and the same count for the 7 days before. Then, by space, the people who asked in it: "finance 12, ops 9", only for spaces where at least 5 people asked, so a small space can't be read as one person; the rest are left out, never shown as a smaller number. Counts only: no one is named, in the report or in <code>GET /v1/admin/usage</code> (<code>adoption</code>: <code>{ "asked", "asked_last_week", "seats", "spaces": { "finance": 12 } }</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -286,7 +394,7 @@ acl_unknown_ratio{tenant=&quot;acme-logistics&quot;,connector=&quot;chat&quot;} 
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-admin.3.html">sb-admin(3)</a>, <a href="../docs/architecture/15-observability-backup-dr.html">15 Observability, backup and DR</a></p><p class="srcline">Source: <code>manual/sb-observability.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#per-tenant-dashboards">Per-tenant dashboards</a></li><li class="l3"><a href="#alerts">Alerts</a></li><li class="l3"><a href="#law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</a></li><li class="l3"><a href="#telemetry-labels">Telemetry labels</a></li><li class="l3"><a href="#budgets-and-rate-limits-sb-609">Budgets and rate limits (SB-609)</a></li><li class="l3"><a href="#disaster-recovery-game-day-exactly-sb-613">Disaster-recovery game day, exactly (SB-613)</a></li><li class="l3"><a href="#canaries-and-the-secret-scanner">Canaries and the secret scanner</a></li><li class="l3"><a href="#weekly-leadership-report">Weekly leadership report</a></li><li class="l3"><a href="#telemetry-rules">Telemetry rules</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#per-tenant-dashboards">Per-tenant dashboards</a></li><li class="l3"><a href="#alerts">Alerts</a></li><li class="l3"><a href="#health-as-gauges-exactly-sb-3203">Health as gauges, exactly (SB-3203)</a></li><li class="l3"><a href="#law-alerts-exactly-sb-608">Law alerts, exactly (SB-608)</a></li><li class="l3"><a href="#telemetry-labels">Telemetry labels</a></li><li class="l3"><a href="#budgets-and-rate-limits-sb-609">Budgets and rate limits (SB-609)</a></li><li class="l3"><a href="#spend-by-space-exactly-sb-4105">Spend by space, exactly (SB-4105)</a></li><li class="l3"><a href="#ai-use-exactly-sb-5001">AI use, exactly (SB-5001)</a></li><li class="l3"><a href="#checks-and-the-admins-week-sb-5005-sb-5006">Checks and the admin's week (SB-5005, SB-5006)</a></li><li class="l3"><a href="#cost-of-one-answer-sb-4606">Cost of one answer (SB-4606)</a></li><li class="l3"><a href="#guardrail-events-sb-5103">Guardrail events (SB-5103)</a></li><li class="l3"><a href="#guardrail-insights-exactly-sb-4406">Guardrail insights, exactly (SB-4406)</a></li><li class="l3"><a href="#disaster-recovery-game-day-exactly-sb-613">Disaster-recovery game day, exactly (SB-613)</a></li><li class="l3"><a href="#canaries-and-the-secret-scanner">Canaries and the secret scanner</a></li><li class="l3"><a href="#weekly-leadership-report">Weekly leadership report</a></li><li class="l3"><a href="#telemetry-rules">Telemetry rules</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>
