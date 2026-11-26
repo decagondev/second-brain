@@ -33,6 +33,7 @@ const (
 	KindPolicy    = "policy"    // a policy to read, once per version (SB-4103)
 	KindLimit     = "limit"     // 80% of the personal limit, once a month (SB-5003)
 	KindSuspect   = "suspect"   // an owner's document has a suspect passage, once per version (SB-5101)
+	KindWidened   = "widened"   // a document's sharing widened at its source, once per change (SB-5403)
 )
 
 // TokenWarn is how long before a token expires its owner is told.
@@ -52,7 +53,7 @@ const KindTest = "test"
 const TestText = "This is a test from Second Brain. Its notifications reach you here."
 
 // Kinds are every kind, for validating a person's settings.
-var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true, KindPolicy: true, KindLimit: true, KindSuspect: true}
+var Kinds = map[string]bool{KindQuestions: true, KindReplies: true, KindDigest: true, KindWatch: true, KindAccess: true, KindTokens: true, KindOwned: true, KindWelcome: true, KindPolicy: true, KindLimit: true, KindSuspect: true, KindWidened: true}
 
 // Person is one recipient: a directory user and the email the chat finds them by.
 type Person struct {
@@ -278,6 +279,9 @@ type Job struct {
 	// Suspects are the documents with a suspect passage, each with its owner's user id
 	// (SB-5101); each version is told once. nil tells no one.
 	Suspects func(ctx context.Context) ([]SuspectDoc, error)
+	// Notices are one-off notices worked out elsewhere (SB-5403 and later), each sent once
+	// by its key; nil sends none.
+	Notices func(ctx context.Context, now time.Time) ([]Notice, error)
 	// Research runs the queued research reports and returns those it finished (SB-4201);
 	// Actions are the action items confirmed since a time (SB-4203); PrepDue makes a
 	// person's briefs of the events starting in a window (SB-4202). nil does none.

@@ -68,6 +68,20 @@ type Space struct {
 	// Suspect is what happens to a passage that reads like instructions (SB-5101), one
 	// of SuspectModes; "" is skip, or its department's.
 	Suspect string `json:"suspect,omitempty"`
+	// WideSensitive is what happens to a document shared too widely that holds something
+	// sensitive (SB-5402), one of WideModes; "" is hold, or its department's.
+	WideSensitive string `json:"wide_sensitive,omitempty"`
+}
+
+// WideModes are the values of a space's wide_sensitive (SB-5402).
+var WideModes = []string{"hold", "warn"}
+
+// WideOf is space name's wide_sensitive mode: its own, else its department's, else hold.
+func (t Tenant) WideOf(name string) string {
+	if m := t.Effective(name).WideSensitive; m != "" {
+		return m
+	}
+	return "hold"
 }
 
 // SuspectModes are the values of a space's suspect (SB-5101).
@@ -268,7 +282,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -388,7 +402,7 @@ func (c *checker) space(name string, n *node, p string) {
 			s.IncidentLabels = c.incidentLabels(v, f)
 		case "skills": // SB-4601
 			s.Skills, sn.skills = c.skills(v, f), v
-		case "rhythms", "onboarding", "on", "routing", "suspect": // SB-4801, SB-4802, SB-4905, SB-5002, SB-5101
+		case "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive": // SB-4801, SB-4802, SB-4905, SB-5002, SB-5101, SB-5402
 			c.rhythmField(k.value, v, f, &s)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {
@@ -1141,6 +1155,9 @@ func (t Tenant) Effective(name string) Space {
 	}
 	if s.Suspect == "" { // SB-5101
 		s.Suspect = par.Suspect
+	}
+	if s.WideSensitive == "" { // SB-5402
+		s.WideSensitive = par.WideSensitive
 	}
 	if len(par.StartHere) > 0 {
 		joined := append([]string{}, par.StartHere...)

@@ -69,6 +69,10 @@ A claim marked `disagree` cites every source it rests on, so the asker can open 
 ### Replaced decisions (SB-4505)
 
 A decision can name the one it replaces (`supersedes:`, sb-ask(3), Work across departments). A cite of the older decision is still a cite of what that document says: it is kept, and carries `replaced_by` with the newer decision's cite and title only when the asker can open the newer one now, checked live like any cite (LAW-01). The composer never swaps one for the other, and a newer decision the asker can't open is neither named nor hinted at. Nothing is linked by the model: a link comes from a decision's own front matter, or from a steward confirming it when publishing a decisions draft.
+### Who can see this (SB-5404)
+
+Beside each cite, a note and a shared answer, **Who can see this** shows how many people can open the document (or every cite) now, and the groups behind it that the reader may see (sb-permissions(7), Who can see this). It is asked of the source each time; nothing about it is kept.
+
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

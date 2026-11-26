@@ -26,6 +26,7 @@ const (
 	InboxFix      = "fix"
 	InboxResearch = "research"
 	InboxRoutine  = "routine"
+	InboxWide     = "wide" // an owner's document shared too widely (SB-5401)
 	InboxDone     = 30 * 24 * time.Hour
 )
 
@@ -115,6 +116,11 @@ func (l Legwork) inbox(ctx context.Context, s tenancy.Scope, offer bool) (Inbox,
 	if err := l.inboxCases(ctx, s, &in); err != nil { // SB-4401
 		return Inbox{}, err
 	}
+	wide, err := l.Agent.OwnWide(ctx, s) // SB-5401
+	if err != nil {
+		return Inbox{}, err
+	}
+	in.NeedsYou = append(in.NeedsYou, wide...)
 	newest := func(xs []InboxItem) {
 		sort.SliceStable(xs, func(i, j int) bool {
 			if xs[i].Overdue != xs[j].Overdue {

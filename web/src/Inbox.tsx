@@ -4,6 +4,7 @@ import { AskError, agentRuns, ask, caseCandidates, collections, decideCase, forg
 import type { AgentRun, AskResponse, CaseCandidate, Collection, Fetch, Inbox, InboxItem, MemoryLine } from "./api";
 import { errorText, msg, t } from "./i18n";
 import { CatchUp } from "./Across";
+import { SharedOnPurpose } from "./Sharing";
 
 const errMsg = (e: unknown, fallback: string) => (e instanceof AskError ? errorText(e.error).message : fallback);
 
@@ -19,6 +20,7 @@ const kinds: Record<string, string> = {
   research: msg("Research report"),
   routine: msg("Routine"),
   case: msg("Eval case to decide"),
+  wide: msg("Shared too widely"), // SB-5401
 };
 
 function Items({ items, label, empty }: { items: InboxItem[]; label: string; empty: string }) {
@@ -44,6 +46,7 @@ function Items({ items, label, empty }: { items: InboxItem[]; label: string; emp
               <a href={x.link} aria-label={t("Open: {title}", { title: x.title })}>
                 {t("Open")}
               </a>
+              {x.kind === "wide" && <SharedOnPurpose cite={x.id} />}
             </li>
           ))}
         </ul>

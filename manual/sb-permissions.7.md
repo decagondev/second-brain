@@ -101,6 +101,16 @@ A barrier holds for everything the brain does, not only for what an answer reads
 
 In a cell without barriers none of these facts is set, and nothing changes.
 
+### Shared too widely (SB-5401, SB-5402)
+
+A source's sharing is trusted exactly, including its mistakes, so Second Brain watches for one kind: a document **shared too widely** whose content is sensitive. Its ACL copy opens it to `anyone` with the link, to a whole `domain:`, or to a group with more members than the cell's `wide_group_size` (sb-cell(5), default 500); and it holds personal data or national ids (`personal_data`, sb-ingest(7)), had a secret removed (`secret_removed`), carries a `confidential` or `restricted` label, or sits in a restricted space. Each such document is listed on its space's review list (`section=wide`) with its widest grant and the reasons, never its text, and in its owner's inbox (kind `wide`) with a link to the source.
+
+Until its owner acts, the document is **held**: left out of answers, searches, drafts, briefs, routines and MCP results for everyone but its owner and the stewards of the spaces that hold it. Holding only narrows (LAW-19), and every exempt person is still checked live (LAW-01). The owner either narrows the sharing at the source, and the next sync clears the hold, or confirms **Shared on purpose** with a reason (`POST /v1/documents/sharing/confirm`), which is audited and lasts until the document's version or its ACL copy changes. A confirmation that can't be read releases nothing. A space may set `wide_sensitive: warn` (sb-space(5)) to use the document with a warning instead (the answer's `wide_warned`); company-wide, a document is used with a warning only when every space that holds it warns. An answer counts what it held (`held`), never which.
+
+### Who can see this (SB-5404)
+
+`GET /v1/documents/{id}/audience`, or `GET /v1/audience?doc=KIND:ID` repeated for a shared answer's cites, says how many active people can open the document (or every document) now: the source is asked as each of them, and a person it can't answer for is counted as `unknown`, never as able. Its groups are named only when they are the caller's own or the space's they ask in; any other group is counted (`other_groups`). It answers only for documents the caller can open now and that aren't held from them; any other id is `EPERM`, the same as one that doesn't exist.
+
 ### What users see
 
 - Refused documents are never named. The answer says how many were refused and, if all were, "I found sources but you don't have access to them."

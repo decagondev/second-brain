@@ -257,6 +257,9 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 	if res.Context, err = a.dropRetired(ctx, s, res.Context); err != nil { // SB-2801
 		return retrieve.Result{}, nil, err
 	}
+	if res.Context, err = a.dropHeld(ctx, s, res.Context); err != nil { // SB-5402: only narrows
+		return retrieve.Result{}, nil, err
+	}
 	if verifiedOf(ctx) { // SB-3602: only narrows, after every check
 		res.Context = a.onlyVerified(ctx, res.Context)
 	}

@@ -86,6 +86,8 @@ type TraceStore interface {
 	ask.ShadowStore
 	ask.RhythmStore
 	ask.ProjectStore
+	ask.WideConfirmStore
+	ask.SharingStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }

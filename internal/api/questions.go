@@ -69,7 +69,8 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/waits", h.waits)
 	mux.HandleFunc("GET /v1/spaces/{name}/decisions", h.trail)
 	mux.HandleFunc("GET /v1/spaces/{name}/service", h.service)
-	h.registerShape(mux) // SB-4601 to SB-4603
+	h.registerShape(mux)   // SB-4601 to SB-4603
+	h.registerSharing(mux) // SB-5401 to SB-5404
 	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
 	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)
@@ -239,6 +240,15 @@ func (h Questions) review(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Query().Get("section") == "due" { // SB-3105
 		res, err := h.Service.ComingDue(r.Context(), s, name, h.Reviews, after)
+		if err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", res)
+		return
+	}
+	if r.URL.Query().Get("section") == "wide" { // SB-5401
+		res, err := h.Service.Wide(r.Context(), s, name)
 		if err != nil {
 			h.fail(w, err)
 			return

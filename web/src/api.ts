@@ -1955,3 +1955,25 @@ export interface DraftSuggestion {
   round: number;
   state: "open" | "accepted" | "rejected";
 }
+
+// Who can see this (SB-5404): how many people can open every one of docs now, and the
+// groups behind it the caller may see; the rest are counted.
+export interface Audience {
+  documents: number;
+  people: number;
+  unknown?: number;
+  groups: string[];
+  other_groups: number;
+  anyone?: boolean;
+  domains?: string[];
+}
+
+export function audience(docs: string[], f: Fetch = fetch): Promise<Audience> {
+  const q = docs.map((d) => `doc=${encodeURIComponent(docKey(d))}`).join("&");
+  return call<Audience>(`/v1/audience?${q}`, {}, f);
+}
+
+// confirmShared is the owner's Shared on purpose for a document shared too widely (SB-5402).
+export function confirmShared(cite: string, reason: string, f: Fetch = fetch): Promise<unknown> {
+  return call<unknown>("/v1/documents/sharing/confirm", post({ cite, reason }), f);
+}

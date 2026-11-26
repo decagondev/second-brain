@@ -77,6 +77,10 @@ Every law with a production check has one alert rule, in `internal/core/alerts`,
 
 All are **Sev-1**, sent through the alert webhook with the law, the tenant and the runbook path, never content. On GCP the `jobs` runner evaluates them over each scrape of `/metrics` and dispatches them (sb-runtime(7), Endpoints).
 
+### Sharing changes (SB-5403)
+
+A sharing change seen at sync that can't be kept counts `sb_sharing_unrecorded_total{connector}`; the sync itself goes on, because the index already holds the new ACL copy and every read checks it live.
+
 ### Telemetry labels
 
 Metric label values are ids, codes and names only: they must match `[A-Za-z0-9_.:@/-]` and be at most 128 characters. A value that doesn't match is **replaced** with `invalid` and counted in `sb_telemetry_rejected_total`, so a bug that tries to put text into a label can't leak it (LAW-07).

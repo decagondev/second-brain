@@ -134,6 +134,11 @@ func (c *Cell) IngestPipeline(kind string, now func() time.Time) ingest.Pipeline
 		},
 		RerouteDropped: func(k string) {
 			m.Add("sb_ingest_reroute_dropped_total", "Documents Reroute took out because they couldn't be fetched.", map[string]string{"connector": k}, 1)
+		},
+		Sharing: func(ctx context.Context, ch ingest.SharingChange) { // SB-5403
+			if err := c.Parts().Agent.RecordSharing(ctx, ch); err != nil {
+				m.Add("sb_sharing_unrecorded_total", "Sharing changes seen at sync that couldn't be kept (SB-5403).", map[string]string{"connector": ch.Ref.Kind}, 1)
+			}
 		}}
 }
 

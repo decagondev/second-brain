@@ -170,7 +170,12 @@ type Response struct {
 	Answer  Answer `json:"answer"`
 	Refused int    `json:"refused"`
 	// Skipped is how many allowed passages were kept out of the prompt as suspect (SB-5101).
-	Skipped      int     `json:"skipped,omitempty"`
+	Skipped int `json:"skipped,omitempty"`
+	// Held is how many documents the asker could open were left out as shared too widely
+	// and not yet confirmed by their owner, and WideWarned how many were used with a warning
+	// in a space that warns (SB-5402). Never their titles.
+	Held         int     `json:"held,omitempty"`
+	WideWarned   int     `json:"wide_warned,omitempty"`
 	Notice       *string `json:"notice"`
 	Conversation string  `json:"conversation"`
 	// Agent is the agent that answered, and Dropped the uncited claims a department agent
@@ -404,6 +409,11 @@ type Agent struct {
 	LeaderWeek func(space string) bool
 	// Skills are a space's skills by name, its department's with them (SB-4601); nil is none.
 	Skills func(space string) []Skill
+	// Wide is the cell's sharing checks (SB-5401 to SB-5403); nil checks nothing.
+	Wide *Wide
+	// Everyone are the tenant's active people, for who can see a document (SB-5404); nil
+	// counts no one.
+	Everyone func(ctx context.Context) ([]ports.UserRef, error)
 }
 
 // Ask answers one question for the scope's user.
@@ -465,6 +475,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	ctx, tally := budget.WithTally(ctx) // SB-4606: this answer's own cost
 	ctx, sk := withSkips(ctx)           // SB-5101: its suspect passages
+	ctx, hd := withWideHeld(ctx)        // SB-5402: documents shared too widely
 	q, docs, err := validate(req)
 	if err != nil {
 		return Response{}, err
@@ -590,6 +601,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, err
 	}
 	resp.Skipped = sk.Skipped() // SB-5101, its consultations' too
+	resp.Held, resp.WideWarned = hd.counts()
 	if probe {
 		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
 		if err := a.Store.PutTrace(ctx, t); err != nil {

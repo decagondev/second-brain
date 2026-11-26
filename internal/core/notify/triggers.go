@@ -60,6 +60,11 @@ func (j Job) triggers(ctx context.Context, from, now time.Time) ([]outgoing, []f
 		return nil, nil, err
 	}
 	out, marks = append(out, sus...), append(marks, susMarks...)
+	one, oneMarks, err := j.notices(ctx, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	out, marks = append(out, one...), append(marks, oneMarks...)
 	lim, limMarks, err := j.nearLimit(ctx, now)
 	if err != nil {
 		return nil, nil, err
@@ -280,3 +285,43 @@ func (j Job) workEvents(ctx context.Context, from, now time.Time) error {
 
 // MaxWork is how many events of one kind in one space a run drafts one by one (SB-5301).
 const MaxWork = 10
+
+// Notice is one message to one person, sent once by Key: Tab is the web UI tab it links to.
+type Notice struct {
+	Key, User, Kind, Text, Tab string
+}
+
+// notices are the Notices not yet sent, each marked after the run sends.
+func (j Job) notices(ctx context.Context, now time.Time) ([]outgoing, []func() error, error) {
+	if j.Notices == nil {
+		return nil, nil, nil
+	}
+	ns, err := j.Notices(ctx, now)
+	if err != nil {
+		return nil, nil, fmt.Errorf("notify: notices: %w", err)
+	}
+	var out []outgoing
+	var marks []func() error
+	seen := map[string]bool{}
+	for _, n := range ns {
+		if seen[n.Key] {
+			continue
+		}
+		seen[n.Key] = true
+		if _, done, err := j.Clock.Last(ctx, n.Key); err != nil {
+			return nil, nil, err
+		} else if done {
+			continue
+		}
+		p, ok, err := j.person(ctx, n.User)
+		if err != nil {
+			return nil, nil, err
+		}
+		key := n.Key
+		marks = append(marks, func() error { return j.Clock.Mark(ctx, key, now) })
+		if ok && j.Send != nil {
+			out = append(out, outgoing{p, Message{Kind: n.Kind, Text: n.Text, Link: j.tab(n.Tab)}})
+		}
+	}
+	return out, marks, nil
+}

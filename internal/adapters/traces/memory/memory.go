@@ -46,6 +46,8 @@ type Store struct {
 	rhythms  map[string]ask.RhythmRun     // tenant/id (SB-4801)
 	rosters  map[string]ask.RhythmRoster  // tenant/space (SB-4802)
 	projects map[string]ask.Project       // tenant/id (SB-4803)
+	wide     map[string]ask.WideConfirm   // tenant/doc (SB-5402)
+	sharing  []ask.SharingEvent           // SB-5403
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }

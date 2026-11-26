@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-26 S53.1: Find what is shared too widely
+
+**Wave/slice:** W53 / S53.1 (SB-5401 to SB-5404) · **Status:** Done
+
+**What:** A document its source shares with anyone with the link, the whole domain or a group above `wide_group_size`, and that holds personal data, had a secret removed, carries a confidential or restricted label or sits in a restricted space, is listed on the review list (`section=wide`) and in its owner's inbox, and held back from everyone but its owner and stewards until the owner narrows it at the source or confirms **Shared on purpose**. A sync that sees sharing widen tells the owner once. **Who can see this** counts the people who can open a document now.
+
+**Why this way:** Everything is worked out at read time from the ACL copy and flags the index already holds, so a rebuild changes nothing and no list can go stale; only the owner's confirmation and the sharing events are kept, both ids and grants. The hold is one more narrowing filter after retirement in the one retrieval path, so every feature that reads gets it at once. The confirmation is keyed to the version and the ACL copy's hash, so it lapses by itself. The audience asks the source as each person, because a count from the ACL copy would be the very thing that can be wrong.
+
+**Learned:** Ingest dropped a secret's chunk without a trace on the document, so "held a secret" needed a flag on the other chunks. Folder ids hold slashes, which a path parameter can't carry, so the audience also takes `?doc=`.
+
+**Laws:** LAW-01, LAW-07, LAW-19, LAW-21. Every law test is still green except LAW-23, as before.
+
 ## 2026-11-26 SB-5304: Draft the next action
 
 **Wave/slice:** W52 / S52.2 (SB-5304) · **Status:** Done

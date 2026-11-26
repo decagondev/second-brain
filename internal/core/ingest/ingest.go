@@ -127,6 +127,9 @@ type Pipeline struct {
 	// RerouteDropped counts a document Reroute took out of the index because it couldn't
 	// be fetched (sb_ingest_reroute_dropped_total{connector}); nil counts nothing.
 	RerouteDropped func(kind string)
+	// Sharing is told when a document's ACL copy changes from the version indexed before
+	// (SB-5403); nil records nothing. It never changes the source.
+	Sharing func(ctx context.Context, ch SharingChange)
 	// Kind is the connector kind this pipeline ingests; Reroute touches only its documents.
 	// Empty means the index holds this connector's documents only.
 	Kind string
@@ -224,6 +227,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		whole = SecretSpans(text) // secrets a chunk boundary would split (SB-1401)
 	}
 	pii := PIISpans(text) // numbers a chunk boundary would cut still flag both chunks (SB-1904)
+	secretRemoved := false
 	for _, sp := range spans {
 		t := string(rs[sp.Start:sp.End])
 		pat := overlaps(whole, sp.Start, sp.End)
@@ -235,6 +239,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			if p.SecretDropped != nil {
 				p.SecretDropped(ref.Kind, pat)
 			}
+			secretRemoved = true
 			continue
 		}
 		h := sha256.Sum256([]byte(t))
@@ -245,6 +250,11 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
 			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy, Section: sectionAt(hs, sp.Start), Lines: [2]int{lineOf(sp.Start), lineOf(sp.End - 1)}, Page: PageAt(doc.Pages, sp.Start),
 			GeneratedBy: mark.GeneratedBy, ApprovedBy: mark.ApprovedBy, Edited: mark.Edited, AskedBy: mark.AskedBy, EditedBy: mark.EditedBy})
+	}
+	if secretRemoved { // the document's other chunks say so, for sharing checks (SB-5401)
+		for i := range chunks {
+			chunks[i].Flags = merge(chunks[i].Flags, []string{FlagSecretRemoved})
+		}
 	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)
@@ -258,7 +268,21 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			chunks[i].Vector = vecs[i]
 		}
 	}
-	return p.Index.Replace(ctx, p.Tenant, ref, doc.Version, chunks)
+	var before []string
+	if p.Sharing != nil {
+		before = p.aclBefore(ctx, ref)
+	}
+	if err := p.Index.Replace(ctx, p.Tenant, ref, doc.Version, chunks); err != nil {
+		return err
+	}
+	if p.Sharing != nil && before != nil {
+		if ch := SharingChangeOf(before, acl); ch.Changed() {
+			ch.Ref, ch.Version, ch.Owner, ch.Spaces = ref, doc.Version, strings.ToLower(strings.TrimSpace(doc.Owner)), holders
+			ch.Sensitive = sensitiveChunks(chunks)
+			p.Sharing(ctx, ch)
+		}
+	}
+	return nil
 }
 
 // reviewBy is the document's own review-by date: the source's, or its front matter's.

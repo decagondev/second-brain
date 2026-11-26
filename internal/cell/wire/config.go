@@ -41,7 +41,10 @@ type Config struct {
 	// MCPGroups are the IdP groups that may use MCP and the tool families each gets
 	// (sb-cell(5), mcp_groups; SB-5305); nil is everyone, every family.
 	MCPGroups map[string][]string `json:"mcp_groups,omitempty"`
-	Model     struct {
+	// WideGroupSize is the group size above which a group grant shares a document too
+	// widely (sb-cell(5), wide_group_size; SB-5401); 0 is ask.DefaultWideGroup.
+	WideGroupSize int `json:"wide_group_size,omitempty"`
+	Model         struct {
 		Provider string `json:"provider"`
 		Base     string `json:"base"`
 		ID       string `json:"id"`

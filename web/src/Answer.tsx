@@ -25,6 +25,7 @@ import {
 import { errorText, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 import { MarkLine, citeMark } from "./Marked";
+import { WhoCanSee } from "./Sharing";
 import { HowThisWasMade } from "./Further";
 
 const notices: Record<Exclude<Notice, null>, string> = {
@@ -279,6 +280,7 @@ export function ClaimView({
             {onAbout && (
               <AboutButton cite={c.cite} name={citeName(c)} onAbout={onAbout} />
             )}
+            {trace.startsWith("tr_") && <WhoCanSee docs={[c.cite]} fetcher={fetcher} />}
           </span>
         ))}
       </span>

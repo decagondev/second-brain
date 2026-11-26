@@ -540,6 +540,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	}
 	agent.Collections = c.Traces          // SB-4304
 	agent.Requests = requestCategories(m) // SB-4502
+	agent.Wide = c.wide(m)                // SB-5401 to SB-5403
+	agent.Everyone = c.everyone           // SB-5404
 
 	// Actions (sb-actions(3)).
 	tools, err := workflow.Registry(m)
