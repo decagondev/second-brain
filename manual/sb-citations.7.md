@@ -81,6 +81,10 @@ An answer, draft or note carries `label`, the highest label among its cites (LAW
 
 The context panel lists the sources an answer's live check allowed and what steered it (kept, dropped and excluded documents, memory, skill, collection), each title checked as the viewer now (sb-ask(3), The context of an answer). A cite is never added by Keep without the same live check as any other.
 
+### Why a document wasn't cited (SB-5506, SB-5507)
+
+Why not this document? and the stewards' retrieval view replay an answer's retrieval as the person asking, and name only what that person can open now (sb-ask(3), Ask why). A document they can't open gets the same reply as one that doesn't exist, so neither can be used to learn that a document exists.
+
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

@@ -67,6 +67,7 @@ import { AskForChanges, Suggestions } from "./Shape";
 import { HowThisWasMade } from "./Further";
 import { AgentValue, PauseHere, ShadowRuns } from "./Accountable";
 import { MarkLine } from "./Marked";
+import { RetrievalView } from "./Steer";
 import { MyData } from "./Session";
 import {
   AboutMe,
@@ -650,6 +651,7 @@ export function StewardQuestions({
                 <p className="meta">{t("Looks like {id}", { id: q.like })}</p>
               )}
               {q.report && <ReportedAnswer r={q.report} />}
+              {q.report && q.trace && <RetrievalView space={space} trace={q.trace} fetcher={fetcher} />}
               {q.draft && (
                 <p className="meta">
                   <strong>{t("Draft")}</strong> · {q.draft.comment}

@@ -121,6 +121,7 @@ func (l Legwork) inbox(ctx context.Context, s tenancy.Scope, offer bool) (Inbox,
 		return Inbox{}, err
 	}
 	in.NeedsYou = append(in.NeedsYou, wide...)
+	in.NeedsYou = append(in.NeedsYou, l.Agent.ownProposals(ctx, s)...) // SB-5505
 	newest := func(xs []InboxItem) {
 		sort.SliceStable(xs, func(i, j int) bool {
 			if xs[i].Overdue != xs[j].Overdue {

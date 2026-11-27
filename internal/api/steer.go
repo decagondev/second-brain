@@ -36,7 +36,9 @@ func (h Ask) contextPanel(w http.ResponseWriter, r *http.Request) {
 func (h Me) registerExclusions(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/me/exclusions", h.exclusions)
 	mux.HandleFunc("POST /v1/me/exclusions", h.exclude(true))
-	mux.HandleFunc("DELETE /v1/me/exclusions", h.exclude(false)) // ?document=KIND:ID
+	mux.HandleFunc("DELETE /v1/me/exclusions", h.exclude(false))                        // ?document=KIND:ID
+	mux.HandleFunc("POST /v1/me/memory/proposals/{id}/confirm", h.decideProposal(true)) // SB-5505
+	mux.HandleFunc("DELETE /v1/me/memory/proposals/{id}", h.decideProposal(false))
 }
 
 func (h Me) exclusionErr(w http.ResponseWriter, err error) {

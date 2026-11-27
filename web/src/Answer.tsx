@@ -26,7 +26,7 @@ import { errorText, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 import { MarkLine, citeMark } from "./Marked";
 import { WhoCanSee } from "./Sharing";
-import { ContextView, MemoryUsed } from "./Steer";
+import { ContextView, MemoryUsed, WhyNotView } from "./Steer";
 import type { SteerKind } from "./Steer";
 import { HowThisWasMade } from "./Further";
 
@@ -716,6 +716,7 @@ export function AnswerView({
       )}
       {answer.memory && answer.memory.length > 0 && <MemoryUsed ids={answer.memory} fetcher={fetcher} />}
       {answer.trace.startsWith("tr_") && <ContextView trace={answer.trace} fetcher={fetcher} onSteer={onSteer} />}
+      {answer.trace.startsWith("tr_") && <WhyNotView trace={answer.trace} fetcher={fetcher} />}
       <SeeAlsoView answer={answer} fetcher={fetcher} onAbout={onAbout} />
       <PeopleView
         answer={answer}

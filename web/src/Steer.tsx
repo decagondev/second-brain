@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { AskError, contextOf, exclude, forgetMemory, myMemory } from "./api";
-import type { ContextPanel, Fetch, MemoryLine } from "./api";
-import { errorText, t, tn } from "./i18n";
+import { AskError, contextOf, exclude, forgetMemory, myMemory, retrievalOf, whyNot } from "./api";
+import type { FormEvent } from "react";
+import type { ContextPanel, Fetch, MemoryLine, RetrievalRow } from "./api";
+import { errorText, msg, t, tn } from "./i18n";
 
 // See and steer the context (SB-5501 to SB-5504): what an answer was built from, from its
 // trace and checked as me now; Keep and Drop for the rest of the conversation; Don't use
@@ -124,5 +125,89 @@ export function MemoryUsed({ ids, fetcher }: { ids: string[]; fetcher?: Fetch })
         </p>
       ))}
     </section>
+  );
+}
+
+// WhyNotView is Why not...? under an answer (SB-5506): a title, link or KIND:ID, and why the
+// answer didn't use it, checked as me now.
+export function WhyNotView({ trace, fetcher }: { trace: string; fetcher?: Fetch }) {
+  const [doc, setDoc] = useState("");
+  const [answer, setAnswer] = useState("");
+  const ask = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      setAnswer((await whyNot(trace, doc.trim(), fetcher)).text);
+    } catch (x) {
+      setAnswer(errMsg(x));
+    }
+  };
+  return (
+    <form className="why-not inline" onSubmit={(e) => void ask(e)}>
+      <input aria-label={t("Why not this document? Its title, link or id")} value={doc} onChange={(e) => setDoc(e.target.value)} />
+      <button type="submit" disabled={!doc.trim()}>
+        {t("Why not this document?")}
+      </button>
+      {answer && <span role="status"> {answer}</span>}
+    </form>
+  );
+}
+
+// whyLabels are the retrieval view's reasons in words.
+const whyLabels: Record<string, string> = {
+  kept: msg("kept"),
+  budget: msg("below the cut"),
+  per_document: msg("too many from one document"),
+  retired: msg("retired"),
+  held: msg("held"),
+  suspect: msg("suspect"),
+};
+
+// RetrievalView is the replay of a reported or unhelpful answer, for its space's stewards
+// (SB-5507): ranks, the fused score and why each passage was kept or cut.
+export function RetrievalView({ space, trace, fetcher }: { space: string; trace: string; fetcher?: Fetch }) {
+  const [rows, setRows] = useState<RetrievalRow[]>();
+  const [hidden, setHidden] = useState(0);
+  const [err, setErr] = useState("");
+  const show = async () => {
+    try {
+      const v = await retrievalOf(space, trace, fetcher);
+      setRows(v.rows);
+      setHidden(v.hidden);
+    } catch (e) {
+      setErr(errMsg(e));
+    }
+  };
+  return (
+    <div className="retrieval">
+      {!rows && (
+        <button type="button" className="link" onClick={() => void show()}>
+          {t("Show the retrieval")}
+        </button>
+      )}
+      {err && <p className="notice">{err}</p>}
+      {rows && (
+        <table>
+          <thead>
+            <tr>
+              <th>{t("Rank")}</th>
+              <th>{t("Passage")}</th>
+              <th>{t("Score")}</th>
+              <th>{t("Kept or cut")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.rank}>
+                <td>{r.rank}</td>
+                <td>{r.title || r.cite}</td>
+                <td>{r.score.toFixed(4)}</td>
+                <td>{t(whyLabels[r.why] ?? r.why)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {rows && hidden > 0 && <p className="meta">{tn(hidden, "{n} source you can't open now", "{n} sources you can't open now")}</p>}
+    </div>
   );
 }

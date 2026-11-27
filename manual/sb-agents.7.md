@@ -233,6 +233,10 @@ A space that lists `on: [source-changed]` (sb-space(5)) has its agent drafts **w
 
 A steward may **share** one of their own routines in a space they steward (sb-ask(3), My routines) with that space. Its members see it on the Start tab and may **opt in**, which makes their own copy: a separate saved question and routine of theirs, counted toward their 5 routines, asked **as them** in the space on the same schedule, kept for them alone and paused by the same budget as their own routines. A member who leaves the space, or whose steward stops sharing, has their copy stopped at its next run, and nothing is asked for them. The steward sees how many have opted in, never who or their answers (LAW-01, LAW-12, LAW-26).
 
+### Memory from an assistant (SB-5505)
+
+An MCP client may read the person's own memory lines and propose a new one (`memory_propose`); it waits for the person and counts only once they confirm it in the web app (sb-ask(3), Ask why). An agent never writes memory itself.
+
 ### The legwork agents (SB-4201 to SB-4207)
 
 `research` and `meeting-prep` are read-only agents in the release bundle (`internal/core/prompts/set/research.md` and `meeting-prep.md`), of no template: they run in any space the person asks in, or company-wide, only where the `use_agent` policy allows them, and never when killed. Like a department agent, every claim they keep is cited (an uncited claim is dropped and counted in `dropped`), and they have **no tools** (LAW-09).

@@ -60,3 +60,23 @@ describe("see and steer the context (SB-5501 to SB-5504)", () => {
     expect(calls).toContain("DELETE /v1/me/memory/mem_1");
   });
 });
+
+describe("ask why (SB-5506, SB-5507)", () => {
+  it("asks why a document wasn't used, and shows the steward's retrieval", async () => {
+    const { WhyNotView, RetrievalView } = await import("./Steer");
+    const f: Fetch = async (u) => {
+      if (u.includes("why-not")) return new Response(JSON.stringify({ reason: "ranked_below", text: "Other passages ranked higher." }), { status: 200 });
+      return new Response(JSON.stringify({ trace: "tr_1", rows: [{ rank: 1, cite: "docs:a@1", title: "Dock", score: 0.0164, why: "kept" }], hidden: 2 }), { status: 200 });
+    };
+    render(<WhyNotView trace="tr_1" fetcher={f} />);
+    fireEvent.change(screen.getByLabelText("Why not this document? Its title, link or id"), { target: { value: "Canteen" } });
+    fireEvent.click(screen.getByRole("button", { name: "Why not this document?" }));
+    await act(async () => {});
+    expect(screen.getByRole("status").textContent).toContain("Other passages ranked higher.");
+    render(<RetrievalView space="ops" trace="tr_1" fetcher={f} />);
+    fireEvent.click(screen.getByRole("button", { name: "Show the retrieval" }));
+    await act(async () => {});
+    expect(screen.getByText("Dock")).toBeTruthy();
+    expect(screen.getByText("2 sources you can't open now")).toBeTruthy();
+  });
+});

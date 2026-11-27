@@ -53,16 +53,7 @@ func Tokens(s tenancy.Scope, emails []string) []string {
 // Fuse ranks candidates by reciprocal-rank fusion of their vector and keyword ranks; of two
 // with the same score, the version the index saw last comes first.
 func Fuse(cs []ports.Candidate) []ports.Candidate {
-	score := func(c ports.Candidate) float64 {
-		var s float64
-		if c.VectorRank > 0 {
-			s += 1 / float64(RRFK+c.VectorRank)
-		}
-		if c.KeywordRank > 0 {
-			s += 1 / float64(RRFK+c.KeywordRank)
-		}
-		return s
-	}
+	score := Score
 	out := append([]ports.Candidate(nil), cs...)
 	sort.SliceStable(out, func(i, j int) bool {
 		si, sj := score(out[i]), score(out[j])
@@ -75,6 +66,18 @@ func Fuse(cs []ports.Candidate) []ports.Candidate {
 		return out[i].Chunk.ID < out[j].Chunk.ID
 	})
 	return out
+}
+
+// Score is a candidate's reciprocal-rank-fusion score (SB-5507 shows it).
+func Score(c ports.Candidate) float64 {
+	var s float64
+	if c.VectorRank > 0 {
+		s += 1 / float64(RRFK+c.VectorRank)
+	}
+	if c.KeywordRank > 0 {
+		s += 1 / float64(RRFK+c.KeywordRank)
+	}
+	return s
 }
 
 // Authoriser runs the live check: one batched ACL call per connector per request.

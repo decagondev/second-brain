@@ -90,6 +90,8 @@ Labels, reach and the sensitive map (SB-5405 to SB-5407): an answer's `label` (s
 
 See and steer the context (SB-5501 to SB-5504): `GET /v1/traces/{id}/context`, the ask's `keep` and `drop`, the answer's `memory`, and `GET|POST|DELETE /v1/me/exclusions` (sb-ask(3), The context of an answer). Each is the caller's own; nothing names what they can't open.
 
+Ask why (SB-5505 to SB-5507): `POST /v1/traces/{id}/why-not`, `GET /v1/spaces/NAME/review/retrieval?trace=ID`, `POST /v1/me/memory/proposals/{id}/confirm` and `DELETE /v1/me/memory/proposals/{id}` (web sessions only), and on MCP `resources/list`, `resources/read` (`memory://me`) and the `memory_propose` tool (sb-ask(3), Ask why).
+
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.

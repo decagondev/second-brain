@@ -119,7 +119,7 @@ func TestWorkWherePeopleAreThroughARunningCell(t *testing.T) {
 	if c, b := mcp(made.Token, `{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"delete","arguments":{}}}`); c != 200 || !strings.Contains(b, `"code":-32602`) {
 		t.Fatalf("a tool that doesn't exist: %d %s", c, b)
 	}
-	if c, b := mcp(made.Token, `{"jsonrpc":"2.0","id":7,"method":"resources/list"}`); c != 200 || !strings.Contains(b, `"code":-32601`) {
+	if c, b := mcp(made.Token, `{"jsonrpc":"2.0","id":7,"method":"completion/complete"}`); c != 200 || !strings.Contains(b, `"code":-32601`) { // resources/list is answered since SB-5505
 		t.Fatalf("another method: %d %s", c, b)
 	}
 	rows, _ := r.cell.Audit.Store.Range(ctx, 1, 1<<20)

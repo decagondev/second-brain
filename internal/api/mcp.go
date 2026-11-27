@@ -24,6 +24,8 @@ type MCP struct {
 		Searcher
 	}
 	Release string
+	// Memory is the person's own memory over MCP (SB-5505); nil offers none.
+	Memory MCPMemory
 	// Agents are the department agents the person may use now, each with its spaces by
 	// name, and ScopeIn the person as a scope in one of them (SB-4306); nil lists none.
 	Agents  func(ctx context.Context, s tenancy.Scope) (map[string][]string, error)
@@ -50,10 +52,11 @@ const (
 	FamilyAgents   = "agents"
 	FamilyResearch = "research"
 	FamilySkills   = "skills"
+	FamilyMemory   = "memory" // the person's own memory lines, and memory_propose (SB-5505)
 )
 
 // MCPFamilies are the families mcp_groups may grant.
-var MCPFamilies = []string{FamilySearch, FamilyAsk, FamilyAgents, FamilyResearch, FamilySkills}
+var MCPFamilies = []string{FamilySearch, FamilyAsk, FamilyAgents, FamilyResearch, FamilySkills, FamilyMemory}
 
 // familyOf is a tool's family.
 func familyOf(tool string) string {
@@ -66,6 +69,8 @@ func familyOf(tool string) string {
 		return FamilyResearch
 	case strings.HasPrefix(tool, "agent_"):
 		return FamilyAgents
+	case tool == "memory_propose":
+		return FamilyMemory
 	}
 	return ""
 }
@@ -159,7 +164,7 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		if p.ProtocolVersion != "" && p.ProtocolVersion < MCPVersion {
 			v = p.ProtocolVersion // an older client gets its own revision; the tools are the same
 		}
-		rpc(w, req.ID, map[string]any{"protocolVersion": v, "capabilities": map[string]any{"tools": map[string]any{"listChanged": false}, "prompts": map[string]any{"listChanged": false}},
+		rpc(w, req.ID, map[string]any{"protocolVersion": v, "capabilities": map[string]any{"tools": map[string]any{"listChanged": false}, "prompts": map[string]any{"listChanged": false}, "resources": map[string]any{"listChanged": false}},
 			"serverInfo":   map[string]any{"name": "second-brain", "version": h.Release},
 			"instructions": "Read-only. Every result is checked live as you; cite the sources you use."}, nil)
 	case "ping":
@@ -201,6 +206,8 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		b, _ := json.Marshal(out)
 		rpc(w, req.ID, map[string]any{"content": []map[string]string{{"type": "text", "text": string(b)}}, "structuredContent": out}, nil)
+	case "resources/list", "resources/read": // SB-5505: the caller's own memory, read-only
+		h.resources(w, r, s, req)
 	case "prompts/list", "prompts/get":
 		if !h.granted(s, FamilySkills) {
 			if req.Method == "prompts/list" {
@@ -302,6 +309,11 @@ func (h MCP) call(ctx context.Context, s tenancy.Scope, name string, args map[st
 		out, err = h.Agent.Ask(ctx, s, ask.Request{Question: args["question"]})
 	case "passage":
 		out, err = h.Agent.Passage(ctx, s, strings.TrimSpace(args["trace"]), strings.TrimSpace(args["cite"]), -1)
+	case "memory_propose": // SB-5505: kept unconfirmed until the person confirms it in the web UI
+		if !h.memoryOn() {
+			return nil, errNoTool
+		}
+		out, err = h.Memory.ProposeMemory(ctx, s, args["text"])
 	case "research_plan":
 		if h.Legwork == nil {
 			return nil, errNoTool
@@ -348,6 +360,10 @@ func AgentTool(agent string) string { return "agent_" + strings.ReplaceAll(agent
 // use now, made at each call so a killed agent is gone at once.
 func (h MCP) tools(ctx context.Context, s tenancy.Scope) ([]mcpTool, error) {
 	out := append([]mcpTool(nil), MCPTools...)
+	if h.memoryOn() { // SB-5505
+		out = append(out, mcpTool{Name: "memory_propose", Description: "Propose one line about you for your memory. It is kept for you to confirm in the web UI and is never used until you do.",
+			InputSchema: strSchema([]string{"text"}, map[string]string{"text": "One line about you, up to 200 characters"})})
+	}
 	if h.Legwork != nil {
 		out = append(out,
 			mcpTool{Name: "research_plan", Description: "Plan a research report on a question, as you, in this space. It is kept for you to read and Run in the web UI; it never runs from here.",

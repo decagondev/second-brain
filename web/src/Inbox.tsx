@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
-import { AskError, agentRuns, ask, caseCandidates, collections, decideCase, forgetMemory, listSpaces, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
+import { AskError, agentRuns, ask, caseCandidates, collections, decideCase, decideProposal, forgetMemory, listSpaces, makeCollection, myInbox, myMemory, remember, removeCollection } from "./api";
 import type { AgentRun, AskResponse, CaseCandidate, Collection, Fetch, Inbox, InboxItem, MemoryLine } from "./api";
 import { errorText, msg, t } from "./i18n";
 import { CatchUp } from "./Across";
@@ -21,6 +21,7 @@ const kinds: Record<string, string> = {
   routine: msg("Routine"),
   case: msg("Eval case to decide"),
   wide: msg("Shared too widely"), // SB-5401
+  memory: msg("Memory line to confirm"), // SB-5505
 };
 
 function Items({ items, label, empty }: { items: InboxItem[]; label: string; empty: string }) {
@@ -87,6 +88,7 @@ export function InboxView({ fetcher }: { fetcher?: Fetch }) {
 export function AboutMe({ fetcher }: { fetcher?: Fetch }) {
   const [on, setOn] = useState(true);
   const [lines, setLines] = useState<MemoryLine[]>();
+  const [proposed, setProposed] = useState<MemoryLine[]>([]);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<string>();
   const id = useId();
@@ -95,6 +97,7 @@ export function AboutMe({ fetcher }: { fetcher?: Fetch }) {
       const m = await myMemory(fetcher);
       setOn(m.on);
       setLines(m.lines);
+      setProposed(m.proposed ?? []);
     } catch (e) {
       setStatus(errMsg(e, t("Your memory is unavailable right now.")));
     }
@@ -137,6 +140,21 @@ export function AboutMe({ fetcher }: { fetcher?: Fetch }) {
                   {l.text}{" "}
                   <button type="button" onClick={() => remove(l.id)} aria-label={t("Remove: {question}", { question: l.text })}>
                     {t("Remove")}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {proposed.length > 0 && (
+            <ul className="saved-list" aria-label={t("Proposed by an assistant")}>
+              {proposed.map((l) => (
+                <li key={l.id}>
+                  {l.text}{" "}
+                  <button type="button" onClick={() => void decideProposal(l.id, true, fetcher).then(load)}>
+                    {t("Confirm")}
+                  </button>{" "}
+                  <button type="button" onClick={() => void decideProposal(l.id, false, fetcher).then(load)}>
+                    {t("Dismiss")}
                   </button>
                 </li>
               ))}

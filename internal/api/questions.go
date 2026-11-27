@@ -71,8 +71,9 @@ func (h Questions) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/waits", h.waits)
 	mux.HandleFunc("GET /v1/spaces/{name}/decisions", h.trail)
 	mux.HandleFunc("GET /v1/spaces/{name}/service", h.service)
-	h.registerShape(mux)   // SB-4601 to SB-4603
-	h.registerSharing(mux) // SB-5401 to SB-5404
+	h.registerShape(mux)                                                  // SB-4601 to SB-4603
+	h.registerSharing(mux)                                                // SB-5401 to SB-5404
+	mux.HandleFunc("GET /v1/spaces/{name}/review/retrieval", h.retrieval) // SB-5507
 	mux.HandleFunc("GET /v1/spaces/{name}/updates", h.updates)
 	h.registerPolicies(mux)
 	mux.HandleFunc("PUT /v1/spaces/{name}/suggested", h.setSuggested)

@@ -725,7 +725,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Sessions{Revoker: revoker}.Register(mux)
 	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
 	if cfg.MCP {
-		api.MCP{Agent: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
+		api.MCP{Agent: agent, Memory: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
 			Agents: func(ctx context.Context, s tenancy.Scope) (map[string][]string, error) {
 				return agent.UsableAgents(ctx, s, c.ScopeAs)
 			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters, Families: c.mcpFamilies()}.Register(mux) // SB-4601, SB-4906, SB-5305

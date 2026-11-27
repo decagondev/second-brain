@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-	"unicode/utf8"
 
 	"example.com/second-brain/internal/core/audit"
 	"example.com/second-brain/internal/core/ingest"
@@ -46,6 +45,9 @@ type Memory struct {
 	// Excluded are the documents the person keeps out of everything made as them (SB-5503),
 	// kept here so they are exported, erased and forgotten with the person's memory.
 	Excluded []Exclusion `json:"excluded,omitempty"`
+	// Proposed are lines an MCP client proposed, waiting for the person (SB-5505); none is
+	// ever sent with an ask.
+	Proposed []MemoryLine `json:"proposed,omitempty"`
 }
 
 // MemoryStore keeps each person's memory, one record per person, erased with them and by
@@ -59,6 +61,8 @@ type MemoryStore interface {
 type MemoryView struct {
 	On    bool         `json:"on"`
 	Lines []MemoryLine `json:"lines"`
+	// Proposed are the lines an MCP client proposed, to confirm or dismiss (SB-5505).
+	Proposed []MemoryLine `json:"proposed,omitempty"`
 }
 
 // ErrMemoryOff is a cell whose manifest has memory: off.
@@ -92,47 +96,14 @@ func (a Agent) MemoryFor(ctx context.Context, s tenancy.Scope) (MemoryView, erro
 	if len(m.Lines) > 0 {
 		out.Lines = m.Lines
 	}
+	out.Proposed = m.Proposed
 	return out, nil
 }
 
 // Remember adds one line the caller wrote. A line that repeats a passage they can open is
 // refused, and so is any line when that can't be checked (LAW-03, LAW-25).
 func (a Agent) Remember(ctx context.Context, s tenancy.Scope, text string) (MemoryLine, error) {
-	if err := a.memoryScope(s); err != nil {
-		return MemoryLine{}, err
-	}
-	if !a.memoryOn() {
-		return MemoryLine{}, ErrMemoryOff
-	}
-	line := strings.TrimSpace(text)
-	if line == "" || utf8.RuneCountInString(line) > MaxMemoryLine || strings.ContainsAny(line, "\r\n") {
-		return MemoryLine{}, fmt.Errorf("%w: a line is 1 to %d characters on one line", ErrInvalid, MaxMemoryLine)
-	}
-	m, _, err := a.Memory.MemoryOf(ctx, a.Tenant, s.User())
-	if err != nil {
-		return MemoryLine{}, fmt.Errorf("%w: memory: %v", ErrUnavailable, err)
-	}
-	if len(m.Lines) >= MaxMemoryLines {
-		return MemoryLine{}, fmt.Errorf("%w: at most %d lines; remove one first", ErrInvalid, MaxMemoryLines)
-	}
-	copied, err := a.fromDocument(ctx, s, line)
-	if err != nil {
-		return MemoryLine{}, err
-	}
-	if copied {
-		return MemoryLine{}, ErrFromDocument
-	}
-	now := a.now()
-	l := MemoryLine{ID: a.NewID("mem_"), Text: line, At: now}
-	if err := a.memoryAudit(ctx, s, "remembered", hashOf(line)); err != nil {
-		return MemoryLine{}, err
-	}
-	m.Tenant, m.User, m.At = a.Tenant, s.User(), now
-	m.Lines = append(m.Lines, l)
-	if err := a.Memory.PutMemory(ctx, m); err != nil {
-		return MemoryLine{}, fmt.Errorf("%w: memory: %v", ErrUnavailable, err)
-	}
-	return l, nil
+	return a.addLine(ctx, s, text, false)
 }
 
 // ForgetLine removes one of the caller's lines, or all of them when id is "".

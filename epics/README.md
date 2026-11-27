@@ -58,7 +58,7 @@ summary: Epics, waves, slices and tickets.
 | W51 Write It Down Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E52), built: suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W52 Agents That Act Carefully | 6 | 0 | 0 | Planned 2026-11-25 with the user (E53), built: start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W53 Know Who Can See | 7 | 0 | 0 | Planned 2026-11-26 with the user (E54), built: shared too widely, hold until the owner confirms, sharing widened, who can see this, labels travel, how far each agent reaches, sensitive map ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
-| W54 See and Steer the Context | 4 | 0 | 3 | Planned 2026-11-26 with the user (E55), S54.1 built: context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
+| W54 See and Steer the Context | 7 | 0 | 0 | Planned 2026-11-26 with the user (E55), built: context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W55 Keep Answering, Spend Less | 0 | 0 | 6 | Planned 2026-11-26 with the user (E56): fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -972,9 +972,9 @@ flowchart LR
 | [SB-5502](E55-see-and-steer-context/SB-5502-keep-or-drop.md) | S54.1 | E55 | Keep or drop for this conversation | Done |
 | [SB-5503](E55-see-and-steer-context/SB-5503-not-for-me.md) | S54.1 | E55 | Not for me | Done |
 | [SB-5504](E55-see-and-steer-context/SB-5504-memory-used.md) | S54.1 | E55 | Memory used, shown | Done |
-| [SB-5505](E55-see-and-steer-context/SB-5505-memory-over-mcp.md) | S54.2 | E55 | Memory over MCP | Open |
-| [SB-5506](E55-see-and-steer-context/SB-5506-why-not.md) | S54.2 | E55 | Why not this document? | Open |
-| [SB-5507](E55-see-and-steer-context/SB-5507-retrieval-view.md) | S54.2 | E55 | Retrieval view for stewards | Open |
+| [SB-5505](E55-see-and-steer-context/SB-5505-memory-over-mcp.md) | S54.2 | E55 | Memory over MCP | Done |
+| [SB-5506](E55-see-and-steer-context/SB-5506-why-not.md) | S54.2 | E55 | Why not this document? | Done |
+| [SB-5507](E55-see-and-steer-context/SB-5507-retrieval-view.md) | S54.2 | E55 | Retrieval view for stewards | Done |
 
 ### W55 Keep Answering, Spend Less
 

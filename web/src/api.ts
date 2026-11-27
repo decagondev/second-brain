@@ -611,6 +611,7 @@ export interface RequestMeta {
 
 export interface QueueQuestion {
   id: string;
+  trace?: string; // the answer it came from (SB-5507)
   question: string;
   at: string;
   state: "open" | "answered";
@@ -1828,13 +1829,19 @@ export interface MemoryLine {
 
 export async function myMemory(
   f: Fetch = fetch,
-): Promise<{ on: boolean; lines: MemoryLine[] }> {
-  const d = await call<{ on?: boolean; lines?: MemoryLine[] }>(
+): Promise<{ on: boolean; lines: MemoryLine[]; proposed: MemoryLine[] }> {
+  const d = await call<{ on?: boolean; lines?: MemoryLine[]; proposed?: MemoryLine[] }>(
     "/v1/me/memory",
     {},
     f,
   );
-  return { on: d.on !== false, lines: d.lines ?? [] };
+  return { on: d.on !== false, lines: d.lines ?? [], proposed: d.proposed ?? [] };
+}
+
+// decideProposal confirms or dismisses a line an MCP client proposed (SB-5505).
+export function decideProposal(id: string, confirm: boolean, f: Fetch = fetch): Promise<unknown> {
+  const u = `/v1/me/memory/proposals/${encodeURIComponent(id)}`;
+  return call<unknown>(confirm ? `${u}/confirm` : u, { method: confirm ? "POST" : "DELETE" }, f);
 }
 
 export function remember(text: string, f: Fetch = fetch): Promise<MemoryLine> {
@@ -2033,4 +2040,32 @@ export function exclude(document: string, on: boolean, f: Fetch = fetch): Promis
   return on
     ? call<Exclusions>("/v1/me/exclusions", post({ document }), f)
     : call<Exclusions>(`/v1/me/exclusions?document=${encodeURIComponent(document)}`, { method: "DELETE" }, f);
+}
+
+// Why not this document? (SB-5506) and the stewards' retrieval view (SB-5507).
+export interface WhyNot {
+  reason: string;
+  text: string;
+  document?: string;
+  title?: string;
+  rank?: number;
+  cut?: number;
+}
+
+export function whyNot(trace: string, document: string, f: Fetch = fetch): Promise<WhyNot> {
+  return call<WhyNot>(`/v1/traces/${encodeURIComponent(trace)}/why-not`, post({ document }), f);
+}
+
+export interface RetrievalRow {
+  rank: number;
+  cite: string;
+  title?: string;
+  keyword_rank?: number;
+  vector_rank?: number;
+  score: number;
+  why: string;
+}
+
+export function retrievalOf(space: string, trace: string, f: Fetch = fetch): Promise<{ trace: string; rows: RetrievalRow[]; hidden: number }> {
+  return call(`/v1/spaces/${encodeURIComponent(space)}/review/retrieval?trace=${encodeURIComponent(trace)}`, {}, f);
 }

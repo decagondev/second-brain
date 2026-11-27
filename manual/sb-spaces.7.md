@@ -203,6 +203,10 @@ A steward of a space with spaces below it is a **branch moderator**: they may pa
 
 Each space's documents counted by kind, this week and last: with personal data, with a secret removed, by label, shared too widely, and held (sb-permissions(7), Shared too widely). A space's stewards see their own space's counts on the review list (`section=sensitive`); operators see every space's at `GET /v1/admin/sensitive`, and the admin's week names each space with documents shared too widely or held. They are counts from the index, never titles, and each week's are kept under the cell's state so a week can be compared with the last.
 
+### The retrieval view (SB-5507)
+
+A space's stewards can replay the retrieval of a reported or unhelpful answer asked in their space, as themselves: the ranked passages with their scores and why each was kept or cut (sb-ask(3), Ask why).
+
 ### Reorg preview (SB-1206)
 
 Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.

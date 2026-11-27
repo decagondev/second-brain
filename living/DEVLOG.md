@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 S54.2: Ask why
+
+**Wave/slice:** W54 / S54.2 (SB-5505 to SB-5507) · **Status:** Done
+
+**What:** **Why not this document?** says why an answer didn't use a document the person names: used, not indexed, outside the scope, dropped, excluded, retired, held, suspect, or ranked below the cut with its rank and closest passage; a document they can't open gets the same reply as one that doesn't exist. Stewards replay a reported or unhelpful answer's retrieval as themselves, with each passage's ranks, score and why it was kept or cut. An MCP client reads the person's memory and proposes a line, which counts only once they confirm it in the web app.
+
+**Why this way:** Both explanations replay the same steps the ask runs, in the same order, as the person asking, so they can't explain more than that person could see. The source's own ACL is asked first, so the no-such reply can't be told apart from a missing document. Proposals sit in the person's memory record beside their lines, so they share its erasure and export, and confirming is refused to API tokens because the MCP client holds one.
+
+**Learned:** The MCP test asserted resources/list was unknown; it now names another unknown method, since resources are part of the contract.
+
+**Laws:** LAW-01, LAW-09, LAW-25, LAW-26. Every law test is green except LAW-23, as before.
+
 ## 2026-11-26 S54.1: Show the context
 
 **Wave/slice:** W54 / S54.1 (SB-5501 to SB-5504) · **Status:** Done
