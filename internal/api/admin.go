@@ -120,6 +120,8 @@ type Admin struct {
 	HoldFeature func(ctx context.Context, s tenancy.Scope, name string, hold bool) error
 	// AIUsage is the AI command centre (SB-5001); nil is EUNAVAIL.
 	AIUsage func(ctx context.Context) (ask.AIUsage, error)
+	// AIClients are the AI tools that reach the brain, counted (SB-6006); nil is none.
+	AIClients func(ctx context.Context) ([]ask.AIClient, error)
 	// Checks are the kept "did it help?" checks of one space, or every space's for ""
 	// (SB-5005); nil is EUNAVAIL.
 	Checks func(space string) ([]ask.Check, error)
@@ -183,6 +185,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/admin/rollouts/{feature}/release", h.guard(h.hold(false)))         // SB-5106
 	mux.HandleFunc("GET /v1/admin/agents/{name}/history", h.guard(h.agentHistory))              // SB-5104
 	mux.HandleFunc("POST /v1/admin/agents/{name}/history/{n}/restore", h.guard(h.restoreAgent)) // SB-5104
+	mux.HandleFunc("GET /v1/admin/ai/clients", h.guard(h.aiClients))                            // SB-6006
 	mux.HandleFunc("GET /v1/admin/ai/usage", h.guard(h.aiUsage))                                // SB-5001
 	mux.HandleFunc("GET /v1/admin/checks", h.guard(h.checks))                                   // SB-5005
 	mux.HandleFunc("GET /v1/admin/checks/{id}", h.guard(h.check))                               // SB-5005

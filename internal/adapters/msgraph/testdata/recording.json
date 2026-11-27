@@ -1,0 +1,146 @@
+{
+  "vendor": "graph",
+  "api": "graph-v1.0",
+  "recorded": "2026-11-27",
+  "exchanges": [
+    {
+      "step": "drive-delta",
+      "status": 200,
+      "body": {
+        "@odata.deltaLink": "ygma://326.2.3.5:50038/w3.8/gjirae/q6/tdlq/bvjjv?hsyyl=0",
+        "value": [
+          {
+            "cTag": "\"v:{mznap},0\"",
+            "createdBy": {
+              "user": {
+                "email": "person1@acme-logistics.example"
+              }
+            },
+            "file": {
+              "mimeType": "application/octet-stream"
+            },
+            "id": "hhsjc",
+            "name": "velkd.rm",
+            "parentReference": {
+              "driveId": "t9",
+              "path": "/teobkc/x4/ionu:/Mxnfnll"
+            },
+            "sensitivityLabel": {
+              "labelId": "ses-mqnz"
+            },
+            "size": 27
+          },
+          {
+            "cTag": "\"q:{lmau},1\"",
+            "file": {
+              "mimeType": "application/octet-stream"
+            },
+            "id": "dbsa",
+            "name": "cinh.db",
+            "parentReference": {
+              "driveId": "t9",
+              "path": "/teobkc/x4/ionu:/Mxnfnll"
+            },
+            "size": 7
+          }
+        ]
+      }
+    },
+    {
+      "step": "drive-item",
+      "status": 200,
+      "body": {
+        "cTag": "\"v:{mznap},0\"",
+        "createdBy": {
+          "user": {
+            "email": "person1@acme-logistics.example"
+          }
+        },
+        "file": {
+          "mimeType": "application/octet-stream"
+        },
+        "id": "hhsjc",
+        "name": "velkd.rm",
+        "parentReference": {
+          "driveId": "t9",
+          "path": "/teobkc/x4/ionu:/Mxnfnll"
+        },
+        "sensitivityLabel": {
+          "labelId": "ses-mqnz"
+        },
+        "size": 27
+      }
+    },
+    {
+      "step": "item-permissions",
+      "status": 200,
+      "body": {
+        "value": [
+          {
+            "grantedToV2": {
+              "group": {
+                "email": "person2@beta-freight.example",
+                "id": "t-qoc"
+              }
+            },
+            "roles": [
+              "read"
+            ]
+          },
+          {
+            "link": {
+              "scope": "organization",
+              "type": "view"
+            },
+            "roles": [
+              "read"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "step": "user-groups",
+      "status": 200,
+      "body": {
+        "value": [
+          {
+            "@odata.type": "#microsoft.graph.group",
+            "id": "t-qoc",
+            "mail": "person2@beta-freight.example"
+          }
+        ]
+      }
+    },
+    {
+      "step": "user-manager",
+      "status": 200,
+      "body": {
+        "mail": "person1@acme-logistics.example"
+      }
+    },
+    {
+      "step": "mailbox-delta",
+      "status": 200,
+      "body": {
+        "@odata.deltaLink": "ygne://084.8.0.9:98057/i9.5/lgqdl/person3@gamma-parts.example/vpdlYjdohuc/kwipz/msjkdiau/xutar?tzwue=7",
+        "value": [
+          {
+            "body": {
+              "content": "ckerkr",
+              "contentType": "text"
+            },
+            "from": {
+              "emailAddress": {
+                "address": "person4@acme-logistics.example"
+              }
+            },
+            "hasAttachments": false,
+            "id": "f8",
+            "subject": "xroktir"
+          }
+        ]
+      }
+    }
+  ]
+}

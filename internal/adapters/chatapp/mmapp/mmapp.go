@@ -55,6 +55,8 @@ type App struct {
 	// (vault://tenants/TENANT/mattermost, events_token) at call time (SB-5801); nil is none.
 	Threads     Threads
 	EventsToken func(ctx context.Context) (string, error)
+	// SaveReaction is sb-cell(5) chat.save_reaction, "" brain (SB-6005).
+	SaveReaction string
 }
 
 // Message is a slash command response (Mattermost's response_type, text and attachments).
@@ -88,6 +90,12 @@ type ShareContext struct {
 	Trace       string `json:"trace"`
 	User        string `json:"user"`
 	ResponseURL string `json:"response_url"`
+	// Kind, Post, Channel and ChannelName are a press from the save reaction's offer
+	// (SB-6005); Kind is "" for Share.
+	Kind        string `json:"kind,omitempty"`
+	Post        string `json:"post,omitempty"`
+	Channel     string `json:"channel,omitempty"`
+	ChannelName string `json:"channel_name,omitempty"`
 	Sig         string `json:"sig"`
 }
 
@@ -201,6 +209,9 @@ func (a *App) answer(ctx context.Context, user, channel, question string) answer
 func sign(token string, c ShareContext) string {
 	m := hmac.New(sha256.New, []byte(token))
 	_, _ = m.Write([]byte(c.Trace + "\n" + c.User + "\n" + c.ResponseURL))
+	if c.Kind != "" { // a press from the save reaction's offer signs what it points at (SB-6005)
+		_, _ = m.Write([]byte("\n" + c.Kind + "\n" + c.Post + "\n" + c.Channel + "\n" + c.ChannelName))
+	}
 	return hex.EncodeToString(m.Sum(nil))
 }
 
@@ -218,14 +229,21 @@ func (a *App) action(w http.ResponseWriter, r *http.Request) {
 	}
 	tok, err := a.Token(r.Context())
 	c := p.Context
+	react := c.Kind == KindReactSave || c.Kind == KindReactAsk
 	if err != nil || tok == "" || c.Sig == "" || !hmac.Equal([]byte(sign(tok, c)), []byte(c.Sig)) ||
-		a.TeamID == "" || p.TeamID != a.TeamID || !a.ownURL(c.ResponseURL) {
+		a.TeamID == "" || p.TeamID != a.TeamID || !react && (c.Kind != "" || !a.ownURL(c.ResponseURL)) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 	done := func(text string) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]string{"ephemeral_text": text})
+	}
+	if react { // SB-6005
+		ctx, cancel := context.WithTimeout(r.Context(), slackapp.AnswerTimeout)
+		defer cancel()
+		done(a.reactPress(ctx, p.UserID, c))
+		return
 	}
 	if p.UserID != c.User {
 		done(MsgShareFail)

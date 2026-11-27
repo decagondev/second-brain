@@ -212,6 +212,9 @@ func (c *Cell) Middleware(next http.Handler) http.Handler {
 		ctx := tenancy.WithScope(r.Context(), scope)
 		if s.Token != "" { // SB-5305: an API token's asks count as its own client
 			ctx = tenancy.WithClient(ctx, tenancy.ClientToken)
+			if s.Client != "" { // SB-6006: and the AI tool it was made for
+				ctx = tenancy.WithTool(ctx, s.Client)
+			}
 		}
 		if r.URL.Query().Get("branch") == "true" { // SB-3903: this department and its teams
 			teams, err := spaces.Teams(r.Context(), c.Spaces, s.Tenant, groups, space)

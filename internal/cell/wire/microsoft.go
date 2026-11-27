@@ -14,6 +14,7 @@ import (
 	"example.com/second-brain/internal/adapters/chatapp/teamsapp"
 	"example.com/second-brain/internal/adapters/connectors/folder"
 	"example.com/second-brain/internal/adapters/msgraph"
+	"example.com/second-brain/internal/adapters/secrets/localvault"
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/obs"
 )
@@ -135,4 +136,19 @@ func mailText(ml msgraph.Mail) []byte {
 		out = out[:ask.MaxFileBytes]
 	}
 	return out
+}
+
+// GraphFor is cfg's Graph client and docs connector with its secrets read from the vault at
+// dir, for sb prove and sb selfhost check-microsoft (SB-6001, SB-6003), which run outside
+// a cell. The sharepoint connector is nil when cfg names no drives or organizers.
+func GraphFor(cfg Config, dir string, hc *http.Client) (*msgraph.Client, *msgraph.SharePoint) {
+	v := localvault.Dir{Root: dir}
+	secret := func(p string) func(context.Context) (string, error) {
+		return func(ctx context.Context) (string, error) { return v.Get(ctx, "vault://tenants/"+cfg.Tenant+"/"+p) }
+	}
+	g := graphClient(cfg, secret, obs.NewRedactor(), hc)
+	if len(cfg.Microsoft.Drives) == 0 && len(cfg.Microsoft.Organizers) == 0 {
+		return g, nil
+	}
+	return g, sharePoint(cfg, g)
 }

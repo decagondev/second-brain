@@ -18,6 +18,7 @@ import (
 	"example.com/second-brain/internal/adapters/smtpmail"
 	"example.com/second-brain/internal/api"
 	"example.com/second-brain/internal/core/offsite"
+	"example.com/second-brain/internal/core/session"
 )
 
 // Config is a cell's configuration file (sb-cell(5)).
@@ -41,6 +42,9 @@ type Config struct {
 	// MCPGroups are the IdP groups that may use MCP and the tool families each gets
 	// (sb-cell(5), mcp_groups; SB-5305); nil is everyone, every family.
 	MCPGroups map[string][]string `json:"mcp_groups,omitempty"`
+	// MCPClients are the AI tools a token may be made for, and the only ones that may use
+	// MCP (sb-cell(5), mcp_clients; SB-6006); empty is any.
+	MCPClients []string `json:"mcp_clients,omitempty"`
 	// WideGroupSize is the group size above which a group grant shares a document too
 	// widely (sb-cell(5), wide_group_size; SB-5401); 0 is ask.DefaultWideGroup.
 	WideGroupSize int `json:"wide_group_size,omitempty"`
@@ -153,6 +157,11 @@ type Config struct {
 		OpenID string `json:"openid,omitempty"`
 		Login  string `json:"login,omitempty"`
 	} `json:"teams"`
+	// Sync paces every connector's reads (SB-6004): at most MaxPerMinute a minute, 0 for
+	// ingest.DefaultPerMinute.
+	Sync struct {
+		MaxPerMinute int `json:"max_per_minute,omitempty"`
+	} `json:"sync"`
 	Alerts struct {
 		Webhook string `json:"webhook"`
 		// ReportWebhook is where the weekly report is posted; "" is Webhook (SB-1608).
@@ -557,6 +566,14 @@ func (c Config) Secrets() (required, optional []string) {
 
 // checkMCPGroups is mcp_groups: only with mcp, each group a name, each family known (SB-5305).
 func (c Config) checkMCPGroups() error {
+	if len(c.MCPClients) > 0 && !c.MCP {
+		return fmt.Errorf("%w: mcp_clients needs mcp: true", ErrConfig)
+	}
+	for _, n := range c.MCPClients {
+		if !session.ValidClient(n) {
+			return fmt.Errorf("%w: mcp_clients: %q isn't a short lower-case name such as claude-code", ErrConfig, n)
+		}
+	}
 	if len(c.MCPGroups) == 0 {
 		return nil
 	}

@@ -139,7 +139,7 @@ func (a *App) Event(body []byte) {
 			if bot, err := a.Replies.Bot(ctx); err != nil || e.User == bot {
 				return
 			}
-			a.directQuestion(ctx, e.User, e.Text)
+			a.DirectQuestion(ctx, e.User, e.Text, a.Replies, func(q string, r ask.Response) string { return Render(q, r).Text })
 		})
 	case e.Type == "reaction_added" && e.User != "" && e.Item.Channel != "" && e.Item.TS != "":
 		a.run(func() {
@@ -257,14 +257,16 @@ func errSlack(method, code string) error { return slackErr{method, code} }
 
 // directQuestion answers a direct message to the brain, company-wide, in that direct
 // message; the person's first one of the day starts with where they left off (SB-5805).
-func (a *App) directQuestion(ctx context.Context, user, text string) {
+// DirectQuestion answers a direct message to the brain as user, through r, rendered by
+// render (SB-5805; Mattermost's too, SB-6005).
+func (a *App) DirectQuestion(ctx context.Context, user, text string, r Replier, render func(q string, resp ask.Response) string) {
 	q := strings.TrimSpace(mention.ReplaceAllString(text, ""))
 	if q == "" {
 		return
 	}
 	s, err := a.Scope(ctx, user)
 	if err != nil {
-		_ = a.Replies.Direct(ctx, user, MsgNoMatch)
+		_ = r.Direct(ctx, user, MsgNoMatch)
 		return
 	}
 	var lines []string
@@ -278,7 +280,7 @@ func (a *App) directQuestion(ctx context.Context, user, text string) {
 	resp, err := a.Agent.Ask(tenancy.WithClient(ctx, tenancy.ClientChat), s, ask.Request{Question: q, Language: a.AnswerLanguage()})
 	out := ErrText(err)
 	if err == nil {
-		out = Render(q, resp).Text
+		out = render(q, resp)
 	}
 	if len(lines) > 0 {
 		out = strings.Join(lines, "\n") + "\n\n" + out
@@ -286,7 +288,7 @@ func (a *App) directQuestion(ctx context.Context, user, text string) {
 	if line := a.NoticeLine(ctx); line != "" {
 		out = line + "\n" + out
 	}
-	_ = a.Replies.Direct(ctx, user, a.mask(ctx, Message{Text: out}).Text)
+	_ = r.Direct(ctx, user, a.mask(ctx, Message{Text: out}).Text)
 }
 
 // firstToday says this is user's first direct message to the app today (UTC). The record

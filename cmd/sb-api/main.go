@@ -82,6 +82,8 @@ func run(ctx context.Context, args []string, stderr io.Writer, ready chan<- stri
 		wg.Add(1)
 		go func() { defer wg.Done(); (&jobsvc.Service{Cell: cell, Ingest: ing}).Loop(bg) }()
 	}
+	wg.Add(1)
+	go func() { defer wg.Done(); cell.Listen(bg) }() // SB-6005: the chat apps' websockets
 	err = serve(ctx, cell, ln, ready)
 	stopBG()
 	wg.Wait()

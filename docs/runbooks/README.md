@@ -26,6 +26,7 @@ Hand-off:
 Connectors:
 
 - [Connector syncs](connectors.md): why a sync fails, by the class health shows, and the fix (SB-3201)
+- [Microsoft 365 setup](microsoft.md): what `sb selfhost check-microsoft` checks and each fix (SB-6003)
 
 Self-hosted cells:
 

@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 W59: Proven for real
+
+**Wave/slice:** W59 / S59.1 and S59.2 (SB-6001 to SB-6006) · **Status:** Done
+
+**What:** `sb prove TICKET` runs a ticket's acceptance criteria against the real system a cell is configured for, reading only, and writes a proof signed with the anchor key that holds only fixed criterion names, counts, timings and ids hashed with a key made for that proof; it covers SB-5901 to SB-5907, SB-2603, SB-2601 and SB-1605. `sb record graph` records a real tenant's answers to a fixed script with every value replaced, and the Graph fake is tested against that recording's shapes. `sb selfhost check-microsoft` refuses a write permission, a mail permission without an access policy (by a probe mailbox that must be refused), a drive that doesn't answer and unmapped labels, each with a runbook section. First syncs are paced, wait out 429s and resume from a checkpoint every 500 changes, health shows their progress and answers say a source is still indexing. The Mattermost bot keeps its websocket open, so the save reaction and direct questions work as in Slack. Tokens name the AI tool they are for; people see and revoke their tools, admins see counts per tool, and `mcp_clients` limits MCP to named tools.
+
+**Why this way:** A proof is evidence for a person to attach, not a switch: the ticket moves only by hand, and the proof can't carry content because its format has no field for any, and is checked before signing. The websocket client is the few hundred lines of RFC 6455 a bot needs, so no Mattermost module joins the allow-list. A first sync resumes by position because every connector lists a first sync in a stable order, which keeps the checkpoint a pair of numbers.
+
+**Learned:** A checkpoint key had to fit the cursor store's safe names, so it is `CONNECTOR--first`, not `CONNECTOR#first`. The Mattermost rules app had no agent of its own, which the direct question needs; it now shares the api's. A notice of its own (`notice_indexing`) beside `notice` keeps a first sync from hiding a no-access or most-uncited notice.
+
+**Laws:** LAW-07 (TestLAW07_AProofHoldsNoContent, new, with TestSelfProofsAreCaught), LAW-01, LAW-03, LAW-05, LAW-09, LAW-11, LAW-13, LAW-16. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 W58: Reach Microsoft 365
 
 **Wave/slice:** W58 / S58.1 and S58.2 (SB-5901 to SB-5907) · **Status:** Done, SB-5901 In review (a real tenant)

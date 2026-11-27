@@ -65,10 +65,13 @@ commands:
   agents  lint [--root DIR]            check every agent definition before a release
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
-  selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|retire-statement|verify-retirement
+  selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|check-microsoft|retire-statement|verify-retirement
                                        a self-hosted box's checks, bundles, settings and retirement (sb-selfhost(7))
   cell    check-config FILE [--vault DIR]...   a cell's configuration and its secrets, before a restart
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
+  prove   TICKET --config FILE ...  |  --verify FILE  |  --list
+                                       prove a ticket on the real system, signed, with no content (SB-6001)
+  record  graph --config FILE --out FILE ...   a real sandbox's answers, every value replaced (SB-6002)
   backup  keygen|seal|open             seal off-box copies to the recovery key
   backup  push|pull|list|check         sealed copies to and from an off-box S3 bucket
   recovery split|join                  the 3-of-5 recovery kit
@@ -92,9 +95,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	cmd := rest[0]
+	if code, ok := e.single(cmd, rest[1:]); ok {
+		return code
+	}
 	switch cmd {
-	case "version":
-		return e.version()
 	case "eval":
 		if len(rest) > 1 && (rest[1] == "run" || rest[1] == "gate" || rest[1] == "diff") {
 			return e.evalPython(rest[1], rest[2:])
@@ -160,6 +164,20 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	return e.fail("sb", errs.New(errs.EUSAGE, "unknown command %q; see sb --help", cmd))
 }
 
+// single runs the commands with no subcommand: version, prove (SB-6001) and record
+// (SB-6002); ok is false for any other.
+func (e *env) single(cmd string, args []string) (code int, ok bool) {
+	switch cmd {
+	case "version":
+		return e.version(), true
+	case "prove":
+		return e.prove(args), true
+	case "record":
+		return e.record(args), true
+	}
+	return 0, false
+}
+
 // boxCommand runs the commands for a self-hosted box (sb-selfhost(7)) and the secret
 // scanner; ok is false for any other name.
 func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
@@ -192,6 +210,8 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.selfhostCheckNotify(args), true
 	case "selfhost check-chat":
 		return e.selfhostCheckChat(args), true
+	case "selfhost check-microsoft":
+		return e.selfhostCheckMicrosoft(args), true
 	case "cell check-config":
 		return e.cellCheckConfig(args), true
 	case "secrets scan":

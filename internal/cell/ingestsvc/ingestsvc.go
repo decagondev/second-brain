@@ -64,7 +64,10 @@ func (s *Service) Pipeline(kind string) ingest.Pipeline {
 
 // SyncerFor is the durable-cursor syncer for one connector kind.
 func (s *Service) SyncerFor(kind string) ingest.Syncer {
-	return ingest.Syncer{Pipeline: s.Pipeline(kind), Connector: kind, Cursors: s.Cell.Cursors, Recorder: recorder{s}, Now: s.now}
+	return ingest.Syncer{Pipeline: s.Pipeline(kind), Connector: kind, Cursors: s.Cell.Cursors, Recorder: recorder{s}, Now: s.now,
+		Progress: func(ctx context.Context, connector string, cp ingest.Checkpoint) { // SB-6004
+			recorder{s}.record(s.Cell.Syncs.Progress(ctx, connector, cp.Done, cp.Total, s.now()))
+		}}
 }
 
 type recorder struct{ s *Service }

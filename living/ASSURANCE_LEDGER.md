@@ -254,6 +254,11 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-27 | LAW-12 | Tested (extended) | SB-5903: an Entra leaver deprovisioned through SCIM in Entra's shape is signed out at once (TestMicrosoft365ThroughARunningCell) |
 | 2026-11-27 | LAW-32 | Tested (extended) | SB-5904: a Teams answer always goes to the person's personal chat, never a channel (TestAskInTeams) |
 | 2026-11-27 | LAW-16 | Tested (extended) | SB-5907: a shared mailbox's new message puts one draft in the queue and sends nothing; no person's mailbox is read (TestMicrosoft365ThroughARunningCell, TestSharedMailbox) |
+| 2026-11-27 | LAW-07 | Tested (new) | SB-6001: a signed proof of any ticket holds no document text, name, address or unhashed id, whatever the system holds (TestLAW07_AProofHoldsNoContent; a leaking proof maker is caught, TestSelfProofsAreCaught) |
+| 2026-11-27 | LAW-07 | Tested (extended) | SB-6002: a recording of a real sandbox holds no value of it, and one with a stored secret, a secret's shape or a real address isn't written (TestRecordGraph) |
+| 2026-11-27 | LAW-03 | Tested (extended) | SB-6003: a permission the check can't name as read-only fails, and a mail policy it can't confirm fails (TestCheckMicrosoft) |
+| 2026-11-27 | LAW-13 | Tested (extended) | SB-6004: a throttled, killed first sync resumes from its checkpoint and indexes every document once (TestFirstSyncIsPacedPatientAndResumes) |
+| 2026-11-27 | LAW-01 | Tested (extended) | SB-6005, SB-6006: a reaction in a channel the bot isn't in reads nothing, a press by anyone but the reactor reads nothing, and a revoked AI tool's next call is refused (TestWebsocketReactionsAndDirectQuestions, TestReactPressIsSignedAndOwned, TestAIToolsThroughARunningCell) |
 | 2026-11-25 | LAW-31 | Tested | SB-5303: a lent draft shows exactly to readers who can open every cite, and a loan answered once never runs again (TestLAW31_LentAccessLastsOneRun, TestSelfLentGateIsCaught, TestBorrowAccessThroughARunningCell) |
 | 2026-11-25 | LAW-29 | Tested (extended) | SB-5301: a work event only drafts, once per document, as the trigger's approver (TestWorkEventsDraftOnceAndBatch) |
 | 2026-11-25 | LAW-13 | Tested (extended) | SB-5205: a chunk's page comes from the source's own page offsets, so a rebuild gives the same pages (TestPagesOfPDFsAndDecks) |

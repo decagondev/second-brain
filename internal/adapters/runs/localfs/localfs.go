@@ -100,7 +100,17 @@ func (s Syncs) Sync(_ context.Context, kind string) (health.Sync, bool, error) {
 
 // Succeeded records a successful sync, clearing the failures.
 func (s Syncs) Succeeded(ctx context.Context, kind string, at time.Time) error {
-	return s.update(ctx, kind, func(x *health.Sync) { x.LastSuccess, x.Failures, x.Failure = at.UTC(), 0, "" })
+	return s.update(ctx, kind, func(x *health.Sync) { x.LastSuccess, x.Failures, x.Failure, x.First = at.UTC(), 0, "", nil })
+}
+
+// Progress records a first sync's checkpoint (SB-6004), keeping when it started.
+func (s Syncs) Progress(ctx context.Context, kind string, done, total int, at time.Time) error {
+	return s.update(ctx, kind, func(x *health.Sync) {
+		if x.First == nil {
+			x.First = &health.FirstSync{Started: at.UTC()}
+		}
+		x.First.Done, x.First.Total = done, total
+	})
 }
 
 // Failed records a failed sync and its class (SB-3201): the class only, never a message.

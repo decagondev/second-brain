@@ -2,6 +2,7 @@ package wire
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,6 +141,7 @@ type Cell struct {
 	// graphC is the cell's Microsoft Graph client, made once (ADR-0023).
 	graphOnce sync.Once
 	graphC    *msgraph.Client
+	sockets   []*mmapp.Socket // the chat apps' websockets (SB-6005)
 	small     func(m manifest.Tenant) (ports.Model, error)
 	deep      func(m manifest.Tenant) (ports.Model, error) // SB-5704
 	eventKey  func(ctx context.Context) (string, error)
@@ -305,6 +307,9 @@ var _ report.NotifySource = usage{}
 // is what the services run with.
 type Options struct {
 	HTTP *http.Client // for the identity provider; nil is http.DefaultClient
+	// ChatTLS is the chat apps' websocket TLS settings (a test server's roots); nil is the
+	// system's (SB-6005).
+	ChatTLS *tls.Config
 	// ConnectorHTTP is the connectors' client; nil is one with a 30-second timeout.
 	ConnectorHTTP *http.Client
 	// Log is where the cell logs; nil is standard error.
@@ -575,7 +580,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Skills:   func(name string) []ask.Skill { return spaceSkills(m, name) },                      // SB-4601
 		Routing:  routing(m), Suspect: suspectMode(m), Guard: c.guardEvent, PersonOver: c.personOver, // SB-5002, SB-5003
 		Rate: &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
-		Marks: c.Traces, SyncLag: c.syncLag, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
+		Marks: c.Traces, SyncLag: c.syncLag, Indexing: c.stillIndexing, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
 		Climb: func(ctx context.Context, space string) []ask.PersonRef { // SB-3906: up to the department's stewards
 			up := parentOf(m)(space)
 			if up == "" {
@@ -680,12 +685,19 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		client := &http.Client{Timeout: 10 * time.Second}
 		rules := &slackapp.App{Tenant: tenant, Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Spaces: c.Spaces,
 			Email: mmapp.APIEmail(mm.Base, slackField(creds, "bot_token"), client), Language: func() string { return c.Manifest().Language },
-			Notice: c.noticeLine}
-		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"), Rules: rules,
+			Notice: c.noticeLine, Agent: agent, Base: cfg.BaseURL} // Agent: direct questions and Ask about this thread (SB-6005)
+		mma := &mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"), Rules: rules,
 			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions",
 			Masked:  func(ctx context.Context, n int) { c.masked(ctx, "mattermost", n) }, // SB-5102
 			Thread:  mmapp.APIThread(mm.Base, slackField(creds, "bot_token"), client),
-			Threads: mmapp.DM{Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "bot_token"), Client: client}, EventsToken: slackField(creds, "events_token")}).Register(public) // SB-5801
+			Threads: mmapp.DM{Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "bot_token"), Client: client}, EventsToken: slackField(creds, "events_token"), // SB-5801
+			SaveReaction: cfg.Chat.SaveReaction}
+		mma.Register(public)
+		// SB-6005: reactions and direct messages come over the bot's websocket.
+		c.sockets = append(c.sockets, &mmapp.Socket{Base: mm.Base, Token: slackField(creds, "bot_token"), On: mma.Event, TLS: c.opt.ChatTLS,
+			Connected: func() {
+				c.Metrics.Add("sb_chat_websocket_connects_total", "Connections the Mattermost bot's websocket made (SB-6005).", nil, 1)
+			}})
 		savers = append(savers, rules)
 	}
 	c.teams(public, agent) // SB-5904
@@ -782,8 +794,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
 		ActiveByEmail: c.activeByEmail, Notices: c.Traces, ModelDown: c.modelDown, Saved: c.SavedIn, Cache: c.CacheIn, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
-		AIUsage: c.aiUsage,                        // SB-5001
-		Checks:  c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007
+		AIUsage:   c.aiUsage,                        // SB-5001
+		AIClients: c.aiClients,                      // SB-6006
+		Checks:    c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007
 		AgentRecord: c.AgentRecord,                           // SB-4707
 		AgentReach:  c.AgentReach, Sensitive: c.SensitiveMap, // SB-5406, SB-5407
 		AgentHistory: c.agentHistory, Restore: c.restore, // SB-5104
@@ -791,12 +804,12 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	admin.InFlight = c.inFlight(m) // SB-4806
 	admin.Register(mux)
 	api.Sessions{Revoker: revoker}.Register(mux)
-	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now}.Register(mux)
+	api.Tokens{Sessions: c.Sessions, Audit: c.Audit, Now: time.Now, Clients: cfg.MCPClients, Families: c.mcpFamilies()}.Register(mux)
 	if cfg.MCP {
 		api.MCP{Agent: agent, Memory: agent, Release: c.Release, ScopeIn: c.ScopeAs, Legwork: legwork, // SB-4306
 			Agents: func(ctx context.Context, s tenancy.Scope) (map[string][]string, error) {
 				return agent.UsableAgents(ctx, s, c.ScopeAs)
-			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters, Families: c.mcpFamilies()}.Register(mux) // SB-4601, SB-4906, SB-5305
+			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters, Families: c.mcpFamilies(), Clients: cfg.MCPClients}.Register(mux) // SB-4601, SB-4906, SB-5305
 	}
 	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now, // SB-5804
 		Shares: &ask.ConversationShares{Agent: agent, Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now}}}.Register(mux)
@@ -877,6 +890,17 @@ func (c *Cell) Ready() bool { return c.ready.Load() }
 
 // Stop marks the cell not ready, so the platform stops sending it requests.
 func (c *Cell) Stop() { c.ready.Store(false) }
+
+// Listen keeps the chat apps' websockets open until ctx ends (SB-6005); it returns at once
+// on a cell with none.
+func (c *Cell) Listen(ctx context.Context) {
+	var wg sync.WaitGroup
+	for _, s := range c.sockets {
+		wg.Add(1)
+		go func() { defer wg.Done(); s.Run(ctx) }()
+	}
+	wg.Wait()
+}
 
 // Close releases the cell's database connections, after it has stopped serving.
 func (c *Cell) Close() {

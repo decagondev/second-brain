@@ -32,6 +32,34 @@ type Sync struct {
 	// Failure is the last failure's class while it stands (SB-3201): auth, rate_limited,
 	// unreachable or source_error, never a URL, body or message.
 	Failure string `json:"failure,omitempty"`
+	// First is a first sync under way (SB-6004): how far it has come and when it started;
+	// nil once a sync succeeds.
+	First *FirstSync `json:"first_sync,omitempty"`
+}
+
+// FirstSync is a first sync's progress: Done of Total changes since Started.
+type FirstSync struct {
+	Done    int       `json:"done"`
+	Total   int       `json:"total"`
+	Started time.Time `json:"started"`
+}
+
+// FirstProgress is a first sync on the health report: Items of Of, and about how many
+// minutes are left at the pace so far (nil until there is a pace).
+type FirstProgress struct {
+	Items       int  `json:"items"`
+	Of          int  `json:"of"`
+	LeftMinutes *int `json:"left_minutes"`
+}
+
+// Progress is a first sync's place on the report at now.
+func (f FirstSync) Progress(now time.Time) *FirstProgress {
+	p := &FirstProgress{Items: f.Done, Of: f.Total}
+	if el := now.Sub(f.Started); f.Done > 0 && el > 0 && f.Total >= f.Done {
+		left := int(time.Duration(float64(el) * float64(f.Total-f.Done) / float64(f.Done)).Minutes())
+		p.LeftMinutes = &left
+	}
+	return p
 }
 
 // Syncs keeps each connector's sync record. found is false for a connector that has never
@@ -60,6 +88,8 @@ type Connector struct {
 	// (SB-3201); both are absent once a sync succeeds.
 	Failure string `json:"failure,omitempty"`
 	Fix     string `json:"fix,omitempty"`
+	// FirstSync is a first sync under way (SB-6004).
+	FirstSync *FirstProgress `json:"first_sync,omitempty"`
 }
 
 // ConnectorRunbook is the runbook whose sections fix each class of sync failure.
@@ -252,6 +282,9 @@ func Build(ctx context.Context, runs schedule.Runs, syncs Syncs, kinds []string,
 		}
 		c := Connector{Kind: k, LastSuccess: ptr(s.LastSuccess, found), LastFailure: ptr(s.LastFailure, found), Failures: s.Failures}
 		c.Stale = !found || s.LastSuccess.IsZero() || now.Sub(s.LastSuccess) > FreshnessSLA
+		if s.First != nil {
+			c.FirstSync = s.First.Progress(now)
+		}
 		if s.Failures > 0 {
 			c.Failure = ingest.KnownClass(s.Failure)
 			c.Fix = ConnectorRunbook + "#" + strings.ReplaceAll(c.Failure, "_", "-")

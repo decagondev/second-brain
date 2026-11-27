@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 
@@ -24,6 +25,9 @@ type MCP struct {
 		Searcher
 	}
 	Release string
+	// Clients are sb-cell(5) mcp_clients (SB-6006): with any, only a token made for one of
+	// them may use MCP.
+	Clients []string
 	// Memory is the person's own memory over MCP (SB-5505); nil offers none.
 	Memory MCPMemory
 	// Agents are the department agents the person may use now, each with its spaces by
@@ -152,6 +156,10 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 			rpc(w, req.ID, nil, &rpcErr{Code: -32001, Message: "EPERM: your groups aren't allowed to use MCP in this cell"})
 			return
 		}
+	}
+	if len(h.Clients) > 0 && !slices.Contains(h.Clients, tenancy.ToolOf(r.Context())) { // SB-6006
+		rpc(w, req.ID, nil, &rpcErr{Code: -32001, Message: "EPERM: this cell allows MCP only from the AI tools it names; make a token for one of them"})
+		return
 	}
 	r = r.WithContext(tenancy.WithClient(r.Context(), tenancy.ClientMCP)) // SB-5305: counted as MCP
 	switch req.Method {

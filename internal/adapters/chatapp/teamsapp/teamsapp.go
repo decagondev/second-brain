@@ -427,6 +427,13 @@ func (a *App) getJSON(ctx context.Context, u string, v any) error {
 	return json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(v)
 }
 
+// SigningKeys loads the Bot Framework's signing keys and says how many there are (sb prove,
+// SB-6001).
+func (a *App) SigningKeys(ctx context.Context) (int, error) {
+	k, err := a.fetchKeys(ctx)
+	return len(k), err
+}
+
 func (a *App) fetchKeys(ctx context.Context) (map[string]*rsa.PublicKey, error) {
 	oid := a.OpenID
 	if oid == "" {

@@ -149,6 +149,7 @@ export interface AskResponse {
   // Most cited documents stale, and connectors behind on syncing (SB-2701, SB-2704).
   notice_stale?: { stale: number; of: number; oldest_days: number };
   notice_sync?: { kind: string; last_success: string | null }[];
+  notice_indexing?: string[]; // SB-6004
   // Every cite is one document (SB-3005).
   notice_single?: boolean;
   // Passages kept out of the prompt because they read like instructions (SB-5101).

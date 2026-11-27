@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -54,7 +55,12 @@ type Client struct {
 type Error struct {
 	Status int
 	Code   string
+	// Wait is the Retry-After Graph sent with a 429 or 503, 0 for none (SB-6004).
+	Wait time.Duration
 }
+
+// RetryAfter implements ingest.RetryAfter: a first sync waits it out instead of failing.
+func (e *Error) RetryAfter() time.Duration { return e.Wait }
 
 func (e *Error) Error() string { return fmt.Sprintf("msgraph: HTTP %d %s", e.Status, e.Code) }
 
@@ -181,8 +187,16 @@ func (c *Client) rawWith(ctx context.Context, path, prefer string) ([]byte, erro
 		}
 		_ = json.Unmarshal(body, &e)
 		ge := &Error{Status: resp.StatusCode, Code: e.Error.Code}
-		if resp.StatusCode != http.StatusTooManyRequests || attempt >= 3 {
+		if secs, err := strconv.Atoi(strings.TrimSpace(resp.Header.Get("Retry-After"))); err == nil && secs > 0 {
+			ge.Wait = time.Duration(secs) * time.Second
+		}
+		// A short wait is taken here; a longer one goes back to the sync, which waits it out
+		// at its own pace (SB-6004).
+		if resp.StatusCode != http.StatusTooManyRequests || attempt >= 3 || ge.Wait > 2*time.Second {
 			return nil, ge
+		}
+		if ge.Wait > wait {
+			wait = ge.Wait
 		}
 		select {
 		case <-ctx.Done():

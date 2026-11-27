@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -50,6 +51,12 @@ func NewToken(rnd io.Reader, tenant, user, name string, days int, now time.Time)
 	return token, ports.Session{ID: TokenKey(token), Tenant: tenant, User: user, SignedIn: now, Validated: now,
 		Token: "tok_" + hex.EncodeToString(id), Name: name, Expires: now.AddDate(0, 0, days)}, nil
 }
+
+// clientRe is an AI tool's name on a token (SB-6006): a short lower-case word.
+var clientRe = regexp.MustCompile(`^[a-z][a-z0-9-]{1,29}$`)
+
+// ValidClient says whether name is an AI tool's name a token may carry.
+func ValidClient(name string) bool { return clientRe.MatchString(name) }
 
 // TokenKey is the store key of a token: its SHA-256.
 func TokenKey(token string) string {

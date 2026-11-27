@@ -327,6 +327,32 @@ func (c *Cell) syncLag(ctx context.Context, kinds []string) ([]ask.SyncNotice, e
 	return out, nil
 }
 
+// stillIndexing names the connectors space reads that are in their first sync (SB-6004):
+// a space reads the connectors its scope names; the company, and a space that names none,
+// read them all. An unreadable record says nothing: the notice only informs.
+func (c *Cell) stillIndexing(ctx context.Context, space string) []string {
+	kinds := make([]string, 0, len(c.Parts().Connectors))
+	for k := range c.Parts().Connectors {
+		kinds = append(kinds, k)
+	}
+	if sp, ok := c.Manifest().Spaces[strings.TrimPrefix(space, "spc_")]; ok && len(sp.Scope) > 0 {
+		kinds = kinds[:0]
+		for k := range sp.Scope {
+			if _, on := c.Parts().Connectors[k]; on {
+				kinds = append(kinds, k)
+			}
+		}
+	}
+	sort.Strings(kinds)
+	var out []string
+	for _, k := range kinds {
+		if st, found, err := c.Syncs.Sync(ctx, k); err == nil && found && st.First != nil {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
 // stewardDir is the directory reads a steward check needs.
 type stewardDir interface {
 	Members(ctx context.Context, tenant, name string) ([]string, error)

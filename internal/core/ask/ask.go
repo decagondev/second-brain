@@ -207,6 +207,9 @@ type Response struct {
 	// connector of a cite is behind on syncing (SB-2701, SB-2704).
 	NoticeStale *StaleNotice `json:"notice_stale,omitempty"`
 	NoticeSync  []SyncNotice `json:"notice_sync,omitempty"`
+	// NoticeIndexing names the connectors of the asked space still in their first sync
+	// (SB-6004): the answer may be missing what they haven't read yet.
+	NoticeIndexing []string `json:"notice_indexing,omitempty"`
 	// NoticeSingle says every cite of an answer with two or more cited claims is one
 	// document (SB-3005).
 	NoticeSingle bool `json:"notice_single,omitempty"`
@@ -304,8 +307,10 @@ type Trace struct {
 	CostUSD float64 `json:",omitempty"`
 	// Feature is what asked it, one of Features or eval (SB-5001); "" is an older ask.
 	Feature string `json:",omitempty"`
-	// Client is where the ask came from: web, chat, mcp or token (SB-5305).
+	// Client is where the ask came from: web, chat, mcp or token (SB-5305), and Tool the AI
+	// tool its token was made for (SB-6006), "" for none.
 	Client string `json:",omitempty"`
+	Tool   string `json:",omitempty"`
 	// Suspect are the cites of the answer's suspect passages, skipped or monitored
 	// (SB-5101): never their text.
 	Suspect []string `json:",omitempty"`
@@ -435,6 +440,9 @@ type Agent struct {
 	Marks MarkStore
 	// SyncLag names the connectors of an answer's cites that are behind (SB-2704); nil is none.
 	SyncLag SyncLag
+	// Indexing names the connectors a space (spc_NAME, or "" for the company) reads that
+	// are still in their first sync (SB-6004); nil is none.
+	Indexing func(ctx context.Context, space string) []string
 	// FileText reads an uploaded file's text by its name's extension, ok false for a type
 	// the folder connector doesn't read (SB-3802); nil reads no files.
 	FileText func(name string, b []byte) (string, bool)
@@ -633,6 +641,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	} else if err := a.answerFrom(ctx, s, req, q, dept, &tc, terms, trace, sent, rk, &res, &resp); err != nil {
 		return Response{}, err
 	}
+	if a.Indexing != nil {
+		resp.NoticeIndexing = a.Indexing(ctx, s.Space())
+	}
 	tier, tierWhy := tc.tier, tc.why
 
 	if keepsNothing(ctx) {
@@ -649,13 +660,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	inTok, cachedTok := tally.Tokens() // SB-5706
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx), Tool: tenancy.ToolOf(ctx)}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx),
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx), Tool: tenancy.ToolOf(ctx),
 		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop, Read: readSet(res.Context), Saved: tally.Saved()} // SB-5501, SB-5603, SB-5606
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err

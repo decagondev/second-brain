@@ -242,6 +242,9 @@ type Session struct {
 	Token   string    `json:",omitempty"`
 	Name    string    `json:",omitempty"`
 	Expires time.Time `json:",omitzero"`
+	// Client is the AI tool a token was made for, such as claude-code (SB-6006); "" for
+	// none.
+	Client string `json:",omitempty"`
 }
 
 // Sessions is a cell's own session store (SB-106).

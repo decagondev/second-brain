@@ -15,7 +15,7 @@ import { StartHere, WhatChanged, WhosWho } from "./Start";
 import { Goals, PoliciesToRead, Requests, TeamUpdates } from "./Company";
 import { CatchUp, ServiceCard, Trail, WaitsCard, markVisit } from "./Across";
 import { SharedRoutines, SkillHint } from "./Shape";
-import { MySessions, SignOutEverywhere } from "./Session";
+import { MyAITools, MySessions, SignOutEverywhere } from "./Session";
 import { LegworkView } from "./Legwork";
 import { HandoverView } from "./Handover";
 import { RememberBox } from "./Inbox";
@@ -646,6 +646,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
       </button>
       {showTokens && <ApiTokens fetcher={fetcher} />}
       <MySessions fetcher={fetcher} onSignedOut={forget} />
+      <MyAITools fetcher={fetcher} />
       <SignOutEverywhere fetcher={fetcher} onSignedOut={forget} />
     </main>
   );

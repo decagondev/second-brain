@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -111,6 +112,26 @@ func suspectMode(m manifest.Tenant) func(space string) string {
 
 // aiUsage is the AI command centre: 12 weeks of traces counted, with each space's budget and
 // this month's spend, each capped agent's spend and the personal limit's bands (SB-5001).
+// aiClients counts the AI tools that reach the brain (SB-6006): live tokens by tool, and
+// this month's asks from each tool's tokens.
+func (c *Cell) aiClients(ctx context.Context) ([]ask.AIClient, error) {
+	lt := c.tokenLister()
+	if lt == nil {
+		return nil, errors.New("wire: sessions can't be listed")
+	}
+	now := time.Now()
+	tokens, err := lt.ListTokens(ctx, c.Config.Tenant)
+	if err != nil {
+		return nil, err
+	}
+	from := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	traces, err := c.Report.Traces(ctx, c.Config.Tenant, from, now)
+	if err != nil {
+		return nil, err
+	}
+	return ask.BuildAIClients(tokens, traces, c.Config.Tenant, now), nil
+}
+
 func (c *Cell) aiUsage(ctx context.Context) (ask.AIUsage, error) {
 	now := time.Now()
 	from := ask.WeekStart(now).AddDate(0, 0, -7*(ask.UsageWeeks-1))

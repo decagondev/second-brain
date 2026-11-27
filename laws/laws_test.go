@@ -608,6 +608,10 @@ func TestLAW06_OnlyAGatedFallbackAnswers(t *testing.T) {
 	Check(t, "LAW-06", runs, func(r *rand.Rand) error { return law06Fallback(r, RealFallback) })
 }
 
+func TestLAW07_AProofHoldsNoContent(t *testing.T) {
+	Check(t, "LAW-07", 40, func(r *rand.Rand) error { return law07Proofs(r, RealProofMaker) })
+}
+
 func TestLAW07_KeptBatchesHoldNoPrompt(t *testing.T) {
 	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Batches(r, RealBatchGateway) })
 }

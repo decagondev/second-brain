@@ -594,6 +594,11 @@ function Freshness({ answer }: { answer: AskResponse }) {
               )}
         </p>
       ))}
+      {(answer.notice_indexing ?? []).map((k) => (
+        <p key={"indexing-" + k} className="notice" role="note">
+          {t("{kind} is still reading its documents for the first time; this answer may be missing some.", { kind: k })}
+        </p>
+      ))}
     </>
   );
 }

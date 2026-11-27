@@ -6,6 +6,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/audit"
@@ -22,14 +24,20 @@ type Tokens struct {
 	Sessions ports.Sessions
 	Audit    session.Auditor
 	Now      func() time.Time
+	// Clients are sb-cell(5) mcp_clients: the AI tools a token may be made for; empty is any
+	// (SB-6006). Families are the MCP tool families a person's groups grant; nil is every one.
+	Clients  []string
+	Families func(s tenancy.Scope) (map[string]bool, bool)
 }
 
 type tokenView struct {
-	ID      string    `json:"id"`
-	Name    string    `json:"name"`
-	Created time.Time `json:"created"`
-	Expires time.Time `json:"expires"`
-	Token   string    `json:"token,omitempty"` // once, when it is made
+	ID       string    `json:"id"`
+	Name     string    `json:"name"`
+	Client   string    `json:"client,omitempty"` // the AI tool it was made for (SB-6006)
+	Created  time.Time `json:"created"`
+	Expires  time.Time `json:"expires"`
+	LastUsed string    `json:"last_used,omitempty"`
+	Token    string    `json:"token,omitempty"` // once, when it is made
 }
 
 // Register mounts the endpoints.
@@ -37,6 +45,7 @@ func (h Tokens) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/tokens", h.make)
 	mux.HandleFunc("GET /v1/tokens", h.list)
 	mux.HandleFunc("DELETE /v1/tokens/{id}", h.revoke)
+	mux.HandleFunc("GET /v1/me/ai-tools", h.aiTools) // SB-6006
 	mux.HandleFunc("GET /v1/me/sessions", h.sessions)
 	mux.HandleFunc("DELETE /v1/me/sessions/{id}", h.signOut)
 }
@@ -48,8 +57,9 @@ func (h Tokens) make(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Name string `json:"name"`
-		Days int    `json:"days"`
+		Name   string `json:"name"`
+		Days   int    `json:"days"`
+		Client string `json:"client"`
 	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
 	if err != nil || len(body) > MaxBody || json.Unmarshal(body, &req) != nil {
@@ -64,6 +74,17 @@ func (h Tokens) make(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fail(w, errs.New(errs.EUNAVAIL, "The token wasn't made; try again."))
 		return
+	}
+	if req.Client != "" || len(h.Clients) > 0 { // SB-6006
+		if !session.ValidClient(req.Client) {
+			fail(w, errs.New(errs.EINVAL, "Name the AI tool the token is for: a short lower-case word, such as claude-code."))
+			return
+		}
+		if len(h.Clients) > 0 && !slices.Contains(h.Clients, req.Client) {
+			fail(w, errs.New(errs.EPERM, "This cell allows tokens only for these AI tools: %s.", strings.Join(h.Clients, ", ")))
+			return
+		}
+		x.Client = req.Client
 	}
 	// Audited first: a token nobody can account for is never made.
 	if _, err := h.Audit.Write(r.Context(), audit.Event{Actor: s.User(), Kind: "access", Subject: "token:" + x.Token, State: "token_created", Reason: x.Expires.Format(time.DateOnly)}); err != nil {
@@ -80,7 +101,39 @@ func (h Tokens) make(w http.ResponseWriter, r *http.Request) {
 }
 
 func view(x ports.Session) tokenView {
-	return tokenView{ID: x.Token, Name: x.Name, Created: x.SignedIn, Expires: x.Expires}
+	v := tokenView{ID: x.Token, Name: x.Name, Client: x.Client, Created: x.SignedIn, Expires: x.Expires}
+	if x.Validated.After(x.SignedIn) {
+		v.LastUsed = x.Validated.UTC().Format(time.DateOnly)
+	}
+	return v
+}
+
+// aiTools is GET /v1/me/ai-tools: the person's own tokens made for an AI tool, each with
+// its last use and the MCP families the person's groups grant (SB-6006). Revoke one with
+// DELETE /v1/tokens/{id}.
+func (h Tokens) aiTools(w http.ResponseWriter, r *http.Request) {
+	s, toks, e := h.mine(r)
+	if e != nil {
+		fail(w, e)
+		return
+	}
+	families := []string{}
+	if h.Families == nil {
+		families = append(families, MCPFamilies...)
+	} else if fs, ok := h.Families(s); ok {
+		for _, f := range MCPFamilies {
+			if fs[f] {
+				families = append(families, f)
+			}
+		}
+	}
+	items := []tokenView{}
+	for _, x := range toks {
+		if x.Client != "" {
+			items = append(items, view(x))
+		}
+	}
+	writeJSON(w, map[string]any{"items": items, "families": families})
 }
 
 func (h Tokens) mine(r *http.Request) (tenancy.Scope, []ports.Session, *errs.Error) {

@@ -119,7 +119,10 @@ func (x indexReports) Prune(ctx context.Context, actor, reason string) (int, err
 func (c *Cell) IngestPipeline(kind string, now func() time.Time) ingest.Pipeline {
 	m := c.Metrics
 	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Parts().Connectors[kind], Embedder: c.Parts().Agent.Embedder,
-		Index: c.Index, Kind: kind, Now: now,
+		Index: c.Index, Kind: kind, Now: now, Pace: &ingest.Pace{PerMinute: c.Config.Sync.MaxPerMinute},
+		Throttled: func(k string) {
+			m.Add("sb_ingest_throttled_total", "Waits for a source's 429 during a sync (SB-6004).", map[string]string{"connector": k}, 1)
+		},
 		Spaces: func(ctx context.Context) ([]ports.Space, error) { return c.Spaces.Spaces(ctx, c.Config.Tenant) },
 		SecretDropped: func(k, pattern string) {
 			m.Add("sb_ingest_secrets_dropped_total", "Chunks dropped for holding a secret (SB-1103).", map[string]string{"connector": k, "pattern": pattern}, 1)

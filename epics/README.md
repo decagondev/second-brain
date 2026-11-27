@@ -63,7 +63,7 @@ summary: Epics, waves, slices and tickets.
 | W56 Right Model, Right Place | 6 | 0 | 0 | Planned 2026-11-27 with the user (E57), built: collect batches later, OpenAI batches, people first when the provider is busy, think harder only when it helps, keep model calls in region, cache hits you can see ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W57 Carry the Conversation | 7 | 0 | 0 | Planned 2026-11-27 with the user (E58), built: follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W58 Reach Microsoft 365 | 6 | 1 | 0 | Planned 2026-11-27 with the user (E59), built: SharePoint and OneDrive, Purview labels, Entra groups and people, ask in Teams, Outlook calendar for meeting prep, Teams meeting transcripts, start on a new email. In review: SB-5901 (a real tenant) ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
-| W59 Proven for Real | 0 | 0 | 6 | Planned 2026-11-27 with the user (E60): prove it on the real thing, fakes refreshed from a real sandbox, check the Microsoft 365 setup, a big tenant's first sync, reactions and direct questions in Mattermost, the AI tools that reach the brain ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
+| W59 Proven for Real | 6 | 0 | 0 | Planned 2026-11-27 with the user (E60), built: prove it on the real thing, fakes refreshed from a real sandbox, check the Microsoft 365 setup, a big tenant's first sync, reactions and direct questions in Mattermost, the AI tools that reach the brain ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | W60 Every Format, Every Language | 0 | 0 | 7 | Planned 2026-11-27 with the user (E61): read scans and images, recordings become transcripts, ask in one language, find another, a glossary in every language, translate a cited passage, Spanish, Italian and Dutch, usable by everyone ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | W61 Reach Confluence and Jira | 0 | 0 | 7 | Planned 2026-11-27 with the user (E62): Confluence, Atlassian groups and people, check the Atlassian setup, Jira, Jira as work events, start on a service request, draft a Jira issue ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -1050,12 +1050,12 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-6001](E60-proven-for-real/SB-6001-prove-it.md) | S59.1 | E60 | Prove it on the real thing | Open |
-| [SB-6002](E60-proven-for-real/SB-6002-fakes-from-sandbox.md) | S59.1 | E60 | Fakes refreshed from a real sandbox | Open |
-| [SB-6003](E60-proven-for-real/SB-6003-check-microsoft.md) | S59.1 | E60 | Check the Microsoft 365 setup | Open |
-| [SB-6004](E60-proven-for-real/SB-6004-big-first-sync.md) | S59.2 | E60 | A big tenant's first sync | Open |
-| [SB-6005](E60-proven-for-real/SB-6005-mattermost-websocket.md) | S59.2 | E60 | Reactions and direct questions in Mattermost | Open |
-| [SB-6006](E60-proven-for-real/SB-6006-ai-tools.md) | S59.2 | E60 | The AI tools that reach the brain | Open |
+| [SB-6001](E60-proven-for-real/SB-6001-prove-it.md) | S59.1 | E60 | Prove it on the real thing | Done |
+| [SB-6002](E60-proven-for-real/SB-6002-fakes-from-sandbox.md) | S59.1 | E60 | Fakes refreshed from a real sandbox | Done |
+| [SB-6003](E60-proven-for-real/SB-6003-check-microsoft.md) | S59.1 | E60 | Check the Microsoft 365 setup | Done |
+| [SB-6004](E60-proven-for-real/SB-6004-big-first-sync.md) | S59.2 | E60 | A big tenant's first sync | Done |
+| [SB-6005](E60-proven-for-real/SB-6005-mattermost-websocket.md) | S59.2 | E60 | Reactions and direct questions in Mattermost | Done |
+| [SB-6006](E60-proven-for-real/SB-6006-ai-tools.md) | S59.2 | E60 | The AI tools that reach the brain | Done |
 
 ### W60 Every Format, Every Language
 

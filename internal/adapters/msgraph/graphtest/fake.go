@@ -70,6 +70,9 @@ type Fake struct {
 	Meetings map[string][]*Meeting       // organizer user id -> meetings
 	Events   map[string][]Event          // email -> events
 	Boxes    map[string][]Message        // mailbox -> messages
+	// Granted are the app registration's application permissions, by value, and Labels the
+	// tenant's sensitivity label ids (sb selfhost check-microsoft, SB-6003).
+	Granted, Labels []string
 	// Calls are the paths asked for, in order.
 	Calls []string
 }
@@ -191,6 +194,12 @@ var routes = []route{
 	{regexp.MustCompile(`^/users/([^/]+)/onlineMeetings/([^/]+)/transcripts/([^/]+)/content$`), (*Fake).transcript},
 	{regexp.MustCompile(`^/users/([^/]+)/mailFolders/inbox/messages/delta$`), (*Fake).mail},
 	{regexp.MustCompile(`^/users/([^/]+)/messages/([^/]+)/attachments$`), (*Fake).attachments},
+	{regexp.MustCompile(`^/users/([^/]+)/mailFolders/inbox/messages$`), (*Fake).inbox},
+	{regexp.MustCompile(`^/drives/([^/]+)/root$`), (*Fake).root},
+	{regexp.MustCompile(`^/servicePrincipals\(appId='([^']+)'\)$`), (*Fake).principal},
+	{regexp.MustCompile(`^/servicePrincipals/([^/]+)/appRoleAssignments$`), (*Fake).assignments},
+	{regexp.MustCompile(`^/servicePrincipals/([^/]+)$`), (*Fake).resource},
+	{regexp.MustCompile(`^/security/informationProtection/(sensitivityLabels)$`), (*Fake).labels},
 	{regexp.MustCompile(`^/users/([^/]+)$`), (*Fake).user},
 }
 
@@ -468,4 +477,75 @@ func (f *Fake) attachments(w http.ResponseWriter, _ *http.Request, m []string) {
 		return
 	}
 	notFound(w)
+}
+
+// Seeded is a fake with one drive (d1) of two items, a group, a person with a manager and
+// a shared mailbox: what the recording script reads (SB-6002).
+func Seeded() *Fake {
+	f := New()
+	f.Mails["g-fin"] = "finance@acme.example"
+	f.Groups["g-fin"] = []string{"sam@acme.example"}
+	f.Users["u-sam"] = "sam@acme.example"
+	f.Managers["sam@acme.example"] = "ann@acme.example"
+	f.Put("d1", Item{ID: "close", Name: "close.md", Path: "/Finance", Owner: "ann@acme.example", Label: "lbl-conf",
+		Content: []byte("The close moves to Tuesday."), Groups: []string{"g-fin"}, Links: []string{"organization"}})
+	f.Put("d1", Item{ID: "plan", Name: "plan.md", Path: "/Finance", Content: []byte("A plan."), Users: []string{"sam@acme.example"}})
+	f.Boxes["support@acme.example"] = []Message{{ID: "m1", From: "a@client.example", Subject: "invoice", Body: "please"}}
+	return f
+}
+
+func (f *Fake) inbox(w http.ResponseWriter, _ *http.Request, m []string) {
+	if _, ok := f.Boxes[strings.ToLower(m[0])]; !ok {
+		http.Error(w, `{"error":{"code":"ErrorAccessDenied"}}`, http.StatusForbidden)
+		return
+	}
+	writeJSON(w, map[string]any{"value": []any{}})
+}
+
+func (f *Fake) root(w http.ResponseWriter, _ *http.Request, m []string) {
+	if _, ok := f.Drives[m[0]]; !ok {
+		notFound(w)
+		return
+	}
+	writeJSON(w, map[string]any{"id": "root-" + m[0], "root": map[string]any{}})
+}
+
+func (f *Fake) principal(w http.ResponseWriter, _ *http.Request, m []string) {
+	if m[0] != "app-1" {
+		notFound(w)
+		return
+	}
+	writeJSON(w, map[string]any{"id": "sp-app", "appId": m[0]})
+}
+
+func (f *Fake) assignments(w http.ResponseWriter, _ *http.Request, m []string) {
+	if m[0] != "sp-app" {
+		notFound(w)
+		return
+	}
+	var vals []map[string]any
+	for _, g := range f.Granted {
+		vals = append(vals, map[string]any{"appRoleId": "role-" + g, "resourceId": "sp-graph"})
+	}
+	writeJSON(w, map[string]any{"value": vals})
+}
+
+func (f *Fake) resource(w http.ResponseWriter, _ *http.Request, m []string) {
+	if m[0] != "sp-graph" {
+		notFound(w)
+		return
+	}
+	var roles []map[string]any
+	for _, g := range f.Granted {
+		roles = append(roles, map[string]any{"id": "role-" + g, "value": g})
+	}
+	writeJSON(w, map[string]any{"id": m[0], "appRoles": roles})
+}
+
+func (f *Fake) labels(w http.ResponseWriter, _ *http.Request, _ []string) {
+	var vals []map[string]any
+	for _, l := range f.Labels {
+		vals = append(vals, map[string]any{"id": l, "name": "label " + l})
+	}
+	writeJSON(w, map[string]any{"value": vals})
 }

@@ -136,6 +136,10 @@ type Pipeline struct {
 	// Now stamps when the index first saw a version (Chunk.Seen, SB-1701); nil leaves it
 	// unknown. Re-ingesting the same version keeps the first time (the index does that).
 	Now func() time.Time
+	// Pace spaces reads to sb-cell(5) sync.max_per_minute (SB-6004); nil is unpaced. A 429
+	// is waited out either way, and Throttled counts each wait by kind (nil counts nothing).
+	Pace      *Pace
+	Throttled func(kind string)
 
 	// During a rebuild: each version's first-seen time from before the drop, and whether
 	// versions it doesn't know are marked rebuilt (SB-1708).
@@ -326,6 +330,10 @@ func Title(source, text string) string {
 // Sync handles every change after cursor (the last change per document wins) and
 // returns the next cursor. A failure returns the old cursor, so a retry loses nothing.
 func (p Pipeline) Sync(ctx context.Context, cursor ports.Cursor) (ports.Cursor, error) {
+	return p.sync(ctx, cursor, 0, nil)
+}
+
+func (p Pipeline) sync(ctx context.Context, cursor ports.Cursor, skip int, progress Progress) (ports.Cursor, error) {
 	if err := p.Reroute(ctx); err != nil {
 		return cursor, err
 	}
@@ -347,7 +355,24 @@ func (p Pipeline) Sync(ctx context.Context, cursor ports.Cursor) (ports.Cursor, 
 		}
 		latest[k] = last{ch: ch, force: l.force || ch.ACLOnly}
 	}
-	for _, k := range order {
+	report := func(done int) error {
+		if progress == nil {
+			return nil
+		}
+		return progress(ctx, Checkpoint{Done: done, Total: len(order)})
+	}
+	if err := report(min(skip, len(order))); err != nil {
+		return cursor, err
+	}
+	for i, k := range order {
+		if i < skip {
+			continue
+		}
+		if i > skip && i%CheckpointEvery == 0 {
+			if err := report(i); err != nil {
+				return cursor, err
+			}
+		}
 		l := latest[k]
 		if l.ch.Deleted {
 			if err := p.Index.Delete(ctx, p.Tenant, l.ch.Ref); err != nil {
@@ -355,9 +380,12 @@ func (p Pipeline) Sync(ctx context.Context, cursor ports.Cursor) (ports.Cursor, 
 			}
 			continue
 		}
-		if err := p.Ingest(ctx, l.ch.Ref, l.force); err != nil {
+		if err := p.patient(ctx, l.ch.Ref, l.force); err != nil {
 			return cursor, err
 		}
+	}
+	if err := report(len(order)); err != nil {
+		return cursor, err
 	}
 	return next, nil
 }

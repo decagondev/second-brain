@@ -93,6 +93,10 @@ The health report's `model` is the main tier's fallback state: whether the fallb
 
 `sb_model_batched_total{tenant, provider}` counts calls a batch API answered. Savings by why (reuse, batching, caching, the economy tier) are in each trace and summed at `GET /v1/admin/costs/saved` and in the admin's week (sb-runtime(7), Spending less).
 
+### Syncs and the chat's websocket (SB-6004, SB-6005)
+
+`sb_ingest_throttled_total{connector}` counts the waits a sync made for a source's 429 (sb-ingest(7), First syncs), and `sb_chat_websocket_connects_total` the connections the Mattermost bot's websocket made: a count rising every minute is a connection that keeps dropping. Health shows a first sync's progress as `first_sync` (sb-admin(3)).
+
 ### Telemetry labels
 
 Metric label values are ids, codes and names only: they must match `[A-Za-z0-9_.:@/-]` and be at most 128 characters. A value that doesn't match is **replaced** with `invalid` and counted in `sb_telemetry_rejected_total`, so a bug that tries to put text into a label can't leak it (LAW-07).

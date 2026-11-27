@@ -84,17 +84,29 @@ func (a *App) reactChoice(user, action, value, responseURL string) {
 // askThread asks ThreadQuestion as user in the channel's space, the thread as a file read for
 // this ask alone (SB-3802).
 func (a *App) askThread(ctx context.Context, user, channel string, read func(ctx context.Context) ([]RawMessage, error)) Message {
+	var out Message
+	text := a.AskThread(ctx, user, channel, read, func(q string, r ask.Response) string { out = Render(q, r); return out.Text })
+	if out.Text == "" {
+		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: text}
+	}
+	return out
+}
+
+// AskThread asks ThreadQuestion as user in channel's space, the thread read as a file for
+// this ask alone, and returns the answer rendered by render, or the message saying why not
+// (Mattermost's react to save too, SB-6005).
+func (a *App) AskThread(ctx context.Context, user, channel string, read func(ctx context.Context) ([]RawMessage, error), render func(q string, r ask.Response) string) string {
 	s, err := a.Scope(ctx, user)
 	if err != nil {
-		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: MsgNoMatch}
+		return MsgNoMatch
 	}
 	s, msg := a.InSpace(ctx, s, channel)
 	if msg != "" {
-		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: msg}
+		return msg
 	}
 	raw, err := read(ctx)
 	if err != nil || len(raw) == 0 {
-		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: MsgSaveFail}
+		return MsgSaveFail
 	}
 	var b strings.Builder
 	for i, m := range raw {
@@ -106,9 +118,9 @@ func (a *App) askThread(ctx context.Context, user, channel string, read func(ctx
 	resp, err := a.Agent.Ask(tenancy.WithClient(ctx, tenancy.ClientChat), s, ask.Request{Question: ThreadQuestion, Language: a.AnswerLanguage(),
 		File: &ask.FileUpload{Name: "thread.txt", Data: []byte(b.String())}})
 	if err != nil {
-		return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: ErrText(err)}
+		return ErrText(err)
 	}
-	return Render(ThreadQuestion, resp)
+	return render(ThreadQuestion, resp)
 }
 
 var _ BlockReplier = DM{}

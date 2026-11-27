@@ -101,6 +101,21 @@ func (h Admin) agentValue(w http.ResponseWriter, r *http.Request, _ tenancy.Scop
 	h.ok(w, v)
 }
 
+// aiClients is GET /v1/admin/ai/clients: per AI tool, its live tokens, people and this
+// month's asks, never who (SB-6006).
+func (h Admin) aiClients(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.AIClients == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "AI tools can't be counted in this cell."))
+		return
+	}
+	cs, err := h.AIClients(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "AI tools can't be counted right now."))
+		return
+	}
+	h.ok(w, map[string]any{"items": cs})
+}
+
 // aiUsage is GET /v1/admin/ai/usage[?format=csv]: the AI command centre (SB-5001).
 func (h Admin) aiUsage(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
 	if h.AIUsage == nil {

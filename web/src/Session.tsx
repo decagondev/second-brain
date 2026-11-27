@@ -118,6 +118,64 @@ export function MySessions({ fetcher = fetch, onSignedOut }: { fetcher?: Fetch; 
   );
 }
 
+type AITool = { id: string; name: string; client: string; last_used?: string; expires: string };
+
+// AI tools that reach the brain for me (sb-api(3), AI tools; SB-6006): each tool's token,
+// when it was last used, what it may reach, and Revoke.
+export function MyAITools({ fetcher = fetch }: { fetcher?: Fetch }) {
+  const [items, setItems] = useState<AITool[]>();
+  const [families, setFamilies] = useState<string[]>([]);
+  const [status, setStatus] = useState("");
+  async function load() {
+    try {
+      const res = await fetcher("/v1/me/ai-tools", { credentials: "same-origin" });
+      if (!res.ok) throw new Error(String(res.status));
+      const d = (await res.json()) as { items?: AITool[]; families?: string[] };
+      setItems(Array.isArray(d.items) ? d.items : []);
+      setFamilies(Array.isArray(d.families) ? d.families : []);
+    } catch {
+      setStatus(t("Your AI tools can't be read right now."));
+    }
+  }
+  async function revoke(x: AITool) {
+    try {
+      const res = await fetcher(`/v1/tokens/${encodeURIComponent(x.id)}`, { method: "DELETE", credentials: "same-origin" });
+      if (!res.ok) throw new Error(String(res.status));
+      setItems((xs) => (xs ?? []).filter((y) => y.id !== x.id));
+      setStatus(t("Revoked."));
+    } catch {
+      setStatus(t("That tool wasn't revoked. Try again."));
+    }
+  }
+  return (
+    <details
+      className="session"
+      onToggle={(e) => {
+        if ((e.target as HTMLDetailsElement).open && !items) void load();
+      }}
+    >
+      <summary>{t("AI tools that reach the brain for me")}</summary>
+      {items && items.length === 0 && <p>{t("No AI tools.")}</p>}
+      {items && items.length > 0 && (
+        <>
+          <p className="meta">{t("They may use: {families}", { families: families.join(", ") })}</p>
+          <ul>
+            {items.map((x) => (
+              <li key={x.id}>
+                {x.client} <span className="meta">· {x.name} · {x.last_used ? t("last used {date}", { date: x.last_used }) : t("never used")}</span>{" "}
+                <button type="button" aria-label={t("Revoke: {what}", { what: x.client })} onClick={() => revoke(x)}>
+                  {t("Revoke")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {status && <p role="status">{status}</p>}
+    </details>
+  );
+}
+
 // What the brain keeps about me and Forget my questions (sb-ask(3), Your own data;
 // SB-3501, SB-3502).
 export function MyData({ fetcher = fetch }: { fetcher?: Fetch }) {
