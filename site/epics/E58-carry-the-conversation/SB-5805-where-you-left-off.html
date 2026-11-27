@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,21 @@
 <p>Unfinished work is found only by opening the inbox.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A new web conversation and the first DM of the day start with up to 3 open things from the last 14 days: a question waiting on a steward, a research plan to approve, a confirmed action not done, an overdue wait</li>
-<li class="task"><span class="box"></span>Each opens where it is; everything comes from existing stores; <strong>Not now</strong> hides it for the day</li>
-<li class="task"><span class="box"></span>An item the person can no longer open isn't shown</li>
+<li class="task done"><span class="box">✓</span>A new web conversation and the first DM of the day start with up to 3 open things from the last 14 days: a question waiting on a steward, a research plan to approve, a confirmed action not done, an overdue wait</li>
+<li class="task done"><span class="box">✓</span>Each opens where it is; everything comes from existing stores; <strong>Not now</strong> hides it for the day</li>
+<li class="task done"><span class="box">✓</span>An item the person can no longer open isn't shown</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Open things from existing stores</li>
-<li class="task"><span class="box"></span>Web and chat-app lines</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Open things from existing stores</li>
+<li class="task done"><span class="box">✓</span>Web and chat-app lines</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
-<p>Not started.</p>
+<p>2026-11-27: built. <code>Legwork.LeftOff</code> at <code>GET /v1/me/left-off</code>: up to 3 of the caller's own open things from 14 days (a question waiting on a steward, a research plan or checkpoint, a confirmed action not done whose transcript they can open, an overdue wait they set in a space they're in), from the existing stores, overdue first. The web's <code>LeftOff</code> above the ask box of a new conversation, with <strong>Not now</strong> for the day in the browser; Slack direct messages to the bot are now answered there, and the first of the day starts with the same lines. Tested in TestCarryTheConversationThroughARunningCell, TestDirectMessageStartsWhereYouLeftOff and the web's carry test.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E58-carry-the-conversation/SB-5805-where-you-left-off.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

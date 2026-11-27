@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,21 @@
 <p>A conversation started in a chat app can't be continued on the web.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A chat-app conversation shows in the person's Recent on the web with <strong>Continue here</strong>, from the traces they own</li>
-<li class="task"><span class="box"></span>Each answer is checked again as them now; one they can no longer open every cite of shows as "no longer available to you"</li>
-<li class="task"><span class="box"></span>Nobody else sees it</li>
+<li class="task done"><span class="box">✓</span>A chat-app conversation shows in the person's Recent on the web with <strong>Continue here</strong>, from the traces they own</li>
+<li class="task done"><span class="box">✓</span>Each answer is checked again as them now; one they can no longer open every cite of shows as "no longer available to you"</li>
+<li class="task done"><span class="box">✓</span>Nobody else sees it</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Conversations from traces</li>
-<li class="task"><span class="box"></span>Web Recent and Continue here</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Conversations from traces</li>
+<li class="task done"><span class="box">✓</span>Web Recent and Continue here</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
-<p>Not started.</p>
+<p>2026-11-27: built. <code>Agent.ListConversations</code> lists the caller's own conversations from their traces (<code>Agent.TracesOf</code>) and conversation records, always those started in a chat app; <code>Agent.OpenConversation</code> shows each turn checked again as them now (<code>turnAs</code>), one with a cite they can't open now <code>unavailable</code>. <code>GET /v1/me/conversations[/{id}]</code>; the web's <strong>Your conversations</strong> under Recent, fetched only when opened, with <strong>Continue here</strong>. Tested in TestYourConversations, TestCarryTheConversationThroughARunningCell and the web's carry test.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E58-carry-the-conversation/SB-5802-continue-on-the-web.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

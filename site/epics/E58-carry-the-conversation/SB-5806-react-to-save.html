@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,21 @@
 <p>A useful chat thread is saved for stewards only by a command few people know.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>sb-cell(5) <code>chat.save_reaction</code> (default <code>brain</code>); adding it to a thread sends the person one DM offering <strong>Save for the stewards</strong> or <strong>Ask about this thread</strong></li>
-<li class="task"><span class="box"></span>Nothing is read beyond the reaction until they choose; the thread's text is data</li>
-<li class="task"><span class="box"></span>A thread in a channel the app isn't in is never read</li>
+<li class="task done"><span class="box">✓</span>sb-cell(5) <code>chat.save_reaction</code> (default <code>brain</code>); adding it to a thread sends the person one DM offering <strong>Save for the stewards</strong> or <strong>Ask about this thread</strong></li>
+<li class="task done"><span class="box">✓</span>Nothing is read beyond the reaction until they choose; the thread's text is data</li>
+<li class="task done"><span class="box">✓</span>A thread in a channel the app isn't in is never read</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Reaction events in <code>slackapp</code> and <code>mmapp</code></li>
-<li class="task"><span class="box"></span>DM with two actions</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Reaction events in <code>slackapp</code> and <code>mmapp</code></li>
+<li class="task done"><span class="box">✓</span>DM with two actions</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
-<p>Not started.</p>
+<p>2026-11-27: built for Slack. sb-cell(5) <code>chat.save_reaction</code> (default <code>brain</code>): a <code>reaction_added</code> in a channel the bot is in sends one direct message with <strong>Save for the stewards</strong> and <strong>Ask about this thread</strong> (<code>DM.DirectBlocks</code>); nothing else is read until a press, which saves the thread as <em>Save to the brain</em> does or asks about it with the thread as a file read for that ask alone (data, LAW-09), as the person in the channel's space. Mattermost sends no reaction events to an outgoing webhook, so there <code>/brain save LINK</code> stays the way to save a thread; recorded in sb-ask(3). Tested in TestReactToSave.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E58-carry-the-conversation/SB-5806-react-to-save.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

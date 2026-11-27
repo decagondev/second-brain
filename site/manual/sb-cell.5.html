@@ -219,6 +219,12 @@
 <td>Overrides for one connector: <code>base</code> (the vendor API's address, for a sandbox or a recorded fake). For <code>docs: folder</code> it is required and names the directory, <code>file:///DIR</code>; the connector keeps its listings under <code>state/connectors/KIND/</code> (sb-connector(3), SB-1606)</td>
 </tr>
 <tr>
+<td><code>chat.save_reaction</code></td>
+<td>string</td>
+<td>no</td>
+<td>(SB-5806) The reaction that offers to save a thread or ask about it, in a direct message to whoever added it (sb-ask(3), The chat app (Slack)); default <code>brain</code></td>
+</tr>
+<tr>
 <td><code>chat.team_id</code></td>
 <td>string</td>
 <td>when <code>chat: slack</code></td>
