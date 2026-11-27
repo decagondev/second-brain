@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-57 epics, 157 user stories and 431 tickets across 56 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+60 epics, 163 user stories and 451 tickets across 59 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -60,6 +60,9 @@ summary: Epics, waves, slices and tickets.
 | W53 Know Who Can See | 7 | 0 | 0 | Planned 2026-11-26 with the user (E54), built: shared too widely, hold until the owner confirms, sharing widened, who can see this, labels travel, how far each agent reaches, sensitive map ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W54 See and Steer the Context | 7 | 0 | 0 | Planned 2026-11-26 with the user (E55), built: context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W55 Keep Answering, Spend Less | 6 | 0 | 0 | Planned 2026-11-26 with the user (E56), built: fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
+| W56 Right Model, Right Place | 0 | 0 | 6 | Planned 2026-11-27 with the user (E57): collect batches later, openAI batches, people first when the provider is busy, think harder only when it helps, keep model calls in region, cache hits you can see ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
+| W57 Carry the Conversation | 0 | 0 | 7 | Planned 2026-11-27 with the user (E58): follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
+| W58 Reach Microsoft 365 | 0 | 0 | 7 | Planned 2026-11-27 with the user (E59): sharePoint and OneDrive, purview labels, entra groups and people, ask in Teams, outlook calendar for meeting prep, teams meeting transcripts, start on a new email ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -205,6 +208,12 @@ flowchart LR
   E53 --> E54
   E54 --> E55
   E55 --> E56
+  E57["E57 Right Model, Right Place"]
+  E58["E58 Carry the Conversation"]
+  E59["E59 Reach Microsoft 365"]
+  E56 --> E57
+  E57 --> E58
+  E58 --> E59
 ```
 
 ## Epics
@@ -268,6 +277,9 @@ flowchart LR
 | [E54 Know Who Can See](E54-know-who-can-see/README.md) | A document shared too widely is noticed and held back before the brain spreads it, its label goes wherever its content goes, and everyone can see how far each agent reaches. | W53 | 7 |
 | [E55 See and Steer the Context](E55-see-and-steer-context/README.md) | A person sees what each answer was built from, can change it, and can find out why something they expected wasn't used. | W54 | 7 |
 | [E56 Keep Answering, Spend Less](E56-keep-answering-spend-less/README.md) | A provider failing doesn't stop the brain, and the same quality costs less. | W55 | 6 |
+| [E57 Right Model, Right Place](E57-right-model-right-place/README.md) | Every call goes to the cheapest gated model that fits it, in the region the company allows, people come first when a provider is busy, and work that can wait is batched on every provider without holding a run open. | W56 | 6 |
+| [E58 Carry the Conversation](E58-carry-the-conversation/README.md) | A conversation follows a person from a chat thread to the web, to their other devices and to a colleague, and work they left unfinished finds them again. | W57 | 7 |
+| [E59 Reach Microsoft 365](E59-reach-microsoft-365/README.md) | A company on Microsoft 365 gets the same brain as one on Google Workspace: documents with their sensitivity labels, groups behind every check, Teams as a place to ask, and calendars, transcripts and shared mailboxes feeding the same agents. | W58 | 7 |
 
 ## All tickets by wave
 
@@ -986,3 +998,38 @@ flowchart LR
 | [SB-5604](E56-keep-answering-spend-less/SB-5604-batch-what-can-wait.md) | S55.2 | E56 | Batch what can wait | Done |
 | [SB-5605](E56-keep-answering-spend-less/SB-5605-prompt-caching.md) | S55.2 | E56 | Cache the stable part | Done |
 | [SB-5606](E56-keep-answering-spend-less/SB-5606-what-it-saved.md) | S55.2 | E56 | What it saved | Done |
+
+### W56 Right Model, Right Place
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5701](E57-right-model-right-place/SB-5701-collect-batches-later.md) | S56.1 | E57 | Collect batches later | Open |
+| [SB-5702](E57-right-model-right-place/SB-5702-openai-batches.md) | S56.1 | E57 | OpenAI batches | Open |
+| [SB-5703](E57-right-model-right-place/SB-5703-people-first-when-busy.md) | S56.1 | E57 | People first when the provider is busy | Open |
+| [SB-5704](E57-right-model-right-place/SB-5704-think-harder.md) | S56.2 | E57 | Think harder only when it helps | Open |
+| [SB-5705](E57-right-model-right-place/SB-5705-keep-calls-in-region.md) | S56.2 | E57 | Keep model calls in region | Open |
+| [SB-5706](E57-right-model-right-place/SB-5706-cache-hits.md) | S56.2 | E57 | Cache hits you can see | Open |
+
+### W57 Carry the Conversation
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5801](E58-carry-the-conversation/SB-5801-follow-up-in-thread.md) | S57.1 | E58 | Follow up in the thread | Open |
+| [SB-5802](E58-carry-the-conversation/SB-5802-continue-on-the-web.md) | S57.1 | E58 | Continue on the web | Open |
+| [SB-5803](E58-carry-the-conversation/SB-5803-every-device.md) | S57.1 | E58 | Your conversations on every device | Open |
+| [SB-5804](E58-carry-the-conversation/SB-5804-share-a-conversation.md) | S57.1 | E58 | Share a conversation | Open |
+| [SB-5805](E58-carry-the-conversation/SB-5805-where-you-left-off.md) | S57.2 | E58 | Where you left off | Open |
+| [SB-5806](E58-carry-the-conversation/SB-5806-react-to-save.md) | S57.2 | E58 | React to save | Open |
+| [SB-5807](E58-carry-the-conversation/SB-5807-skills-over-mcp.md) | S57.2 | E58 | Skills over MCP | Open |
+
+### W58 Reach Microsoft 365
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-5901](E59-reach-microsoft-365/SB-5901-sharepoint-onedrive.md) | S58.1 | E59 | SharePoint and OneDrive | Open |
+| [SB-5902](E59-reach-microsoft-365/SB-5902-purview-labels.md) | S58.1 | E59 | Purview labels | Open |
+| [SB-5903](E59-reach-microsoft-365/SB-5903-entra.md) | S58.1 | E59 | Entra groups and people | Open |
+| [SB-5904](E59-reach-microsoft-365/SB-5904-ask-in-teams.md) | S58.2 | E59 | Ask in Teams | Open |
+| [SB-5905](E59-reach-microsoft-365/SB-5905-outlook-calendar.md) | S58.2 | E59 | Outlook calendar for meeting prep | Open |
+| [SB-5906](E59-reach-microsoft-365/SB-5906-teams-transcripts.md) | S58.2 | E59 | Teams meeting transcripts | Open |
+| [SB-5907](E59-reach-microsoft-365/SB-5907-start-on-email.md) | S58.2 | E59 | Start on a new email | Open |
