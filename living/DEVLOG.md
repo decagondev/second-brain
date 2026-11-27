@@ -7,6 +7,30 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 S56.2: The right model
+
+**Wave/slice:** W56 / S56.2 (SB-5704 to SB-5706) · **Status:** Done
+
+**What:** A deep tier (sb-cell(5) `model.deep`, a deeper model or a higher reasoning effort) writes research syntheses, answers with a table, consultations and one retry of a mostly uncited answer, only while the evals job has gated it and never in an economy space; the trace says why. sb-cell(5) `model.region` keeps every model call in one region: a provider of another region or none is refused before the call leaves, so the fallback is never called out of region and an ask shows passages (LAW-33, new). Operators see the share of input read from the prompt cache by space and agent at `GET /v1/admin/costs/cache`, with the prefix parts that changed between asks for the ones under a tenth.
+
+**Why this way:** The deep tier is one more gateway built like the small one, so budgets, batches, regions and the busy queue apply to it unchanged, and the gate is a file the evals job writes per release like the fallback's. The region check sits in the gateway, after the secret check and before the budget, because that is the one place every tier, the fallback and batch submissions pass through. For cache hits the trace keeps a short hash of each prefix part rather than the parts, which is enough to say which part moved and can't leak a prompt.
+
+**Learned:** The ask chose its tier before retrieval and never revisited it; the deep tier needs what retrieval finds (a table) and what composing produced (uncited claims), so the choice now travels with the answer as it is built.
+
+**Laws:** LAW-03, LAW-06, LAW-07, LAW-11, LAW-14, LAW-33 (new: TestLAW33_AModelCallStaysInItsRegion). Every law test is green except LAW-23, as before.
+
+## 2026-11-27 S56.1: Batches and busy providers
+
+**Wave/slice:** W56 / S56.1 (SB-5701 to SB-5703) · **Status:** Done
+
+**What:** A scheduled brief, update, leader's week, routine or rhythm step no longer waits for its batch: the call is submitted on one notify tick, the batch is kept in `state/batches` without its prompt, and a later tick runs the step again and collects it, or, past 06:00 on the next working morning, cancels it and runs the call normally. OpenAI-compatible providers batch through OpenAI's file-based Batch API when sb-cell(5) `model.batch` says so, and the files are deleted once collected. When a provider rate-limits, calls take turns: asks first, spaces in turn, scheduled steps sent to the next tick, and an ask that would wait more than 20 seconds gets passages that say the model is busy.
+
+**Why this way:** A step that runs again is the only resume point every drafting part already has: each one is idempotent until it marks itself done. So the gateway keys a batch by the step and a hash of the request, and the step comes back to it simply by asking the same thing again; when its sources change, the request changes, a new batch goes up, and the sweep cancels the old one at its deadline. The deferred path is opt-in by context, set only by the callers that know how to come back, so every other batchable call keeps waiting within its run. The queue only exists during a rate-limit storm, so normal calls stay concurrent, and it lives on the cell per provider so the small tier and the main tier share it.
+
+**Learned:** Wrapping the model error with `%v` lost the busy error before the ask could tell it apart from a dead model; the ask now keeps it with a second `%w`. Fairness needs the served counts reset when a storm ends, or the next storm starts with the last one's debt.
+
+**Laws:** LAW-03, LAW-05, LAW-07 (TestLAW07_KeptBatchesHoldNoPrompt, new), LAW-14. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 S55.2: Spend less
 
 **Wave/slice:** W55 / S55.2 (SB-5604 to SB-5606) · **Status:** Done

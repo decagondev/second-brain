@@ -83,6 +83,8 @@ type Admin struct {
 	ModelDown func() bool
 	// Saved is what a month's answers saved (SB-5606); nil leaves it out.
 	Saved func(ctx context.Context, month string) (costs.Saved, error)
+	// Cache is the month's prompt cache hits by space and agent (SB-5706); nil serves EUNAVAIL.
+	Cache func(ctx context.Context, month string) (ask.CacheHits, error)
 	// AgentKilled and EvalHeld make the agent registry (SB-4004); a hold that can't be
 	// read is an error, never no hold.
 	AgentKilled func(agent string) bool
@@ -160,6 +162,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
 	mux.HandleFunc("GET /v1/admin/costs/spaces", h.readers(h.spaceCosts))
 	mux.HandleFunc("GET /v1/admin/costs/saved", h.readers(h.saved)) // SB-5606
+	mux.HandleFunc("GET /v1/admin/costs/cache", h.readers(h.cache)) // SB-5706
 	mux.HandleFunc("GET /v1/admin/guardrails", h.guard(h.guardrails))
 	mux.HandleFunc("GET /v1/admin/guardrails/events", h.guard(h.guardrailEvents)) // SB-5103
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
@@ -767,7 +770,8 @@ func (h Admin) hold(on bool) func(w http.ResponseWriter, r *http.Request, s tena
 }
 
 // saved is what a month's answers saved (SB-5606): month=2027-03, or this month.
-func (h Admin) saved(w http.ResponseWriter, r *http.Request) {
+// month is the request's ?month=, this month by default; false has already failed it.
+func (h Admin) month(w http.ResponseWriter, r *http.Request) (string, bool) {
 	month := r.URL.Query().Get("month")
 	if month == "" {
 		now := time.Now
@@ -778,6 +782,32 @@ func (h Admin) saved(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, _, err := costs.ParseMonth(month); err != nil {
 		h.fail(w, errs.New(errs.EINVAL, "month must be like 2027-03"))
+		return "", false
+	}
+	return month, true
+}
+
+// cache serves GET /v1/admin/costs/cache?month=2027-03 (SB-5706): this month by default.
+func (h Admin) cache(w http.ResponseWriter, r *http.Request) {
+	month, ok := h.month(w, r)
+	if !ok {
+		return
+	}
+	if h.Cache == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Cache hits can't be counted in this cell."))
+		return
+	}
+	c, err := h.Cache(r.Context(), month)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Cache hits can't be counted right now."))
+		return
+	}
+	h.ok(w, c)
+}
+
+func (h Admin) saved(w http.ResponseWriter, r *http.Request) {
+	month, ok := h.month(w, r)
+	if !ok {
 		return
 	}
 	if h.Saved == nil {

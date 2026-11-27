@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/answer"
+	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -212,8 +213,10 @@ func (l Legwork) runRoutine(ctx context.Context, q SavedQuestion, now time.Time)
 	}
 	r := Research{ID: l.NewID("rs_"), Tenant: l.Agent.Tenant, Release: l.Agent.Release, User: q.User, Kind: KindRoutine, Question: q.Question, Space: q.Space,
 		Steps: []string{q.Question}, State: StateDone, At: now}
-	resp, err := l.Agent.Ask(WithFeature(ctx, FeatureRoutine), s, Request{Question: q.Question}) // SB-5001
+	resp, err := l.Agent.Ask(ports.WithDeferredBatch(WithFeature(ctx, FeatureRoutine), "routine-"+q.ID), s, Request{Question: q.Question}) // SB-5001, SB-5701
 	switch {
+	case errors.Is(err, ErrPending): // SB-5701: asked again on a later tick, which collects it
+		return nil, nil
 	case errors.Is(err, ErrBudget):
 		r.State, r.Why, r.Stopped = StateFailed, RoutinePaused, "budget"
 	case errors.Is(err, ErrKilled):

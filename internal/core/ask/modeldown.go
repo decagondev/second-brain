@@ -19,6 +19,13 @@ const NoticeModelDown = "model_unavailable"
 // ModelDownLine is what the asker reads above the passages.
 const ModelDownLine = "No answer written: the model is unavailable."
 
+// NoticeModelBusy is an ask answered with passages because the provider was rate-limiting
+// for longer than gateway.MaxBusyWait (SB-5703).
+const NoticeModelBusy = "model_busy"
+
+// ModelBusyLine is what the asker reads above those passages.
+const ModelBusyLine = "No answer written: the model is busy. Try again in a minute."
+
 // MaxDownPassages is the most passages an ask without a model shows.
 const MaxDownPassages = 5
 
@@ -52,6 +59,9 @@ func (a Agent) composeOrPassages(ctx context.Context, compose func() ([]answer.C
 		return claims, err
 	}
 	n := NoticeModelDown
+	if errors.Is(err, gateway.ErrBusy) {
+		n = NoticeModelBusy
+	}
 	resp.Notice = &n
 	resp.Passages = a.passagesOnly(ctx, chunks)
 	return []answer.Claim{}, nil

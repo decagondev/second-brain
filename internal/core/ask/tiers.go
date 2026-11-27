@@ -3,6 +3,8 @@ package ask
 import (
 	"context"
 	"unicode/utf8"
+
+	"example.com/second-brain/internal/core/answer"
 )
 
 // Model tiers (sb-evals(7), Model tiers; SB-4405).
@@ -46,4 +48,71 @@ func (a Agent) tierFor(ctx context.Context, space string, req Request, q string,
 		return TierSmall
 	}
 	return TierMain
+}
+
+// Think harder only when it helps (sb-runtime(7), The deep tier; SB-5704): the deep tier
+// writes a research synthesis, an answer with a table, a consultation's synthesis, and one
+// retry of an answer whose claims are mostly uncited, and nothing else. Only while the
+// evals job gated it for this release (LAW-06), never in a space whose routing policy is
+// economy, and never for a person at their monthly limit.
+
+// TierDeep is the deep tier, and the reasons the trace gives for using it.
+const (
+	TierDeep          = "deep"
+	DeepResearch      = "research"
+	DeepTable         = "table"
+	DeepConsultation  = "consultation"
+	DeepCitationRetry = "citation_retry"
+)
+
+// tierChoice is one ask's tier as it goes: the rule's pick, and why it went deeper.
+type tierChoice struct {
+	tier, why, feature string
+	economy            bool
+}
+
+func economyOf(ctx context.Context) bool {
+	over, _ := ctx.Value(economyKey{}).(bool)
+	return over
+}
+
+// deepAllowed says the deep tier may answer in space now.
+func (a Agent) deepAllowed(ctx context.Context, space string, tc *tierChoice) bool {
+	if a.Deep == nil || a.DeepGated == nil || !a.DeepGated() || tc.economy {
+		return false
+	}
+	if t, ok := ctx.Value(tierKey).(string); ok && t != TierDeep { // an eval probe on one tier
+		return false
+	}
+	return a.Routing == nil || a.Routing(space) != RoutingEconomy
+}
+
+// goDeeper moves tc to the deep tier for the work that needs it, saying why.
+func (a Agent) goDeeper(ctx context.Context, space string, tc *tierChoice, table bool) {
+	if t, ok := ctx.Value(tierKey).(string); ok && t == TierDeep && a.Deep != nil { // the evals job's gate run
+		tc.tier, tc.why = TierDeep, "eval"
+		return
+	}
+	why := ""
+	switch {
+	case tc.feature == FeatureResearch:
+		why = DeepResearch
+	case tc.feature == FeatureConsultation:
+		why = DeepConsultation
+	case table:
+		why = DeepTable
+	}
+	if why != "" && a.deepAllowed(ctx, space, tc) {
+		tc.tier, tc.why = TierDeep, why
+	}
+}
+
+func uncitedCount(cs []answer.Claim) int {
+	n := 0
+	for _, c := range cs {
+		if c.Uncited {
+			n++
+		}
+	}
+	return n
 }

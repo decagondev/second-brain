@@ -92,6 +92,8 @@ See and steer the context (SB-5501 to SB-5504): `GET /v1/traces/{id}/context`, t
 
 Ask why (SB-5505 to SB-5507): `POST /v1/traces/{id}/why-not`, `GET /v1/spaces/NAME/review/retrieval?trace=ID`, `POST /v1/me/memory/proposals/{id}/confirm` and `DELETE /v1/me/memory/proposals/{id}` (web sessions only), and on MCP `resources/list`, `resources/read` (`memory://me`) and the `memory_propose` tool (sb-ask(3), Ask why).
 
+Cache hits (SB-5706): `GET /v1/admin/costs/cache?month=YYYY-MM`, for operators (sb-admin(3)).
+
 Spend less (SB-5604 to SB-5606): `GET /v1/admin/costs/saved?month=YYYY-MM`, for operators, `{ "month", "reuse_usd", "batch_usd", "cache_usd", "tier_usd", "total_usd", "note"? }`, and the same as `saved` on `GET /v1/admin/costs` (sb-runtime(7), Spending less).
 
 ### Idempotency

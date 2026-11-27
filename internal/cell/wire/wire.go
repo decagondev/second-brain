@@ -135,7 +135,9 @@ type Cell struct {
 	opt      Options
 	model    func(m manifest.Tenant) (ports.Model, error)
 	fallback atomic.Pointer[gateway.Fallback] // the main tier's (SB-5601)
+	busy     sync.Map                         // provider|base: *gateway.Busy (SB-5703)
 	small    func(m manifest.Tenant) (ports.Model, error)
+	deep     func(m manifest.Tenant) (ports.Model, error) // SB-5704
 	eventKey func(ctx context.Context) (string, error)
 	inbox    slack.Inbox
 	closeDB  func()
@@ -393,10 +395,14 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.Logs = &logfs.Files{Dir: filepath.Join(cfg.State, "logs"), Now: time.Now}
 	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index, state: c.Config.State, tree: c.Manifest}
 	c.eventKey = secret("events") // SB-4404
-	tierOf := func(m manifest.Tenant, small bool) (ports.Model, error) {
+	tierOf := func(m manifest.Tenant, tier string) (ports.Model, error) {
 		mc := cfg
+		small := tier == ask.TierSmall
 		if small { // SB-4405: the same provider, base and key, another id and price
 			mc.Model.ID, mc.Model.Price.InPerM, mc.Model.Price.OutPerM = cfg.Model.Small.ID, cfg.Model.Small.Price.InPerM, cfg.Model.Small.Price.OutPerM
+		}
+		if tier == ask.TierDeep { // SB-5704: the same provider, base and key, a deeper id or effort
+			mc = deepConfig(cfg)
 		}
 		guardFor := func(price budget.Price) *budget.Guard {
 			return &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
@@ -418,6 +424,11 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		if err != nil {
 			return nil, err
 		}
+		zone, _ := manifest.DigestZone(m.Digest)
+		primary = c.laterBatches(primary, zone, mc.Model.Base) // SB-5701, SB-5703
+		if tier == ask.TierDeep {
+			return withEffort(primary, cfg.Model.Deep.Effort), nil
+		}
 		if small { // SB-5606: what a call on the small tier saved against the main one
 			if g, ok := primary.(gateway.Gateway); ok {
 				mp := budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}
@@ -431,6 +442,7 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		if fb := cfg.Model.Fallback; fb.Provider != "" {
 			fc := cfg
 			fc.Model.Provider, fc.Model.Base, fc.Model.ID, fc.Model.Local = fb.Provider, fb.Base, fb.ID, false
+			fc.Model.ProviderRegion, fc.Model.Batch = fb.Region, false // SB-5705: the fallback's own region
 			fc.Model.Price.InPerM, fc.Model.Price.OutPerM = fb.Price.InPerM, fb.Price.OutPerM
 			fguard := guardFor(budget.Price{InputPerM: fb.Price.InPerM, OutputPerM: fb.Price.OutPerM})
 			fsecret := func(p string) func(context.Context) (string, error) {
@@ -442,17 +454,24 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 			if second, err = buildModel(fc, tenant, fsecret, redact, c.Usage, fguard); err != nil {
 				return nil, err
 			}
+			second = c.laterBatches(second, zone, fc.Model.Base)
 		}
 		f := gateway.NewFallback(primary, second, c.fallbackGated, time.Now)
 		c.fallback.Store(f)
 		return f, nil
 	}
-	c.model = func(m manifest.Tenant) (ports.Model, error) { return tierOf(m, false) }
+	c.model = func(m manifest.Tenant) (ports.Model, error) { return tierOf(m, ask.TierMain) }
 	c.small = func(m manifest.Tenant) (ports.Model, error) {
 		if cfg.Model.Small.ID == "" {
 			return nil, nil
 		}
-		return tierOf(m, true)
+		return tierOf(m, ask.TierSmall)
+	}
+	c.deep = func(m manifest.Tenant) (ports.Model, error) {
+		if cfg.Model.Deep.ID == "" && cfg.Model.Deep.Effort == "" {
+			return nil, nil
+		}
+		return tierOf(m, ask.TierDeep)
 	}
 
 	// Sign-in (sb-identity(7)).
@@ -499,7 +518,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	if err != nil {
 		return nil, err
 	}
-	small, err := c.small(m)
+	small, deep, err := c.tiers(m)
 	if err != nil {
 		return nil, err
 	}
@@ -527,6 +546,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		},
 		AgentKilled: func(a string) bool { return c.Kill.AgentKilled(a)(context.Background()) },
 		AgentPaused: c.Kill.Paused, AgentCapped: c.agentCapped, // SB-4702, SB-4703
+		Deep: deep, DeepGated: c.deepGated, // SB-5704
 		Small: small, SmallHeld: c.smallHeld, PinMain: func(key string) bool { return m.Spaces[strings.TrimPrefix(key, "spc_")].Model == "main" },
 		Departmental: departmental(m),
 		Updates:      func(name string) bool { return m.Spaces[name].Updates },
@@ -748,7 +768,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails, GuardrailEvents: c.GuardrailEvents,
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
-		ActiveByEmail: c.activeByEmail, Notices: c.Traces, ModelDown: c.modelDown, Saved: c.SavedIn, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
+		ActiveByEmail: c.activeByEmail, Notices: c.Traces, ModelDown: c.modelDown, Saved: c.SavedIn, Cache: c.CacheIn, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
 		AIUsage: c.aiUsage,                        // SB-5001
 		Checks:  c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007
@@ -932,6 +952,9 @@ func buildModel(cfg Config, tenant string, secret func(string) func(context.Cont
 		adapter = extractive.Model{}
 	case "openaicompat":
 		adapter = &openaicompat.Client{BaseURL: cfg.Model.Base, Key: key, HTTP: hc}
+		if cfg.Model.Batch { // SB-5702: only a provider that says it has the Batch API
+			adapter = openaicompat.Batching{Client: openaicompat.Client{BaseURL: cfg.Model.Base, Key: key, HTTP: hc}}
+		}
 	case "anthropic":
 		adapter = &anthropic.Client{BaseURL: cfg.Model.Base, Key: key, HTTP: hc}
 	case "groq":
@@ -942,7 +965,8 @@ func buildModel(cfg Config, tenant string, secret func(string) func(context.Cont
 		return nil, fmt.Errorf("%w: model.provider %q", ErrConfig, cfg.Model.Provider)
 	}
 	return gateway.Gateway{Tenant: tenant, Provider: cfg.Model.Provider, ModelID: cfg.Model.ID, Model: adapter, Secrets: redact,
-		Metrics: meter, Budget: guard}, nil
+		Metrics: meter, Budget: guard, Region: cfg.Model.ProviderRegion, Allowed: cfg.Model.Region, // SB-5705
+		Local: cfg.Model.Local || cfg.Model.Provider == "extractive"}, nil
 }
 
 // classification reads the Drive label that carries sensitivity (sb-connector(3)): none
@@ -1184,6 +1208,9 @@ func modelPrices(cfg Config) map[string]costs.Price {
 	if s := cfg.Model.Small; s.ID != "" {
 		out[cfg.Model.Provider+"/"+s.ID] = costs.Price{InPerM: s.Price.InPerM, OutPerM: s.Price.OutPerM}
 	}
+	if d := cfg.Model.Deep; d.ID != "" { // SB-5704; an effort on the main id is priced as main
+		out[cfg.Model.Provider+"/"+d.ID] = costs.Price{InPerM: d.Price.InPerM, OutPerM: d.Price.OutPerM}
+	}
 	return out
 }
 
@@ -1192,7 +1219,11 @@ func modelTiers(cfg Config) map[string]string {
 	if cfg.Model.Small.ID == "" {
 		return nil
 	}
-	return map[string]string{cfg.Model.Provider + "/" + cfg.Model.ID: "main", cfg.Model.Provider + "/" + cfg.Model.Small.ID: "small"}
+	out := map[string]string{cfg.Model.Provider + "/" + cfg.Model.ID: "main", cfg.Model.Provider + "/" + cfg.Model.Small.ID: "small"}
+	if d := cfg.Model.Deep.ID; d != "" {
+		out[cfg.Model.Provider+"/"+d] = "deep"
+	}
+	return out
 }
 
 // rhythms is the rhythms and projects service (SB-4801 to SB-4804): every step is drafted

@@ -281,6 +281,11 @@ func (c *Cell) adminLines(ctx context.Context, m manifest.Tenant, from, to, now 
 	if sv, err := c.SavedIn(ctx, now.UTC().Format("2006-01")); err == nil { // SB-5606
 		out = append(out, ask.AdminLine{Section: "Spend", Text: sv.Line(), Link: "/v1/admin/costs/saved"})
 	}
+	if ch, err := c.CacheIn(ctx, now.UTC().Format("2006-01")); err == nil { // SB-5706
+		for _, l := range ch.Lines() {
+			out = append(out, ask.AdminLine{Section: "Spend", Text: l, Link: "/v1/admin/costs/cache"})
+		}
+	}
 	sens, err := c.sensitiveLines(ctx) // SB-5407
 	if err != nil {
 		return nil, err
@@ -380,6 +385,9 @@ func (c *Cell) Inventory(ctx context.Context) (inventory.Signed, error) {
 	m := c.Manifest()
 	from := now.AddDate(0, 0, -90)
 	in := inventory.Inputs{Tenant: c.Config.Tenant, Release: c.Release, Now: now, Manifest: m}
+	for _, r := range modelRegions(c.Config) { // SB-5705
+		in.Models = append(in.Models, inventory.Model{Tier: r.Tier, Provider: r.Provider, Region: r.Region, InRegion: r.InRegion})
+	}
 	var err error
 	if in.Traces, err = c.Report.Traces(ctx, c.Config.Tenant, from, now); err != nil {
 		return inventory.Signed{}, err

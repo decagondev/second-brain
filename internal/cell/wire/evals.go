@@ -87,7 +87,7 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 		return ec.Passes(resp), nil
 	}
 	policy := routing(c.Manifest())
-	fbRan, fbFailed := 0, 0
+	var fb, deep gate // SB-5601, SB-5704
 	hasFallback := c.Config.Model.Fallback.Provider != ""
 	run := func(ec ask.EvalCase) (bool, error) {
 		if policy(ec.Space) == ask.RoutingEconomy && agent.Small != nil && ec.Agent != ask.AgentResearch {
@@ -96,11 +96,9 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 			return probe(ask.WithTier(ctx, ask.TierSmall), ec)
 		}
 		ok, err := probe(ask.WithTier(ctx, ask.TierMain), ec)
-		if err == nil && ok && hasFallback { // SB-5601: the fallback must pass what the main model passes
-			fbRan++
-			if fb, ferr := probe(gateway.WithFallbackOnly(ask.WithTier(ctx, ask.TierMain)), ec); ferr != nil || !fb {
-				fbFailed++
-			}
+		if err == nil && ok { // the fallback and the deep tier must pass what the main model passes
+			fb.alsoOn(hasFallback, func() (bool, error) { return probe(gateway.WithFallbackOnly(ask.WithTier(ctx, ask.TierMain)), ec) })
+			deep.alsoOn(agent.Deep != nil, func() (bool, error) { return probe(ask.WithTier(ctx, ask.TierDeep), ec) })
 		}
 		if policy(ec.Space) == ask.RoutingFrontier { // composing stays on main: no small run
 			return ok, err
@@ -126,10 +124,8 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	if err != nil {
 		return nil, err
 	}
-	if hasFallback {
-		if err := writeFallbackGate(c.Config.State, c.Release, fbRan > 0 && fbFailed == 0); err != nil {
-			return nil, err
-		}
+	if err := c.writeGates(hasFallback, agent.Deep != nil, fb, deep); err != nil {
+		return nil, err
 	}
 	if ran > 0 {
 		if err := writeSmallHeld(c.Config.State, smallFailed > 0); err != nil {
@@ -266,7 +262,11 @@ func (c *Cell) withSkillCases(ctx context.Context, cases []ask.EvalCase) ([]ask.
 func FallbackGatePath(state string) string { return filepath.Join(state, "evals", "fallback-gated") }
 
 func writeFallbackGate(state, release string, passed bool) error {
-	p := FallbackGatePath(state)
+	return writeGate(FallbackGatePath(state), release, passed)
+}
+
+// writeGate names release in the gate file p when it passed, and removes the file when not.
+func writeGate(p, release string, passed bool) error {
 	if !passed {
 		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
@@ -277,6 +277,45 @@ func writeFallbackGate(state, release string, passed bool) error {
 		return err
 	}
 	return os.WriteFile(p, []byte(release+"\n"), 0o600)
+}
+
+// gate counts the cases one more model ran after the main model passed them.
+type gate struct{ ran, failed int }
+
+// alsoOn runs probe when on, counting a failure or an error as failed.
+func (g *gate) alsoOn(on bool, probe func() (bool, error)) {
+	if !on {
+		return
+	}
+	g.ran++
+	if ok, err := probe(); err != nil || !ok {
+		g.failed++
+	}
+}
+
+func (g gate) passed() bool { return g.ran > 0 && g.failed == 0 }
+
+// writeGates writes the fallback's and the deep tier's gates for this release.
+func (c *Cell) writeGates(fallback, deep bool, fb, dp gate) error {
+	if fallback {
+		if err := writeFallbackGate(c.Config.State, c.Release, fb.passed()); err != nil {
+			return err
+		}
+	}
+	if deep {
+		return writeGate(DeepGatePath(c.Config.State), c.Release, dp.passed())
+	}
+	return nil
+}
+
+// DeepGatePath is where the evals job writes the release the deep tier passed (SB-5704):
+// the deep tier is used only while it names the release the cell runs.
+func DeepGatePath(state string) string { return filepath.Join(state, "evals", "deep-gated") }
+
+// deepGated is whether the deep tier passed this release's gate; unreadable is no (LAW-06).
+func (c *Cell) deepGated() bool {
+	b, err := os.ReadFile(DeepGatePath(c.Config.State))
+	return err == nil && strings.TrimSpace(string(b)) == c.Release
 }
 
 // fallbackGated is whether the fallback passed this release's gate; one that can't be read
@@ -299,5 +338,29 @@ func (c *Cell) ModelState() *gateway.State {
 		return nil
 	}
 	st := f.State()
+	st.Regions = modelRegions(c.Config) // SB-5705
 	return &st
+}
+
+// modelRegions is every provider the cell may call, with its region (SB-5705).
+func modelRegions(cfg Config) []gateway.Region {
+	allowed := cfg.Model.Region
+	local := cfg.Model.Local || cfg.Model.Provider == "extractive"
+	row := func(tier, provider, region string, local bool) gateway.Region {
+		return gateway.Region{Tier: tier, Provider: provider, Region: region, Local: local, InRegion: gateway.InRegion(region, allowed, local)}
+	}
+	out := []gateway.Region{row(ask.TierMain, cfg.Model.Provider, cfg.Model.ProviderRegion, local)}
+	if cfg.Model.Small.ID != "" {
+		out = append(out, row(ask.TierSmall, cfg.Model.Provider, cfg.Model.ProviderRegion, local))
+	}
+	if d := cfg.Model.Deep; d.ID != "" || d.Effort != "" {
+		out = append(out, row(ask.TierDeep, cfg.Model.Provider, cfg.Model.ProviderRegion, local))
+	}
+	if fb := cfg.Model.Fallback; fb.Provider != "" {
+		out = append(out, row("fallback", fb.Provider, fb.Region, false))
+	}
+	if e := cfg.Embed; e.Provider != "" && e.Provider != "hashing" {
+		out = append(out, row("embed", e.Provider, e.Region, e.Local))
+	}
+	return out
 }

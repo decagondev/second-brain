@@ -585,7 +585,7 @@ From the panel, **Keep** adds a document to every later ask of the conversation 
 
 ### When the model is down (SB-5602)
 
-With no gated model to write an answer, an ask still runs every check and returns the best passages the asker can open (`passages`), with `notice: "model_unavailable"` and no claim: the web shows "No answer written: the model is unavailable." above them, and nothing is labelled as an answer (LAW-14).
+With no gated model to write an answer, an ask still runs every check and returns the best passages the asker can open (`passages`), with `notice: "model_unavailable"` and no claim: the web shows "No answer written: the model is unavailable." above them, and nothing is labelled as an answer (LAW-14). An ask that waited more than 20 seconds for a provider that is rate-limiting gets the same passages with `notice: "model_busy"`, "No answer written: the model is busy. Try again in a minute." (SB-5703, sb-runtime(7), When the provider is busy).
 
 ### Answered before, checked now (SB-5603)
 

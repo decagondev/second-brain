@@ -608,6 +608,14 @@ func TestLAW06_OnlyAGatedFallbackAnswers(t *testing.T) {
 	Check(t, "LAW-06", runs, func(r *rand.Rand) error { return law06Fallback(r, RealFallback) })
 }
 
+func TestLAW07_KeptBatchesHoldNoPrompt(t *testing.T) {
+	Check(t, "LAW-07", runs, func(r *rand.Rand) error { return law07Batches(r, RealBatchGateway) })
+}
+
+func TestLAW33_AModelCallStaysInItsRegion(t *testing.T) {
+	Check(t, "LAW-33", runs, func(r *rand.Rand) error { return law33(r, RealRegionGateway) })
+}
+
 func TestLAW32_ALabelNeverDrops(t *testing.T) {
 	Check(t, "LAW-32", runs, func(r *rand.Rand) error { return law32(r, RealLabelGate) })
 }

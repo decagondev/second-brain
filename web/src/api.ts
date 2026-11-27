@@ -118,7 +118,7 @@ export interface SeeAlso {
   age_days?: number;
 }
 
-export type Notice = "most_uncited" | "no_access" | "no_sources" | "model_unavailable" | null;
+export type Notice = "most_uncited" | "no_access" | "no_sources" | "model_unavailable" | "model_busy" | null;
 
 // Clarify is the one question an ambiguous ask gets instead of an answer (SB-4901).
 export interface Clarify {

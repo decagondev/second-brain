@@ -236,3 +236,16 @@ func (c *Cell) SavedIn(ctx context.Context, month string) (costs.Saved, error) {
 	}
 	return costs.AddSaved(month, each), nil
 }
+
+// CacheIn is a month's prompt cache hits by space and agent, from its traces (SB-5706).
+func (c *Cell) CacheIn(ctx context.Context, month string) (ask.CacheHits, error) {
+	from, to, err := costs.ParseMonth(month)
+	if err != nil {
+		return ask.CacheHits{}, err
+	}
+	ts, err := c.Report.Traces(ctx, c.Config.Tenant, from, to)
+	if err != nil {
+		return ask.CacheHits{}, err
+	}
+	return ask.BuildCacheHits(ts, month, from, to), nil
+}

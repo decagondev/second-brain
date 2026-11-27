@@ -14,6 +14,31 @@ type Tally struct {
 	usd    float64
 	saved  map[string]float64 // what reuse, batching, caching and the economy tier saved (SB-5606)
 	parent *Tally
+	// input and cached are the input tokens the calls sent, and those the provider read from
+	// its prompt cache (SB-5706).
+	input, cached int
+}
+
+// AddTokens counts one call's input tokens and the cached ones among them (SB-5706).
+func (t *Tally) AddTokens(input, cached int) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	t.input += input
+	t.cached += cached
+	t.mu.Unlock()
+	t.parent.AddTokens(input, cached)
+}
+
+// Tokens is the input tokens counted so far, and the cached ones among them.
+func (t *Tally) Tokens() (input, cached int) {
+	if t == nil {
+		return 0, 0
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.input, t.cached
 }
 
 type tallyKey struct{}

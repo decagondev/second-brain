@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"example.com/second-brain/internal/core/ports"
 )
 
 // Scheduled briefs (sb-agents(7), Scheduled and triggered agents; SB-4005): each space's
@@ -21,6 +23,9 @@ const (
 	BriefKilled    = "killed"
 	// BriefSpaceBudget is a space whose branch has spent its own budget_usd_month (SB-4105).
 	BriefSpaceBudget = "space_budget"
+	// BriefPending is a brief whose model call went to a batch: it isn't marked, so a later
+	// tick runs it again and collects the batch (SB-5701).
+	BriefPending = "pending"
 )
 
 // SpaceBudget is one space's budget this month: its key, the month (2027-03) and the
@@ -104,6 +109,11 @@ type scheduled struct {
 // that didn't run. Each is marked in Clock when it has run or been told, so it runs once a
 // week.
 func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
+	if j.SweepBatches != nil { // SB-5701: batches no step came back for, past their deadline
+		if err := j.SweepBatches(ctx); err != nil {
+			return nil, fmt.Errorf("notify: batches: %w", err)
+		}
+	}
 	var runs []scheduled
 	if j.RunBrief != nil {
 		for s, d := range j.Briefs {
@@ -131,9 +141,12 @@ func (j Job) briefs(ctx context.Context, now time.Time) ([]outgoing, error) {
 		if found && !last.Before(day) {
 			continue
 		}
-		why, err := r.run(ctx, r.space)
+		why, err := r.run(ports.WithDeferredBatch(ctx, r.clock), r.space)
 		if err != nil {
 			return nil, fmt.Errorf("notify: %s: %w", r.clock, err)
+		}
+		if why == BriefPending {
+			continue
 		}
 		if err := j.Clock.Mark(ctx, r.clock, day); err != nil {
 			return nil, err

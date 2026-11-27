@@ -290,8 +290,9 @@ type Trace struct {
 	// Files is how many files the ask was about (SB-3802): never their name or text.
 	Files int `json:",omitempty"`
 	// Tier is the model tier that answered, small or main, when the cell has a small
-	// model (SB-4405).
-	Tier string `json:",omitempty"`
+	// model (SB-4405), or deep (SB-5704), and TierWhy why the deep tier was used.
+	Tier    string `json:",omitempty"`
+	TierWhy string `json:",omitempty"`
 	// FlaggedFiles is 1 when the file's passages carried an injection flag (SB-4406).
 	FlaggedFiles int `json:",omitempty"`
 	// CostUSD is this one answer's model spend, its consultations' within it (SB-4606).
@@ -312,6 +313,12 @@ type Trace struct {
 	// Saved is what reuse, batching, caching and the economy tier took off this answer's
 	// cost, in dollars by why (SB-5606).
 	Saved map[string]float64 `json:",omitempty"`
+	// InputTokens and CachedTokens are the input its model calls sent and the part the
+	// provider read from its prompt cache, and Prefix a short hash of each part of its
+	// stable prefix, never the text (SB-5706).
+	InputTokens  int               `json:",omitempty"`
+	CachedTokens int               `json:",omitempty"`
+	Prefix       map[string]string `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -337,6 +344,9 @@ var (
 	ErrUnavailable = errors.New("ask: EUNAVAIL")
 	ErrNotFound    = errors.New("ask: no such trace for this user") // EPERM
 	ErrBudget      = errors.New("ask: EBUDGET")
+	// ErrPending is a scheduled step whose model call went to a batch this tick: it runs
+	// again on a later tick and gets the result then (SB-5701). Never a person's ask.
+	ErrPending = errors.New("ask: batch pending")
 )
 
 // Agent is the ask agent for one cell.
@@ -378,8 +388,12 @@ type Agent struct {
 	AgentCapped func(ctx context.Context, agent string) (bool, error)
 	// Small is the small model tier (SB-4405), nil for none; SmallHeld says the evals
 	// hold it (an unreadable hold is held), and PinMain that a space, by key, pins main.
-	Small       ports.Model
-	SmallHeld   func() bool
+	Small     ports.Model
+	SmallHeld func() bool
+	// Deep is the deep tier (SB-5704), nil for none, used only while DeepGated says the evals
+	// job passed it for this release (nil or false is never).
+	Deep        ports.Model
+	DeepGated   func() bool
 	PinMain     func(space string) bool
 	AgentKilled func(agent string) bool
 	// Routing is a space's routing policy by key (SB-5002), nil for balanced everywhere;
@@ -507,6 +521,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, fmt.Errorf("%w: no valid scope for this cell", ErrInvalid)
 	}
 	ctx, tally := budget.WithTally(ctx) // SB-4606: this answer's own cost
+	ctx, prefix := withPrefix(ctx)      // SB-5706: its stable prefix's parts, hashed
 	ctx, sk := withSkips(ctx)           // SB-5101: its suspect passages
 	ctx, hd := withWideHeld(ctx)        // SB-5402: documents shared too widely
 	ctx, mu := gateway.WithUsed(ctx)    // SB-5601: whether the fallback model answered
@@ -546,10 +561,12 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return *early, err
 	}
 	ctx = withChoice(ctx, choice)
-	ctx = withBatch(ctx, probe)                                                                                   // SB-5604: nobody waits for it
-	feature := featureFor(ctx, req, probe)                                                                        // SB-5001
-	tier := a.tierFor(WithFeature(a.atLimit(ctx, s.User()), feature), s.Space(), req, q, len(docs), len(earlier)) // SB-4405, SB-5002, SB-5003
-	ctx, used, keep, drop, err := a.steerAndRemember(ctx, s, req, probe)                                          // SB-4303, SB-5502
+	ctx = withBatch(ctx, probe)            // SB-5604: nobody waits for it
+	feature := featureFor(ctx, req, probe) // SB-5001
+	lctx := WithFeature(a.atLimit(ctx, s.User()), feature)
+	tier := a.tierFor(lctx, s.Space(), req, q, len(docs), len(earlier))      // SB-4405, SB-5002, SB-5003
+	tc := tierChoice{tier: tier, feature: feature, economy: economyOf(lctx)} // SB-5704: answerFrom may go deeper
+	ctx, used, keep, drop, err := a.steerAndRemember(ctx, s, req, probe)     // SB-4303, SB-5502
 	if err != nil {
 		return Response{}, err
 	}
@@ -589,9 +606,10 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		}
 		resp.Notice = &n
 		resp.Answer.Claims = []answer.Claim{{Text: NothingToCite, Cites: []answer.Cite{}, Uncited: true}}
-	} else if err := a.answerFrom(ctx, s, req, q, dept, tier, terms, trace, sent, rk, &res, &resp); err != nil {
+	} else if err := a.answerFrom(ctx, s, req, q, dept, &tc, terms, trace, sent, rk, &res, &resp); err != nil {
 		return Response{}, err
 	}
+	tier, tierWhy := tc.tier, tc.why
 
 	if keepsNothing(ctx) {
 		return resp, nil
@@ -605,14 +623,15 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	for _, l := range used { // SB-5504: which lines, never their text, in the trace
 		resp.Memory = append(resp.Memory, l.ID)
 	}
+	inTok, cachedTok := tally.Tokens() // SB-5706
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx),
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx),
 		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop, Read: readSet(res.Context), Saved: tally.Saved()} // SB-5501, SB-5603, SB-5606
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
@@ -703,11 +722,18 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + noteData(ctx) + "\n" + lead + q + choiceLine(ctx)})
 	// SB-5605: the system prompt is the stable part (the prompt, language, length and skill),
 	// cached where the provider can; the asker's material is only ever in the messages.
+	notePrefix(ctx, map[string]string{PrefixPrompt: p.Text, PrefixLanguage: LanguageLine(languageOf(ctx)), PrefixLength: shortLine(ctx), PrefixSkill: skillLine(ctx)}) // SB-5706
 	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx) + skillLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx),
 		CacheSystem: true, Batch: batchOf(ctx)})
 	if err != nil {
+		if errors.Is(err, ports.ErrBatchPending) { // SB-5701: collected on a later tick
+			return nil, fmt.Errorf("%w: %v", ErrPending, err)
+		}
 		if errors.Is(err, budget.ErrBudget) {
 			return nil, fmt.Errorf("%w: %v", ErrBudget, err)
+		}
+		if errors.Is(err, gateway.ErrBusy) { // SB-5703: kept, so the ask says the model is busy
+			return nil, fmt.Errorf("%w: model: %w", ErrUnavailable, gateway.ErrBusy)
 		}
 		return nil, fmt.Errorf("%w: model: %v", ErrUnavailable, err)
 	}
@@ -860,7 +886,7 @@ func (a Agent) whoAnswers(ctx context.Context, s tenancy.Scope, q string, req Re
 
 // answerFrom composes the answer from res's allowed context into resp: the table tool,
 // the model (or passages when it is down), and every check and note on the claims.
-func (a Agent) answerFrom(ctx context.Context, s tenancy.Scope, req Request, q string, dept *Department, tier string, terms []Term, trace string, sent []string, rk string, res *retrieve.Result, resp *Response) error {
+func (a Agent) answerFrom(ctx context.Context, s tenancy.Scope, req Request, q string, dept *Department, tc *tierChoice, terms []Term, trace string, sent []string, rk string, res *retrieve.Result, resp *Response) error {
 	if claims, at, ok := a.reusedFrom(ctx, rk, res.Context); ok { // SB-5603: the same documents, checked now: no model call
 		resp.Answer.Claims, resp.Reused = claims, at
 		resp.People = a.whoToAsk(ctx, s, claims)
@@ -879,15 +905,26 @@ func (a Agent) answerFrom(ctx context.Context, s tenancy.Scope, req Request, q s
 			res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
 		}
 	}
+	a.goDeeper(ctx, s.Space(), tc, resp.Table != nil) // SB-5704: research, tables, consultations
 	ca := a
-	if tier == TierSmall {
+	switch tc.tier {
+	case TierSmall:
 		ca.Model = a.Small
+	case TierDeep:
+		ca.Model = a.Deep
 	}
+	cctx := withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short")
 	claims, err := a.composeOrPassages(ctx, func() ([]answer.Claim, error) { // SB-5602: passages when no model can write
-		return ca.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
+		return ca.composeWith(cctx, prompt, lead, trace, q, sent, res.Context)
 	}, res.Context, resp)
 	if err != nil {
 		return err
+	}
+	if mostUncited(claims) && resp.Notice == nil && tc.tier != TierDeep && a.deepAllowed(ctx, s.Space(), tc) { // SB-5704: one retry, deeper
+		ca.Model = a.Deep
+		if again, err := ca.composeWith(cctx, prompt, lead, trace, q, sent, res.Context); err == nil && uncitedCount(again) < uncitedCount(claims) {
+			claims, tc.tier, tc.why = again, TierDeep, DeepCitationRetry
+		}
 	}
 	if req.Length == "short" && len(claims) > MaxShort {
 		claims = claims[:MaxShort]

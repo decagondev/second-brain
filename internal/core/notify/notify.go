@@ -306,6 +306,9 @@ type Job struct {
 	AgentAlerts func(ctx context.Context, now time.Time) ([]AgentAlert, error)
 	// SweepShadows deletes the shadow runs of every window that has ended (SB-4704).
 	SweepShadows func(ctx context.Context) (int, error)
+	// SweepBatches cancels the batches past their morning deadline that no step came back
+	// for (SB-5701).
+	SweepBatches func(ctx context.Context) error
 	// Rhythms starts onboarding for new members, stops rhythms whose subject left and
 	// offers the steps whose day has come (SB-4801); nil runs none.
 	Rhythms func(ctx context.Context) (int, error)

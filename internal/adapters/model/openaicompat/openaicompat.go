@@ -33,6 +33,8 @@ type request struct {
 	Messages       []message         `json:"messages"`
 	MaxTokens      int               `json:"max_tokens,omitempty"`
 	ResponseFormat map[string]string `json:"response_format,omitempty"`
+	// ReasoningEffort is the deep tier's effort (SB-5704).
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type response struct {
@@ -48,9 +50,9 @@ type response struct {
 	} `json:"usage"`
 }
 
-// Complete implements ports.Model.
-func (c Client) Complete(ctx context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
-	body := request{Model: req.Model, MaxTokens: req.MaxTokens}
+// body is the chat completions body of req, with Extra merged in.
+func (c Client) body(req ports.ModelRequest) ([]byte, error) {
+	body := request{Model: req.Model, MaxTokens: req.MaxTokens, ReasoningEffort: req.Effort}
 	if req.System != "" {
 		body.Messages = append(body.Messages, message{Role: "system", Content: req.System})
 	}
@@ -62,7 +64,7 @@ func (c Client) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mod
 	}
 	b, err := json.Marshal(body)
 	if err != nil {
-		return ports.ModelResponse{}, err
+		return nil, err
 	}
 	if len(c.Extra) > 0 {
 		var m map[string]any
@@ -73,8 +75,17 @@ func (c Client) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mod
 			}
 		}
 		if b, err = json.Marshal(m); err != nil {
-			return ports.ModelResponse{}, err
+			return nil, err
 		}
+	}
+	return b, nil
+}
+
+// Complete implements ports.Model.
+func (c Client) Complete(ctx context.Context, req ports.ModelRequest) (ports.ModelResponse, error) {
+	b, err := c.body(req)
+	if err != nil {
+		return ports.ModelResponse{}, err
 	}
 	key, err := c.Key(ctx)
 	if err != nil {
@@ -93,6 +104,10 @@ func (c Client) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mod
 	if err := Do(c.HTTP, hr, &out); err != nil {
 		return ports.ModelResponse{}, err
 	}
+	return out.model()
+}
+
+func (out response) model() (ports.ModelResponse, error) {
 	if len(out.Choices) == 0 {
 		return ports.ModelResponse{}, fmt.Errorf("%w: no choices in the response", ports.ErrModelDown)
 	}

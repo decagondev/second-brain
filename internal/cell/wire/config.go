@@ -57,6 +57,14 @@ type Config struct {
 		} `json:"price"`
 		// Local is a model on the cell's own machine (SB-1710): no key, and a price of 0.
 		Local bool `json:"local"`
+		// Region is where every model call must stay (SB-5705, LAW-33), and ProviderRegion
+		// where the main provider (and so its small and deep tiers) runs. Empty Region is
+		// anywhere; with it set, a provider of another region or of none is never called.
+		Region         string `json:"region,omitempty"`
+		ProviderRegion string `json:"provider_region,omitempty"`
+		// Batch says an openaicompat provider has OpenAI's file-based Batch API (SB-5702);
+		// without it every call runs as before.
+		Batch bool `json:"batch,omitempty"`
 		// Small is a second, smaller model of the same provider, base and key (SB-4405).
 		Small struct {
 			ID    string `json:"id"`
@@ -65,6 +73,17 @@ type Config struct {
 				OutPerM float64 `json:"out_per_m"`
 			} `json:"price"`
 		} `json:"small"`
+		// Deep is a deeper model of the same provider, base and key, or the main model with a
+		// higher reasoning effort (SB-5704), used only for the work that needs it and only
+		// while the evals job has gated it. Empty is none.
+		Deep struct {
+			ID     string `json:"id"`
+			Effort string `json:"effort"`
+			Price  struct {
+				InPerM  float64 `json:"in_per_m"`
+				OutPerM float64 `json:"out_per_m"`
+			} `json:"price"`
+		} `json:"deep"`
 		// Fallback is a second provider and model, used only while it passes the release's
 		// eval gate (sb-cell(5), model.fallback; SB-5601); its key is at
 		// vault://tenants/TENANT/model-fallback. Empty is none.
@@ -72,6 +91,7 @@ type Config struct {
 			Provider string `json:"provider"`
 			Base     string `json:"base"`
 			ID       string `json:"id"`
+			Region   string `json:"region,omitempty"` // SB-5705
 			Price    struct {
 				InPerM  float64 `json:"in_per_m"`
 				OutPerM float64 `json:"out_per_m"`
@@ -84,6 +104,8 @@ type Config struct {
 		Base     string `json:"base"`
 		Model    string `json:"model"`
 		Dim      int    `json:"dim"`
+		Region   string `json:"region,omitempty"` // SB-5705: a remote embedder's region
+		Local    bool   `json:"local,omitempty"`  // SB-5705: an embedder on the cell's own machine
 	} `json:"embed"`
 	Connectors map[string]ConnectorConfig `json:"connectors"`
 	Chat       struct {
@@ -392,6 +414,9 @@ func (c Config) checkModel() error {
 	default:
 		return fmt.Errorf("%w: embed.provider %q is not hashing or openaicompat", ErrConfig, c.Embed.Provider)
 	}
+	if c.Model.Batch && (c.Model.Provider != "openaicompat" || c.Model.Local) {
+		return fmt.Errorf("%w: model.batch is for an openaicompat provider with the Batch API, not %s", ErrConfig, c.Model.Provider)
+	}
 	if c.Model.Local && c.Model.Provider != "openaicompat" {
 		return fmt.Errorf("%w: model.local is for an openaicompat model on the cell's own machine", ErrConfig)
 	}
@@ -401,8 +426,49 @@ func (c Config) checkModel() error {
 	if s := c.Model.Small; s.ID != "" && c.Model.Provider != "extractive" && !c.Model.Local && (s.Price.InPerM <= 0 || s.Price.OutPerM <= 0) {
 		return fmt.Errorf("%w: model.small needs model.small.price, or the budget can't be kept", ErrConfig)
 	}
+	if err := c.checkRegion(); err != nil {
+		return err
+	}
+	return c.checkDeep()
+}
+
+// checkRegion refuses a remote embedder outside model.region (SB-5705, LAW-33): ingest
+// has no passages to fall back on, so the cell doesn't start rather than send text out.
+// Models are refused call by call in the gateway.
+func (c Config) checkRegion() error {
+	if c.Model.Region == "" || c.Embed.Provider == "" || c.Embed.Provider == "hashing" || c.Embed.Local {
+		return nil
+	}
+	if c.Embed.Region != c.Model.Region {
+		return fmt.Errorf("%w: embed.region %q is outside model.region %q", ErrConfig, c.Embed.Region, c.Model.Region)
+	}
 	return nil
 }
+
+// checkDeep checks model.deep (SB-5704): an id, an effort or both, of a gateway provider; an
+// effort only where the provider takes one; and a price, or the budget can't be kept.
+func (c Config) checkDeep() error {
+	d := c.Model.Deep
+	if d.ID == "" && d.Effort == "" {
+		return nil
+	}
+	if c.Model.Provider == "extractive" {
+		return fmt.Errorf("%w: model.deep needs a gateway provider", ErrConfig)
+	}
+	if d.Effort != "" && !DeepEfforts[d.Effort] {
+		return fmt.Errorf("%w: model.deep.effort %q is not one of low, medium, high", ErrConfig, d.Effort)
+	}
+	if d.Effort != "" && c.Model.Provider == "anthropic" {
+		return fmt.Errorf("%w: model.deep.effort is for an OpenAI-compatible provider; for anthropic name a deeper model.deep.id", ErrConfig)
+	}
+	if !c.Model.Local && (d.Price.InPerM <= 0 || d.Price.OutPerM <= 0) {
+		return fmt.Errorf("%w: model.deep needs model.deep.price, or the budget can't be kept", ErrConfig)
+	}
+	return nil
+}
+
+// DeepEfforts are the reasoning efforts model.deep.effort may name (SB-5704).
+var DeepEfforts = map[string]bool{"low": true, "medium": true, "high": true}
 
 // Secrets are the vault paths (under vault://tenants/TENANT/) the api service reads with
 // this configuration (SB-2604): required ones must be there; optional ones are checked

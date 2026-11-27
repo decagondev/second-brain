@@ -64,6 +64,16 @@ type Inventory struct {
 	Made             string             `json:"made"`
 	Items            []Item             `json:"items"`
 	PersonalRoutines []PersonalRoutines `json:"personal_routines"`
+	// Models is every model provider the cell may call, with its region (SB-5705).
+	Models []Model `json:"models,omitempty"`
+}
+
+// Model is one provider by tier, where it runs, and whether calls may go to it.
+type Model struct {
+	Tier     string `json:"tier"`
+	Provider string `json:"provider"`
+	Region   string `json:"region,omitempty"`
+	InRegion bool   `json:"in_region"`
 }
 
 // Signed is the inventory with its SHA-256 and the anchor key's signature.
@@ -93,6 +103,7 @@ type Inputs struct {
 	Starters        []ask.Suggested
 	Proposals       []proposals.Proposal
 	RhythmRuns      []ask.RhythmRun
+	Models          []Model // SB-5705
 }
 
 func stamp(t time.Time) string {
@@ -105,7 +116,7 @@ func stamp(t time.Time) string {
 // Build makes the inventory, items by kind then name.
 func Build(in Inputs) Inventory {
 	m := in.Manifest
-	inv := Inventory{Tenant: in.Tenant, Release: in.Release, Made: stamp(in.Now), Items: []Item{}, PersonalRoutines: []PersonalRoutines{}}
+	inv := Inventory{Tenant: in.Tenant, Release: in.Release, Made: stamp(in.Now), Items: []Item{}, PersonalRoutines: []PersonalRoutines{}, Models: in.Models}
 	last := ask.LastUses(in.Questions, in.Traces)
 	approved := []proposals.Proposal{}
 	for _, p := range in.Proposals {

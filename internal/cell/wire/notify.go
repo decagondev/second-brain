@@ -221,6 +221,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 		Waits:        c.Parts().Stewards.OverdueWaits, // SB-4504
 		AgentAlerts:  c.agentAlerts,                   // SB-4701, SB-4703
 		SweepShadows: c.Parts().Stewards.SweepShadows, // SB-4704
+		SweepBatches: c.sweepBatches,                  // SB-5701
 		Rhythms:      c.Parts().Rhythms.Tick,          // SB-4801
 		Actions: func(ctx context.Context, since time.Time) ([]ask.Action, error) {
 			return c.Traces.ActionsSince(ctx, c.Config.Tenant, since)

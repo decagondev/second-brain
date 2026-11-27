@@ -13,7 +13,7 @@ summary: "Nobody can tell whether the prompt cache is working, or which prefix k
 | Manual | [`sb-admin(3)`](../../manual/sb-admin.3.md), [`sb-observability(7)`](../../manual/sb-observability.7.md) |
 | Laws | LAW-07, LAW-11 |
 | Depends on | SB-5605, SB-5606, SB-5006 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,23 +21,23 @@ Nobody can tell whether the prompt cache is working, or which prefix keeps chang
 
 ## Acceptance criteria
 
-- [ ] The share of input read from the prompt cache per space and agent this month, from traces, at `GET /v1/admin/costs/cache` and in the admin's week
-- [ ] A space or agent under a tenth with repeated asks is named, with the part of its prefix that changed between asks
-- [ ] No question, passage or memory appears in the report
+- [x] The share of input read from the prompt cache per space and agent this month, from traces, at `GET /v1/admin/costs/cache` and in the admin's week
+- [x] A space or agent under a tenth with repeated asks is named, with the part of its prefix that changed between asks
+- [x] No question, passage or memory appears in the report
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Cache shares from traces
-- [ ] Changed-prefix finder
-- [ ] Admin's week line
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Cache shares from traces
+- [x] Changed-prefix finder
+- [x] Admin's week line
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. Each trace keeps `InputTokens`, `CachedTokens` (from `budget.Tally.AddTokens`, fed by the gateway) and `Prefix`, an 8-character hash of each part of the stable prefix (prompt, language, length, skill). `ask.BuildCacheHits` counts the month by space and agent at `GET /v1/admin/costs/cache`, marks a space or agent under a tenth over at least 2 asks as `low` with the parts that changed between asks, and the admin's week has a line for each. Tested in TestCacheHitsFromTraces (a prompt with a timestamp is named, no text in the report) and TestPrefixIsHashed.
 
 ## Definition of done
 

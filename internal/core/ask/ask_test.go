@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/gateway"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retrieve"
@@ -208,6 +209,24 @@ func TestModelDownIsUnavailable(t *testing.T) {
 	a, _ := setup(t, &model{err: errors.New("boom")})
 	resp, err := a.Ask(context.Background(), scope(t, "alice"), ask.Request{Question: "refund"})
 	if err != nil || resp.Notice == nil || *resp.Notice != ask.NoticeModelDown || len(resp.Answer.Claims) != 0 || len(resp.Passages) != 1 || resp.Passages[0].Cite != "docs:refunds@2" {
+		t.Fatalf("got %+v, %v", resp, err)
+	}
+}
+
+// SB-5703: an ask that waited too long for a busy provider gets passages and says so.
+func TestBusyModelGivesPassages(t *testing.T) {
+	a, _ := setup(t, &model{err: gateway.ErrBusy})
+	resp, err := a.Ask(context.Background(), scope(t, "alice"), ask.Request{Question: "refund"})
+	if err != nil || resp.Notice == nil || *resp.Notice != ask.NoticeModelBusy || len(resp.Answer.Claims) != 0 || len(resp.Passages) != 1 {
+		t.Fatalf("got %+v, %v", resp, err)
+	}
+}
+
+// SB-5701: a scheduled step whose call went to a batch gets ErrPending, never passages.
+func TestBatchPendingIsNotModelDown(t *testing.T) {
+	a, _ := setup(t, &model{err: fmt.Errorf("%w: b1", ports.ErrBatchPending)})
+	resp, err := a.Ask(ask.WithFeature(context.Background(), ask.FeatureRoutine), scope(t, "alice"), ask.Request{Question: "refund"})
+	if !errors.Is(err, ask.ErrPending) || errors.Is(err, ask.ErrUnavailable) || resp.Notice != nil {
 		t.Fatalf("got %+v, %v", resp, err)
 	}
 }

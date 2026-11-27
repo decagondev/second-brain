@@ -179,6 +179,20 @@ type State struct {
 	Switched bool      `json:"switched"`
 	Until    time.Time `json:"until,omitzero"`
 	Down     bool      `json:"down"`
+	// Busy is the main provider's rate limits and waits by space (SB-5703).
+	Busy map[string]BusyCounts `json:"busy,omitempty"`
+	// Regions is each provider's region and whether it may be called (SB-5705).
+	Regions []Region `json:"regions,omitempty"`
+}
+
+// Region is one provider the cell may call, by tier (main, small, deep, fallback, embed):
+// where it runs, and whether calls may go to it under model.region (SB-5705).
+type Region struct {
+	Tier     string `json:"tier"`
+	Provider string `json:"provider"`
+	Region   string `json:"region,omitempty"`
+	Local    bool   `json:"local,omitempty"`
+	InRegion bool   `json:"in_region"`
 }
 
 // State is the fallback now.
@@ -187,6 +201,9 @@ func (f *Fallback) State() State {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	st := State{Gated: f.Secondary != nil && f.Gated != nil && f.Gated(), Down: f.down}
+	if g, ok := f.Primary.(Gateway); ok {
+		st.Busy = g.Busy.Counts()
+	}
 	if now.Before(f.until) {
 		st.Switched, st.Until = true, f.until
 	}

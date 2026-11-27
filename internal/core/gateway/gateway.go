@@ -51,6 +51,25 @@ type Gateway struct {
 	// BatchPoll is how long to wait between looks at a batch, 0 for 2s, and BatchWait the
 	// longest a batched call waits before it runs as a normal one, 0 for 10 minutes (SB-5604).
 	BatchPoll, BatchWait time.Duration
+	// Batches keeps batches a scheduled step submitted on one tick for a later tick to
+	// collect (SB-5701); nil waits within the run as before. Zone is the cell's time for
+	// the morning deadline, nil UTC, and Now the clock, nil time.Now.
+	Batches ports.BatchStore
+	Zone    *time.Location
+	Now     func() time.Time
+	// Region is where the provider runs (sb-cell(5) model.provider_region, fallback.region),
+	// and Allowed the region every call must stay in (model.region; SB-5705, LAW-33): with
+	// Allowed set, a call to a provider of another region or of none is refused before it
+	// leaves, as unavailable, so an ask shows passages. Local is a model on the cell's own
+	// machine, which is in every region the cell is.
+	Region, Allowed string
+	Local           bool
+	// Effort is the reasoning effort every call asks for, "" for the provider's own (the deep
+	// tier's model.deep.effort; SB-5704).
+	Effort string
+	// Busy is the provider's queue while it rate-limits (SB-5703), shared by every gateway of
+	// the provider; nil retries within the deadline as before.
+	Busy *Busy
 }
 
 // BatchRate is what a batched call costs against its list price (SB-5604).
@@ -71,6 +90,10 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 		}
 		return ports.ModelResponse{}, ErrSecretInPrompt
 	}
+	if !InRegion(g.Region, g.Allowed, g.Local) { // SB-5705, LAW-33: unknown means refuse
+		g.count("sb_model_refusals_total", "Model requests refused by the gateway.", map[string]string{"reason": "region"}, 1)
+		return ports.ModelResponse{}, ErrRegion
+	}
 	if g.Budget != nil {
 		max := req.MaxTokens
 		if max == 0 {
@@ -84,6 +107,9 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 		}
 	}
 	req.Model = g.ModelID
+	if g.Effort != "" {
+		req.Effort = g.Effort
+	}
 	retries, backoff := g.Retries, g.Backoff
 	if retries == 0 {
 		retries = 3
@@ -95,11 +121,23 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 	if sleep == nil {
 		sleep = sleepCtx
 	}
-	if req.Batch { // SB-5604: nobody is waiting
+	if step := ports.DeferredStep(ctx); req.Batch && step != "" && g.Batches != nil { // SB-5701
+		resp, ok, err := g.deferred(ctx, req, step)
+		if err != nil {
+			return ports.ModelResponse{}, err
+		}
+		if ok {
+			g.spent(ctx, req, resp.Usage, true)
+			return resp, nil
+		}
+	} else if req.Batch { // SB-5604: nobody is waiting
 		if resp, ok := g.batched(ctx, req); ok {
 			g.spent(ctx, req, resp.Usage, true)
 			return resp, nil
 		}
+	}
+	if g.Busy != nil {
+		return g.turns(ctx, req, retries, backoff)
 	}
 	for attempt := 0; ; attempt++ {
 		resp, err := g.Model.Complete(ctx, req)
@@ -166,6 +204,7 @@ func sleepCtx(ctx context.Context, d time.Duration) error {
 // what those and the economy tier saved against the list price (SB-5604 to SB-5606).
 func (g Gateway) spent(ctx context.Context, req ports.ModelRequest, u ports.Usage, batched bool) {
 	g.meter(u)
+	budget.TallyOf(ctx).AddTokens(u.Input, u.Cached) // SB-5706
 	if g.Budget == nil {
 		return
 	}

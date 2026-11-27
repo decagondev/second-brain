@@ -458,6 +458,9 @@ type ModelRequest struct {
 	// Batch says nobody is waiting: the gateway may send it through the provider's batch API
 	// (SB-5604).
 	Batch bool
+	// Effort is a reasoning effort (low, medium, high) for a provider that takes one, set by
+	// the deep tier's gateway (SB-5704); "" is the provider's own.
+	Effort string
 }
 
 // Usage is the token count of one completion: Input counts every input token, Cached those
@@ -469,6 +472,51 @@ type Usage struct{ Input, Output, Cached int }
 type Batcher interface {
 	SubmitBatch(ctx context.Context, req ModelRequest) (id string, err error)
 	CollectBatch(ctx context.Context, id string) (resp ModelResponse, done bool, err error)
+}
+
+// BatchCanceller is a Batcher that can cancel a batch it no longer waits for (SB-5701).
+type BatchCanceller interface {
+	CancelBatch(ctx context.Context, id string) error
+}
+
+// PendingBatch is one batch submitted on one tick and collected on a later one (SB-5701):
+// its key (a hash of the step and the request), the provider's batch id, the provider, the
+// caller and the step. Never the prompt.
+type PendingBatch struct {
+	Key       string    `json:"key"`
+	BatchID   string    `json:"batch_id"`
+	Provider  string    `json:"provider"`
+	Caller    string    `json:"caller"`
+	Step      string    `json:"step"`
+	Submitted time.Time `json:"submitted"`
+	Deadline  time.Time `json:"deadline"`
+	Tries     int       `json:"tries"`
+}
+
+// BatchStore keeps pending batches across ticks and restarts (state/batches; SB-5701).
+type BatchStore interface {
+	GetBatch(ctx context.Context, key string) (PendingBatch, bool, error)
+	PutBatch(ctx context.Context, b PendingBatch) error
+	DeleteBatch(ctx context.Context, key string) error
+	ListBatches(ctx context.Context) ([]PendingBatch, error)
+}
+
+// ErrBatchPending is a batchable call submitted on this tick, or still running: its step
+// runs again on a later tick and gets the result then (SB-5701). It is not a failure.
+var ErrBatchPending = errors.New("model: batch pending")
+
+type deferKey struct{}
+
+// WithDeferredBatch says the caller of ctx is a scheduled step named step that runs again on
+// a later tick, so a batchable call may be submitted now and collected then (SB-5701).
+func WithDeferredBatch(ctx context.Context, step string) context.Context {
+	return context.WithValue(ctx, deferKey{}, step)
+}
+
+// DeferredStep is the step ctx was marked with, or "" when the caller waits within the run.
+func DeferredStep(ctx context.Context) string {
+	s, _ := ctx.Value(deferKey{}).(string)
+	return s
 }
 
 // ModelResponse is the model's text and usage.

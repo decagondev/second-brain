@@ -327,6 +327,8 @@ func (c *Cell) runDraft(ctx context.Context, key, kind, title string, req ask.Re
 		return notify.BriefKilled, nil
 	case errors.Is(err, ask.ErrBudget): // at its monthly cap (SB-4703)
 		return notify.BriefBudget, nil
+	case errors.Is(err, ask.ErrPending): // its batch is collected on a later tick (SB-5701)
+		return notify.BriefPending, nil
 	case err != nil:
 		return "", err
 	}

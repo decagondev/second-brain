@@ -29,6 +29,7 @@ LAW-25 a memory is its person's own          LAW-26 a stored result is checked w
 LAW-27 a consultation is the asker's own    LAW-28 an agent's writing says so
 LAW-29 a rhythm only drafts                  LAW-30 a brief about a person is theirs to read
 LAW-31 lent access lasts one run             LAW-32 a label never drops
+LAW-33 a model call stays in its region
 ```
 
 ## DESCRIPTION
@@ -239,6 +240,12 @@ When a steward's run needs a space they can't read, a person who can read it may
 Anything built from a labelled document carries the highest label among what it cites, and goes nowhere that label forbids (SB-5405). An answer, a draft, a note, a download and a chat reply each carry it (`label`), and content labelled `confidential` or `restricted` goes only to a person: the web, a direct reply, an email to them. It is never shared into a chat channel or posted to one from a draft. A label read from a document's front matter only ever raises the label its source or space gave it, and a cite the index can't find counts as `restricted`: unknown never drops a label.
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW32_ALabelNeverDrops`: random answers over random labelled chunks, through the real label and channel gate; SB-5405) · Selftest (`TestSelfLabelGateIsCaught`: a gate that takes the first cite's label, or lets every label into a channel, goes red) · Integration (`TestLabelsReachAndTheSensitiveMapThroughARunningCell`).
+
+### LAW-33: A model call stays in its region {#law-33}
+
+With sb-cell(5) `model.region` set, no model call of any tier (main, small, deep or fallback), batched or not, goes to a provider that declares another region or none (SB-5705). The gateway refuses the call before it leaves, as unavailable, so an ask shows the passages the asker can open instead of an answer from elsewhere (LAW-03: a provider with no region is unknown, and unknown means refuse). A model on the cell's own machine is in its region. A remote embedder outside the region stops the cell from starting, since ingest has nothing else to fall back on. The health report's `model.regions` and the inventory list each provider's region.
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW33_AModelCallStaysInItsRegion`: random regions for a primary and a fallback, random failures, gates and batchable calls, through the real gateways and fallback; SB-5705) · Selftest (`TestSelfRegionBlindGatewayIsCaught`: a gateway that ignores the region goes red).
 
 ### External review (SB-612)
 

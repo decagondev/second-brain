@@ -87,7 +87,7 @@ The admin's week (SB-5006) has a **Sensitive map** section: one line for each sp
 
 ### The model's state (SB-5601, SB-5602)
 
-The health report's `model` is the main tier's fallback state: whether the fallback is gated, whether calls are switched to it and until when, and whether the last call found no model to answer (`down`). While it is down, the notice banner says so and answers show passages only.
+The health report's `model` is the main tier's fallback state: whether the fallback is gated, whether calls are switched to it and until when, and whether the last call found no model to answer (`down`). While it is down, the notice banner says so and answers show passages only. `model.busy` counts, for each space, the rate limits the main provider answered (`rate_limited`) and the calls that waited for a turn (`waited`) since the cell started (SB-5703); `sb_model_rate_limited_total{tenant, provider, space}` counts the same limits. `model.regions` lists each provider the cell may call, `{ "tier", "provider", "region"?, "local"?, "in_region" }` (SB-5705), and `sb_model_refusals_total{reason="region"}` counts calls refused for leaving `model.region`. Prompt cache hits by space and agent are at `GET /v1/admin/costs/cache` (sb-admin(3); SB-5706). Batches a scheduled step submitted and hasn't collected yet are files in `state/batches`, one each, holding no prompt (SB-5701).
 
 ### What it saved (SB-5604 to SB-5606)
 

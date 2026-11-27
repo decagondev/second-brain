@@ -130,3 +130,11 @@ func (c Client) CollectBatch(ctx context.Context, id string) (ports.ModelRespons
 	}
 	return ports.ModelResponse{}, true, fmt.Errorf("%w: the batch had no result", ports.ErrModelDown)
 }
+
+var _ ports.BatchCanceller = Client{}
+
+// CancelBatch implements ports.BatchCanceller (SB-5701): a batch not back by the morning.
+func (c Client) CancelBatch(ctx context.Context, id string) error {
+	var st batchState
+	return c.do(ctx, http.MethodPost, c.base()+"/v1/messages/batches/"+id+"/cancel", nil, &st)
+}

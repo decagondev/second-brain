@@ -37,6 +37,7 @@ const notices: Record<Exclude<Notice, null>, string> = {
   no_sources: msg("Nothing indexed answers this yet."),
   most_uncited: msg("Most of this answer isn't backed by your sources."),
   model_unavailable: msg("No answer written: the model is unavailable."),
+  model_busy: msg("No answer written: the model is busy. Try again in a minute."),
 };
 
 // "Finance · restricted": the spaces that hold a source and its label, in words.

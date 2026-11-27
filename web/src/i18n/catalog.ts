@@ -1126,6 +1126,7 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Confirm": { de: "Bestätigen", fr: "Confirmer" },
   "Memory line to confirm": { de: "Gedächtniszeile zum Bestätigen", fr: "Ligne de mémoire à confirmer" },
   "No answer written: the model is unavailable.": { de: "Keine Antwort geschrieben: Das Modell ist nicht verfügbar.", fr: "Aucune réponse rédigée : le modèle est indisponible." },
+  "No answer written: the model is busy. Try again in a minute.": { de: "Keine Antwort geschrieben: Das Modell ist ausgelastet. Versuchen Sie es in einer Minute erneut.", fr: "Aucune réponse rédigée : le modèle est occupé. Réessayez dans une minute." },
   "Answered on {date}, checked now.": { de: "Beantwortet am {date}, jetzt geprüft.", fr: "Répondu le {date}, vérifié maintenant." },
   "Ask fresh": { de: "Neu fragen", fr: "Redemander" },
   "Answered by the fallback model.": { de: "Vom Ersatzmodell beantwortet.", fr: "Répondu par le modèle de secours." },

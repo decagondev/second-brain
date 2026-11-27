@@ -239,6 +239,12 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-27 | LAW-14 | Tested (extended) | SB-5602: with no model, an ask returns passages and no claim (TestModelDownIsUnavailable, TestKeepAnsweringThroughARunningCell) |
 | 2026-11-27 | LAW-07 | Tested (extended) | SB-5605: the cached system prompt holds no question, passage or memory and is the same across asks (TestStablePrefixAndBatching) |
 | 2026-11-27 | LAW-11 | Tested (extended) | SB-5604 to SB-5606: batched and cached calls are metered at what they cost, and what they saved adds up from the traces (TestBatchCacheAndTierSavings, TestSavedAddsUp) |
+| 2026-11-27 | LAW-07 | Tested (extended) | SB-5701: a batch kept between ticks holds no prompt, and a step gets only its own request's result (TestLAW07_KeptBatchesHoldNoPrompt, TestSelfBatchesAreCaught, TestBatchCollectedOnALaterTick) |
+| 2026-11-27 | LAW-05 | Tested (extended) | SB-5701, SB-5702: a pending batch is never reported as a result, and a brief is marked done only once its batch returned (TestPendingBriefRunsAgainNextTick, TestOpenAIBatch) |
+| 2026-11-27 | LAW-14 | Tested (extended) | SB-5703: an ask that waited too long for a busy provider shows passages and no claim (TestBusyModelGivesPassages, TestPeopleFirstWhenBusy) |
+| 2026-11-27 | LAW-33 | Stated, Tested | SB-5705: a model call stays in its region; with model.region set, no tier, fallback or batch reaches a provider of another region or none (TestLAW33_AModelCallStaysInItsRegion, TestSelfRegionBlindGatewayIsCaught) |
+| 2026-11-27 | LAW-06 | Tested (extended) | SB-5704: the deep tier answers only while the release's eval gate passed it (TestThinkHarderOnlyWhenItHelps) |
+| 2026-11-27 | LAW-07 | Tested (extended) | SB-5706: the cache report and traces hold prefix hashes, never a question, passage or prompt (TestCacheHitsFromTraces, TestPrefixIsHashed) |
 | 2026-11-25 | LAW-31 | Tested | SB-5303: a lent draft shows exactly to readers who can open every cite, and a loan answered once never runs again (TestLAW31_LentAccessLastsOneRun, TestSelfLentGateIsCaught, TestBorrowAccessThroughARunningCell) |
 | 2026-11-25 | LAW-29 | Tested (extended) | SB-5301: a work event only drafts, once per document, as the trigger's approver (TestWorkEventsDraftOnceAndBatch) |
 | 2026-11-25 | LAW-13 | Tested (extended) | SB-5205: a chunk's page comes from the source's own page offsets, so a rebuild gives the same pages (TestPagesOfPDFsAndDecks) |

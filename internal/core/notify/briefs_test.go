@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"example.com/second-brain/internal/core/ports"
 )
 
 // SB-4005: a brief runs once on its day, from 08:00; one that can't run tells the stewards.
@@ -81,5 +83,33 @@ func TestLeaderWeekRunsOnMonday(t *testing.T) {
 	}
 	if len(s.got) != 1 || s.got[0].msg.Text != "The leader's week didn't run: the space has no active steward to run it as" {
 		t.Fatalf("sent %v", s.got)
+	}
+}
+
+// SB-5701: a brief whose call went to a batch isn't marked or told; the next tick runs it
+// again as the same step, collects the batch and marks it.
+func TestPendingBriefRunsAgainNextTick(t *testing.T) {
+	tue := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	j, s, c := world(tue)
+	j.Questions = questions{}
+	c.weekly["weekly"] = Monday(tue, nil)
+	j.Briefs = map[string]time.Weekday{"spc_ops": time.Tuesday}
+	j.Facts = func(string) ([]string, string, bool) { return []string{"group:finance-leads"}, "", true }
+	var steps []string
+	j.RunBrief = func(ctx context.Context, _ string) (string, error) {
+		steps = append(steps, ports.DeferredStep(ctx))
+		if len(steps) == 1 {
+			return BriefPending, nil
+		}
+		return "", nil
+	}
+	for i := 0; i < 3; i++ {
+		j.Now = func() time.Time { return tue.Add(time.Duration(i) * time.Hour) }
+		if _, err := j.Run(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if strings.Join(steps, ",") != "brief-spc_ops,brief-spc_ops" || len(s.got) != 0 {
+		t.Fatalf("steps %v sent %v", steps, s.got)
 	}
 }

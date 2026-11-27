@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
 )
 
@@ -630,7 +631,10 @@ func (x Rhythms) offer(ctx context.Context, r *RhythmRun, i int) error {
 		}
 	}
 	title := fmt.Sprintf("%s, day %d: %s", r.Rhythm, st.Day, st.Ask)
-	thread, err := x.draft(ctx, r, *st, s, as != "")
+	thread, err := x.draft(ports.WithDeferredBatch(ctx, fmt.Sprintf("rhythm-%s-%d", r.ID, i)), r, *st, s, as != "")
+	if errors.Is(err, ErrPending) { // SB-5701: its batch is collected on a later tick
+		return nil
+	}
 	if err != nil {
 		st.State, st.Why = StepSkipped, "nothing to draft: "+err.Error()
 		return x.audit(ctx, RhythmSystem, *r, "rhythm_step_skipped", fmt.Sprintf("day %d: nothing to draft", st.Day))
