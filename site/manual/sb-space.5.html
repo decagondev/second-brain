@@ -164,6 +164,13 @@
 <td>(SB-4204) The ticket labels that make a ticket an incident in this space: 1 to 10 labels of 1 to 40 letters, digits, spaces or <code>_ . : / -</code>, none twice (ignoring case). When the notify job first sees a ticket in the space whose text names one of them on a <code>Labels:</code> line among its first five lines (sb-connector(3), <code>tickets: linear</code>), the <code>incident-brief</code> agent drafts one brief for the stewards (sb-agents(7), Scheduled and triggered agents). Switch it off with the agent's kill switch</td>
 </tr>
 <tr>
+<td><code>mailbox</code></td>
+<td>an email address</td>
+<td>no</td>
+<td></td>
+<td>(SB-5907) The one <strong>shared</strong> mailbox whose new messages start the space's agent, with <code>on: [mail-received]</code>, for example <code>support@acme.example</code>. It is read through Microsoft Graph (<code>Mail.Read</code>, which an application access policy limits to the mailboxes spaces name); a person's own mailbox is never named or read. <code>on</code> listing <code>mail-received</code> without a <code>mailbox</code> is an error</td>
+</tr>
+<tr>
 <td><code>routing</code></td>
 <td><code>economy</code>, <code>balanced</code> or <code>frontier</code></td>
 <td>no</td>
@@ -172,10 +179,10 @@
 </tr>
 <tr>
 <td><code>on</code> (work events)</td>
-<td><code>pr-opened</code>, <code>ticket-filed</code></td>
+<td><code>pr-opened</code>, <code>ticket-filed</code>, <code>mail-received</code></td>
 <td>no</td>
 <td>none</td>
-<td>(SB-5301) Beside <code>source-changed</code>: a new pull request on GitHub, or a new ticket, in the space starts a draft about it for the space's first active steward (sb-agents(7), Start on a work event)</td>
+<td>(SB-5301) Beside <code>source-changed</code>: a new pull request on GitHub, or a new ticket, in the space starts a draft about it for the space's first active steward (sb-agents(7), Start on a work event); <code>mail-received</code> (SB-5907), with <code>mailbox</code>, a new message in the space's shared mailbox (sb-agents(7), Start on a new email)</td>
 </tr>
 <tr>
 <td><code>suspect</code></td>

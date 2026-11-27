@@ -72,6 +72,14 @@ agents: [ask]
 <td>the cell's canary secret; nothing may use it (<a href="sb-observability.7.html#canaries-and-the-secret-scanner">sb-observability(7)</a>)</td>
 </tr>
 <tr>
+<td><code>vault://tenants/TENANT/msgraph</code></td>
+<td>Microsoft Graph's app credentials, <code>{ "tenant_id", "client_id", "client_secret" }</code> (SB-5901, ADR-0023); read scopes only</td>
+</tr>
+<tr>
+<td><code>vault://tenants/TENANT/teams</code></td>
+<td>the Teams bot's <code>{ "app_id", "app_password" }</code> (SB-5904)</td>
+</tr>
+<tr>
 <td><code>vault://tenants/TENANT/connectors/docs-classification</code></td>
 <td>the Drive label that carries sensitivity, no secret in it (sb-connector(3)); optional</td>
 </tr>

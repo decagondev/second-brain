@@ -446,6 +446,47 @@ type Connector interface {
 </tbody>
 </table>
 <p>Tested against <code>hubspottest</code>, a recorded fake of the CRM v3 objects, search, owners and settings users endpoints the connector calls.</p>
+<h3 id="docs-sharepoint-sb-5901-sb-5902-sb-5906"><code>docs: sharepoint</code> (SB-5901, SB-5902, SB-5906)</h3>
+<p>SharePoint document libraries and OneDrives through Microsoft Graph, read-only (ADR-0023), with the standard library only: no Microsoft SDK. One Graph client per cell signs in with OAuth client credentials against Entra; its app's <code>{ "tenant_id", "client_id", "client_secret" }</code> are at <code>vault://tenants/TENANT/msgraph</code>, read at call time and registered with the log redactor with each token. The application permissions it needs are read scopes only: <code>Sites.Read.All</code> (or <code>Sites.Selected</code>), <code>Files.Read.All</code>, <code>Group.Read.All</code>, <code>User.Read.All</code> and <code>OnlineMeetingTranscript.Read.All</code>. sb-cell(5) <code>microsoft</code> names the drives, the organizers whose Teams transcripts are read, and the company's email domain.</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Changes</td>
+<td><code>GET /drives/ID/root/delta</code> per drive with <code>Prefer: deltashowsharingchanges</code>, from the delta link the cursor keeps (one per drive and organizer, as JSON); an empty cursor lists everything. A deleted item is a delete; an item whose sharing changed is read again whole (<code>ACLOnly</code>, which re-ingests). A delta link Graph no longer takes (410) starts that drive over</td>
+</tr>
+<tr>
+<td>Fetch</td>
+<td>The item, its content (at most 25 MB) through the Office readers by extension (sb-ingest(7): <code>.docx</code>, <code>.pptx</code>, <code>.xlsx</code>, <code>.pdf</code>, <code>.vtt</code>, text), with each page or slide's start (SB-5205) and an Office file's review-by property. The version is the number after the last comma of its <code>cTag</code>; the location is its folder under the drive's root, then its name (<code>/Finance/close.docx</code>); the owner is <code>createdBy.user.email</code></td>
+</tr>
+<tr>
+<td>ACL copy</td>
+<td><code>GET …/items/ID/permissions</code>: each granted user's email, each group as <code>group:MAIL</code> (or <code>group:ID</code>), an <code>anonymous</code> link as <code>anyone</code> and an <code>organization</code> link as <code>domain:DOMAIN</code>, both of which are wide (sb-permissions(7), Shared too widely)</td>
+</tr>
+<tr>
+<td>Live check</td>
+<td>The item's permissions read again now and the person's groups from Entra with nested membership (sb-identity(7), Entra ID), at most 8 at a time within 800 ms: a grant to their email, to one of their groups, an <code>anyone</code> link, or an <code>organization</code> link for an address in the domain allows; anything else denies; an item that's gone, an error or a late answer is Unknown (LAW-03)</td>
+</tr>
+<tr>
+<td>Purview labels (SB-5902)</td>
+<td>Each item's <code>sensitivityLabel.labelId</code> is mapped by sb-cell(5) <code>labels.microsoft</code> to public, internal, confidential or restricted. An id it doesn't map counts as <strong>restricted</strong> until an admin maps it, and the health report's <code>unmapped_labels</code> lists such ids with how many items carried each, never which. A new mapping relabels at the next sync</td>
+</tr>
+<tr>
+<td>Teams transcripts (SB-5906)</td>
+<td>For each organizer, <code>GET /users/ID/onlineMeetings/getAllTranscripts(meetingOrganizerUserId='ID')/delta</code>; each transcript is a document titled <code>SUBJECT (DATE) - Transcript</code>, of type <code>transcript</code> (SB-3701), its WebVTT read with speakers and times (<code>folder.TranscriptText</code>), under <code>/Teams meetings/</code>, open to the meeting's organizer and attendees, who could open its recording; the live check reads the meeting's participants again. A meeting without a transcript is never listed. Its text is data (LAW-09)</td>
+</tr>
+<tr>
+<td>Act</td>
+<td><code>ENOTSUP</code>: read-only</td>
+</tr>
+</tbody>
+</table>
+<p>Tested against <code>graphtest</code>, a recorded fake of the Graph endpoints and the token endpoint, with the contract kit and the connector laws (<code>TestLAW01_SharePointAccessIsLive</code>, <code>TestLAW03_SharePointUnknownIsNeverAllow</code>). A run against a real tenant is In review until one is provided.</p>
 <h3 id="calendars-sb-4202">Calendars (SB-4202)</h3>
 <p>A calendar isn't a source: nothing in it is indexed, answered from or kept. It is read only for meeting prep (sb-ask(3), Meeting prep), as the person whose calendar it is, and only when that person asks for a brief or has turned on <code>prep</code>. It is set in sb-cell(5) <code>calendar</code>, not in the tenant's <code>connectors</code>.</p>
 <table>
@@ -475,6 +516,7 @@ type Connector interface {
 </tbody>
 </table>
 <p>Tested against <code>caltest</code>, a recorded fake of the events endpoint and the token endpoint.</p>
+<p><strong>Outlook</strong> (SB-5905). With sb-cell(5) <code>calendar.kind: outlook</code>, the calendar is read through Microsoft Graph with the cell's Graph client (<code>docs: sharepoint</code>, above; <code>Calendars.Read</code>): <code>GET /users/EMAIL/calendarView</code> for the window asked, at most 50, the person's own address only, never anyone else's. Each event's subject is its title, its body preview its agenda, and its attendees' addresses are matched to people through the directory (sb-identity(7), Entra ID). Cancelled events and those the person declined are left out, and a person Graph doesn't know reads no events. Tested against <code>graphtest</code>.</p>
 <h2 id="mock-connector">MOCK CONNECTOR</h2>
 <p><code>internal/adapters/connectors/mock</code> is a scriptable source system and connector for laws, evals and tests. Nothing in it is random; every behaviour is asked for:</p>
 <table>
@@ -518,7 +560,7 @@ type Connector interface {
 <p>A minimal connector skeleton is in <a href="../examples/connector/README.html">examples/connector/</a>.</p>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-permissions.7.html">sb-permissions(7)</a>, <a href="sb-ingest.7.html">sb-ingest(7)</a>, <a href="sb-approvals.7.html">sb-approvals(7)</a></p><p class="srcline">Source: <code>manual/sb-connector.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#location-and-label-sb-1005">Location and label (SB-1005)</a></li><li class="l3"><a href="#fields-sb-1106">Fields (SB-1106)</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#docs-folder-sb-1606">docs: folder (SB-1606)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l3"><a href="#code-github-sb-1103">code: github (SB-1103)</a></li><li class="l3"><a href="#hris-bamboohr-sb-1104">hris: bamboohr (SB-1104)</a></li><li class="l3"><a href="#accounting-quickbooks-online-sb-1105">accounting: quickbooks-online (SB-1105)</a></li><li class="l3"><a href="#tickets-linear-sb-211">tickets: linear (SB-211)</a></li><li class="l3"><a href="#crm-hubspot-sb-610">crm: hubspot (SB-610)</a></li><li class="l3"><a href="#calendars-sb-4202">Calendars (SB-4202)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#version-negotiation">Version negotiation</a></li><li class="l3"><a href="#fetch">Fetch</a></li><li class="l3"><a href="#location-and-label-sb-1005">Location and label (SB-1005)</a></li><li class="l3"><a href="#fields-sb-1106">Fields (SB-1106)</a></li><li class="l3"><a href="#acl">ACL</a></li><li class="l3"><a href="#changes">Changes</a></li><li class="l3"><a href="#act">Act</a></li><li class="l3"><a href="#credentials">Credentials</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#contract-kit">CONTRACT KIT</a></li><li class="l2"><a href="#connectors">CONNECTORS</a></li><li class="l3"><a href="#docs-google-drive-sb-203">docs: google-drive (SB-203)</a></li><li class="l3"><a href="#docs-folder-sb-1606">docs: folder (SB-1606)</a></li><li class="l3"><a href="#chat-slack-sb-204">chat: slack (SB-204)</a></li><li class="l3"><a href="#code-github-sb-1103">code: github (SB-1103)</a></li><li class="l3"><a href="#hris-bamboohr-sb-1104">hris: bamboohr (SB-1104)</a></li><li class="l3"><a href="#accounting-quickbooks-online-sb-1105">accounting: quickbooks-online (SB-1105)</a></li><li class="l3"><a href="#tickets-linear-sb-211">tickets: linear (SB-211)</a></li><li class="l3"><a href="#crm-hubspot-sb-610">crm: hubspot (SB-610)</a></li><li class="l3"><a href="#docs-sharepoint-sb-5901-sb-5902-sb-5906">docs: sharepoint (SB-5901, SB-5902, SB-5906)</a></li><li class="l3"><a href="#calendars-sb-4202">Calendars (SB-4202)</a></li><li class="l2"><a href="#mock-connector">MOCK CONNECTOR</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

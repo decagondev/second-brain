@@ -183,6 +183,12 @@
 <td>(SB-5705) Where the main provider (and its small and deep tiers), the fallback and a remote embedder run; <code>embed.local</code> is an embedder on the cell's own machine. A local model is in every region. The health report's <code>model.regions</code> and the inventory list them</td>
 </tr>
 <tr>
+<td><code>calendar.kind: outlook</code></td>
+<td>string</td>
+<td>no</td>
+<td>(SB-5905) Meeting prep, <code>/v1/me/events</code> and the leader's week read Outlook calendars through Microsoft Graph (<code>microsoft</code>, above) instead of Google's; each person's own events only</td>
+</tr>
+<tr>
 <td><code>model.batch</code></td>
 <td>bool</td>
 <td>no</td>
@@ -217,6 +223,30 @@
 <td>object</td>
 <td>no</td>
 <td>Overrides for one connector: <code>base</code> (the vendor API's address, for a sandbox or a recorded fake). For <code>docs: folder</code> it is required and names the directory, <code>file:///DIR</code>; the connector keeps its listings under <code>state/connectors/KIND/</code> (sb-connector(3), SB-1606)</td>
+</tr>
+<tr>
+<td><code>microsoft.base</code>, <code>microsoft.login</code></td>
+<td>URLs</td>
+<td>no</td>
+<td>(SB-5901 to SB-5907) Microsoft Graph's API and Entra's sign-in, for a fake in tests; default <code>https://graph.microsoft.com/v1.0</code> and <code>https://login.microsoftonline.com</code>. The app's credentials are at <code>vault://tenants/TENANT/msgraph</code>, <code>{ "tenant_id", "client_id", "client_secret" }</code> (ADR-0023)</td>
+</tr>
+<tr>
+<td><code>microsoft.drives</code>, <code>microsoft.organizers</code>, <code>microsoft.domain</code></td>
+<td>lists, string</td>
+<td>with <code>docs: sharepoint</code></td>
+<td>(SB-5901, SB-5906) The drive ids the sharepoint connector reads (a site's library or a OneDrive), the Entra user ids whose Teams meetings' transcripts it reads, and the company's email domain an organization sharing link grants (sb-connector(3), <code>docs: sharepoint</code>)</td>
+</tr>
+<tr>
+<td><code>labels.microsoft</code></td>
+<td>map label id → level</td>
+<td>no</td>
+<td>(SB-5902) Purview sensitivity label ids to <code>public</code>, <code>internal</code>, <code>confidential</code> or <code>restricted</code>. An id it doesn't map counts as <code>restricted</code>, and the health report lists it by id and count</td>
+</tr>
+<tr>
+<td><code>teams.app_id</code>, <code>teams.openid</code>, <code>teams.login</code></td>
+<td>strings, URLs</td>
+<td>no</td>
+<td>(SB-5904) The Teams bot's Microsoft app id, its password at <code>vault://tenants/TENANT/teams</code> (<code>{ "app_id", "app_password" }</code>), and the Bot Framework's OpenID configuration and token addresses, for a fake in tests ("" for Microsoft's). It needs <code>microsoft</code> to find people by their Entra ids (sb-ask(3), The chat app (Teams))</td>
 </tr>
 <tr>
 <td><code>chat.save_reaction</code></td>

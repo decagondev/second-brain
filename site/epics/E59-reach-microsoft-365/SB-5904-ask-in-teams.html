@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,21 +60,21 @@
 <p>People on Microsoft 365 can't ask the brain where they work.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span><code>internal/adapters/chatapp/teamsapp</code> and <code>POST /chat/teams</code>: mentions and DMs, cites, follow-ups in the reply chain</li>
-<li class="task"><span class="box"></span>Incoming activities verified against Microsoft's signing keys with the standard library; anything else refused</li>
-<li class="task"><span class="box"></span>A confidential answer goes to the person in a DM</li>
+<li class="task done"><span class="box">✓</span><code>internal/adapters/chatapp/teamsapp</code> and <code>POST /chat/teams</code>: mentions and DMs, cites, follow-ups in the reply chain</li>
+<li class="task done"><span class="box">✓</span>Incoming activities verified against Microsoft's signing keys with the standard library; anything else refused</li>
+<li class="task done"><span class="box">✓</span>A confidential answer goes to the person in a DM</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Teams app adapter</li>
-<li class="task"><span class="box"></span>Activity verification</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Teams app adapter</li>
+<li class="task done"><span class="box">✓</span>Activity verification</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
-<p>Not started.</p>
+<p>2026-11-27: built. <code>internal/adapters/chatapp/teamsapp</code> at <code>POST /chat/teams</code>: the Bot Framework's RS256 token checked with the standard library against its published keys (issuer, this app id, times, the activity's serviceUrl), the sender's Entra id mapped through Graph and the Slack app's rules, a channel mapped to its space by name, and the answer always in the person's personal chat (Teams has no message only one person sees), the reply chain getting a line; follow-ups in a reply chain are one conversation per person (<code>Request.Thread</code>). sb-cell(5) <code>teams</code> and <code>vault://tenants/TENANT/teams</code>. Tested in TestAskInTeams against a recorded Bot Framework.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E59-reach-microsoft-365/SB-5904-ask-in-teams.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>Done</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,22 @@
 <p>Microsoft sensitivity labels mean nothing to the brain.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>The connector reads each item's sensitivity label id; sb-cell(5) <code>labels.microsoft</code> maps ids to the four levels</li>
-<li class="task"><span class="box"></span>An unmapped label counts as <code>restricted</code> until mapped; health lists unmapped labels by id and count</li>
-<li class="task"><span class="box"></span>Changing a mapping relabels at the next sync</li>
+<li class="task done"><span class="box">✓</span>The connector reads each item's sensitivity label id; sb-cell(5) <code>labels.microsoft</code> maps ids to the four levels</li>
+<li class="task done"><span class="box">✓</span>An unmapped label counts as <code>restricted</code> until mapped; health lists unmapped labels by id and count</li>
+<li class="task done"><span class="box">✓</span>Changing a mapping relabels at the next sync</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span>Label ids from Graph</li>
-<li class="task"><span class="box"></span>Mapping and the restricted default</li>
-<li class="task"><span class="box"></span>Health line</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span>Label ids from Graph</li>
+<li class="task done"><span class="box">✓</span>Mapping and the restricted default</li>
+<li class="task done"><span class="box">✓</span>Health line</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
-<p>Not started.</p>
+<p>2026-11-27: built. <code>SharePoint.label</code> maps <code>sensitivityLabel.labelId</code> by sb-cell(5) <code>labels.microsoft</code>; an unmapped id is <code>restricted</code> and counted (<code>SharePoint.Unmapped</code>), and the health report's <code>unmapped_labels</code> lists ids and counts only; a new mapping relabels at the next fetch. Tested in TestSharePointSync and TestMicrosoft365ThroughARunningCell.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E59-reach-microsoft-365/SB-5902-purview-labels.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>

@@ -52,7 +52,7 @@
 </tr>
 <tr>
 <td>Status</td>
-<td>Open</td>
+<td>In review</td>
 </tr>
 </tbody>
 </table>
@@ -60,22 +60,22 @@
 <p>A company on Microsoft 365 can't connect its documents.</p>
 <h2 id="acceptance-criteria">Acceptance criteria</h2>
 <ul>
-<li class="task"><span class="box"></span>A Graph connector for the sites and drives sb-cell(5) names, with delta queries from a stored cursor</li>
-<li class="task"><span class="box"></span>Live permissions including sharing links (<code>anonymous</code> and <code>organization</code> count as wide), Office text, pages and slides</li>
+<li class="task done"><span class="box">✓</span>A Graph connector for the sites and drives sb-cell(5) names, with delta queries from a stored cursor</li>
+<li class="task done"><span class="box">✓</span>Live permissions including sharing links (<code>anonymous</code> and <code>organization</code> count as wide), Office text, pages and slides</li>
 <li class="task"><span class="box"></span>Built against a recorded Graph fake with the standard library; a real tenant run stays In review</li>
 </ul>
 <h2 id="subtasks">Subtasks</h2>
 <ul>
-<li class="task"><span class="box"></span>Update the man pages listed above first (manual first, P2)</li>
-<li class="task"><span class="box"></span><code>connectors/msgraph</code> documents</li>
-<li class="task"><span class="box"></span>Recorded Graph fake</li>
-<li class="task"><span class="box"></span>Permissions and sharing links</li>
-<li class="task"><span class="box"></span>Tests</li>
-<li class="task"><span class="box"></span>Write or extend the law tests</li>
-<li class="task"><span class="box"></span>Devlog entry, ledger and changelog updated</li>
+<li class="task done"><span class="box">✓</span>Update the man pages listed above first (manual first, P2)</li>
+<li class="task done"><span class="box">✓</span><code>connectors/msgraph</code> documents</li>
+<li class="task done"><span class="box">✓</span>Recorded Graph fake</li>
+<li class="task done"><span class="box">✓</span>Permissions and sharing links</li>
+<li class="task done"><span class="box">✓</span>Tests</li>
+<li class="task done"><span class="box">✓</span>Write or extend the law tests</li>
+<li class="task done"><span class="box">✓</span>Devlog entry, ledger and changelog updated</li>
 </ul>
 <h2 id="progress">Progress</h2>
-<p>Not started.</p>
+<p>2026-11-27: built against the recorded Graph; waits for a real tenant. <code>internal/adapters/msgraph</code>: one <code>Client</code> (client credentials against Entra, the standard library only, <code>vault://tenants/TENANT/msgraph</code>, 429 retried) and <code>SharePoint</code> (vendor <code>sharepoint</code>, kind docs): drive deltas from a stored cursor with <code>Prefer: deltashowsharingchanges</code>, deletes as deletes, a sharing change re-read whole; Fetch through <code>folder.Text</code> with pages and slides and the review-by property; the ACL copy from <code>…/permissions</code> with <code>anonymous</code> as <code>anyone</code> and <code>organization</code> as <code>domain:</code> (wide, SB-5401); the live check reads the permissions and the person's nested Entra groups now, 8 at a time within 800 ms, Unknown on anything else. sb-cell(5) <code>microsoft</code> (<code>base</code>, <code>login</code>, <code>domain</code>, <code>drives</code>). Tested in TestSharePointSync, TestSharePointLiveCheck, TestContractKit (the connector kit), the law tests TestLAW01_SharePointAccessIsLive and TestLAW03_SharePointUnknownIsNeverAllow with TestSelf_SharePointMutationsAreCaught, and TestMicrosoft365ThroughARunningCell.</p>
 <h2 id="definition-of-done">Definition of done</h2>
 <p>See <a href="../../docs/05-living-documents.html#definition-of-done">docs/05-living-documents.md</a>.</p><p class="srcline">Source: <code>epics/E59-reach-microsoft-365/SB-5901-sharepoint-onedrive.md</code></p></main>
   <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#why">Why</a></li><li class="l2"><a href="#acceptance-criteria">Acceptance criteria</a></li><li class="l2"><a href="#subtasks">Subtasks</a></li><li class="l2"><a href="#progress">Progress</a></li><li class="l2"><a href="#definition-of-done">Definition of done</a></li></ul></aside>
