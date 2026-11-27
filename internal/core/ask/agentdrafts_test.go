@@ -54,3 +54,21 @@ func TestAgentDraftWaitsForItsSteward(t *testing.T) {
 		t.Fatalf("nothing cited: %v", err)
 	}
 }
+
+// BUG-0031, SB-5907: a work event's draft and a shared mailbox's reply note are drafts the
+// queue takes, like a brief.
+func TestWorkAndMailDraftsArePut(t *testing.T) {
+	ctx := context.Background()
+	a := freshAgent(t, `{"claims":[{"text":"Refund limit is 500.","cites":["C1"]}]}`)
+	ix := a.Index.(index)
+	for i := range ix {
+		ix[i].Spaces = []string{"spc_ops"}
+	}
+	x := stewardsOf(a, time.Now())
+	for _, kind := range []string{ask.DraftWork, ask.DraftMail} {
+		sq, err := x.AgentDraft(ctx, inOps(t, "alice"), kind, "New: "+kind, ask.Request{Question: ask.MailQuestion("refund limit")})
+		if err != nil || sq.Thread == nil || sq.Thread.Kind != kind {
+			t.Fatalf("%s: %+v %v", kind, sq, err)
+		}
+	}
+}

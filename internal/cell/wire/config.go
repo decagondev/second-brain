@@ -130,6 +130,29 @@ type Config struct {
 		Kind string `json:"kind"`
 		Base string `json:"base"`
 	} `json:"calendar"`
+	// Microsoft is Microsoft 365 through Graph (sb-cell(5), microsoft; ADR-0023), its app's
+	// credentials at vault://tenants/TENANT/msgraph: the drives the sharepoint connector
+	// reads, the organizers whose Teams transcripts it reads, and the company's email domain
+	// an organization sharing link grants. Base and login are Graph's and Entra's, or a fake's.
+	Microsoft struct {
+		Base       string   `json:"base,omitempty"`
+		Login      string   `json:"login,omitempty"`
+		Domain     string   `json:"domain,omitempty"`
+		Drives     []string `json:"drives,omitempty"`
+		Organizers []string `json:"organizers,omitempty"`
+	} `json:"microsoft"`
+	// Labels maps Purview sensitivity label ids to the four levels (SB-5902); an id it
+	// doesn't map counts as restricted.
+	Labels struct {
+		Microsoft map[string]string `json:"microsoft,omitempty"`
+	} `json:"labels"`
+	// Teams is the Teams bot (SB-5904): its Microsoft app id, its password at
+	// vault://tenants/TENANT/teams, and the Bot Framework's addresses ("" for Microsoft's).
+	Teams struct {
+		AppID  string `json:"app_id,omitempty"`
+		OpenID string `json:"openid,omitempty"`
+		Login  string `json:"login,omitempty"`
+	} `json:"teams"`
 	Alerts struct {
 		Webhook string `json:"webhook"`
 		// ReportWebhook is where the weekly report is posted; "" is Webhook (SB-1608).
@@ -381,8 +404,11 @@ func (c Config) checkMattermost() error {
 	if cal := c.Calendar; cal.Kind != "" || cal.Base != "" {
 		u, err := url.Parse(cal.Base)
 		local := err == nil && u.Scheme == "http" && strings.HasPrefix(u.Host, "127.0.0.1:")
-		if cal.Kind != "google" {
-			return fmt.Errorf("%w: calendar.kind must be google", ErrConfig)
+		if cal.Kind != "google" && cal.Kind != "outlook" {
+			return fmt.Errorf("%w: calendar.kind must be google or outlook", ErrConfig)
+		}
+		if cal.Kind == "outlook" && !c.microsoft() {
+			return fmt.Errorf("%w: calendar.kind outlook reads through microsoft, which isn't set", ErrConfig)
 		}
 		if cal.Base != "" && (err != nil || (u.Scheme != "https" && !local) || u.Host == "" || u.User != nil) {
 			return fmt.Errorf("%w: calendar.base must be an https URL", ErrConfig)
@@ -431,6 +457,9 @@ func (c Config) checkModel() error {
 	if err := c.checkRegion(); err != nil {
 		return err
 	}
+	if err := c.checkMicrosoft(); err != nil {
+		return err
+	}
 	return c.checkDeep()
 }
 
@@ -469,6 +498,33 @@ func (c Config) checkDeep() error {
 	return nil
 }
 
+// microsoft says the cell reaches Microsoft 365 (SB-5901 to SB-5907).
+func (c Config) microsoft() bool {
+	m := c.Microsoft
+	return m.Base != "" || m.Login != "" || m.Domain != "" || len(m.Drives) > 0 || len(m.Organizers) > 0 || c.Teams.AppID != "" || c.Calendar.Kind == "outlook"
+}
+
+// checkMicrosoft checks the Microsoft 365 settings: https addresses (or a loopback fake),
+// a label map onto the four levels, and Teams only with Graph to find its people.
+func (c Config) checkMicrosoft() error {
+	for name, v := range map[string]string{"microsoft.base": c.Microsoft.Base, "microsoft.login": c.Microsoft.Login, "teams.openid": c.Teams.OpenID, "teams.login": c.Teams.Login} {
+		if v == "" {
+			continue
+		}
+		u, err := url.Parse(v)
+		local := err == nil && u.Scheme == "http" && strings.HasPrefix(u.Host, "127.0.0.1:")
+		if err != nil || (u.Scheme != "https" && !local) || u.Host == "" || u.User != nil {
+			return fmt.Errorf("%w: %s must be an https URL", ErrConfig, name)
+		}
+	}
+	for id, l := range c.Labels.Microsoft {
+		if id == "" || !contains([]string{"public", "internal", "confidential", "restricted"}, l) {
+			return fmt.Errorf("%w: labels.microsoft maps label ids to public, internal, confidential or restricted, not %q", ErrConfig, l)
+		}
+	}
+	return nil
+}
+
 // DeepEfforts are the reasoning efforts model.deep.effort may name (SB-5704).
 var DeepEfforts = map[string]bool{"low": true, "medium": true, "high": true}
 
@@ -486,8 +542,14 @@ func (c Config) Secrets() (required, optional []string) {
 	if c.Worm.Endpoint != "" {
 		required = append(required, "worm")
 	}
-	if c.Calendar.Kind != "" {
+	if c.Calendar.Kind == "google" {
 		required = append(required, "calendar")
+	}
+	if c.microsoft() { // SB-5901 to SB-5907
+		required = append(required, "msgraph")
+	}
+	if c.Teams.AppID != "" {
+		required = append(required, "teams")
 	}
 	optional = []string{"email"}
 	return required, optional

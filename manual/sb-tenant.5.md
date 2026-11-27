@@ -44,6 +44,8 @@ Secrets never appear in a manifest, in configuration, in a log line or in an aud
 | `vault://tenants/TENANT/scim` | the IdP's SCIM bearer token |
 | `vault://tenants/TENANT/model` | the model gateway's API key (ADR-0019) |
 | `vault://tenants/TENANT/canary` | the cell's canary secret; nothing may use it ([sb-observability(7)](sb-observability.7.md#canaries-and-the-secret-scanner)) |
+| `vault://tenants/TENANT/msgraph` | Microsoft Graph's app credentials, `{ "tenant_id", "client_id", "client_secret" }` (SB-5901, ADR-0023); read scopes only |
+| `vault://tenants/TENANT/teams` | the Teams bot's `{ "app_id", "app_password" }` (SB-5904) |
 | `vault://tenants/TENANT/connectors/docs-classification` | the Drive label that carries sensitivity, no secret in it (sb-connector(3)); optional |
 | `vault://tenants/TENANT/audit/anchor-seed` | the cell's audit anchor key seed, 32 bytes in base64, on a local cell (sb-audit(5), Anchors); on GCP it is a data key wrapped by the cell's KMS key |
 | `vault://tenants/TENANT/attest-seed` | the cell's attestation key seed, 32 bytes in base64, on a local cell (sb-release(7), Attestation) |

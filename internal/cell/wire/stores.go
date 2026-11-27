@@ -237,7 +237,8 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 		return r, err
 	}
 	r.Box = c.box(now)
-	r.Model = c.ModelState() // SB-5601, SB-5602
+	r.Model = c.ModelState()              // SB-5601, SB-5602
+	r.UnmappedLabels = c.unmappedLabels() // SB-5902
 	if via := c.channel(); via != "" {
 		rec, found, err := lastNotify(c.Config.State)
 		if err != nil {

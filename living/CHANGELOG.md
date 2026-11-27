@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Reach Microsoft 365: `docs: sharepoint` for SharePoint and OneDrive through Microsoft Graph (sb-cell(5) `microsoft`, `vault://tenants/TENANT/msgraph`), with sharing links, Office text, pages and slides, Purview labels by sb-cell(5) `labels.microsoft` (unmapped is restricted, listed on health as `unmapped_labels`) and Teams meeting transcripts; Entra's nested groups in the live check and Entra SCIM provisioning; a Teams bot at `POST /chat/teams` (sb-cell(5) `teams`); `calendar.kind: outlook`; sb-space(5) `mailbox` with `on: [mail-received]` (SB-5901 to SB-5907)
 - Carry the conversation: follow-ups in a Slack or Mattermost thread under the brain's message (`POST /chat/mattermost/events`); **Your conversations** with **Continue here** (`GET /v1/me/conversations[/{id}]`); **Keep my conversations on every device** (`PUT /v1/me/conversations/sync`); **Share conversation** (`POST /v1/me/conversations/{id}/share`, `GET|DELETE /v1/conversation-shares/{id}`, `/c/sh_…`); where you left off (`GET /v1/me/left-off`) and direct questions to the Slack bot; sb-cell(5) `chat.save_reaction`; `skills/list` and `skills/get` over MCP (SB-5801 to SB-5807)
 - The right model: sb-cell(5) `model.deep` for research, tables, consultations and a retry of a mostly uncited answer, only while gated (`state/evals/deep-gated`); sb-cell(5) `model.region` with each provider's region, and no model call leaves it (LAW-33), shown in the health report's `model.regions` and the inventory; prompt cache hits by space and agent at `GET /v1/admin/costs/cache` and in the admin's week (SB-5704 to SB-5706)
 - Batches and busy providers: scheduled briefs, routines and rhythm steps submit their batch on one tick and collect it on a later one (`state/batches`), with anything not back by 06:00 on the next working morning run normally; OpenAI-compatible providers batch through the Batch API with sb-cell(5) `model.batch`; when a provider rate-limits, asks go first and spaces take turns, and an ask that waits more than 20 seconds shows passages (`notice: model_busy`); the health report's `model.busy` (SB-5701 to SB-5703)
@@ -116,6 +117,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Fixed
 
+- A new pull request or ticket in a space with `on: [pr-opened]` or `[ticket-filed]` now puts its draft in the stewards' queue; the draft kinds check had refused it (BUG-0031)
 - A cell with its web UI configured starts; the UI no longer clashes with SCIM's routes (BUG-0026).
 - SCIM user and group ids are `usr_…` and `grp_…`, so legal holds and erasure accept real users (BUG-0025).
 - The CLI against a running cell (S14.4: SB-1507): `sb audit verify|tail|export --tenant T`, `sb eval diff`, and `sb factory handoff` and `detach` on the local control plane; no `sb` command answers `ENOTIMPL` any more.

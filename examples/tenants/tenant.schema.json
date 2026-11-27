@@ -500,7 +500,8 @@
               "enum": [
                 "source-changed",
                 "pr-opened",
-                "ticket-filed"
+                "ticket-filed",
+                "mail-received"
               ]
             },
             "minItems": 1,

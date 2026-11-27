@@ -13,7 +13,7 @@ summary: "Meeting prep reads Google Calendar only."
 | Manual | [`sb-cell(5)`](../../manual/sb-cell.5.md), [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-01, LAW-30 |
 | Depends on | SB-4202, SB-5903 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ Meeting prep reads Google Calendar only.
 
 ## Acceptance criteria
 
-- [ ] Meeting prep, `/v1/me/events` and the leader's week read Outlook calendars through Graph
-- [ ] Only the person's own events, with attendees resolved through Entra
-- [ ] Another person's calendar is never read
+- [x] Meeting prep, `/v1/me/events` and the leader's week read Outlook calendars through Graph
+- [x] Only the person's own events, with attendees resolved through Entra
+- [x] Another person's calendar is never read
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Outlook calendar connector
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Outlook calendar connector
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. `msgraph.Calendar` implements `ports.Calendar` with `calendarView` for the person's own address only, declined and cancelled events left out; sb-cell(5) `calendar.kind: outlook` uses it for meeting prep, `/v1/me/events` and the leader's week. Tested in TestOutlookCalendar.
 
 ## Definition of done
 

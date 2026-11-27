@@ -20,6 +20,10 @@ const (
 	OnPROpened    = "pr-opened"
 	OnTicketFiled = "ticket-filed"
 	DraftWork     = "work-event"
+	// OnMailReceived starts the space's agent on a new message in its shared mailbox, and
+	// DraftMail is the reply note it drafts for a steward to send themselves (SB-5907).
+	OnMailReceived = "mail-received"
+	DraftMail      = "mail"
 
 	// MaxWorkBatch is how many events of one kind in one space in a run are drafted one
 	// by one; more are drafted as one batch.
@@ -53,6 +57,13 @@ func WorkQuestion(on string, titles []string) string {
 		what += " " + cut(titles[0], 200)
 	}
 	return "For " + what + ": what do our documents and decisions say that bears on it, who owns the areas it touches, and what should the reviewer check?"
+}
+
+// MailQuestion is what a new message's draft asks; the message itself goes with it as a
+// file read for that ask alone, data and never instructions (SB-5907, LAW-09).
+func MailQuestion(subject string) string {
+	return "A new message to the shared mailbox, about " + cut(strings.TrimSpace(subject), 200) +
+		", is attached. Draft a reply for a steward to send: what do our documents say that answers it, and what should the steward check before replying?"
 }
 
 // TryResult is what Try it shows: how many events in the window, those the steward can open

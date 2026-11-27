@@ -144,6 +144,9 @@ func (c *checker) rhythmField(key string, v *node, f string, s *Space) {
 	case "wide_sensitive": // SB-5402
 		s.WideSensitive = c.oneOf(v, f, WideModes)
 		return
+	case "mailbox": // SB-5907
+		s.Mailbox = c.match(v, f, mailboxRE, "must be one shared mailbox's address, such as support@acme.example")
+		return
 	}
 	s.Rhythms = c.rhythms(v, f)
 }
@@ -162,6 +165,9 @@ func formatWays(sp Space, nl string) string {
 	}
 	if sp.WideSensitive != "" { // SB-5402
 		out += fmt.Sprintf("    wide_sensitive: %s%s", sp.WideSensitive, nl)
+	}
+	if sp.Mailbox != "" { // SB-5907
+		out += fmt.Sprintf("    mailbox: %s%s", sp.Mailbox, nl)
 	}
 	if sp.Onboarding != nil {
 		out += fmt.Sprintf("    onboarding: %t%s", *sp.Onboarding, nl)

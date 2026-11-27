@@ -234,6 +234,11 @@ func (j Job) suspects(ctx context.Context, now time.Time) ([]outgoing, []func() 
 // (SB-5301): one draft each, or one for a space's events of a kind past MaxWork in a run.
 // Each document starts one draft, ever.
 func (j Job) workEvents(ctx context.Context, from, now time.Time) error {
+	if j.Mail != nil { // SB-5907: the shared mailboxes' new messages
+		if err := j.Mail(ctx); err != nil {
+			return fmt.Errorf("notify: mail: %w", err)
+		}
+	}
 	if j.WorkEvents == nil || j.RunWork == nil {
 		return nil
 	}

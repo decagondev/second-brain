@@ -54,6 +54,10 @@ Each cell serves SCIM 2.0 at `/scim/v2` for its own tenant only. The IdP authent
 
 Setting `active` to false (by `PUT`, `PATCH` or `DELETE`) revokes every session of that user in the cell **before** the response is sent. If revocation fails, the request fails with `503` and the IdP retries. The 60-second re-validation then catches anything a lost revocation missed, so no request from a deactivated user succeeds more than 5 minutes after the deactivate (LAW-12).
 
+### Entra ID (SB-5903)
+
+A company on Microsoft 365 provisions people and groups from Entra ID with Entra's own SCIM provisioning into `/scim/v2` above: Entra sends `PATCH` with `Replace` and string values (`"False"`), which the endpoint takes, so a leaver is signed out before the response and within 5 minutes at most (LAW-12). Entra's provisioning sends direct group members only, so the cell reads nested membership from Entra itself, through Microsoft Graph and the cell's Graph client (sb-connector(3), `docs: sharepoint`): a person's groups with `transitiveMemberOf` for SharePoint's live check, a group's members with `transitiveMembers` (at most 5,000; a larger group is counted as too large, never guessed at), and a person's manager. Each is read when needed, never kept, and an id Entra doesn't know has no groups.
+
 ### Identity Platform, exactly (SB-907)
 
 A company without its own OIDC IdP signs in through **Identity Platform**, Firebase Authentication's enterprise tier. Each company gets **its own Identity Platform tenant**, which federates the company's SAML or OIDC provider (for example, a Google Workspace or Microsoft 365 account). The manifest names it as `idp: identity-platform://PROJECT/IDP_TENANT`, where `PROJECT` is the GCP project that holds Identity Platform and `IDP_TENANT` is the company's Identity Platform tenant id.

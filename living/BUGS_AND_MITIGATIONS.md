@@ -465,3 +465,17 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** `selfhost.sh` copies the IdP's `oidc` and `scim` and wormsetup's worm key into their own volumes (`run-idp`, `run-wormsetup`), owned by 65532 with no access for others, mounted at `/run/sb` read-only, so the paths the services and runbooks use don't change. `sb cell check-config` takes `--vault` more than once, and `update.sh` names the api and jobs vaults. `selfhost.sh` gives the demo's `.offsite` to 65532, as `install.sh` does for a real `SB_OFFSITE`. The smoke test looks for the sealed copy and expects the sorted mount order.
 
 **Caught by now:** The `selfhost` CI job, which runs as a non-65532 user on Linux; `TestCellCheckConfig` covers two vaults.
+
+## BUG-0031 A work event's draft never reached the stewards' queue
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-27, building SB-5907 | Medium | SB-5301 | Fixed |
+
+**Symptom:** In a space with `on: [pr-opened]` or `on: [ticket-filed]`, a new pull request or ticket was seen and marked done by the notify job, but no draft appeared in the stewards' queue.
+
+**Root cause:** `Stewards.AgentDraftFor` checks the draft's kind against a fixed list of kinds, and SB-5301 added `work-event` (`DraftWork`) without adding it there, so every work event's draft was refused as `EINVAL` and `runDraft` read that as "nothing to cite". No test drafted a real work event end to end; the trigger's Try it path uses its own replay.
+
+**Fix:** `work-event` and SB-5907's `mail` are in the list.
+
+**Caught by now:** `TestWorkAndMailDraftsArePut`, and `TestMicrosoft365ThroughARunningCell` drafts a mail end to end.

@@ -602,6 +602,7 @@ An ask whose normalised question (lower case, words only), space, source kinds, 
 
 | Endpoint | Does |
 |---|---|
+| `GET /v1/me/events` with Outlook | (SB-5905) With sb-cell(5) `calendar.kind: outlook`, meeting prep and `/v1/me/events` read the person's own Outlook calendar through Graph, as they read Google's; nobody else's |
 | `GET /v1/me/conversations` | (SB-5802, SB-5803) The caller's own conversations of the last 30 days, newest first, at most 50: `{ "sync", "conversations": [{ "id", "client", "first", "turns", "at", "synced"? }] }`. A conversation started in a chat app (`client: chat`, a thread follow-up or a direct question) is always listed; one started on the web only while **Keep my conversations on every device** is on. Built from the caller's own traces and conversation records; nobody else can list them, admins included. The web shows them under **Your conversations**, fetched only when the list is opened, each with **Continue here** and **Share conversation** |
 | `GET /v1/me/conversations/{id}` | One of them to continue: `{ "id", "turns": [{ "question", "trace", "at", "claims"?, "label"?, "unavailable"? }] }`, each answer checked again as the caller now (LAW-26): one with a cite they can no longer open is `unavailable` with no claims, and the web shows "No longer available to you". The next ask with `conversation: ID` continues it. Someone else's is `EPERM` |
 | `PUT /v1/me/conversations/sync` `{ "on" }` | (SB-5803) **Keep my conversations on every device** on My data, off by default, web sessions only. On, each web ask's conversation id, question, kept and dropped documents (SB-5502) and trace id, never its answer, are kept in the caller's own memory record, so they are in **Download my data** (`memory`) and go with **Forget my questions**, and an entry goes when its last answer passes the traces' 30 days. Off deletes every entry at once |
@@ -655,6 +656,18 @@ Sites that run their own Mattermost can ask from it with a slash command (SB-200
 7. **Follow up in the thread** (SB-5801). An outgoing webhook on the channels the bot is in, whose callback URL is the cell's `POST /chat/mattermost/events` and whose token is `events_token` in `vault://tenants/TENANT/mattermost`, posts each new message. A reply whose thread's root is the bot's own post (`GET /api/v4/posts/ID`, `GET /api/v4/users/me`) continues the replier's conversation in that thread under the Slack rules (7, above): re-authorised as them, answered as an ephemeral post in the thread (`POST /api/v4/posts/ephemeral`), and a `confidential` or `restricted` answer to their direct messages instead (LAW-32). A wrong token or team is HTTP 401. Mattermost sends outgoing webhooks for channel messages only, so a reaction to save and direct questions are Slack's alone; `/brain save LINK` stays the way to save a thread here.
 
 The bot account needs to read users' emails (the System Console's *Show Email Address* for it) and to create direct channels for notifications (Notifications, above); replies and shares go through `response_url`.
+
+### The chat app (Teams) (SB-5904)
+
+With sb-cell(5) `teams.app_id`, a Teams app (a bot registered with that app id) sends each activity to `POST /chat/teams`, and the cell answers under the Slack app's rules, from the same code:
+
+1. **Verify.** The `Authorization: Bearer` token must be an RS256 token signed by one of the Bot Framework's keys (read from its OpenID configuration and its `jwks_uri`, kept a day and read again for a key they don't hold), issued by `https://api.botframework.com`, for this app id, within its times (5 minutes either way), and naming the activity's `serviceUrl`, which must be https. The check is the standard library's RSA. Anything else is HTTP 401 and no answer.
+2. **Map the person.** The sender's Entra object id (`from.aadObjectId`) is resolved to their email through Microsoft Graph (sb-identity(7), Entra ID), then to the **one active** directory user with it, exactly as for Slack; no match gets "I can't match your … account" and no answer.
+3. **Spaces.** A channel's name maps it to a space by the space's `channels` (sb-space(5)), as Slack's do; a channel whose name the activity doesn't carry is never answered company-wide instead: the reply says to ask in the personal chat. A personal chat asks company-wide.
+4. **Answer privately.** Teams has no message only one person sees, so the answer always goes to the person's **personal chat** with the bot: a personal chat is answered in place, and a mention in a channel or group chat gets its answer in the personal chat and only "I've sent you the answer in our personal chat." in the reply chain. So a confidential or restricted answer never reaches a channel (LAW-32). The answer is Markdown, as Mattermost's: each claim with its cites as links, uncited claims marked, who to ask, the notice and the trace id, masked as every reply is (SB-5102).
+5. **Follow up in the reply chain** (SB-5801). A later mention in the same reply chain continues that person's own conversation in it (`teams/TENANT/CONVERSATION`, the reply chain's id); someone else's mention starts theirs.
+
+The bot's token for replies comes from its app id and password with client credentials (`https://api.botframework.com/.default`).
 
 ## ERRORS
 

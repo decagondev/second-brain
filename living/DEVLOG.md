@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 W58: Reach Microsoft 365
+
+**Wave/slice:** W58 / S58.1 and S58.2 (SB-5901 to SB-5907) · **Status:** Done, SB-5901 In review (a real tenant)
+
+**What:** A `docs: sharepoint` connector reads SharePoint libraries and OneDrives through Microsoft Graph with their live permissions and sharing links, Office text with pages and slides, Purview labels mapped to the four levels (an unmapped one is restricted and shows on health), and Teams meeting transcripts open to the meeting's people. Entra's nested groups decide SharePoint's live check, and Entra's SCIM provisioning signs a leaver out at once. Teams is a place to ask, with every answer in the person's personal chat. Outlook calendars feed meeting prep. A space's shared mailbox starts its agent on each new message, which drafts a reply note for a steward to send.
+
+**Why this way:** One Graph client with the standard library (ADR-0023) keeps the module list as it was; every adapter is tested against one recorded fake of the endpoints it calls, so the shapes are checked in one place. The live check reads permissions again rather than impersonating the person, because Graph's application permissions can't act as a user; Entra's nested groups make that exact. Teams has no message only one person sees, so the safe place for an answer is the personal chat, never the channel.
+
+**Learned:** The draft kinds check refused SB-5301's work-event drafts, so a new pull request or ticket never put a draft in the queue; a mail draft hit the same check (BUG-0031). The connector law tests need a fault to fail every permission call of a batch, since the check runs them side by side. A request's thread key must stay off the wire, which the API's manual check now knows.
+
+**Laws:** LAW-01 (TestLAW01_SharePointAccessIsLive, new), LAW-03 (TestLAW03_SharePointUnknownIsNeverAllow, new), LAW-09, LAW-12, LAW-16, LAW-32. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 W57: Carry the conversation
 
 **Wave/slice:** W57 / S57.1 and S57.2 (SB-5801 to SB-5807) · **Status:** Done

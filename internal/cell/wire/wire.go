@@ -39,6 +39,7 @@ import (
 	"example.com/second-brain/internal/adapters/model/groq"
 	"example.com/second-brain/internal/adapters/model/openaicompat"
 	"example.com/second-brain/internal/adapters/model/openrouter"
+	"example.com/second-brain/internal/adapters/msgraph"
 	"example.com/second-brain/internal/adapters/oidc"
 	"example.com/second-brain/internal/adapters/policy/cedar"
 	runsfs "example.com/second-brain/internal/adapters/runs/localfs"
@@ -83,7 +84,7 @@ var MemoryStores = []string{"directory and sessions", "traces and conversations"
 	"index", "chat events inbox", "proposals", "access reviews", "legal holds", "audit log (in files)"}
 
 // Vendors are the connector adapters a cell can run, by the manifest's vendor name.
-var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "slack": "chat", "linear": "tickets", "hubspot": "crm", "github": "code",
+var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "sharepoint": "docs", "slack": "chat", "linear": "tickets", "hubspot": "crm", "github": "code",
 	"bamboohr": "hris", "quickbooks": "accounting"}
 
 // Cell is a built cell: every part, and the API handler that serves them.
@@ -136,16 +137,19 @@ type Cell struct {
 	model    func(m manifest.Tenant) (ports.Model, error)
 	fallback atomic.Pointer[gateway.Fallback] // the main tier's (SB-5601)
 	busy     sync.Map                         // provider|base: *gateway.Busy (SB-5703)
-	small    func(m manifest.Tenant) (ports.Model, error)
-	deep     func(m manifest.Tenant) (ports.Model, error) // SB-5704
-	eventKey func(ctx context.Context) (string, error)
-	inbox    slack.Inbox
-	closeDB  func()
-	receipts toolbus.Receipts
-	engine   policy.Evaluator
-	parts    atomic.Pointer[Parts]
-	applyMu  sync.Mutex
-	ready    atomic.Bool
+	// graphC is the cell's Microsoft Graph client, made once (ADR-0023).
+	graphOnce sync.Once
+	graphC    *msgraph.Client
+	small     func(m manifest.Tenant) (ports.Model, error)
+	deep      func(m manifest.Tenant) (ports.Model, error) // SB-5704
+	eventKey  func(ctx context.Context) (string, error)
+	inbox     slack.Inbox
+	closeDB   func()
+	receipts  toolbus.Receipts
+	engine    policy.Evaluator
+	parts     atomic.Pointer[Parts]
+	applyMu   sync.Mutex
+	ready     atomic.Bool
 }
 
 // Parts are everything built from the applied manifest. An apply builds a new set and
@@ -684,6 +688,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			Threads: mmapp.DM{Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "bot_token"), Client: client}, EventsToken: slackField(creds, "events_token")}).Register(public) // SB-5801
 		savers = append(savers, rules)
 	}
+	c.teams(public, agent) // SB-5904
 	if cfg.Web != "" {
 		api.Web{Files: os.DirFS(cfg.Web), Base: cfg.BaseURL, Language: func() string { return c.Manifest().Language }}.Register(public)
 	}
@@ -861,6 +866,9 @@ func (c *Cell) legwork(m manifest.Tenant, agent ask.Agent, stewards ask.Stewards
 		l.Calendar = &gcal.Calendar{Base: base, HTTP: hc, Metrics: c.Metrics,
 			Tokens: &gdrive.ServiceAccount{Key: c.Secret("calendar"), HTTP: hc, Redact: c.Redact, Now: time.Now, Scope: gcal.Scope}}
 	}
+	if c.Config.Calendar.Kind == "outlook" { // SB-5905
+		l.Calendar = &msgraph.Calendar{Graph: c.graph()}
+	}
 	return l
 }
 
@@ -930,6 +938,11 @@ func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.
 			out[kind] = c
 		case "slack":
 			out[kind] = &slack.Connector{Base: base, HTTP: hc, Creds: creds, Redact: redact, Exclude: m.Exclude[kind], Inbox: inbox}
+		case "sharepoint": // SB-5901: Microsoft 365 through Graph (ADR-0023)
+			if len(cfg.Microsoft.Drives) == 0 && len(cfg.Microsoft.Organizers) == 0 {
+				return nil, fmt.Errorf("%w: connector %s: sharepoint needs microsoft.drives or microsoft.organizers", ErrConfig, kind)
+			}
+			out[kind] = sharePoint(cfg, graphClient(cfg, secret, redact, hc))
 		case "linear":
 			out[kind] = &linear.Connector{Endpoint: base, HTTP: hc, Key: creds, Redact: redact}
 		case "hubspot":

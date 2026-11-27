@@ -170,7 +170,7 @@ func TestRefusesToStart(t *testing.T) {
 	}
 	t.Run("unknown vendor", func(t *testing.T) {
 		cfg := celltest.Fixture(t, idp, "https://cell.example")
-		celltest.Write(t, cfg.Manifest, strings.Replace(celltest.Manifest, "docs: gdrive", "docs: sharepoint", 1), 0o600)
+		celltest.Write(t, cfg.Manifest, strings.Replace(celltest.Manifest, "docs: gdrive", "docs: confluence", 1), 0o600)
 		if _, err := wire.Build(context.Background(), cfg, wire.Options{HTTP: idp.Server.Client()}); !errors.Is(err, wire.ErrConfig) {
 			t.Fatalf("Build: %v, want ErrConfig", err)
 		}

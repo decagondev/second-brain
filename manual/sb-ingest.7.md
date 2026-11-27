@@ -139,6 +139,10 @@ A connector may say where each page of a document starts in its text (`Pages`, i
 
 Each chunk records its **section**: the text of the nearest heading line at or above the chunk's start, at most 120 characters, or nothing when there is none. A heading line is a Markdown heading of level 1 to 3 (`#`, `##` or `###` and a space). The folder connector writes the headings of the files it reads as such lines: Word paragraphs styled Heading 1 to 3 (and Title), OpenDocument headings (`text:h`), and HTML `h1` to `h3`, and a meeting transcript's cue start times (`### 00:12:40`; SB-3701). A section is data: it is shown on the cite and never changes routing, ranking or any check (LAW-09). It is computed from the text, so a rebuild fills it in for every document (LAW-13).
 
+### Microsoft 365 labels (SB-5902)
+
+A SharePoint or OneDrive item's Purview sensitivity label is its source label: sb-cell(5) `labels.microsoft` maps each label id to public, internal, confidential or restricted, and an id it doesn't map is **restricted** until an admin maps it (LAW-03: unknown never lowers a label; LAW-32). The label rides on every chunk as Drive's does, so answers and drafts carry the highest of what they cite. The health report lists the unmapped ids and their counts (`unmapped_labels`).
+
 ### Spaces and labels (SB-1005)
 
 In a cell with spaces (sb-spaces(7)), ingest **routes** every document version before it writes a chunk, so nothing is ever indexed without knowing which spaces hold it and how sensitive it is:

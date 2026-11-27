@@ -220,6 +220,22 @@ Read-only. Name it as `connectors: { crm: hubspot }`. Contacts are personal data
 
 Tested against `hubspottest`, a recorded fake of the CRM v3 objects, search, owners and settings users endpoints the connector calls.
 
+### `docs: sharepoint` (SB-5901, SB-5902, SB-5906)
+
+SharePoint document libraries and OneDrives through Microsoft Graph, read-only (ADR-0023), with the standard library only: no Microsoft SDK. One Graph client per cell signs in with OAuth client credentials against Entra; its app's `{ "tenant_id", "client_id", "client_secret" }` are at `vault://tenants/TENANT/msgraph`, read at call time and registered with the log redactor with each token. The application permissions it needs are read scopes only: `Sites.Read.All` (or `Sites.Selected`), `Files.Read.All`, `Group.Read.All`, `User.Read.All` and `OnlineMeetingTranscript.Read.All`. sb-cell(5) `microsoft` names the drives, the organizers whose Teams transcripts are read, and the company's email domain.
+
+| Concern | Behaviour |
+|---|---|
+| Changes | `GET /drives/ID/root/delta` per drive with `Prefer: deltashowsharingchanges`, from the delta link the cursor keeps (one per drive and organizer, as JSON); an empty cursor lists everything. A deleted item is a delete; an item whose sharing changed is read again whole (`ACLOnly`, which re-ingests). A delta link Graph no longer takes (410) starts that drive over |
+| Fetch | The item, its content (at most 25 MB) through the Office readers by extension (sb-ingest(7): `.docx`, `.pptx`, `.xlsx`, `.pdf`, `.vtt`, text), with each page or slide's start (SB-5205) and an Office file's review-by property. The version is the number after the last comma of its `cTag`; the location is its folder under the drive's root, then its name (`/Finance/close.docx`); the owner is `createdBy.user.email` |
+| ACL copy | `GET …/items/ID/permissions`: each granted user's email, each group as `group:MAIL` (or `group:ID`), an `anonymous` link as `anyone` and an `organization` link as `domain:DOMAIN`, both of which are wide (sb-permissions(7), Shared too widely) |
+| Live check | The item's permissions read again now and the person's groups from Entra with nested membership (sb-identity(7), Entra ID), at most 8 at a time within 800 ms: a grant to their email, to one of their groups, an `anyone` link, or an `organization` link for an address in the domain allows; anything else denies; an item that's gone, an error or a late answer is Unknown (LAW-03) |
+| Purview labels (SB-5902) | Each item's `sensitivityLabel.labelId` is mapped by sb-cell(5) `labels.microsoft` to public, internal, confidential or restricted. An id it doesn't map counts as **restricted** until an admin maps it, and the health report's `unmapped_labels` lists such ids with how many items carried each, never which. A new mapping relabels at the next sync |
+| Teams transcripts (SB-5906) | For each organizer, `GET /users/ID/onlineMeetings/getAllTranscripts(meetingOrganizerUserId='ID')/delta`; each transcript is a document titled `SUBJECT (DATE) - Transcript`, of type `transcript` (SB-3701), its WebVTT read with speakers and times (`folder.TranscriptText`), under `/Teams meetings/`, open to the meeting's organizer and attendees, who could open its recording; the live check reads the meeting's participants again. A meeting without a transcript is never listed. Its text is data (LAW-09) |
+| Act | `ENOTSUP`: read-only |
+
+Tested against `graphtest`, a recorded fake of the Graph endpoints and the token endpoint, with the contract kit and the connector laws (`TestLAW01_SharePointAccessIsLive`, `TestLAW03_SharePointUnknownIsNeverAllow`). A run against a real tenant is In review until one is provided.
+
 ### Calendars (SB-4202)
 
 A calendar isn't a source: nothing in it is indexed, answered from or kept. It is read only for meeting prep (sb-ask(3), Meeting prep), as the person whose calendar it is, and only when that person asks for a brief or has turned on `prep`. It is set in sb-cell(5) `calendar`, not in the tenant's `connectors`.
@@ -232,6 +248,8 @@ A calendar isn't a source: nothing in it is indexed, answered from or kept. It i
 | Act | None: the calendar has no write path |
 
 Tested against `caltest`, a recorded fake of the events endpoint and the token endpoint.
+
+**Outlook** (SB-5905). With sb-cell(5) `calendar.kind: outlook`, the calendar is read through Microsoft Graph with the cell's Graph client (`docs: sharepoint`, above; `Calendars.Read`): `GET /users/EMAIL/calendarView` for the window asked, at most 50, the person's own address only, never anyone else's. Each event's subject is its title, its body preview its agenda, and its attendees' addresses are matched to people through the directory (sb-identity(7), Entra ID). Cancelled events and those the person declined are left out, and a person Graph doesn't know reads no events. Tested against `graphtest`.
 
 ## MOCK CONNECTOR
 

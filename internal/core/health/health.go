@@ -86,6 +86,9 @@ type Report struct {
 	// Model is the main model's fallback: gated, switched until a time, and whether no
 	// model could answer the last call (SB-5601, SB-5602).
 	Model *gateway.State `json:"model,omitempty"`
+	// UnmappedLabels are the Purview label ids the docs connector met that labels.microsoft
+	// doesn't map, by how many items carried each (SB-5902): never which documents.
+	UnmappedLabels map[string]int `json:"unmapped_labels,omitempty"`
 }
 
 // Unstewarded is health's spaces with no active steward; either list warns.

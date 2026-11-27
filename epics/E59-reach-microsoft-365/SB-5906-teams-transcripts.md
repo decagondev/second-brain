@@ -13,7 +13,7 @@ summary: "What was said in Teams meetings never reaches the brain."
 | Manual | [`sb-connector(3)`](../../manual/sb-connector.3.md), [`sb-ingest(7)`](../../manual/sb-ingest.7.md) |
 | Laws | LAW-01, LAW-09 |
 | Depends on | SB-3701, SB-5901 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ What was said in Teams meetings never reaches the brain.
 
 ## Acceptance criteria
 
-- [ ] Teams transcripts (VTT) ingested through `folder.TranscriptText` as type `transcript`, with speakers and times
-- [ ] Open only to people who could open the meeting's recording
-- [ ] A meeting without a transcript is skipped
+- [x] Teams transcripts (VTT) ingested through `folder.TranscriptText` as type `transcript`, with speakers and times
+- [x] Open only to people who could open the meeting's recording
+- [x] A meeting without a transcript is skipped
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Transcripts from Graph
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Transcripts from Graph
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. The sharepoint connector lists each organizer's transcripts (`getAllTranscripts(...)/delta`) and fetches each as `SUBJECT (DATE) - Transcript` (type `transcript`) through `folder.TranscriptText`, open to the meeting's organizer and attendees, the live check reading the participants again; a meeting without a transcript is never listed. sb-cell(5) `microsoft.organizers`. Tested in TestTeamsTranscripts.
 
 ## Definition of done
 

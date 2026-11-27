@@ -237,7 +237,7 @@ When a steward's run needs a space they can't read, a person who can read it may
 
 ### LAW-32: A label never drops {#law-32}
 
-Anything built from a labelled document carries the highest label among what it cites, and goes nowhere that label forbids (SB-5405). An answer, a draft, a note, a download and a chat reply each carry it (`label`), and content labelled `confidential` or `restricted` goes only to a person: the web, a direct reply, an email to them. It is never shared into a chat channel or posted to one from a draft. A label read from a document's front matter only ever raises the label its source or space gave it, and a cite the index can't find counts as `restricted`: unknown never drops a label.
+Anything built from a labelled document carries the highest label among what it cites, and goes nowhere that label forbids (SB-5405). An answer, a draft, a note, a download and a chat reply each carry it (`label`), and content labelled `confidential` or `restricted` goes only to a person: the web, a direct reply, an email to them. It is never shared into a chat channel or posted to one from a draft. A label read from a document's front matter only ever raises the label its source or space gave it, a Purview label the cell doesn't map counts as `restricted` (SB-5902), and a cite the index can't find counts as `restricted`: unknown never drops a label.
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW32_ALabelNeverDrops`: random answers over random labelled chunks, through the real label and channel gate; SB-5405) · Selftest (`TestSelfLabelGateIsCaught`: a gate that takes the first cite's label, or lets every label into a channel, goes red) · Integration (`TestLabelsReachAndTheSensitiveMapThroughARunningCell`).
 

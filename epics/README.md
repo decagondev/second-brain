@@ -62,7 +62,7 @@ summary: Epics, waves, slices and tickets.
 | W55 Keep Answering, Spend Less | 6 | 0 | 0 | Planned 2026-11-26 with the user (E56), built: fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W56 Right Model, Right Place | 6 | 0 | 0 | Planned 2026-11-27 with the user (E57), built: collect batches later, OpenAI batches, people first when the provider is busy, think harder only when it helps, keep model calls in region, cache hits you can see ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W57 Carry the Conversation | 7 | 0 | 0 | Planned 2026-11-27 with the user (E58), built: follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
-| W58 Reach Microsoft 365 | 0 | 0 | 7 | Planned 2026-11-27 with the user (E59): sharePoint and OneDrive, purview labels, entra groups and people, ask in Teams, outlook calendar for meeting prep, teams meeting transcripts, start on a new email ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
+| W58 Reach Microsoft 365 | 6 | 1 | 0 | Planned 2026-11-27 with the user (E59), built: SharePoint and OneDrive, Purview labels, Entra groups and people, ask in Teams, Outlook calendar for meeting prep, Teams meeting transcripts, start on a new email. In review: SB-5901 (a real tenant) ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -1026,10 +1026,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-5901](E59-reach-microsoft-365/SB-5901-sharepoint-onedrive.md) | S58.1 | E59 | SharePoint and OneDrive | Open |
-| [SB-5902](E59-reach-microsoft-365/SB-5902-purview-labels.md) | S58.1 | E59 | Purview labels | Open |
-| [SB-5903](E59-reach-microsoft-365/SB-5903-entra.md) | S58.1 | E59 | Entra groups and people | Open |
-| [SB-5904](E59-reach-microsoft-365/SB-5904-ask-in-teams.md) | S58.2 | E59 | Ask in Teams | Open |
-| [SB-5905](E59-reach-microsoft-365/SB-5905-outlook-calendar.md) | S58.2 | E59 | Outlook calendar for meeting prep | Open |
-| [SB-5906](E59-reach-microsoft-365/SB-5906-teams-transcripts.md) | S58.2 | E59 | Teams meeting transcripts | Open |
-| [SB-5907](E59-reach-microsoft-365/SB-5907-start-on-email.md) | S58.2 | E59 | Start on a new email | Open |
+| [SB-5901](E59-reach-microsoft-365/SB-5901-sharepoint-onedrive.md) | S58.1 | E59 | SharePoint and OneDrive | In review |
+| [SB-5902](E59-reach-microsoft-365/SB-5902-purview-labels.md) | S58.1 | E59 | Purview labels | Done |
+| [SB-5903](E59-reach-microsoft-365/SB-5903-entra.md) | S58.1 | E59 | Entra groups and people | Done |
+| [SB-5904](E59-reach-microsoft-365/SB-5904-ask-in-teams.md) | S58.2 | E59 | Ask in Teams | Done |
+| [SB-5905](E59-reach-microsoft-365/SB-5905-outlook-calendar.md) | S58.2 | E59 | Outlook calendar for meeting prep | Done |
+| [SB-5906](E59-reach-microsoft-365/SB-5906-teams-transcripts.md) | S58.2 | E59 | Teams meeting transcripts | Done |
+| [SB-5907](E59-reach-microsoft-365/SB-5907-start-on-email.md) | S58.2 | E59 | Start on a new email | Done |
