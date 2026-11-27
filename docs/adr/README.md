@@ -32,6 +32,7 @@ An ADR records one decision, the alternatives we rejected and the consequences w
 | [ADR-0021](ADR-0021-gcp-cell-runtime.md) | Cells run on Cloud Run with Cloud SQL, one project per cell; Firebase only for hosting and identity | Accepted (plan, W9) |
 | [ADR-0022](ADR-0022-self-hosted-cell.md) | A self-hosted cell runs in containers that mirror GCP, on one machine | Proposed (plan, W15) |
 | [ADR-0023](ADR-0023-microsoft-365.md) | Microsoft 365 is reached through Graph adapters built with the standard library, read-only | Proposed (plan, W58) |
+| [ADR-0024](ADR-0024-atlassian.md) | Confluence and Jira are reached through adapters built with the standard library, read-only, and Notion stays out | Proposed (plan, W61) |
 
 ## Sign-off (SB-014)
 

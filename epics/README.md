@@ -5,7 +5,7 @@ summary: Epics, waves, slices and tickets.
 
 # Plan: epics and tickets
 
-60 epics, 163 user stories and 451 tickets across 59 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
+63 epics, 169 user stories and 471 tickets across 62 waves. W8 to W12 add department brains, and W13 hardens everything ([08-department-brains.md](../docs/08-department-brains.md)). The narrative, wave exit gates and slices are in the [PRD](../docs/03-prd.md#waves).
 
 **How to pick up work:** take the lowest open wave and slice, check its dependencies are done, then follow the ticket's subtasks top to bottom. The first subtask is always the manual.
 
@@ -63,6 +63,9 @@ summary: Epics, waves, slices and tickets.
 | W56 Right Model, Right Place | 6 | 0 | 0 | Planned 2026-11-27 with the user (E57), built: collect batches later, OpenAI batches, people first when the provider is busy, think harder only when it helps, keep model calls in region, cache hits you can see ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W57 Carry the Conversation | 7 | 0 | 0 | Planned 2026-11-27 with the user (E58), built: follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W58 Reach Microsoft 365 | 6 | 1 | 0 | Planned 2026-11-27 with the user (E59), built: SharePoint and OneDrive, Purview labels, Entra groups and people, ask in Teams, Outlook calendar for meeting prep, Teams meeting transcripts, start on a new email. In review: SB-5901 (a real tenant) ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
+| W59 Proven for Real | 0 | 0 | 6 | Planned 2026-11-27 with the user (E60): prove it on the real thing, fakes refreshed from a real sandbox, check the Microsoft 365 setup, a big tenant's first sync, reactions and direct questions in Mattermost, the AI tools that reach the brain ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
+| W60 Every Format, Every Language | 0 | 0 | 7 | Planned 2026-11-27 with the user (E61): read scans and images, recordings become transcripts, ask in one language, find another, a glossary in every language, translate a cited passage, Spanish, Italian and Dutch, usable by everyone ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
+| W61 Reach Confluence and Jira | 0 | 0 | 7 | Planned 2026-11-27 with the user (E62): Confluence, Atlassian groups and people, check the Atlassian setup, Jira, Jira as work events, start on a service request, draft a Jira issue ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -214,6 +217,12 @@ flowchart LR
   E56 --> E57
   E57 --> E58
   E58 --> E59
+  E60["E60 Proven for Real"]
+  E61["E61 Every Format, Every Language"]
+  E62["E62 Reach Confluence and Jira"]
+  E59 --> E60
+  E60 --> E61
+  E61 --> E62
 ```
 
 ## Epics
@@ -280,6 +289,9 @@ flowchart LR
 | [E57 Right Model, Right Place](E57-right-model-right-place/README.md) | Every call goes to the cheapest gated model that fits it, in the region the company allows, people come first when a provider is busy, and work that can wait is batched on every provider without holding a run open. | W56 | 6 |
 | [E58 Carry the Conversation](E58-carry-the-conversation/README.md) | A conversation follows a person from a chat thread to the web, to their other devices and to a colleague, and work they left unfinished finds them again. | W57 | 7 |
 | [E59 Reach Microsoft 365](E59-reach-microsoft-365/README.md) | A company on Microsoft 365 gets the same brain as one on Google Workspace: documents with their sensitivity labels, groups behind every check, Teams as a place to ask, and calendars, transcripts and shared mailboxes feeding the same agents. | W58 | 7 |
+| [E60 Proven for Real](E60-proven-for-real/README.md) | What is built against fakes can be proven on a real system in one run, with evidence a reviewer can trust, and the parts that lag (Mattermost, big tenants, AI tools acting for people) catch up. | W59 | 6 |
+| [E61 Every Format, Every Language](E61-every-format-every-language/README.md) | The brain reads what's in scans, images and recordings, finds an answer whatever language it's written in, and is usable by everyone, while text a model read is always marked as such. | W60 | 7 |
+| [E62 Reach Confluence and Jira](E62-reach-confluence-and-jira/README.md) | A team on Confluence and Jira gets the same brain as one on Google Drive and Linear, read-only, with Atlassian's own permissions behind every check. | W61 | 7 |
 
 ## All tickets by wave
 
@@ -1033,3 +1045,38 @@ flowchart LR
 | [SB-5905](E59-reach-microsoft-365/SB-5905-outlook-calendar.md) | S58.2 | E59 | Outlook calendar for meeting prep | Done |
 | [SB-5906](E59-reach-microsoft-365/SB-5906-teams-transcripts.md) | S58.2 | E59 | Teams meeting transcripts | Done |
 | [SB-5907](E59-reach-microsoft-365/SB-5907-start-on-email.md) | S58.2 | E59 | Start on a new email | Done |
+
+### W59 Proven for Real
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-6001](E60-proven-for-real/SB-6001-prove-it.md) | S59.1 | E60 | Prove it on the real thing | Open |
+| [SB-6002](E60-proven-for-real/SB-6002-fakes-from-sandbox.md) | S59.1 | E60 | Fakes refreshed from a real sandbox | Open |
+| [SB-6003](E60-proven-for-real/SB-6003-check-microsoft.md) | S59.1 | E60 | Check the Microsoft 365 setup | Open |
+| [SB-6004](E60-proven-for-real/SB-6004-big-first-sync.md) | S59.2 | E60 | A big tenant's first sync | Open |
+| [SB-6005](E60-proven-for-real/SB-6005-mattermost-websocket.md) | S59.2 | E60 | Reactions and direct questions in Mattermost | Open |
+| [SB-6006](E60-proven-for-real/SB-6006-ai-tools.md) | S59.2 | E60 | The AI tools that reach the brain | Open |
+
+### W60 Every Format, Every Language
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-6101](E61-every-format-every-language/SB-6101-scans-and-images.md) | S60.1 | E61 | Read scans and images | Open |
+| [SB-6102](E61-every-format-every-language/SB-6102-recordings.md) | S60.1 | E61 | Recordings become transcripts | Open |
+| [SB-6103](E61-every-format-every-language/SB-6103-cross-language.md) | S60.2 | E61 | Ask in one language, find another | Open |
+| [SB-6104](E61-every-format-every-language/SB-6104-glossary-languages.md) | S60.2 | E61 | A glossary in every language | Open |
+| [SB-6105](E61-every-format-every-language/SB-6105-translate-passage.md) | S60.2 | E61 | Translate a cited passage | Open |
+| [SB-6106](E61-every-format-every-language/SB-6106-more-languages.md) | S60.2 | E61 | Spanish, Italian and Dutch | Open |
+| [SB-6107](E61-every-format-every-language/SB-6107-accessible.md) | S60.2 | E61 | Usable by everyone | Open |
+
+### W61 Reach Confluence and Jira
+
+| Ticket | Slice | Epic | Title | Status |
+|---|---|---|---|---|
+| [SB-6201](E62-reach-confluence-and-jira/SB-6201-confluence.md) | S61.1 | E62 | Confluence | Open |
+| [SB-6202](E62-reach-confluence-and-jira/SB-6202-atlassian-groups.md) | S61.1 | E62 | Atlassian groups and people | Open |
+| [SB-6203](E62-reach-confluence-and-jira/SB-6203-check-atlassian.md) | S61.1 | E62 | Check the Atlassian setup | Open |
+| [SB-6204](E62-reach-confluence-and-jira/SB-6204-jira.md) | S61.2 | E62 | Jira | Open |
+| [SB-6205](E62-reach-confluence-and-jira/SB-6205-jira-events.md) | S61.2 | E62 | Jira as work events | Open |
+| [SB-6206](E62-reach-confluence-and-jira/SB-6206-service-requests.md) | S61.2 | E62 | Start on a service request | Open |
+| [SB-6207](E62-reach-confluence-and-jira/SB-6207-draft-jira-issue.md) | S61.2 | E62 | Draft a Jira issue | Open |
