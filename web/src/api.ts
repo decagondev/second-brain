@@ -135,6 +135,9 @@ export interface AskResponse {
   release: string;
   answer: { claims: Claim[] };
   refused: number;
+  // The highest label among its cites (SB-5405, LAW-32), and documents held as shared too widely (SB-5402).
+  label?: string;
+  held?: number;
   notice: Notice;
   conversation: string;
   people?: PersonRef[];

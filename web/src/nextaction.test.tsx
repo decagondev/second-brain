@@ -22,7 +22,7 @@ describe("draft the next action (SB-5304)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     await act(async () => {});
     expect(calls[1]![0]).toBe("/v1/spaces/ops/messages");
-    expect(JSON.parse(calls[1]![1])).toEqual({ channel: "#ops", text: "- The dock opens at seven." });
+    expect(JSON.parse(calls[1]![1])).toEqual({ channel: "#ops", text: "- The dock opens at seven.", cites: ["docs:dock@1"] });
     expect(screen.getByRole("status").textContent).toContain("marked as sent by you");
   });
 

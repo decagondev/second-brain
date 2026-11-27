@@ -99,6 +99,8 @@ type AgentRecord struct {
 	// (SB-5004); none without a goal.
 	Job     string       `json:"job,omitempty"`
 	Targets []TargetView `json:"targets"`
+	// Reach is what the agent can read now and last week's count (SB-5406).
+	Reach *AgentReach `json:"reach,omitempty"`
 }
 
 // SignedRecord is the record with its SHA-256 and the cell's signature.
@@ -126,6 +128,8 @@ type RecordInputs struct {
 	Caps            map[string]float64
 	// Goal is the agent's job and targets from the manifest, nil for none (SB-5004).
 	Goal *GoalDef
+	// Reach is the agent's reach now (SB-5406); nil leaves it out.
+	Reach *AgentReach
 }
 
 func quarterStart(t time.Time) time.Time {
@@ -139,7 +143,7 @@ func BuildRecord(in RecordInputs) AgentRecord {
 	r := AgentRecord{Agent: name, Tenant: in.Tenant, Made: in.Now.UTC().Format(time.RFC3339), Release: in.Release, Definition: in.Def,
 		Owner: in.Def.Owner, OwnerInactive: in.OwnerInactive, PromptSHA256: in.PromptSHA256, Eval: RecordEval{Suite: in.Def.Suite, Held: in.EvalHeld},
 		Versions: []RecordVersion{}, Value: []RecordQuarter{}, Pauses: []RecordPause{}, Spend: []AgentSpend{}, Reviews: []RecordReview{}, Reports: []RecordReport{},
-		Targets: []TargetView{}}
+		Targets: []TargetView{}, Reach: in.Reach}
 	if in.Goal != nil { // SB-5004: every target, with its history
 		vs := GoalViews(map[string]GoalDef{name: *in.Goal}, in.Questions, in.Traces, in.Feedback, in.Now, ValueWeeks, nil)
 		r.Job, r.Targets = in.Goal.Job, vs[0].Targets

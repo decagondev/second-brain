@@ -219,6 +219,9 @@ type Response struct {
 	// the line an answer that couldn't ask starts with (SB-4901).
 	Clarify *Clarify `json:"clarify,omitempty"`
 	Assumed string   `json:"assumed,omitempty"`
+	// Label is the highest label among the answer's cites (SB-5405, LAW-32): whatever is
+	// built from it carries it, and confidential or above goes only to a person.
+	Label string `json:"label,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -592,6 +595,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		resp.NoticeSync = a.syncNotices(ctx, claims)
 		resp.SeeAlso = seeAlso(claims, res.Context, a.Now())
 		resp.Verified = a.verifiedCount(ctx, claims, res.Context)
+		resp.Label = CitedLabel(claims, res.Context) // SB-5405, LAW-32
 	}
 
 	if keepsNothing(ctx) {

@@ -686,7 +686,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	api.Rhythms{Service: rhythms, Release: c.Release, NewID: newID}.Register(mux)
 	api.Collections{Service: ask.CollectionService{Agent: agent, Store: c.Traces, Saved: c.Traces, Audit: c.Audit, Known: legwork.Known,
 		NewID: newID, Now: time.Now}, Release: c.Release, NewID: newID}.Register(mux) // SB-4304
-	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces, TryTrigger: c.tryTrigger, LendAs: c.ScopeAs, Poster: c.chatPoster(), Channels: c.spaceChannels,
+	api.Questions{Service: stewards, Release: c.Release, NewID: newID, Reviews: c.Traces, TryTrigger: c.tryTrigger, LendAs: c.ScopeAs, LastSensitive: c.lastSensitive, Poster: c.chatPoster(), Channels: c.spaceChannels,
 		ReviewAfter: func(name string) int { return m.Effective(name).ReviewAfterDays }}.Register(mux)
 	api.Knowledge{Search: agent, Release: c.Release, NewID: newID,
 		Start: func(ctx context.Context, s tenancy.Scope) (ask.StartResponse, error) {
@@ -715,7 +715,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
 		AIUsage: c.aiUsage,                        // SB-5001
 		Checks:  c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007
-		AgentRecord:  c.AgentRecord,                      // SB-4707
+		AgentRecord: c.AgentRecord,                           // SB-4707
+		AgentReach:  c.AgentReach, Sensitive: c.SensitiveMap, // SB-5406, SB-5407
 		AgentHistory: c.agentHistory, Restore: c.restore, // SB-5104
 		Rollouts: c.Rollouts, HoldFeature: c.holdAdmin} // SB-5106
 	admin.InFlight = c.inFlight(m) // SB-4806

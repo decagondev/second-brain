@@ -73,6 +73,10 @@ A decision can name the one it replaces (`supersedes:`, sb-ask(3), Work across d
 
 Beside each cite, a note and a shared answer, **Who can see this** shows how many people can open the document (or every cite) now, and the groups behind it that the reader may see (sb-permissions(7), Who can see this). It is asked of the source each time; nothing about it is kept.
 
+### Labels travel (SB-5405)
+
+An answer, draft or note carries `label`, the highest label among its cites (LAW-32). The web shows it above the answer and in downloads and print, and a chat reply names it. An answer labelled `confidential` or above can't be shared into a chat channel (it stays with the asker, who is told why), and a drafted message citing one can't be posted to a channel.
+
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

@@ -19,6 +19,7 @@ export function NextAction({ trace, space, fetcher = fetch }: { trace: string; s
   const [kind, setKind] = useState<"" | "ticket" | "message">("");
   const [text, setText] = useState("");
   const [target, setTarget] = useState("");
+  const [cites, setCites] = useState<string[]>([]); // a confidential draft can't go to a channel (LAW-32)
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const ids = { text: useId(), target: useId() };
@@ -29,6 +30,7 @@ export function NextAction({ trace, space, fetcher = fetch }: { trace: string; s
       const d = await post(fetcher, "/v1/actions/draft", { trace, kind: k });
       setKind(k);
       setText(String(d.text ?? ""));
+      setCites(Array.isArray(d.cites) ? (d.cites as string[]) : []);
     } catch (e) {
       setStatus(e instanceof Error ? e.message : t("That didn't work. Try again."));
     } finally {
@@ -44,7 +46,7 @@ export function NextAction({ trace, space, fetcher = fetch }: { trace: string; s
         const r = await post(fetcher, "/v1/actions", { workflow: "ticket-update", target: `tickets:${id}`, payload: { comment: text } });
         setStatus(t("Sent for approval: {state}.", { state: String(r.state ?? "") }));
       } else {
-        await post(fetcher, `/v1/spaces/${encodeURIComponent(space ?? "")}/messages`, { channel: target.trim(), text });
+        await post(fetcher, `/v1/spaces/${encodeURIComponent(space ?? "")}/messages`, { channel: target.trim(), text, cites });
         setStatus(t("Posted in {channel}, marked as sent by you.", { channel: target.trim() }));
       }
       setKind("");

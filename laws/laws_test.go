@@ -603,3 +603,7 @@ func TestLAW07_NothingSensitiveGoesOut(t *testing.T) {
 func TestLAW31_LentAccessLastsOneRun(t *testing.T) {
 	Check(t, "LAW-31", runs, func(r *rand.Rand) error { return law31(r, RealLentGate) })
 }
+
+func TestLAW32_ALabelNeverDrops(t *testing.T) {
+	Check(t, "LAW-32", runs, func(r *rand.Rand) error { return law32(r, RealLabelGate) })
+}

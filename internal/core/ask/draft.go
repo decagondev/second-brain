@@ -145,7 +145,7 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 	if err != nil {
 		return DraftResponse{}, err
 	}
-	resp := DraftResponse{Response: Response{Trace: trace, Release: a.Release, Refused: res.Refused, Answer: Answer{Claims: claims}}, Context: req.Context}
+	resp := DraftResponse{Response: Response{Trace: trace, Release: a.Release, Refused: res.Refused, Answer: Answer{Claims: claims}, Label: CitedLabel(claims, chunks)}, Context: req.Context}
 	uncited := 0
 	for _, c := range claims {
 		if c.Uncited {

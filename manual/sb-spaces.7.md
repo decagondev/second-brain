@@ -199,6 +199,10 @@ The lead and members add to the decision log (`POST /v1/projects/ID/decisions`, 
 
 A steward of a space with spaces below it is a **branch moderator**: they may pause any agent in any space below theirs (sb-agents(7), Pause here), and `GET /v1/spaces/NAME/branch` shows them, for every space below, the agents it lists and whether each is paused there, the names of its skills and rhythms, and how many routines are shared there: `{ "space", "below": [{ "space", "parent", "agents": [{ "name", "paused" }], "skills", "rhythms", "shared_routines" }] }`. Names and counts only: never a skill's instruction, a routine's question or anything a space holds, so a moderator of a department sees nothing of a team they couldn't open. A pause they make is audited with the branch, "(branch moderator of NAME)" in its reason. A steward of a sibling space, or of a space below, can't pause there (`EPERM`). Branch moderation is a pilot feature, `branch-moderators` (sb-release(7), Feature rollouts).
 
+### Sensitive map (SB-5407)
+
+Each space's documents counted by kind, this week and last: with personal data, with a secret removed, by label, shared too widely, and held (sb-permissions(7), Shared too widely). A space's stewards see their own space's counts on the review list (`section=sensitive`); operators see every space's at `GET /v1/admin/sensitive`, and the admin's week names each space with documents shared too widely or held. They are counts from the index, never titles, and each week's are kept under the cell's state so a week can be compared with the last.
+
 ### Reorg preview (SB-1206)
 
 Reorgs are planned. Before the IdP changes, HR and IT run `sb space diff` (sb-space(1)) on the manifest and a snapshot of the people being moved, with their groups before and after, and see per person the spaces they'd gain and lose. It flags anyone who would lose every space, gain a restricted one, or end up on both sides of a barrier. It works offline and changes nothing; the reorg itself is the IdP's SCIM moves (Moves, below) and, if spaces change, a manifest diff.

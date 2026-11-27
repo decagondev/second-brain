@@ -1089,4 +1089,6 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Why it is shared this widely": { de: "Warum es so breit geteilt ist", fr: "Pourquoi il est partagé aussi largement" },
   "Shared on purpose": { de: "Absichtlich geteilt", fr: "Partagé volontairement" },
   "Shared too widely": { de: "Zu breit geteilt", fr: "Partagé trop largement" },
+  "Restricted: this answer cites restricted documents. Don't forward it.": { de: "Streng vertraulich: Diese Antwort zitiert streng vertrauliche Dokumente. Bitte nicht weiterleiten.", fr: "Restreint : cette réponse cite des documents restreints. Ne la transférez pas." },
+  "Confidential: this answer cites confidential documents. Don't forward it.": { de: "Vertraulich: Diese Antwort zitiert vertrauliche Dokumente. Bitte nicht weiterleiten.", fr: "Confidentiel : cette réponse cite des documents confidentiels. Ne la transférez pas." },
 };

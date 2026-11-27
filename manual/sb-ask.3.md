@@ -92,6 +92,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "skill": "weekly-update",
   "clarify": { "kind": "term", "question": "Which \"ap\" do you mean?", "choices": ["AP as eng uses it: access point", "AP as finance uses it: accounts payable", "just answer"] },
   "assumed": "Assumed: AP as eng uses it: access point",
+  "label": "internal",
   "table": { "cite": "docs:9a0c2b11@4", "sheet": "Invoices", "op": "sum", "column": "Amount", "where": [{ "column": "Customer", "equals": "acme-logistics" }], "value": 12840.5, "rows": 12, "range": "Invoices!C2:C41" }
 }
 ```
@@ -130,6 +131,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `earlier_dropped` | (SB-2901) How many of the conversation's earlier questions were left out of what the model read: only the last 8 are sent. 0 otherwise. The conversation itself keeps every question |
 | `clarify` | (SB-4901) The one clarifying question of an ambiguous ask made with `clarify: true`: `kind` (`term`, `space` or `period`), the `question`, and up to 4 `choices` then `just answer`. When it is there, nothing was composed: `answer.claims` is empty, `trace` is `""` and no conversation is kept. Omitted otherwise |
 | `assumed` | (SB-4901) For an ambiguous ask made without `clarify`, the line `Assumed: CHOICE`, the first choice it answered with; the chat apps and agent drafts show it at the top. Omitted otherwise |
+| `label` | (SB-5405) The highest label among the answer's cites (sb-citations(7), Labels travel; LAW-32). The web shows `confidential` and `restricted` above the answer and in its download and print view; a chat reply names them, and such an answer can't be shared into a channel. Omitted when no cite is labelled |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner, except in a team (SB-3906): when the answer has cites and none of their owners is an active user, it names up to three of the department's stewards, active now, each with `"steward": true` and no `cites` count |
 
 ### How the `ask` agent runs, exactly
@@ -291,6 +293,8 @@ Every cite in an answer also carries `age_days` (whole days since the index firs
 **Several at once (SB-3103).** `POST /v1/spaces/NAME/review/marks` and `POST /v1/spaces/NAME/retired` also take `"cites": ["docs:…@17", …]` (at most 50) instead of `cite`, with one `reason` and no `replaced_by` for a retirement. Each cite is checked, decided and audited on its own, exactly as when it is sent alone, and the response is `{ "items": [{ "cite": "…", "ok": true } | { "cite": "…", "error": { "code": "EPERM", "message": "…" } }] }`, in the order sent: one that fails doesn't stop the others. More than 50 is `EINVAL`. The review list has a checkbox on each document and **Mark reviewed** and **Retire** for the selected ones.
 
 **Suggested edits (SB-5201).** From the review list, a steward sends a document's owner a drafted change: `POST /v1/spaces/NAME/review/suggest` `{ "cite": "docs:…@3", "why": "stale"|"contradicted"|"replaced"|"reported", "evidence": ["docs:…"] }` (at most 4 documents of evidence). The cell checks the steward can open the document, finds its owner at the source (one active user, LAW-12), and asks **as the owner**, narrowed to the document and the evidence, for the new wording and what supports it, so the suggestion cites only what the owner can open (LAW-01). It lands in the owner's own queue (`/v1/spaces/me/questions`, Questions to a person) as a draft of kind `suggested-edit`, with the passage's cite in `doc`, and is audited `suggested`. The steward is answered `{ "id", "to": "owner", "doc" }`: never the owner's address or the text. **Nothing is written to the source**: the owner makes the change there, then answers or discards the draft, or dismisses it with `POST /v1/me/suggestions/ID/dismiss` `{ "reason": "…" }` (1 to 300 characters, audited with its hash). A passage with an open or dismissed suggestion isn't suggested again (`EINVAL`).
+
+**Sensitive map (SB-5407).** `GET /v1/spaces/NAME/review?section=sensitive` is the space's documents counted by kind this week: `{ "space", "week", "personal_data", "secret_removed", "labels": { LABEL: N }, "wide", "held", "last_week"? }`, for its stewards only, counts and never a title (sb-spaces(7), Sensitive map).
 
 **Shared too widely (SB-5401).** `GET /v1/spaces/NAME/review?section=wide` lists the space's documents whose source shares them too widely and that hold something sensitive, and its sensitive documents whose sharing widened in the last 30 days (sb-permissions(7), Shared too widely): `{ "items": [{ …result, "grant", "people"?, "reasons", "held", "confirmed"?, "widened"? }], "hidden": [...] }`, checked as the steward like the list, never the text.
 

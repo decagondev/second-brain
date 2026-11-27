@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/tenancy"
 	"example.com/second-brain/internal/errs"
 )
 
@@ -62,4 +63,36 @@ func (h Questions) audience(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", a)
+}
+
+// agentReach is what an agent can read now, for operators (SB-5406).
+func (h Admin) agentReach(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.AgentReach == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Agent reach can't be worked out in this cell."))
+		return
+	}
+	rc, err := h.AgentReach(r.Context(), r.PathValue("name"))
+	switch {
+	case errors.Is(err, ask.ErrInvalid):
+		h.fail(w, errs.New(errs.EINVAL, "No agent %q in the bundle.", r.PathValue("name")))
+		return
+	case err != nil:
+		h.fail(w, errs.New(errs.EUNAVAIL, "The agent's reach can't be worked out right now."))
+		return
+	}
+	h.ok(w, rc)
+}
+
+// sensitive is every space's sensitive counts, for operators (SB-5407).
+func (h Admin) sensitive(w http.ResponseWriter, r *http.Request, _ tenancy.Scope) {
+	if h.Sensitive == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The sensitive map can't be counted in this cell."))
+		return
+	}
+	sm, err := h.Sensitive(r.Context())
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "The sensitive map can't be counted right now."))
+		return
+	}
+	h.ok(w, map[string]any{"spaces": sm})
 }

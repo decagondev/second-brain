@@ -47,6 +47,10 @@ What is recorded: every `Deny` and `Unknown`, and every decision on `call_tool`,
 
 Document content, prompts, answers, drafts, secrets and tokens. Payloads appear only as SHA-256 hashes (LAW-07).
 
+### Reach in an agent's record (SB-5406)
+
+An agent's signed record (sb-agents(7), An agent's record) carries its reach now and last week's count: spaces, people and document counts, never titles. The weekly counts themselves are kept under the cell's state, not in the audit log; an owner told that reach grew is a notification like any other.
+
 ### Tamper evidence
 
 The audit role can only insert and select. Each row chains to the previous row's hash, and the latest hash is signed and written to WORM storage every hour. `sb audit verify` recomputes everything (LAW-11).

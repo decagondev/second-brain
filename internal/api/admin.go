@@ -97,6 +97,10 @@ type Admin struct {
 	// paused in (SB-4702); nil has neither.
 	AgentValue func(ctx context.Context) (ask.ValueReport, error)
 	PausedIn   func(agent string) []string
+	// AgentReach is what an agent can read now (SB-5406), and Sensitive every space's
+	// sensitive counts (SB-5407); nil is EUNAVAIL.
+	AgentReach func(ctx context.Context, name string) (ask.AgentReach, error)
+	Sensitive  func(ctx context.Context) ([]ask.SensitiveCounts, error)
 	// AgentRecord is an agent's signed record (SB-4707); nil is EUNAVAIL.
 	AgentRecord func(ctx context.Context, name string) (ask.SignedRecord, error)
 	// AgentHistory is an agent's versions and Restore makes a proposal (SB-5104); nil is
@@ -163,6 +167,8 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/agents", h.guard(h.agents))
 	mux.HandleFunc("GET /v1/admin/agents/value", h.guard(h.agentValue))                         // SB-4701
 	mux.HandleFunc("GET /v1/admin/agents/{name}/record", h.guard(h.agentRecord))                // SB-4707
+	mux.HandleFunc("GET /v1/admin/agents/{name}/reach", h.guard(h.agentReach))                  // SB-5406
+	mux.HandleFunc("GET /v1/admin/sensitive", h.guard(h.sensitive))                             // SB-5407
 	mux.HandleFunc("GET /v1/admin/rollouts", h.guard(h.rollouts))                               // SB-5106
 	mux.HandleFunc("POST /v1/admin/rollouts/{feature}/hold", h.guard(h.hold(true)))             // SB-5106
 	mux.HandleFunc("POST /v1/admin/rollouts/{feature}/release", h.guard(h.hold(false)))         // SB-5106

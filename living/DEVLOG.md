@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-26 S53.2: Labels and reach
+
+**Wave/slice:** W53 / S53.2 (SB-5405 to SB-5407) · **Status:** Done
+
+**What:** Labels travel: front matter `sensitivity:` raises a document's label, and every answer, draft and note carries the highest label it cites; confidential content can't be shared into or posted to a chat channel (LAW-32, new). Each agent's reach (the documents its stewards can open in the spaces that enable it) is counted, kept weekly, shown to operators and in its record, and a jump of more than a tenth tells its owners. A sensitive map counts each space's documents by kind for its stewards and operators.
+
+**Why this way:** The label already lived on every chunk for routing, so carrying it is a fold over what an answer cites, and the channel gate is one predicate shared by both chat apps and the message send. Front matter may only raise a label because it is written by whoever edits the file. Reach is a replay through the same live check every ask uses rather than a count from ACL copies, so it measures what an agent would really read. Weekly numbers are tiny files under state/, like the eval hold and notify clock, so no store is added.
+
+**Learned:** Slack answers are already ephemeral, so the only path into a channel was Share; the guard sits there, and on the drafted message, which needed its cites passed back.
+
+**Laws:** LAW-20, LAW-26, LAW-32 (new), LAW-01, LAW-07. Every law test is green except LAW-23, as before.
+
 ## 2026-11-26 S53.1: Find what is shared too widely
 
 **Wave/slice:** W53 / S53.1 (SB-5401 to SB-5404) · **Status:** Done

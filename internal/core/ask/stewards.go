@@ -15,6 +15,7 @@ import (
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/approvals"
 	"example.com/second-brain/internal/core/audit"
+	"example.com/second-brain/internal/core/ingest"
 	"example.com/second-brain/internal/core/policy"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/retrieve"
@@ -713,6 +714,10 @@ func (x Stewards) Note(ctx context.Context, s tenancy.Scope, name, id string, re
 	owner := strings.ToLower(who.Email)
 	if republish && was.Owner != "" { // the same note: its owner stays, whoever republishes it
 		owner = strings.ToLower(was.Owner)
+	}
+	if cl := x.Agent.citesLabel(ctx, q.Reply.Cites); cl != "" { // SB-5405, LAW-32: the note keeps its cites' label
+		label = ingest.Highest(label, cl)
+		front = append(front, "sensitivity: "+label)
 	}
 	front = append(front, markFront(q, owner, x.emailOf(ctx, q.Asker), x.emailsOf(ctx, editorsOf(q.Thread)))...) // SB-4706, SB-5204
 	keep := req.KeepQuestion

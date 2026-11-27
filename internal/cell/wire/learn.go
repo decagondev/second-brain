@@ -278,6 +278,11 @@ func (c *Cell) adminLines(ctx context.Context, m manifest.Tenant, from, to, now 
 			}
 		}
 	}
+	sens, err := c.sensitiveLines(ctx) // SB-5407
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, sens...)
 	checks, err := c.Checks("")
 	if err != nil {
 		return nil, err

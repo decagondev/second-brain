@@ -57,7 +57,7 @@ summary: Epics, waves, slices and tickets.
 | W50 Guard What Goes In | 7 | 0 | 0 | Planned 2026-11-25 with the user (E51), built: suspect passages, nothing sensitive goes out, guardrail export, agent history, branch moderators, feature rollouts, pause from the notice ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W51 Write It Down Together | 7 | 0 | 0 | Planned 2026-11-25 with the user (E52), built: suggested edits to the source, edit a draft together, ask an agent in a comment, who made it, cite the page or slide, branch a conversation, `@` and `/` in the ask box ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W52 Agents That Act Carefully | 6 | 0 | 0 | Planned 2026-11-25 with the user (E53), built: start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
-| W53 Know Who Can See | 4 | 0 | 3 | Planned 2026-11-26 with the user (E54), S53.1 built: shared too widely, hold until the owner confirms, sharing widened, who can see this, labels travel, how far each agent reaches, sensitive map ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
+| W53 Know Who Can See | 7 | 0 | 0 | Planned 2026-11-26 with the user (E54), built: shared too widely, hold until the owner confirms, sharing widened, who can see this, labels travel, how far each agent reaches, sensitive map ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W54 See and Steer the Context | 0 | 0 | 7 | Planned 2026-11-26 with the user (E55): context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W55 Keep Answering, Spend Less | 0 | 0 | 6 | Planned 2026-11-26 with the user (E56): fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
@@ -960,9 +960,9 @@ flowchart LR
 | [SB-5402](E54-know-who-can-see/SB-5402-hold-until-confirmed.md) | S53.1 | E54 | Hold until the owner confirms | Done |
 | [SB-5403](E54-know-who-can-see/SB-5403-sharing-widened.md) | S53.1 | E54 | Sharing widened | Done |
 | [SB-5404](E54-know-who-can-see/SB-5404-who-can-see.md) | S53.1 | E54 | Who can see this | Done |
-| [SB-5405](E54-know-who-can-see/SB-5405-labels-travel.md) | S53.2 | E54 | Labels travel | Open |
-| [SB-5406](E54-know-who-can-see/SB-5406-agent-reach.md) | S53.2 | E54 | How far each agent reaches | Open |
-| [SB-5407](E54-know-who-can-see/SB-5407-sensitive-map.md) | S53.2 | E54 | Sensitive map | Open |
+| [SB-5405](E54-know-who-can-see/SB-5405-labels-travel.md) | S53.2 | E54 | Labels travel | Done |
+| [SB-5406](E54-know-who-can-see/SB-5406-agent-reach.md) | S53.2 | E54 | How far each agent reaches | Done |
+| [SB-5407](E54-know-who-can-see/SB-5407-sensitive-map.md) | S53.2 | E54 | Sensitive map | Done |
 
 ### W54 See and Steer the Context
 

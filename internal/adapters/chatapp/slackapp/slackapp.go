@@ -145,6 +145,8 @@ const (
 	// MsgSpacesDown answers when the space registry can't say which space a channel is in.
 	MsgSpacesDown = "Answers are unavailable right now. Try again in a minute."
 	MsgShareFail  = "Only the person who asked can share this answer."
+	// MsgShareLabel refuses to share an answer that cites confidential documents (LAW-32).
+	MsgShareLabel = "This answer cites confidential documents, so it stays with you and wasn't shared in the channel."
 )
 
 // ErrNoMatch is a chat user who isn't exactly one active directory user.
@@ -332,6 +334,9 @@ func Render(question string, r ask.Response) Message {
 	if m := ask.MarkLine(r.Agent, r.Release); m != "" { // SB-4706, LAW-28
 		b.WriteString("_" + escape(m) + "_\n")
 	}
+	if l := ask.LabelLine(r.Label); l != "" { // SB-5405, LAW-32
+		b.WriteString("*" + escape(l) + "*\n")
+	}
 	fmt.Fprintf(&b, "_Trace %s_", r.Trace)
 	text := b.String()
 	return Message{ResponseType: "ephemeral", ReplaceOriginal: true, Text: text, Blocks: []Block{
@@ -454,6 +459,10 @@ func (a *App) interaction(w http.ResponseWriter, r *http.Request) {
 		t, err := a.Agent.Trace(ctx, s, trace)
 		if err != nil || t.User != s.User() {
 			_ = a.post(ctx, p.ResponseURL, Message{ResponseType: "ephemeral", Text: MsgShareFail})
+			return
+		}
+		if !ask.MayPostInChannel(t.Response.Label) { // LAW-32: never to a channel
+			_ = a.post(ctx, p.ResponseURL, Message{ResponseType: "ephemeral", Text: MsgShareLabel})
 			return
 		}
 		_ = a.post(ctx, p.ResponseURL, Shared(t))

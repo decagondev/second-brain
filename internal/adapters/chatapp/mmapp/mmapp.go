@@ -236,6 +236,10 @@ func (a *App) action(w http.ResponseWriter, r *http.Request) {
 		done(MsgShareFail)
 		return
 	}
+	if !ask.MayPostInChannel(t.Response.Label) { // LAW-32: never to a channel
+		done(slackapp.MsgShareLabel)
+		return
+	}
 	if err := a.post(r.Context(), c.ResponseURL, Shared(t)); err != nil {
 		done(MsgShareGone)
 		return
@@ -310,6 +314,9 @@ func Render(question string, r ask.Response) Message {
 	}
 	if m := ask.MarkLine(r.Agent, r.Release); m != "" { // SB-4706, LAW-28
 		b.WriteString("_" + escape(m) + "_\n")
+	}
+	if l := ask.LabelLine(r.Label); l != "" { // SB-5405, LAW-32
+		b.WriteString("**" + escape(l) + "**\n")
 	}
 	fmt.Fprintf(&b, "_Trace %s_", r.Trace)
 	return Message{ResponseType: "ephemeral", Text: b.String()}

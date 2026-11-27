@@ -86,6 +86,8 @@ Governing agents (SB-4401, SB-4402): `GET /v1/agents/cases` and `POST /v1/agents
 
 Know who can see (SB-5401 to SB-5404): `GET /v1/spaces/NAME/review?section=wide` (the space's documents shared too widely, for its stewards), `POST /v1/documents/sharing/confirm` (`{ "cite", "reason" }`, the owner's Shared on purpose), `GET /v1/documents/{id}/audience` and `GET /v1/audience?doc=KIND:ID` (sb-permissions(7), Who can see this). The inbox lists the caller's own documents shared too widely (kind `wide`), and a widening at the source is told to the owner once (notify kind `widened`).
 
+Labels, reach and the sensitive map (SB-5405 to SB-5407): an answer's `label` (sb-ask(3)); `GET /v1/admin/agents/NAME/reach` (sb-agents(7), How far each agent reaches); `GET /v1/spaces/NAME/review?section=sensitive` for a space's stewards and `GET /v1/admin/sensitive` for operators (sb-spaces(7), Sensitive map). `POST /v1/spaces/NAME/messages` takes the draft's `cites` and refuses one that cites `confidential` or `restricted` documents (LAW-32).
+
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.

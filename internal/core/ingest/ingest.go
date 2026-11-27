@@ -256,6 +256,11 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			chunks[i].Flags = merge(chunks[i].Flags, []string{FlagSecretRemoved})
 		}
 	}
+	if fm := Sensitivity(doc.Text); fm != "" { // SB-5405: front matter only ever raises a label
+		for i := range chunks {
+			chunks[i].Label = Highest(chunks[i].Label, fm)
+		}
+	}
 	if len(texts) > 0 {
 		vecs, err := p.Embedder.Embed(ctx, texts)
 		if err != nil {

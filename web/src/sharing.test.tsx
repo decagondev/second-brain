@@ -37,3 +37,13 @@ describe("know who can see (SB-5402, SB-5404)", () => {
     expect(screen.getByText("Confirmed as shared on purpose.")).toBeTruthy();
   });
 });
+
+describe("labels travel (SB-5405, LAW-32)", () => {
+  it("puts a confidential answer's label in its download", async () => {
+    const { answerMarkdown } = await import("./Copy");
+    const md = answerMarkdown("plan?", { trace: "tr_1", release: "r", refused: 0, notice: null, conversation: "cv_1", label: "confidential", answer: { claims: [] } } as never);
+    expect(md).toContain("Confidential: this answer cites confidential documents");
+    const plain = answerMarkdown("menu?", { trace: "tr_2", release: "r", refused: 0, notice: null, conversation: "cv_1", label: "internal", answer: { claims: [] } } as never);
+    expect(plain).not.toContain("Confidential");
+  });
+});

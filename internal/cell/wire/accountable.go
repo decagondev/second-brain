@@ -182,6 +182,11 @@ func (c *Cell) agentAlerts(ctx context.Context, now time.Time) ([]notify.AgentAl
 		return nil, err
 	}
 	out = append(out, learn...)
+	reach, err := c.reachAlerts(ctx) // SB-5406
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, reach...)
 	if len(m.AgentCaps) == 0 {
 		return out, nil
 	}
@@ -346,6 +351,11 @@ func (c *Cell) AgentRecord(ctx context.Context, name string) (ask.SignedRecord, 
 		sum := sha256.Sum256([]byte(p.Text))
 		in.PromptSHA256 = hex.EncodeToString(sum[:])
 	}
+	reach, err := c.AgentReach(ctx, name) // SB-5406
+	if err != nil {
+		return ask.SignedRecord{}, fmt.Errorf("%w: reach: %v", ask.ErrUnavailable, err)
+	}
+	in.Reach = &reach
 	sg, err := c.AnchorSigner(ctx)
 	if err != nil {
 		return ask.SignedRecord{}, fmt.Errorf("%w: %v", ask.ErrUnavailable, err)

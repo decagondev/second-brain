@@ -57,6 +57,8 @@ function mdURL(u: string): string {
 export function answerMarkdown(question: string, answer: AskResponse): string {
   const nums = numberCites(answer);
   const lines = [`**${md(question)}**`, ""];
+  if (answer.label === "confidential" || answer.label === "restricted")
+    lines.push(`*${md(answer.label === "restricted" ? t("Restricted: this answer cites restricted documents. Don't forward it.") : t("Confidential: this answer cites confidential documents. Don't forward it."))}*`, ""); // SB-5405
   for (const c of answer.answer.claims) {
     if (!isCited(c)) lines.push(`- **${md(t("Uncited"))}:** ${md(c.text)}`);
     else lines.push(`- ${md(c.text)} ${c.cites.map((ci) => `\\[${numberOf(nums, ci.cite)}\\]`).join(" ")}`);

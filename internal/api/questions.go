@@ -27,6 +27,8 @@ type Questions struct {
 	// scope in the space they lend (SB-5303); nil serves neither.
 	TryTrigger func(ctx context.Context, s tenancy.Scope, name, on string) (ask.TryResult, error)
 	LendAs     func(ctx context.Context, user, space string) (tenancy.Scope, error)
+	// LastSensitive is a space's kept sensitive counts for a week (SB-5407); nil keeps none.
+	LastSensitive func(space, week string) (ask.SensitiveCounts, bool)
 	// Poster is the chat bot that posts a person's drafted message, and Channels a space's
 	// channels (SB-5304); nil posts none.
 	Poster   ask.ChannelPoster
@@ -240,6 +242,15 @@ func (h Questions) review(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.Query().Get("section") == "due" { // SB-3105
 		res, err := h.Service.ComingDue(r.Context(), s, name, h.Reviews, after)
+		if err != nil {
+			h.fail(w, err)
+			return
+		}
+		h.k().out().ok(w, "", res)
+		return
+	}
+	if r.URL.Query().Get("section") == "sensitive" { // SB-5407
+		res, err := h.Service.Sensitive(r.Context(), s, name, h.LastSensitive)
 		if err != nil {
 			h.fail(w, err)
 			return

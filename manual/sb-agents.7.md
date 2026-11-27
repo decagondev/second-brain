@@ -251,6 +251,10 @@ A steward may **share** one of their own routines in a space they steward (sb-as
 
 A report or brief is stored for its owner, and every cite in it is checked again as the reader whenever it is shown (LAW-26). Their suites are `agent-research`, `agent-meeting-prep`, `agent-incident-brief`, `agent-incident-review`, `agent-voc`, `agent-fix-draft`, `agent-goal-check-in` and `agent-catch-up` (sb-evals(7)).
 
+### How far each agent reaches (SB-5406)
+
+An agent reads as the people it runs as: each active steward of every space whose manifest enables it (its drafts, triggers and rhythms run as one of them). Its **reach** is replayed now, each document of each such space checked live as each of those people, and counted: the spaces, the people, the documents any of them can open, how many of those are labelled `confidential` or above, and how many are held as shared too widely (sb-permissions(7)). `GET /v1/admin/agents/NAME/reach` gives it to operators as `{ "agent", "week", "spaces": [{ "space", "people", "documents", "labelled", "held" }], "documents", "labelled", "held", "last_week"?, "grew"? }`, and the agent's record (An agent's record) carries it. Each week's count is kept under the cell's state, and a reach more than a tenth larger than last week's tells the agent's owners once that week (notify kind `agent`). Counts only, never a title. A loan (Borrow access for one run) lasts one run and is not counted.
+
 ### The tool bus
 
 Every tool call takes the same path, in this order:

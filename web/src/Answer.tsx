@@ -553,6 +553,13 @@ function Freshness({ answer }: { answer: AskResponse }) {
           )}
         </p>
       )}
+      {(answer.label === "confidential" || answer.label === "restricted") && (
+        <p className="notice label" role="note">
+          {answer.label === "restricted"
+            ? t("Restricted: this answer cites restricted documents. Don't forward it.")
+            : t("Confidential: this answer cites confidential documents. Don't forward it.")}
+        </p>
+      )}
       {answer.notice_single && (
         <p className="notice" role="note">
           {t("This answer rests on one document. Check it if it matters.")}

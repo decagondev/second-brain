@@ -28,7 +28,7 @@ LAW-23 grants are consented and revocable    LAW-24 the tree never widens
 LAW-25 a memory is its person's own          LAW-26 a stored result is checked when read
 LAW-27 a consultation is the asker's own    LAW-28 an agent's writing says so
 LAW-29 a rhythm only drafts                  LAW-30 a brief about a person is theirs to read
-LAW-31 lent access lasts one run
+LAW-31 lent access lasts one run             LAW-32 a label never drops
 ```
 
 ## DESCRIPTION
@@ -231,6 +231,12 @@ A brief the platform makes about one person for someone else (the 1:1 prep a man
 When a steward's run needs a space they can't read, a person who can read it may lend it for **one run** (sb-agents(7), Borrow access for one run). The run reads that space as the lender, once; its draft names the lender; and a reader sees the draft only when they can open every one of its cites, checked live as them, so the loan widens what no one sees. A loan is answered once, yes or no, and never runs again: the next run asks again.
 
 *Owner:* platform lead. *Checks:* Property (`TestLAW31_LentAccessLastsOneRun`: random lent drafts with random cites and random readers who can open part of them, through the real visibility gate, and a loan answered at random, through the real loan service and store, then answered again; SB-5303) · Selftest (`TestSelfLentGateIsCaught`: a gate that shows a lent draft to anyone, or to a reader who can open one of its cites, goes red).
+
+### LAW-32: A label never drops {#law-32}
+
+Anything built from a labelled document carries the highest label among what it cites, and goes nowhere that label forbids (SB-5405). An answer, a draft, a note, a download and a chat reply each carry it (`label`), and content labelled `confidential` or `restricted` goes only to a person: the web, a direct reply, an email to them. It is never shared into a chat channel or posted to one from a draft. A label read from a document's front matter only ever raises the label its source or space gave it, and a cite the index can't find counts as `restricted`: unknown never drops a label.
+
+*Owner:* platform lead. *Checks:* Property (`TestLAW32_ALabelNeverDrops`: random answers over random labelled chunks, through the real label and channel gate; SB-5405) · Selftest (`TestSelfLabelGateIsCaught`: a gate that takes the first cite's label, or lets every label into a channel, goes red) · Integration (`TestLabelsReachAndTheSensitiveMapThroughARunningCell`).
 
 ### External review (SB-612)
 
