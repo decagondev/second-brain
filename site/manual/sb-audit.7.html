@@ -65,6 +65,8 @@ hourly: sign(latest hash) → WORM storage
 <p><strong>Before</strong> the thing it records takes effect. If the audit write fails, the action doesn't happen (LAW-04).</p>
 <h3 id="what-is-never-recorded">What is never recorded</h3>
 <p>Document content, prompts, answers, drafts, secrets and tokens. Payloads appear only as SHA-256 hashes (LAW-07).</p>
+<h3 id="reach-in-an-agents-record-sb-5406">Reach in an agent's record (SB-5406)</h3>
+<p>An agent's signed record (sb-agents(7), An agent's record) carries its reach now and last week's count: spaces, people and document counts, never titles. The weekly counts themselves are kept under the cell's state, not in the audit log; an owner told that reach grew is a notification like any other.</p>
 <h3 id="tamper-evidence">Tamper evidence</h3>
 <p>The audit role can only insert and select. Each row chains to the previous row's hash, and the latest hash is signed and written to WORM storage every hour. <code>sb audit verify</code> recomputes everything (LAW-11).</p>
 <h3 id="retention-and-backup">Retention and backup</h3>
@@ -90,7 +92,7 @@ sb audit verify --export acme-2027Q1.ndjson       # offline, for auditors
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-audit.1.html">sb-audit(1)</a>, <a href="sb-audit.5.html">sb-audit(5)</a>, <a href="../docs/architecture/10-audit-log.html">10 Audit log</a></p><p class="srcline">Source: <code>manual/sb-audit.7.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#what-is-recorded">What is recorded</a></li><li class="l3"><a href="#policy-decisions">Policy decisions</a></li><li class="l3"><a href="#when">When</a></li><li class="l3"><a href="#what-is-never-recorded">What is never recorded</a></li><li class="l3"><a href="#tamper-evidence">Tamper evidence</a></li><li class="l3"><a href="#retention-and-backup">Retention and backup</a></li><li class="l3"><a href="#streaming-to-a-siem-sb-2302">Streaming to a SIEM (SB-2302)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#what-is-recorded">What is recorded</a></li><li class="l3"><a href="#policy-decisions">Policy decisions</a></li><li class="l3"><a href="#when">When</a></li><li class="l3"><a href="#what-is-never-recorded">What is never recorded</a></li><li class="l3"><a href="#reach-in-an-agents-record-sb-5406">Reach in an agent's record (SB-5406)</a></li><li class="l3"><a href="#tamper-evidence">Tamper evidence</a></li><li class="l3"><a href="#retention-and-backup">Retention and backup</a></li><li class="l3"><a href="#streaming-to-a-siem-sb-2302">Streaming to a SIEM (SB-2302)</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

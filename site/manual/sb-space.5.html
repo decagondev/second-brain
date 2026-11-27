@@ -77,7 +77,7 @@
 <td>label</td>
 <td>no</td>
 <td>from the template</td>
-<td>The default label for documents in this space whose source carries none: <code>public</code>, <code>internal</code>, <code>confidential</code> or <code>restricted</code></td>
+<td>The default label for documents in this space whose source carries none: <code>public</code>, <code>internal</code>, <code>confidential</code> or <code>restricted</code>. A document's front matter <code>sensitivity:</code> only raises it (SB-5405), and whatever cites a document carries its label (LAW-32)</td>
 </tr>
 <tr>
 <td><code>scope</code></td>
@@ -183,6 +183,13 @@
 <td>no</td>
 <td><code>skip</code></td>
 <td>(SB-5101) What happens to a passage that reads like instructions to the model (sb-ingest(7), Suspect passages): <code>skip</code> keeps it out of every prompt; <code>monitor</code> lets it through wrapped and flagged. Both record it for the stewards. A team inherits its department's</td>
+</tr>
+<tr>
+<td><code>wide_sensitive</code></td>
+<td><code>hold</code> or <code>warn</code></td>
+<td>no</td>
+<td><code>hold</code></td>
+<td>(SB-5402) What happens to a sensitive document its source shares too widely (sb-permissions(7), Shared too widely): <code>hold</code> leaves it out for everyone but its owner and the space's stewards until the owner narrows it or confirms it; <code>warn</code> uses it and says so. A team inherits its department's</td>
 </tr>
 <tr>
 <td><code>model</code></td>

@@ -120,7 +120,13 @@
 <td><code>mcp_groups</code></td>
 <td>map group → list</td>
 <td>no</td>
-<td>(SB-5305) Who may use MCP, and which tools: each IdP group named gets the tool families listed, of <code>search</code>, <code>ask</code> (with <code>passage</code>), <code>agents</code>, <code>research</code> and <code>skills</code> (prompts). A person in none of the groups is refused (<code>EPERM</code>), and a tool not granted to any of their groups isn't listed or callable. Without it, everyone gets every family, as before. It needs <code>mcp: true</code></td>
+<td>(SB-5305) Who may use MCP, and which tools: each IdP group named gets the tool families listed, of <code>search</code>, <code>ask</code> (with <code>passage</code>), <code>agents</code>, <code>research</code>, <code>skills</code> (prompts) and <code>memory</code> (the person's memory resource and <code>memory_propose</code>, SB-5505). A person in none of the groups is refused (<code>EPERM</code>), and a tool not granted to any of their groups isn't listed or callable. Without it, everyone gets every family, as before. It needs <code>mcp: true</code></td>
+</tr>
+<tr>
+<td><code>wide_group_size</code></td>
+<td>integer</td>
+<td>no</td>
+<td>(SB-5401) A group grant with more members than this shares a document too widely (sb-permissions(7), Shared too widely). Default 500</td>
 </tr>
 <tr>
 <td><code>mcp</code></td>
@@ -151,6 +157,18 @@
 <td>string, numbers</td>
 <td>no</td>
 <td>(SB-4405) A second, smaller model of the same provider, base and key: short plain asks go to it (sb-evals(7), Model tiers). Without it, every call uses <code>model.id</code></td>
+</tr>
+<tr>
+<td><code>model.fallback.provider</code>, <code>model.fallback.base</code>, <code>model.fallback.id</code>, <code>model.fallback.price.in_per_m</code>, <code>model.fallback.price.out_per_m</code></td>
+<td>strings, numbers</td>
+<td>no</td>
+<td>(SB-5601) A second provider and model for the main tier, its key at <code>vault://tenants/TENANT/model-fallback</code>. It answers only while the evals job has gated it for the release the cell runs (sb-runtime(7), The fallback model): when the main provider fails, is rate limited or times out, and for 10 minutes after 3 failures in 5 minutes. Without it, or while it isn't gated, a failing main model gives passages only (sb-ask(3), When the model is down)</td>
+</tr>
+<tr>
+<td><code>model.price.cached_in_per_m</code></td>
+<td>number</td>
+<td>no</td>
+<td>(SB-5605) The price of input tokens the provider read from its prompt cache, per million; 0 or absent is <code>in_per_m</code>. Spend, budgets and limits use it</td>
 </tr>
 <tr>
 <td><code>model.price.in_per_m</code>, <code>model.price.out_per_m</code></td>
