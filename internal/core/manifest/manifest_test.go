@@ -313,8 +313,8 @@ func TestLanguage(t *testing.T) {
 			t.Errorf("%s doesn't read back after Format: %v", v, ds)
 		}
 	}
-	for _, v := range []string{"es", "EN", "german"} {
-		if _, diags := Check([]byte(valid + "language: " + v + "\n")); !strings.Contains(format("m.yaml", diags), "must be one of en, de, fr") {
+	for _, v := range []string{"pt", "EN", "german"} { // SB-6106: es, it and nl joined en, de and fr
+		if _, diags := Check([]byte(valid + "language: " + v + "\n")); !strings.Contains(format("m.yaml", diags), "must be one of en, de, fr, es, it, nl") {
 			t.Errorf("language %s accepted: %s", v, format("m.yaml", diags))
 		}
 	}

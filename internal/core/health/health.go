@@ -35,6 +35,9 @@ type Sync struct {
 	// First is a first sync under way (SB-6004): how far it has come and when it started;
 	// nil once a sync succeeds.
 	First *FirstSync `json:"first_sync,omitempty"`
+	// Unread counts the images and recordings no gated reader read (SB-6101, SB-6102), by
+	// what they were; nil for none.
+	Unread map[string]int `json:"unread,omitempty"`
 }
 
 // FirstSync is a first sync's progress: Done of Total changes since Started.
@@ -90,6 +93,9 @@ type Connector struct {
 	Fix     string `json:"fix,omitempty"`
 	// FirstSync is a first sync under way (SB-6004).
 	FirstSync *FirstProgress `json:"first_sync,omitempty"`
+	// Unread are the images and recordings the connector's documents hold that no gated
+	// reader read, by what they were (SB-6101, SB-6102).
+	Unread map[string]int `json:"unread,omitempty"`
 }
 
 // ConnectorRunbook is the runbook whose sections fix each class of sync failure.
@@ -285,6 +291,7 @@ func Build(ctx context.Context, runs schedule.Runs, syncs Syncs, kinds []string,
 		if s.First != nil {
 			c.FirstSync = s.First.Progress(now)
 		}
+		c.Unread = s.Unread
 		if s.Failures > 0 {
 			c.Failure = ingest.KnownClass(s.Failure)
 			c.Fix = ConnectorRunbook + "#" + strings.ReplaceAll(c.Failure, "_", "-")

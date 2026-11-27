@@ -40,7 +40,7 @@ func (c *Cell) graph() *msgraph.Client {
 func sharePoint(cfg Config, g *msgraph.Client) *msgraph.SharePoint {
 	return &msgraph.SharePoint{Graph: g, Drives: cfg.Microsoft.Drives, Domain: cfg.Microsoft.Domain, Labels: cfg.Labels.Microsoft,
 		Organizers: cfg.Microsoft.Organizers, Dir: &msgraph.Directory{Graph: g},
-		Readers: msgraph.Readers{Text: folder.Text, Pages: folder.Pages, ReviewBy: folder.OfficeReviewBy, Transcript: folder.TranscriptText}}
+		Readers: msgraph.Readers{Text: folder.Text, Pages: folder.Pages, ReviewBy: folder.OfficeReviewBy, Transcript: folder.TranscriptText, Images: folder.Images, Media: folder.Media}}
 }
 
 // unmappedLabels are the Purview label ids the docs connector met that labels.microsoft

@@ -327,6 +327,7 @@ func TestLAW26_AStoredResultIsCheckedWhenRead(t *testing.T) {
 func TestLAW28_AnAgentsWritingSaysSo(t *testing.T) {
 	dir := t.TempDir()
 	Check(t, "LAW-28", runs, func(r *rand.Rand) error { return law28(r, dir, RealMarks{}) })
+	Check(t, "LAW-28", 60, func(r *rand.Rand) error { return law28Read(r, t.TempDir(), RealReadIngest) })
 }
 
 func TestLAW29_ARhythmOnlyDraftsAndStopsWithItsSubject(t *testing.T) {

@@ -22,6 +22,20 @@ func MarkLine(agent, version string) string {
 	return "Written by " + agent + ", version " + version
 }
 
+// ReadMark is the mark of a passage a model read (SB-6101, SB-6102, LAW-28); "" for the
+// source's own text.
+func ReadMark(readBy string) string {
+	switch readBy {
+	case "":
+		return ""
+	case "vision":
+		return "Read by a model from a scan or picture"
+	case "transcribe":
+		return "Transcribed by a model from a recording"
+	}
+	return "Read by a model"
+}
+
 // GeneratedBy is the front matter's AGENT@VERSION, or AGENT alone without a version.
 func GeneratedBy(agent, version string) string {
 	if version == "" {

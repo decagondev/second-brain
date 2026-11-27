@@ -32,6 +32,8 @@ export interface Cite {
   // Who asked for it and who edited it (SB-5204).
   asked_by?: string;
   edited_by?: string;
+  // A model read it from a scan or a picture (vision) or a recording (transcribe) (SB-6101, SB-6102).
+  read_by?: string;
 }
 
 export interface Person {
@@ -212,6 +214,8 @@ export interface PinItem {
 export interface Term {
   term: string;
   means: string;
+  // The term's own words in other languages, by language (SB-6104).
+  words?: Record<string, string>;
 }
 
 export interface ApiError {
@@ -250,6 +254,8 @@ export interface Passage {
   page?: number; // SB-5205
   cut?: boolean;
   gone?: boolean;
+  // The passage in the UI's language, translated by a model and marked (SB-6105).
+  translation?: { language: string; text: string; read_by: string };
 }
 
 export async function passage(
@@ -257,8 +263,10 @@ export async function passage(
   cite: string,
   start: number,
   f: Fetch = fetch,
+  translate?: string,
 ): Promise<Passage> {
-  const q = `cite=${encodeURIComponent(cite)}&start=${encodeURIComponent(String(start))}`;
+  let q = `cite=${encodeURIComponent(cite)}&start=${encodeURIComponent(String(start))}`;
+  if (translate) q += `&translate=${encodeURIComponent(translate)}`; // SB-6105
   let res: Response;
   try {
     res = await f(`/v1/traces/${encodeURIComponent(trace)}/passage?${q}`, {
@@ -456,6 +464,7 @@ export interface SearchResult {
   // The asker is the document's current owner at the source (SB-3106).
   mine?: boolean;
   // A note an agent drafted (SB-4706).
+  read_by?: string; // SB-6101
   generated_by?: string;
   approved_by?: string;
 }

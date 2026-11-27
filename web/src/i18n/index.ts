@@ -5,18 +5,21 @@ import { catalog } from "./catalog";
 // The UI's languages (sb-tenant(5) language; SB-2301). Every string the UI shows is a key
 // of the catalog, in English; t() gives it in the current language. Answers stay in
 // whatever language the model writes.
-export type Lang = "en" | "de" | "fr";
+export type Lang = "en" | "de" | "fr" | "es" | "it" | "nl";
 export const langs: { id: Lang; name: string }[] = [
   { id: "en", name: "English" },
   { id: "de", name: "Deutsch" },
   { id: "fr", name: "Français" },
+  { id: "es", name: "Español" }, // SB-6106
+  { id: "it", name: "Italiano" },
+  { id: "nl", name: "Nederlands" },
 ];
 
 const stored = "sb.lang";
 let current: Lang = "en";
 
 export function isLang(s: string | null | undefined): s is Lang {
-  return s === "en" || s === "de" || s === "fr";
+  return s === "en" || s === "de" || s === "fr" || s === "es" || s === "it" || s === "nl";
 }
 
 // The language to start in: the person's own choice, kept in their browser, else the

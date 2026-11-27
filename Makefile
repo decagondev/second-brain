@@ -6,7 +6,7 @@ GO      ?= go
 PY      ?= python3
 LDFLAGS := -X example.com/second-brain/internal/version.Commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
-.PHONY: images selfhost selfhost-smoke selfhost-update selfhost-bundle selfhost-model selfhost-stop selfhost-clean cell cell-stop policy integration ci-rules check build test fuzz coverage lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
+.PHONY: images selfhost selfhost-smoke selfhost-update selfhost-bundle selfhost-model selfhost-transcribe selfhost-stop selfhost-clean cell cell-stop policy integration ci-rules check build test fuzz coverage lint deps gen gen-check laws smoke regress evals examples crosscheck proofs docs diagrams web release-build lockfiles tools clean
 
 check: gen-check lint deps build test laws smoke regress evals examples policy crosscheck ci-rules docs  ## everything that runs offline
 	@echo "make check: all green"
@@ -127,6 +127,8 @@ selfhost-bundle:       ## an offline install bundle: every image and the install
 	bash tools/selfhost/bundle.sh
 selfhost-model:        ## the model profile: a local model and embedder, gated, then the cell switched to them (SB-1710)
 	bash tools/selfhost/model.sh
+selfhost-transcribe:   ## the transcribe profile: whisper.cpp on the box, its sample heard, then the cell given it (SB-6102)
+	bash tools/selfhost/transcribe.sh
 selfhost-stop:
 	bash tools/selfhost/selfhost.sh stop
 selfhost-clean:        ## stop the self-hosted cell and delete its volumes

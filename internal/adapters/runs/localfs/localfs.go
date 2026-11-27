@@ -103,6 +103,16 @@ func (s Syncs) Succeeded(ctx context.Context, kind string, at time.Time) error {
 	return s.update(ctx, kind, func(x *health.Sync) { x.LastSuccess, x.Failures, x.Failure, x.First = at.UTC(), 0, "", nil })
 }
 
+// Unread counts one image or recording of kind's documents no reader read (SB-6101).
+func (s Syncs) Unread(ctx context.Context, kind, what string) error {
+	return s.update(ctx, kind, func(x *health.Sync) {
+		if x.Unread == nil {
+			x.Unread = map[string]int{}
+		}
+		x.Unread[what]++
+	})
+}
+
 // Progress records a first sync's checkpoint (SB-6004), keeping when it started.
 func (s Syncs) Progress(ctx context.Context, kind string, done, total int, at time.Time) error {
 	return s.update(ctx, kind, func(x *health.Sync) {

@@ -140,6 +140,12 @@ type Pipeline struct {
 	// is waited out either way, and Throttled counts each wait by kind (nil counts nothing).
 	Pace      *Pace
 	Throttled func(kind string)
+	// Vision and Transcribe read a document's images and recordings (SB-6101, SB-6102):
+	// nil, or a tier the evals job hasn't gated, reads none. Unread counts each part skipped,
+	// by kind and what it was (image or recording); nil counts nothing.
+	Vision     func(ctx context.Context, p ports.Part) (string, error)
+	Transcribe func(ctx context.Context, p ports.Part) (string, error)
+	Unread     func(kind, what string)
 
 	// During a rebuild: each version's first-seen time from before the drop, and whether
 	// versions it doesn't know are marked rebuilt (SB-1708).
@@ -196,7 +202,8 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		}
 	}
 	reviewBy := p.reviewBy(ref.Kind, doc)
-	mark := MarkOf(doc.Text, doc.Owner) // SB-4706
+	mark := MarkOf(doc.Text, doc.Owner)         // SB-4706
+	doc.Text += p.readParts(ctx, ref.Kind, doc) // SB-6101, SB-6102: what a model read, marked
 	clean, docFlags := p.Sanitiser.Sanitise(doc.Title + "\n\n" + doc.Text)
 	text := Normalise(clean)
 	spans := Chunks(text)
@@ -231,6 +238,7 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 		whole = SecretSpans(text) // secrets a chunk boundary would split (SB-1401)
 	}
 	pii := PIISpans(text) // numbers a chunk boundary would cut still flag both chunks (SB-1904)
+	marks := readMarks(text)
 	secretRemoved := false
 	for _, sp := range spans {
 		t := string(rs[sp.Start:sp.End])
@@ -254,6 +262,12 @@ func (p Pipeline) Ingest(ctx context.Context, ref ports.SourceRef, force bool) e
 			Label: label, Spaces: holders, Routing: routing, Owner: strings.ToLower(strings.TrimSpace(doc.Owner)),
 			Title: title, Seen: seen, Location: doc.Location, Rebuilt: rebuilt, TextSHA256: textHash, ReviewBy: reviewBy, Section: sectionAt(hs, sp.Start), Lines: [2]int{lineOf(sp.Start), lineOf(sp.End - 1)}, Page: PageAt(doc.Pages, sp.Start),
 			GeneratedBy: mark.GeneratedBy, ApprovedBy: mark.ApprovedBy, Edited: mark.Edited, AskedBy: mark.AskedBy, EditedBy: mark.EditedBy})
+		if by, page := readBy(marks, sp.Start, sp.End); by != "" { // LAW-28: a model read it
+			chunks[len(chunks)-1].ReadBy = by
+			if page > 0 {
+				chunks[len(chunks)-1].Page = page
+			}
+		}
 	}
 	if secretRemoved { // the document's other chunks say so, for sharing checks (SB-5401)
 		for i := range chunks {

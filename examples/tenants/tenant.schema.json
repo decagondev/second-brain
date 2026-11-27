@@ -292,7 +292,10 @@
       "enum": [
         "en",
         "de",
-        "fr"
+        "fr",
+        "es",
+        "it",
+        "nl"
       ],
       "type": "string"
     },
@@ -448,6 +451,42 @@
               "maxLength": 200,
               "minLength": 1,
               "type": "string"
+            },
+            "maxProperties": 200,
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object"
+          },
+          "glossary_in": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "maxLength": 40,
+                "minLength": 1,
+                "type": "string"
+              },
+              "propertyNames": {
+                "enum": [
+                  "en",
+                  "de",
+                  "fr",
+                  "es",
+                  "it",
+                  "nl",
+                  "pt",
+                  "pl",
+                  "sv",
+                  "da",
+                  "fi",
+                  "nb",
+                  "cs",
+                  "ja",
+                  "zh",
+                  "ko"
+                ]
+              },
+              "type": "object"
             },
             "maxProperties": 200,
             "propertyNames": {

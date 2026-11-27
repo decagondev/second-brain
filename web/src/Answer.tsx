@@ -22,7 +22,7 @@ import {
   passage,
   requestAccess,
 } from "./api";
-import { errorText, msg, t, tj, tn } from "./i18n";
+import { errorText, lang, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 import { MarkLine, citeMark } from "./Marked";
 import { WhoCanSee } from "./Sharing";
@@ -112,6 +112,18 @@ export function PassageView({
   const [open, setOpen] = useState(false);
   const [p, setP] = useState<Passage | null>(null);
   const [err, setErr] = useState("");
+  const [translating, setTranslating] = useState(false);
+  // Translate (SB-6105): the passage in the UI's language, by a model, kept nowhere.
+  const translate = async () => {
+    setTranslating(true);
+    try {
+      setP(await passage(trace, cite.cite, cite.span[0], fetcher, lang()));
+    } catch {
+      setErr(t("The passage can't be translated right now."));
+    } finally {
+      setTranslating(false);
+    }
+  };
   const show = async () => {
     if (open) {
       setOpen(false);
@@ -157,6 +169,17 @@ export function PassageView({
             <blockquote>
               {p.text}
               <cite>{citeName(cite)}</cite>
+            </blockquote>
+          )}
+          {p?.text && !p.translation && (
+            <button type="button" className="link" disabled={translating} onClick={() => void translate()}>
+              {t("Translate")}
+            </button>
+          )}
+          {p?.translation && (
+            <blockquote className="translation" lang={p.translation.language}>
+              {p.translation.text}
+              <cite>{t("Translated by a model; the original is above")}</cite>
             </blockquote>
           )}
         </span>
@@ -214,18 +237,22 @@ export function glossed(text: string, terms?: Term[]): ReactNode {
   for (;;) {
     let best: { at: number; len: number; term: Term } | null = null;
     for (const x of ts) {
-      const flags = x.term === x.term.toLowerCase() ? "iu" : "u";
-      const m = new RegExp(
-        `(?<![\\p{L}\\p{N}])${escapeRe(x.term)}(?![\\p{L}\\p{N}])`,
-        flags,
-      ).exec(rest);
-      if (
-        m &&
-        (best === null ||
-          m.index < best.at ||
-          (m.index === best.at && m[0].length > best.len))
-      )
-        best = { at: m.index, len: m[0].length, term: x };
+      // The term, and its words in other languages (SB-6104).
+      for (const w of [x.term, ...Object.values(x.words ?? {})]) {
+        if (w.trim() === "") continue;
+        const flags = w === w.toLowerCase() ? "iu" : "u";
+        const m = new RegExp(
+          `(?<![\\p{L}\\p{N}])${escapeRe(w)}(?![\\p{L}\\p{N}])`,
+          flags,
+        ).exec(rest);
+        if (
+          m &&
+          (best === null ||
+            m.index < best.at ||
+            (m.index === best.at && m[0].length > best.len))
+        )
+          best = { at: m.index, len: m[0].length, term: x };
+      }
     }
     if (best === null) break;
     out.push(<Fragment key={key++}>{rest.slice(0, best.at)}</Fragment>);

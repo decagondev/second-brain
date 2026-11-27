@@ -34,6 +34,9 @@ type Space struct {
 	ReviewAfterDays int `json:"review_after_days"`
 	// Glossary is the space's terms and their meanings (SB-2203); nil for none.
 	Glossary map[string]string `json:"glossary,omitempty"`
+	// GlossaryIn is each term's own words in other languages, by language code (SB-6104):
+	// { "PO": { "de": "Bestellung" } }. A term it names must be in the glossary.
+	GlossaryIn map[string]map[string]string `json:"glossary_in,omitempty"`
 	// Parent is the department space this team space sits under, "" for none (SB-3901).
 	Parent string `json:"parent,omitempty"`
 	// Brief is the space's one scheduled agent (SB-4005), nil for none.
@@ -295,16 +298,16 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive", "mailbox"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "glossary_in", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive", "mailbox"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 var channelName = regexp.MustCompile(`^#[a-z0-9][a-z0-9_-]{0,79}$`)
 
 type spaceNodes struct {
-	members, scope, agents, retention, fields, label, parent, brief, updates, budget, skills *node
-	set                                                                                      map[string]bool
-	start                                                                                    []*node
+	members, scope, agents, retention, fields, label, parent, brief, updates, budget, skills, glossaryIn *node
+	set                                                                                                  map[string]bool
+	start                                                                                                []*node
 }
 
 func (c *checker) spaces(n *node) {
@@ -389,8 +392,8 @@ func (c *checker) space(name string, n *node, p string) {
 			c.spaceChannels(name, v, f, &s)
 		case "start_here":
 			c.startHere(v, f, &s, &sn)
-		case "glossary":
-			s.Glossary = c.glossary(v, f)
+		case "glossary", "glossary_in":
+			c.spaceGlossary(k.value, v, f, &s, &sn)
 		case "brief":
 			s.Brief, sn.brief = c.brief(v, f), v
 		case "updates":
@@ -627,6 +630,7 @@ func (c *checker) spaceChecks() {
 		}
 		c.spaceAgents(&s, sn, p, tpl, par, hasParent)
 		c.spaceBrief(s, sn, p)
+		c.spaceGlossaryIn(s, sn, p, par.Glossary)
 		c.spaceRetention(&s, sn, p, tpl, par, hasParent)
 		c.spaceBudget(s, sn, p, par, hasParent)
 		c.t.Spaces[name] = s
@@ -738,6 +742,15 @@ func SpaceAttrs(s Space) map[string]string {
 			gs = append(gs, k+": "+s.Glossary[k])
 		}
 		a["glossary"] = strings.Join(gs, "; ")
+	}
+	if len(s.GlossaryIn) > 0 { // SB-6104
+		var gs []string
+		for _, k := range sorted(s.GlossaryIn) {
+			for _, l := range sorted(s.GlossaryIn[k]) {
+				gs = append(gs, k+" "+l+": "+s.GlossaryIn[k][l])
+			}
+		}
+		a["glossary_in"] = strings.Join(gs, "; ")
 	}
 	if s.Parent != "" {
 		a["parent"] = s.Parent
@@ -948,6 +961,76 @@ func (c *checker) spaceBudget(s Space, sn spaceNodes, p string, par Space, hasPa
 	}
 }
 
+// WordLanguages are the language codes a glossary may name, and a cell's languages too
+// (sb-cell(5), languages; SB-6103, SB-6104).
+var WordLanguages = []string{"en", "de", "fr", "es", "it", "nl", "pt", "pl", "sv", "da", "fi", "nb", "cs", "ja", "zh", "ko"}
+
+// spaceGlossary reads glossary (SB-2203) or glossary_in (SB-6104).
+func (c *checker) spaceGlossary(key string, v *node, f string, s *Space, sn *spaceNodes) {
+	if key == "glossary" {
+		s.Glossary = c.glossary(v, f)
+		return
+	}
+	sn.glossaryIn, s.GlossaryIn = v, c.glossaryIn(v, f)
+}
+
+// spaceGlossaryIn checks every glossary_in term is the space's or its parent's (SB-6104);
+// parent is the parent's glossary, nil for none.
+func (c *checker) spaceGlossaryIn(s Space, sn spaceNodes, p string, parent map[string]string) {
+	for term := range s.GlossaryIn {
+		if !hasTerm(s.Glossary, term) && !hasTerm(parent, term) {
+			c.add(sn.glossaryIn, p+".glossary_in."+term, "%q isn't a term of the glossary", term)
+		}
+	}
+}
+
+func hasTerm(g map[string]string, term string) bool {
+	for k := range g {
+		if strings.EqualFold(k, term) {
+			return true
+		}
+	}
+	return false
+}
+
+// glossaryIn reads a space's glossary_in, TERM: { LANG: WORD } (SB-6104).
+func (c *checker) glossaryIn(v *node, f string) map[string]map[string]string {
+	if !c.mapOf(v, f, `{ "PO": { "de": "Bestellung" } }`) {
+		return nil
+	}
+	out := map[string]map[string]string{}
+	for j, k := range v.keys {
+		fk := f + "." + k.value
+		term, ok := c.scalar(k, fk)
+		if !ok || !c.mapOf(v.vals[j], fk, `{ "de": "Bestellung" }`) {
+			continue
+		}
+		words := map[string]string{}
+		lv := v.vals[j]
+		for i, lk := range lv.keys {
+			fl := fk + "." + lk.value
+			lang, ok1 := c.scalar(lk, fl)
+			word, ok2 := c.scalar(lv.vals[i], fl)
+			switch {
+			case !ok1 || !ok2:
+			case !contains(WordLanguages, lang):
+				c.add(lk, fl, "%q isn't a language code (%s)", lang, strings.Join(WordLanguages, ", "))
+			case word == "" || utf8.RuneCountInString(word) > MaxTerm || strings.TrimSpace(word) != word || !printable(word):
+				c.add(lv.vals[i], fl, "a word is 1 to %d printable characters, with no space around it", MaxTerm)
+			default:
+				words[lang] = word
+			}
+		}
+		if len(words) > 0 {
+			out[term] = words
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
 // glossary reads a space's glossary, TERM: MEANING (SB-2203).
 func (c *checker) glossary(v *node, f string) map[string]string {
 	if !c.mapOf(v, f, `{ "PO": "purchase order" }`) {
@@ -1140,6 +1223,18 @@ func (t Tenant) Effective(name string) Space {
 			g[k] = v
 		}
 		s.Glossary = g
+	}
+	if len(par.GlossaryIn) > 0 { // SB-6104: the parent's words for the terms it lends
+		gi := map[string]map[string]string{}
+		for k, v := range par.GlossaryIn {
+			if _, mine := s.GlossaryIn[k]; !mine {
+				gi[k] = v
+			}
+		}
+		for k, v := range s.GlossaryIn {
+			gi[k] = v
+		}
+		s.GlossaryIn = gi
 	}
 	if len(par.Skills) > 0 { // SB-4601: the team's own skill of a name wins
 		sk := map[string]Skill{}

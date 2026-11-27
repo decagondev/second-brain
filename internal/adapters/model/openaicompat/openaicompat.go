@@ -5,6 +5,7 @@ package openaicompat
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,9 +29,21 @@ type message struct {
 	Content string `json:"content"`
 }
 
+// outMessage is a message sent: its content a string, or parts with an image (SB-6101).
+type outMessage struct {
+	Role    string `json:"role"`
+	Content any    `json:"content"`
+}
+
+type part struct {
+	Type     string            `json:"type"`
+	Text     string            `json:"text,omitempty"`
+	ImageURL map[string]string `json:"image_url,omitempty"`
+}
+
 type request struct {
 	Model          string            `json:"model"`
-	Messages       []message         `json:"messages"`
+	Messages       []outMessage      `json:"messages"`
 	MaxTokens      int               `json:"max_tokens,omitempty"`
 	ResponseFormat map[string]string `json:"response_format,omitempty"`
 	// ReasoningEffort is the deep tier's effort (SB-5704).
@@ -54,10 +67,15 @@ type response struct {
 func (c Client) body(req ports.ModelRequest) ([]byte, error) {
 	body := request{Model: req.Model, MaxTokens: req.MaxTokens, ReasoningEffort: req.Effort}
 	if req.System != "" {
-		body.Messages = append(body.Messages, message{Role: "system", Content: req.System})
+		body.Messages = append(body.Messages, outMessage{Role: "system", Content: req.System})
 	}
 	for _, m := range req.Messages {
-		body.Messages = append(body.Messages, message{Role: m.Role, Content: m.Content})
+		if m.Image == nil {
+			body.Messages = append(body.Messages, outMessage{Role: m.Role, Content: m.Content})
+			continue
+		}
+		url := "data:" + m.Image.MIME + ";base64," + base64.StdEncoding.EncodeToString(m.Image.Data)
+		body.Messages = append(body.Messages, outMessage{Role: m.Role, Content: []part{{Type: "image_url", ImageURL: map[string]string{"url": url}}, {Type: "text", Text: m.Content}}})
 	}
 	if req.JSON {
 		body.ResponseFormat = map[string]string{"type": "json_object"}

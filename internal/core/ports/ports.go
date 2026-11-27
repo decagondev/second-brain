@@ -53,6 +53,35 @@ type Document struct {
 	// Pages are where each page of a PDF, or slide of a deck, starts in Text, in runes, the
 	// first at 0 (SB-5205); nil for a document without pages.
 	Pages []int
+	// Images are the parts of the document with text the connector couldn't read itself: an
+	// image file, a scanned PDF's pages, the pictures in a deck or document (SB-6101). Ingest
+	// has them read by the gated vision tier, or skips and counts them.
+	Images []Part
+	// Media are the document's sound: an audio or video file (SB-6102), transcribed by the
+	// gated transcribe tier, or skipped and counted.
+	Media []Part
+}
+
+// Part is one image or recording inside a document: its name, MIME type, page or slide (0
+// for none) and bytes.
+type Part struct {
+	Name, MIME string
+	Page       int
+	Data       []byte
+}
+
+// Segment is one stretch of a transcript: when it starts, in seconds, who spoke (Speaker 1,
+// 2 …, "" when unknown) and what was said.
+type Segment struct {
+	Start   float64
+	Speaker string
+	Text    string
+}
+
+// Transcriber turns a recording into a transcript (SB-6102): its segments and how many
+// minutes it ran.
+type Transcriber interface {
+	Transcribe(ctx context.Context, p Part) (segs []Segment, minutes float64, err error)
 }
 
 // Field is one field a structured connector can return (sb-connector(3), Fields).
@@ -363,6 +392,10 @@ type Chunk struct {
 	// Page is the PDF page or deck slide the chunk starts on, from 1; 0 for a document
 	// without pages (SB-5205).
 	Page int
+	// ReadBy says a model read this text from the source, not the source itself: vision (a
+	// scan or an image, SB-6101) or transcribe (a recording, SB-6102); "" for the source's
+	// own text. It is the AI mark of what a model read (LAW-28).
+	ReadBy string
 }
 
 // Embedder turns chunk texts into vectors (SB-206). Model names the embedding model.
@@ -443,6 +476,8 @@ type Retriever interface {
 type Message struct {
 	Role    string // "user" or "assistant"
 	Content string
+	// Image is a picture sent with the content, for the vision tier (SB-6101); nil for none.
+	Image *Part
 }
 
 // ModelRequest is one chat completion (ADR-0019). System is the system prompt; JSON asks

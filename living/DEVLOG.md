@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 W60: Every format, every language
+
+**Wave/slice:** W60 / S60.1 and S60.2 (SB-6101 to SB-6107) · **Status:** Done
+
+**What:** Pictures (image files, scanned PDF pages, the pictures in documents and decks) are read at ingest by a gated vision tier, and recordings transcribed by a gated transcribe tier (a whisper.cpp profile on the box, or an OpenAI-compatible provider); what a model read joins the document after a marker and every chunk holding it carries `read_by`, the AI mark, wherever it is cited. A question is also searched in the cell's other `languages`, translated with the glossary's words in each language (`glossary_in`); a cited passage can be translated for its reader; the web UI speaks Spanish, Italian and Dutch; and an accessibility suite runs axe over every tab, checks the keyboard paths and the colour tokens.
+
+**Why this way:** Readers write into the same document text after a marker, so sanitising, secret scanning, PII flags, chunking and the index stay one path, and the marker is what makes the mark impossible to lose: a chunk that touches any read text is marked. The vision gate draws random digits each run, so a model passes by reading, not by remembering; transcription has no such trick, so it is gated by an operator's own sample. Translations join the search as glossary meanings already did, which keeps one ranking.
+
+**Learned:** A chunk can straddle the source's last paragraph and the first read one, so marking by overlap, not start, is the only safe rule. The heredoc in this shell eats backslashes, so edits with escapes go through files. A catalog of 1,163 strings translates cleanly in chunks when each chunk is checked for placeholders before it is merged.
+
+**Laws:** LAW-28 (law28Read in TestLAW28_AnAgentsWritingSaysSo, new; TestSelfReadTextIsCaught), LAW-06, LAW-09, LAW-26, LAW-33. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 W59: Proven for real
 
 **Wave/slice:** W59 / S59.1 and S59.2 (SB-6001 to SB-6006) · **Status:** Done

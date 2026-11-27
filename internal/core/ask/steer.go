@@ -283,6 +283,9 @@ type ContextPanel struct {
 	EarlierDropped int          `json:"earlier_dropped"`
 	Skipped        int          `json:"skipped"`
 	Held           int          `json:"held"`
+	// Translated is the question as it was also searched in the cell's other languages
+	// (SB-6103), shown only to the asker, whose question it is.
+	Translated []string `json:"translated,omitempty"`
 }
 
 // Context is the panel of trace id's answer, for whoever may read the trace; the memory
@@ -295,6 +298,9 @@ func (a Agent) Context(ctx context.Context, s tenancy.Scope, id string) (Context
 	out := ContextPanel{HowMade: HowMade{Trace: t.ID, Agent: t.Response.Agent, Release: t.Response.Release, Skill: t.Response.Skill, Tier: t.Tier},
 		Memory: []MemoryLine{}, Documents: []HowSource{}, Kept: []HowSource{}, Dropped: []HowSource{},
 		Collection: t.Collection, EarlierDropped: t.Response.EarlierDropped, Skipped: t.Response.Skipped, Held: t.Response.Held}
+	if t.User == s.User() {
+		out.Translated = t.Translated
+	}
 	if err := a.howOf(ctx, s, []Trace{t}, &out.HowMade); err != nil {
 		return ContextPanel{}, err
 	}

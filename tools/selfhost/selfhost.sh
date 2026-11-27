@@ -252,6 +252,13 @@ if [ -f "$DIR/model.json" ]; then
   EMBED="{ \"provider\": \"openaicompat\", \"base\": \"http://model-embed:8080/v1\", \"model\": \"$(mf embed_model)\", \"dim\": $(mf embed_dim) }"
   MODEL_IMAGE=$(mf image)
 fi
+# SB-6102: with a transcriber on the box (build/selfhost/transcribe.json, written by
+# transcribe.sh only after its sample was heard), the transcribe profile.
+TRANSCRIBE_IMAGE=
+if [ -f "$DIR/transcribe.json" ]; then
+  TRANSCRIBE_IMAGE=$(sed -nE 's/^ *"image": *"([^"]*)".*$/\1/p' "$DIR/transcribe.json")
+  MODEL="${MODEL%\}}, \"transcribe\": { \"provider\": \"whispercpp\", \"base\": \"http://transcribe:8080\", \"local\": true } }"
+fi
 CONNECTORS='{}'
 if [ -n "$SB_SHARE" ]; then CONNECTORS='{ "docs": { "base": "file:///srv/share" } }'; fi
 # The backup's off-box copy: the mounted directory, or the bucket (always sealed).
@@ -316,6 +323,7 @@ fi
 profiles=$SB_IDP
 [ "$SB_IDP" = company ] && profiles=
 [ -z "$MODEL_IMAGE" ] || profiles="$profiles model"
+[ -z "$TRANSCRIBE_IMAGE" ] || profiles="$profiles transcribe"
 [ -n "$SB_SHARE" ] || mkdir -p "$DIR/empty-share/notes" # the notes mount point (SB-1705)
 {
   echo "SB_TENANT=$SB_TENANT"; echo "SB_HOST=$SB_HOST"; echo "SB_PORT=$SB_PORT"; echo "SB_HTTP_PORT=$SB_HTTP_PORT"
@@ -329,6 +337,7 @@ profiles=$SB_IDP
   [ -z "$PROXY_FILE_IN" ] || echo "SB_PROXY_FILE=$PROXY_FILE_IN"
   [ -z "$NO_PROXY_LIST" ] || echo "SB_NO_PROXY_LIST=$NO_PROXY_LIST"
   [ -z "$MODEL_IMAGE" ] || echo "SB_MODEL_IMAGE=$MODEL_IMAGE"
+  [ -z "$TRANSCRIBE_IMAGE" ] || echo "SB_TRANSCRIBE_IMAGE=$TRANSCRIBE_IMAGE"
   [ -z "${SB_EMAIL_SERVER:-}" ] || echo "SB_EMAIL_SERVER=$SB_EMAIL_SERVER"
   if [ -f "$DIR/compose.env" ]; then grep -E '^SB_[A-Z]+_IMAGE=' "$DIR/compose.env" || true; fi
 } >"$DIR/compose.env.new"

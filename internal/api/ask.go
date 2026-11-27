@@ -41,6 +41,11 @@ type Passager interface {
 	Passage(ctx context.Context, s tenancy.Scope, trace, cite string, start int) (ask.Passage, error)
 }
 
+// PassageTranslator translates a cite's passage for its reader (SB-6105).
+type PassageTranslator interface {
+	TranslatePassage(ctx context.Context, s tenancy.Scope, trace, cite string, start int, lang string) (ask.Passage, *ask.Translation, error)
+}
+
 // Brancher starts a conversation from an earlier question of one (SB-5206).
 type Brancher interface {
 	Branch(ctx context.Context, s tenancy.Scope, conv string, at int) (string, error)
@@ -209,6 +214,27 @@ func (h Ask) passage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.PathValue("id")
+	if lang := r.URL.Query().Get("translate"); lang != "" { // SB-6105
+		tp, ok := h.Agent.(PassageTranslator)
+		if !ok {
+			h.fail(w, id, errs.New(errs.EUNAVAIL, "Passages can't be translated in this cell."))
+			return
+		}
+		p, tr, err := tp.TranslatePassage(r.Context(), s, id, cite, start, lang)
+		if errors.Is(err, ask.ErrSourceDenied) {
+			h.fail(w, id, errs.New(errs.EPERM, "You can't open this source now."))
+			return
+		}
+		if err != nil {
+			h.fail(w, id, mapErr(err))
+			return
+		}
+		h.ok(w, id, struct {
+			ask.Passage
+			Translation *ask.Translation `json:"translation,omitempty"`
+		}{p, tr})
+		return
+	}
 	p, err := h.Agent.(Passager).Passage(r.Context(), s, id, cite, start)
 	if errors.Is(err, ask.ErrSourceDenied) {
 		h.fail(w, id, errs.New(errs.EPERM, "You can't open this source now."))

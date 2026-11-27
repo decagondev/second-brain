@@ -263,16 +263,22 @@ func (c *SharePoint) Fetch(ctx context.Context, ref ports.SourceRef) (ports.Docu
 		if e := strings.ToLower(path.Ext(it.Name)); c.Readers.ReviewBy != nil && (e == ".docx" || e == ".pptx") {
 			doc.ReviewBy = c.Readers.ReviewBy(b)
 		}
+		if c.Readers.Images != nil { // SB-6101, SB-6102: scans, pictures and recordings
+			doc.Images, doc.Media = c.Readers.Images(it.Name, b), c.Readers.Media(it.Name, b)
+		}
 	}
 	return doc, nil
 }
 
 // Readers are the text readers the connector uses.
 type Readers struct {
-	Text       func(name string, b []byte) (string, bool)
-	Pages      func(name string, b []byte) []int
-	ReviewBy   func(b []byte) string
-	Transcript func(b []byte) (string, int)
+	// Images and Media are a file's pictures and recordings (SB-6101, SB-6102); both or
+	// neither.
+	Images, Media func(name string, b []byte) []ports.Part
+	Text          func(name string, b []byte) (string, bool)
+	Pages         func(name string, b []byte) []int
+	ReviewBy      func(b []byte) string
+	Transcript    func(b []byte) (string, int)
 }
 
 // location is the item's folder under its drive's root, then its name.

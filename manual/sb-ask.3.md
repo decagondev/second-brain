@@ -127,6 +127,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `agent`, `release` | (SB-4706) Which agent wrote the answer and the release it ran under; the web app shows "Written by ask, version rel_…" under every answer, and the chat app ends with that line (sb-agents(7), Marked as AI; LAW-28) |
 | `claims[].cites[].title` | The cited document's title at the source, as indexed |
 | `claims[].cites[].generated_by`, `approved_by`, `edited` | (SB-4706) A cited note an agent drafted: the front matter's `generated_by` (`AGENT@VERSION`), `approved_by` (the steward who published it) and `edited`, shown as "Written by case-brief, version rel_7, approved by …". Omitted for a document a person wrote |
+| `claims[].cites[].read_by` | (SB-6101, SB-6102) `vision` or `transcribe` when a model read the passage from a scan, a picture or a recording (sb-ingest(7), What a model read; LAW-28); shown as *Read by a model from a scan or picture* or *Transcribed by a model from a recording*, never as the document's own words. Absent for the source's own text |
 | `claims[].cites[].page` | (SB-5205) The PDF page or deck slide the cited passage starts on, from 1 (sb-ingest(7), Pages and slides); the UI shows "Pricing deck, slide 7" or "Handbook, page 12". Omitted for a document without pages |
 | `claims[].cites[].section` | (SB-3002) The nearest heading above the cited chunk in its document, at most 120 characters, as indexed (sb-ingest(7), Sections). Omitted for a chunk with no heading above it. The UI shows the cite as "Title › Section" |
 | `claims[].cites[].owner` | The cited document's owner at the source: their `email` and job `title` from the directory, only when exactly one **active** directory user has that email. Omitted otherwise (SB-1702) |
@@ -184,6 +185,16 @@ Every question ends with the choice `just answer`. With `clarify: true` the resp
 ### Glossary, exactly (SB-2203)
 
 In a space with a `glossary` (sb-space(5)), step 2 first **expands** the question: each term the question uses, as a whole word, adds its meaning to the text that is searched and embedded, so "PO" also finds documents that say "purchase order". A term with a capital letter matches only as written ("IT", never "it"); a term in lower case matches in any case. Only the space's own glossary is used, and only in an ask or search in that space: a company-wide ask, or another space, never expands one (LAW-19). An entry that reads like an instruction (the patterns of sb-ingest(7), Content is data) is never used. The terms used go to the model inside one data block, `<<data cite="glossary">>`, never as instructions (LAW-09), and the response lists them, `"terms": [{ "term": "PO", "means": "purchase order" }]`, which the web UI shows at the foot of the answer or results. The stewards' review list names the flagged entries, `"glossary_flagged": ["TERM"…]`, so they can fix them.
+
+### Languages (SB-6103 to SB-6106)
+
+**Ask in one language, find another** (SB-6103). With sb-cell(5) `languages` naming two or more, a question is also searched in each of them: the small tier (the main one while the evals job holds the small tier, LAW-06) translates it, keeping names, numbers and dates and using the space's glossary words, with the bundled prompt `translate`. Each translation joins the search as a glossary meaning does, so the vector and keyword rankings fuse them (SB-2706). A translation that reads like an instruction is dropped (LAW-09), and one that fails leaves the question searched as asked. Cites stay in their own language; the answer is in the UI's (SB-3003). The trace keeps the translated questions (`translated`), which the context view shows to the asker only (`GET /v1/traces/{id}/context`, The context of an answer).
+
+**A glossary in every language** (SB-6104). A term's words in sb-space(5) `glossary_in` count as the term: a German question that says *Bestellung* uses *PO*, and an answer's `terms` carry each term's `words`, which the web UI marks like the term itself.
+
+**Translate a cited passage** (SB-6105). `GET /v1/traces/{id}/passage?cite=CITE&start=N&translate=LANG` (LANG one of `en`, `de`, `fr`, `es`, `it`, `nl`) answers the passage as without `translate`, checked live as the reader (LAW-26), plus `"translation": { "language", "text", "read_by": "translate" }`: at most its first 600 characters, translated by the same tier with the bundled prompt `translate-passage`, kept nowhere. Someone who can't open the passage now gets `EPERM`, and nothing is translated. The web UI's passage view has **Translate**, which shows the translation under the original, in the UI's language, as *Translated by a model; the original is above*.
+
+**Spanish, Italian and Dutch** (SB-6106). The web UI speaks English, German, French, Spanish, Italian and Dutch (sb-tenant(5) `language`); every string has every language, with the same placeholders, and a test fails on one that hasn't. One is singular and zero plural in Spanish, Italian and Dutch, as in English and German; French counts zero as singular.
 
 ### Who to ask, exactly (SB-1702)
 
@@ -569,6 +580,10 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
 
 `cites[].url` is set when the source's connector can link to a version; it is omitted otherwise. `agent` names the agent that answered, and `dropped` counts the uncited claims a department agent left out, always 0 for `ask` (sb-agents(7), Department agents). In a cell with spaces, `cites[].spaces` names the spaces that hold the cited document and `cites[].label` its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).
+
+### Accessibility (SB-6107)
+
+The web UI meets WCAG 2.2 AA where a machine can check it, and is tested so: `make web` runs axe over every tab of the app and over an answer with every kind of mark (a label, a stale cite, a cite a model read, a notice), and fails on any serious or critical violation; colour contrast is checked in the stylesheet's tokens, since jsdom computes no colour. The tabs move with the arrow keys; asking works from the keyboard (Ctrl+Enter, Cmd+Enter on a Mac), every cite is a link the keyboard reaches, and **Show passage** and **Translate** are buttons. A cite's name says everything its chip shows: its title, place, age when stale, label and mark. A label, a stale cite and a notice are always words, never colour alone.
 
 ### The context of an answer (SB-5501 to SB-5504)
 

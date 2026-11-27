@@ -88,7 +88,7 @@ func Document(p string) bool {
 	case ".txt", ".md", ".pdf", ".docx", ".pptx", ".odt", ".html", ".htm", ".xlsx", ".ods", ".csv", ".vtt", ".srt":
 		return true
 	}
-	return false
+	return IsImage(p) || IsMedia(p) // SB-6101, SB-6102: read by the vision and transcribe tiers
 }
 
 // acl is one file's ACL file, parsed.
@@ -209,12 +209,16 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 	if a, aerr := c.aclFor(ref.ID); aerr == nil {
 		doc.ACLPrefilter, doc.Label, doc.Owner = a.readers, a.label, a.owner
 	}
-	if st.Size() > MaxSize {
+	if st.Size() > MaxSize && (!IsMedia(ref.ID) || st.Size() > MaxMediaSize) {
 		return doc, nil
 	}
 	b, err := fs.ReadFile(c.FS, ref.ID)
 	if err != nil {
 		return ports.Document{}, fmt.Errorf("folder: %w", err)
+	}
+	doc.Images, doc.Media = Images(ref.ID, b), Media(ref.ID, b) // SB-6101, SB-6102
+	if IsImage(ref.ID) || IsMedia(ref.ID) {
+		return doc, nil // no text of its own
 	}
 	doc.Text, _ = Text(ref.ID, b)
 	doc.Pages = Pages(ref.ID, b) // SB-5205
@@ -229,6 +233,9 @@ func (c *Connector) Fetch(_ context.Context, ref ports.SourceRef) (ports.Documen
 func Text(name string, b []byte) (string, bool) {
 	if !Document(path.Base(name)) {
 		return "", false
+	}
+	if IsImage(name) || IsMedia(name) {
+		return "", true // no text of its own (SB-6101, SB-6102)
 	}
 	switch strings.ToLower(path.Ext(name)) {
 	case ".pdf":

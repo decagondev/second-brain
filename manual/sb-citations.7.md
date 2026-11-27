@@ -93,6 +93,8 @@ A reused answer's cites are checked again as the new asker, and every document t
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.
 
+**Text a model read** (SB-6101, SB-6102). A cite of a passage the vision or the transcribe tier read carries `read_by` and the page of its picture, and says so wherever it is shown (sb-ingest(7), What a model read; LAW-28).
+
 ## LAWS
 
 [LAW-01](sb-laws.7.md#law-01), [LAW-14](sb-laws.7.md#law-14).

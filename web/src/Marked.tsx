@@ -23,8 +23,12 @@ export function pageName(title: string, cite: string, page: number): string {
 
 // citeMark is a cited note's mark; "" for a document a person wrote.
 export function citeMark(
-  c: Pick<Cite, "generated_by" | "approved_by" | "edited" | "asked_by" | "edited_by">,
+  c: Pick<Cite, "generated_by" | "approved_by" | "edited" | "asked_by" | "edited_by" | "read_by">,
 ): string {
+  // What a model read (SB-6101, SB-6102, LAW-28): never shown as the document's own words.
+  if (c.read_by === "vision") return t("Read by a model from a scan or picture");
+  if (c.read_by === "transcribe") return t("Transcribed by a model from a recording");
+  if (c.read_by) return t("Read by a model");
   if (!c.generated_by) return "";
   const at = c.generated_by.indexOf("@");
   let line =

@@ -17,6 +17,7 @@ import (
 	"example.com/second-brain/internal/adapters/backup/s3"
 	"example.com/second-brain/internal/adapters/smtpmail"
 	"example.com/second-brain/internal/api"
+	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/offsite"
 	"example.com/second-brain/internal/core/session"
 )
@@ -88,6 +89,29 @@ type Config struct {
 				OutPerM float64 `json:"out_per_m"`
 			} `json:"price"`
 		} `json:"deep"`
+		// Vision reads scans and images at ingest (SB-6101): a model of the same provider, base
+		// and key that takes pictures, used only while the evals job has gated it. Empty is
+		// none: images are skipped and counted.
+		Vision struct {
+			ID    string `json:"id"`
+			Price struct {
+				InPerM  float64 `json:"in_per_m"`
+				OutPerM float64 `json:"out_per_m"`
+			} `json:"price"`
+		} `json:"vision"`
+		// Transcribe turns recordings into transcripts at ingest (SB-6102): whispercpp (the
+		// transcribe profile's server on the box) or openaicompat (/v1/audio/transcriptions),
+		// its key at vault://tenants/TENANT/model-transcribe, used only while gated. Empty is
+		// none: recordings are skipped and counted.
+		Transcribe struct {
+			Provider     string  `json:"provider"`
+			Base         string  `json:"base"`
+			ID           string  `json:"id"`
+			Region       string  `json:"region,omitempty"`
+			Local        bool    `json:"local,omitempty"`
+			PerMinuteUSD float64 `json:"per_minute_usd,omitempty"`
+			MaxMinutes   int     `json:"max_minutes,omitempty"`
+		} `json:"transcribe"`
 		// Fallback is a second provider and model, used only while it passes the release's
 		// eval gate (sb-cell(5), model.fallback; SB-5601); its key is at
 		// vault://tenants/TENANT/model-fallback. Empty is none.
@@ -157,6 +181,9 @@ type Config struct {
 		OpenID string `json:"openid,omitempty"`
 		Login  string `json:"login,omitempty"`
 	} `json:"teams"`
+	// Languages are the languages the cell's documents are in, by code (SB-6103): with two
+	// or more, a question is also searched in each. Empty or one is none.
+	Languages []string `json:"languages,omitempty"`
 	// Sync paces every connector's reads (SB-6004): at most MaxPerMinute a minute, 0 for
 	// ingest.DefaultPerMinute.
 	Sync struct {
@@ -298,6 +325,11 @@ func Parse(b []byte) (Config, error) {
 	}
 	if err := c.checkMattermost(); err != nil {
 		return Config{}, err
+	}
+	for _, l := range c.Languages { // SB-6103
+		if !slices.Contains(manifest.WordLanguages, l) {
+			return Config{}, fmt.Errorf("%w: languages: %q isn't a language code (%s)", ErrConfig, l, strings.Join(manifest.WordLanguages, ", "))
+		}
 	}
 	if err := c.checkMCPGroups(); err != nil { // SB-5305
 		return Config{}, err
@@ -469,7 +501,44 @@ func (c Config) checkModel() error {
 	if err := c.checkMicrosoft(); err != nil {
 		return err
 	}
+	if err := c.checkReaders(); err != nil {
+		return err
+	}
 	return c.checkDeep()
+}
+
+// checkReaders checks model.vision and model.transcribe (SB-6101, SB-6102): a vision tier
+// needs a gateway provider and a price; transcribe a known provider, a base, a price unless
+// local, and a region inside model.region (LAW-33).
+func (c Config) checkReaders() error {
+	if v := c.Model.Vision; v.ID != "" {
+		if c.Model.Provider == "extractive" {
+			return fmt.Errorf("%w: model.vision needs a gateway provider", ErrConfig)
+		}
+		if !c.Model.Local && (v.Price.InPerM <= 0 || v.Price.OutPerM <= 0) {
+			return fmt.Errorf("%w: model.vision needs model.vision.price, or the budget can't be kept", ErrConfig)
+		}
+	}
+	t := c.Model.Transcribe
+	if t.Provider == "" {
+		return nil
+	}
+	if t.Provider != "whispercpp" && t.Provider != "openaicompat" {
+		return fmt.Errorf("%w: model.transcribe.provider %q is not whispercpp or openaicompat", ErrConfig, t.Provider)
+	}
+	if t.Base == "" || (t.Provider == "openaicompat" && t.ID == "") {
+		return fmt.Errorf("%w: model.transcribe needs a base (and an id for openaicompat)", ErrConfig)
+	}
+	if !t.Local && t.PerMinuteUSD <= 0 {
+		return fmt.Errorf("%w: model.transcribe needs per_minute_usd unless local, or the budget can't be kept", ErrConfig)
+	}
+	if t.MaxMinutes < 0 {
+		return fmt.Errorf("%w: model.transcribe.max_minutes can't be negative", ErrConfig)
+	}
+	if c.Model.Region != "" && !t.Local && t.Region != c.Model.Region {
+		return fmt.Errorf("%w: model.transcribe.region %q is outside model.region %q", ErrConfig, t.Region, c.Model.Region)
+	}
+	return nil
 }
 
 // checkRegion refuses a remote embedder outside model.region (SB-5705, LAW-33): ingest

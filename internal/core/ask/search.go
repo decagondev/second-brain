@@ -46,7 +46,7 @@ type SearchRequest struct {
 // Types are the document types search filters by (SB-2404), from a file's extension.
 var Types = map[string][]string{
 	"pdf": {".pdf"}, "doc": {".docx", ".doc", ".odt", ".rtf"}, "sheet": {".xlsx", ".xls", ".ods", ".csv"},
-	"slides": {".pptx", ".ppt", ".odp"}, "web": {".html", ".htm"}, "text": {".txt", ".md"}, "transcript": {".vtt", ".srt"},
+	"slides": {".pptx", ".ppt", ".odp"}, "web": {".html", ".htm"}, "text": {".txt", ".md"}, "image": {".png", ".jpg", ".jpeg", ".webp"}, "transcript": {".vtt", ".srt", ".mp3", ".m4a", ".wav", ".mp4", ".webm"}, // SB-6102: a recording, transcribed
 	"decision": nil, "goal": nil, "other": nil,
 }
 
@@ -110,7 +110,9 @@ type Result struct {
 	Mine bool `json:"mine,omitempty"`
 	// GeneratedBy and ApprovedBy mark a note an agent drafted (SB-4706, LAW-28).
 	GeneratedBy string `json:"generated_by,omitempty"`
-	ApprovedBy  string `json:"approved_by,omitempty"`
+	// ReadBy says a model read the passage from a scan, an image or a recording (SB-6101).
+	ReadBy     string `json:"read_by,omitempty"`
+	ApprovedBy string `json:"approved_by,omitempty"`
 }
 
 // SearchResponse is the 200 body of GET /v1/search.
@@ -208,7 +210,7 @@ func (a Agent) Search(ctx context.Context, s tenancy.Scope, req SearchRequest) (
 
 func (a Agent) result(ctx context.Context, own *owners, c ports.Chunk) Result {
 	r := Result{Cite: c.Cite, Title: c.Title, Owner: own.of(ctx, c), Snippet: snippet(ingest.Shown(c.Text, c.Flags)), Flags: c.Flags, Label: c.Label,
-		GeneratedBy: c.GeneratedBy, ApprovedBy: c.ApprovedBy}
+		GeneratedBy: c.GeneratedBy, ApprovedBy: c.ApprovedBy, ReadBy: c.ReadBy}
 	if r.Flags == nil {
 		r.Flags = []string{}
 	}
@@ -238,6 +240,13 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 	query := ports.Query{Text: q, Kinds: sources, Docs: docsOf(ctx)}
 	for _, t := range terms {
 		query.Also = append(query.Also, t.Means)
+	}
+	if tr := a.translations(ctx, q, terms); len(tr) > 0 { // SB-6103: also in the cell's other languages
+		query.Also = append(query.Also, tr...)
+		wide += "\n" + strings.Join(tr, "\n")
+		if into, ok := ctx.Value(translatedKey{}).(*[]string); ok {
+			*into = tr
+		}
 	}
 	if a.Embedder != nil {
 		vs, err := a.Embedder.Embed(ctx, []string{wide})

@@ -120,6 +120,7 @@ func (c *Cell) IngestPipeline(kind string, now func() time.Time) ingest.Pipeline
 	m := c.Metrics
 	return ingest.Pipeline{Tenant: c.Config.Tenant, Release: c.Release, Connector: c.Parts().Connectors[kind], Embedder: c.Parts().Agent.Embedder,
 		Index: c.Index, Kind: kind, Now: now, Pace: &ingest.Pace{PerMinute: c.Config.Sync.MaxPerMinute},
+		Vision: c.readVision, Transcribe: c.readTranscribe, Unread: c.unread, // SB-6101, SB-6102
 		Throttled: func(k string) {
 			m.Add("sb_ingest_throttled_total", "Waits for a source's 429 during a sync (SB-6004).", map[string]string{"connector": k}, 1)
 		},

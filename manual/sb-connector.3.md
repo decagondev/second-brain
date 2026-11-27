@@ -38,6 +38,10 @@ A connector is an adapter between one kind of company system and the platform. I
 
 Returns the document's text and structure, its **version** (monotonic per document, as reported by the source), and an ACL snapshot used only as a prefilter. The same `(ref, version)` must always return the same content hash.
 
+### Scans, images and recordings (SB-6101, SB-6102)
+
+`Fetch` may return **`Images`** and **`Media`**, the parts of the document it couldn't read as text, each `{ name, mime, page, data }`: an image file itself, a PDF's pictures when it has no text layer (as pages 1, 2 …), the pictures under a .docx's `word/media/` or a .pptx's `ppt/media/` (each with the first slide that shows it), and an audio or video file. Ingest has them read by the gated readers and marks what they wrote (sb-ingest(7), What a model read). `docs: folder` and `docs: sharepoint` return them: a picture of at most 10 MB, a recording of at most 200 MB, at most 50 pictures of a PDF.
+
 ### Location and label (SB-1005)
 
 `Fetch` also returns where the document lives, its **location**, and the source's own sensitivity **label** if it has one, in the four-step vocabulary of sb-spaces(7). Ingest routes documents to spaces by location (sb-ingest(7), Spaces and labels). A connector whose source has no labels returns none, and never invents one; ingest also reads a Markdown document's front matter `sensitivity:`, which only ever raises the label (SB-5405, sb-ingest(7)). It also returns the document's **owner** at the source, as an email, where the source has one (Drive: the file's owner; a shared drive's files have none), for information barriers (sb-permissions(7), SB-1203). A source without owners returns none. A connector may also return **pages**, where each page of a PDF or slide of a deck starts in the text (SB-5205; sb-ingest(7), Pages and slides); the folder connector does for `.pdf` and `.pptx`.

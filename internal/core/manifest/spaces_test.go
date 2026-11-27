@@ -135,6 +135,34 @@ func TestSpaceRules(t *testing.T) {
 
 func itoa(i int) string { return string(rune('a'+i/26)) + string(rune('a'+i%26)) }
 
+// SB-6104: a glossary term's words in other languages read back as written; a word for a
+// term the glossary doesn't have, or in a language that isn't one, is an error.
+func TestGlossaryIn(t *testing.T) {
+	add := func(s string) string {
+		return strings.Replace(spacesValid, "    scope: { docs: [\"/People/**\"] }\n", "    scope: { docs: [\"/People/**\"] }\n    glossary: { PO: purchase order }\n"+s, 1)
+	}
+	got, ds := Check([]byte(add("    glossary_in: { PO: { de: Bestellung, fr: \"bon de commande\" } }\n")))
+	if len(ds) > 0 {
+		t.Fatal(format("m.yaml", ds))
+	}
+	gi := got.Spaces["people"].GlossaryIn
+	if gi["PO"]["de"] != "Bestellung" || gi["PO"]["fr"] != "bon de commande" {
+		t.Fatalf("glossary_in %v", gi)
+	}
+	back, ds := Check(Format(got))
+	if len(ds) > 0 || !reflect.DeepEqual(back.Spaces["people"].GlossaryIn, gi) {
+		t.Fatalf("format: %v %v", back.Spaces["people"].GlossaryIn, ds)
+	}
+	for in, want := range map[string]string{
+		"    glossary_in: { SLA: { de: Vereinbarung } }\n": "isn't a term of the glossary",
+		"    glossary_in: { PO: { xx: Bestellung } }\n":    "isn't a language code",
+	} {
+		if _, ds := Check([]byte(add(in))); !strings.Contains(format("m.yaml", ds), want) {
+			t.Errorf("%s: want %q, got %s", in, want, format("m.yaml", ds))
+		}
+	}
+}
+
 // SB-2203: a space's glossary reads back as written, and its limits are errors.
 func TestGlossary(t *testing.T) {
 	src := strings.Replace(spacesValid, "    scope: { docs: [\"/People/**\"] }\n",

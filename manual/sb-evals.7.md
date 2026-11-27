@@ -81,6 +81,10 @@ With sb-cell(5) `model.small`, an ask goes to the small model when **all** of th
 
 The release gate runs every suite once per tier (`make evals` runs them for `rel_local` and `rel_local_small`), and a release whose either tier fails isn't released. On the cell, the evals job runs the tenant's cases (above) on the small tier too: a case that passes on the main model and fails on the small one **holds the small tier**, and every ask goes to the main model until a later run passes every case on both. The hold is the cell's own (`state/evals/small-held`), never a model call refused. With sb-cell(5) `model.deep`, every case that passes on the main model runs again on the deep tier (SB-5704), and the evals job writes `state/evals/deep-gated` naming the release only when at least one ran and all passed; while it doesn't name the release the cell runs, the deep tier is never used (LAW-06). The cost statement (sb-admin(3)) carries each line's `tier`, and the weekly report the share of asks on the small model (sb-observability(7)).
 
+### Readers (SB-6101, SB-6102)
+
+Each run of the evals job also gates the readers for the release, writing `state/evals/vision-gated` and `state/evals/transcribe-gated` only when they pass. **Vision** is shown three pictures of six random digits each, drawn by the cell, and must read every one back; a new draw each run, so nothing can be remembered. **Transcribe** must hear every word of each sample an operator put in `state/evals/transcribe/` (a recording beside a `.txt` of its words; `make selfhost-transcribe` puts its sample there), and there must be at least one. A reader not configured, or one that fails or errors, has no gate, and ingest reads nothing with it.
+
 ### The fallback gate (SB-5601)
 
 With sb-cell(5) `model.fallback`, each case that passes on the main model runs again on the fallback alone. The fallback is gated for the release only when at least one case ran and every one passed; otherwise it is never used (sb-runtime(7), The fallback model; LAW-06).

@@ -13,7 +13,7 @@ summary: "A glossary term has one word, so translations lose the company's own w
 | Manual | [`sb-space(5)`](../../manual/sb-space.5.md), [`sb-ask(3)`](../../manual/sb-ask.3.md) |
 | Laws | LAW-16 |
 | Depends on | SB-2203, SB-3302, SB-3107 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A glossary term has one word, so translations lose the company's own words.
 
 ## Acceptance criteria
 
-- [ ] A glossary term may carry its words per language (`in: {de: …, fr: …}`)
-- [ ] Translated questions keep the glossary's word, and terms are marked in every language
-- [ ] A translation is added through a proposal like any term change
+- [x] A glossary term may carry its words per language (`in: {de: …, fr: …}`)
+- [x] Translated questions keep the glossary's word, and terms are marked in every language
+- [x] A translation is added through a proposal like any term change
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Glossary `in:` and its parser
-- [ ] Marking terms in every language
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Glossary `in:` and its parser
+- [x] Marking terms in every language
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. sb-space(5) `glossary_in` (TERM: {LANG: WORD}), checked against the glossary and inherited from the parent; `Term.Words` count as the term in a question and are marked in answers (web `glossed`); a proposal adds words to a term with `words`. The field is `glossary_in` beside `glossary`, not `in:` under each term, so `glossary` keeps its form. Tested in TestGlossaryIn and TestAskInOneLanguageFindAnother.
 
 ## Definition of done
 

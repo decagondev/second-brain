@@ -126,6 +126,10 @@ func JSONSchema() []byte {
 					"glossary": map[string]any{"type": "object", "maxProperties": MaxGlossary,
 						"propertyNames":        map[string]any{"minLength": 1, "maxLength": MaxTerm},
 						"additionalProperties": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxMeaning}},
+					"glossary_in": map[string]any{"type": "object", "maxProperties": MaxGlossary, // SB-6104
+						"propertyNames": map[string]any{"minLength": 1, "maxLength": MaxTerm},
+						"additionalProperties": map[string]any{"type": "object", "propertyNames": map[string]any{"enum": WordLanguages},
+							"additionalProperties": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxTerm}}},
 					"skills": map[string]any{"type": "object", "maxProperties": MaxSkills, "propertyNames": map[string]any{"pattern": skillNameRe.String()},
 						"additionalProperties": map[string]any{"type": "object", "additionalProperties": false, "required": []string{"instruction", "cases"},
 							"properties": map[string]any{"instruction": map[string]any{"type": "string", "minLength": 1, "maxLength": MaxSkillInstruction},

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -125,6 +126,9 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 		return nil, err
 	}
 	if err := c.writeGates(hasFallback, agent.Deep != nil, fb, deep); err != nil {
+		return nil, err
+	}
+	if err := c.gateReaders(ctx, rand.New(rand.NewSource(time.Now().UnixNano()))); err != nil { // SB-6101, SB-6102
 		return nil, err
 	}
 	if ran > 0 {

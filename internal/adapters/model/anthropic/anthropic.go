@@ -3,6 +3,7 @@ package anthropic
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 
 	"example.com/second-brain/internal/core/ports"
@@ -23,7 +24,18 @@ type Client struct {
 
 type message struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"` // a string, or blocks with an image (SB-6101)
+}
+
+// imageBlock is a picture in a message (SB-6101).
+type imageBlock struct {
+	Type   string `json:"type"`
+	Text   string `json:"text,omitempty"`
+	Source *struct {
+		Type      string `json:"type"`
+		MediaType string `json:"media_type"`
+		Data      string `json:"data"`
+	} `json:"source,omitempty"`
 }
 
 // block is a system prompt block; cache_control marks the stable prefix cacheable (SB-5605).
@@ -73,7 +85,16 @@ func (c Client) body(req ports.ModelRequest) request {
 		body.MaxTokens = 1024
 	}
 	for _, m := range req.Messages {
-		body.Messages = append(body.Messages, message{Role: m.Role, Content: m.Content})
+		if m.Image == nil {
+			body.Messages = append(body.Messages, message{Role: m.Role, Content: m.Content})
+			continue
+		}
+		img := imageBlock{Type: "image", Source: &struct {
+			Type      string `json:"type"`
+			MediaType string `json:"media_type"`
+			Data      string `json:"data"`
+		}{Type: "base64", MediaType: m.Image.MIME, Data: base64.StdEncoding.EncodeToString(m.Image.Data)}}
+		body.Messages = append(body.Messages, message{Role: m.Role, Content: []imageBlock{img, {Type: "text", Text: m.Content}}})
 	}
 	return body
 }

@@ -64,7 +64,7 @@ summary: Epics, waves, slices and tickets.
 | W57 Carry the Conversation | 7 | 0 | 0 | Planned 2026-11-27 with the user (E58), built: follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W58 Reach Microsoft 365 | 6 | 1 | 0 | Planned 2026-11-27 with the user (E59), built: SharePoint and OneDrive, Purview labels, Entra groups and people, ask in Teams, Outlook calendar for meeting prep, Teams meeting transcripts, start on a new email. In review: SB-5901 (a real tenant) ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W59 Proven for Real | 6 | 0 | 0 | Planned 2026-11-27 with the user (E60), built: prove it on the real thing, fakes refreshed from a real sandbox, check the Microsoft 365 setup, a big tenant's first sync, reactions and direct questions in Mattermost, the AI tools that reach the brain ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
-| W60 Every Format, Every Language | 0 | 0 | 7 | Planned 2026-11-27 with the user (E61): read scans and images, recordings become transcripts, ask in one language, find another, a glossary in every language, translate a cited passage, Spanish, Italian and Dutch, usable by everyone ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
+| W60 Every Format, Every Language | 7 | 0 | 0 | Planned 2026-11-27 with the user (E61), built: read scans and images, recordings become transcripts, ask in one language, find another, a glossary in every language, translate a cited passage, Spanish, Italian and Dutch, usable by everyone ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | W61 Reach Confluence and Jira | 0 | 0 | 7 | Planned 2026-11-27 with the user (E62): Confluence, Atlassian groups and people, check the Atlassian setup, Jira, Jira as work events, start on a service request, draft a Jira issue ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -1061,13 +1061,13 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-6101](E61-every-format-every-language/SB-6101-scans-and-images.md) | S60.1 | E61 | Read scans and images | Open |
-| [SB-6102](E61-every-format-every-language/SB-6102-recordings.md) | S60.1 | E61 | Recordings become transcripts | Open |
-| [SB-6103](E61-every-format-every-language/SB-6103-cross-language.md) | S60.2 | E61 | Ask in one language, find another | Open |
-| [SB-6104](E61-every-format-every-language/SB-6104-glossary-languages.md) | S60.2 | E61 | A glossary in every language | Open |
-| [SB-6105](E61-every-format-every-language/SB-6105-translate-passage.md) | S60.2 | E61 | Translate a cited passage | Open |
-| [SB-6106](E61-every-format-every-language/SB-6106-more-languages.md) | S60.2 | E61 | Spanish, Italian and Dutch | Open |
-| [SB-6107](E61-every-format-every-language/SB-6107-accessible.md) | S60.2 | E61 | Usable by everyone | Open |
+| [SB-6101](E61-every-format-every-language/SB-6101-scans-and-images.md) | S60.1 | E61 | Read scans and images | Done |
+| [SB-6102](E61-every-format-every-language/SB-6102-recordings.md) | S60.1 | E61 | Recordings become transcripts | Done |
+| [SB-6103](E61-every-format-every-language/SB-6103-cross-language.md) | S60.2 | E61 | Ask in one language, find another | Done |
+| [SB-6104](E61-every-format-every-language/SB-6104-glossary-languages.md) | S60.2 | E61 | A glossary in every language | Done |
+| [SB-6105](E61-every-format-every-language/SB-6105-translate-passage.md) | S60.2 | E61 | Translate a cited passage | Done |
+| [SB-6106](E61-every-format-every-language/SB-6106-more-languages.md) | S60.2 | E61 | Spanish, Italian and Dutch | Done |
+| [SB-6107](E61-every-format-every-language/SB-6107-accessible.md) | S60.2 | E61 | Usable by everyone | Done |
 
 ### W61 Reach Confluence and Jira
 

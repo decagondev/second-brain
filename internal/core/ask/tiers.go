@@ -11,8 +11,10 @@ import (
 
 // The tiers, and the longest question the small one takes.
 const (
-	TierMain             = "main"
-	TierSmall            = "small"
+	TierMain  = "main"
+	TierSmall = "small"
+	// TierVision reads scans and images at ingest (SB-6101); it answers no question.
+	TierVision           = "vision"
 	SmallMaxRunes        = 120
 	tierKey       ctxKey = "tier"
 )

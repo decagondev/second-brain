@@ -181,6 +181,15 @@ services:
     volumes: ["models:/models:ro"]
     networks: [data]
 
+  transcribe:       # SB-6102: recordings transcribed on the box (make selfhost-transcribe)
+    <<: *hardened
+    image: ${SB_TRANSCRIBE_IMAGE:-sb-transcribe-image-unset}
+    profiles: [transcribe]
+    entrypoint: ["/app/build/bin/whisper-server"]
+    command: ["--host", "0.0.0.0", "--port", "8080", "-m", "/models/whisper.bin"]
+    volumes: ["models:/models:ro"]
+    networks: [data]
+
   devidp:           # development only: the IdP with no passwords, on this machine's loopback
     <<: *hardened
     image: sb-devidp:local

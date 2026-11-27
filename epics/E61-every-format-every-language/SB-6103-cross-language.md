@@ -13,7 +13,7 @@ summary: "A question in German doesn't find the English policy that answers it."
 | Manual | [`sb-cell(5)`](../../manual/sb-cell.5.md), [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-evals(7)`](../../manual/sb-evals.7.md) |
 | Laws | LAW-06, LAW-14 |
 | Depends on | SB-3003, SB-2706, SB-5501 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ A question in German doesn't find the English policy that answers it.
 
 ## Acceptance criteria
 
-- [ ] sb-cell(5) `languages` names the corpus's languages; a question is also searched in each, translated by the gated small tier with the glossary
-- [ ] Results are fused; cites stay in their own language and the answer is in the UI's
-- [ ] The translated queries are in the trace and the context view; with one language named, nothing is translated
+- [x] sb-cell(5) `languages` names the corpus's languages; a question is also searched in each, translated by the gated small tier with the glossary
+- [x] Results are fused; cites stay in their own language and the answer is in the UI's
+- [x] The translated queries are in the trace and the context view; with one language named, nothing is translated
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Query translation and fusion
-- [ ] Eval cases across languages
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Query translation and fusion
+- [x] Eval cases across languages
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. sb-cell(5) `languages`; with two or more, `Agent.translations` has the small tier (main while held) translate the question with the bundled `translate` prompt and the glossary's words; translations join `Query.Also` and the embedded text, an instruction-like one is dropped, and `Trace.Translated` shows in the asker's context view (`translated`). Tested in TestAskInOneLanguageFindAnother.
 
 ## Definition of done
 

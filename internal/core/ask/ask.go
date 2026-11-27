@@ -159,7 +159,7 @@ func documentKeys(ds []string) ([]string, error) {
 }
 
 // Languages are the languages an answer can be asked for, as the prompt names them.
-var Languages = map[string]string{"en": "English", "de": "German", "fr": "French"}
+var Languages = map[string]string{"en": "English", "de": "German", "fr": "French", "es": "Spanish", "it": "Italian", "nl": "Dutch"}
 
 // LanguageLine is the answer prompt's extra line for a language, or "" for none.
 func LanguageLine(code string) string {
@@ -307,6 +307,9 @@ type Trace struct {
 	CostUSD float64 `json:",omitempty"`
 	// Feature is what asked it, one of Features or eval (SB-5001); "" is an older ask.
 	Feature string `json:",omitempty"`
+	// Translated are the question as it was also searched, in the cell's other languages
+	// (SB-6103); nil for none.
+	Translated []string `json:",omitempty"`
 	// Client is where the ask came from: web, chat, mcp or token (SB-5305), and Tool the AI
 	// tool its token was made for (SB-6006), "" for none.
 	Client string `json:",omitempty"`
@@ -432,6 +435,11 @@ type Agent struct {
 	ReviewAfter func(spaces []string) int
 	// Glossary is a space's glossary by name (sb-space(5); SB-2203); nil is none.
 	Glossary func(space string) map[string]string
+	// Languages are sb-cell(5) languages, the languages the cell's documents are in
+	// (SB-6103): with two or more, a question is also searched in each.
+	Languages []string
+	// GlossaryIn is a space's terms' words in other languages (SB-6104); nil is none.
+	GlossaryIn func(space string) map[string]map[string]string
 	// Rate counts each person's asks; AsksPerMinute is the manifest's limit, 0 or nil
 	// for DefaultAsksPerMinute (SB-2305). A nil Rate limits nothing (tests and evals).
 	Rate          *Rate
@@ -608,7 +616,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return Response{}, err
 	}
 
-	res, terms, err := a.retrieve(withVerified(withDocs(ctx, docs), req.Verified), s, q, req.Sources, retrieve.Budget)
+	var translated []string // SB-6103
+	res, terms, err := a.retrieve(withTranslated(withVerified(withDocs(ctx, docs), req.Verified), &translated), s, q, req.Sources, retrieve.Budget)
 	if err != nil {
 		return Response{}, err
 	}
@@ -660,13 +669,13 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	inTok, cachedTok := tally.Tokens() // SB-5706
 	if probe {
-		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx), Tool: tenancy.ToolOf(ctx)}
+		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx), Tool: tenancy.ToolOf(ctx), Translated: translated}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
 			return Response{}, fmt.Errorf("%w: traces: %v", ErrUnavailable, err)
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx), Tool: tenancy.ToolOf(ctx),
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, TierWhy: tierWhy, CostUSD: tally.USD(), InputTokens: inTok, CachedTokens: cachedTok, Prefix: prefix.get(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx), Tool: tenancy.ToolOf(ctx), Translated: translated,
 		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop, Read: readSet(res.Context), Saved: tally.Saved()} // SB-5501, SB-5603, SB-5606
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err

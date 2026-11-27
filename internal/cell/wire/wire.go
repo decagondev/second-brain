@@ -144,6 +144,7 @@ type Cell struct {
 	sockets   []*mmapp.Socket // the chat apps' websockets (SB-6005)
 	small     func(m manifest.Tenant) (ports.Model, error)
 	deep      func(m manifest.Tenant) (ports.Model, error) // SB-5704
+	vision    func(m manifest.Tenant) (ports.Model, error) // SB-6101
 	eventKey  func(ctx context.Context) (string, error)
 	inbox     slack.Inbox
 	closeDB   func()
@@ -405,14 +406,8 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 	c.Report = usage{traces: c.Traces, ledger: c.Usage, actions: c.Actions, dir: c.Directory, index: c.Index, state: c.Config.State, tree: c.Manifest}
 	c.eventKey = secret("events") // SB-4404
 	tierOf := func(m manifest.Tenant, tier string) (ports.Model, error) {
-		mc := cfg
+		mc := tierConfig(cfg, tier)
 		small := tier == ask.TierSmall
-		if small { // SB-4405: the same provider, base and key, another id and price
-			mc.Model.ID, mc.Model.Price.InPerM, mc.Model.Price.OutPerM = cfg.Model.Small.ID, cfg.Model.Small.Price.InPerM, cfg.Model.Small.Price.OutPerM
-		}
-		if tier == ask.TierDeep { // SB-5704: the same provider, base and key, a deeper id or effort
-			mc = deepConfig(cfg)
-		}
 		guardFor := func(price budget.Price) *budget.Guard {
 			return &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
 				Price: price, Once: c.Usage,
@@ -437,6 +432,9 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		primary = c.laterBatches(primary, zone, mc.Model.Base) // SB-5701, SB-5703
 		if tier == ask.TierDeep {
 			return withEffort(primary, cfg.Model.Deep.Effort), nil
+		}
+		if tier == ask.TierVision { // no fallback: a picture nobody gated is skipped, not sent elsewhere
+			return primary, nil
 		}
 		if small { // SB-5606: what a call on the small tier saved against the main one
 			if g, ok := primary.(gateway.Gateway); ok {
@@ -475,6 +473,12 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 			return nil, nil
 		}
 		return tierOf(m, ask.TierSmall)
+	}
+	c.vision = func(m manifest.Tenant) (ports.Model, error) {
+		if cfg.Model.Vision.ID == "" {
+			return nil, nil
+		}
+		return tierOf(m, ask.TierVision)
 	}
 	c.deep = func(m manifest.Tenant) (ports.Model, error) {
 		if cfg.Model.Deep.ID == "" && cfg.Model.Deep.Effort == "" {
@@ -576,9 +580,11 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Owner: ask.ActiveOwner(func(ctx context.Context, email string) ([]ports.User, error) {
 			return c.Directory.UsersByEmail(ctx, tenant, email)
 		}),
-		Glossary: func(name string) map[string]string { return m.Effective(name).Glossary },
-		Skills:   func(name string) []ask.Skill { return spaceSkills(m, name) },                      // SB-4601
-		Routing:  routing(m), Suspect: suspectMode(m), Guard: c.guardEvent, PersonOver: c.personOver, // SB-5002, SB-5003
+		Glossary:   func(name string) map[string]string { return m.Effective(name).Glossary },
+		GlossaryIn: func(name string) map[string]map[string]string { return m.Effective(name).GlossaryIn }, // SB-6104
+		Languages:  cfg.Languages,                                                                          // SB-6103
+		Skills:     func(name string) []ask.Skill { return spaceSkills(m, name) },                          // SB-4601
+		Routing:    routing(m), Suspect: suspectMode(m), Guard: c.guardEvent, PersonOver: c.personOver,     // SB-5002, SB-5003
 		Rate: &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
 		Marks: c.Traces, SyncLag: c.syncLag, Indexing: c.stillIndexing, Retired: c.Traces, Pins: c.Traces, FileText: folder.Text,
 		Climb: func(ctx context.Context, space string) []ask.PersonRef { // SB-3906: up to the department's stewards
@@ -890,6 +896,21 @@ func (c *Cell) Ready() bool { return c.ready.Load() }
 
 // Stop marks the cell not ready, so the platform stops sending it requests.
 func (c *Cell) Stop() { c.ready.Store(false) }
+
+// tierConfig is cfg with tier's model id and price: the small, deep and vision tiers are
+// the main provider, base and key with another id (SB-4405, SB-5704, SB-6101).
+func tierConfig(cfg Config, tier string) Config {
+	mc := cfg
+	switch tier {
+	case ask.TierSmall:
+		mc.Model.ID, mc.Model.Price.InPerM, mc.Model.Price.OutPerM = cfg.Model.Small.ID, cfg.Model.Small.Price.InPerM, cfg.Model.Small.Price.OutPerM
+	case ask.TierDeep:
+		mc = deepConfig(cfg)
+	case ask.TierVision:
+		mc.Model.ID, mc.Model.Price.InPerM, mc.Model.Price.OutPerM = cfg.Model.Vision.ID, cfg.Model.Vision.Price.InPerM, cfg.Model.Vision.Price.OutPerM
+	}
+	return mc
+}
 
 // Listen keeps the chat apps' websockets open until ctx ends (SB-6005); it returns at once
 // on a cell with none.

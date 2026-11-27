@@ -143,13 +143,48 @@ func (h Stewards) proposeTerm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Term      string   `json:"term"`
-		Meaning   string   `json:"meaning"`
-		Spellings []string `json:"spellings"`
+		Term      string            `json:"term"`
+		Meaning   string            `json:"meaning"`
+		Spellings []string          `json:"spellings"`
+		Words     map[string]string `json:"words"` // SB-6104: the term's words in other languages
 	}
 	b, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
-	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil || strings.TrimSpace(req.Term) == "" || strings.TrimSpace(req.Meaning) == "" {
-		fail(w, errs.New(errs.EINVAL, "The body must be JSON with a term and its meaning."))
+	if err != nil || len(b) > MaxBody || json.Unmarshal(b, &req) != nil || strings.TrimSpace(req.Term) == "" ||
+		strings.TrimSpace(req.Meaning) == "" && len(req.Words) == 0 {
+		fail(w, errs.New(errs.EINVAL, "The body must be JSON with a term and its meaning, or a term and its words in other languages."))
+		return
+	}
+	if strings.TrimSpace(req.Meaning) == "" { // words for a term the glossary has (SB-6104)
+		sp := cur.Spaces[name]
+		have := ""
+		for k := range sp.Glossary {
+			if strings.EqualFold(k, strings.TrimSpace(req.Term)) {
+				have = k
+			}
+		}
+		if have == "" {
+			fail(w, errs.New(errs.EINVAL, "The glossary has no %q to add words to; propose the term with its meaning.", req.Term))
+			return
+		}
+		gi := map[string]map[string]string{}
+		for k, v := range sp.GlossaryIn {
+			gi[k] = v
+		}
+		words := map[string]string{}
+		for l, wd := range gi[have] {
+			words[l] = wd
+		}
+		for l, wd := range req.Words {
+			words[l] = strings.TrimSpace(wd)
+		}
+		gi[have] = words
+		sp.GlossaryIn = gi
+		raw, err := json.Marshal(sp)
+		if err != nil {
+			fail(w, errs.New(errs.EUNAVAIL, "The space's definition can't be written."))
+			return
+		}
+		h.submit(w, r, s, cur, name, raw)
 		return
 	}
 	if len(req.Spellings) > MaxSpellings {

@@ -87,9 +87,9 @@ describe("the string catalog", () => {
     expect(Object.keys(catalog).filter((k) => !used.has(k))).toEqual([]);
   });
 
-  it("has German and French for every entry, with the same placeholders", () => {
-    for (const [key, e] of Object.entries(catalog) as [string, { de: string; fr: string }][]) {
-      for (const l of ["de", "fr"] as const) {
+  it("has German, French, Spanish, Italian and Dutch for every entry, with the same placeholders", () => {
+    for (const [key, e] of Object.entries(catalog) as [string, { de: string; fr: string; es: string; it: string; nl: string }][]) {
+      for (const l of ["de", "fr", "es", "it", "nl"] as const) {
         expect(e[l].trim(), `${key} in ${l}`).not.toBe("");
         expect(holes(e[l]), `${key} in ${l}`).toBe(holes(key));
       }
@@ -97,7 +97,7 @@ describe("the string catalog", () => {
   });
 
   it("speaks each language and counts by its rule", () => {
-    expect(langs.map((l) => l.id)).toEqual(["en", "de", "fr"]);
+    expect(langs.map((l) => l.id)).toEqual(["en", "de", "fr", "es", "it", "nl"]);
     setLang("de");
     expect(t("Ask")).toBe(catalog.Ask!.de);
     expect(tn(0, "{n} source was not shown because you can't open it.", "{n} sources were not shown because you can't open them.")).toContain("0");
@@ -105,5 +105,12 @@ describe("the string catalog", () => {
     expect(tn(0, "{n} source was not shown because you can't open it.", "{n} sources were not shown because you can't open them.")).toBe(
       catalog["{n} source was not shown because you can't open it."]!.fr.replace("{n}", "0"),
     );
+    for (const l of ["es", "it", "nl"] as const) { // SB-6106: one is singular, zero is plural
+      setLang(l);
+      expect(t("Ask")).toBe(catalog.Ask![l]);
+      expect(tn(0, "{n} source was not shown because you can't open it.", "{n} sources were not shown because you can't open them.")).toBe(
+        catalog["{n} sources were not shown because you can't open them."]![l].replace("{n}", "0"),
+      );
+    }
   });
 });

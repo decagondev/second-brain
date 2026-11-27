@@ -123,7 +123,8 @@ func Format(t Tenant) []byte {
 				}
 				fmt.Fprintf(&b, "    glossary: { %s }%s", strings.Join(gp, ", "), nl)
 			}
-			if len(sp.Skills) > 0 { // SB-4601
+			b.WriteString(glossaryInLine(sp.GlossaryIn, nl)) // SB-6104
+			if len(sp.Skills) > 0 {                          // SB-4601
 				sk := make([]string, 0, len(sp.Skills))
 				for _, k := range sorted(sp.Skills) {
 					cs := make([]string, 0, len(sp.Skills[k].Cases))
@@ -251,4 +252,20 @@ func agentsLine(t Tenant) string {
 		}
 	}
 	return "{ " + strings.Join(parts, ", ") + " }"
+}
+
+// glossaryInLine is a space's glossary_in line, "" for none (SB-6104).
+func glossaryInLine(gi map[string]map[string]string, nl string) string {
+	if len(gi) == 0 {
+		return ""
+	}
+	gp := make([]string, 0, len(gi))
+	for _, k := range sorted(gi) {
+		ws := make([]string, 0, len(gi[k]))
+		for _, l := range sorted(gi[k]) {
+			ws = append(ws, l+": "+strconv.Quote(gi[k][l]))
+		}
+		gp = append(gp, strconv.Quote(k)+": { "+strings.Join(ws, ", ")+" }")
+	}
+	return "    glossary_in: { " + strings.Join(gp, ", ") + " }" + nl
 }

@@ -15,6 +15,27 @@ import (
 type Term struct {
 	Term  string `json:"term"`
 	Means string `json:"means"`
+	// Words are the term's own words in other languages, by language (SB-6104): a question
+	// or an answer in that language uses the term when it uses the word.
+	Words map[string]string `json:"words,omitempty"`
+}
+
+// spellings are the term and its words in every language.
+func (t Term) spellings() []string {
+	out := []string{t.Term}
+	for _, l := range sortedKeys(t.Words) {
+		out = append(out, t.Words[l])
+	}
+	return out
+}
+
+func sortedKeys(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // usable splits a space's glossary into the entries that may be used and the terms of those
@@ -48,7 +69,27 @@ func (a Agent) glossaryOf(s tenancy.Scope) []Term {
 	if a.Glossary == nil || !strings.HasPrefix(s.Space(), "spc_") {
 		return nil
 	}
-	ok, _ := usable(a.Glossary(strings.TrimPrefix(s.Space(), "spc_")))
+	name := strings.TrimPrefix(s.Space(), "spc_")
+	ok, _ := usable(a.Glossary(name))
+	if a.GlossaryIn != nil { // SB-6104: each term's words in other languages
+		in := a.GlossaryIn(name)
+		for i := range ok {
+			for k, words := range in {
+				if !strings.EqualFold(k, ok[i].Term) {
+					continue
+				}
+				for l, w := range words {
+					if instructionLike(w) {
+						continue // LAW-09: a word that reads like an instruction is never used
+					}
+					if ok[i].Words == nil {
+						ok[i].Words = map[string]string{}
+					}
+					ok[i].Words[l] = w
+				}
+			}
+		}
+	}
 	return ok
 }
 
@@ -58,14 +99,17 @@ func expand(q string, terms []Term) (string, []Term) {
 	var used []Term
 	out := q
 	for _, t := range terms {
-		pat := regexp.QuoteMeta(t.Term)
-		if !hasUpper(t.Term) {
-			pat = "(?i)" + pat
-		}
-		re := regexp.MustCompile(`(^|[^\pL\pN])` + pat + `($|[^\pL\pN])`)
-		if re.MatchString(q) {
-			used = append(used, t)
-			out += " " + t.Means
+		for _, w := range t.spellings() {
+			pat := regexp.QuoteMeta(w)
+			if !hasUpper(w) {
+				pat = "(?i)" + pat
+			}
+			re := regexp.MustCompile(`(^|[^\pL\pN])` + pat + `($|[^\pL\pN])`)
+			if re.MatchString(q) {
+				used = append(used, t)
+				out += " " + t.Means
+				break
+			}
 		}
 	}
 	return out, used
