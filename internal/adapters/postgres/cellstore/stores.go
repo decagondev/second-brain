@@ -519,7 +519,7 @@ func (t Traces) MemoryOf(ctx context.Context, tenant, user string) (ask.Memory, 
 
 // PutMemory implements ask.MemoryStore; a memory with no lines is removed.
 func (t Traces) PutMemory(ctx context.Context, m ask.Memory) error {
-	if len(m.Lines) == 0 {
+	if len(m.Lines) == 0 && len(m.Excluded) == 0 { // SB-5503: exclusions live here too
 		return del(ctx, t.Pool, m.Tenant, "memory", m.User)
 	}
 	return put(ctx, t.Pool, m.Tenant, "memory", m.User, meta{at: m.At, user: m.User}, m, false)

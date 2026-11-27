@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-26 S54.1: Show the context
+
+**Wave/slice:** W54 / S54.1 (SB-5501 to SB-5504) · **Status:** Done
+
+**What:** **Context** under each answer lists what it was built from: sources, memory lines, skill, collection, documents, kept and dropped documents, earlier questions read and left out, passages skipped and the model tier. From it a person can **Keep** or **Drop** a document for the rest of the conversation, or say **Don't use this for me** for good, which applies to everything made as them until they undo it on My data. An answer that used a memory line shows it with **Forget this**.
+
+**Why this way:** The panel is the trace read again as the viewer, like How this was made, so it can't show what they can no longer open. Keep and Drop belong to the conversation, which lives in the browser, so they travel with each ask and the server keeps only ids in the trace. Exclusions sit in the person's memory record, which already has every property they need: theirs alone, exported, erased, forgotten and never expired.
+
+**Learned:** The memory store deleted a record whose lines were empty, which would have dropped a person's exclusions when they forgot their last line; both stores now keep a record with either.
+
+**Laws:** LAW-01, LAW-25, LAW-26. Every law test is green except LAW-23, as before.
+
 ## 2026-11-26 S53.2: Labels and reach
 
 **Wave/slice:** W53 / S53.2 (SB-5405 to SB-5407) · **Status:** Done

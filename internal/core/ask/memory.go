@@ -43,6 +43,9 @@ type Memory struct {
 	User   string       `json:"user"`
 	Lines  []MemoryLine `json:"lines"`
 	At     time.Time    `json:"at"`
+	// Excluded are the documents the person keeps out of everything made as them (SB-5503),
+	// kept here so they are exported, erased and forgotten with the person's memory.
+	Excluded []Exclusion `json:"excluded,omitempty"`
 }
 
 // MemoryStore keeps each person's memory, one record per person, erased with them and by
@@ -222,7 +225,8 @@ func normWords(s string) []string {
 
 // memoryLines are the asker's own lines for their ask, or none: a cell without memory, a
 // probe, or any agent but ask carries none (LAW-25). A store that can't be read sends none.
-func (a Agent) memoryLines(ctx context.Context, s tenancy.Scope, agent string, probe bool) []string {
+// memoryUsed are the lines an ask sends, with their ids, oldest first (SB-5504).
+func (a Agent) memoryUsed(ctx context.Context, s tenancy.Scope, agent string, probe bool) []MemoryLine {
 	if !a.memoryOn() || probe || (agent != "" && agent != "ask") {
 		return nil
 	}
@@ -231,11 +235,7 @@ func (a Agent) memoryLines(ctx context.Context, s tenancy.Scope, agent string, p
 		return nil
 	}
 	sort.SliceStable(m.Lines, func(i, j int) bool { return m.Lines[i].At.Before(m.Lines[j].At) })
-	var out []string
-	for _, l := range m.Lines {
-		out = append(out, l.Text)
-	}
-	return out
+	return m.Lines
 }
 
 type memoryKey struct{}

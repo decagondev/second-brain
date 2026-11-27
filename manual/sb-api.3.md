@@ -88,6 +88,8 @@ Know who can see (SB-5401 to SB-5404): `GET /v1/spaces/NAME/review?section=wide`
 
 Labels, reach and the sensitive map (SB-5405 to SB-5407): an answer's `label` (sb-ask(3)); `GET /v1/admin/agents/NAME/reach` (sb-agents(7), How far each agent reaches); `GET /v1/spaces/NAME/review?section=sensitive` for a space's stewards and `GET /v1/admin/sensitive` for operators (sb-spaces(7), Sensitive map). `POST /v1/spaces/NAME/messages` takes the draft's `cites` and refuses one that cites `confidential` or `restricted` documents (LAW-32).
 
+See and steer the context (SB-5501 to SB-5504): `GET /v1/traces/{id}/context`, the ask's `keep` and `drop`, the answer's `memory`, and `GET|POST|DELETE /v1/me/exclusions` (sb-ask(3), The context of an answer). Each is the caller's own; nothing names what they can't open.
+
 ### Idempotency
 
 POSTs that create drafts or actions accept `Idempotency-Key`. Repeating a request with the same key within 24 hours returns the original response and creates nothing new.

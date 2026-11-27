@@ -26,6 +26,8 @@ import { errorText, msg, t, tj, tn } from "./i18n";
 import { numberCites, numberOf } from "./Copy";
 import { MarkLine, citeMark } from "./Marked";
 import { WhoCanSee } from "./Sharing";
+import { ContextView, MemoryUsed } from "./Steer";
+import type { SteerKind } from "./Steer";
 import { HowThisWasMade } from "./Further";
 
 const notices: Record<Exclude<Notice, null>, string> = {
@@ -643,8 +645,11 @@ export function AnswerView({
   question,
   space,
   onSuggest,
+  onSteer,
 }: {
   answer: AskResponse;
+  // Keep or Drop a document for the rest of the conversation (SB-5502).
+  onSteer?: (doc: string, kind: SteerKind) => void;
   fetcher?: Fetch;
   onAbout?: (d: About) => void;
   onOwner?: (email: string) => void;
@@ -709,6 +714,8 @@ export function AnswerView({
           })}
         </p>
       )}
+      {answer.memory && answer.memory.length > 0 && <MemoryUsed ids={answer.memory} fetcher={fetcher} />}
+      {answer.trace.startsWith("tr_") && <ContextView trace={answer.trace} fetcher={fetcher} onSteer={onSteer} />}
       <SeeAlsoView answer={answer} fetcher={fetcher} onAbout={onAbout} />
       <PeopleView
         answer={answer}

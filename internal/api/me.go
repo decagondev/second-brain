@@ -41,6 +41,7 @@ func (h Me) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/me/memory", h.remember)
 	mux.HandleFunc("DELETE /v1/me/memory", h.forgetMemory)
 	mux.HandleFunc("DELETE /v1/me/memory/{id}", h.forgetMemory)
+	h.registerExclusions(mux) // SB-5503
 }
 
 // Memory I control (sb-ask(3); SB-4303): the caller's own lines only.

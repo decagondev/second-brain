@@ -77,6 +77,10 @@ Beside each cite, a note and a shared answer, **Who can see this** shows how man
 
 An answer, draft or note carries `label`, the highest label among its cites (LAW-32). The web shows it above the answer and in downloads and print, and a chat reply names it. An answer labelled `confidential` or above can't be shared into a chat channel (it stays with the asker, who is told why), and a drafted message citing one can't be posted to a channel.
 
+### What an answer was built from (SB-5501)
+
+The context panel lists the sources an answer's live check allowed and what steered it (kept, dropped and excluded documents, memory, skill, collection), each title checked as the viewer now (sb-ask(3), The context of an answer). A cite is never added by Keep without the same live check as any other.
+
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

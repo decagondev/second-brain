@@ -64,6 +64,10 @@ type Request struct {
 	// answer to it (SB-4901).
 	Clarify bool   `json:"clarify,omitempty"`
 	Choice  string `json:"choice,omitempty"`
+	// Keep and Drop are the conversation's kept and dropped documents, as KIND:ID, sent by
+	// the browser with each ask (SB-5502); each kept one is still checked as the asker.
+	Keep []string `json:"keep,omitempty"`
+	Drop []string `json:"drop,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -222,6 +226,8 @@ type Response struct {
 	// Label is the highest label among the answer's cites (SB-5405, LAW-32): whatever is
 	// built from it carries it, and confidential or above goes only to a person.
 	Label string `json:"label,omitempty"`
+	// Memory are the ids of the asker's memory lines the answer was given (SB-5504).
+	Memory []string `json:"memory,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -287,6 +293,10 @@ type Trace struct {
 	// Suspect are the cites of the answer's suspect passages, skipped or monitored
 	// (SB-5101): never their text.
 	Suspect []string `json:",omitempty"`
+	// Collection, Documents, Kept and Dropped are what the ask was narrowed or steered by
+	// (SB-5501, SB-5502), as ids.
+	Collection               string   `json:",omitempty"`
+	Documents, Kept, Dropped []string `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -412,6 +422,9 @@ type Agent struct {
 	LeaderWeek func(space string) bool
 	// Skills are a space's skills by name, its department's with them (SB-4601); nil is none.
 	Skills func(space string) []Skill
+	// Exclusions keeps each person's Don't use this for me with their memory record
+	// (SB-5503), whatever the manifest's memory setting; nil excludes nothing.
+	Exclusions MemoryStore
 	// Wide is the cell's sharing checks (SB-5401 to SB-5403); nil checks nothing.
 	Wide *Wide
 	// Everyone are the tenant's active people, for who can see a document (SB-5404); nil
@@ -517,7 +530,10 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	ctx = withChoice(ctx, choice)
 	feature := featureFor(ctx, req, probe)                                                                        // SB-5001
 	tier := a.tierFor(WithFeature(a.atLimit(ctx, s.User()), feature), s.Space(), req, q, len(docs), len(earlier)) // SB-4405, SB-5002, SB-5003
-	ctx = withMemory(ctx, a.memoryLines(ctx, s, req.Agent, probe))                                                // SB-4303: the asker's own, ask agent only (LAW-25)
+	ctx, used, keep, drop, err := a.steerAndRemember(ctx, s, req, probe)                                          // SB-4303, SB-5502
+	if err != nil {
+		return Response{}, err
+	}
 	capped := len(docs) == 0
 	if docs, err = a.collectionOr(ctx, s, req.Collection, docs); err != nil { // SB-4304
 		return Response{}, err
@@ -606,6 +622,9 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	resp.Skipped = sk.Skipped() // SB-5101, its consultations' too
 	resp.Held, resp.WideWarned = hd.counts()
+	for _, l := range used { // SB-5504: which lines, never their text, in the trace
+		resp.Memory = append(resp.Memory, l.ID)
+	}
 	if probe {
 		t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
 		if err := a.Store.PutTrace(ctx, t); err != nil {
@@ -613,7 +632,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		}
 		return resp, nil
 	}
-	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx)}
+	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx),
+		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop} // SB-5501
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}

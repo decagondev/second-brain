@@ -629,11 +629,12 @@ func (s *Store) MemoryOf(_ context.Context, tenant, user string) (ask.Memory, bo
 func (s *Store) PutMemory(_ context.Context, m ask.Memory) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(m.Lines) == 0 {
+	if len(m.Lines) == 0 && len(m.Excluded) == 0 { // SB-5503: exclusions live here too
 		delete(s.memory, m.Tenant+"/"+m.User)
 		return nil
 	}
 	m.Lines = append([]ask.MemoryLine(nil), m.Lines...)
+	m.Excluded = append([]ask.Exclusion(nil), m.Excluded...)
 	s.memory[m.Tenant+"/"+m.User] = m
 	return nil
 }

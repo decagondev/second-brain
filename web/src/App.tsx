@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { DepartmentsView, HandoffView } from "./Departments";
-import { ask, AskError, BRANCH, fileToAsk, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
-import type { About, ApiError, AskFile, AskResponse, Fetch, SearchResult, SharedQuestion, Space } from "./api";
+import { ask, AskError, BRANCH, docKey, fileToAsk, listSpaces, maxAbout, openShare, search, spaceName, suggestedQuestions } from "./api";
+import type { About, ApiError, AskFile, AskResponse, Fetch, SearchResult, SharedQuestion, Space, Steer } from "./api";
 import { AnswerView } from "./Answer";
 import { FeedbackBar } from "./Feedback";
 import { DraftPanel } from "./Draft";
@@ -68,6 +68,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversation, setConversation] = useState<string>();
+  const [steers, setSteers] = useState<Record<string, Steer>>({}); // SB-5502: in this browser only
   const [branches, setBranches] = useState<Branch<Turn>[]>([]); // SB-5206: kept in this browser only
   const [branchError, setBranchError] = useState<string>();
   const [about, setAbout] = useState<About[]>([]); // SB-3004
@@ -181,6 +182,19 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
   }
 
   // remember is false for a shared question asked from its link (SB-2405).
+  // steerDoc keeps or drops a document for the rest of a conversation (SB-5502), in this
+  // browser only; a later Keep of a dropped one undoes the Drop, and the other way round.
+  function steerDoc(conv: string, doc: string, kind: "keep" | "drop") {
+    const key = docKey(doc);
+    setSteers((all) => {
+      const cur = all[conv] ?? { keep: [], drop: [] };
+      const keep = cur.keep.filter((d) => d !== key);
+      const drop = cur.drop.filter((d) => d !== key);
+      (kind === "keep" ? keep : drop).push(key);
+      return { ...all, [conv]: { keep, drop } };
+    });
+  }
+
   async function run(q: string, inSpace: string, conv: string | undefined, remember = true, agent?: string, choice?: string) {
     setBusy(true);
     if (remember) setRecent(rememberQuestion(q));
@@ -194,7 +208,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH), true, choice);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH), true, choice, conv ? steers[conv] : undefined);
       setConversation(a.conversation);
       dropFile();
       settle({ id, question: q, answer: a });
@@ -348,7 +362,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
               {x.answer?.clarify && <ClarifyView clarify={x.answer.clarify} busy={busy} onChoose={(c) => { setTurns((ts) => ts.filter((y) => y.id !== x.id)); void run(x.question, branch && space ? space + BRANCH : space, conversation, false, undefined, c); }} />}
-              {answered(x) && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} />}
+              {answered(x) && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} onSteer={(d, k) => steerDoc(x.answer.conversation, d, k)} />}
               {answered(x) && <DepartmentsView answer={x.answer} fetcher={fetcher} />}
               {answered(x) && <HandoffView answer={x.answer} question={x.question} fetcher={fetcher} />}
               {answered(x) && <AnswerTools question={x.question} answer={x.answer} />}
@@ -581,7 +595,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
           <button type="submit" disabled={busy || question.trim() === ""}>
             {busy ? t("Asking…") : t("Ask")}
           </button>
-          <DownloadConversation turns={turns} />
+          <DownloadConversation turns={turns} steer={conversation ? steers[conversation] : undefined} />
           {branchError && <span role="alert">{branchError}</span>}
           <OtherBranches
             branches={branches}

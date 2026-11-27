@@ -1,4 +1,6 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { exclude, exclusions } from "./api";
+import type { Exclusions } from "./api";
 import type { Fetch } from "./api";
 import { tj, tn, t } from "./i18n";
 
@@ -167,6 +169,32 @@ export function MyData({ fetcher = fetch }: { fetcher?: Fetch }) {
         {t("Forget my questions")}
       </button>
       {status && <p role="status">{status}</p>}
+      <NotForMe fetcher={fetcher} />
+    </section>
+  );
+}
+
+// NotForMe is the person's Don't use this for me list (SB-5503), with Undo on each.
+export function NotForMe({ fetcher = fetch }: { fetcher?: Fetch }) {
+  const [list, setList] = useState<Exclusions>();
+  useEffect(() => {
+    exclusions(fetcher).then(setList, () => undefined);
+  }, [fetcher]);
+  if (!list || !Array.isArray(list.items) || (list.items.length === 0 && !list.hidden)) return null;
+  return (
+    <section aria-label={t("Not used for me")}>
+      <h3>{t("Not used for me")}</h3>
+      <ul>
+        {list.items.map((x) => (
+          <li key={x.document}>
+            {x.title || x.document}{" "}
+            <button type="button" className="link" onClick={() => void exclude(x.document, false, fetcher).then(setList)}>
+              {t("Undo")}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {list.hidden > 0 && <p className="meta">{tn(list.hidden, "{n} source you can't open now", "{n} sources you can't open now")}</p>}
     </section>
   );
 }

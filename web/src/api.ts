@@ -138,6 +138,7 @@ export interface AskResponse {
   // The highest label among its cites (SB-5405, LAW-32), and documents held as shared too widely (SB-5402).
   label?: string;
   held?: number;
+  memory?: string[]; // the ids of the memory lines it was given (SB-5504)
   notice: Notice;
   conversation: string;
   people?: PersonRef[];
@@ -335,10 +336,13 @@ export async function ask(
   consult?: boolean,
   clarify?: boolean,
   choice?: string,
+  steer?: Steer,
 ): Promise<AskResponse> {
   const body: Record<string, string | string[] | boolean | AskFile> = {
     question,
   };
+  if (steer && steer.keep.length > 0) body.keep = steer.keep; // SB-5502
+  if (steer && steer.drop.length > 0) body.drop = steer.drop;
   if (consult) body.consult = true; // SB-4501: with branch=true only
   if (clarify) body.clarify = true; // SB-4901: this caller shows one clarifying question
   if (choice) body.choice = choice;
@@ -1979,4 +1983,54 @@ export function audience(docs: string[], f: Fetch = fetch): Promise<Audience> {
 // confirmShared is the owner's Shared on purpose for a document shared too widely (SB-5402).
 export function confirmShared(cite: string, reason: string, f: Fetch = fetch): Promise<unknown> {
   return call<unknown>("/v1/documents/sharing/confirm", post({ cite, reason }), f);
+}
+
+// Steer is a conversation's kept and dropped documents (SB-5502), as KIND:ID: kept in the
+// browser with the conversation and sent with each ask.
+export interface Steer {
+  keep: string[];
+  drop: string[];
+}
+
+// ContextPanel is what an answer was built from (SB-5501), checked as the viewer now.
+export interface ContextPanel {
+  trace: string;
+  agent: string;
+  release: string;
+  skill?: string;
+  tier?: string;
+  sources: { cite: string; title?: string }[];
+  sources_hidden: number;
+  departments: { space: string; agent: string }[];
+  memory: MemoryLine[];
+  memory_gone?: number;
+  collection?: string;
+  documents: { cite: string; title?: string }[];
+  kept: { cite: string; title?: string }[];
+  dropped: { cite: string; title?: string }[];
+  documents_hidden: number;
+  earlier_kept: number;
+  earlier_dropped: number;
+  skipped: number;
+  held: number;
+}
+
+export function contextOf(trace: string, f: Fetch = fetch): Promise<ContextPanel> {
+  return call<ContextPanel>(`/v1/traces/${encodeURIComponent(trace)}/context`, {}, f);
+}
+
+// Don't use this for me (SB-5503): the caller's own exclusions.
+export interface Exclusions {
+  items: { document: string; title?: string; at: string }[];
+  hidden: number;
+}
+
+export function exclusions(f: Fetch = fetch): Promise<Exclusions> {
+  return call<Exclusions>("/v1/me/exclusions", {}, f);
+}
+
+export function exclude(document: string, on: boolean, f: Fetch = fetch): Promise<Exclusions> {
+  return on
+    ? call<Exclusions>("/v1/me/exclusions", post({ document }), f)
+    : call<Exclusions>(`/v1/me/exclusions?document=${encodeURIComponent(document)}`, { method: "DELETE" }, f);
 }

@@ -13,7 +13,7 @@ summary: "Steering an answer means rewording the question and hoping."
 | Manual | [`sb-ask(3)`](../../manual/sb-ask.3.md), [`sb-api(3)`](../../manual/sb-api.3.md) |
 | Laws | LAW-01 |
 | Depends on | SB-5501, SB-3004, SB-2405 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Steering an answer means rewording the question and hoping.
 
 ## Acceptance criteria
 
-- [ ] From the panel, **Keep** adds a document to every later ask in the conversation and **Drop** leaves it out
-- [ ] Both live with the conversation in the browser and go into its download; nothing is stored on the server
-- [ ] A kept document is checked as the person on each ask and stops being used if they lose access
+- [x] From the panel, **Keep** adds a document to every later ask in the conversation and **Drop** leaves it out
+- [x] Both live with the conversation in the browser and go into its download; nothing is stored on the server
+- [x] A kept document is checked as the person on each ask and stops being used if they lose access
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Web: keep and drop
-- [ ] Request carries kept and dropped documents
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Web: keep and drop
+- [x] Request carries kept and dropped documents
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-26: built. The ask takes `keep` and `drop` (KIND:ID, at most 20 each, `steerOfRequest`); `Agent.steered` drops the dropped documents and puts the kept ones' first passages first, each through the live check, retirement, hold and exclusions as the asker. The web keeps both per conversation in the browser (`App` `steers`), sends them with each ask and adds them to the conversation's download; the server keeps only the trace's ids.
 
 ## Definition of done
 

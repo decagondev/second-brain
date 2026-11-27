@@ -260,6 +260,12 @@ func (a Agent) retrieve(ctx context.Context, s tenancy.Scope, q string, sources 
 	if res.Context, err = a.dropHeld(ctx, s, res.Context); err != nil { // SB-5402: only narrows
 		return retrieve.Result{}, nil, err
 	}
+	if res.Context, err = a.dropExcluded(ctx, s, res.Context); err != nil { // SB-5503: the person's own
+		return retrieve.Result{}, nil, err
+	}
+	if res.Context, err = a.steered(ctx, s, res.Context); err != nil { // SB-5502: an ask's Keep and Drop, none for a search
+		return retrieve.Result{}, nil, err
+	}
 	if verifiedOf(ctx) { // SB-3602: only narrows, after every check
 		res.Context = a.onlyVerified(ctx, res.Context)
 	}

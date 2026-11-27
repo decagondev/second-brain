@@ -69,6 +69,9 @@ func (h Ask) Register(mux *http.ServeMux) {
 	if _, ok := h.Agent.(Passager); ok {
 		mux.HandleFunc("GET /v1/traces/{id}/passage", h.passage)
 	}
+	if _, ok := h.Agent.(Contexter); ok {
+		mux.HandleFunc("GET /v1/traces/{id}/context", h.contextPanel) // SB-5501
+	}
 	if h.Feedback != nil {
 		mux.HandleFunc("POST /v1/feedback", h.feedback)
 	}

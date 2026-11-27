@@ -133,6 +133,9 @@ func (d Drafts) Draft(ctx context.Context, s tenancy.Scope, req DraftRequest) (D
 	if res.Context, err = a.dropHeld(ctx, s, res.Context); err != nil { // SB-5402
 		return DraftResponse{}, err
 	}
+	if res.Context, err = a.dropExcluded(ctx, s, res.Context); err != nil { // SB-5503
+		return DraftResponse{}, err
+	}
 	chunks := []ports.Chunk{item}
 	for _, c := range retrieve.PerDocument(res.Context, MaxPerDocument) { // SB-2902
 		if c.Kind == kind && c.SourceID == id {

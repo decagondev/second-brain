@@ -38,6 +38,8 @@ POST /v1/ask
 | `consult` | bool | no | (SB-4501) **Ask each department**: with `?space=NAME&branch=true` in a space with teams, also consult the department agents of at most 6 of its teams the asker is a member of, each answering as the asker from its own space only (Ask each department and hand off, below). Without a branch to consult it is `EINVAL`, and so is `consult` inside a consultation (LAW-27) |
 | `clarify` | bool | no | (SB-4901) The caller can show one clarifying question: an ambiguous question gets `clarify` back instead of an answer (Clarifying questions, below). Without it, an ambiguous question is answered with the first choice, stated in `assumed` |
 | `choice` | string | no | (SB-4901) The asker's answer to the clarifying question: one of its `choices`, exactly, or `just answer`. A choice that isn't one the same question would be offered is `EINVAL` |
+| `keep` | list of `KIND:ID`, ≤ 20 | no | (SB-5502) The conversation's **kept** documents: their first passages are added to this ask, each checked as the asker now and left out when they can't open it, it is held, or they excluded it. The web keeps the list with the conversation in the browser and sends it with each ask; nothing is stored on the server but the trace's ids |
+| `drop` | list of `KIND:ID`, ≤ 20 | no | (SB-5502) The conversation's **dropped** documents: left out of this ask, kept or not |
 
 In a cell with spaces, the space to ask in is the query parameter `?space=NAME` (sb-api(3), Spaces), never a body field: `POST /v1/ask?space=finance`. Without it the ask is company-wide. In a department, `&branch=true` (SB-3903) also asks in each of its teams the asker is a member of, every check running once per space as the asker in it (sb-spaces(7), The tree); it works the same on `GET /v1/search`, and a space with no teams, or none the asker is in, is the space alone.
 
@@ -93,6 +95,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "clarify": { "kind": "term", "question": "Which \"ap\" do you mean?", "choices": ["AP as eng uses it: access point", "AP as finance uses it: accounts payable", "just answer"] },
   "assumed": "Assumed: AP as eng uses it: access point",
   "label": "internal",
+  "memory": ["mem_01JD…"],
   "table": { "cite": "docs:9a0c2b11@4", "sheet": "Invoices", "op": "sum", "column": "Amount", "where": [{ "column": "Customer", "equals": "acme-logistics" }], "value": 12840.5, "rows": 12, "range": "Invoices!C2:C41" }
 }
 ```
@@ -132,6 +135,7 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `clarify` | (SB-4901) The one clarifying question of an ambiguous ask made with `clarify: true`: `kind` (`term`, `space` or `period`), the `question`, and up to 4 `choices` then `just answer`. When it is there, nothing was composed: `answer.claims` is empty, `trace` is `""` and no conversation is kept. Omitted otherwise |
 | `assumed` | (SB-4901) For an ambiguous ask made without `clarify`, the line `Assumed: CHOICE`, the first choice it answered with; the chat apps and agent drafts show it at the top. Omitted otherwise |
 | `label` | (SB-5405) The highest label among the answer's cites (sb-citations(7), Labels travel; LAW-32). The web shows `confidential` and `restricted` above the answer and in its download and print view; a chat reply names them, and such an answer can't be shared into a channel. Omitted when no cite is labelled |
+| `memory` | (SB-5504) The ids of the asker's own memory lines this answer was given (Memory I control). The web shows each line under the answer with **Forget this**; the trace keeps only the ids. Omitted when none |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner, except in a team (SB-3906): when the answer has cites and none of their owners is an active user, it names up to three of the department's stewards, active now, each with `"steward": true` and no `cites` count |
 
 ### How the `ask` agent runs, exactly
@@ -555,6 +559,14 @@ The cell serves its web chat UI at `/` on the tenant's own hostname, from the re
 The UI renders a claim only as cited (with at least one chip) or as uncited, never as plain text (LAW-14). It targets WCAG 2.2 AA: everything works by keyboard, focus is always visible, the answer area is an `aria-live` region, and every chip has an accessible name that includes the cite.
 
 `cites[].url` is set when the source's connector can link to a version; it is omitted otherwise. `agent` names the agent that answered, and `dropped` counts the uncited claims a department agent left out, always 0 for `ask` (sb-agents(7), Department agents). In a cell with spaces, `cites[].spaces` names the spaces that hold the cited document and `cites[].label` its label (sb-spaces(7)); both are omitted in a cell without spaces (SB-1007).
+
+### The context of an answer (SB-5501 to SB-5504)
+
+**Context** beside each answer opens `GET /v1/traces/{id}/context`, for whoever may read the trace (LAW-26): the agent, release, skill and model tier, the sources the live check allowed (titles the viewer can open now; the rest counted as `sources_hidden`), the departments consulted, the collection or documents asked about, the kept and dropped documents, how many earlier questions the model read (`earlier_kept`) and left out (`earlier_dropped`), how many passages were skipped as suspect and documents held, and, for the asker only, the memory lines it was given (`memory`; a line forgotten since is counted, `memory_gone`). Each title is checked as the viewer now; nothing is named that they can't open.
+
+From the panel, **Keep** adds a document to every later ask of the conversation and **Drop** leaves it out (the ask's `keep` and `drop`). Both live with the conversation in the browser, go into its download, and are sent with each ask; a kept document is checked as the person every time and stops being used when they lose access.
+
+**Don't use this for me** (SB-5503) keeps a document out of everything made as the person: answers, searches, drafts, briefs, routines, research and MCP results, while others still see it. `POST /v1/me/exclusions` `{ "document": "KIND:ID" }` adds one (at most 200), `DELETE /v1/me/exclusions?document=KIND:ID` undoes it, and `GET /v1/me/exclusions` lists them on My data, `{ "items": [{ "document", "title", "at" }], "hidden" }`, titles only for documents the person can open now. The list is kept with the person's memory record (LAW-25), so it is in their export, erased with them and removed by **Forget my questions**; each change is audited by the document's id. A list that can't be read fails the ask rather than answer from a document the person turned off.
 
 ### Your own data (SB-3501, SB-3502)
 

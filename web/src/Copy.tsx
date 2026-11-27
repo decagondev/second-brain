@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { AskResponse, Cite } from "./api";
+import type { AskResponse, Cite, Steer } from "./api";
 import { citeName, isCited } from "./api";
 import { t, tn } from "./i18n";
 
@@ -77,22 +77,27 @@ export function answerMarkdown(question: string, answer: AskResponse): string {
 
 // conversationMarkdown is every answered turn, in order, each as Copy as Markdown makes it
 // (SB-3305).
-export function conversationMarkdown(turns: { question: string; answer?: AskResponse }[]): string {
-  return turns
+export function conversationMarkdown(turns: { question: string; answer?: AskResponse }[], steer?: Steer): string {
+  const out = turns
     .filter((x) => x.answer)
     .map((x) => answerMarkdown(x.question, x.answer!))
     .join("\n---\n\n");
+  // The conversation's Keep and Drop go with it (SB-5502).
+  const lines: string[] = [];
+  if (steer && steer.keep.length > 0) lines.push(md(t("Kept: {docs}", { docs: steer.keep.join(", ") })));
+  if (steer && steer.drop.length > 0) lines.push(md(t("Dropped: {docs}", { docs: steer.drop.join(", ") })));
+  return lines.length > 0 ? out + "\n---\n\n" + lines.join("\n\n") + "\n" : out;
 }
 
 // DownloadConversation saves the conversation as one Markdown file, made in this browser and
 // sent nowhere (SB-3305).
-export function DownloadConversation({ turns }: { turns: { question: string; answer?: AskResponse }[] }) {
+export function DownloadConversation({ turns, steer }: { turns: { question: string; answer?: AskResponse }[]; steer?: Steer }) {
   if (!turns.some((x) => x.answer)) return null;
   return (
     <button
       type="button"
       onClick={() => {
-        const url = URL.createObjectURL(new Blob([conversationMarkdown(turns)], { type: "text/markdown;charset=utf-8" }));
+        const url = URL.createObjectURL(new Blob([conversationMarkdown(turns, steer)], { type: "text/markdown;charset=utf-8" }));
         const a = document.createElement("a");
         a.href = url;
         a.download = "conversation.md";
