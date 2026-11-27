@@ -92,3 +92,21 @@ func (a Agent) atLimit(ctx context.Context, user string) context.Context {
 	}
 	return context.WithValue(ctx, economyKey{}, true)
 }
+
+type batchKey struct{}
+
+// withBatch marks ctx's model calls batchable when nobody waits for them (SB-5604): an
+// eval probe, or a brief, routine or rhythm step its caller named as such. A brief made
+// for a person waiting (catch-up) is named by its agent instead, so it never batches.
+func withBatch(ctx context.Context, probe bool) context.Context {
+	f, _ := ctx.Value(featureKey{}).(string)
+	if probe || f == FeatureBrief || f == FeatureRoutine || f == FeatureRhythm {
+		return context.WithValue(ctx, batchKey{}, true)
+	}
+	return ctx
+}
+
+func batchOf(ctx context.Context) bool {
+	b, _ := ctx.Value(batchKey{}).(bool)
+	return b
+}

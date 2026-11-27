@@ -13,7 +13,7 @@ summary: "Nobody can see what reuse, batching, caching and the economy tier are 
 | Manual | [`sb-api(3)`](../../manual/sb-api.3.md), [`sb-observability(7)`](../../manual/sb-observability.7.md) |
 | Laws | LAW-11 |
 | Depends on | SB-3505, SB-5006, SB-5603, SB-5604, SB-5605 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ Nobody can see what reuse, batching, caching and the economy tier are worth.
 
 ## Acceptance criteria
 
-- [ ] The cost statement and the admin's week gain a "saved" line: reuse, batching, caching and the economy tier, each in dollars this month
-- [ ] `GET /v1/admin/costs/saved` gives the same as JSON, worked out from traces against the full price
-- [ ] A month with no savings says so
+- [x] The cost statement and the admin's week gain a "saved" line: reuse, batching, caching and the economy tier, each in dollars this month
+- [x] `GET /v1/admin/costs/saved` gives the same as JSON, worked out from traces against the full price
+- [x] A month with no savings says so
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Savings from traces
-- [ ] Statement and admin's week lines
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Savings from traces
+- [x] Statement and admin's week lines
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. The gateway's `spent` saves into the answer's tally what caching, batching and the economy tier (`Gateway.MainPrice` on the small tier) took off, and a reused answer saves its earlier cost; `Trace.Saved` keeps it. `costs.AddSaved` sums a month's at `GET /v1/admin/costs/saved` (operators), on the cost statement as `saved`, and in the admin's week; a month with none says "Nothing saved this month." Tested in TestSavedAddsUp and TestKeepAnsweringThroughARunningCell.
 
 ## Definition of done
 

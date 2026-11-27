@@ -278,6 +278,9 @@ func (c *Cell) adminLines(ctx context.Context, m manifest.Tenant, from, to, now 
 			}
 		}
 	}
+	if sv, err := c.SavedIn(ctx, now.UTC().Format("2006-01")); err == nil { // SB-5606
+		out = append(out, ask.AdminLine{Section: "Spend", Text: sv.Line(), Link: "/v1/admin/costs/saved"})
+	}
 	sens, err := c.sensitiveLines(ctx) // SB-5407
 	if err != nil {
 		return nil, err

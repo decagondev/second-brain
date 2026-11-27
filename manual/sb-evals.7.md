@@ -85,6 +85,10 @@ The release gate runs every suite once per tier (`make evals` runs them for `rel
 
 With sb-cell(5) `model.fallback`, each case that passes on the main model runs again on the fallback alone. The fallback is gated for the release only when at least one case ran and every one passed; otherwise it is never used (sb-runtime(7), The fallback model; LAW-06).
 
+### Batched probes (SB-5604)
+
+The evals job's probes are batchable: where the provider has a batch API they run at the batch price, collected within the run (sb-runtime(7), Spending less).
+
 ### Routing policies (SB-5002)
 
 A space's `routing` (sb-space(5)) changes which tier its asks use, so the evals job runs that space's cases on the tiers its policy uses: an `economy` space's cases run on the small tier only (a research case still on main), a `frontier` space's on the main tier only, and a `balanced` space's on both, as above. A case that fails on the tier its policy uses holds the small tier like any other failing case, so a policy can't route answers to a tier its own cases fail on. Whatever the policy, a held small tier answers on main.

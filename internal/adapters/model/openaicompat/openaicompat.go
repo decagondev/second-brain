@@ -40,7 +40,10 @@ type response struct {
 		Message message `json:"message"`
 	} `json:"choices"`
 	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
+		PromptTokens        int `json:"prompt_tokens"`
+		PromptTokensDetails struct {
+			CachedTokens int `json:"cached_tokens"`
+		} `json:"prompt_tokens_details"`
 		CompletionTokens int `json:"completion_tokens"`
 	} `json:"usage"`
 }
@@ -94,7 +97,7 @@ func (c Client) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mod
 		return ports.ModelResponse{}, fmt.Errorf("%w: no choices in the response", ports.ErrModelDown)
 	}
 	return ports.ModelResponse{Text: out.Choices[0].Message.Content,
-		Usage: ports.Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens}}, nil
+		Usage: ports.Usage{Input: out.Usage.PromptTokens, Output: out.Usage.CompletionTokens, Cached: out.Usage.PromptTokensDetails.CachedTokens}}, nil // SB-5605: providers cache a long stable prefix themselves
 }
 
 // Do sends hr and decodes a 2xx JSON body into out. 429 is ErrRateLimited; any other

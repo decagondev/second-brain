@@ -51,6 +51,9 @@ type Config struct {
 		Price    struct {
 			InPerM  float64 `json:"in_per_m"`
 			OutPerM float64 `json:"out_per_m"`
+			// CachedInPerM is the price of input tokens the provider read from its prompt
+			// cache (SB-5605); 0 is in_per_m.
+			CachedInPerM float64 `json:"cached_in_per_m,omitempty"`
 		} `json:"price"`
 		// Local is a model on the cell's own machine (SB-1710): no key, and a price of 0.
 		Local bool `json:"local"`

@@ -12,6 +12,7 @@ import (
 type Tally struct {
 	mu     sync.Mutex
 	usd    float64
+	saved  map[string]float64 // what reuse, batching, caching and the economy tier saved (SB-5606)
 	parent *Tally
 }
 
@@ -38,6 +39,48 @@ func (t *Tally) Add(p Price, input, output int) {
 	t.usd += float64(input)*p.InputPerM/1e6 + float64(output)*p.OutputPerM/1e6
 	t.mu.Unlock()
 	t.parent.Add(p, input, output)
+}
+
+// AddUSD counts one call's dollars.
+func (t *Tally) AddUSD(usd float64) {
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	t.usd += usd
+	t.mu.Unlock()
+	t.parent.AddUSD(usd)
+}
+
+// Save counts dollars a call didn't cost, by why (reuse, batch, cache, tier).
+func (t *Tally) Save(why string, usd float64) {
+	if t == nil || usd <= 0 {
+		return
+	}
+	t.mu.Lock()
+	if t.saved == nil {
+		t.saved = map[string]float64{}
+	}
+	t.saved[why] += usd
+	t.mu.Unlock()
+	t.parent.Save(why, usd)
+}
+
+// Saved is what the calls saved so far, by why; nil for nothing.
+func (t *Tally) Saved() map[string]float64 {
+	if t == nil {
+		return nil
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if len(t.saved) == 0 {
+		return nil
+	}
+	out := map[string]float64{}
+	for k, v := range t.saved {
+		out[k] = v
+	}
+	return out
 }
 
 // USD is what the calls cost so far.

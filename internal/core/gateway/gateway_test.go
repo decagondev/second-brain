@@ -31,6 +31,7 @@ type model struct {
 	limited int
 	err     error
 	got     []ports.ModelRequest
+	usage   ports.Usage // the usage to report; zero is 10 in, 3 out
 }
 
 func (m *model) Complete(_ context.Context, r ports.ModelRequest) (ports.ModelResponse, error) {
@@ -42,6 +43,9 @@ func (m *model) Complete(_ context.Context, r ports.ModelRequest) (ports.ModelRe
 	}
 	if m.err != nil {
 		return ports.ModelResponse{}, m.err
+	}
+	if m.usage != (ports.Usage{}) {
+		return ports.ModelResponse{Text: "ok", Usage: m.usage}, nil
 	}
 	return ports.ModelResponse{Text: "ok", Usage: ports.Usage{Input: 10, Output: 3}}, nil
 }

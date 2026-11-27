@@ -45,7 +45,16 @@ type Gateway struct {
 	OnSecret func(ctx context.Context)
 	// Budget, when set, is checked before every call and metered after (SB-609).
 	Budget *budget.Guard
+	// MainPrice is the main tier's price, for the small tier's gateway: what a call on it
+	// saved (SB-5606). nil saves nothing.
+	MainPrice *budget.Price
+	// BatchPoll is how long to wait between looks at a batch, 0 for 2s, and BatchWait the
+	// longest a batched call waits before it runs as a normal one, 0 for 10 minutes (SB-5604).
+	BatchPoll, BatchWait time.Duration
 }
+
+// BatchRate is what a batched call costs against its list price (SB-5604).
+const BatchRate = 0.5
 
 // ErrBudget is a call refused by the budget or rate limit (EBUDGET).
 var ErrBudget = budget.ErrBudget
@@ -86,14 +95,16 @@ func (g Gateway) Complete(ctx context.Context, req ports.ModelRequest) (ports.Mo
 	if sleep == nil {
 		sleep = sleepCtx
 	}
+	if req.Batch { // SB-5604: nobody is waiting
+		if resp, ok := g.batched(ctx, req); ok {
+			g.spent(ctx, req, resp.Usage, true)
+			return resp, nil
+		}
+	}
 	for attempt := 0; ; attempt++ {
 		resp, err := g.Model.Complete(ctx, req)
 		if err == nil {
-			g.meter(resp.Usage)
-			if g.Budget != nil {
-				_ = g.Budget.RecordFor(ctx, req.Space, req.User, resp.Usage.Input, resp.Usage.Output) // SB-5003
-				budget.TallyOf(ctx).Add(g.Budget.Price, resp.Usage.Input, resp.Usage.Output)          // SB-4201
-			}
+			g.spent(ctx, req, resp.Usage, false)
 			return resp, nil
 		}
 		if !errors.Is(err, ports.ErrRateLimited) || attempt >= retries {
@@ -149,4 +160,71 @@ func sleepCtx(ctx context.Context, d time.Duration) error {
 	case <-t.C:
 		return nil
 	}
+}
+
+// spent meters one call: the tokens, and its dollars at the cached and batch prices, with
+// what those and the economy tier saved against the list price (SB-5604 to SB-5606).
+func (g Gateway) spent(ctx context.Context, req ports.ModelRequest, u ports.Usage, batched bool) {
+	g.meter(u)
+	if g.Budget == nil {
+		return
+	}
+	p := g.Budget.Price
+	list := p.Cost(u.Input, 0, u.Output)
+	paid := p.Cost(u.Input, u.Cached, u.Output)
+	t := budget.TallyOf(ctx)
+	t.Save("cache", list-paid)
+	if batched {
+		t.Save("batch", paid*(1-BatchRate))
+		paid *= BatchRate
+	}
+	if g.MainPrice != nil {
+		t.Save("tier", g.MainPrice.Cost(u.Input, 0, u.Output)-list)
+	}
+	_ = g.Budget.RecordCost(ctx, req.Space, req.User, paid) // SB-5003
+	t.AddUSD(paid)                                          // SB-4201
+}
+
+// batched sends req through the adapter's batch API and waits for it, looking every
+// BatchPoll until ctx ends; a failed batch is tried once more, then false runs it as a
+// normal call. An adapter without one is false at once.
+func (g Gateway) batched(ctx context.Context, req ports.ModelRequest) (ports.ModelResponse, bool) {
+	b, ok := g.Model.(ports.Batcher)
+	if !ok {
+		return ports.ModelResponse{}, false
+	}
+	poll := g.BatchPoll
+	if poll == 0 {
+		poll = 2 * time.Second
+	}
+	sleep := g.Sleep
+	if sleep == nil {
+		sleep = sleepCtx
+	}
+	wait := g.BatchWait
+	if wait == 0 {
+		wait = 10 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(ctx, wait)
+	defer cancel()
+	for try := 0; try < 2; try++ {
+		id, err := b.SubmitBatch(ctx, req)
+		if err != nil {
+			continue
+		}
+		for {
+			resp, done, err := b.CollectBatch(ctx, id)
+			if done && err == nil {
+				g.count("sb_model_batched_total", "Model calls sent through a batch API (SB-5604).", map[string]string{"tenant": g.Tenant, "provider": g.Provider}, 1)
+				return resp, true
+			}
+			if done || err != nil {
+				break
+			}
+			if sleep(ctx, poll) != nil {
+				return ports.ModelResponse{}, false
+			}
+		}
+	}
+	return ports.ModelResponse{}, false
 }

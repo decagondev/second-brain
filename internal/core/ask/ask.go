@@ -309,6 +309,9 @@ type Trace struct {
 	Documents, Kept, Dropped []string `json:",omitempty"`
 	// Read are the documents the answer was composed from, as KIND:ID@VERSION (SB-5603).
 	Read []string `json:",omitempty"`
+	// Saved is what reuse, batching, caching and the economy tier took off this answer's
+	// cost, in dollars by why (SB-5606).
+	Saved map[string]float64 `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -543,6 +546,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return *early, err
 	}
 	ctx = withChoice(ctx, choice)
+	ctx = withBatch(ctx, probe)                                                                                   // SB-5604: nobody waits for it
 	feature := featureFor(ctx, req, probe)                                                                        // SB-5001
 	tier := a.tierFor(WithFeature(a.atLimit(ctx, s.User()), feature), s.Space(), req, q, len(docs), len(earlier)) // SB-4405, SB-5002, SB-5003
 	ctx, used, keep, drop, err := a.steerAndRemember(ctx, s, req, probe)                                          // SB-4303, SB-5502
@@ -609,7 +613,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return resp, nil
 	}
 	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx),
-		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop, Read: readSet(res.Context)} // SB-5501, SB-5603
+		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop, Read: readSet(res.Context), Saved: tally.Saved()} // SB-5501, SB-5603, SB-5606
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}
@@ -697,7 +701,10 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 		msgs = append(msgs, ports.Message{Role: "assistant", Content: "(earlier answer withheld; sources are checked again)"})
 	}
 	msgs = append(msgs, ports.Message{Role: "user", Content: memoryData(memoryOf(ctx)) + glossaryData(termsOf(ctx)) + actx.Data() + noteData(ctx) + "\n" + lead + q + choiceLine(ctx)})
-	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx) + skillLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx)})
+	// SB-5605: the system prompt is the stable part (the prompt, language, length and skill),
+	// cached where the provider can; the asker's material is only ever in the messages.
+	out, err := a.Model.Complete(ctx, ports.ModelRequest{System: p.Text + LanguageLine(languageOf(ctx)) + shortLine(ctx) + skillLine(ctx), Messages: msgs, JSON: true, User: a.user(ctx), Space: spaceOf(ctx),
+		CacheSystem: true, Batch: batchOf(ctx)})
 	if err != nil {
 		if errors.Is(err, budget.ErrBudget) {
 			return nil, fmt.Errorf("%w: %v", ErrBudget, err)

@@ -13,7 +13,7 @@ summary: "The stable part of every prompt is sent and billed in full on every ca
 | Manual | [`sb-runtime(7)`](../../manual/sb-runtime.7.md), [`sb-observability(7)`](../../manual/sb-observability.7.md), [`sb-cell(5)`](../../manual/sb-cell.5.md) |
 | Laws | LAW-02, LAW-07 |
 | Depends on | SB-305 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ The stable part of every prompt is sent and billed in full on every call.
 
 ## Acceptance criteria
 
-- [ ] Prompts put the stable part first (system prompt, agent and skill instructions, glossary); adapters mark it cacheable where the provider supports it
-- [ ] Traces record cached and uncached tokens, and costs use the provider's cached price
-- [ ] No passage, memory, file or question is ever in the cached prefix
+- [x] Prompts put the stable part first (system prompt, agent and skill instructions, glossary); adapters mark it cacheable where the provider supports it
+- [x] Traces record cached and uncached tokens, and costs use the provider's cached price
+- [x] No passage, memory, file or question is ever in the cached prefix
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Prompt order and cache marks
-- [ ] Cached tokens in traces and costs
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Prompt order and cache marks
+- [x] Cached tokens in traces and costs
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. The answer's system prompt is its stable part and carries `ModelRequest.CacheSystem`; nothing the asker sent is in it (TestStablePrefixAndBatching). Anthropic's adapter sends it as a block with `cache_control` and reads `cache_read_input_tokens`, the OpenAI-compatible adapter reads `prompt_tokens_details.cached_tokens`, into `Usage.Cached`; `budget.Price.Cost` charges them at sb-cell(5) `model.price.cached_in_per_m` through `Guard.RecordCost` and the tally.
 
 ## Definition of done
 

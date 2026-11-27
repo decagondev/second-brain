@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/answer"
+	"example.com/second-brain/internal/core/budget"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/tenancy"
 )
@@ -97,17 +98,25 @@ func readSet(chunks []ports.Chunk) []string {
 // read has changed and the asker can open all of it now (LAW-26). Its cites are dressed
 // again for now (owners, links, review marks).
 func (a Agent) reusedFrom(ctx context.Context, key string, chunks []ports.Chunk) ([]answer.Claim, string, bool) {
+	claims, at, cost, ok := a.reusedCost(ctx, key, chunks)
+	if ok {
+		budget.TallyOf(ctx).Save("reuse", cost) // SB-5606: what the earlier answer cost
+	}
+	return claims, at, ok
+}
+
+func (a Agent) reusedCost(ctx context.Context, key string, chunks []ports.Chunk) ([]answer.Claim, string, float64, bool) {
 	if key == "" || len(chunks) == 0 {
-		return nil, "", false
+		return nil, "", 0, false
 	}
 	e, ok, err := a.Reuse.Reuse(ctx, a.Tenant, key)
 	if err != nil || !ok || a.Now().Sub(e.At) > ReuseFor {
-		return nil, "", false
+		return nil, "", 0, false
 	}
 	t, found, err := a.Store.GetTrace(ctx, a.Tenant, e.Trace)
 	if err != nil || !found || t.Response.Notice != nil || t.Response.Table != nil || len(t.Response.Answer.Claims) == 0 ||
 		strings.Join(t.Read, ",") != strings.Join(readSet(chunks), ",") {
-		return nil, "", false
+		return nil, "", 0, false
 	}
 	byCite := map[string]ports.Chunk{}
 	for _, c := range chunks {
@@ -118,13 +127,13 @@ func (a Agent) reusedFrom(ctx context.Context, key string, chunks []ports.Chunk)
 		c.Cites = append([]answer.Cite(nil), c.Cites...)
 		for _, ci := range c.Cites {
 			if _, ok := byCite[ci.Cite]; !ok {
-				return nil, "", false
+				return nil, "", 0, false
 			}
 		}
 		claims[i] = c
 	}
 	a.decorate(ctx, claims, byCite)
-	return claims, t.At.UTC().Format("2006-01-02"), true
+	return claims, t.At.UTC().Format("2006-01-02"), t.CostUSD, true
 }
 
 // keepForReuse makes a fresh answer reusable: one whose claims are all cited, with no notice.

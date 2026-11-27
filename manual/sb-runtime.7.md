@@ -116,6 +116,14 @@ Every call of the main tier goes through the fallback gateway. When the main pro
 
 When no gated model can answer, the ask returns passages only (sb-ask(3), When the model is down), and the notify job leaves briefs, updates, routines, research, check-ins, rhythms and drafts from work events for a later tick: none is marked done, so each runs when a model answers again. The health report's `model` says `{ "gated", "switched", "until"?, "down" }`, and the notice banner says the model is unavailable while it is down.
 
+### Spending less (SB-5604 to SB-5606)
+
+**Batching.** An eval probe, and a brief, routine or rhythm step its caller names as such, is batchable: nobody is waiting for it. The gateway sends a batchable call through the provider's batch API when the adapter has one (Anthropic's Message Batches today), looks at it every 2 seconds, and takes the result at half the price (`BatchRate`). It waits at most 10 minutes; a batch that fails is tried once more, and one that fails again or doesn't end in time runs as a normal call. An ask, a search, a catch-up or anything else a person waits for never batches, and a provider without a batch API runs every call as before. Batches are collected within the run that sends them, not on a later tick, so a run that batches takes longer.
+
+**Prompt caching.** Each answer's system prompt is its stable part: the bundled prompt, the language, length and skill lines. Nothing the asker sent, no passage, memory line, file or question, is ever in it; those are in the messages. The gateway asks the adapter to mark the system prompt cacheable: Anthropic's adapter sends it as a block with `cache_control`, and OpenAI-compatible providers cache a long prefix themselves. Each provider's cached input tokens come back in the usage (`cached`), and spend, budgets and personal limits charge them at `model.price.cached_in_per_m` (sb-cell(5)).
+
+**What it saved.** Each answer's trace keeps what reuse (the earlier answer's cost), batching, caching and the economy tier (against the main model's price) took off its cost. `GET /v1/admin/costs/saved?month=2027-03` (this month by default) adds them up for operators, the cost statement carries them as `saved`, and the admin's week has one line; a month with none says "Nothing saved this month." The statement's token lines stay at list price.
+
 ## LAWS
 
 [LAW-02](sb-laws.7.md#law-02): every resource and role is in the cell's own project. [LAW-06](sb-laws.7.md#law-06): only admitted, attested images run. [LAW-18](sb-laws.7.md#law-18): the database key is in the cell's key ring.

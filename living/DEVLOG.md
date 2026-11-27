@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 S55.2: Spend less
+
+**Wave/slice:** W55 / S55.2 (SB-5604 to SB-5606) · **Status:** Done
+
+**What:** Calls nobody waits for (eval probes, scheduled briefs, routines and rhythm steps) go through the provider's batch API at half price where the adapter has one. The stable part of every prompt is marked cacheable, cached tokens come back in the usage and are charged at the cached price. Each answer keeps what reuse, batching, caching and the economy tier saved, and operators see the month's total at `GET /v1/admin/costs/saved`, on the cost statement and in the admin's week.
+
+**Why this way:** Batching and caching live in the gateway and the adapters, so every caller gets them and none can batch an ask by mistake: the batch flag is set only from the feature its caller named. The system prompt was already the stable part, so caching needed no prompt to move. Savings ride on the tally each answer already carries, so they are worked out at the call against the real prices, and the month's figure is a sum of traces.
+
+**Learned:** A batch can take hours; waiting for it within the run, bounded at ten minutes and then running the call normally, keeps the notify job's shape. Collecting on a later tick would need each drafting part to resume from a stored batch, which is follow-up work, as is OpenAI's file-based batch API.
+
+**Laws:** LAW-02, LAW-05, LAW-07, LAW-11, LAW-16. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 S55.1: Keep answering
 
 **Wave/slice:** W55 / S55.1 (SB-5601 to SB-5603) · **Status:** Done

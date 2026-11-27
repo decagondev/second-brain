@@ -11,6 +11,7 @@ All notable changes, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ### Added
 
+- Spend less: eval probes, scheduled briefs, routines and rhythm steps go through Anthropic's batch API at half price; the system prompt is marked cacheable and cached tokens are charged at sb-cell(5) `model.price.cached_in_per_m`; what reuse, batching, caching and the economy tier saved is at `GET /v1/admin/costs/saved`, on the cost statement and in the admin's week (SB-5604 to SB-5606)
 - Keep answering: sb-cell(5) `model.fallback`, used only while the release's eval gate passed it and named on the answer (`fallback`); with no gated model an ask shows the passages you can open (`notice: model_unavailable`, `passages`), drafting waits, and the health report's `model` and the banner say so; the same question within 7 days reuses the earlier answer, checked now, with **Ask fresh** (`reused`, `fresh`) (SB-5601 to SB-5603)
 - Ask why: **Why not this document?** (`POST /v1/traces/{id}/why-not`); the stewards' retrieval view of a reported or unhelpful answer (`GET /v1/spaces/NAME/review/retrieval`); memory over MCP, a read-only `memory://me` resource and `memory_propose`, confirmed in the web app (SB-5505 to SB-5507)
 - See the context: **Context** under each answer (`GET /v1/traces/{id}/context`); **Keep** and **Drop** for the rest of a conversation (the ask's `keep` and `drop`); **Don't use this for me** for everything made as you (`/v1/me/exclusions`, on My data); the memory lines an answer used, with **Forget this** (`memory`) (SB-5501 to SB-5504)

@@ -452,10 +452,24 @@ type ModelRequest struct {
 	JSON      bool
 	User      string // who the call is for (budget and rate limit); never sent to a provider
 	Space     string // the space it runs in, spc_NAME or "" (SB-4105); never sent to a provider
+	// CacheSystem marks System, the stable prefix, cacheable where the provider can (SB-5605):
+	// only ever the system prompt, never what the asker sent.
+	CacheSystem bool
+	// Batch says nobody is waiting: the gateway may send it through the provider's batch API
+	// (SB-5604).
+	Batch bool
 }
 
-// Usage is the token count of one completion.
-type Usage struct{ Input, Output int }
+// Usage is the token count of one completion: Input counts every input token, Cached those
+// of them the provider read from its prompt cache (SB-5605).
+type Usage struct{ Input, Output, Cached int }
+
+// Batcher is an adapter with a batch API (SB-5604): a request submitted now and collected
+// when done, at the batch price.
+type Batcher interface {
+	SubmitBatch(ctx context.Context, req ModelRequest) (id string, err error)
+	CollectBatch(ctx context.Context, id string) (resp ModelResponse, done bool, err error)
+}
 
 // ModelResponse is the model's text and usage.
 type ModelResponse struct {

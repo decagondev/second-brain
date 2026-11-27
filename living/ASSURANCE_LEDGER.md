@@ -237,6 +237,8 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-27 | LAW-06 | Tested (extended) | SB-5601: a fallback model answers only while the release's eval gate passed it, and says so (TestLAW06_OnlyAGatedFallbackAnswers, TestSelfUngatedFallbackIsCaught, TestKeepAnsweringThroughARunningCell) |
 | 2026-11-27 | LAW-26 | Tested (extended) | SB-5603: a reused answer is checked again as the new asker, and a changed document answers fresh (TestAnsweredBeforeCheckedNow) |
 | 2026-11-27 | LAW-14 | Tested (extended) | SB-5602: with no model, an ask returns passages and no claim (TestModelDownIsUnavailable, TestKeepAnsweringThroughARunningCell) |
+| 2026-11-27 | LAW-07 | Tested (extended) | SB-5605: the cached system prompt holds no question, passage or memory and is the same across asks (TestStablePrefixAndBatching) |
+| 2026-11-27 | LAW-11 | Tested (extended) | SB-5604 to SB-5606: batched and cached calls are metered at what they cost, and what they saved adds up from the traces (TestBatchCacheAndTierSavings, TestSavedAddsUp) |
 | 2026-11-25 | LAW-31 | Tested | SB-5303: a lent draft shows exactly to readers who can open every cite, and a loan answered once never runs again (TestLAW31_LentAccessLastsOneRun, TestSelfLentGateIsCaught, TestBorrowAccessThroughARunningCell) |
 | 2026-11-25 | LAW-29 | Tested (extended) | SB-5301: a work event only drafts, once per document, as the trigger's approver (TestWorkEventsDraftOnceAndBatch) |
 | 2026-11-25 | LAW-13 | Tested (extended) | SB-5205: a chunk's page comes from the source's own page offsets, so a rebuild gives the same pages (TestPagesOfPDFsAndDecks) |

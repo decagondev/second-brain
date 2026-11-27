@@ -59,7 +59,7 @@ summary: Epics, waves, slices and tickets.
 | W52 Agents That Act Carefully | 6 | 0 | 0 | Planned 2026-11-25 with the user (E53), built: start on a work event, try a trigger first, borrow access for one run, draft the next action, managed MCP access, meeting transcripts from Drive ([21-guard-write-act.md](../docs/21-guard-write-act.md)) |
 | W53 Know Who Can See | 7 | 0 | 0 | Planned 2026-11-26 with the user (E54), built: shared too widely, hold until the owner confirms, sharing widened, who can see this, labels travel, how far each agent reaches, sensitive map ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W54 See and Steer the Context | 7 | 0 | 0 | Planned 2026-11-26 with the user (E55), built: context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
-| W55 Keep Answering, Spend Less | 3 | 0 | 3 | Planned 2026-11-26 with the user (E56), S55.1 built: fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
+| W55 Keep Answering, Spend Less | 6 | 0 | 0 | Planned 2026-11-26 with the user (E56), built: fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -983,6 +983,6 @@ flowchart LR
 | [SB-5601](E56-keep-answering-spend-less/SB-5601-gated-fallback.md) | S55.1 | E56 | Fall back to a gated model | Done |
 | [SB-5602](E56-keep-answering-spend-less/SB-5602-passages-when-down.md) | S55.1 | E56 | Passages when the model is down | Done |
 | [SB-5603](E56-keep-answering-spend-less/SB-5603-answer-reuse.md) | S55.1 | E56 | Answered before, checked now | Done |
-| [SB-5604](E56-keep-answering-spend-less/SB-5604-batch-what-can-wait.md) | S55.2 | E56 | Batch what can wait | Open |
-| [SB-5605](E56-keep-answering-spend-less/SB-5605-prompt-caching.md) | S55.2 | E56 | Cache the stable part | Open |
-| [SB-5606](E56-keep-answering-spend-less/SB-5606-what-it-saved.md) | S55.2 | E56 | What it saved | Open |
+| [SB-5604](E56-keep-answering-spend-less/SB-5604-batch-what-can-wait.md) | S55.2 | E56 | Batch what can wait | Done |
+| [SB-5605](E56-keep-answering-spend-less/SB-5605-prompt-caching.md) | S55.2 | E56 | Cache the stable part | Done |
+| [SB-5606](E56-keep-answering-spend-less/SB-5606-what-it-saved.md) | S55.2 | E56 | What it saved | Done |

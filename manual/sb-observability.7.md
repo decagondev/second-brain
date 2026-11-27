@@ -89,6 +89,10 @@ The admin's week (SB-5006) has a **Sensitive map** section: one line for each sp
 
 The health report's `model` is the main tier's fallback state: whether the fallback is gated, whether calls are switched to it and until when, and whether the last call found no model to answer (`down`). While it is down, the notice banner says so and answers show passages only.
 
+### What it saved (SB-5604 to SB-5606)
+
+`sb_model_batched_total{tenant, provider}` counts calls a batch API answered. Savings by why (reuse, batching, caching, the economy tier) are in each trace and summed at `GET /v1/admin/costs/saved` and in the admin's week (sb-runtime(7), Spending less).
+
 ### Telemetry labels
 
 Metric label values are ids, codes and names only: they must match `[A-Za-z0-9_.:@/-]` and be at most 128 characters. A value that doesn't match is **replaced** with `invalid` and counted in `sb_telemetry_rejected_total`, so a bug that tries to put text into a label can't leak it (LAW-07).

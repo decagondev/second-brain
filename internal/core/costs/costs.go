@@ -51,6 +51,8 @@ type Statement struct {
 	// with Forecast "not enough data yet" before 3 days of it, nil for a past month.
 	ForecastUSD *float64 `json:"forecast_usd"`
 	Forecast    string   `json:"forecast,omitempty"`
+	// Saved is what the month's answers didn't cost (SB-5606), when the cell can say.
+	Saved *Saved `json:"saved,omitempty"`
 }
 
 // ParseMonth reads "2027-03" and returns its UTC bounds.
@@ -160,4 +162,45 @@ func (s Statement) CSV() ([]byte, error) {
 	}
 	w.Flush()
 	return b.Bytes(), w.Error()
+}
+
+// Saved is what reuse, batching, prompt caching and the economy tier took off a month's
+// spend, in dollars, worked out from its traces against the list price (SB-5606).
+type Saved struct {
+	Month    string  `json:"month"`
+	ReuseUSD float64 `json:"reuse_usd"`
+	BatchUSD float64 `json:"batch_usd"`
+	CacheUSD float64 `json:"cache_usd"`
+	TierUSD  float64 `json:"tier_usd"`
+	TotalUSD float64 `json:"total_usd"`
+	// Note is "Nothing saved this month." when there was nothing.
+	Note string `json:"note,omitempty"`
+}
+
+// NothingSaved is a month's Note with no savings.
+const NothingSaved = "Nothing saved this month."
+
+// AddSaved sums what each answer saved, by why, into a month's Saved.
+func AddSaved(month string, each []map[string]float64) Saved {
+	s := Saved{Month: month}
+	for _, m := range each {
+		s.ReuseUSD += m["reuse"]
+		s.BatchUSD += m["batch"]
+		s.CacheUSD += m["cache"]
+		s.TierUSD += m["tier"]
+	}
+	s.ReuseUSD, s.BatchUSD, s.CacheUSD, s.TierUSD = cents(s.ReuseUSD), cents(s.BatchUSD), cents(s.CacheUSD), cents(s.TierUSD)
+	s.TotalUSD = cents(s.ReuseUSD + s.BatchUSD + s.CacheUSD + s.TierUSD)
+	if s.TotalUSD == 0 {
+		s.Note = NothingSaved
+	}
+	return s
+}
+
+// Line is the saved line as the admin's week and the statement say it.
+func (s Saved) Line() string {
+	if s.TotalUSD == 0 {
+		return NothingSaved
+	}
+	return fmt.Sprintf("Saved $%.2f this month: reuse $%.2f, batching $%.2f, caching $%.2f, economy tier $%.2f", s.TotalUSD, s.ReuseUSD, s.BatchUSD, s.CacheUSD, s.TierUSD)
 }

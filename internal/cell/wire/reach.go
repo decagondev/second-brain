@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
+	"example.com/second-brain/internal/core/costs"
 	"example.com/second-brain/internal/core/notify"
 	"example.com/second-brain/internal/core/tenancy"
 )
@@ -215,4 +216,23 @@ func (c *Cell) sensitiveLines(ctx context.Context) ([]ask.AdminLine, error) {
 		out = append(out, ask.AdminLine{Section: "Sensitive map", Text: fmt.Sprintf("%s: %d shared too widely, %d held, %d with personal data", s.Space, s.Wide, s.Held, s.Personal), Link: "/v1/admin/sensitive"})
 	}
 	return out, nil
+}
+
+// SavedIn is what month's answers saved (SB-5606), from their traces.
+func (c *Cell) SavedIn(ctx context.Context, month string) (costs.Saved, error) {
+	from, to, err := costs.ParseMonth(month)
+	if err != nil {
+		return costs.Saved{}, err
+	}
+	ts, err := c.Report.Traces(ctx, c.Config.Tenant, from, to)
+	if err != nil {
+		return costs.Saved{}, err
+	}
+	var each []map[string]float64
+	for _, t := range ts {
+		if len(t.Saved) > 0 {
+			each = append(each, t.Saved)
+		}
+	}
+	return costs.AddSaved(month, each), nil
 }

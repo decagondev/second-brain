@@ -81,6 +81,8 @@ type Admin struct {
 	// ModelDown says no gated model could answer the last call (SB-5602); the notice
 	// banner then says so. nil is never.
 	ModelDown func() bool
+	// Saved is what a month's answers saved (SB-5606); nil leaves it out.
+	Saved func(ctx context.Context, month string) (costs.Saved, error)
 	// AgentKilled and EvalHeld make the agent registry (SB-4004); a hold that can't be
 	// read is an error, never no hold.
 	AgentKilled func(agent string) bool
@@ -157,6 +159,7 @@ func (h Admin) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/admin/usage", h.readers(h.usage))
 	mux.HandleFunc("GET /v1/admin/costs", h.readers(h.costs))
 	mux.HandleFunc("GET /v1/admin/costs/spaces", h.readers(h.spaceCosts))
+	mux.HandleFunc("GET /v1/admin/costs/saved", h.readers(h.saved)) // SB-5606
 	mux.HandleFunc("GET /v1/admin/guardrails", h.guard(h.guardrails))
 	mux.HandleFunc("GET /v1/admin/guardrails/events", h.guard(h.guardrailEvents)) // SB-5103
 	mux.HandleFunc("POST /v1/admin/subjects/erase", h.guard(h.erase))
@@ -236,6 +239,11 @@ func (h Admin) costs(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := range st.Lines { // SB-4405: each line's tier
 		st.Lines[i].Tier = h.Tiers[st.Lines[i].Provider+"/"+st.Lines[i].Model]
+	}
+	if h.Saved != nil { // SB-5606
+		if sv, err := h.Saved(r.Context(), month); err == nil {
+			st.Saved = &sv
+		}
 	}
 	if r.URL.Query().Get("format") == "csv" {
 		b, err := st.CSV()
@@ -756,4 +764,30 @@ func (h Admin) hold(on bool) func(w http.ResponseWriter, r *http.Request, s tena
 		}
 		h.rollouts(w, r, s)
 	}
+}
+
+// saved is what a month's answers saved (SB-5606): month=2027-03, or this month.
+func (h Admin) saved(w http.ResponseWriter, r *http.Request) {
+	month := r.URL.Query().Get("month")
+	if month == "" {
+		now := time.Now
+		if h.Now != nil {
+			now = h.Now
+		}
+		month = now().UTC().Format("2006-01")
+	}
+	if _, _, err := costs.ParseMonth(month); err != nil {
+		h.fail(w, errs.New(errs.EINVAL, "month must be like 2027-03"))
+		return
+	}
+	if h.Saved == nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Savings can't be worked out in this cell."))
+		return
+	}
+	sv, err := h.Saved(r.Context(), month)
+	if err != nil {
+		h.fail(w, errs.New(errs.EUNAVAIL, "Savings can't be worked out right now."))
+		return
+	}
+	h.ok(w, sv)
 }

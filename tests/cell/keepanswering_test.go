@@ -109,4 +109,24 @@ agents: [ask]
 	if a := askIt(`{"question":"When does the quokka dock open?","fresh":true}`); a.Reused != "" {
 		t.Fatalf("ask fresh reused: %+v", a)
 	}
+
+	// SB-5606: what it saved, for operators; the local models cost nothing, so nothing.
+	if code, out := r.do(t, "GET", "/v1/admin/costs/saved", ""); code != http.StatusForbidden {
+		t.Fatalf("saved for a non-operator: %d %s", code, out)
+	}
+	sam := r.idp.User
+	if code, body := r.do(t, "POST", "/scim/v2/Groups", `{"displayName":"sb-operators","members":[{"value":"`+sam+`"}]}`,
+		"Authorization", "Bearer scim-token", "Content-Type", "application/scim+json"); code != http.StatusCreated {
+		t.Fatalf("SCIM group: %d %s", code, body)
+	}
+	if code, _ := r.do(t, "GET", "/login", ""); code != http.StatusNotFound {
+		t.Fatalf("sign-in: %d", code)
+	}
+	month := time.Now().UTC().Format("2006-01")
+	if code, out := r.do(t, "GET", "/v1/admin/costs/saved", ""); code != 200 || !strings.Contains(out, `"month":"`+month+`"`) || !strings.Contains(out, "Nothing saved this month.") {
+		t.Fatalf("saved: %d %s", code, out)
+	}
+	if code, _ := r.do(t, "GET", "/v1/admin/costs/saved?month=2026-13", ""); code != http.StatusBadRequest {
+		t.Fatalf("a bad month: %d", code)
+	}
 }

@@ -15,7 +15,20 @@ import (
 const PerUserPerMinute = 30
 
 // Price is per million tokens, from the release's price table.
-type Price struct{ InputPerM, OutputPerM float64 }
+type Price struct{ InputPerM, OutputPerM, CachedPerM float64 }
+
+// Cost is one call's dollars: cached input tokens at CachedPerM (InputPerM when unset), the
+// rest at InputPerM, output at OutputPerM (SB-5605).
+func (p Price) Cost(input, cached, output int) float64 {
+	cp := p.CachedPerM
+	if cp == 0 {
+		cp = p.InputPerM
+	}
+	if cached > input {
+		cached = input
+	}
+	return float64(input-cached)/1e6*p.InputPerM + float64(cached)/1e6*cp + float64(output)/1e6*p.OutputPerM
+}
 
 // Meter keeps a tenant's spend per calendar month (UTC), e.g. "2027-03".
 type Meter interface {
@@ -123,10 +136,25 @@ func (g *Guard) RecordFor(ctx context.Context, space, user string, input, output
 	return nil
 }
 
+// RecordCost meters usd of one call made in space for user (SB-5604, SB-5605: a cached
+// or batched call costs less than its tokens at list price).
+func (g *Guard) RecordCost(ctx context.Context, space, user string, usd float64) error {
+	if err := g.recordUSD(ctx, space, usd); err != nil {
+		return err
+	}
+	if pm, ok := g.Meter.(PersonMeter); ok && user != "" {
+		return pm.AddPerson(ctx, g.Tenant, user, g.month(), usd)
+	}
+	return nil
+}
+
 // RecordIn is Record for a call that ran in space (spc_NAME, or "" for none): the spend is
 // metered for the tenant and, with a SpaceMeter, for the space.
 func (g *Guard) RecordIn(ctx context.Context, space string, input, output int) error {
-	usd := float64(input)/1e6*g.Price.InputPerM + float64(output)/1e6*g.Price.OutputPerM
+	return g.recordUSD(ctx, space, float64(input)/1e6*g.Price.InputPerM+float64(output)/1e6*g.Price.OutputPerM)
+}
+
+func (g *Guard) recordUSD(ctx context.Context, space string, usd float64) error {
 	month := g.month()
 	if err := g.Meter.Add(ctx, g.Tenant, month, usd); err != nil {
 		return err

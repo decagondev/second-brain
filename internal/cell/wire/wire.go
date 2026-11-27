@@ -413,10 +413,18 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 					}
 				}}
 		}
-		guard := guardFor(budget.Price{InputPerM: mc.Model.Price.InPerM, OutputPerM: mc.Model.Price.OutPerM})
+		guard := guardFor(budget.Price{InputPerM: mc.Model.Price.InPerM, OutputPerM: mc.Model.Price.OutPerM, CachedPerM: cfg.Model.Price.CachedInPerM})
 		primary, err := buildModel(mc, tenant, secret, redact, c.Usage, guard)
-		if err != nil || small {
-			return primary, err
+		if err != nil {
+			return nil, err
+		}
+		if small { // SB-5606: what a call on the small tier saved against the main one
+			if g, ok := primary.(gateway.Gateway); ok {
+				mp := budget.Price{InputPerM: cfg.Model.Price.InPerM, OutputPerM: cfg.Model.Price.OutPerM}
+				g.MainPrice = &mp
+				return g, nil
+			}
+			return primary, nil
 		}
 		// SB-5601: the main tier falls back to a second provider while it passes the gate.
 		var second ports.Model
@@ -740,7 +748,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails, GuardrailEvents: c.GuardrailEvents,
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
-		ActiveByEmail: c.activeByEmail, Notices: c.Traces, ModelDown: c.modelDown, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
+		ActiveByEmail: c.activeByEmail, Notices: c.Traces, ModelDown: c.modelDown, Saved: c.SavedIn, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
 		AIUsage: c.aiUsage,                        // SB-5001
 		Checks:  c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007
