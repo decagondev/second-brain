@@ -1465,6 +1465,42 @@
 <td>SB-5604 to SB-5606: batched and cached calls are metered at what they cost, and what they saved adds up from the traces (TestBatchCacheAndTierSavings, TestSavedAddsUp)</td>
 </tr>
 <tr>
+<td>2026-11-27</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-5701: a batch kept between ticks holds no prompt, and a step gets only its own request's result (TestLAW07_KeptBatchesHoldNoPrompt, TestSelfBatchesAreCaught, TestBatchCollectedOnALaterTick)</td>
+</tr>
+<tr>
+<td>2026-11-27</td>
+<td>LAW-05</td>
+<td>Tested (extended)</td>
+<td>SB-5701, SB-5702: a pending batch is never reported as a result, and a brief is marked done only once its batch returned (TestPendingBriefRunsAgainNextTick, TestOpenAIBatch)</td>
+</tr>
+<tr>
+<td>2026-11-27</td>
+<td>LAW-14</td>
+<td>Tested (extended)</td>
+<td>SB-5703: an ask that waited too long for a busy provider shows passages and no claim (TestBusyModelGivesPassages, TestPeopleFirstWhenBusy)</td>
+</tr>
+<tr>
+<td>2026-11-27</td>
+<td>LAW-33</td>
+<td>Stated, Tested</td>
+<td>SB-5705: a model call stays in its region; with model.region set, no tier, fallback or batch reaches a provider of another region or none (TestLAW33_AModelCallStaysInItsRegion, TestSelfRegionBlindGatewayIsCaught)</td>
+</tr>
+<tr>
+<td>2026-11-27</td>
+<td>LAW-06</td>
+<td>Tested (extended)</td>
+<td>SB-5704: the deep tier answers only while the release's eval gate passed it (TestThinkHarderOnlyWhenItHelps)</td>
+</tr>
+<tr>
+<td>2026-11-27</td>
+<td>LAW-07</td>
+<td>Tested (extended)</td>
+<td>SB-5706: the cache report and traces hold prefix hashes, never a question, passage or prompt (TestCacheHitsFromTraces, TestPrefixIsHashed)</td>
+</tr>
+<tr>
 <td>2026-11-25</td>
 <td>LAW-31</td>
 <td>Tested</td>

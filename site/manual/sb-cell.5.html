@@ -165,6 +165,30 @@
 <td>(SB-5601) A second provider and model for the main tier, its key at <code>vault://tenants/TENANT/model-fallback</code>. It answers only while the evals job has gated it for the release the cell runs (sb-runtime(7), The fallback model): when the main provider fails, is rate limited or times out, and for 10 minutes after 3 failures in 5 minutes. Without it, or while it isn't gated, a failing main model gives passages only (sb-ask(3), When the model is down)</td>
 </tr>
 <tr>
+<td><code>model.deep.id</code>, <code>model.deep.effort</code>, <code>model.deep.price.in_per_m</code>, <code>model.deep.price.out_per_m</code></td>
+<td>strings, numbers</td>
+<td>no</td>
+<td>(SB-5704) The deep tier: a deeper model of the same provider, base and key (<code>id</code>), or the main model asked for a higher reasoning effort (<code>effort</code>: <code>low</code>, <code>medium</code> or <code>high</code>, sent as <code>reasoning_effort</code>; OpenAI-compatible providers only), or both, with its own price. It writes only research syntheses, answers with a table, consultations' syntheses and one retry of a mostly uncited answer, and only while the evals job has gated it (sb-runtime(7), The deep tier)</td>
+</tr>
+<tr>
+<td><code>model.region</code></td>
+<td>string</td>
+<td>no</td>
+<td>(SB-5705) The region every model call must stay in, for example <code>eu</code>. With it set, no call of any tier, batched or not, goes to a provider that declares another region or none (LAW-33); such a call is refused and an ask shows passages. A remote embedder outside it stops the cell from starting. Empty is anywhere</td>
+</tr>
+<tr>
+<td><code>model.provider_region</code>, <code>model.fallback.region</code>, <code>embed.region</code>, <code>embed.local</code></td>
+<td>strings, bool</td>
+<td>with <code>model.region</code></td>
+<td>(SB-5705) Where the main provider (and its small and deep tiers), the fallback and a remote embedder run; <code>embed.local</code> is an embedder on the cell's own machine. A local model is in every region. The health report's <code>model.regions</code> and the inventory list them</td>
+</tr>
+<tr>
+<td><code>model.batch</code></td>
+<td>bool</td>
+<td>no</td>
+<td>(SB-5702) <code>true</code> says an <code>openaicompat</code> provider has OpenAI's file-based Batch API: briefs, routines, rhythm steps and eval probes go through it at half price (sb-runtime(7), Batching). Without it every call runs as before. Refused for any other provider and for a local model</td>
+</tr>
+<tr>
 <td><code>model.price.cached_in_per_m</code></td>
 <td>number</td>
 <td>no</td>

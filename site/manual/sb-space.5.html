@@ -168,7 +168,7 @@
 <td><code>economy</code>, <code>balanced</code> or <code>frontier</code></td>
 <td>no</td>
 <td><code>balanced</code></td>
-<td>(SB-5002) How the space's asks pick a model tier. <code>balanced</code> is the usual rule (sb-evals(7), Model tiers); <code>economy</code> sends everything but research to the small tier; <code>frontier</code> sends everything to the main tier. A held small tier answers on main whatever the policy. A team inherits its department's, and can't be above it (<code>economy</code> &lt; <code>balanced</code> &lt; <code>frontier</code>). Evals run each space's cases on the tiers its policy uses</td>
+<td>(SB-5002) How the space's asks pick a model tier. <code>balanced</code> is the usual rule (sb-evals(7), Model tiers); <code>economy</code> sends everything but research to the small tier; <code>frontier</code> sends everything to the main tier. <code>economy</code> also never uses the deep tier (SB-5704). A held small tier answers on main whatever the policy. A team inherits its department's, and can't be above it (<code>economy</code> &lt; <code>balanced</code> &lt; <code>frontier</code>). Evals run each space's cases on the tiers its policy uses</td>
 </tr>
 <tr>
 <td><code>on</code> (work events)</td>
