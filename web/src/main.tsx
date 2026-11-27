@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import { SharedConversation } from "./Conversations";
 import { ApproverView } from "./Approver";
 import { AdminConsole } from "./Admin";
 import { StewardView } from "./Steward";
@@ -15,13 +16,15 @@ const admin = params.has("admin");
 const steward = params.get("steward");
 // A share link, /q/sh_… (sb-api(3), Links for people): the app opens on the shared question.
 const share = /^\/q\/(sh_[0-9a-f]{32})$/.exec(window.location.pathname)?.[1];
+// A shared conversation, /c/sh_… (SB-5804): each answer checked as the reader.
+const sharedConversation = /^\/c\/(sh_[0-9a-f]{32})$/.exec(window.location.pathname)?.[1];
 setLang(initialLang());
 if (root) {
   createRoot(root).render(
     <StrictMode>
       <Localised
         render={() =>
-          action ? <ApproverView id={action} /> : admin ? <AdminConsole /> : steward && steward !== "me" ? <StewardView space={steward} /> : <App share={share} tab={steward === "me" ? "questions" : (params.get("tab") ?? undefined)} q={params.get("q") ?? undefined} space={params.get("space") ?? undefined} pause={params.get("pause") ?? undefined} />
+          sharedConversation ? <SharedConversation id={sharedConversation} /> : action ? <ApproverView id={action} /> : admin ? <AdminConsole /> : steward && steward !== "me" ? <StewardView space={steward} /> : <App share={share} tab={steward === "me" ? "questions" : (params.get("tab") ?? undefined)} q={params.get("q") ?? undefined} space={params.get("space") ?? undefined} pause={params.get("pause") ?? undefined} />
         }
       />
     </StrictMode>,

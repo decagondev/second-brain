@@ -108,6 +108,9 @@ func (c *Connector) EventsHandler(now func() time.Time) http.Handler {
 			_ = json.NewEncoder(w).Encode(map[string]string{"challenge": env.Challenge})
 			return
 		}
+		if c.Also != nil { // SB-5801, SB-5806: the chat app's part of the same delivery
+			c.Also(body)
+		}
 		e := env.Event
 		var ev Event
 		switch {

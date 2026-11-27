@@ -116,6 +116,13 @@ func TestActiveOwnerNeedsExactlyOne(t *testing.T) {
 	}
 }
 
+func (q *qstore) RevokeShare(_ context.Context, _, id string, at time.Time) error {
+	sh := q.shares[id]
+	sh.Expires = at
+	q.shares[id] = sh
+	return nil
+}
+
 type rows struct{ got []audit.Event }
 
 func (r *rows) Write(_ context.Context, e audit.Event) (audit.Row, error) {

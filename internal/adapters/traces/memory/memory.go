@@ -413,6 +413,19 @@ func (s *Store) PutShare(_ context.Context, sh ask.Share) error {
 	return nil
 }
 
+// RevokeShare implements ask.ShareRevoker: the share expires at at.
+func (s *Store) RevokeShare(_ context.Context, tenant, id string, at time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sh, ok := s.shares[tenant+"/"+id]
+	if !ok {
+		return errors.New("traces: no such share")
+	}
+	sh.Expires = at
+	s.shares[tenant+"/"+id] = sh
+	return nil
+}
+
 // GetShare implements ask.QuestionStore.
 func (s *Store) GetShare(_ context.Context, tenant, id string) (ask.Share, bool, error) {
 	s.mu.Lock()
@@ -630,10 +643,11 @@ func (s *Store) MemoryOf(_ context.Context, tenant, user string) (ask.Memory, bo
 func (s *Store) PutMemory(_ context.Context, m ask.Memory) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(m.Lines) == 0 && len(m.Excluded) == 0 && len(m.Proposed) == 0 { // SB-5503: exclusions live here too
+	if m.Empty() { // SB-5503, SB-5803: exclusions and synced conversations live here too
 		delete(s.memory, m.Tenant+"/"+m.User)
 		return nil
 	}
+	m.Conversations = append([]ask.SyncedConversation(nil), m.Conversations...)
 	m.Lines = append([]ask.MemoryLine(nil), m.Lines...)
 	m.Excluded = append([]ask.Exclusion(nil), m.Excluded...)
 	m.Proposed = append([]ask.MemoryLine(nil), m.Proposed...)

@@ -3,6 +3,7 @@ import { exclude, exclusions } from "./api";
 import type { Exclusions } from "./api";
 import type { Fetch } from "./api";
 import { tj, tn, t } from "./i18n";
+import { KeepOnEveryDevice } from "./Conversations";
 
 // Sign out everywhere (sb-identity(7), Signing out everywhere; SB-1906): every session
 // of the person ends, this one included.
@@ -169,6 +170,7 @@ export function MyData({ fetcher = fetch }: { fetcher?: Fetch }) {
         {t("Forget my questions")}
       </button>
       {status && <p role="status">{status}</p>}
+      <KeepOnEveryDevice fetcher={fetcher} />
       <NotForMe fetcher={fetcher} />
     </section>
   );

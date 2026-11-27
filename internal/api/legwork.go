@@ -40,6 +40,7 @@ func (h Legwork) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /v1/spaces/{name}/actions", h.spaceActions)
 	mux.HandleFunc("POST /v1/spaces/{name}/review/fix", h.fix)
 	mux.HandleFunc("GET /v1/me/inbox", h.inbox)
+	mux.HandleFunc("GET /v1/me/left-off", h.leftOff) // SB-5805
 	mux.HandleFunc("POST /v1/catch-up", h.catchUp)
 	mux.HandleFunc("GET /v1/me/agent-runs", h.agentRuns)
 	mux.HandleFunc("GET /v1/agents/cases", h.cases)
@@ -106,6 +107,20 @@ func (h Legwork) inbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.k().out().ok(w, "", in)
+}
+
+// leftOff is where the caller left off: up to 3 of their own open things (SB-5805).
+func (h Legwork) leftOff(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.k().scope(w, r)
+	if !ok {
+		return
+	}
+	lo, err := h.Service.LeftOff(r.Context(), s)
+	if err != nil {
+		h.fail(w, err)
+		return
+	}
+	h.k().out().ok(w, "", lo)
 }
 
 func (h Legwork) fix(w http.ResponseWriter, r *http.Request) {

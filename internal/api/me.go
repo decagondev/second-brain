@@ -28,6 +28,8 @@ type Me struct {
 	Agent    ask.Agent
 	Sessions ports.Sessions
 	Now      func() time.Time
+	// Shares shares whole conversations (SB-5804); nil shares none.
+	Shares *ask.ConversationShares
 }
 
 // ForgetPhrase is what the person types to forget their questions.
@@ -41,7 +43,8 @@ func (h Me) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/me/memory", h.remember)
 	mux.HandleFunc("DELETE /v1/me/memory", h.forgetMemory)
 	mux.HandleFunc("DELETE /v1/me/memory/{id}", h.forgetMemory)
-	h.registerExclusions(mux) // SB-5503
+	h.registerExclusions(mux)    // SB-5503
+	h.registerConversations(mux) // SB-5802 to SB-5804
 }
 
 // Memory I control (sb-ask(3); SB-4303): the caller's own lines only.

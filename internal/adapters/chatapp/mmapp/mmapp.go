@@ -51,6 +51,10 @@ type App struct {
 	ActionURL string
 	// Thread reads a post's thread for Save to the brain (SB-3703); nil saves none.
 	Thread func(ctx context.Context, post string) ([]Post, error)
+	// Threads answers follow-ups in threads, and EventsToken is the outgoing webhook's token
+	// (vault://tenants/TENANT/mattermost, events_token) at call time (SB-5801); nil is none.
+	Threads     Threads
+	EventsToken func(ctx context.Context) (string, error)
 }
 
 // Message is a slash command response (Mattermost's response_type, text and attachments).
@@ -101,6 +105,7 @@ const MsgNoMatch = "I can't match your Mattermost account to your company sign-i
 func (a *App) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /chat/mattermost", a.command)
 	mux.HandleFunc("POST /chat/mattermost/actions", a.action)
+	mux.HandleFunc("POST /chat/mattermost/events", a.events) // SB-5801
 }
 
 // verify reads the command and checks its token and team.
@@ -326,6 +331,8 @@ var notices = map[string]string{
 	ask.NoticeNoAccess:    "Some sources you don't have access to may answer this. Ask their owner.",
 	ask.NoticeNoSources:   "Nothing indexed answers this yet.",
 	ask.NoticeMostUncited: "Most of this answer isn't backed by your sources.",
+	ask.NoticeModelDown:   ask.ModelDownLine,
+	ask.NoticeModelBusy:   ask.ModelBusyLine,
 }
 
 func links(cs []answer.Cite) string {

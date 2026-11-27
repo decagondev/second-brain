@@ -213,6 +213,27 @@ func TestModelDownIsUnavailable(t *testing.T) {
 	}
 }
 
+// SB-5801: replies in one chat thread continue one conversation per person, the earlier
+// question sent with the next; another person in the thread starts their own.
+func TestThreadFollowUpsAreOnePersonsConversation(t *testing.T) {
+	m := &model{reply: `{"claims":[{"text":"500","cites":["docs:refunds@2"]}]}`}
+	a, _ := setup(t, m)
+	ctx := context.Background()
+	thread := "slack/T1/C1/100.1"
+	r1, err := a.Ask(ctx, scope(t, "alice"), ask.Request{Question: "refund limit?", Thread: thread})
+	if err != nil || r1.Conversation != ask.ThreadConversation(tenant, "alice", thread) {
+		t.Fatalf("first: %+v %v", r1, err)
+	}
+	r2, err := a.Ask(ctx, scope(t, "alice"), ask.Request{Question: "and for refunds over that?", Thread: thread})
+	if err != nil || r2.Conversation != r1.Conversation || len(m.got[len(m.got)-1].Messages) < 3 || m.got[len(m.got)-1].Messages[0].Content != "refund limit?" {
+		t.Fatalf("follow-up: %+v %v %+v", r2, err, m.got[len(m.got)-1].Messages)
+	}
+	r3, err := a.Ask(ctx, scope(t, "bob"), ask.Request{Question: "refund limit?", Thread: thread})
+	if err != nil || r3.Conversation == r1.Conversation || r3.Conversation == "" {
+		t.Fatalf("bob: %+v %v", r3, err)
+	}
+}
+
 // SB-5703: an ask that waited too long for a busy provider gets passages and says so.
 func TestBusyModelGivesPassages(t *testing.T) {
 	a, _ := setup(t, &model{err: gateway.ErrBusy})

@@ -68,6 +68,10 @@ type Share struct {
 	Space    string    `json:"space"`
 	At       time.Time `json:"-"`
 	Expires  time.Time `json:"expires"`
+	// Traces and Questions are a shared conversation's answers and questions (SB-5804); a
+	// share with Traces opens only as a conversation.
+	Traces    []string `json:"traces,omitempty"`
+	Questions []string `json:"questions,omitempty"`
 }
 
 // QuestionStore keeps saved questions and shares, under the tenant's retention.
@@ -77,6 +81,12 @@ type QuestionStore interface {
 	DeleteSaved(ctx context.Context, tenant, user, id string) (found bool, err error)
 	PutShare(ctx context.Context, sh Share) error
 	GetShare(ctx context.Context, tenant, id string) (Share, bool, error)
+}
+
+// ShareRevoker is a QuestionStore that can end a share early (SB-5804): the share is
+// kept, expired now, so its audit trail still points at it.
+type ShareRevoker interface {
+	RevokeShare(ctx context.Context, tenant, id string, at time.Time) error
 }
 
 // Auditor writes one audit row; the audit log is one.
@@ -251,7 +261,7 @@ func (x Questions) Open(ctx context.Context, s tenancy.Scope, id string) (Share,
 	if err != nil {
 		return Share{}, fmt.Errorf("%w: shares: %v", ErrUnavailable, err)
 	}
-	if !found || sh.Tenant != s.Tenant() || !x.Now().Before(sh.Expires) {
+	if !found || sh.Tenant != s.Tenant() || !x.Now().Before(sh.Expires) || len(sh.Traces) > 0 {
 		return Share{}, ErrNoShare
 	}
 	return sh, nil

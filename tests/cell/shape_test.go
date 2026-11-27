@@ -150,6 +150,16 @@ func TestShapeTheWorkThroughARunningCell(t *testing.T) {
 	if b := mcp(`{"jsonrpc":"2.0","id":3,"method":"prompts/get","params":{"name":"it/weekly-update"}}`); !strings.Contains(b, `"error"`) {
 		t.Fatalf("a prompt of another space: %s", b)
 	}
+	// SB-5807: the same skills over skills/list and skills/get, never another space's.
+	if b := mcp(`{"jsonrpc":"2.0","id":31,"method":"skills/list"}`); !strings.Contains(b, `"name":"ops/weekly-update"`) || !strings.Contains(b, `"name":"returns/weekly-update"`) || strings.Contains(b, "it/") {
+		t.Fatalf("skills/list: %s", b)
+	}
+	if b := mcp(`{"jsonrpc":"2.0","id":32,"method":"skills/get","params":{"name":"ops/weekly-update"}}`); !strings.Contains(b, "Three headings") || !strings.Contains(b, `"instructions"`) {
+		t.Fatalf("skills/get: %s", b)
+	}
+	if b := mcp(`{"jsonrpc":"2.0","id":33,"method":"skills/get","params":{"name":"it/weekly-update"}}`); !strings.Contains(b, `"error"`) {
+		t.Fatalf("a skill of another space: %s", b)
+	}
 	as(ids["lee"])
 	if code, out := r.do(t, "GET", "/v1/spaces/returns/skills", ""); code != http.StatusForbidden {
 		t.Fatalf("a non-member read the team's skills: %d %s", code, out)

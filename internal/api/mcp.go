@@ -164,7 +164,8 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 		if p.ProtocolVersion != "" && p.ProtocolVersion < MCPVersion {
 			v = p.ProtocolVersion // an older client gets its own revision; the tools are the same
 		}
-		rpc(w, req.ID, map[string]any{"protocolVersion": v, "capabilities": map[string]any{"tools": map[string]any{"listChanged": false}, "prompts": map[string]any{"listChanged": false}, "resources": map[string]any{"listChanged": false}},
+		rpc(w, req.ID, map[string]any{"protocolVersion": v, "capabilities": map[string]any{"tools": map[string]any{"listChanged": false}, "prompts": map[string]any{"listChanged": false}, "resources": map[string]any{"listChanged": false},
+			"skills": map[string]any{"listChanged": false}}, // SB-5807
 			"serverInfo":   map[string]any{"name": "second-brain", "version": h.Release},
 			"instructions": "Read-only. Every result is checked live as you; cite the sources you use."}, nil)
 	case "ping":
@@ -218,6 +219,16 @@ func (h MCP) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.prompts(w, r, s, req)
+	case "skills/list", "skills/get": // SB-5807: the same skills as prompts, as skills
+		if !h.granted(s, FamilySkills) {
+			if req.Method == "skills/list" {
+				rpc(w, req.ID, map[string]any{"skills": []any{}}, nil)
+			} else {
+				rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such skill"})
+			}
+			return
+		}
+		h.skills(w, r, s, req)
 	default:
 		rpc(w, req.ID, nil, &rpcErr{Code: -32601, Message: "no such method"})
 	}
@@ -274,6 +285,43 @@ func (h MCP) prompts(w http.ResponseWriter, r *http.Request, s tenancy.Scope, re
 		return
 	}
 	rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such prompt: see prompts/list"})
+}
+
+// skills answers skills/list and skills/get (SB-5807): each skill of the person's spaces now,
+// its name, description and instructions, the text the release bundle signed. A skill only
+// tells the client how to answer; it runs nothing, and the client asks as the person.
+func (h MCP) skills(w http.ResponseWriter, r *http.Request, s tenancy.Scope, req rpcReq) {
+	skills, _, err := h.promptSources(r.Context(), s)
+	if err != nil {
+		rpc(w, req.ID, nil, &rpcErr{Code: -32603, Message: "the skills can't be listed now; try again"})
+		return
+	}
+	one := func(sk ask.SpaceSkill) map[string]any {
+		return map[string]any{"name": sk.Space + "/" + sk.Name, "description": "The " + sk.Name + " skill of " + sk.Space,
+			"instructions": "Use the ask tool, with ?space=" + sk.Space + ", to ask: /" + sk.Name + " QUESTION. Then give the answer the way the skill says, keeping every cite: " + sk.Instruction}
+	}
+	if req.Method == "skills/list" {
+		out := []map[string]any{}
+		for _, sk := range skills {
+			out = append(out, one(sk))
+		}
+		rpc(w, req.ID, map[string]any{"skills": out}, nil)
+		return
+	}
+	var p struct {
+		Name string `json:"name"`
+	}
+	if json.Unmarshal(req.Params, &p) != nil {
+		rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "skills/get takes a name"})
+		return
+	}
+	for _, sk := range skills {
+		if sk.Space+"/"+sk.Name == p.Name {
+			rpc(w, req.ID, one(sk), nil)
+			return
+		}
+	}
+	rpc(w, req.ID, nil, &rpcErr{Code: -32602, Message: "no such skill: see skills/list"})
 }
 
 // starterPrompt is a starter question's prompt name: SPACE/start-N.

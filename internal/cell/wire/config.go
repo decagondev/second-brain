@@ -110,6 +110,8 @@ type Config struct {
 	Connectors map[string]ConnectorConfig `json:"connectors"`
 	Chat       struct {
 		TeamID string `json:"team_id"`
+		// SaveReaction is the reaction that offers to save a thread (SB-5806); "" is brain.
+		SaveReaction string `json:"save_reaction,omitempty"`
 	} `json:"chat"`
 	// Mattermost is the Mattermost slash command (SB-2005): the server and the team whose
 	// command reaches POST /chat/mattermost. Empty is none.

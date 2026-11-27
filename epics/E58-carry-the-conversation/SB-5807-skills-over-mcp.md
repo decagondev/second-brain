@@ -13,7 +13,7 @@ summary: "MCP clients that look for skills through `skills/list` find none."
 | Manual | [`sb-api(3)`](../../manual/sb-api.3.md), [`sb-agents(7)`](../../manual/sb-agents.7.md) |
 | Laws | LAW-01, LAW-09 |
 | Depends on | SB-4601, SB-4306, SB-5305 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,21 +21,21 @@ MCP clients that look for skills through `skills/list` find none.
 
 ## Acceptance criteria
 
-- [ ] The MCP server answers `skills/list` and `skills/get` beside `prompts/list` and `prompts/get`
-- [ ] Only skills of agents the token's person can use, in groups allowed MCP
-- [ ] The text is the bundle's signed skill
+- [x] The MCP server answers `skills/list` and `skills/get` beside `prompts/list` and `prompts/get`
+- [x] Only skills of agents the token's person can use, in groups allowed MCP
+- [x] The text is the bundle's signed skill
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] `skills/list` and `skills/get` in `api.MCP`
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] `skills/list` and `skills/get` in `api.MCP`
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. The MCP server answers `skills/list` and `skills/get` beside `prompts/list` and `prompts/get`, with the same skills (`UsableSkills`: the spaces the token's person is a member of now) and only for groups granted the `skills` family; each is `{ name, description, instructions }` from the release bundle's skill text, and `initialize` declares `skills`. Tested in TestShapeTheWorkThroughARunningCell and TestManagedMCPAccessThroughARunningCell.
 
 ## Definition of done
 

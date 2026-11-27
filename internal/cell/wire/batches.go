@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/gateway"
 	"example.com/second-brain/internal/core/manifest"
 	"example.com/second-brain/internal/core/ports"
@@ -156,4 +157,19 @@ func (c *Cell) tiers(m manifest.Tenant) (small, deep ports.Model, err error) {
 	}
 	deep, err = c.deep(m)
 	return small, deep, err
+}
+
+// tracesOf are one person's traces from a time on (SB-5802).
+func (c *Cell) tracesOf(ctx context.Context, user string, from time.Time) ([]ask.Trace, error) {
+	ts, err := c.Traces.Between(ctx, c.Config.Tenant, from, time.Now().Add(time.Minute))
+	if err != nil {
+		return nil, err
+	}
+	var out []ask.Trace
+	for _, t := range ts {
+		if t.User == user {
+			out = append(out, t)
+		}
+	}
+	return out, nil
 }

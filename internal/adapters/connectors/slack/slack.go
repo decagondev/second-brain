@@ -47,6 +47,9 @@ type Connector struct {
 	Redact  Registrar
 	Exclude []string // channel name patterns, e.g. "#hr-*"
 	Inbox   Inbox
+	// Also is given every verified event delivery, for the chat app's follow-ups and save
+	// reactions (SB-5801, SB-5806); nil is none. It must return at once.
+	Also func(body []byte)
 }
 
 var _ ports.Connector = (*Connector)(nil)

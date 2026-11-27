@@ -456,6 +456,20 @@ func (t Traces) PutShare(ctx context.Context, sh ask.Share) error {
 	return put(ctx, t.Pool, sh.Tenant, "share", sh.ID, meta{at: sh.At, user: sh.User, space: sh.Space}, shareRec{sh, sh.Tenant, sh.User, sh.At}, true)
 }
 
+// RevokeShare implements ask.ShareRevoker: the share expires at at.
+func (t Traces) RevokeShare(ctx context.Context, tenant, id string, at time.Time) error {
+	r, found, err := get[shareRec](ctx, t.Pool, tenant, "share", id, false)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return errors.New("traces: no such share")
+	}
+	sh := r.full()
+	sh.Expires = at
+	return put(ctx, t.Pool, tenant, "share", id, meta{at: sh.At, user: sh.User, space: sh.Space}, shareRec{sh, sh.Tenant, sh.User, sh.At}, false)
+}
+
 // GetShare implements ask.QuestionStore.
 func (t Traces) GetShare(ctx context.Context, tenant, id string) (ask.Share, bool, error) {
 	r, found, err := get[shareRec](ctx, t.Pool, tenant, "share", id, false)
@@ -519,7 +533,7 @@ func (t Traces) MemoryOf(ctx context.Context, tenant, user string) (ask.Memory, 
 
 // PutMemory implements ask.MemoryStore; a memory with no lines is removed.
 func (t Traces) PutMemory(ctx context.Context, m ask.Memory) error {
-	if len(m.Lines) == 0 && len(m.Excluded) == 0 && len(m.Proposed) == 0 { // SB-5503: exclusions live here too
+	if m.Empty() { // SB-5503, SB-5803: exclusions and synced conversations live here too
 		return del(ctx, t.Pool, m.Tenant, "memory", m.User)
 	}
 	return put(ctx, t.Pool, m.Tenant, "memory", m.User, meta{at: m.At, user: m.User}, m, false)

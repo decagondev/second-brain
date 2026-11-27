@@ -48,6 +48,15 @@ type Memory struct {
 	// Proposed are lines an MCP client proposed, waiting for the person (SB-5505); none is
 	// ever sent with an ask.
 	Proposed []MemoryLine `json:"proposed,omitempty"`
+	// Sync is Keep my conversations on every device, and Conversations the web conversations
+	// it keeps (SB-5803): questions, kept and dropped documents and trace ids, never answers.
+	Sync          bool                 `json:"sync,omitempty"`
+	Conversations []SyncedConversation `json:"conversations,omitempty"`
+}
+
+// Empty says a memory record holds nothing to keep.
+func (m Memory) Empty() bool {
+	return len(m.Lines) == 0 && len(m.Excluded) == 0 && len(m.Proposed) == 0 && !m.Sync && len(m.Conversations) == 0
 }
 
 // MemoryStore keeps each person's memory, one record per person, erased with them and by

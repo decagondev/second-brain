@@ -31,6 +31,7 @@ import { AtHint, withoutAt } from "./AtHint";
 import type { Branch } from "./Branch";
 import { forgetQuestions, recentQuestions, rememberQuestion, setShortAnswers, setVerifiedOnly, shortAnswers, verifiedOnly } from "./recent";
 import { errorText, lang, msg, t, tj, tn } from "./i18n";
+import { LeftOff, MyConversations } from "./Conversations";
 
 interface Turn {
   id: number;
@@ -92,6 +93,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
   const [showTokens, setShowTokens] = useState(false);
   const tokensButton = useRef<HTMLButtonElement>(null);
   const [recent, setRecent] = useState<string[]>(() => recentQuestions());
+  const [leftOffStart, setLeftOffStart] = useState(false); // SB-5805: fetched when the ask box is first used
   function forget() {
     forgetQuestions();
     setRecent([]);
@@ -463,10 +465,12 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               </button>
             </p>
           )}
+          <LeftOff fetcher={fetcher} start={leftOffStart && turns.length === 0} />
           <label htmlFor={inputId}>{t("Ask a question")}</label>
           <textarea
             id={inputId}
             ref={askBox}
+            onFocus={() => setLeftOffStart(true)}
             value={question}
             maxLength={4000}
             rows={3}
@@ -551,6 +555,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               </button>
             </details>
           )}
+          <MyConversations fetcher={fetcher} onContinue={(id) => setConversation(id)} />
           <label className="short">
             <input
               type="checkbox"

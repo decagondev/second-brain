@@ -139,7 +139,9 @@ func TestContractMatchesManPage(t *testing.T) {
 		var out []string
 		rt := reflect.TypeOf(v)
 		for i := 0; i < rt.NumField(); i++ {
-			out = append(out, strings.Split(rt.Field(i).Tag.Get("json"), ",")[0])
+			if name := strings.Split(rt.Field(i).Tag.Get("json"), ",")[0]; name != "-" { // never on the wire (SB-5801's thread)
+				out = append(out, name)
+			}
 		}
 		sort.Strings(out)
 		return out

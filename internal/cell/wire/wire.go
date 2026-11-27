@@ -597,6 +597,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	agent.Requests = requestCategories(m) // SB-4502
 	agent.Wide = c.wide(m)                // SB-5401 to SB-5403
 	agent.Exclusions = c.Traces           // SB-5503: with the person's memory record
+	agent.TracesOf = c.tracesOf           // SB-5802
 	agent.Reuse = c.Traces                // SB-5603
 	agent.Everyone = c.everyone           // SB-5404
 
@@ -662,7 +663,11 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			Users: c.Directory, Groups: c.Directory.GroupsOf, Issuer: c.Auth.Issuer, Agent: agent, Spaces: c.Spaces, Now: time.Now,
 			Language: func() string { return c.Manifest().Language }, Notice: c.noticeLine,
 			Masked: func(ctx context.Context, n int) { c.masked(ctx, "slack", n) }, // SB-5102
-			Thread: slackapp.WebThread(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second})}
+			Thread: slackapp.WebThread(cfg.Connectors["chat"].Base, slackField(creds, "bot_token"), &http.Client{Timeout: 10 * time.Second}),
+			// SB-5801, SB-5806: follow-ups in threads and the save reaction, through the chat connector's events
+			Replies:      slackapp.DM{Base: cfg.Connectors["chat"].Base, Token: slackField(creds, "bot_token"), Client: &http.Client{Timeout: 10 * time.Second}},
+			SaveReaction: cfg.Chat.SaveReaction, Base: cfg.BaseURL}
+		sc.Also = app.Event
 		app.Register(public)
 		savers = append(savers, app)
 	}
@@ -674,8 +679,9 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 			Notice: c.noticeLine}
 		(&mmapp.App{Tenant: tenant, Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "command_token"), Rules: rules,
 			Agent: agent, ActionURL: strings.TrimSuffix(cfg.BaseURL, "/") + "/chat/mattermost/actions",
-			Masked: func(ctx context.Context, n int) { c.masked(ctx, "mattermost", n) }, // SB-5102
-			Thread: mmapp.APIThread(mm.Base, slackField(creds, "bot_token"), client)}).Register(public)
+			Masked:  func(ctx context.Context, n int) { c.masked(ctx, "mattermost", n) }, // SB-5102
+			Thread:  mmapp.APIThread(mm.Base, slackField(creds, "bot_token"), client),
+			Threads: mmapp.DM{Base: mm.Base, TeamID: mm.TeamID, Token: slackField(creds, "bot_token"), Client: client}, EventsToken: slackField(creds, "events_token")}).Register(public) // SB-5801
 		savers = append(savers, rules)
 	}
 	if cfg.Web != "" {
@@ -737,6 +743,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	stewards.ActionsOf = legwork.DraftActions // a decisions draft carries its action items (SB-4203)
 	for _, app := range savers {
 		app.Saver = stewards
+		app.LeftOff = legwork.LeftOff // SB-5805: a direct message's first of the day
 	}
 	api.Legwork{Service: legwork, Release: c.Release, NewID: newID}.Register(mux)
 	rhythms := c.rhythms(m, stewards, legwork, newID) // SB-4801 to SB-4804
@@ -786,7 +793,8 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 				return agent.UsableAgents(ctx, s, c.ScopeAs)
 			}, Skills: agent.UsableSkills, Starters: stewards.UsableStarters, Families: c.mcpFamilies()}.Register(mux) // SB-4601, SB-4906, SB-5305
 	}
-	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now}.Register(mux)
+	api.Me{Data: ret, Agent: agent, Sessions: c.Sessions, Now: time.Now, // SB-5804
+		Shares: &ask.ConversationShares{Agent: agent, Questions: ask.Questions{Tenant: tenant, Store: c.Traces, Audit: c.Audit, NewID: newID, Now: time.Now}}}.Register(mux)
 	api.Notifications{Prefs: c.Traces, Release: c.Release, NewID: newID, Test: c.testSelf}.Register(mux)
 	api.Operations{Admin: admin, Feedback: c.Traces, Traces: c.Traces, Health: c.Health}.Register(mux)
 	api.Spaces{Store: c.Spaces}.Register(mux)

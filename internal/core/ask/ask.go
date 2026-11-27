@@ -11,6 +11,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"crypto/sha256"
+	"encoding/hex"
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/budget"
 	"example.com/second-brain/internal/core/gateway"
@@ -41,10 +43,13 @@ const NothingToCite = "I couldn't find anything you have access to that answers 
 
 // Request is the body of POST /v1/ask.
 type Request struct {
-	Question     string   `json:"question"`
-	Conversation string   `json:"conversation,omitempty"`
-	Sources      []string `json:"sources,omitempty"`
-	Agent        string   `json:"agent,omitempty"` // "" or ask, or a department agent (SB-1102)
+	Question     string `json:"question"`
+	Conversation string `json:"conversation,omitempty"`
+	// Thread is a chat thread the ask is a reply in (SB-5801): the chat app's own key for it,
+	// never sent by the web. One conversation per thread and person, kept for them alone.
+	Thread  string   `json:"-"`
+	Sources []string `json:"sources,omitempty"`
+	Agent   string   `json:"agent,omitempty"` // "" or ask, or a department agent (SB-1102)
 	// Language is the language to write the claims in: en, de or fr (SB-3003). Anything
 	// else is ignored.
 	Language string `json:"language,omitempty"`
@@ -453,6 +458,9 @@ type Agent struct {
 	Skills func(space string) []Skill
 	// Reuse keeps the answers an ask may reuse (SB-5603); nil reuses none.
 	Reuse ReuseStore
+	// TracesOf are a person's traces from a time on, for their conversations (SB-5802);
+	// nil lists none.
+	TracesOf func(ctx context.Context, user string, from time.Time) ([]Trace, error)
 	// Exclusions keeps each person's Don't use this for me with their memory record
 	// (SB-5503), whatever the manifest's memory setting; nil excludes nothing.
 	Exclusions MemoryStore
@@ -502,7 +510,15 @@ func (a Agent) take(ctx context.Context, s tenancy.Scope) error {
 }
 
 // conversation is the ask's conversation and its earlier questions: a new one for "".
-func (a Agent) conversation(ctx context.Context, s tenancy.Scope, conv string) (string, []string, error) {
+func (a Agent) conversation(ctx context.Context, s tenancy.Scope, conv, thread string) (string, []string, error) {
+	if conv == "" && thread != "" { // SB-5801: the thread's conversation for this person, new or not
+		conv = ThreadConversation(a.Tenant, s.User(), thread)
+		qs, _, err := a.Store.Questions(ctx, a.Tenant, s.User(), conv)
+		if err != nil {
+			return "", nil, fmt.Errorf("%w: conversations: %v", ErrUnavailable, err)
+		}
+		return conv, qs, nil
+	}
 	if conv == "" {
 		return a.NewID("cv_"), nil, nil
 	}
@@ -514,6 +530,14 @@ func (a Agent) conversation(ctx context.Context, s tenancy.Scope, conv string) (
 		return "", nil, fmt.Errorf("%w: no such conversation", ErrInvalid)
 	}
 	return conv, qs, nil
+}
+
+// ThreadConversation is the conversation of one person in one chat thread (SB-5801): the
+// same id for their every reply in it, another for anyone else's, and nothing in it says
+// which thread or person.
+func ThreadConversation(tenant, user, thread string) string {
+	sum := sha256.Sum256([]byte(tenant + "\x00" + user + "\x00" + thread))
+	return "cv_t" + hex.EncodeToString(sum[:12])
 }
 
 func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool) (Response, error) {
@@ -552,7 +576,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		}
 		dept = &d
 	}
-	conv, earlier, err := a.conversation(ctx, s, req.Conversation)
+	conv, earlier, err := a.conversation(ctx, s, req.Conversation, req.Thread)
 	if err != nil {
 		return Response{}, err
 	}
@@ -636,6 +660,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}
+	a.noteSynced(ctx, s, conv, q+choice, trace, keep, drop) // SB-5803: on every device, if the person chose so
 	a.guard(ctx, s.Space(), resp.Agent, t.Suspect)
 	a.keepForReuse(ctx, rk, resp) // SB-5603
 	return resp, nil

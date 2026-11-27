@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 W57: Carry the conversation
+
+**Wave/slice:** W57 / S57.1 and S57.2 (SB-5801 to SB-5807) · **Status:** Done
+
+**What:** A reply in a Slack or Mattermost thread under the brain's message continues the replier's own conversation there, answered to them alone, and a confidential answer goes to their direct messages. Conversations started in chat show on the web under **Your conversations** with **Continue here**; with **Keep my conversations on every device** on, web conversations follow the person too. A whole conversation can be shared, each answer checked as the reader. A new conversation, and the first direct message of the day, start with where the person left off. The save reaction offers to save or ask about a thread, and MCP clients get the skills as skills.
+
+**Why this way:** Everything is built from what the cell already keeps: conversation records, traces, the memory record and shares, so there is no new store, and every stored answer is shown through the same live check as the reader (LAW-26). A thread's conversation id is a hash of the tenant, the person and the thread, so the chat app needs no mapping table and nobody else can reach it. Follow-ups come through the chat connector's events URL because a Slack app has only one; the app answers ephemerally rather than in the thread, because a thread is read by everyone in the channel and an answer is the asker's.
+
+**Learned:** Shares were insert-only in both stores, so revoking needed a narrow optional store method rather than a second write. Mattermost's outgoing webhooks carry channel messages only, so reactions and direct questions are Slack's for now; recorded on SB-5806. The web fetches nothing new until the person opens the list or focuses the ask box, which kept every existing test's fetch order.
+
+**Laws:** LAW-01, LAW-09, LAW-25, LAW-26, LAW-32. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 S56.2: The right model
 
 **Wave/slice:** W56 / S56.2 (SB-5704 to SB-5706) · **Status:** Done

@@ -61,7 +61,7 @@ summary: Epics, waves, slices and tickets.
 | W54 See and Steer the Context | 7 | 0 | 0 | Planned 2026-11-26 with the user (E55), built: context panel, keep or drop for this conversation, not for me, memory used, shown, memory over MCP, why not this document?, retrieval view for stewards ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W55 Keep Answering, Spend Less | 6 | 0 | 0 | Planned 2026-11-26 with the user (E56), built: fall back to a gated model, passages when the model is down, answered before, checked now, batch what can wait, cache the stable part, what it saved ([22-see-steer-spend.md](../docs/22-see-steer-spend.md)) |
 | W56 Right Model, Right Place | 6 | 0 | 0 | Planned 2026-11-27 with the user (E57), built: collect batches later, OpenAI batches, people first when the provider is busy, think harder only when it helps, keep model calls in region, cache hits you can see ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
-| W57 Carry the Conversation | 0 | 0 | 7 | Planned 2026-11-27 with the user (E58): follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
+| W57 Carry the Conversation | 7 | 0 | 0 | Planned 2026-11-27 with the user (E58), built: follow up in the thread, continue on the web, your conversations on every device, share a conversation, where you left off, react to save, skills over MCP ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W58 Reach Microsoft 365 | 0 | 0 | 7 | Planned 2026-11-27 with the user (E59): sharePoint and OneDrive, purview labels, entra groups and people, ask in Teams, outlook calendar for meeting prep, teams meeting transcripts, start on a new email ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
@@ -1014,13 +1014,13 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-5801](E58-carry-the-conversation/SB-5801-follow-up-in-thread.md) | S57.1 | E58 | Follow up in the thread | Open |
-| [SB-5802](E58-carry-the-conversation/SB-5802-continue-on-the-web.md) | S57.1 | E58 | Continue on the web | Open |
-| [SB-5803](E58-carry-the-conversation/SB-5803-every-device.md) | S57.1 | E58 | Your conversations on every device | Open |
-| [SB-5804](E58-carry-the-conversation/SB-5804-share-a-conversation.md) | S57.1 | E58 | Share a conversation | Open |
-| [SB-5805](E58-carry-the-conversation/SB-5805-where-you-left-off.md) | S57.2 | E58 | Where you left off | Open |
-| [SB-5806](E58-carry-the-conversation/SB-5806-react-to-save.md) | S57.2 | E58 | React to save | Open |
-| [SB-5807](E58-carry-the-conversation/SB-5807-skills-over-mcp.md) | S57.2 | E58 | Skills over MCP | Open |
+| [SB-5801](E58-carry-the-conversation/SB-5801-follow-up-in-thread.md) | S57.1 | E58 | Follow up in the thread | Done |
+| [SB-5802](E58-carry-the-conversation/SB-5802-continue-on-the-web.md) | S57.1 | E58 | Continue on the web | Done |
+| [SB-5803](E58-carry-the-conversation/SB-5803-every-device.md) | S57.1 | E58 | Your conversations on every device | Done |
+| [SB-5804](E58-carry-the-conversation/SB-5804-share-a-conversation.md) | S57.1 | E58 | Share a conversation | Done |
+| [SB-5805](E58-carry-the-conversation/SB-5805-where-you-left-off.md) | S57.2 | E58 | Where you left off | Done |
+| [SB-5806](E58-carry-the-conversation/SB-5806-react-to-save.md) | S57.2 | E58 | React to save | Done |
+| [SB-5807](E58-carry-the-conversation/SB-5807-skills-over-mcp.md) | S57.2 | E58 | Skills over MCP | Done |
 
 ### W58 Reach Microsoft 365
 

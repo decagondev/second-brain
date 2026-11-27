@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"example.com/second-brain/internal/core/answer"
@@ -72,6 +73,16 @@ type App struct {
 	// Saver keeps saved threads, and Thread reads one (SB-3703); nil saves none.
 	Saver  Saver
 	Thread func(ctx context.Context, channel, ts string) ([]RawMessage, error)
+	// Replies answers follow-ups in threads (SB-5801) and offers the save reaction's choice
+	// (SB-5806); nil answers none. SaveReaction is sb-cell(5) chat.save_reaction, "" brain.
+	Replies      Replies
+	SaveReaction string
+	// LeftOff is where a person left off, for their first direct message of the day
+	// (SB-5805), and Base the cell's address for its links; nil shows none.
+	LeftOff func(ctx context.Context, s tenancy.Scope) (ask.LeftOff, error)
+	Base    string
+	seenMu  sync.Mutex
+	seen    map[string]string // chat user: the day of their last direct message
 }
 
 // NoticeLine is the first line every answer starts with while an admin's notice stands.
@@ -369,6 +380,8 @@ var notices = map[string]string{
 	ask.NoticeNoAccess:    "Some sources you don't have access to may answer this. Ask their owner.",
 	ask.NoticeNoSources:   "Nothing indexed answers this yet.",
 	ask.NoticeMostUncited: "Most of this answer isn't backed by your sources.",
+	ask.NoticeModelDown:   ask.ModelDownLine,
+	ask.NoticeModelBusy:   ask.ModelBusyLine,
 }
 
 func links(cs []answer.Cite) string {
@@ -440,6 +453,11 @@ func (a *App) interaction(w http.ResponseWriter, r *http.Request) {
 	}
 	if p.Type == "message_action" && p.CallbackID == SaveCallback { // SB-3703
 		a.saveAction(w, p.User.ID, p.Channel.ID, p.Channel.Name, p.Message.TS, p.Message.ThreadTS, p.ResponseURL)
+		return
+	}
+	if len(p.Actions) == 1 && (p.Actions[0].ActionID == ActionReactSave || p.Actions[0].ActionID == ActionReactAsk) { // SB-5806
+		w.WriteHeader(http.StatusOK)
+		a.reactChoice(p.User.ID, p.Actions[0].ActionID, p.Actions[0].Value, p.ResponseURL)
 		return
 	}
 	if len(p.Actions) != 1 || p.Actions[0].ActionID != "share" || !slackURL(p.ResponseURL) {

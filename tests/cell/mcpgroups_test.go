@@ -79,6 +79,9 @@ func TestManagedMCPAccessThroughARunningCell(t *testing.T) {
 	if b := mcp(annTok, `{"jsonrpc":"2.0","id":5,"method":"prompts/list"}`); !strings.Contains(b, `"prompts":[]`) {
 		t.Fatalf("prompts without skills: %s", b)
 	}
+	if b := mcp(annTok, `{"jsonrpc":"2.0","id":6,"method":"skills/list"}`); !strings.Contains(b, `"skills":[]`) { // SB-5807
+		t.Fatalf("skills without the skills family: %s", b)
+	}
 	r.idp.User = ann
 	if code, _ := r.do(t, "GET", "/login", ""); code != http.StatusNotFound {
 		t.Fatalf("sign-in: %d", code)
