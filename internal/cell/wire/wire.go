@@ -134,6 +134,7 @@ type Cell struct {
 
 	opt      Options
 	model    func(m manifest.Tenant) (ports.Model, error)
+	fallback atomic.Pointer[gateway.Fallback] // the main tier's (SB-5601)
 	small    func(m manifest.Tenant) (ports.Model, error)
 	eventKey func(ctx context.Context) (string, error)
 	inbox    slack.Inbox
@@ -397,20 +398,46 @@ func Build(ctx context.Context, cfg Config, opt Options) (*Cell, error) {
 		if small { // SB-4405: the same provider, base and key, another id and price
 			mc.Model.ID, mc.Model.Price.InPerM, mc.Model.Price.OutPerM = cfg.Model.Small.ID, cfg.Model.Small.Price.InPerM, cfg.Model.Small.Price.OutPerM
 		}
-		guard := &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
-			Price: budget.Price{InputPerM: mc.Model.Price.InPerM, OutputPerM: mc.Model.Price.OutPerM}, Once: c.Usage,
-			Forecast: func(ctx context.Context) (float64, bool) {
-				prices := modelPrices(cfg)
-				f, ok, err := costs.Forecast(ctx, c.Usage, tenant, prices, time.Now())
-				return f, ok && err == nil
-			},
-			// The warning goes through whichever alerter the cell has when it fires (SB-1608).
-			Warn: func(ctx context.Context, month string, _ float64) {
-				if c.Alerter != nil {
-					_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev3", Kind: "budget_warning", Tenant: tenant, Where: "budget", Ref: month})
+		guardFor := func(price budget.Price) *budget.Guard {
+			return &budget.Guard{Tenant: tenant, MonthlyUSD: float64(m.BudgetUSDMonth), Meter: c.Usage.Spend(), Metrics: c.Metrics, Now: time.Now,
+				Price: price, Once: c.Usage,
+				Forecast: func(ctx context.Context) (float64, bool) {
+					prices := modelPrices(cfg)
+					f, ok, err := costs.Forecast(ctx, c.Usage, tenant, prices, time.Now())
+					return f, ok && err == nil
+				},
+				// The warning goes through whichever alerter the cell has when it fires (SB-1608).
+				Warn: func(ctx context.Context, month string, _ float64) {
+					if c.Alerter != nil {
+						_ = c.Alerter.Alert(ctx, canary.Alert{Severity: "sev3", Kind: "budget_warning", Tenant: tenant, Where: "budget", Ref: month})
+					}
+				}}
+		}
+		guard := guardFor(budget.Price{InputPerM: mc.Model.Price.InPerM, OutputPerM: mc.Model.Price.OutPerM})
+		primary, err := buildModel(mc, tenant, secret, redact, c.Usage, guard)
+		if err != nil || small {
+			return primary, err
+		}
+		// SB-5601: the main tier falls back to a second provider while it passes the gate.
+		var second ports.Model
+		if fb := cfg.Model.Fallback; fb.Provider != "" {
+			fc := cfg
+			fc.Model.Provider, fc.Model.Base, fc.Model.ID, fc.Model.Local = fb.Provider, fb.Base, fb.ID, false
+			fc.Model.Price.InPerM, fc.Model.Price.OutPerM = fb.Price.InPerM, fb.Price.OutPerM
+			fguard := guardFor(budget.Price{InputPerM: fb.Price.InPerM, OutputPerM: fb.Price.OutPerM})
+			fsecret := func(p string) func(context.Context) (string, error) {
+				if p == "model" {
+					p = "model-fallback"
 				}
-			}}
-		return buildModel(mc, tenant, secret, redact, c.Usage, guard)
+				return secret(p)
+			}
+			if second, err = buildModel(fc, tenant, fsecret, redact, c.Usage, fguard); err != nil {
+				return nil, err
+			}
+		}
+		f := gateway.NewFallback(primary, second, c.fallbackGated, time.Now)
+		c.fallback.Store(f)
+		return f, nil
 	}
 	c.model = func(m manifest.Tenant) (ports.Model, error) { return tierOf(m, false) }
 	c.small = func(m manifest.Tenant) (ports.Model, error) {
@@ -542,6 +569,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 	agent.Requests = requestCategories(m) // SB-4502
 	agent.Wide = c.wide(m)                // SB-5401 to SB-5403
 	agent.Exclusions = c.Traces           // SB-5503: with the person's memory record
+	agent.Reuse = c.Traces                // SB-5603
 	agent.Everyone = c.everyone           // SB-5404
 
 	// Actions (sb-actions(3)).
@@ -712,7 +740,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Meter: c.Usage, Prices: modelPrices(cfg), Tiers: modelTiers(cfg), Guardrails: c.Guardrails, GuardrailEvents: c.GuardrailEvents,
 		BudgetUSD: m.BudgetUSDMonth, Now: time.Now, Erasure: ret, Sessions: revoker, Tokens: c.tokenLister(), NotifyTest: c.testEmail,
 		AgentKilled: c.agentKilled, EvalHeld: c.evalHeld, Index: indexReports{c},
-		ActiveByEmail: c.activeByEmail, Notices: c.Traces, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
+		ActiveByEmail: c.activeByEmail, Notices: c.Traces, ModelDown: c.modelDown, SpaceSpend: c.spaceSpend, OwnerActive: c.ownerActive,
 		AgentValue: func(ctx context.Context) (ask.ValueReport, error) { return c.agentValue(ctx, nil) }, PausedIn: c.Kill.PausedIn, // SB-4701, SB-4702
 		AIUsage: c.aiUsage,                        // SB-5001
 		Checks:  c.Checks, Inventory: c.Inventory, // SB-5005, SB-5007

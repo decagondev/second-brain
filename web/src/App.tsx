@@ -195,7 +195,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
     });
   }
 
-  async function run(q: string, inSpace: string, conv: string | undefined, remember = true, agent?: string, choice?: string) {
+  async function run(q: string, inSpace: string, conv: string | undefined, remember = true, agent?: string, choice?: string, fresh?: boolean) {
     setBusy(true);
     if (remember) setRecent(rememberQuestion(q));
     const id = nextTurn.current++;
@@ -208,7 +208,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
       () => undefined,
     );
     try {
-      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH), true, choice, conv ? steers[conv] : undefined);
+      const a = await ask(q, conv, fetcher, inSpace || undefined, lang(), about.map((d) => d.key), short, verified, file, agent, undefined, consult && inSpace.endsWith(BRANCH), true, choice, conv ? steers[conv] : undefined, fresh);
       setConversation(a.conversation);
       dropFile();
       settle({ id, question: q, answer: a });
@@ -362,7 +362,7 @@ export function App({ fetcher, share, tab: first, q: fromBar, space: inSpace, pa
               <h2 className="question">{x.question}</h2>
               {x.pending && <SourcesFirst sources={x.sources} />}
               {x.answer?.clarify && <ClarifyView clarify={x.answer.clarify} busy={busy} onChoose={(c) => { setTurns((ts) => ts.filter((y) => y.id !== x.id)); void run(x.question, branch && space ? space + BRANCH : space, conversation, false, undefined, c); }} />}
-              {answered(x) && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} onSteer={(d, k) => steerDoc(x.answer.conversation, d, k)} />}
+              {answered(x) && <AnswerView answer={x.answer} fetcher={fetcher} onAbout={addAbout} onOwner={theirDocuments} question={x.question} space={space || undefined} onSuggest={(sp, ag) => void askThere(x.question, sp, ag)} onSteer={(d, k) => steerDoc(x.answer.conversation, d, k)} onFresh={() => void run(x.question, branch && space ? space + BRANCH : space, undefined, false, undefined, undefined, true)} />}
               {answered(x) && <DepartmentsView answer={x.answer} fetcher={fetcher} />}
               {answered(x) && <HandoffView answer={x.answer} question={x.question} fetcher={fetcher} />}
               {answered(x) && <AnswerTools question={x.question} answer={x.answer} />}

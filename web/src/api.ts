@@ -118,7 +118,7 @@ export interface SeeAlso {
   age_days?: number;
 }
 
-export type Notice = "most_uncited" | "no_access" | "no_sources" | null;
+export type Notice = "most_uncited" | "no_access" | "no_sources" | "model_unavailable" | null;
 
 // Clarify is the one question an ambiguous ask gets instead of an answer (SB-4901).
 export interface Clarify {
@@ -139,6 +139,9 @@ export interface AskResponse {
   label?: string;
   held?: number;
   memory?: string[]; // the ids of the memory lines it was given (SB-5504)
+  fallback?: boolean; // the fallback model wrote it (SB-5601)
+  passages?: SearchResult[]; // no model could write: the best passages (SB-5602)
+  reused?: string; // the day an earlier answer was written, reused and checked now (SB-5603)
   notice: Notice;
   conversation: string;
   people?: PersonRef[];
@@ -337,10 +340,12 @@ export async function ask(
   clarify?: boolean,
   choice?: string,
   steer?: Steer,
+  fresh?: boolean,
 ): Promise<AskResponse> {
   const body: Record<string, string | string[] | boolean | AskFile> = {
     question,
   };
+  if (fresh) body.fresh = true; // SB-5603: Ask fresh
   if (steer && steer.keep.length > 0) body.keep = steer.keep; // SB-5502
   if (steer && steer.drop.length > 0) body.drop = steer.drop;
   if (consult) body.consult = true; // SB-4501: with branch=true only

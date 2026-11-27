@@ -88,9 +88,16 @@ func (h Admin) notice(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, errs.New(errs.EUNAVAIL, "The notice can't be read now."))
 		return
 	}
-	if !ok {
+	down := h.ModelDown != nil && h.ModelDown() // SB-5602
+	switch {
+	case !ok && down:
+		h.ok(w, map[string]any{"text": ModelDownNotice, "model_down": true})
+	case !ok:
 		h.ok(w, map[string]any{})
-		return
+	default:
+		h.ok(w, map[string]any{"text": n.Text, "until": n.Until, "model_down": down})
 	}
-	h.ok(w, map[string]any{"text": n.Text, "until": n.Until})
 }
+
+// ModelDownNotice is the banner while no gated model can answer (SB-5602).
+const ModelDownNotice = "The AI model is unavailable right now: answers show the passages you can open, with no answer written."

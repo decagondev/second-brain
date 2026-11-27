@@ -604,6 +604,10 @@ func TestLAW31_LentAccessLastsOneRun(t *testing.T) {
 	Check(t, "LAW-31", runs, func(r *rand.Rand) error { return law31(r, RealLentGate) })
 }
 
+func TestLAW06_OnlyAGatedFallbackAnswers(t *testing.T) {
+	Check(t, "LAW-06", runs, func(r *rand.Rand) error { return law06Fallback(r, RealFallback) })
+}
+
 func TestLAW32_ALabelNeverDrops(t *testing.T) {
 	Check(t, "LAW-32", runs, func(r *rand.Rand) error { return law32(r, RealLabelGate) })
 }

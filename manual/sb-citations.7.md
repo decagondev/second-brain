@@ -85,6 +85,10 @@ The context panel lists the sources an answer's live check allowed and what stee
 
 Why not this document? and the stewards' retrieval view replay an answer's retrieval as the person asking, and name only what that person can open now (sb-ask(3), Ask why). A document they can't open gets the same reply as one that doesn't exist, so neither can be used to learn that a document exists.
 
+### A reused answer (SB-5603)
+
+A reused answer's cites are checked again as the new asker, and every document the earlier answer read must be unchanged; otherwise the question is answered fresh (sb-ask(3), Answered before).
+
 ### Versions
 
 Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.

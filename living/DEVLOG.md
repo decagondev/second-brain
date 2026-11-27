@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 S55.1: Keep answering
+
+**Wave/slice:** W55 / S55.1 (SB-5601 to SB-5603) · **Status:** Done
+
+**What:** A second provider answers when the first fails, but only while the release's eval gate has passed it, and the answer says so; three failures in five minutes switch to it for ten. With no gated model, an ask returns the passages the person can open and says no answer was written, scheduled drafting waits, and the health report and banner say why. The same question within seven days reuses the earlier answer, checked again as the asker, at no model cost, with **Ask fresh**.
+
+**Why this way:** The fallback is one more ports.Model in front of two gateways, so budgets, secret checks and tallies apply to each model as before and nothing above it changes. The gate is a file the evals job writes per release, like the small tier's hold, so a release that didn't gate it can't use it. Reuse keys only what makes two asks the same, and checks every document the earlier answer read, not just its cites, because an uncited claim could rest on any of them; asks that carry the person's own context never reuse.
+
+**Learned:** The old test that a down model fails the ask was the opposite of SB-5602; it now asserts the passages. Copying a budget guard copies its mutex, so the fallback builds its own.
+
+**Laws:** LAW-01, LAW-03, LAW-06, LAW-14, LAW-26. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 S54.2: Ask why
 
 **Wave/slice:** W54 / S54.2 (SB-5505 to SB-5507) · **Status:** Done

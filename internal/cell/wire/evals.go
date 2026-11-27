@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"example.com/second-brain/internal/core/ask"
 	"example.com/second-brain/internal/core/canary"
+	"example.com/second-brain/internal/core/gateway"
 )
 
 // The tenant's cases from wrong citations (sb-evals(7); SB-2204): the evals job runs them on
@@ -85,6 +87,8 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 		return ec.Passes(resp), nil
 	}
 	policy := routing(c.Manifest())
+	fbRan, fbFailed := 0, 0
+	hasFallback := c.Config.Model.Fallback.Provider != ""
 	run := func(ec ask.EvalCase) (bool, error) {
 		if policy(ec.Space) == ask.RoutingEconomy && agent.Small != nil && ec.Agent != ask.AgentResearch {
 			// SB-5002: an economy space's case runs on the tier its policy uses, so a policy
@@ -92,6 +96,12 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 			return probe(ask.WithTier(ctx, ask.TierSmall), ec)
 		}
 		ok, err := probe(ask.WithTier(ctx, ask.TierMain), ec)
+		if err == nil && ok && hasFallback { // SB-5601: the fallback must pass what the main model passes
+			fbRan++
+			if fb, ferr := probe(gateway.WithFallbackOnly(ask.WithTier(ctx, ask.TierMain)), ec); ferr != nil || !fb {
+				fbFailed++
+			}
+		}
 		if policy(ec.Space) == ask.RoutingFrontier { // composing stays on main: no small run
 			return ok, err
 		}
@@ -115,6 +125,11 @@ func (c *Cell) RunEvals(ctx context.Context) (*ask.Hold, error) {
 	updated, hold, err := ask.RunCases(cases, c.Release, run, checks)
 	if err != nil {
 		return nil, err
+	}
+	if hasFallback {
+		if err := writeFallbackGate(c.Config.State, c.Release, fbRan > 0 && fbFailed == 0); err != nil {
+			return nil, err
+		}
 	}
 	if ran > 0 {
 		if err := writeSmallHeld(c.Config.State, smallFailed > 0); err != nil {
@@ -244,4 +259,45 @@ func (c *Cell) withSkillCases(ctx context.Context, cases []ask.EvalCase) ([]ask.
 		out = append(out, ec)
 	}
 	return out, nil
+}
+
+// FallbackGatePath is where the evals job writes the release the fallback model passed
+// (SB-5601): the fallback answers only while it names the release the cell runs.
+func FallbackGatePath(state string) string { return filepath.Join(state, "evals", "fallback-gated") }
+
+func writeFallbackGate(state, release string, passed bool) error {
+	p := FallbackGatePath(state)
+	if !passed {
+		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	return os.WriteFile(p, []byte(release+"\n"), 0o600)
+}
+
+// fallbackGated is whether the fallback passed this release's gate; one that can't be read
+// didn't (LAW-06).
+func (c *Cell) fallbackGated() bool {
+	b, err := os.ReadFile(FallbackGatePath(c.Config.State))
+	return err == nil && strings.TrimSpace(string(b)) == c.Release
+}
+
+// modelDown says the last model call found no gated model to answer (SB-5602).
+func (c *Cell) modelDown() bool {
+	f := c.fallback.Load()
+	return f != nil && f.State().Down
+}
+
+// ModelState is the main tier's fallback state for the health report (SB-5601).
+func (c *Cell) ModelState() *gateway.State {
+	f := c.fallback.Load()
+	if f == nil {
+		return nil
+	}
+	st := f.State()
+	return &st
 }

@@ -80,3 +80,20 @@ describe("ask why (SB-5506, SB-5507)", () => {
     expect(screen.getByText("2 sources you can't open now")).toBeTruthy();
   });
 });
+
+describe("keep answering (SB-5601 to SB-5603)", () => {
+  it("shows passages when no model could write, the fallback, and a reused answer with Ask fresh", async () => {
+    const { AnswerView } = await import("./Answer");
+    const base = { trace: "q_1", release: "r", refused: 0, conversation: "cv_1", answer: { claims: [] } };
+    render(<AnswerView answer={{ ...base, notice: "model_unavailable", passages: [{ cite: "docs:dock@1", title: "Dock hours", snippet: "opens at seven", flags: [] }] } as never} />);
+    expect(screen.getByText("No answer written: the model is unavailable.")).toBeTruthy();
+    expect(screen.getByText("Dock hours")).toBeTruthy();
+    cleanup();
+    let fresh = 0;
+    render(<AnswerView answer={{ ...base, notice: null, reused: "2026-11-26", fallback: true } as never} onFresh={() => fresh++} />);
+    expect(screen.getByText(/Answered on 2026-11-26, checked now/)).toBeTruthy();
+    expect(screen.getByText("Answered by the fallback model.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Ask fresh" }));
+    expect(fresh).toBe(1);
+  });
+});

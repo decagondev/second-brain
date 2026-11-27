@@ -80,7 +80,9 @@ An action is reported as `Ran` only if the target returned a receipt. Otherwise 
 
 The build running in every cell is a signed release whose bundle passed the eval gate.
 
-*Checks:* Model (`Rollout.tla: OnlyGatedRuns`) · deploy-time verification · Watch: hourly digest attestation per cell.
+A fallback model answers only while the release's eval gate has passed it (SB-5601).
+
+*Checks:* Model (`Rollout.tla: OnlyGatedRuns`) · deploy-time verification · Property (`TestLAW06_OnlyAGatedFallbackAnswers`: random failures and a gate that opens and closes, through the real fallback; SB-5601) · Selftest (`TestSelfUngatedFallbackIsCaught`) · Watch: hourly digest attestation per cell.
 
 ### LAW-07: No secret in prompt, log or audit {#law-07}
 

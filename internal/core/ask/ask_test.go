@@ -202,10 +202,13 @@ func TestConversationSendsOnlyEarlierQuestions(t *testing.T) {
 	}
 }
 
+// SB-5602 changed this: a model that is down no longer fails the ask; it returns the
+// passages the asker can open, no claim, and says no answer was written.
 func TestModelDownIsUnavailable(t *testing.T) {
 	a, _ := setup(t, &model{err: errors.New("boom")})
-	if _, err := a.Ask(context.Background(), scope(t, "alice"), ask.Request{Question: "refund"}); !errors.Is(err, ask.ErrUnavailable) {
-		t.Fatalf("got %v", err)
+	resp, err := a.Ask(context.Background(), scope(t, "alice"), ask.Request{Question: "refund"})
+	if err != nil || resp.Notice == nil || *resp.Notice != ask.NoticeModelDown || len(resp.Answer.Claims) != 0 || len(resp.Passages) != 1 || resp.Passages[0].Cite != "docs:refunds@2" {
+		t.Fatalf("got %+v, %v", resp, err)
 	}
 }
 

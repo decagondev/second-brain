@@ -13,6 +13,7 @@ import (
 
 	"example.com/second-brain/internal/core/answer"
 	"example.com/second-brain/internal/core/budget"
+	"example.com/second-brain/internal/core/gateway"
 	"example.com/second-brain/internal/core/ports"
 	"example.com/second-brain/internal/core/prompts"
 	"example.com/second-brain/internal/core/retrieve"
@@ -68,6 +69,8 @@ type Request struct {
 	// the browser with each ask (SB-5502); each kept one is still checked as the asker.
 	Keep []string `json:"keep,omitempty"`
 	Drop []string `json:"drop,omitempty"`
+	// Fresh is Ask fresh: never reuse an earlier answer (SB-5603).
+	Fresh bool `json:"fresh,omitempty"`
 }
 
 // MaxShort is the most claims a short answer keeps (SB-3303), and MaxSeeAlso the most
@@ -228,6 +231,13 @@ type Response struct {
 	Label string `json:"label,omitempty"`
 	// Memory are the ids of the asker's memory lines the answer was given (SB-5504).
 	Memory []string `json:"memory,omitempty"`
+	// Fallback says the fallback model wrote it (SB-5601), and Passages are the best
+	// passages the asker can open when no model could (SB-5602): never an answer.
+	Fallback bool     `json:"fallback,omitempty"`
+	Passages []Result `json:"passages,omitempty"`
+	// Reused is the day an earlier answer to the same question was written, reused because
+	// every document it read is unchanged and open to the asker now (SB-5603).
+	Reused string `json:"reused,omitempty"`
 }
 
 // oneDocument says an answer of at least two cited claims cites one document only.
@@ -297,6 +307,8 @@ type Trace struct {
 	// (SB-5501, SB-5502), as ids.
 	Collection               string   `json:",omitempty"`
 	Documents, Kept, Dropped []string `json:",omitempty"`
+	// Read are the documents the answer was composed from, as KIND:ID@VERSION (SB-5603).
+	Read []string `json:",omitempty"`
 }
 
 // SpaceTagger is a store that keeps the space a conversation is asked in, so a legal hold
@@ -422,6 +434,8 @@ type Agent struct {
 	LeaderWeek func(space string) bool
 	// Skills are a space's skills by name, its department's with them (SB-4601); nil is none.
 	Skills func(space string) []Skill
+	// Reuse keeps the answers an ask may reuse (SB-5603); nil reuses none.
+	Reuse ReuseStore
 	// Exclusions keeps each person's Don't use this for me with their memory record
 	// (SB-5503), whatever the manifest's memory setting; nil excludes nothing.
 	Exclusions MemoryStore
@@ -492,6 +506,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	ctx, tally := budget.WithTally(ctx) // SB-4606: this answer's own cost
 	ctx, sk := withSkips(ctx)           // SB-5101: its suspect passages
 	ctx, hd := withWideHeld(ctx)        // SB-5402: documents shared too widely
+	ctx, mu := gateway.WithUsed(ctx)    // SB-5601: whether the fallback model answered
 	q, docs, err := validate(req)
 	if err != nil {
 		return Response{}, err
@@ -534,6 +549,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	if err != nil {
 		return Response{}, err
 	}
+	rk := a.reuseKeyIf(ctx, s, req, q, len(earlier), used, skill, probe || dept != nil) // SB-5603: "" never reuses
 	capped := len(docs) == 0
 	if docs, err = a.collectionOr(ctx, s, req.Collection, docs); err != nil { // SB-4304
 		return Response{}, err
@@ -569,49 +585,8 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		}
 		resp.Notice = &n
 		resp.Answer.Claims = []answer.Claim{{Text: NothingToCite, Cites: []answer.Cite{}, Uncited: true}}
-	} else {
-		prompt, lead := promptFor(ctx, dept)
-		if dept == nil { // a department agent uses no table
-			tr, ch, err := a.table(ctx, s, q, res.Context) // SB-4307
-			if err != nil {
-				return Response{}, err
-			}
-			if ch != nil {
-				res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
-			}
-		}
-		ca := a
-		if tier == TierSmall {
-			ca.Model = a.Small
-		}
-		claims, err := ca.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
-		if err != nil {
-			return Response{}, err
-		}
-		if req.Length == "short" && len(claims) > MaxShort {
-			claims = claims[:MaxShort]
-		}
-		if dept != nil {
-			claims, resp.Dropped = citedOnly(claims)
-		}
-		var off int // a number no passage or tool returned is dropped (SB-4307, LAW-14)
-		claims, off = tableCheck(claims, res.Context, resp.Table)
-		resp.Dropped += off
-		resp.Answer.Claims = claims
-		resp.People = a.whoToAsk(ctx, s, claims)
-		if mostUncited(claims) {
-			n := NoticeMostUncited
-			resp.Notice = &n
-		}
-		if err := a.markLinks(ctx, s, claims, res.Context); err != nil {
-			return Response{}, err
-		}
-		resp.NoticeStale = staleNotice(claims)
-		resp.NoticeSingle = oneDocument(claims)
-		resp.NoticeSync = a.syncNotices(ctx, claims)
-		resp.SeeAlso = seeAlso(claims, res.Context, a.Now())
-		resp.Verified = a.verifiedCount(ctx, claims, res.Context)
-		resp.Label = CitedLabel(claims, res.Context) // SB-5405, LAW-32
+	} else if err := a.answerFrom(ctx, s, req, q, dept, tier, terms, trace, sent, rk, &res, &resp); err != nil {
+		return Response{}, err
 	}
 
 	if keepsNothing(ctx) {
@@ -622,6 +597,7 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 	}
 	resp.Skipped = sk.Skipped() // SB-5101, its consultations' too
 	resp.Held, resp.WideWarned = hd.counts()
+	resp.Fallback = mu.Fallback()
 	for _, l := range used { // SB-5504: which lines, never their text, in the trace
 		resp.Memory = append(resp.Memory, l.ID)
 	}
@@ -633,11 +609,12 @@ func (a Agent) ask(ctx context.Context, s tenancy.Scope, req Request, probe bool
 		return resp, nil
 	}
 	t := Trace{ID: trace, Tenant: a.Tenant, User: s.User(), Space: s.Space(), At: a.Now(), Response: resp, Decisions: res.Decisions, Turn: turn, Files: files, FlaggedFiles: flaggedFiles, Tier: tier, CostUSD: tally.USD(), Feature: feature, Suspect: sk.Cites(), Client: tenancy.ClientOf(ctx),
-		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop} // SB-5501
+		Collection: req.Collection, Documents: docs, Kept: keep, Dropped: drop, Read: readSet(res.Context)} // SB-5501, SB-5603
 	if err := a.keep(ctx, s, conv, q+choice, t); err != nil { // the conversation keeps the choice with the question
 		return Response{}, err
 	}
 	a.guard(ctx, s.Space(), resp.Agent, t.Suspect)
+	a.keepForReuse(ctx, rk, resp) // SB-5603
 	return resp, nil
 }
 
@@ -732,19 +709,7 @@ func (a Agent) composeWith(ctx context.Context, prompt, lead, trace, q string, e
 	for _, ch := range chunks {
 		byCite[ch.Cite] = ch
 	}
-	own := a.owners()
-	marks := &marksCache{store: a.Marks, by: map[string]map[string]ReviewMark{}}
-	for i := range res.Claims {
-		for j := range res.Claims[i].Cites {
-			ch := byCite[res.Claims[i].Cites[j].Cite]
-			if a.Link != nil {
-				res.Claims[i].Cites[j].URL = a.Link(ch)
-			}
-			res.Claims[i].Cites[j].Owner = own.of(ctx, ch) // only allowed chunks are ever cited
-			f := a.freshness(ctx, marks, ch)
-			res.Claims[i].Cites[j].AgeDays, res.Claims[i].Cites[j].Reviewed, res.Claims[i].Cites[j].Stale = f.age, f.reviewed, f.stale
-		}
-	}
+	a.decorate(ctx, res.Claims, byCite)
 	for _, l := range res.Spoofs {
 		if a.Spoof != nil {
 			a.Spoof(ctx, trace, l)
@@ -884,4 +849,62 @@ func (a Agent) whoAnswers(ctx context.Context, s tenancy.Scope, q string, req Re
 		resp.Pinned = a.pinned(ctx, s, q)
 		resp.Suggest = a.suggest(ctx, s, q, req)
 	}
+}
+
+// answerFrom composes the answer from res's allowed context into resp: the table tool,
+// the model (or passages when it is down), and every check and note on the claims.
+func (a Agent) answerFrom(ctx context.Context, s tenancy.Scope, req Request, q string, dept *Department, tier string, terms []Term, trace string, sent []string, rk string, res *retrieve.Result, resp *Response) error {
+	if claims, at, ok := a.reusedFrom(ctx, rk, res.Context); ok { // SB-5603: the same documents, checked now: no model call
+		resp.Answer.Claims, resp.Reused = claims, at
+		resp.People = a.whoToAsk(ctx, s, claims)
+		resp.Verified = a.verifiedCount(ctx, claims, res.Context)
+		resp.Label = CitedLabel(claims, res.Context)
+		resp.SeeAlso = seeAlso(claims, res.Context, a.Now())
+		return a.markLinks(ctx, s, claims, res.Context)
+	}
+	prompt, lead := promptFor(ctx, dept)
+	if dept == nil { // a department agent uses no table
+		tr, ch, err := a.table(ctx, s, q, res.Context) // SB-4307
+		if err != nil {
+			return err
+		}
+		if ch != nil {
+			res.Context, resp.Table = append([]ports.Chunk{*ch}, res.Context...), tr
+		}
+	}
+	ca := a
+	if tier == TierSmall {
+		ca.Model = a.Small
+	}
+	claims, err := a.composeOrPassages(ctx, func() ([]answer.Claim, error) { // SB-5602: passages when no model can write
+		return ca.composeWith(withShort(withLanguage(withTerms(withSpace(withUser(ctx, s.User()), s.Space()), terms), req.Language), req.Length == "short"), prompt, lead, trace, q, sent, res.Context)
+	}, res.Context, resp)
+	if err != nil {
+		return err
+	}
+	if req.Length == "short" && len(claims) > MaxShort {
+		claims = claims[:MaxShort]
+	}
+	if dept != nil {
+		claims, resp.Dropped = citedOnly(claims)
+	}
+	var off int // a number no passage or tool returned is dropped (SB-4307, LAW-14)
+	claims, off = tableCheck(claims, res.Context, resp.Table)
+	resp.Dropped += off
+	resp.Answer.Claims = claims
+	resp.People = a.whoToAsk(ctx, s, claims)
+	if mostUncited(claims) {
+		n := NoticeMostUncited
+		resp.Notice = &n
+	}
+	if err := a.markLinks(ctx, s, claims, res.Context); err != nil {
+		return err
+	}
+	resp.NoticeStale = staleNotice(claims)
+	resp.NoticeSingle = oneDocument(claims)
+	resp.NoticeSync = a.syncNotices(ctx, claims)
+	resp.SeeAlso = seeAlso(claims, res.Context, a.Now())
+	resp.Verified = a.verifiedCount(ctx, claims, res.Context)
+	resp.Label = CitedLabel(claims, res.Context) // SB-5405, LAW-32
+	return nil
 }

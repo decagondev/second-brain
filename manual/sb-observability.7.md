@@ -85,6 +85,10 @@ A sharing change seen at sync that can't be kept counts `sb_sharing_unrecorded_t
 
 The admin's week (SB-5006) has a **Sensitive map** section: one line for each space with documents shared too widely or held, with how many have personal data, linking to `GET /v1/admin/sensitive`. Counts only.
 
+### The model's state (SB-5601, SB-5602)
+
+The health report's `model` is the main tier's fallback state: whether the fallback is gated, whether calls are switched to it and until when, and whether the last call found no model to answer (`down`). While it is down, the notice banner says so and answers show passages only.
+
 ### Telemetry labels
 
 Metric label values are ids, codes and names only: they must match `[A-Za-z0-9_.:@/-]` and be at most 128 characters. A value that doesn't match is **replaced** with `invalid` and counted in `sb_telemetry_rejected_total`, so a bug that tries to put text into a label can't leak it (LAW-07).

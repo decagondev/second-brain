@@ -78,6 +78,9 @@ type Admin struct {
 	// Notices keeps the cell's one notice to everyone (SB-3207); nil is EUNAVAIL to set it
 	// and no notice to read.
 	Notices ask.NoticeStore
+	// ModelDown says no gated model could answer the last call (SB-5602); the notice
+	// banner then says so. nil is never.
+	ModelDown func() bool
 	// AgentKilled and EvalHeld make the agent registry (SB-4004); a hold that can't be
 	// read is an error, never no hold.
 	AgentKilled func(agent string) bool

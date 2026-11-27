@@ -62,6 +62,18 @@ type Config struct {
 				OutPerM float64 `json:"out_per_m"`
 			} `json:"price"`
 		} `json:"small"`
+		// Fallback is a second provider and model, used only while it passes the release's
+		// eval gate (sb-cell(5), model.fallback; SB-5601); its key is at
+		// vault://tenants/TENANT/model-fallback. Empty is none.
+		Fallback struct {
+			Provider string `json:"provider"`
+			Base     string `json:"base"`
+			ID       string `json:"id"`
+			Price    struct {
+				InPerM  float64 `json:"in_per_m"`
+				OutPerM float64 `json:"out_per_m"`
+			} `json:"price"`
+		} `json:"fallback"`
 	} `json:"model"`
 	// Embed is the embedder (sb-ingest(7); SB-1710): "" or hashing, or openaicompat.
 	Embed struct {

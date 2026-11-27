@@ -81,6 +81,10 @@ With sb-cell(5) `model.small`, an ask goes to the small model when **all** of th
 
 The release gate runs every suite once per tier (`make evals` runs them for `rel_local` and `rel_local_small`), and a release whose either tier fails isn't released. On the cell, the evals job runs the tenant's cases (above) on the small tier too: a case that passes on the main model and fails on the small one **holds the small tier**, and every ask goes to the main model until a later run passes every case on both. The hold is the cell's own (`state/evals/small-held`), never a model call refused. The cost statement (sb-admin(3)) carries each line's `tier`, and the weekly report the share of asks on the small model (sb-observability(7)).
 
+### The fallback gate (SB-5601)
+
+With sb-cell(5) `model.fallback`, each case that passes on the main model runs again on the fallback alone. The fallback is gated for the release only when at least one case ran and every one passed; otherwise it is never used (sb-runtime(7), The fallback model; LAW-06).
+
 ### Routing policies (SB-5002)
 
 A space's `routing` (sb-space(5)) changes which tier its asks use, so the evals job runs that space's cases on the tiers its policy uses: an `economy` space's cases run on the small tier only (a research case still on main), a `frontier` space's on the main tier only, and a `balanced` space's on both, as above. A case that fails on the tier its policy uses holds the small tier like any other failing case, so a policy can't route answers to a tier its own cases fail on. Whatever the policy, a held small tier answers on main.

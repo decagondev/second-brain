@@ -36,6 +36,7 @@ const notices: Record<Exclude<Notice, null>, string> = {
   ),
   no_sources: msg("Nothing indexed answers this yet."),
   most_uncited: msg("Most of this answer isn't backed by your sources."),
+  model_unavailable: msg("No answer written: the model is unavailable."),
 };
 
 // "Finance · restricted": the spaces that hold a source and its label, in words.
@@ -646,8 +647,11 @@ export function AnswerView({
   space,
   onSuggest,
   onSteer,
+  onFresh,
 }: {
   answer: AskResponse;
+  // Ask the same question again without reusing this answer (SB-5603).
+  onFresh?: () => void;
   // Keep or Drop a document for the rest of the conversation (SB-5502).
   onSteer?: (doc: string, kind: SteerKind) => void;
   fetcher?: Fetch;
@@ -683,10 +687,30 @@ export function AnswerView({
         </p>
       )}
       <Freshness answer={answer} />
+      {answer.reused && (
+        <p className="notice" role="note">
+          {t("Answered on {date}, checked now.", { date: answer.reused })}{" "}
+          {onFresh && (
+            <button type="button" className="link" onClick={onFresh}>
+              {t("Ask fresh")}
+            </button>
+          )}
+        </p>
+      )}
+      {answer.fallback && <p className="meta">{t("Answered by the fallback model.")}</p>}
       {answer.notice && (
         <p className="notice" role="note">
           {t(notices[answer.notice])}
         </p>
+      )}
+      {answer.passages && answer.passages.length > 0 && (
+        <ul className="passages" aria-label={t("Passages you can open")}>
+          {answer.passages.map((p) => (
+            <li key={p.cite}>
+              <strong>{p.title || p.cite}</strong> <span>{p.snippet}</span>
+            </li>
+          ))}
+        </ul>
       )}
       <ul className="claims">
         {answer.answer.claims.map((c, i) => (

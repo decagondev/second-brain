@@ -234,6 +234,9 @@ One row per law. Status only moves up: **Stated → Modelled → Tested → Enfo
 | 2026-11-26 | LAW-01 | Tested (extended) | SB-5501, SB-5502: the context panel names only what the viewer can open now, and a kept document still takes the live check (TestSeeAndSteerTheContextThroughARunningCell) |
 | 2026-11-27 | LAW-01 | Tested (extended) | SB-5506, SB-5507: why not answers a document the caller can't open exactly as a missing one, and the retrieval view runs as the steward and counts what they can't open (TestAskWhyThroughARunningCell) |
 | 2026-11-27 | LAW-25 | Tested (extended) | SB-5505: a line an MCP client proposes is never sent until its person confirms it in the web app, and a token can't confirm it (TestAskWhyThroughARunningCell) |
+| 2026-11-27 | LAW-06 | Tested (extended) | SB-5601: a fallback model answers only while the release's eval gate passed it, and says so (TestLAW06_OnlyAGatedFallbackAnswers, TestSelfUngatedFallbackIsCaught, TestKeepAnsweringThroughARunningCell) |
+| 2026-11-27 | LAW-26 | Tested (extended) | SB-5603: a reused answer is checked again as the new asker, and a changed document answers fresh (TestAnsweredBeforeCheckedNow) |
+| 2026-11-27 | LAW-14 | Tested (extended) | SB-5602: with no model, an ask returns passages and no claim (TestModelDownIsUnavailable, TestKeepAnsweringThroughARunningCell) |
 | 2026-11-25 | LAW-31 | Tested | SB-5303: a lent draft shows exactly to readers who can open every cite, and a loan answered once never runs again (TestLAW31_LentAccessLastsOneRun, TestSelfLentGateIsCaught, TestBorrowAccessThroughARunningCell) |
 | 2026-11-25 | LAW-29 | Tested (extended) | SB-5301: a work event only drafts, once per document, as the trigger's approver (TestWorkEventsDraftOnceAndBatch) |
 | 2026-11-25 | LAW-13 | Tested (extended) | SB-5205: a chunk's page comes from the source's own page offsets, so a rebuild gives the same pages (TestPagesOfPDFsAndDecks) |

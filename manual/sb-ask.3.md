@@ -40,6 +40,7 @@ POST /v1/ask
 | `choice` | string | no | (SB-4901) The asker's answer to the clarifying question: one of its `choices`, exactly, or `just answer`. A choice that isn't one the same question would be offered is `EINVAL` |
 | `keep` | list of `KIND:ID`, ≤ 20 | no | (SB-5502) The conversation's **kept** documents: their first passages are added to this ask, each checked as the asker now and left out when they can't open it, it is held, or they excluded it. The web keeps the list with the conversation in the browser and sends it with each ask; nothing is stored on the server but the trace's ids |
 | `drop` | list of `KIND:ID`, ≤ 20 | no | (SB-5502) The conversation's **dropped** documents: left out of this ask, kept or not |
+| `fresh` | bool | no | (SB-5603) **Ask fresh**: never reuse an earlier answer (Answered before, below) |
 
 In a cell with spaces, the space to ask in is the query parameter `?space=NAME` (sb-api(3), Spaces), never a body field: `POST /v1/ask?space=finance`. Without it the ask is company-wide. In a department, `&branch=true` (SB-3903) also asks in each of its teams the asker is a member of, every check running once per space as the asker in it (sb-spaces(7), The tree); it works the same on `GET /v1/search`, and a space with no teams, or none the asker is in, is the space alone.
 
@@ -76,6 +77,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
   "held": 0,
   "wide_warned": 0,
   "verified": { "of": 2, "marked": 1 },
+  "fallback": false,
+  "passages": [],
+  "reused": "2026-11-26",
   "notice": null,
   "conversation": "cv_01JD3QB9…",
   "agent": "ask",
@@ -136,6 +140,9 @@ In a cell with spaces, the space to ask in is the query parameter `?space=NAME` 
 | `assumed` | (SB-4901) For an ambiguous ask made without `clarify`, the line `Assumed: CHOICE`, the first choice it answered with; the chat apps and agent drafts show it at the top. Omitted otherwise |
 | `label` | (SB-5405) The highest label among the answer's cites (sb-citations(7), Labels travel; LAW-32). The web shows `confidential` and `restricted` above the answer and in its download and print view; a chat reply names them, and such an answer can't be shared into a channel. Omitted when no cite is labelled |
 | `memory` | (SB-5504) The ids of the asker's own memory lines this answer was given (Memory I control). The web shows each line under the answer with **Forget this**; the trace keeps only the ids. Omitted when none |
+| `fallback` | (SB-5601) `true` when the fallback model wrote the answer (sb-runtime(7), The fallback model). Omitted otherwise |
+| `passages` | (SB-5602) With `notice: "model_unavailable"`: the best passages the asker can open, at most 5, one per document, as search results with masked snippets, and no claim. Omitted otherwise |
+| `reused` | (SB-5603) The day an earlier answer to the same question was written, when this one reuses it (Answered before). Omitted otherwise |
 | `people` | Who to ask: the owners of the answer's cites, most cited first (then by email), at most three, each with how many cites name their documents. Empty when no cite has an owner, except in a team (SB-3906): when the answer has cites and none of their owners is an active user, it names up to three of the department's stewards, active now, each with `"steward": true` and no `cites` count |
 
 ### How the `ask` agent runs, exactly
@@ -575,6 +582,14 @@ From the panel, **Keep** adds a document to every later ask of the conversation 
 **The retrieval view** (SB-5507) `GET /v1/spaces/NAME/review/retrieval?trace=ID`, for the space's stewards and only for an answer asked there that was reported to them (SB-3606) or rated unhelpful (SB-3604; otherwise `EINVAL`): the trace's question searched again **as the steward**, each ranked passage with its `keyword_rank`, `vector_rank`, fused `score` and `why` (`kept`, `budget`, `per_document`, `retired`, `held` or `suspect`), `{ "trace", "rows": [...], "hidden" }`. Passages the steward can't open are counted, never named, and the asker's memory and exclusions play no part, so they are never shown. Web: **Show the retrieval** on a reported answer in the queue.
 
 **Memory over MCP** (SB-5505): with the `memory` family (sb-cell(5), `mcp_groups`) and memory on, the MCP endpoint offers one read-only resource, `memory://me` (`resources/list`, `resources/read`), the caller's own lines, and a `memory_propose` tool. A proposed line passes the same checks as one typed in, waits in the person's memory as `proposed` (at most 10) and inbox (kind `memory`), and is never sent with an ask until the person confirms it in the web app: `POST /v1/me/memory/proposals/{id}/confirm`, or `DELETE /v1/me/memory/proposals/{id}` to dismiss, both refused (`EPERM`) for an API token, which is what an MCP client uses. Another person's memory is never offered.
+
+### When the model is down (SB-5602)
+
+With no gated model to write an answer, an ask still runs every check and returns the best passages the asker can open (`passages`), with `notice: "model_unavailable"` and no claim: the web shows "No answer written: the model is unavailable." above them, and nothing is labelled as an answer (LAW-14).
+
+### Answered before, checked now (SB-5603)
+
+An ask whose normalised question (lower case, words only), space, source kinds, language, agent, length and `verified` match an answer kept in the last 7 days reuses it, with no model call, when the documents this ask's own retrieval allows, checked live as the asker after retirements, holds and exclusions, are exactly the ones that answer was composed from, in the same versions: nothing it read has changed and the asker can open all of it now (LAW-26). Its cites are dressed again for now (owners, links, review marks). It carries `reused` (the day it was written), and the web shows "Answered on DATE, checked now" with **Ask fresh** (`fresh`). Only a first question with every claim cited is kept for reuse, and an ask with memory lines, exclusions, kept or dropped documents, a file, a collection, chosen documents, a skill, a consult or a clarifying choice never reuses or is reused. Near matches with other wording are never reused.
 
 ### Your own data (SB-3501, SB-3502)
 

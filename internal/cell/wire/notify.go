@@ -212,7 +212,7 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 	if weekly == nil {
 		weekly = time.UTC
 	}
-	return notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m), Parent: parentOf(m),
+	j := notify.Job{Zone: weekly, Digest: zone != nil, Askers: c.askers, Changes: c.digestChanges, Watches: c.Traces, Sources: c.Sources, Tenant: c.Config.Tenant, Base: c.Config.BaseURL, Questions: c.Traces, Facts: stewardFacts(m), Parent: parentOf(m),
 		Dir: c.Directory, Prefs: c.Traces, Send: send, Clock: notifyClock{filepath.Join(c.Config.State, "notify")},
 		Now: time.Now, Lookback: time.Duration(m.RetentionDays) * 24 * time.Hour, Tokens: c.expiringTokens, Owned: c.ownedPastReview, Helped: c.helpedOwners, FoundNothing: c.foundNothing, Trends: c.trends, Audit: c.Audit, Reviews: c.reviewList,
 		Briefs: briefDays(m), RunBrief: c.runBrief, Updates: updateSpaces(m), RunUpdate: c.runUpdate, Leaders: leaderSpaces(m), RunLeader: c.runLeader, Welcomes: c.welcomes, Welcomed: c.welcomed, Transcripts: c.newTranscripts, RunDecisions: c.runDecisions, PolicyNotices: c.policyNotices, SourceChanged: c.sourceChanged, NearLimit: c.nearLimit, Suspects: c.suspects, Notices: c.notices, MayPause: c.mayPauseLink, WorkEvents: c.workEvents, RunWork: c.runWork, SpaceBudgets: c.spaceBudgets,
@@ -228,6 +228,11 @@ func (c *Cell) NotifyJob(send notify.Sender) notify.Job {
 		Failed: func(kind string) {
 			c.Metrics.Add("sb_notify_failed_total", "Notifications that couldn't be sent, by kind (sb-ask(3)).", map[string]string{"kind": kind}, 1)
 		}}
+	if c.modelDown() { // SB-5602: what drafts waits for a model; each runs on a later tick, none is marked done
+		j.RunBrief, j.RunUpdate, j.RunLeader, j.RunDecisions, j.RunWork, j.RunIncident, j.RunReview = nil, nil, nil, nil, nil, nil, nil
+		j.Research, j.Routines, j.Checkins, j.Rhythms, j.SourceChanged, j.PrepDue = nil, nil, nil, nil, nil, nil
+	}
+	return j
 }
 
 // notifyClock keeps each part's last run in a file under the cell's state.

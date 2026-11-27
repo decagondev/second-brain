@@ -48,6 +48,7 @@ type Store struct {
 	projects map[string]ask.Project       // tenant/id (SB-4803)
 	wide     map[string]ask.WideConfirm   // tenant/doc (SB-5402)
 	sharing  []ask.SharingEvent           // SB-5403
+	reuse    map[string]ask.ReuseEntry    // tenant/key (SB-5603)
 	// Now stamps conversations for retention; nil is time.Now.
 	Now func() time.Time
 }

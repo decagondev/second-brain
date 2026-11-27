@@ -1125,4 +1125,9 @@ export const catalog: Record<string, { de: string; fr: string }> = {
   "Proposed by an assistant": { de: "Von einem Assistenten vorgeschlagen", fr: "Proposé par un assistant" },
   "Confirm": { de: "Bestätigen", fr: "Confirmer" },
   "Memory line to confirm": { de: "Gedächtniszeile zum Bestätigen", fr: "Ligne de mémoire à confirmer" },
+  "No answer written: the model is unavailable.": { de: "Keine Antwort geschrieben: Das Modell ist nicht verfügbar.", fr: "Aucune réponse rédigée : le modèle est indisponible." },
+  "Answered on {date}, checked now.": { de: "Beantwortet am {date}, jetzt geprüft.", fr: "Répondu le {date}, vérifié maintenant." },
+  "Ask fresh": { de: "Neu fragen", fr: "Redemander" },
+  "Answered by the fallback model.": { de: "Vom Ersatzmodell beantwortet.", fr: "Répondu par le modèle de secours." },
+  "Passages you can open": { de: "Textstellen, die Sie öffnen können", fr: "Passages que vous pouvez ouvrir" },
 };

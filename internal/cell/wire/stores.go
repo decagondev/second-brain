@@ -88,6 +88,7 @@ type TraceStore interface {
 	ask.ProjectStore
 	ask.WideConfirmStore
 	ask.SharingStore
+	ask.ReuseStore
 	Retention() []retention.Store
 	Between(ctx context.Context, tenant string, from, to time.Time) ([]ask.Trace, error)
 }
@@ -236,6 +237,7 @@ func (c *Cell) Health(ctx context.Context, now time.Time) (health.Report, error)
 		return r, err
 	}
 	r.Box = c.box(now)
+	r.Model = c.ModelState() // SB-5601, SB-5602
 	if via := c.channel(); via != "" {
 		rec, found, err := lastNotify(c.Config.State)
 		if err != nil {

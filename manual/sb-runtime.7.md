@@ -110,6 +110,12 @@ Each tenant's web UI is a **Firebase Hosting site in that cell's own project**, 
 
 Firebase Hosting can only rewrite to a Cloud Run service in its own project, and the generator checks that too. A configuration is refused if it rewrites to any service other than `api`, to another region, to a function, or to any absolute URL, or if the site isn't in the cell's project. So no site can ever send a request to another tenant's cell (LAW-02). A tenant may instead serve the same files from its own host, provided that host sends `/v1/` only to its own cell's `api`.
 
+### The fallback model (SB-5601, SB-5602)
+
+Every call of the main tier goes through the fallback gateway. When the main provider returns a server error, a rate limit past its retries, or times out, the call goes to `model.fallback` (sb-cell(5)) only if the fallback is **gated** for this release: the evals job runs every tenant case that passes on the main model again on the fallback alone, and writes `state/evals/fallback-gated` naming the release only when there was at least one case and the fallback passed them all. A gate that names another release, or can't be read, isn't one (LAW-06). After 3 failures of the main provider in 5 minutes, every call uses the gated fallback for 10 minutes, then the main provider is tried again. A refused secret or a spent budget is the same on either model and never falls back. An answer the fallback wrote says so (`fallback`, and the trace).
+
+When no gated model can answer, the ask returns passages only (sb-ask(3), When the model is down), and the notify job leaves briefs, updates, routines, research, check-ins, rhythms and drafts from work events for a later tick: none is marked done, so each runs when a model answers again. The health report's `model` says `{ "gated", "switched", "until"?, "down" }`, and the notice banner says the model is unavailable while it is down.
+
 ## LAWS
 
 [LAW-02](sb-laws.7.md#law-02): every resource and role is in the cell's own project. [LAW-06](sb-laws.7.md#law-06): only admitted, attested images run. [LAW-18](sb-laws.7.md#law-18): the database key is in the cell's key ring.

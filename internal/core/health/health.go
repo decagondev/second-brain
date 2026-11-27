@@ -5,6 +5,8 @@
 package health
 
 import (
+	"example.com/second-brain/internal/core/gateway"
+
 	"context"
 	"errors"
 	"fmt"
@@ -81,6 +83,9 @@ type Report struct {
 	Unstewarded *Unstewarded `json:"spaces_unstewarded,omitempty"`
 	// AnswerTime is seconds per answer, this week and the week before (SB-3205).
 	AnswerTime *AnswerTime `json:"answer_time,omitempty"`
+	// Model is the main model's fallback: gated, switched until a time, and whether no
+	// model could answer the last call (SB-5601, SB-5602).
+	Model *gateway.State `json:"model,omitempty"`
 }
 
 // Unstewarded is health's spaces with no active steward; either list warns.
