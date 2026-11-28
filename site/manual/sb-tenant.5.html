@@ -76,6 +76,18 @@ agents: [ask]
 <td>Microsoft Graph's app credentials, <code>{ "tenant_id", "client_id", "client_secret" }</code> (SB-5901, ADR-0023); read scopes only</td>
 </tr>
 <tr>
+<td><code>vault://tenants/TENANT/atlassian</code></td>
+<td>Confluence and Jira Cloud: a read-only account's <code>{ "email", "api_token", "webhook_secret" }</code> (SB-6201, ADR-0024)</td>
+</tr>
+<tr>
+<td><code>vault://tenants/TENANT/model-transcribe</code></td>
+<td>The transcribe provider's key, when it isn't on the box (SB-6102)</td>
+</tr>
+<tr>
+<td><code>vault://tenants/TENANT/model-fallback</code></td>
+<td>The fallback model's key (SB-5601; BUG-0032)</td>
+</tr>
+<tr>
 <td><code>vault://tenants/TENANT/teams</code></td>
 <td>the Teams bot's <code>{ "app_id", "app_password" }</code> (SB-5904)</td>
 </tr>
@@ -159,7 +171,7 @@ agents: [ask]
 <td>map kind→vendor</td>
 <td>yes</td>
 <td></td>
-<td>Kinds: <code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>, <code>code</code> (SB-1103), <code>hris</code> (SB-1104) and <code>accounting</code> (SB-1105). At least one. Vendor is <code>[a-z0-9-]</code>, e.g. <code>sharepoint</code>; <code>docs: folder</code> reads a directory, such as a mounted file share (sb-connector(3), SB-1606). Read-only unless named in <code>workflows</code></td>
+<td>Kinds: <code>docs</code>, <code>chat</code>, <code>tickets</code>, <code>crm</code>, <code>code</code> (SB-1103), <code>hris</code> (SB-1104) and <code>accounting</code> (SB-1105). At least one. Vendor is <code>[a-z0-9-]</code>, e.g. <code>sharepoint</code>; <code>docs: folder</code> reads a directory, such as a mounted file share (sb-connector(3), SB-1606); <code>docs: confluence</code> and <code>tickets: jira</code> read Confluence and Jira Cloud (SB-6201, SB-6204). Read-only unless named in <code>workflows</code></td>
 </tr>
 <tr>
 <td><code>agents</code></td>
@@ -254,10 +266,10 @@ agents: [ask]
 </tr>
 <tr>
 <td><code>language</code></td>
-<td><code>en</code> | <code>de</code> | <code>fr</code></td>
+<td><code>en</code> | <code>de</code> | <code>fr</code> | <code>es</code> | <code>it</code> | <code>nl</code></td>
 <td>no</td>
 <td><code>en</code></td>
-<td>The web UI's default language (SB-2301): English, German or French. The cell writes it into the page it serves (<code>&lt;html lang="…"&gt;</code>), every string the UI shows comes from its catalog in that language, and the cell's errors are shown by their code in it (sb-errors(7)). A person can switch language in the UI; their choice is kept in their own browser and wins over this default. Answers stay in whatever language the model writes</td>
+<td>The web UI's default language (SB-2301, SB-6106): English, German, French, Spanish, Italian or Dutch. The cell writes it into the page it serves; each person may choose another in the web UI, kept in their browser. Answers are in the asker's UI language (SB-3003), in chat the manifest's; the chat apps' fixed lines stay in English</td>
 </tr>
 <tr>
 <td><code>memory</code></td>

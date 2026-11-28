@@ -312,7 +312,10 @@
       &quot;enum&quot;: [
         &quot;en&quot;,
         &quot;de&quot;,
-        &quot;fr&quot;
+        &quot;fr&quot;,
+        &quot;es&quot;,
+        &quot;it&quot;,
+        &quot;nl&quot;
       ],
       &quot;type&quot;: &quot;string&quot;
     },
@@ -476,6 +479,42 @@
             },
             &quot;type&quot;: &quot;object&quot;
           },
+          &quot;glossary_in&quot;: {
+            &quot;additionalProperties&quot;: {
+              &quot;additionalProperties&quot;: {
+                &quot;maxLength&quot;: 40,
+                &quot;minLength&quot;: 1,
+                &quot;type&quot;: &quot;string&quot;
+              },
+              &quot;propertyNames&quot;: {
+                &quot;enum&quot;: [
+                  &quot;en&quot;,
+                  &quot;de&quot;,
+                  &quot;fr&quot;,
+                  &quot;es&quot;,
+                  &quot;it&quot;,
+                  &quot;nl&quot;,
+                  &quot;pt&quot;,
+                  &quot;pl&quot;,
+                  &quot;sv&quot;,
+                  &quot;da&quot;,
+                  &quot;fi&quot;,
+                  &quot;nb&quot;,
+                  &quot;cs&quot;,
+                  &quot;ja&quot;,
+                  &quot;zh&quot;,
+                  &quot;ko&quot;
+                ]
+              },
+              &quot;type&quot;: &quot;object&quot;
+            },
+            &quot;maxProperties&quot;: 200,
+            &quot;propertyNames&quot;: {
+              &quot;maxLength&quot;: 40,
+              &quot;minLength&quot;: 1
+            },
+            &quot;type&quot;: &quot;object&quot;
+          },
           &quot;incident_labels&quot;: {
             &quot;default&quot;: [
               &quot;sev-1&quot;
@@ -521,7 +560,8 @@
                 &quot;source-changed&quot;,
                 &quot;pr-opened&quot;,
                 &quot;ticket-filed&quot;,
-                &quot;mail-received&quot;
+                &quot;mail-received&quot;,
+                &quot;request-received&quot;
               ]
             },
             &quot;minItems&quot;: 1,

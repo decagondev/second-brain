@@ -73,6 +73,7 @@ answer = claim*      claim = text (cite+ | uncited)
 <p>A reused answer's cites are checked again as the new asker, and every document the earlier answer read must be unchanged; otherwise the question is answered fresh (sb-ask(3), Answered before).</p>
 <h3 id="versions">Versions</h3>
 <p>Citations keep the version they used. If the source has moved on, the UI shows "newer version available" next to the citation.</p>
+<p><strong>Text a model read</strong> (SB-6101, SB-6102). A cite of a passage the vision or the transcribe tier read carries <code>read_by</code> and the page of its picture, and says so wherever it is shown (sb-ingest(7), What a model read; LAW-28).</p>
 <h2 id="laws">LAWS</h2>
 <p><a href="sb-laws.7.html#law-01">LAW-01</a>, <a href="sb-laws.7.html#law-14">LAW-14</a>.</p>
 <h2 id="examples">EXAMPLES</h2>

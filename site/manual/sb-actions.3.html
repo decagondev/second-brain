@@ -80,6 +80,8 @@ Idempotency-Key: 01JD3QE2…
 </tr>
 </tbody>
 </table>
+<h3 id="draft-a-jira-issue-sb-6207">Draft a Jira issue (SB-6207)</h3>
+<p><code>POST /v1/actions/draft { "trace", "kind": "jira-issue" }</code> drafts a new Jira issue from the caller's own answer, its cites checked again as them (a cite they can no longer open is left out, with its claim): <code>{ "kind": "jira-issue", "summary", "text", "cites", "link", "warning"? }</code>. <code>link</code> opens Jira's own create form (<code>/secure/CreateIssueDetails!init.jspa</code>) in the first project of sb-cell(5) <code>atlassian.projects</code>, filled in with the summary and the text, so the person files it under their own sign-in; the cell never files an issue and keeps no token of theirs. <code>warning</code> says the draft cites a confidential or restricted document the project's readers may not open (LAW-32). Without Jira it is <code>EUNAVAIL</code>. The web UI's <strong>Draft a Jira issue</strong> shows the text, the warning and <strong>File it in Jira</strong>.</p>
 <h3 id="draft-the-next-action-sb-5304">Draft the next action (SB-5304)</h3>
 <p>An answer can become the next action, drafted for the person to edit; nothing goes out until they press <strong>Send</strong>.</p>
 <ul>
@@ -137,7 +139,7 @@ curl -sS -X POST &quot;$SB/v1/actions/$ID/approve&quot; -H &quot;Authorization: 
 </code></pre>
 <h2 id="see-also">SEE ALSO</h2>
 <p><a href="sb-approvals.7.html">sb-approvals(7)</a>, <a href="sb-agents.7.html">sb-agents(7)</a>, <a href="sb-connector.3.html">sb-connector(3)</a></p><p class="srcline">Source: <code>manual/sb-actions.3.md</code></p></main>
-  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#drafts-draft-reply">Drafts (draft-reply)</a></li><li class="l3"><a href="#actions-gated-workflows">Actions (gated workflows)</a></li><li class="l3"><a href="#draft-the-next-action-sb-5304">Draft the next action (SB-5304)</a></li><li class="l3"><a href="#the-approver-view">The approver view</a></li><li class="l3"><a href="#states">States</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li class="l2"><a href="#name">NAME</a></li><li class="l2"><a href="#synopsis">SYNOPSIS</a></li><li class="l2"><a href="#description">DESCRIPTION</a></li><li class="l3"><a href="#drafts-draft-reply">Drafts (draft-reply)</a></li><li class="l3"><a href="#actions-gated-workflows">Actions (gated workflows)</a></li><li class="l3"><a href="#draft-a-jira-issue-sb-6207">Draft a Jira issue (SB-6207)</a></li><li class="l3"><a href="#draft-the-next-action-sb-5304">Draft the next action (SB-5304)</a></li><li class="l3"><a href="#the-approver-view">The approver view</a></li><li class="l3"><a href="#states">States</a></li><li class="l2"><a href="#errors">ERRORS</a></li><li class="l2"><a href="#laws">LAWS</a></li><li class="l2"><a href="#examples">EXAMPLES</a></li><li class="l2"><a href="#see-also">SEE ALSO</a></li></ul></aside>
 </div>
 <footer>Second Brain · generated from the repository's markdown by <code>tools/site/build.py</code> · if the platform says it, it holds</footer>
 <script>window.SB_PREFIX="../";</script>

@@ -171,6 +171,13 @@
 <td>(SB-5907) The one <strong>shared</strong> mailbox whose new messages start the space's agent, with <code>on: [mail-received]</code>, for example <code>support@acme.example</code>. It is read through Microsoft Graph (<code>Mail.Read</code>, which an application access policy limits to the mailboxes spaces name); a person's own mailbox is never named or read. <code>on</code> listing <code>mail-received</code> without a <code>mailbox</code> is an error</td>
 </tr>
 <tr>
+<td><code>service_queue</code></td>
+<td>a Jira project key</td>
+<td>no</td>
+<td></td>
+<td>(SB-6206) The one Jira Service Management project whose new requests start the space's agent with <code>on: [request-received]</code> (which needs it). Only a queue a space names is read, through sb-cell(5) <code>atlassian</code>; nothing is sent</td>
+</tr>
+<tr>
 <td><code>routing</code></td>
 <td><code>economy</code>, <code>balanced</code> or <code>frontier</code></td>
 <td>no</td>
@@ -179,10 +186,10 @@
 </tr>
 <tr>
 <td><code>on</code> (work events)</td>
-<td><code>pr-opened</code>, <code>ticket-filed</code>, <code>mail-received</code></td>
+<td><code>pr-opened</code>, <code>ticket-filed</code>, <code>mail-received</code>, <code>request-received</code></td>
 <td>no</td>
 <td>none</td>
-<td>(SB-5301) Beside <code>source-changed</code>: a new pull request on GitHub, or a new ticket, in the space starts a draft about it for the space's first active steward (sb-agents(7), Start on a work event); <code>mail-received</code> (SB-5907), with <code>mailbox</code>, a new message in the space's shared mailbox (sb-agents(7), Start on a new email)</td>
+<td>(SB-5301) Beside <code>source-changed</code>: a new pull request on GitHub, or a new ticket (Linear or Jira, SB-6205), in the space starts a draft about it for the space's first active steward (sb-agents(7), Start on a work event); <code>mail-received</code> (SB-5907), with <code>mailbox</code>, a new message in the space's shared mailbox (sb-agents(7), Start on a new email); <code>request-received</code> (SB-6206), with <code>service_queue</code>, a new request in the space's Jira Service Management queue (sb-agents(7), Start on a service request)</td>
 </tr>
 <tr>
 <td><code>suspect</code></td>
@@ -211,6 +218,13 @@
 <td>no</td>
 <td><code>{}</code></td>
 <td>The space's terms and acronyms, <code>TERM: MEANING</code> (SB-2203; stewards see the terms its documents define as suggestions, sb-ask(3), SB-3407): at most 200, each term 1 to 40 characters and each meaning 1 to 200, printable, no term twice (ignoring case). Search and answers <strong>in this space</strong> expand a term the question uses with its meaning (sb-ask(3), Glossary); a company-wide ask or another space never does. An entry that reads like an instruction to the model is kept but <strong>flagged and not used</strong>, and the stewards' review list names it. Changed like any field: a steward's proposal an operator approves (sb-spaces(7))</td>
+</tr>
+<tr>
+<td><code>glossary_in</code></td>
+<td>map</td>
+<td>no</td>
+<td><code>{}</code></td>
+<td>(SB-6104) Each glossary term's own words in other languages, <code>TERM: { LANG: WORD }</code>, such as <code>PO: { de: Bestellung, fr: "bon de commande" }</code>. A term it names must be in the space's glossary or its parent's; a language is one of sb-cell(5) <code>languages</code>' codes; a word is 1 to 40 printable characters. A question or an answer that uses the word uses the term: its meaning joins the search and the word is marked in the answer (sb-ask(3), Glossary). A team takes its department's words for the terms it lends. Stewards add a word with a proposal (<code>POST /v1/spaces/NAME/proposals/term</code> with <code>term</code> and <code>words</code>)</td>
 </tr>
 <tr>
 <td><code>skills</code></td>

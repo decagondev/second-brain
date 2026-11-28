@@ -123,6 +123,24 @@
 <td>(SB-5305) Who may use MCP, and which tools: each IdP group named gets the tool families listed, of <code>search</code>, <code>ask</code> (with <code>passage</code>), <code>agents</code>, <code>research</code>, <code>skills</code> (prompts) and <code>memory</code> (the person's memory resource and <code>memory_propose</code>, SB-5505). A person in none of the groups is refused (<code>EPERM</code>), and a tool not granted to any of their groups isn't listed or callable. Without it, everyone gets every family, as before. It needs <code>mcp: true</code></td>
 </tr>
 <tr>
+<td><code>mcp_clients</code></td>
+<td>list</td>
+<td>no</td>
+<td>(SB-6006) The AI tools a token may be made for, by short lower-case name (<code>claude-code</code>, <code>cursor</code>): with any, <code>POST /v1/tokens</code> needs a <code>client</code> from the list, and only a token made for a listed tool may use MCP (<code>EPERM</code> otherwise). Without it, a token may name any tool or none. It needs <code>mcp: true</code></td>
+</tr>
+<tr>
+<td><code>languages</code></td>
+<td>list</td>
+<td>no</td>
+<td>(SB-6103) The languages the cell's documents are in, by code (<code>en</code>, <code>de</code>, <code>fr</code>, <code>es</code>, <code>it</code>, <code>nl</code>, <code>pt</code>, <code>pl</code>, <code>sv</code>, <code>da</code>, <code>fi</code>, <code>nb</code>, <code>cs</code>, <code>ja</code>, <code>zh</code>, <code>ko</code>). With two or more, every question is also searched in each, translated first (sb-ask(3), Languages). Empty or one is none</td>
+</tr>
+<tr>
+<td><code>sync.max_per_minute</code></td>
+<td>integer</td>
+<td>no</td>
+<td>(SB-6004) How many documents a minute each connector reads at most, every sync (sb-ingest(7), First syncs); default 600</td>
+</tr>
+<tr>
 <td><code>wide_group_size</code></td>
 <td>integer</td>
 <td>no</td>
@@ -169,6 +187,18 @@
 <td>strings, numbers</td>
 <td>no</td>
 <td>(SB-5704) The deep tier: a deeper model of the same provider, base and key (<code>id</code>), or the main model asked for a higher reasoning effort (<code>effort</code>: <code>low</code>, <code>medium</code> or <code>high</code>, sent as <code>reasoning_effort</code>; OpenAI-compatible providers only), or both, with its own price. It writes only research syntheses, answers with a table, consultations' syntheses and one retry of a mostly uncited answer, and only while the evals job has gated it (sb-runtime(7), The deep tier)</td>
+</tr>
+<tr>
+<td><code>model.vision.id</code>, <code>model.vision.price.in_per_m</code>, <code>model.vision.price.out_per_m</code></td>
+<td>string, numbers</td>
+<td>no</td>
+<td>(SB-6101) The vision tier: a model of the same provider, base and key that reads pictures, so ingest can read scans, image files and the pictures in documents (sb-ingest(7), What a model read). It is used only while the evals job has gated it for the release the cell runs (sb-evals(7), Readers; LAW-06), obeys <code>model.region</code> (LAW-33), has no fallback, and counts at its own price. It answers no question. On a box it may be the local model profile with a model that reads pictures (<code>model.local</code>, no price). Without it, pictures are skipped and counted on health</td>
+</tr>
+<tr>
+<td><code>model.transcribe.provider</code>, <code>.base</code>, <code>.id</code>, <code>.region</code>, <code>.local</code>, <code>.per_minute_usd</code>, <code>.max_minutes</code></td>
+<td>strings, bool, numbers</td>
+<td>no</td>
+<td>(SB-6102) The transcribe tier: <code>whispercpp</code> (a whisper.cpp server; on a box, the <code>transcribe</code> compose profile, <code>local: true</code>) or <code>openaicompat</code> (<code>/audio/transcriptions</code> under <code>base</code>, model <code>id</code>, key at <code>vault://tenants/TENANT/model-transcribe</code>). It turns recordings into transcripts at ingest, only while the evals job has gated it (sb-evals(7), Readers). A remote one needs <code>per_minute_usd</code>, which counts in the month's spend, and a <code>region</code> inside <code>model.region</code> or the cell doesn't start (LAW-33); a month over budget transcribes nothing. <code>max_minutes</code> (default 120) caps one recording, estimated before it is sent (a WAV's length from its header, anything else from its size at 128 kbit/s) and checked again after. Without it, recordings are skipped and counted on health</td>
 </tr>
 <tr>
 <td><code>model.region</code></td>
@@ -237,6 +267,12 @@
 <td>(SB-5901, SB-5906) The drive ids the sharepoint connector reads (a site's library or a OneDrive), the Entra user ids whose Teams meetings' transcripts it reads, and the company's email domain an organization sharing link grants (sb-connector(3), <code>docs: sharepoint</code>)</td>
 </tr>
 <tr>
+<td><code>atlassian.base</code>, <code>atlassian.spaces</code>, <code>atlassian.projects</code></td>
+<td>URL, lists</td>
+<td>no</td>
+<td>(SB-6201 to SB-6207, ADR-0024) Confluence and Jira Cloud: the site (<code>https://acme.atlassian.net</code>, or a fake's), the Confluence space keys <code>docs: confluence</code> reads and the Jira project keys <code>tickets: jira</code> reads; the first project is where a drafted Jira issue opens. A read-only account's API token at <code>vault://tenants/TENANT/atlassian</code>, <code>{ "email", "api_token", "webhook_secret" }</code>. Check it with <code>sb selfhost check-atlassian</code> (sb(1))</td>
+</tr>
+<tr>
 <td><code>labels.microsoft</code></td>
 <td>map label id → level</td>
 <td>no</td>
@@ -252,7 +288,7 @@
 <td><code>chat.save_reaction</code></td>
 <td>string</td>
 <td>no</td>
-<td>(SB-5806) The reaction that offers to save a thread or ask about it, in a direct message to whoever added it (sb-ask(3), The chat app (Slack)); default <code>brain</code></td>
+<td>(SB-5806, SB-6005) The reaction that offers to save a thread or ask about it, in a direct message to whoever added it, in Slack and in Mattermost (sb-ask(3), The chat app (Slack) and The chat app (Mattermost)); default <code>brain</code></td>
 </tr>
 <tr>
 <td><code>chat.team_id</code></td>
