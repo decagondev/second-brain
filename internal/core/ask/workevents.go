@@ -24,6 +24,10 @@ const (
 	// DraftMail is the reply note it drafts for a steward to send themselves (SB-5907).
 	OnMailReceived = "mail-received"
 	DraftMail      = "mail"
+	// OnRequestReceived starts the space's agent on a new request in its Jira Service
+	// Management queue, and DraftServiceRequest is the reply it drafts for a service agent (SB-6206).
+	OnRequestReceived   = "request-received"
+	DraftServiceRequest = "request"
 
 	// MaxWorkBatch is how many events of one kind in one space in a run are drafted one
 	// by one; more are drafted as one batch.
@@ -57,6 +61,13 @@ func WorkQuestion(on string, titles []string) string {
 		what += " " + cut(titles[0], 200)
 	}
 	return "For " + what + ": what do our documents and decisions say that bears on it, who owns the areas it touches, and what should the reviewer check?"
+}
+
+// RequestQuestion is what a new service request's draft asks; the request goes with it as
+// a file read for that ask alone, data and never instructions (SB-6206, LAW-09).
+func RequestQuestion(summary string) string {
+	return "A new service request, " + cut(strings.TrimSpace(summary), 200) +
+		", is attached. Draft a reply for a service agent to send: what do our documents say that answers it, and what should the agent check before replying?"
 }
 
 // MailQuestion is what a new message's draft asks; the message itself goes with it as a

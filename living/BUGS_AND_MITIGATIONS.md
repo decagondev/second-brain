@@ -479,3 +479,18 @@ Every defect gets an entry, including design defects found in review. Each entry
 **Fix:** `work-event` and SB-5907's `mail` are in the list.
 
 **Caught by now:** `TestWorkAndMailDraftsArePut`, and `TestMicrosoft365ThroughARunningCell` drafts a mail end to end.
+
+## BUG-0032 A remote fallback model's key could never be read
+
+| Found | Severity | Ticket | Status |
+|---|---|---|---|
+| 2026-11-27, building SB-6201 | High | SB-5601 | Fixed |
+
+**Symptom:** A cell with a remote fallback model (sb-cell(5) `model.fallback` with a key) would find its key unreadable, so the fallback would fail every call and the cell would answer with passages only while the main provider was down.
+
+**Root cause:** The vault reads a secret only at a documented path (`secrets.ParseRef`), and SB-5601 read `vault://tenants/TENANT/model-fallback` without adding it to the list. Its tests used an extractive fallback, which has no key.
+
+**Fix:** `model-fallback` is a valid path, as are SB-6102's `model-transcribe` and SB-6201's `atlassian`.
+
+**Caught by now:** `TestEveryPathTheCellReadsIsValid` reads every path the cell reads.
+

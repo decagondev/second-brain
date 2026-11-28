@@ -65,7 +65,7 @@ summary: Epics, waves, slices and tickets.
 | W58 Reach Microsoft 365 | 6 | 1 | 0 | Planned 2026-11-27 with the user (E59), built: SharePoint and OneDrive, Purview labels, Entra groups and people, ask in Teams, Outlook calendar for meeting prep, Teams meeting transcripts, start on a new email. In review: SB-5901 (a real tenant) ([23-place-carry-reach.md](../docs/23-place-carry-reach.md)) |
 | W59 Proven for Real | 6 | 0 | 0 | Planned 2026-11-27 with the user (E60), built: prove it on the real thing, fakes refreshed from a real sandbox, check the Microsoft 365 setup, a big tenant's first sync, reactions and direct questions in Mattermost, the AI tools that reach the brain ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | W60 Every Format, Every Language | 7 | 0 | 0 | Planned 2026-11-27 with the user (E61), built: read scans and images, recordings become transcripts, ask in one language, find another, a glossary in every language, translate a cited passage, Spanish, Italian and Dutch, usable by everyone ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
-| W61 Reach Confluence and Jira | 0 | 0 | 7 | Planned 2026-11-27 with the user (E62): Confluence, Atlassian groups and people, check the Atlassian setup, Jira, Jira as work events, start on a service request, draft a Jira issue ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
+| W61 Reach Confluence and Jira | 5 | 2 | 0 | Planned 2026-11-27 with the user (E62), built: Confluence, Atlassian groups and people, check the Atlassian setup, Jira, Jira as work events, start on a service request, draft a Jira issue. In review: SB-6201, SB-6204 (a real site) ([24-prove-read-reach.md](../docs/24-prove-read-reach.md)) |
 | Parked | 0 | 0 | 4 | E13 portfolio grants (SB-1301 to SB-1304): Q-01 stays no (2026-11-20) |
 
 Ticket files are now the source of truth; they're edited by hand, and the plan generator isn't re-run over them.
@@ -1073,10 +1073,10 @@ flowchart LR
 
 | Ticket | Slice | Epic | Title | Status |
 |---|---|---|---|---|
-| [SB-6201](E62-reach-confluence-and-jira/SB-6201-confluence.md) | S61.1 | E62 | Confluence | Open |
-| [SB-6202](E62-reach-confluence-and-jira/SB-6202-atlassian-groups.md) | S61.1 | E62 | Atlassian groups and people | Open |
-| [SB-6203](E62-reach-confluence-and-jira/SB-6203-check-atlassian.md) | S61.1 | E62 | Check the Atlassian setup | Open |
-| [SB-6204](E62-reach-confluence-and-jira/SB-6204-jira.md) | S61.2 | E62 | Jira | Open |
-| [SB-6205](E62-reach-confluence-and-jira/SB-6205-jira-events.md) | S61.2 | E62 | Jira as work events | Open |
-| [SB-6206](E62-reach-confluence-and-jira/SB-6206-service-requests.md) | S61.2 | E62 | Start on a service request | Open |
-| [SB-6207](E62-reach-confluence-and-jira/SB-6207-draft-jira-issue.md) | S61.2 | E62 | Draft a Jira issue | Open |
+| [SB-6201](E62-reach-confluence-and-jira/SB-6201-confluence.md) | S61.1 | E62 | Confluence | In review |
+| [SB-6202](E62-reach-confluence-and-jira/SB-6202-atlassian-groups.md) | S61.1 | E62 | Atlassian groups and people | Done |
+| [SB-6203](E62-reach-confluence-and-jira/SB-6203-check-atlassian.md) | S61.1 | E62 | Check the Atlassian setup | Done |
+| [SB-6204](E62-reach-confluence-and-jira/SB-6204-jira.md) | S61.2 | E62 | Jira | In review |
+| [SB-6205](E62-reach-confluence-and-jira/SB-6205-jira-events.md) | S61.2 | E62 | Jira as work events | Done |
+| [SB-6206](E62-reach-confluence-and-jira/SB-6206-service-requests.md) | S61.2 | E62 | Start on a service request | Done |
+| [SB-6207](E62-reach-confluence-and-jira/SB-6207-draft-jira-issue.md) | S61.2 | E62 | Draft a Jira issue | Done |

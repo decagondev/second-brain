@@ -13,7 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/adapters/atlassian"
 	"example.com/second-brain/internal/adapters/chatapp/teamsapp"
+	"example.com/second-brain/internal/adapters/connectors/folder"
 	"example.com/second-brain/internal/adapters/secrets/localvault"
 	"example.com/second-brain/internal/adapters/smtpmail"
 	"example.com/second-brain/internal/cell/prove"
@@ -178,6 +180,19 @@ func proveEnv(cfg wire.Config, vault string, opt map[string]string, mailboxes []
 	env := prove.Env{Tenant: cfg.Tenant, Mailboxes: mailboxes, Probe: opt["--probe"], Person: opt["--person"], Labels: cfg.Labels.Microsoft}
 	if cfg.Microsoft.Base != "" || len(cfg.Microsoft.Drives) > 0 || cfg.Microsoft.Domain != "" {
 		env.Graph, env.SharePoint = wire.GraphFor(cfg, vault, hc)
+	}
+	if a := cfg.Atlassian; a.Base != "" { // SB-6201, SB-6202, SB-6204
+		v := localvault.Dir{Root: vault}
+		cl := &atlassian.Client{Base: a.Base, HTTP: hc, Creds: func(ctx context.Context) (string, error) {
+			return v.Get(ctx, "vault://tenants/"+cfg.Tenant+"/atlassian")
+		}}
+		env.Atlassian = cl
+		if len(a.Spaces) > 0 {
+			env.Confluence = &atlassian.Confluence{Client: cl, Spaces: a.Spaces, Dir: &atlassian.Directory{Client: cl}, Text: folder.Text}
+		}
+		if len(a.Projects) > 0 {
+			env.Jira = &atlassian.Jira{Client: cl, Projects: a.Projects}
+		}
 	}
 	if cfg.Teams.AppID != "" {
 		app := &teamsapp.App{AppID: cfg.Teams.AppID, OpenID: cfg.Teams.OpenID, HTTP: hc}

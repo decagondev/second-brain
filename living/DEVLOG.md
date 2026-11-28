@@ -7,6 +7,18 @@ summary: The running story of the project, newest first.
 
 Every PR adds an entry, and so does every significant design step. Newest first. Entries are never rewritten; corrections go in a new entry. Format: [05-living-documents.md](../docs/05-living-documents.md#devlog-entry-format).
 
+## 2026-11-27 W61: Reach Confluence and Jira
+
+**Wave/slice:** W61 / S61.1 and S61.2 (SB-6201 to SB-6207) · **Status:** Done, SB-6201 and SB-6204 In review (a real site)
+
+**What:** `docs: confluence` and `tickets: jira` read Confluence and Jira Cloud through one Atlassian client built with the standard library (ADR-0024): pages and issues with their labels and status, read restrictions and the people Jira lets browse an issue as the ACL copy, and Confluence's and Jira's own permission checks as the live check. Atlassian groups resolve by email; `sb selfhost check-atlassian` refuses an account that can write; `sb prove` covers Confluence, the groups and Jira. Jira issues start work events, incident briefs and reviews as Linear's do, and a signed Jira webhook starts a sync at once; a space's Jira Service Management queue starts a drafted reply for each new request; and the next action can draft a Jira issue as a link to Jira's own form, which the person files.
+
+**Why this way:** Asking each product's own permission check, rather than copying permission schemes and security levels into the cell, is the only live check that stays right as a site changes, and Unknown stays refusal. Listing every item with its version keeps one simple, resumable change feed for both products, at the cost of a list a sync. An issue the person files in Jira's form needs no token of theirs in the cell.
+
+**Learned:** An Atlassian API token has no scopes of its own: it carries its account's permissions, so "read-only" can only be checked as a read-only account. Atlassian Guard provisions into Atlassian from the IdP, so leavers keep coming through the IdP's SCIM. The vault's list of valid paths had no `model-fallback`, so a remote fallback model's key could never be read (BUG-0032); fixed, with a test over every path the cell reads.
+
+**Laws:** LAW-01, LAW-03, LAW-09, LAW-12, LAW-13, LAW-16, LAW-32. Every law test is green except LAW-23, as before.
+
 ## 2026-11-27 W60: Every format, every language
 
 **Wave/slice:** W60 / S60.1 and S60.2 (SB-6101 to SB-6107) · **Status:** Done

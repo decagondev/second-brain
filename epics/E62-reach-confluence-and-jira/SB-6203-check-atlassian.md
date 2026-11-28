@@ -13,7 +13,7 @@ summary: "An Atlassian token with write scopes, or a project it can't reach, sho
 | Manual | [`sb-selfhost(7)`](../../manual/sb-selfhost.7.md), [`sb(1)`](../../manual/sb.1.md) |
 | Laws | LAW-03, LAW-16 |
 | Depends on | SB-6001, SB-6201 |
-| Status | Open |
+| Status | Done |
 
 ## Why
 
@@ -21,22 +21,22 @@ An Atlassian token with write scopes, or a project it can't reach, shows only on
 
 ## Acceptance criteria
 
-- [ ] `sb selfhost check-atlassian` refuses a token with any write scope and names it
-- [ ] Each named Confluence space and Jira project must answer, and groups must resolve
-- [ ] Each fix is in `docs/runbooks/atlassian.md`; `sb prove` covers SB-6201, SB-6202 and SB-6204 to SB-6207
+- [x] `sb selfhost check-atlassian` refuses a token with any write scope and names it
+- [x] Each named Confluence space and Jira project must answer, and groups must resolve
+- [x] Each fix is in `docs/runbooks/atlassian.md`; `sb prove` covers SB-6201, SB-6202 and SB-6204 to SB-6207
 
 ## Subtasks
 
-- [ ] Update the man pages listed above first (manual first, P2)
-- [ ] Scope and reach checks
-- [ ] `docs/runbooks/atlassian.md`
-- [ ] Tests
-- [ ] Write or extend the law tests
-- [ ] Devlog entry, ledger and changelog updated
+- [x] Update the man pages listed above first (manual first, P2)
+- [x] Scope and reach checks
+- [x] `docs/runbooks/atlassian.md`
+- [x] Tests
+- [x] Write or extend the law tests
+- [x] Devlog entry, ledger and changelog updated
 
 ## Progress
 
-Not started.
+2026-11-27: built. `sb selfhost check-atlassian`: the token signs in, its account holds none of the Jira write permissions (site-wide and in each project; an API token carries its account's permissions, so read-only is a read-only account), each space and project answers, groups resolve; fixes in `docs/runbooks/atlassian.md`. `sb prove` covers SB-6201, SB-6202 and SB-6204. Tested in TestCheckAtlassian and TestProveAtlassian.
 
 ## Definition of done
 

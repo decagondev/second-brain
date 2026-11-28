@@ -65,7 +65,7 @@ commands:
   agents  lint [--root DIR]            check every agent definition before a release
   eval    run|diff SUITE               evaluation suites
   factory status|handoff|detach        custody and hand-off (factory operators)
-  selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|check-microsoft|retire-statement|verify-retirement
+  selfhost doctor|verify-bundle|check-proxy|check-dsn|check-email|check-notify|check-chat|check-microsoft|check-atlassian|retire-statement|verify-retirement
                                        a self-hosted box's checks, bundles, settings and retirement (sb-selfhost(7))
   cell    check-config FILE [--vault DIR]...   a cell's configuration and its secrets, before a restart
   secrets scan [--known PATH]... PATH...   find stored secrets and secret shapes in files
@@ -212,6 +212,8 @@ func (e *env) boxCommand(name string, args []string) (code int, ok bool) {
 		return e.selfhostCheckChat(args), true
 	case "selfhost check-microsoft":
 		return e.selfhostCheckMicrosoft(args), true
+	case "selfhost check-atlassian":
+		return e.selfhostCheckAtlassian(args), true
 	case "cell check-config":
 		return e.cellCheckConfig(args), true
 	case "secrets scan":

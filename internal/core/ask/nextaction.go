@@ -21,6 +21,8 @@ import (
 const (
 	ActionTicket  = "ticket"
 	ActionMessage = "message"
+	// ActionJiraIssue is a new Jira issue the person files themselves (SB-6207).
+	ActionJiraIssue = "jira-issue"
 
 	MaxDraftedAction = 4000
 )
@@ -31,13 +33,25 @@ type ActionDraft struct {
 	Kind  string   `json:"kind"`
 	Text  string   `json:"text"`
 	Cites []string `json:"cites"`
+	// For a Jira issue (SB-6207): its summary, and the link that opens Jira's own create form
+	// filled in, which the person files under their own sign-in; Warning when it cites a
+	// confidential or restricted document the project's readers may not open (LAW-32).
+	Summary string `json:"summary,omitempty"`
+	Link    string `json:"link,omitempty"`
+	Warning string `json:"warning,omitempty"`
 }
+
+// JiraWarning is the warning on a Jira issue drafted from labelled sources.
+const JiraWarning = "This draft cites confidential or restricted documents. People who can see the Jira project may not be allowed to open them: check before you file it."
 
 // DraftAction drafts the next action from s's own answer trace, its cites checked again as
 // s: a cite they can no longer open is left out, and so is its claim.
 func (a Agent) DraftAction(ctx context.Context, s tenancy.Scope, trace, kind string) (ActionDraft, error) {
-	if kind != ActionTicket && kind != ActionMessage {
-		return ActionDraft{}, fmt.Errorf("%w: kind is ticket or message", ErrInvalid)
+	if kind != ActionTicket && kind != ActionMessage && kind != ActionJiraIssue {
+		return ActionDraft{}, fmt.Errorf("%w: kind is ticket, message or jira-issue", ErrInvalid)
+	}
+	if kind == ActionJiraIssue && a.JiraCreate == nil {
+		return ActionDraft{}, fmt.Errorf("%w: this cell has no Jira", ErrUnavailable)
 	}
 	t, err := a.Trace(ctx, s, trace)
 	if err != nil {
@@ -50,12 +64,14 @@ func (a Agent) DraftAction(ctx context.Context, s tenancy.Scope, trace, kind str
 	out := ActionDraft{Kind: kind, Cites: []string{}}
 	var lines []string
 	seen := map[string]bool{}
+	labelled := false
 	for _, c := range claims {
 		if c.Uncited || len(c.Cites) == 0 {
 			continue
 		}
 		lines = append(lines, "- "+strings.TrimSpace(c.Text))
 		for _, ci := range c.Cites {
+			labelled = labelled || ci.Label == "confidential" || ci.Label == "restricted"
 			if !seen[ci.Cite] {
 				seen[ci.Cite] = true
 				out.Cites = append(out.Cites, ci.Cite)
@@ -77,6 +93,13 @@ func (a Agent) DraftAction(ctx context.Context, s tenancy.Scope, trace, kind str
 		text = string(r[:MaxDraftedAction])
 	}
 	out.Text = text
+	if kind == ActionJiraIssue { // SB-6207: filed by the person in Jira, never by the brain
+		out.Summary = cut(strings.TrimPrefix(lines[0], "- "), 200)
+		out.Link = a.JiraCreate(out.Summary, text)
+		if labelled {
+			out.Warning = JiraWarning
+		}
+	}
 	return out, nil
 }
 

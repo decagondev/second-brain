@@ -169,6 +169,14 @@ type Config struct {
 		Drives     []string `json:"drives,omitempty"`
 		Organizers []string `json:"organizers,omitempty"`
 	} `json:"microsoft"`
+	// Atlassian is Confluence and Jira Cloud (sb-cell(5), atlassian; ADR-0024), a read-only
+	// account's API token at vault://tenants/TENANT/atlassian: the site, the Confluence
+	// spaces the confluence connector reads and the Jira projects the jira connector reads.
+	Atlassian struct {
+		Base     string   `json:"base,omitempty"`
+		Spaces   []string `json:"spaces,omitempty"`
+		Projects []string `json:"projects,omitempty"`
+	} `json:"atlassian"`
 	// Labels maps Purview sensitivity label ids to the four levels (SB-5902); an id it
 	// doesn't map counts as restricted.
 	Labels struct {
@@ -628,6 +636,9 @@ func (c Config) Secrets() (required, optional []string) {
 	}
 	if c.Teams.AppID != "" {
 		required = append(required, "teams")
+	}
+	if c.Atlassian.Base != "" { // SB-6201 to SB-6207
+		required = append(required, "atlassian")
 	}
 	optional = []string{"email"}
 	return required, optional

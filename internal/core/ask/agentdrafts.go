@@ -70,7 +70,7 @@ func (x Stewards) AgentDraftFor(ctx context.Context, s tenancy.Scope, kind, titl
 		return StewardQuestion{}, fmt.Errorf("%w: an agent draft runs in a space", ErrInvalid)
 	}
 	if kind != DraftBrief && kind != DraftDecisions && kind != DraftUpdate && kind != DraftIncident && kind != DraftCheckin && kind != DraftLeaderWeek && kind != DraftReview &&
-		kind != DraftWork && kind != DraftMail { // BUG-0031: a work event's draft was refused; SB-5907
+		kind != DraftWork && kind != DraftMail && kind != DraftServiceRequest { // BUG-0031: a work event's draft was refused; SB-5907
 		return StewardQuestion{}, fmt.Errorf("%w: no draft kind %q", ErrInvalid, kind)
 	}
 	agent := req.Agent

@@ -22,7 +22,21 @@ export function NextAction({ trace, space, fetcher = fetch }: { trace: string; s
   const [cites, setCites] = useState<string[]>([]); // a confidential draft can't go to a channel (LAW-32)
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  // A Jira issue (SB-6207): drafted here, filed by the person in Jira's own form.
+  const [jira, setJira] = useState<{ link: string; text: string; warning: string } | null>(null);
   const ids = { text: useId(), target: useId() };
+  async function draftJira() {
+    setBusy(true);
+    setStatus("");
+    try {
+      const d = await post(fetcher, "/v1/actions/draft", { trace, kind: "jira-issue" });
+      setJira({ link: String(d.link ?? ""), text: String(d.text ?? ""), warning: String(d.warning ?? "") });
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : t("That didn't work. Try again."));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function draft(k: "ticket" | "message") {
     setBusy(true);
     setStatus("");
@@ -83,6 +97,29 @@ export function NextAction({ trace, space, fetcher = fetch }: { trace: string; s
             {t("Cancel")}
           </button>
         </form>
+      )}
+      {kind === "" && !jira && (
+        <button type="button" disabled={busy} onClick={() => void draftJira()}>
+          {t("Draft a Jira issue")}
+        </button>
+      )}
+      {jira && (
+        <div className="jira-draft">
+          <pre>{jira.text}</pre>
+          {jira.warning && (
+            <p className="notice" role="note">
+              {t("This draft cites confidential or restricted documents. People who can see the Jira project may not be allowed to open them: check before you file it.")}
+            </p>
+          )}
+          {jira.link.startsWith("http") && (
+            <a href={jira.link} target="_blank" rel="noopener noreferrer">
+              {t("File it in Jira (opens Jira; nothing is filed until you do)")}
+            </a>
+          )}{" "}
+          <button type="button" onClick={() => setJira(null)}>
+            {t("Cancel")}
+          </button>
+        </div>
       )}
       {status && (
         <p className="meta" role="status">

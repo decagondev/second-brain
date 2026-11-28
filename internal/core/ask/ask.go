@@ -435,6 +435,9 @@ type Agent struct {
 	ReviewAfter func(spaces []string) int
 	// Glossary is a space's glossary by name (sb-space(5); SB-2203); nil is none.
 	Glossary func(space string) map[string]string
+	// JiraCreate is the address of Jira's own create form filled in with a summary and a
+	// description (SB-6207); nil for a cell with no Jira.
+	JiraCreate func(summary, description string) string
 	// Languages are sb-cell(5) languages, the languages the cell's documents are in
 	// (SB-6103): with two or more, a question is also searched in each.
 	Languages []string

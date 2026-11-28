@@ -65,6 +65,10 @@ Approvers fetch it with `GET /v1/actions/{id}`, which adds a `diff` against the 
 | `approval`, `approved_by` | Set once approved |
 | `receipt` / `reason` | Set once `Ran` / `DidNotRun` |
 
+### Draft a Jira issue (SB-6207)
+
+`POST /v1/actions/draft { "trace", "kind": "jira-issue" }` drafts a new Jira issue from the caller's own answer, its cites checked again as them (a cite they can no longer open is left out, with its claim): `{ "kind": "jira-issue", "summary", "text", "cites", "link", "warning"? }`. `link` opens Jira's own create form (`/secure/CreateIssueDetails!init.jspa`) in the first project of sb-cell(5) `atlassian.projects`, filled in with the summary and the text, so the person files it under their own sign-in; the cell never files an issue and keeps no token of theirs. `warning` says the draft cites a confidential or restricted document the project's readers may not open (LAW-32). Without Jira it is `EUNAVAIL`. The web UI's **Draft a Jira issue** shows the text, the warning and **File it in Jira**.
+
 ### Draft the next action (SB-5304)
 
 An answer can become the next action, drafted for the person to edit; nothing goes out until they press **Send**.

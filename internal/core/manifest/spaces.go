@@ -77,15 +77,24 @@ type Space struct {
 	// Mailbox is the one shared mailbox whose new messages start the space's agent with
 	// on: [mail-received] (SB-5907); "" is none. Nobody's own mailbox is ever named here.
 	Mailbox string `json:"mailbox,omitempty"`
+	// ServiceQueue is the one Jira Service Management project whose new requests start the
+	// space's agent with on: [request-received] (SB-6206); "" is none.
+	ServiceQueue string `json:"service_queue,omitempty"`
 }
 
 // mailboxRE is one email address, the shared mailbox a space names.
 var mailboxRE = regexp.MustCompile(`^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`)
 
+// queueRE is a Jira project key, the service queue a space names (SB-6206).
+var queueRE = regexp.MustCompile(`^[A-Z][A-Z0-9]{1,9}$`)
+
 // mailKinds checks that a space whose on lists mail-received names its mailbox (SB-5907).
 func (c *checker) mailKinds(s Space, n *node, p string) {
 	if s.Watches("mail-received") && s.Mailbox == "" {
 		c.add(n, p+".mailbox", "on lists mail-received, so the space must name its shared mailbox")
+	}
+	if s.Watches("request-received") && s.ServiceQueue == "" { // SB-6206
+		c.add(n, p+".service_queue", "on lists request-received, so the space must name its service queue")
 	}
 }
 
@@ -140,7 +149,7 @@ func (t Tenant) RoutingOf(name string) string {
 
 // SpaceTriggers are the triggers a space's `on` may list: source-changed redrafts what an
 // agent drafted from a document that has a new version (SB-4905).
-var SpaceTriggers = []string{"source-changed", "pr-opened", "ticket-filed", "mail-received"} // SB-5301: a work event starts a draft; SB-5907: a new message in the space's mailbox
+var SpaceTriggers = []string{"source-changed", "pr-opened", "ticket-filed", "mail-received", "request-received"} // SB-5301: a work event starts a draft; SB-5907: a new message in the space's mailbox
 
 // Watches says whether the space lists trigger t in `on`.
 func (s Space) Watches(t string) bool { return contains(s.On, t) }
@@ -298,7 +307,7 @@ const (
 
 var spaceName = regexp.MustCompile(spaceNameRe)
 
-var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "glossary_in", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive", "mailbox"}
+var spaceFields = []string{"template", "members", "stewards", "label", "scope", "agents", "retention_days", "channels", "fields", "start_here", "review_after_days", "glossary", "glossary_in", "parent", "brief", "updates", "leader_week", "requests", "budget_usd_month", "incident_labels", "model", "skills", "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive", "mailbox", "service_queue"}
 
 var fieldName = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
@@ -418,7 +427,7 @@ func (c *checker) space(name string, n *node, p string) {
 			s.IncidentLabels = c.incidentLabels(v, f)
 		case "skills": // SB-4601
 			s.Skills, sn.skills = c.skills(v, f), v
-		case "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive", "mailbox": // SB-4801, SB-4802, SB-4905, SB-5002, SB-5101, SB-5402, SB-5907
+		case "rhythms", "onboarding", "on", "routing", "suspect", "wide_sensitive", "mailbox", "service_queue": // SB-4801, SB-4802, SB-4905, SB-5002, SB-5101, SB-5402, SB-5907, SB-6206
 			c.rhythmField(k.value, v, f, &s)
 		case "review_after_days":
 			if s.ReviewAfterDays = c.intIn(v, f, MinRetentionDays, MaxRetentionDays); s.ReviewAfterDays == DefaultReviewAfterDays {

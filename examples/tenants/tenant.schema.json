@@ -540,7 +540,8 @@
                 "source-changed",
                 "pr-opened",
                 "ticket-filed",
-                "mail-received"
+                "mail-received",
+                "request-received"
               ]
             },
             "minItems": 1,

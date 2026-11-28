@@ -147,6 +147,9 @@ func (c *checker) rhythmField(key string, v *node, f string, s *Space) {
 	case "mailbox": // SB-5907
 		s.Mailbox = c.match(v, f, mailboxRE, "must be one shared mailbox's address, such as support@acme.example")
 		return
+	case "service_queue": // SB-6206
+		s.ServiceQueue = c.match(v, f, queueRE, "must be one Jira Service Management project key, such as SUP")
+		return
 	}
 	s.Rhythms = c.rhythms(v, f)
 }
@@ -168,6 +171,9 @@ func formatWays(sp Space, nl string) string {
 	}
 	if sp.Mailbox != "" { // SB-5907
 		out += fmt.Sprintf("    mailbox: %s%s", sp.Mailbox, nl)
+	}
+	if sp.ServiceQueue != "" { // SB-6206
+		out += fmt.Sprintf("    service_queue: %s%s", sp.ServiceQueue, nl)
 	}
 	if sp.Onboarding != nil {
 		out += fmt.Sprintf("    onboarding: %t%s", *sp.Onboarding, nl)

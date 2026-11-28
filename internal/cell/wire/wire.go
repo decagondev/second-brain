@@ -85,7 +85,7 @@ var MemoryStores = []string{"directory and sessions", "traces and conversations"
 	"index", "chat events inbox", "proposals", "access reviews", "legal holds", "audit log (in files)"}
 
 // Vendors are the connector adapters a cell can run, by the manifest's vendor name.
-var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "sharepoint": "docs", "slack": "chat", "linear": "tickets", "hubspot": "crm", "github": "code",
+var Vendors = map[string]string{"gdrive": "docs", "folder": "docs", "sharepoint": "docs", "slack": "chat", "linear": "tickets", "confluence": "docs", "jira": "tickets", "hubspot": "crm", "github": "code",
 	"bamboohr": "hris", "quickbooks": "accounting"}
 
 // Cell is a built cell: every part, and the API handler that serves them.
@@ -142,6 +142,7 @@ type Cell struct {
 	graphOnce sync.Once
 	graphC    *msgraph.Client
 	sockets   []*mmapp.Socket // the chat apps' websockets (SB-6005)
+	hooks     sync.WaitGroup  // syncs webhooks started (SB-6205)
 	small     func(m manifest.Tenant) (ports.Model, error)
 	deep      func(m manifest.Tenant) (ports.Model, error) // SB-5704
 	vision    func(m manifest.Tenant) (ports.Model, error) // SB-6101
@@ -583,6 +584,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		Glossary:   func(name string) map[string]string { return m.Effective(name).Glossary },
 		GlossaryIn: func(name string) map[string]map[string]string { return m.Effective(name).GlossaryIn }, // SB-6104
 		Languages:  cfg.Languages,                                                                          // SB-6103
+		JiraCreate: jiraCreate(cfg),                                                                        // SB-6207
 		Skills:     func(name string) []ask.Skill { return spaceSkills(m, name) },                          // SB-4601
 		Routing:    routing(m), Suspect: suspectMode(m), Guard: c.guardEvent, PersonOver: c.personOver,     // SB-5002, SB-5003
 		Rate: &c.asks, AsksPerMinute: func() int { return m.AsksPerMinute },
@@ -707,6 +709,7 @@ func (c *Cell) assemble(m manifest.Tenant, digest string) (*Parts, error) {
 		savers = append(savers, rules)
 	}
 	c.teams(public, agent) // SB-5904
+	c.jiraHook(public)     // SB-6205
 	if cfg.Web != "" {
 		api.Web{Files: os.DirFS(cfg.Web), Base: cfg.BaseURL, Language: func() string { return c.Manifest().Language }}.Register(public)
 	}
@@ -990,6 +993,12 @@ func connectors(cfg Config, m manifest.Tenant, secret func(string) func(context.
 			out[kind] = sharePoint(cfg, graphClient(cfg, secret, redact, hc))
 		case "linear":
 			out[kind] = &linear.Connector{Endpoint: base, HTTP: hc, Key: creds, Redact: redact}
+		case "confluence", "jira": // SB-6201, SB-6204: Atlassian Cloud (ADR-0024)
+			c, err := atlassianConnector(cfg, vendor, secret, redact, hc)
+			if err != nil {
+				return nil, fmt.Errorf("%w: connector %s: %v", ErrConfig, kind, err)
+			}
+			out[kind] = c
 		case "hubspot":
 			out[kind] = &hubspot.Connector{Base: base, HTTP: hc, Creds: creds, Redact: redact}
 		case "github":

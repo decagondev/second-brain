@@ -56,3 +56,13 @@ func TestRefusals(t *testing.T) {
 		t.Errorf("world-readable secret: %v", err)
 	}
 }
+
+// BUG-0032: every secret path the cell reads is a valid reference: the fallback model's
+// key (SB-5601), the transcribe provider's (SB-6102) and the Atlassian account's (SB-6201).
+func TestEveryPathTheCellReadsIsValid(t *testing.T) {
+	for _, p := range []string{"model", "model-fallback", "model-transcribe", "atlassian", "msgraph", "teams", "mattermost", "email", "events"} {
+		if _, err := secrets.ParseRef("vault://tenants/acme-logistics/" + p); err != nil {
+			t.Errorf("%s: %v", p, err)
+		}
+	}
+}

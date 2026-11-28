@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"example.com/second-brain/internal/adapters/atlassian"
 	"example.com/second-brain/internal/adapters/msgraph"
 	"example.com/second-brain/internal/core/box"
 	"example.com/second-brain/internal/core/ports"
@@ -37,6 +38,10 @@ type Env struct {
 	Chat func() ([]string, error)
 	// Email checks the mail server offers STARTTLS with a trusted certificate.
 	Email func(context.Context) error
+	// Atlassian, Confluence and Jira are the cell's Atlassian parts (ADR-0024).
+	Atlassian  *atlassian.Client
+	Confluence *atlassian.Confluence
+	Jira       *atlassian.Jira
 	// Facts are the box's facts (tools/selfhost/facts.sh) for the doctor.
 	Facts []byte
 	Now   func() time.Time
